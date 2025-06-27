@@ -188,8 +188,8 @@ export function QuarantineMatButton({
       btnTxt = "Remove";
       break;
     case "Scrap":
-      title = q.quarantineQueueDestination ? `Move to ${q.quarantineQueueDestination}` : "Remove as scrap";
-      btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Scrap";
+      title = q.quarantineQueueDestination ? `Move to ${q.quarantineQueueDestination}` : "Remove from queue";
+      btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Remove";
       break;
     case "SignalForScrap":
       title = q.quarantineQueueDestination

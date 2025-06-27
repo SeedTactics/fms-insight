@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, Fragment, SetStateAction, Dispatch } from "react";
+import { useState, Fragment } from "react";
 import {
   Button,
   Collapse,
@@ -59,23 +59,17 @@ import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  InvalidateCycleDialogButton,
-  InvalidateCycleDialogContent,
-  InvalidateCycleState,
-} from "./InvalidateCycle.js";
 
 export type AddMaterialState = {
   readonly toQueue: string | null;
   readonly enteredOperator: string | null;
   readonly newMaterialTy: NewMaterialToQueueType | null;
-  readonly invalidateSt: InvalidateCycleState | null;
 };
 
 function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
-  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
+  const possibleNewMats = useAtomValue(matDetails.barcodePotentialNewMaterial);
 
   const curInQueueOnScreen =
     inProcMat !== null &&
@@ -87,7 +81,7 @@ function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   if (inProcMat?.location.type === api.LocType.OnPallet) return false;
   if (inProcMat?.action.type === api.ActionType.Loading) return false;
 
-  if (existingMat === null && !barcode?.potentialNewMaterial) {
+  if (existingMat === null && !possibleNewMats) {
     return false;
   }
 
@@ -478,7 +472,6 @@ export function AddToQueueMaterialDialogCt({
               toQueue: q,
               newMaterialTy: null,
               enteredOperator: st.enteredOperator,
-              invalidateSt: st.invalidateSt,
             });
           }}
           queueNames={queueNames}
@@ -493,24 +486,16 @@ export function AddToQueueMaterialDialogCt({
         enteredOperator={st.enteredOperator}
         setEnteredOperator={(o) => setState({ ...st, enteredOperator: o })}
       />
-      {st.invalidateSt !== null ? (
-        <InvalidateCycleDialogContent
-          st={st.invalidateSt}
-          setState={(is) => setState({ ...st, invalidateSt: is })}
-        />
-      ) : undefined}
     </>
   );
 }
 
 export function AddToQueueButton({
-  st: { enteredOperator, newMaterialTy, toQueue, invalidateSt },
-  setState,
+  st: { enteredOperator, newMaterialTy, toQueue },
   queueNames,
   onClose,
 }: {
   st: AddMaterialState;
-  setState: Dispatch<SetStateAction<AddMaterialState>>;
   queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
@@ -564,11 +549,6 @@ export function AddToQueueButton({
 
   return (
     <>
-      <InvalidateCycleDialogButton
-        onClose={onClose}
-        st={invalidateSt}
-        setState={(s) => setState((as) => ({ ...as, invalidateSt: s }))}
-      />
       <Button
         color="primary"
         disabled={

@@ -78,7 +78,7 @@ export interface LogEntryProps {
   entry: api.ILogEntry;
   detailLogCounter: number | null;
   setDetail: (counter: number | null) => void;
-  readonly highlightProcess?: number;
+  readonly highlightProcsGreaterOrEqualTo?: number;
 }
 
 function logType(entry: api.ILogEntry): string {
@@ -498,13 +498,14 @@ const LogEntryTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.to
 
 export const LogEntry = memo(function LogEntry(props: LogEntryProps) {
   const details = detailsForEntry(props.entry);
+  const highlight = props.highlightProcsGreaterOrEqualTo;
 
   return (
     <>
       <LogEntryTableRow
         $highlightProc={
-          props.highlightProcess !== undefined &&
-          props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0 &&
+          highlight !== undefined &&
+          props.entry.material.findIndex((m) => m.proc >= highlight) >= 0 &&
           logTypesToHighlight.indexOf(props.entry.type) >= 0
         }
         $invalidCycle={isLogEntryInvalidated(props.entry)}
@@ -589,7 +590,7 @@ export function* filterRemoveAddQueue(
 export interface LogEntriesProps {
   entries: Iterable<Readonly<api.ILogEntry>>;
   copyToClipboard?: boolean;
-  highlightProcess?: number;
+  highlightProcsGreaterOrEqualTo?: number;
 }
 
 export const LogEntries = memo(function LogEntriesF(props: LogEntriesProps) {
@@ -624,7 +625,7 @@ export const LogEntries = memo(function LogEntriesF(props: LogEntriesProps) {
             entry={e}
             detailLogCounter={curDetail}
             setDetail={setDetail}
-            highlightProcess={props.highlightProcess}
+            highlightProcsGreaterOrEqualTo={props.highlightProcsGreaterOrEqualTo}
           />
         ))}
       </TableBody>
