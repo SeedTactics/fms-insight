@@ -634,7 +634,10 @@ public static class BuildCellState
 
   private static string? OutputQueueForMaterial(LoadedFace face, IEnumerable<LogEntry> log)
   {
-    var signalQuarantine = log.FirstOrDefault(e => e.LogType == LogType.SignalQuarantine);
+    var matIdsOnFace = face.Material.Select(m => m.MaterialID).ToHashSet();
+    var signalQuarantine = log.FirstOrDefault(e =>
+      e.LogType == LogType.SignalQuarantine && e.Material.Any(m => matIdsOnFace.Contains(m.MaterialID))
+    );
     if (signalQuarantine != null)
     {
       return signalQuarantine.LocationName;
