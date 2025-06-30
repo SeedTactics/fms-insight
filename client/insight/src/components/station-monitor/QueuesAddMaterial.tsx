@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, Fragment } from "react";
+import { useState, Fragment, useEffect, useRef } from "react";
 import {
   Button,
   Collapse,
@@ -41,6 +41,7 @@ import {
   ListItemIcon,
   ListItemText,
   TextField,
+  Tooltip,
   Typography,
   styled,
 } from "@mui/material";
@@ -409,8 +410,16 @@ export function PromptForQueue({
   setSelectedQueue: (queue: string) => void;
   queueNames: ReadonlyArray<string>;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [ref]);
+
   return (
-    <div>
+    <div ref={ref}>
       <p>Select a queue</p>
       <List>
         {queueNames.map((q, idx) => (
@@ -549,59 +558,72 @@ export function AddToQueueButton({
 
   return (
     <>
-      <Button
-        color="primary"
-        disabled={
-          toQueue === null ||
-          addingExistingMat === true ||
-          addingNewMat === true ||
-          addingNewCasting === true ||
-          (existingMat === null && newMaterialTy === null) ||
-          (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-            (enteredOperator === null || enteredOperator === ""))
+      <Tooltip
+        title={
+          toQueue === null
+            ? "Select a queue to add the material to"
+            : fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                (enteredOperator === null || enteredOperator === "")
+              ? "Please enter an operator name"
+              : ""
         }
-        onClick={() => {
-          if (existingMat) {
-            addExistingMat({
-              materialId: existingMat.materialID,
-              queue: toQueue ?? "",
-              queuePosition: -1,
-              operator: enteredOperator ?? operator,
-            });
-          } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.jobUnique) {
-            addNewMat({
-              jobUnique: newMaterialTy.jobUnique,
-              lastCompletedProcess: newMaterialTy.last_proc,
-              serial: newSerial ?? undefined,
-              workorder: newWorkorder ?? null,
-              queue: toQueue ?? "",
-              queuePosition: -1,
-              operator: enteredOperator ?? operator,
-            });
-          } else if (newMaterialTy && newMaterialTy.kind === "RawMat" && newMaterialTy.rawMatName) {
-            addNewCasting({
-              casting: newMaterialTy.rawMatName,
-              quantity: 1,
-              queue: toQueue ?? "",
-              serials: newSerial ? [newSerial] : undefined,
-              workorder: newWorkorder,
-              operator: enteredOperator ?? operator,
-            });
-          }
-          setMatToShow(null);
-          onClose();
-        }}
       >
-        {toQueue === null ? (
-          "Add to Queue"
-        ) : (
-          <span>
-            {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
-            {withSerialMsg}
-            {addProcMsg}
-          </span>
-        )}
-      </Button>
+        <span>
+          <Button
+            color="primary"
+            disabled={
+              toQueue === null ||
+              addingExistingMat === true ||
+              addingNewMat === true ||
+              addingNewCasting === true ||
+              (existingMat === null && newMaterialTy === null) ||
+              (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                (enteredOperator === null || enteredOperator === ""))
+            }
+            onClick={() => {
+              if (existingMat) {
+                addExistingMat({
+                  materialId: existingMat.materialID,
+                  queue: toQueue ?? "",
+                  queuePosition: -1,
+                  operator: enteredOperator ?? operator,
+                });
+              } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.jobUnique) {
+                addNewMat({
+                  jobUnique: newMaterialTy.jobUnique,
+                  lastCompletedProcess: newMaterialTy.last_proc,
+                  serial: newSerial ?? undefined,
+                  workorder: newWorkorder ?? null,
+                  queue: toQueue ?? "",
+                  queuePosition: -1,
+                  operator: enteredOperator ?? operator,
+                });
+              } else if (newMaterialTy && newMaterialTy.kind === "RawMat" && newMaterialTy.rawMatName) {
+                addNewCasting({
+                  casting: newMaterialTy.rawMatName,
+                  quantity: 1,
+                  queue: toQueue ?? "",
+                  serials: newSerial ? [newSerial] : undefined,
+                  workorder: newWorkorder,
+                  operator: enteredOperator ?? operator,
+                });
+              }
+              setMatToShow(null);
+              onClose();
+            }}
+          >
+            {toQueue === null ? (
+              "Add to Queue"
+            ) : (
+              <span>
+                {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
+                {withSerialMsg}
+                {addProcMsg}
+              </span>
+            )}
+          </Button>
+        </span>
+      </Tooltip>
     </>
   );
 }

@@ -48,7 +48,7 @@ import {
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { PartIdenticon } from "./Material.js";
 
@@ -160,11 +160,23 @@ function InvalidateSelect(props: InvalidateCycleProps) {
 
 export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
   const curMat = useAtomValue(materialInDialogInfo);
+  const show = props.st !== null && curMat !== null;
+  const boxRef = useRef<HTMLDivElement>(null);
 
-  if (props.st === null || curMat === null) return <div />;
+  useEffect(() => {
+    boxRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [boxRef, show]);
+
+  if (!show) return <div />;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "1em" }}>
+    <Box
+      ref={boxRef}
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "1em" }}
+    >
       <Stack spacing={2}>
         <p style={{ maxWidth: "35em" }}>
           An invalidated cycle remains in the event log, but is not considered when determining the next
@@ -185,6 +197,7 @@ export function InvalidateCycleDialogButton(
 ) {
   const fmsInfo = useAtomValue(fmsInformation);
   const curMat = useAtomValue(materialInDialogInfo);
+  const inProcMat = useAtomValue(inProcessMaterialInDialog);
   const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
   const possibleNew = useAtomValue(barcodePotentialNewMaterial);
   const setMatToShow = useSetAtom(materialDialogOpen);
@@ -193,6 +206,8 @@ export function InvalidateCycleDialogButton(
   if (props.loadStation && !fmsInfo.allowInvalidateMaterialAtLoadStation) return null;
   if (!props.loadStation && !fmsInfo.allowInvalidateMaterialOnQueuesPage) return null;
   if (curMat === null) return null;
+
+  if (inProcMat && inProcMat.location.type === LocType.OnPallet) return null;
 
   const allowChange =
     possibleNew !== null &&
