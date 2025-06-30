@@ -3117,6 +3117,7 @@ namespace BlackMaple.MachineFramework
       long matId,
       int? process,
       string operatorName,
+      string reason,
       DateTime timeUTC,
       SqliteTransaction trans,
       List<LogEntry> newLogEntries
@@ -3280,7 +3281,7 @@ namespace BlackMaple.MachineFramework
           LogType = LogType.AddToQueue,
           LocationName = queue,
           LocationNum = queuePos,
-          Program = "Invalidating",
+          Program = reason,
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
           Result = "",
@@ -3310,6 +3311,7 @@ namespace BlackMaple.MachineFramework
           matId: matId,
           process: process,
           operatorName: operatorName,
+          reason: "Invalidating",
           timeUTC: timeUTC ?? DateTime.UtcNow,
           trans: trans,
           newLogEntries: newLogEntries
@@ -3357,6 +3359,7 @@ namespace BlackMaple.MachineFramework
           matId: matId,
           process: null,
           operatorName: operatorName,
+          reason: "ChangedJob",
           timeUTC: timeUTC ?? DateTime.UtcNow,
           trans: trans,
           newLogEntries: newLogEntries

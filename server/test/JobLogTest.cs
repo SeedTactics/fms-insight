@@ -5350,7 +5350,7 @@ namespace BlackMaple.FMSInsight.Tests
         LogType = LogType.AddToQueue,
         LocationName = "rawmat",
         LocationNum = 0,
-        Program = "Invalidating",
+        Program = "ChangedJob",
         StartOfCycle = false,
         EndTimeUTC = now.AddMinutes(5),
         ElapsedTime = TimeSpan.FromMinutes(-1),
