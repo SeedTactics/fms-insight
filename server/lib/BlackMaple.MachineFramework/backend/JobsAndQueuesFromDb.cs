@@ -819,12 +819,15 @@ namespace BlackMaple.MachineFramework
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
-                  ldb.RecordOperatorNotes(
-                    materialId: materialId,
-                    process: proc,
-                    notes: reason,
-                    operatorName: operatorName
-                  );
+                  if (!string.IsNullOrEmpty(reason))
+                  {
+                    ldb.RecordOperatorNotes(
+                      materialId: materialId,
+                      process: proc,
+                      notes: reason,
+                      operatorName: operatorName
+                    );
+                  }
                   ldb.RecordAddMaterialToQueue(
                     matID: materialId,
                     process: proc,
@@ -845,12 +848,15 @@ namespace BlackMaple.MachineFramework
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
-                  ldb.RecordOperatorNotes(
-                    materialId: materialId,
-                    process: proc,
-                    notes: reason,
-                    operatorName: operatorName
-                  );
+                  if (!string.IsNullOrEmpty(reason))
+                  {
+                    ldb.RecordOperatorNotes(
+                      materialId: materialId,
+                      process: proc,
+                      notes: reason,
+                      operatorName: operatorName
+                    );
+                  }
                   ldb.BulkRemoveMaterialFromAllQueues(
                     new[] { materialId },
                     operatorName: operatorName,

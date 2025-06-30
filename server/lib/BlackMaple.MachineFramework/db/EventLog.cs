@@ -1352,7 +1352,7 @@ namespace BlackMaple.MachineFramework
         foreach (var pair in details)
         {
           cmd.Parameters[1].Value = pair.Key;
-          cmd.Parameters[2].Value = pair.Value;
+          cmd.Parameters[2].Value = string.IsNullOrEmpty(pair.Value) ? DBNull.Value : pair.Value;
           cmd.ExecuteNonQuery();
         }
       }
@@ -2824,6 +2824,10 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUtc
     )
     {
+      if (string.IsNullOrEmpty(notes))
+      {
+        throw new ArgumentException("Operator notes cannot be empty", nameof(notes));
+      }
       var extra = new Dictionary<string, string>();
       extra["note"] = notes;
       if (!string.IsNullOrEmpty(operatorName))
