@@ -44,6 +44,7 @@ import {
   QueuePosition,
   IActiveWorkorder,
   IScannedMaterial,
+  IScannedPotentialNewMaterial,
 } from "../network/api.js";
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
@@ -86,7 +87,7 @@ export const materialDialogOpen = atom(
 // Material Details
 //--------------------------------------------------------------------------------
 
-export const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | null>>(async (get) => {
+const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | null>>(async (get) => {
   const toShow = get(matToShow);
   if (toShow && toShow.type === "Barcode") {
     const route = get(currentRoute);
@@ -102,6 +103,12 @@ export const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | n
     return null;
   }
 });
+
+export const barcodePotentialNewMaterial = atom<Promise<Readonly<IScannedPotentialNewMaterial> | null>>(
+  async (get) => {
+    return (await get(barcodeMaterialDetail))?.potentialNewMaterial ?? null;
+  },
+);
 
 export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(async (get) => {
   const curMat = get(matToShow);

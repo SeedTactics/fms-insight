@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, John Lenz
+/* Copyright (c) 2025, John Lenz
 
 All rights reserved.
 
@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Button } from "@mui/material";
+import { Box, Button, ListItemIcon, ListItemText, ListSubheader, Stack } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
 import { ActionType, IActiveJob, IInProcessMaterial, LocType } from "../../network/api.js";
@@ -39,6 +39,7 @@ import { JobsBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
 import {
+  barcodePotentialNewMaterial,
   inProcessMaterialInDialog,
   materialDialogOpen,
   materialInDialogInfo,
@@ -47,53 +48,143 @@ import {
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
+import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
+import { PartIdenticon } from "./Material.js";
 
-interface InvalidateCycle {
+export type InvalidateCycleState = {
   readonly process: number | null;
+  readonly changeRawMat: string | null;
+  readonly changeJobUnique: string | null;
   readonly updating: boolean;
-}
+};
 
-export type InvalidateCycleState = InvalidateCycle | null;
+export type InvalidateCycleProps = {
+  readonly st: InvalidateCycleState | null;
+  readonly setState: (s: InvalidateCycleState | null) => void;
+};
 
-export interface InvalidateCycleProps {
-  readonly st: InvalidateCycleState;
-  readonly setState: (s: InvalidateCycleState) => void;
+function InvalidateSelect(props: InvalidateCycleProps) {
+  const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
+  const possible = useAtomValue(barcodePotentialNewMaterial);
+  const currentSt = useAtomValue(currentStatus);
+  const history = useAtomValue(last30Jobs);
+
+  const castings = Object.values(possible?.possibleCastingsByQueue ?? {}).flatMap((cs) => cs);
+  const jobs = Object.values(possible?.possibleJobsByQueue ?? {})
+    .flatMap((js) => js)
+    .filter((j) => j.lastCompletedProcess === 0)
+    .map((j) => ({
+      jobUnique: j.jobUnique,
+      job: currentSt.jobs[j.jobUnique] ?? history.get(j.jobUnique) ?? null,
+    }));
+
+  const hasProc = lastMat !== null && lastMat.process >= 1;
+  const hasChangeMat = castings.length > 0 || jobs.length > 0;
+
+  function change(e: string) {
+    props.setState({
+      updating: false,
+      process: e.startsWith("proc") ? parseInt(e.substring(4)) : null,
+      changeRawMat: e.startsWith("rawMat") ? e.substring(6) : null,
+      changeJobUnique: e.startsWith("job") ? e.substring(3) : null,
+    });
+  }
+
+  return (
+    <TextField
+      value={
+        props.st?.process
+          ? "proc" + props.st.process.toString()
+          : props.st?.changeRawMat
+            ? "rawMat" + props.st.changeRawMat
+            : props.st?.changeJobUnique
+              ? "job" + props.st.changeJobUnique
+              : ""
+      }
+      select
+      onChange={(e) => change(e.target.value)}
+      variant="outlined"
+      label={
+        props.st?.process || !hasChangeMat
+          ? "Invalidate Process"
+          : props.st?.changeRawMat
+            ? "Change Raw Material"
+            : props.st?.changeJobUnique
+              ? "Change Assigned Job"
+              : !hasProc
+                ? "Change Assignment"
+                : ""
+      }
+    >
+      {[
+        hasProc && hasChangeMat
+          ? [<ListSubheader key={"procheader"}>Invalidate Selected Process</ListSubheader>]
+          : [],
+        lastMat
+          ? [
+              ...LazySeq.ofRange(1, lastMat.process + 1).map((p) => (
+                <MenuItem key={p} value={"proc" + p.toString()}>
+                  Invalidate Process {p}
+                </MenuItem>
+              )),
+            ]
+          : [],
+        hasProc && hasChangeMat ? [<ListSubheader key="matheader">Change Material Type</ListSubheader>] : [],
+        hasChangeMat
+          ? [
+              ...castings.map((c) => (
+                <MenuItem key={"rawMat" + c} value={"rawMat" + c}>
+                  Invalidate Everything And Change to {c}
+                </MenuItem>
+              )),
+              ...jobs.map(({ jobUnique, job }) => (
+                <MenuItem key={"job" + jobUnique} value={"job" + jobUnique}>
+                  {job ? (
+                    <ListItemIcon>
+                      <PartIdenticon part={job.partName} />
+                    </ListItemIcon>
+                  ) : undefined}
+                  <ListItemText
+                    primary={"Invalidate Everything And Change To Job " + jobUnique}
+                    secondary={job?.partName}
+                  />
+                </MenuItem>
+              )),
+            ]
+          : [],
+      ]}
+    </TextField>
+  );
 }
 
 export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
   const curMat = useAtomValue(materialInDialogInfo);
-  const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
+  const show = props.st !== null && curMat !== null;
+  const boxRef = useRef<HTMLDivElement>(null);
 
-  if (curMat === null || lastMat === null) return <div />;
+  useEffect(() => {
+    boxRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [boxRef, show]);
+
+  if (!show) return <div />;
 
   return (
-    <div style={{ margin: "2em" }}>
-      <p>
-        An invalidated cycle remains in the event log, but is not considered when determining the next process
-        to be machined on a piece of material.
-      </p>
-      <TextField
-        value={props.st?.process ?? ""}
-        select
-        onChange={(e) =>
-          props.st &&
-          props.setState({
-            ...props.st,
-            process: parseInt(e.target.value),
-          })
-        }
-        style={{ width: "20em" }}
-        variant="outlined"
-        label="Select process to invalidate"
-      >
-        {LazySeq.ofRange(1, lastMat.process + 1).map((p) => (
-          <MenuItem key={p} value={p}>
-            {p}
-          </MenuItem>
-        ))}
-      </TextField>
-    </div>
+    <Box
+      ref={boxRef}
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "1em" }}
+    >
+      <Stack spacing={2}>
+        <p style={{ maxWidth: "35em" }}>
+          An invalidated cycle remains in the event log, but is not considered when determining the next
+          process to be machined on a piece of material.
+        </p>
+        <InvalidateSelect st={props.st} setState={props.setState} />
+      </Stack>
+    </Box>
   );
 }
 
@@ -106,23 +197,54 @@ export function InvalidateCycleDialogButton(
 ) {
   const fmsInfo = useAtomValue(fmsInformation);
   const curMat = useAtomValue(materialInDialogInfo);
+  const inProcMat = useAtomValue(inProcessMaterialInDialog);
   const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
+  const possibleNew = useAtomValue(barcodePotentialNewMaterial);
   const setMatToShow = useSetAtom(materialDialogOpen);
   let operator = useAtomValue(currentOperator);
 
   if (props.loadStation && !fmsInfo.allowInvalidateMaterialAtLoadStation) return null;
   if (!props.loadStation && !fmsInfo.allowInvalidateMaterialOnQueuesPage) return null;
+  if (curMat === null) return null;
+
+  if (inProcMat && inProcMat.location.type === LocType.OnPallet) return null;
+
+  const allowChange =
+    possibleNew !== null &&
+    (!LazySeq.ofObject(possibleNew.possibleCastingsByQueue ?? {}).isEmpty() ||
+      !LazySeq.ofObject(possibleNew.possibleJobsByQueue ?? {}).isEmpty());
+  if (!allowChange && (lastMat === null || lastMat.process < 1)) return null;
 
   if (props.ignoreOperator) operator = null;
 
-  if (curMat === null || lastMat === null || lastMat.process < 1) return null;
+  function showInvalidate() {
+    props.setState({ process: null, updating: false, changeRawMat: null, changeJobUnique: null });
+  }
 
   function invalidateCycle() {
-    if (curMat && props.st && props.st.process) {
+    if (curMat && (props.st?.process || props.st?.changeRawMat || props.st?.changeJobUnique)) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(curMat.materialID, null, operator, props.st.process)
-        .catch(console.log)
-        .finally(() => {
+      JobsBackend.invalidatePalletCycle(
+        curMat.materialID,
+        operator,
+        props.st?.changeRawMat,
+        props.st?.changeJobUnique,
+        props.st?.process ?? 0,
+      )
+        .then((mat) => {
+          if (mat) {
+            setMatToShow({
+              type: "MatDetails",
+              details: mat,
+            });
+            props.onClose();
+          } else {
+            setMatToShow(null);
+            props.onClose();
+          }
+        })
+        .catch((e) => {
+          console.log(e);
           setMatToShow(null);
           props.onClose();
         });
@@ -132,7 +254,7 @@ export function InvalidateCycleDialogButton(
   return (
     <>
       {props.st === null ? (
-        <Button color="primary" onClick={() => props.setState({ process: null, updating: false })}>
+        <Button color="primary" onClick={showInvalidate}>
           Invalidate Cycle
         </Button>
       ) : undefined}
@@ -140,11 +262,18 @@ export function InvalidateCycleDialogButton(
         <Button
           color="primary"
           onClick={invalidateCycle}
-          disabled={props.st.process === null || props.st.updating}
+          disabled={
+            props.st.updating ||
+            (props.st.process === null && props.st.changeRawMat === null && props.st.changeJobUnique === null)
+          }
         >
-          {props.st.process === null
-            ? "Invalidate Cycle"
-            : "Invalidate Process " + props.st.process.toString()}
+          {props.st.process !== null
+            ? "Invalidate Process " + props.st.process.toString()
+            : props.st.changeJobUnique !== null
+              ? "Invalidate And Change To Job " + props.st.changeJobUnique
+              : props.st.changeRawMat !== null
+                ? "Invalidate And Change To " + props.st.changeRawMat
+                : "Invalidate Cycle"}
         </Button>
       ) : undefined}
     </>
