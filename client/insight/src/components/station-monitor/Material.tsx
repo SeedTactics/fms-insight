@@ -739,9 +739,15 @@ function MaterialInspections() {
   }
 }
 
-function MaterialEvents({ highlightProcess }: { highlightProcess?: number }) {
+function MaterialEvents({ highlightProcsGreaterOrEqualTo }: { highlightProcsGreaterOrEqualTo?: number }) {
   const events = useAtomValue(matDetails.materialInDialogEvents);
-  return <LogEntries entries={events} copyToClipboard highlightProcess={highlightProcess} />;
+  return (
+    <LogEntries
+      entries={events}
+      copyToClipboard
+      highlightProcsGreaterOrEqualTo={highlightProcsGreaterOrEqualTo}
+    />
+  );
 }
 
 function RebookingNote() {
@@ -764,13 +770,13 @@ function RebookingNote() {
 }
 
 export const MaterialDetailContent = memo(function MaterialDetailContent({
-  highlightProcess,
+  highlightProcsGreaterOrEqualTo,
 }: {
-  highlightProcess?: number;
+  highlightProcsGreaterOrEqualTo?: number;
 }) {
   const toShow = useAtomValue(matDetails.materialDialogOpen);
   const mat = useAtomValue(matDetails.materialInDialogInfo);
-  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
+  const barcodeNewMat = useAtomValue(matDetails.barcodePotentialNewMaterial);
 
   if (toShow === null) return null;
 
@@ -778,7 +784,7 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
     if (toShow.type === "AddMatWithEnteredSerial" || toShow.type === "ManuallyEnteredSerial") {
       return <div style={{ marginLeft: "1em" }}>Material with serial {toShow.serial} not found.</div>;
     } else if (toShow.type === "Barcode") {
-      if (barcode?.potentialNewMaterial) {
+      if (barcodeNewMat) {
         return (
           <div style={{ marginLeft: "1em" }}>
             Material with barcode {toShow.barcode} does not yet exist in the cell.
@@ -816,7 +822,7 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
         </div>
       </div>
       <DisplayLoadingAndError fallback={<CircularProgress />}>
-        <MaterialEvents highlightProcess={highlightProcess} />
+        <MaterialEvents highlightProcsGreaterOrEqualTo={highlightProcsGreaterOrEqualTo} />
       </DisplayLoadingAndError>
     </>
   );
@@ -914,7 +920,7 @@ export interface MaterialDialogProps {
   onClose?: () => void;
   allowNote?: boolean;
   extraDialogElements?: ReactNode;
-  highlightProcess?: number;
+  highlightProcsGreaterOrEqualTo?: number;
 }
 
 export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialogProps) {
@@ -936,7 +942,7 @@ export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialog
         </DialogTitle>
         <DialogContent>
           <DisplayLoadingAndError fallback={<MaterialLoading />}>
-            <MaterialDetailContent highlightProcess={props.highlightProcess} />
+            <MaterialDetailContent highlightProcsGreaterOrEqualTo={props.highlightProcsGreaterOrEqualTo} />
             <DisplayLoadingAndError fallback={<CircularProgress />}>
               {props.extraDialogElements}
             </DisplayLoadingAndError>

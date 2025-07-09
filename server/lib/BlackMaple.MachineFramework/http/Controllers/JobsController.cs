@@ -245,19 +245,20 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPut("material/{materialId}/invalidate-process")]
-    [ProducesResponseType(typeof(void), 200)]
-    public void InvalidatePalletCycle(
+    public MaterialDetails? InvalidatePalletCycle(
       long materialId,
       [FromBody] int process,
-      [FromQuery] string? putMatInQueue = null,
-      [FromQuery] string? operName = null
+      [FromQuery] string? operName = null,
+      [FromQuery] string? changeCastingTo = null,
+      [FromQuery] string? changeJobUniqueTo = null
     )
     {
-      jobAndQueue.InvalidatePalletCycle(
+      return jobAndQueue.InvalidatePalletCycle(
         matId: materialId,
         process: process,
-        oldMatPutInQueue: putMatInQueue,
-        operatorName: operName
+        operatorName: operName,
+        changeCastingTo: changeCastingTo,
+        changeJobUniqueTo: changeJobUniqueTo
       );
     }
 

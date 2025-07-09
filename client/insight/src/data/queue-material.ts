@@ -38,7 +38,7 @@ import { differenceInSeconds } from "date-fns";
 import { useAtomValue } from "jotai";
 import { currentStatus } from "../cell-status/current-status.js";
 import { rawMaterialQueues } from "../cell-status/names.js";
-import { barcodeMaterialDetail } from "../cell-status/material-details.js";
+import { barcodePotentialNewMaterial } from "../cell-status/material-details.js";
 import { useMemo } from "react";
 import { last30Jobs } from "../cell-status/scheduled-jobs.js";
 
@@ -91,11 +91,11 @@ function workorderDetailForCasting(
 
 function possibleCastings(
   currentSt: Readonly<api.ICurrentStatus>,
-  barcode: Readonly<api.IScannedMaterial> | null,
+  barcode: Readonly<api.IScannedPotentialNewMaterial> | null,
   toQueue: string,
 ): ReadonlyArray<SelectableCasting> {
-  const workorder = barcode?.potentialNewMaterial?.workorder;
-  return LazySeq.of(barcode?.potentialNewMaterial?.possibleCastingsByQueue?.[toQueue] ?? [])
+  const workorder = barcode?.workorder;
+  return LazySeq.of(barcode?.possibleCastingsByQueue?.[toQueue] ?? [])
     .map((c) => ({
       casting: c,
       message: workorder ? workorderDetailForCasting(currentSt, workorder, c) : null,
@@ -106,10 +106,10 @@ function possibleCastings(
 function possibleJobs(
   currentSt: Readonly<api.ICurrentStatus>,
   historicJobs: HashMap<string, Readonly<api.IHistoricJob>>,
-  barcode: Readonly<api.IScannedMaterial> | null,
+  barcode: Readonly<api.IScannedPotentialNewMaterial> | null,
   toQueue: string,
 ): ReadonlyArray<SelectableJob> {
-  return LazySeq.of(barcode?.potentialNewMaterial?.possibleJobsByQueue?.[toQueue] ?? [])
+  return LazySeq.of(barcode?.possibleJobsByQueue?.[toQueue] ?? [])
     .groupBy((j) => j.jobUnique)
     .collect(([uniq, procs]) => {
       const job = currentSt.jobs[uniq] ?? historicJobs.get(uniq);
@@ -128,7 +128,7 @@ function possibleJobs(
 export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableMaterialType {
   const historicJobs = useAtomValue(last30Jobs);
   const currentSt = useAtomValue(currentStatus);
-  const barcode = useAtomValue(barcodeMaterialDetail);
+  const barcode = useAtomValue(barcodePotentialNewMaterial);
   const rawMatQueues = useAtomValue(rawMaterialQueues);
 
   return useMemo(() => {

@@ -80,10 +80,11 @@ export interface JobAPI {
   ): Promise<void>;
   invalidatePalletCycle(
     materialId: number,
-    putMatInQueue: string | null,
-    operName: string | null,
+    operName: string | null | undefined,
+    changeCastingTo: string | null | undefined,
+    changeJobUniqueTo: string | null | undefined,
     process: number,
-  ): Promise<void>;
+  ): Promise<Readonly<api.IMaterialDetails> | null | undefined>;
   unscheduledRebookings(signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.IRebooking>>>;
 }
 

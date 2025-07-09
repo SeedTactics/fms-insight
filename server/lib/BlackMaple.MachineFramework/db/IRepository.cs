@@ -373,8 +373,15 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> InvalidatePalletCycle(
       long matId,
       int process,
-      string oldMatPutInQueue,
       string operatorName,
+      DateTime? timeUTC = null
+    );
+    IEnumerable<LogEntry> InvalidateAndChangeAssignment(
+      long matId,
+      string operatorName,
+      string changeJobUniqueTo,
+      string changePartNameTo,
+      int changeNumProcessesTo,
       DateTime? timeUTC = null
     );
     LogEntry CreateRebooking(

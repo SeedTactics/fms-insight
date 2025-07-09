@@ -31,8 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#nullable disable
-
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -50,7 +48,7 @@ namespace BlackMaple.MachineFramework
     ///loads info
     CurrentStatus GetCurrentStatus();
     void RecalculateCellState();
-    event NewCurrentStatus OnNewCurrentStatus;
+    event NewCurrentStatus? OnNewCurrentStatus;
 
     //checks to see if the jobs are valid.  Some machine types might not support all the different
     //pallet->part->machine->process combinations.
@@ -59,8 +57,8 @@ namespace BlackMaple.MachineFramework
     List<string> CheckValidRoutes(IEnumerable<Job> newJobs);
 
     ///Adds new jobs into the cell controller
-    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
-    event NewJobsDelegate OnNewJobs;
+    void AddJobs(NewJobs jobs, string? expectedPreviousScheduleId);
+    event NewJobsDelegate? OnNewJobs;
 
     void SetJobComment(string jobUnique, string comment);
 
@@ -83,8 +81,8 @@ namespace BlackMaple.MachineFramework
       int qty,
       string queue,
       IList<string> serial,
-      string workorder,
-      string operatorName
+      string? workorder,
+      string? operatorName
     );
 
     /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
@@ -95,16 +93,16 @@ namespace BlackMaple.MachineFramework
       int lastCompletedProcess,
       string queue,
       int position,
-      string serial,
-      string workorder,
-      string operatorName = null
+      string? serial,
+      string? workorder,
+      string? operatorName = null
     );
 
     /// Add material into a queue or just into free material if the queue name is the empty string.
     /// The material will be inserted into the given position, bumping any later material to a
     /// larger position.  If the material is currently in another queue or a different position,
     /// it will be removed and placed in the given position.
-    void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null);
+    void SetMaterialInQueue(long materialId, string queue, int position, string? operatorName = null);
 
     // If true, material that is currently being loaded onto a pallet can be canceled by calling
     // SignalMaterialForQuarantine.  Otherwise, SignalMaterialForQuarantine will give an error
@@ -113,18 +111,19 @@ namespace BlackMaple.MachineFramework
 
     /// Mark the material for quarantine.  If the material is already in a queue, it is directly moved.
     /// If the material is still on a pallet, it will be moved after unload completes.
-    void SignalMaterialForQuarantine(long materialId, string operatorName = null, string reason = null);
+    void SignalMaterialForQuarantine(long materialId, string? operatorName = null, string? reason = null);
 
-    void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
+    void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName = null);
 
-    void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null);
-    event EditMaterialInLogDelegate OnEditMaterialInLog;
+    void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string? operatorName = null);
+    event EditMaterialInLogDelegate? OnEditMaterialInLog;
 
-    void InvalidatePalletCycle(
+    MaterialDetails? InvalidatePalletCycle(
       long matId,
       int process,
-      string oldMatPutInQueue = null,
-      string operatorName = null
+      string? operatorName = null,
+      string? changeCastingTo = null,
+      string? changeJobUniqueTo = null
     );
   }
 
@@ -139,7 +138,7 @@ namespace BlackMaple.MachineFramework
     private readonly ISynchronizeCellState<St> _syncState;
     private readonly IEnumerable<IAdditionalCheckJobs> _additionalCheckJobs;
 
-    public event NewCurrentStatus OnNewCurrentStatus;
+    public event NewCurrentStatus? OnNewCurrentStatus;
     public bool AllowQuarantineToCancelLoad => _syncState.AllowQuarantineToCancelLoad;
 
     public JobsAndQueuesFromDb(
@@ -147,7 +146,7 @@ namespace BlackMaple.MachineFramework
       ServerSettings serverSt,
       FMSSettings settings,
       ISynchronizeCellState<St> syncSt,
-      IEnumerable<IAdditionalCheckJobs> additionalCheckJobs = null,
+      IEnumerable<IAdditionalCheckJobs>? additionalCheckJobs = null,
       bool startThread = true
     )
     {
@@ -183,8 +182,8 @@ namespace BlackMaple.MachineFramework
 
     // curStLock protects _lastCurrentStatus and _syncError field
     private readonly Lock _curStLock = new();
-    private St _lastCurrentStatus = default;
-    private string _syncError = null;
+    private St? _lastCurrentStatus = default;
+    private string? _syncError = null;
 
     #region Thread and Messages
     private readonly Thread _thread;
@@ -259,8 +258,8 @@ namespace BlackMaple.MachineFramework
           {
             _newCellState.Reset();
             var st = _syncState.CalculateCellState(db);
-            raiseNewCurStatus = raiseNewCurStatus || (st?.StateUpdated ?? false);
-            timeUntilNextRefresh = st?.TimeUntilNextRefresh ?? TimeSpan.FromSeconds(30);
+            raiseNewCurStatus = raiseNewCurStatus || st.StateUpdated;
+            timeUntilNextRefresh = st.TimeUntilNextRefresh;
 
             lock (_curStLock)
             {
@@ -329,14 +328,17 @@ namespace BlackMaple.MachineFramework
       bool requireStateRefresh = false;
       lock (_changeLock)
       {
-        St st;
+        St? st;
         lock (_curStLock)
         {
           st = _lastCurrentStatus;
         }
 
-        var jobsDecremented = _syncState.DecrementJobs(jobDB, st);
-        requireStateRefresh = requireStateRefresh || jobsDecremented;
+        if (st != null)
+        {
+          var jobsDecremented = _syncState.DecrementJobs(jobDB, st);
+          requireStateRefresh = requireStateRefresh || jobsDecremented;
+        }
       }
 
       if (requireStateRefresh)
@@ -347,7 +349,7 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Jobs
-    public event NewJobsDelegate OnNewJobs;
+    public event NewJobsDelegate? OnNewJobs;
 
     public CurrentStatus GetCurrentStatus()
     {
@@ -399,14 +401,14 @@ namespace BlackMaple.MachineFramework
     List<string> IJobAndQueueControl.CheckValidRoutes(IEnumerable<Job> newJobs)
     {
       using var jdb = _repo.OpenConnection();
-      var newJ = new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() };
+      var newJ = new NewJobs() { ScheduleId = "FakeSchIdForChecking", Jobs = newJobs.ToImmutableList() };
       return _syncState
         .CheckNewJobs(jdb, newJ)
         .Concat(_additionalCheckJobs.SelectMany(c => c.CheckNewJobs(jdb, newJ)))
         .ToList();
     }
 
-    void IJobAndQueueControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
+    void IJobAndQueueControl.AddJobs(NewJobs jobs, string? expectedPreviousScheduleId)
     {
       using (var jdb = _repo.OpenConnection())
       {
@@ -461,15 +463,15 @@ namespace BlackMaple.MachineFramework
 
 
     #region Queues
-    public event EditMaterialInLogDelegate OnEditMaterialInLog;
+    public event EditMaterialInLogDelegate? OnEditMaterialInLog;
 
     public List<InProcessMaterial> AddUnallocatedCastingToQueue(
       string casting,
       int qty,
       string queue,
       IList<string> serial,
-      string workorder,
-      string operatorName
+      string? workorder,
+      string? operatorName
     )
     {
       using var ldb = _repo.OpenConnection();
@@ -498,7 +500,7 @@ namespace BlackMaple.MachineFramework
           new InProcessMaterial()
           {
             MaterialID = log.Material.First().MaterialID,
-            JobUnique = null,
+            JobUnique = "",
             PartName = casting,
             Process = 0,
             Path = 1,
@@ -527,9 +529,9 @@ namespace BlackMaple.MachineFramework
       int process,
       string queue,
       int position,
-      string serial,
-      string workorder,
-      string operatorName
+      string? serial,
+      string? workorder,
+      string? operatorName
     )
     {
       if (!_settings.Queues.ContainsKey(queue))
@@ -623,7 +625,7 @@ namespace BlackMaple.MachineFramework
       };
     }
 
-    public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
+    public void SetMaterialInQueue(long materialId, string queue, int position, string? operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -631,20 +633,20 @@ namespace BlackMaple.MachineFramework
       }
       Log.Debug("Adding material {matId} to queue {queue} in position {pos}", materialId, queue, position);
 
-      string error = null;
+      string? error = null;
       bool requireStateRefresh = false;
 
       using (var ldb = _repo.OpenConnection())
       {
         lock (_changeLock)
         {
-          CurrentStatus st;
+          CurrentStatus? st;
           lock (_curStLock)
           {
             st = _lastCurrentStatus?.CurrentStatus;
           }
 
-          var mat = st.Material.FirstOrDefault(m => m.MaterialID == materialId);
+          var mat = st?.Material.FirstOrDefault(m => m.MaterialID == materialId);
           if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
           {
             error = "Material on pallet can not be moved to a queue";
@@ -685,16 +687,16 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
 
-      string error = null;
+      string? error = null;
       bool requireStateRefresh = false;
 
       lock (_changeLock)
       {
-        CurrentStatus st;
+        CurrentStatus? st;
         lock (_curStLock)
         {
           st = _lastCurrentStatus?.CurrentStatus;
@@ -703,7 +705,7 @@ namespace BlackMaple.MachineFramework
         using var ldb = _repo.OpenConnection();
         foreach (var matId in materialIds)
         {
-          var mat = st.Material.FirstOrDefault(m => m.MaterialID == matId);
+          var mat = st?.Material.FirstOrDefault(m => m.MaterialID == matId);
           if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
           {
             error = "Material on pallet can not be removed from queues";
@@ -734,24 +736,24 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void SignalMaterialForQuarantine(long materialId, string operatorName, string reason)
+    public void SignalMaterialForQuarantine(long materialId, string? operatorName, string? reason)
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
 
-      string error = null;
+      string? error = null;
       bool requireStateRefresh = false;
 
       using (var ldb = _repo.OpenConnection())
       {
         lock (_changeLock)
         {
-          CurrentStatus st;
+          CurrentStatus? st;
           lock (_curStLock)
           {
             st = _lastCurrentStatus?.CurrentStatus;
           }
 
-          var mat = st.Material.FirstOrDefault(m => m.MaterialID == materialId);
+          var mat = st?.Material.FirstOrDefault(m => m.MaterialID == materialId);
 
           if (mat == null)
           {
@@ -771,7 +773,7 @@ namespace BlackMaple.MachineFramework
                   else
                   {
                     // If the material will eventually stay on the pallet, disallow quarantine
-                    var job = st.Jobs.GetValueOrDefault(mat.JobUnique);
+                    var job = st?.Jobs.GetValueOrDefault(mat.JobUnique);
                     if (job == null)
                     {
                       error = "Job not found";
@@ -817,12 +819,15 @@ namespace BlackMaple.MachineFramework
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
-                  ldb.RecordOperatorNotes(
-                    materialId: materialId,
-                    process: proc,
-                    notes: reason,
-                    operatorName: operatorName
-                  );
+                  if (!string.IsNullOrEmpty(reason))
+                  {
+                    ldb.RecordOperatorNotes(
+                      materialId: materialId,
+                      process: proc,
+                      notes: reason,
+                      operatorName: operatorName
+                    );
+                  }
                   ldb.RecordAddMaterialToQueue(
                     matID: materialId,
                     process: proc,
@@ -843,12 +848,15 @@ namespace BlackMaple.MachineFramework
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
-                  ldb.RecordOperatorNotes(
-                    materialId: materialId,
-                    process: proc,
-                    notes: reason,
-                    operatorName: operatorName
-                  );
+                  if (!string.IsNullOrEmpty(reason))
+                  {
+                    ldb.RecordOperatorNotes(
+                      materialId: materialId,
+                      process: proc,
+                      notes: reason,
+                      operatorName: operatorName
+                    );
+                  }
                   ldb.BulkRemoveMaterialFromAllQueues(
                     new[] { materialId },
                     operatorName: operatorName,
@@ -877,7 +885,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
+    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string? operatorName = null)
     {
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 
@@ -904,26 +912,66 @@ namespace BlackMaple.MachineFramework
       RecalculateCellState();
     }
 
-    public void InvalidatePalletCycle(
+    public MaterialDetails? InvalidatePalletCycle(
       long matId,
       int process,
-      string oldMatPutInQueue = null,
-      string operatorName = null
+      string? operatorName = null,
+      string? changeCastingTo = null,
+      string? changeJobUniqueTo = null
     )
     {
-      Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
+      Log.Debug(
+        "Invalidating pallet cycle for {matId} and {process}: changing to {casting} and {job}",
+        matId,
+        process,
+        changeCastingTo,
+        changeJobUniqueTo
+      );
 
-      using (var logDb = _repo.OpenConnection())
+      using var db = _repo.OpenConnection();
+
+      if (!string.IsNullOrEmpty(changeCastingTo))
       {
-        logDb.InvalidatePalletCycle(
+        if (process > 1)
+        {
+          throw new BadRequestException("Can only change casting when invalidating all processes");
+        }
+
+        db.InvalidateAndChangeAssignment(
           matId: matId,
-          process: process,
-          oldMatPutInQueue: oldMatPutInQueue,
+          changeJobUniqueTo: null,
+          changePartNameTo: changeCastingTo,
+          changeNumProcessesTo: 1,
           operatorName: operatorName
         );
       }
+      else if (!string.IsNullOrEmpty(changeJobUniqueTo))
+      {
+        if (process > 1)
+        {
+          throw new BadRequestException("Can only change job when invalidating all processes");
+        }
+        var job = db.LoadJob(changeJobUniqueTo);
+        if (job == null)
+        {
+          throw new BadRequestException("Job " + changeJobUniqueTo + " not found");
+        }
+        db.InvalidateAndChangeAssignment(
+          matId: matId,
+          changeJobUniqueTo: changeJobUniqueTo,
+          changePartNameTo: job.PartName,
+          changeNumProcessesTo: job.Processes.Count,
+          operatorName: operatorName
+        );
+      }
+      else
+      {
+        db.InvalidatePalletCycle(matId: matId, process: process, operatorName: operatorName);
+      }
 
       RecalculateCellState();
+
+      return db.GetMaterialDetails(matId);
     }
     #endregion
   }

@@ -585,6 +585,7 @@ function AddMatButton({
   showAddToQueue: boolean;
   setShowAddToQueue: (show: boolean) => void;
 }) {
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const lastProcMat = useAtomValue(matDetails.materialInDialogLargestUsedProcess);
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
@@ -625,10 +626,11 @@ function AddMatButton({
             queuePosition: -1,
             operator: operator,
           });
+          setMatToShow(null);
           onClose();
         }}
       >
-        Add To {toQueue ?? "Queue"} {lastProcMat ? ` To Run Process ${lastProcMat.process}` : ""}
+        Add To {toQueue ?? "Queue"} {lastProcMat ? ` To Run Process ${lastProcMat.process + 1}` : ""}
       </Button>
     );
   }
@@ -676,7 +678,7 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
     <MaterialDialog
       onClose={onClose}
       allowNote
-      highlightProcess={invalidateSt?.process ?? undefined}
+      highlightProcsGreaterOrEqualTo={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
           <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, Fragment, SetStateAction, Dispatch } from "react";
+import { useState, Fragment, useEffect, useRef } from "react";
 import {
   Button,
   Collapse,
@@ -41,6 +41,7 @@ import {
   ListItemIcon,
   ListItemText,
   TextField,
+  Tooltip,
   Typography,
   styled,
 } from "@mui/material";
@@ -59,23 +60,17 @@ import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  InvalidateCycleDialogButton,
-  InvalidateCycleDialogContent,
-  InvalidateCycleState,
-} from "./InvalidateCycle.js";
 
 export type AddMaterialState = {
   readonly toQueue: string | null;
   readonly enteredOperator: string | null;
   readonly newMaterialTy: NewMaterialToQueueType | null;
-  readonly invalidateSt: InvalidateCycleState | null;
 };
 
 function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
-  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
+  const possibleNewMats = useAtomValue(matDetails.barcodePotentialNewMaterial);
 
   const curInQueueOnScreen =
     inProcMat !== null &&
@@ -87,7 +82,7 @@ function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   if (inProcMat?.location.type === api.LocType.OnPallet) return false;
   if (inProcMat?.action.type === api.ActionType.Loading) return false;
 
-  if (existingMat === null && !barcode?.potentialNewMaterial) {
+  if (existingMat === null && !possibleNewMats) {
     return false;
   }
 
@@ -415,8 +410,16 @@ export function PromptForQueue({
   setSelectedQueue: (queue: string) => void;
   queueNames: ReadonlyArray<string>;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [ref]);
+
   return (
-    <div>
+    <div ref={ref}>
       <p>Select a queue</p>
       <List>
         {queueNames.map((q, idx) => (
@@ -478,7 +481,6 @@ export function AddToQueueMaterialDialogCt({
               toQueue: q,
               newMaterialTy: null,
               enteredOperator: st.enteredOperator,
-              invalidateSt: st.invalidateSt,
             });
           }}
           queueNames={queueNames}
@@ -493,24 +495,16 @@ export function AddToQueueMaterialDialogCt({
         enteredOperator={st.enteredOperator}
         setEnteredOperator={(o) => setState({ ...st, enteredOperator: o })}
       />
-      {st.invalidateSt !== null ? (
-        <InvalidateCycleDialogContent
-          st={st.invalidateSt}
-          setState={(is) => setState({ ...st, invalidateSt: is })}
-        />
-      ) : undefined}
     </>
   );
 }
 
 export function AddToQueueButton({
-  st: { enteredOperator, newMaterialTy, toQueue, invalidateSt },
-  setState,
+  st: { enteredOperator, newMaterialTy, toQueue },
   queueNames,
   onClose,
 }: {
   st: AddMaterialState;
-  setState: Dispatch<SetStateAction<AddMaterialState>>;
   queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
@@ -564,64 +558,72 @@ export function AddToQueueButton({
 
   return (
     <>
-      <InvalidateCycleDialogButton
-        onClose={onClose}
-        st={invalidateSt}
-        setState={(s) => setState((as) => ({ ...as, invalidateSt: s }))}
-      />
-      <Button
-        color="primary"
-        disabled={
-          toQueue === null ||
-          addingExistingMat === true ||
-          addingNewMat === true ||
-          addingNewCasting === true ||
-          (existingMat === null && newMaterialTy === null) ||
-          (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-            (enteredOperator === null || enteredOperator === ""))
+      <Tooltip
+        title={
+          toQueue === null
+            ? "Select a queue to add the material to"
+            : fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                (enteredOperator === null || enteredOperator === "")
+              ? "Please enter an operator name"
+              : ""
         }
-        onClick={() => {
-          if (existingMat) {
-            addExistingMat({
-              materialId: existingMat.materialID,
-              queue: toQueue ?? "",
-              queuePosition: -1,
-              operator: enteredOperator ?? operator,
-            });
-          } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.jobUnique) {
-            addNewMat({
-              jobUnique: newMaterialTy.jobUnique,
-              lastCompletedProcess: newMaterialTy.last_proc,
-              serial: newSerial ?? undefined,
-              workorder: newWorkorder ?? null,
-              queue: toQueue ?? "",
-              queuePosition: -1,
-              operator: enteredOperator ?? operator,
-            });
-          } else if (newMaterialTy && newMaterialTy.kind === "RawMat" && newMaterialTy.rawMatName) {
-            addNewCasting({
-              casting: newMaterialTy.rawMatName,
-              quantity: 1,
-              queue: toQueue ?? "",
-              serials: newSerial ? [newSerial] : undefined,
-              workorder: newWorkorder,
-              operator: enteredOperator ?? operator,
-            });
-          }
-          setMatToShow(null);
-          onClose();
-        }}
       >
-        {toQueue === null ? (
-          "Add to Queue"
-        ) : (
-          <span>
-            {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
-            {withSerialMsg}
-            {addProcMsg}
-          </span>
-        )}
-      </Button>
+        <span>
+          <Button
+            color="primary"
+            disabled={
+              toQueue === null ||
+              addingExistingMat === true ||
+              addingNewMat === true ||
+              addingNewCasting === true ||
+              (existingMat === null && newMaterialTy === null) ||
+              (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                (enteredOperator === null || enteredOperator === ""))
+            }
+            onClick={() => {
+              if (existingMat) {
+                addExistingMat({
+                  materialId: existingMat.materialID,
+                  queue: toQueue ?? "",
+                  queuePosition: -1,
+                  operator: enteredOperator ?? operator,
+                });
+              } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.jobUnique) {
+                addNewMat({
+                  jobUnique: newMaterialTy.jobUnique,
+                  lastCompletedProcess: newMaterialTy.last_proc,
+                  serial: newSerial ?? undefined,
+                  workorder: newWorkorder ?? null,
+                  queue: toQueue ?? "",
+                  queuePosition: -1,
+                  operator: enteredOperator ?? operator,
+                });
+              } else if (newMaterialTy && newMaterialTy.kind === "RawMat" && newMaterialTy.rawMatName) {
+                addNewCasting({
+                  casting: newMaterialTy.rawMatName,
+                  quantity: 1,
+                  queue: toQueue ?? "",
+                  serials: newSerial ? [newSerial] : undefined,
+                  workorder: newWorkorder,
+                  operator: enteredOperator ?? operator,
+                });
+              }
+              setMatToShow(null);
+              onClose();
+            }}
+          >
+            {toQueue === null ? (
+              "Add to Queue"
+            ) : (
+              <span>
+                {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
+                {withSerialMsg}
+                {addProcMsg}
+              </span>
+            )}
+          </Button>
+        </span>
+      </Tooltip>
     </>
   );
 }
