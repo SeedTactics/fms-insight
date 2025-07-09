@@ -17,12 +17,7 @@ updates:
           - "@types/react-dom"
           - "@react-spring/*"
           - "@visx/*"
-      insight-dev:
-        dependency-type: "development"
-        patterns:
-          - "*"
-      insight-prod:
-        dependency-type: "production"
+      insight:
         patterns:
           - "*"
   - package-ecosystem: "nuget"
