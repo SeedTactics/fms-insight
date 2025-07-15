@@ -20,7 +20,6 @@
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
@@ -50,10 +49,5 @@
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="CsvHelper" />
     <PackageReference Include="System.Collections.Immutable" />
-    <PackageReference
-      Include="Microsoft.SourceLink.GitHub"
-      PrivateAssets="All"
-      Condition="'$(Configuration)' == 'Release'"
-    />
   </ItemGroup>
 </Project>
