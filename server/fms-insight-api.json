@@ -2723,6 +2723,10 @@
               "type": "string"
             }
           },
+          "ProvisionalWorkorderId": {
+            "type": "string",
+            "nullable": true
+          },
           "ManuallyCreated": {
             "type": "boolean"
           },

@@ -242,6 +242,8 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("Bookings")]
     public ImmutableSortedSet<string>? BookingIds { get; init; }
 
+    public string? ProvisionalWorkorderId { get; init; }
+
     public bool ManuallyCreated { get; init; }
 
     [JsonPropertyName("HoldEntireJob")]
