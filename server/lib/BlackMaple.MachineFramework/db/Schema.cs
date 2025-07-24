@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 36;
+    private const int Version = 37;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -176,7 +176,7 @@ namespace BlackMaple.MachineFramework
         cmd.Transaction = transaction;
 
         cmd.CommandText =
-          "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, AllocateAlg TEXT, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT, Manual INTEGER)";
+          "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, AllocateAlg TEXT, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT, Manual INTEGER, ProvisionalWorkorderId TEXT)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX jobs_time_idx ON jobs(EndUTC, StartUTC)";
@@ -474,6 +474,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 36)
             Ver35ToVer36(trans, updateJobsTables);
+
+          if (curVersion < 37)
+            Ver36ToVer37(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1193,6 +1196,17 @@ namespace BlackMaple.MachineFramework
       using var cmd = trans.Connection.CreateCommand();
 
       cmd.CommandText = "ALTER TABLE sim_station_use ADD Pallet INTEGER";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver36ToVer37(IDbTransaction trans, bool updateJobTables)
+    {
+      if (!updateJobTables)
+        return;
+
+      using var cmd = trans.Connection.CreateCommand();
+
+      cmd.CommandText = "ALTER TABLE jobs ADD ProvisionalWorkorderId TEXT";
       cmd.ExecuteNonQuery();
     }
 

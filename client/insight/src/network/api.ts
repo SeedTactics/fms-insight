@@ -2967,6 +2967,7 @@ export class Job implements IJob {
     comment?: string | undefined;
     allocationAlgorithm?: string | undefined;
     bookings?: string[] | undefined;
+    provisionalWorkorderId?: string | undefined;
     manuallyCreated?: boolean;
     holdEntireJob?: HoldPattern | undefined;
     cycles!: number;
@@ -2998,6 +2999,7 @@ export class Job implements IJob {
                 for (let item of _data["Bookings"])
                     this.bookings!.push(item);
             }
+            this.provisionalWorkorderId = _data["ProvisionalWorkorderId"];
             this.manuallyCreated = _data["ManuallyCreated"];
             this.holdEntireJob = _data["HoldEntireJob"] ? HoldPattern.fromJS(_data["HoldEntireJob"]) : <any>undefined;
             this.cycles = _data["Cycles"];
@@ -3030,6 +3032,7 @@ export class Job implements IJob {
             for (let item of this.bookings)
                 data["Bookings"].push(item);
         }
+        data["ProvisionalWorkorderId"] = this.provisionalWorkorderId;
         data["ManuallyCreated"] = this.manuallyCreated;
         data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
         data["Cycles"] = this.cycles;
@@ -3051,6 +3054,7 @@ export interface IJob {
     comment?: string | undefined;
     allocationAlgorithm?: string | undefined;
     bookings?: string[] | undefined;
+    provisionalWorkorderId?: string | undefined;
     manuallyCreated?: boolean;
     holdEntireJob?: HoldPattern | undefined;
     cycles: number;

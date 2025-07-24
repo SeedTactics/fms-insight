@@ -234,6 +234,7 @@ namespace BlackMaple.FMSInsight.Makino
         AllocationAlgorithm = historic?.AllocationAlgorithm ?? null,
         ScheduleId = historic?.ScheduleId ?? null,
         BookingIds = historic?.BookingIds ?? null,
+        ProvisionalWorkorderId = historic?.ProvisionalWorkorderId ?? null,
         ManuallyCreated = historic?.ManuallyCreated ?? false,
         CopiedToSystem = historic?.CopiedToSystem ?? true,
         Decrements = db.LoadDecrementsForJob(order),

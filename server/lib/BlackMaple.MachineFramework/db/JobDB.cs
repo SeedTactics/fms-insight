@@ -520,6 +520,7 @@ namespace BlackMaple.MachineFramework
               Cycles = details.CyclesOnFirstProc.Sum(),
               Processes = details.Procs,
               BookingIds = details.Bookings,
+              ProvisionalWorkorderId = reader.IsDBNull(11) ? null : reader.GetString(11),
               HoldJob = details.Hold?.ToHoldPattern(),
               Decrements = LoadDecrementsForJob(trans, unique),
             }
@@ -764,7 +765,7 @@ namespace BlackMaple.MachineFramework
         using var jobCmd = _connection.CreateCommand();
         jobCmd.Transaction = trans;
         jobCmd.CommandText =
-          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg"
+          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId"
           + " FROM jobs WHERE ScheduleId IN temp_sch_ids";
 
         using var simCmd = _connection.CreateCommand();
@@ -815,7 +816,7 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.CommandText =
-          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg FROM jobs WHERE Archived = 0";
+          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId FROM jobs WHERE Archived = 0";
         using (var trans = _connection.BeginTransaction())
         {
           cmd.Transaction = trans;
@@ -831,7 +832,7 @@ namespace BlackMaple.MachineFramework
     )
     {
       var cmdTxt =
-        "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg"
+        "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId"
         + " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
       if (!includeDecremented)
       {
@@ -970,7 +971,7 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.CommandText =
-          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg"
+          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId"
           + " FROM jobs WHERE ScheduleId = $sid";
 
         using (var trans = _connection.BeginTransaction())
@@ -1015,7 +1016,7 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.CommandText =
-          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg"
+          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId"
           + " FROM jobs WHERE UniqueStr BETWEEN $start AND $end";
 
         using (var trans = _connection.BeginTransaction())
@@ -1035,7 +1036,7 @@ namespace BlackMaple.MachineFramework
       HistoricJob job = null;
 
       cmd.CommandText =
-        "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg FROM jobs WHERE UniqueStr = $uniq";
+        "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId FROM jobs WHERE UniqueStr = $uniq";
       cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
 
       cmd.Transaction = trans;
@@ -1065,6 +1066,7 @@ namespace BlackMaple.MachineFramework
             Cycles = details.CyclesOnFirstProc.Sum(),
             Processes = details.Procs,
             BookingIds = details.Bookings,
+            ProvisionalWorkorderId = reader.IsDBNull(10) ? null : reader.GetString(10),
             HoldJob = details.Hold?.ToHoldPattern(),
             Decrements = LoadDecrementsForJob(trans, UniqueStr),
           };
@@ -1231,8 +1233,8 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg) "
-          + "VALUES($uniq,$part,$proc,$comment,$start,$end,$archived,$copied,$sid,$manual,$alg)";
+          "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId) "
+          + "VALUES($uniq,$part,$proc,$comment,$start,$end,$archived,$copied,$sid,$manual,$alg,$prov)";
 
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("part", SqliteType.Text).Value = job.PartName;
@@ -1253,6 +1255,9 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("alg", SqliteType.Text).Value = string.IsNullOrEmpty(job.AllocationAlgorithm)
           ? DBNull.Value
           : job.AllocationAlgorithm;
+        cmd.Parameters.Add("prov", SqliteType.Text).Value = string.IsNullOrEmpty(job.ProvisionalWorkorderId)
+          ? DBNull.Value
+          : job.ProvisionalWorkorderId;
 
         cmd.ExecuteNonQuery();
 
