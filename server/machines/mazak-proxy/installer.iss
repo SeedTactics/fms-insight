@@ -71,7 +71,6 @@ begin
     True, False);
   VersionPage.Add('Version E');
   VersionPage.Add('Web');
-  VersionPage.Add('Smooth');
 
   DatabasePage := CreateInputDirPage(VersionPage.ID,
     'Select Mazak Database Path', 'Where are the Mazak databases located?',
@@ -131,9 +130,6 @@ begin
   end;
   if VersionPage.Values[1] then begin
     Result := 'MazakWeb'
-  end;
-  if VersionPage.Values[2] then begin
-    Result := 'MazakSmooth'
   end;
 end;
 
