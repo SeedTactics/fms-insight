@@ -51,13 +51,54 @@ public class MazakConfig
     using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
       @"Software\SeedTactics\FMS Insight Mazak Proxy"
     );
-    return new MazakConfig()
+    if (key != null)
     {
-      DBType = (MazakDbType)Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString()),
-      SQLConnectionString = key.GetValue("SQLConnectionString", DefaultConnectionStr).ToString(),
-      OleDbDatabasePath = key.GetValue("OleDbDatabasePath", "c:\\Mazak\\NFMS\\DB").ToString(),
-      LogCSVPath = key.GetValue("LogCSVPath", "c:\\Mazak\\FMS\\Log").ToString(),
-      LoadCSVPath = key.GetValue("LoadCSVPath", "c:\\Mazak\\FMS\\LDS").ToString(),
-    };
+      return new MazakConfig()
+      {
+        DBType = (MazakDbType)Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString()),
+        SQLConnectionString = key.GetValue("SQLConnectionString", DefaultConnectionStr).ToString(),
+        OleDbDatabasePath = key.GetValue("OleDbDatabasePath", "c:\\Mazak\\NFMS\\DB").ToString(),
+        LogCSVPath = key.GetValue("LogCSVPath", "c:\\Mazak\\FMS\\Log").ToString(),
+        LoadCSVPath = key.GetValue("LoadCSVPath", "c:\\Mazak\\FMS\\LDS").ToString(),
+      };
+    }
+    else
+    {
+      // the installer is 32bit and we could be 64 bit, so we need to use the Wow6432 registry
+      // .NET 4 added an easy way to access the Wow6432 registry, but can't use that since we are
+      // .NET 3.5
+      var dbTy = RegistryWOW6432.GetRegKey32(
+        RegHive.HKEY_LOCAL_MACHINE,
+        @"Software\SeedTactics\FMS Insight Mazak Proxy",
+        "DBType"
+      );
+
+      return new MazakConfig()
+      {
+        DBType = string.IsNullOrEmpty(dbTy)
+          ? MazakDbType.MazakWeb
+          : (MazakDbType)Enum.Parse(typeof(MazakDbType), dbTy),
+        SQLConnectionString = RegistryWOW6432.GetRegKey32(
+          RegHive.HKEY_LOCAL_MACHINE,
+          @"Software\SeedTactics\FMS Insight Mazak Proxy",
+          "SQLConnectionString"
+        ),
+        OleDbDatabasePath = RegistryWOW6432.GetRegKey32(
+          RegHive.HKEY_LOCAL_MACHINE,
+          @"Software\SeedTactics\FMS Insight Mazak Proxy",
+          "OleDbDatabasePath"
+        ),
+        LogCSVPath = RegistryWOW6432.GetRegKey32(
+          RegHive.HKEY_LOCAL_MACHINE,
+          @"Software\SeedTactics\FMS Insight Mazak Proxy",
+          "LogCSVPath"
+        ),
+        LoadCSVPath = RegistryWOW6432.GetRegKey32(
+          RegHive.HKEY_LOCAL_MACHINE,
+          @"Software\SeedTactics\FMS Insight Mazak Proxy",
+          "LoadCSVPath"
+        ),
+      };
+    }
   }
 }
