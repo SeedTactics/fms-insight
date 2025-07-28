@@ -47,7 +47,7 @@
     "react-calendar": "^6.0.0",
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.0.0",
-    "react-timeago": "^8.2.0",
+    "react-timeago": "^8.3.0",
     "react-to-print": "^3.1.1",
     "urlpattern-polyfill": "^10.1.0"
   },
