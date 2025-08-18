@@ -657,7 +657,17 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int? totalMatCnt = null
     )
     {
-      LoadEnd(new[] { mat }, offset, load, elapMin, activeMin, expectMark, expectWork, totalActiveMin, totalMatCnt);
+      LoadEnd(
+        new[] { mat },
+        offset,
+        load,
+        elapMin,
+        activeMin,
+        expectMark,
+        expectWork,
+        totalActiveMin,
+        totalMatCnt
+      );
     }
 
     protected void LoadEnd(
@@ -717,7 +727,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       foreach (var mat in mats)
       {
-        if (mat.Process > 1) continue;
+        if (mat.Process > 1)
+          continue;
 
         if (expectMark == true && matsToSkipMark?.Contains(mat.MaterialID) != true)
         {
@@ -1919,9 +1930,10 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       {
         UniqueStr = "uniqqq",
         PartName = "pppart",
-        Processes = [
+        Processes =
+        [
           new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
-          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
         ],
         Cycles = 0,
         RouteStartUTC = DateTime.MinValue,
@@ -1929,11 +1941,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         Archived = false,
         ProvisionalWorkorderId = "provWork",
       };
-      jobLog.AddJobs(
-        new NewJobs() { Jobs = [j], ScheduleId = "schId" },
-        null,
-        addAsCopiedToSystem: true
-      );
+      jobLog.AddJobs(new NewJobs() { Jobs = [j], ScheduleId = "schId" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1948,7 +1956,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
-
 
     [Test]
     public void SkipShortMachineCycle()

@@ -382,11 +382,20 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         jsonSettings
       );
 
-      newJobs = newJobs with { Jobs = newJobs.Jobs.Select(j => j.UniqueStr == "ccc-schId1234" ? j with { ProvisionalWorkorderId = "provWorkCCC" } : j).ToImmutableList() };
+      newJobs = newJobs with
+      {
+        Jobs = newJobs
+          .Jobs.Select(j =>
+            j.UniqueStr == "ccc-schId1234" ? j with { ProvisionalWorkorderId = "provWorkCCC" } : j
+          )
+          .ToImmutableList(),
+      };
       repo.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       var allData = JsonSerializer.Deserialize<MazakAllData>(
-        File.ReadAllText(Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-load-material.data.json")),
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-load-material.data.json")
+        ),
         jsonSettings
       );
 
@@ -409,7 +418,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
       }
 
-      var loadingMat = status.Material.Where(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading);
+      var loadingMat = status.Material.Where(m =>
+        m.Action.Type == InProcessMaterialAction.ActionType.Loading
+      );
       await Assert.That(loadingMat.Count()).IsEqualTo(2);
       await Assert.That(loadingMat.Select(m => m.WorkorderId)).IsEquivalentTo(["provWorkCCC", "provWorkCCC"]);
     }
