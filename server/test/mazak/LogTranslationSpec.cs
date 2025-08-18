@@ -652,11 +652,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int elapMin,
       int activeMin = 0,
       bool expectMark = true,
+      string expectWork = null,
       int totalActiveMin = 0,
       int? totalMatCnt = null
     )
     {
-      LoadEnd(new[] { mat }, offset, load, elapMin, activeMin, expectMark, totalActiveMin, totalMatCnt);
+      LoadEnd(new[] { mat }, offset, load, elapMin, activeMin, expectMark, expectWork, totalActiveMin, totalMatCnt);
     }
 
     protected void LoadEnd(
@@ -666,6 +667,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int elapMin,
       int activeMin = 0,
       bool expectMark = true,
+      string expectWork = null,
       int totalActiveMin = 0,
       int? totalMatCnt = null,
       IReadOnlySet<long> matsToSkipMark = null
@@ -715,22 +717,43 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       foreach (var mat in mats)
       {
-        if (mat.Process > 1 || expectMark == false || matsToSkipMark?.Contains(mat.MaterialID) == true)
-          continue;
-        expected.Add(
-          new BlackMaple.MachineFramework.LogEntry(
-            cntr: -1,
-            mat: [mat.ToLogMat() with { Process = 0, Path = null, Face = 0 }],
-            pal: 0,
-            ty: LogType.PartMark,
-            locName: "Mark",
-            locNum: 1,
-            prog: "MARK",
-            start: false,
-            endTime: mat.EventStartTime.AddMinutes(offset),
-            result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0')
-          )
-        );
+        if (mat.Process > 1) continue;
+
+        if (expectMark == true && matsToSkipMark?.Contains(mat.MaterialID) != true)
+        {
+          expected.Add(
+            new BlackMaple.MachineFramework.LogEntry(
+              cntr: -1,
+              mat: [mat.ToLogMat() with { Process = 0, Path = null, Face = 0 }],
+              pal: 0,
+              ty: LogType.PartMark,
+              locName: "Mark",
+              locNum: 1,
+              prog: "MARK",
+              start: false,
+              endTime: mat.EventStartTime.AddMinutes(offset),
+              result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0')
+            )
+          );
+        }
+
+        if (!string.IsNullOrEmpty(expectWork))
+        {
+          expected.Add(
+            new BlackMaple.MachineFramework.LogEntry(
+              cntr: -1,
+              mat: [mat.ToLogMat() with { Process = 0, Path = null, Face = 0 }],
+              pal: 0,
+              ty: LogType.OrderAssignment,
+              locName: "Order",
+              locNum: 1,
+              prog: "",
+              start: false,
+              endTime: mat.EventStartTime.AddMinutes(offset),
+              result: expectWork
+            )
+          );
+        }
       }
     }
 
@@ -1888,6 +1911,44 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
+
+    [Test]
+    public void ProvisionalWorkorder()
+    {
+      var j = new Job()
+      {
+        UniqueStr = "uniqqq",
+        PartName = "pppart",
+        Processes = [
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ],
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        ProvisionalWorkorderId = "provWork",
+      };
+      jobLog.AddJobs(
+        new NewJobs() { Jobs = [j], ScheduleId = "schId" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      AddTestPart(unique: "uniqqq", part: "pppart", numProc: 2);
+
+      var p1 = BuildMaterial(t, pal: 1, unique: "uniqqq", part: "pppart", proc: 1, numProc: 2, matID: 1);
+
+      LoadStart(p1, offset: 0, load: 1);
+      LoadEnd(p1, offset: 4, load: 1, elapMin: 5, expectWork: "provWork");
+      ExpectPalletStart(t, pal: 3, offset: 2, mats: [p1]);
+      MovePallet(t, offset: 3, load: 1, pal: 3);
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
 
     [Test]
     public void SkipShortMachineCycle()
