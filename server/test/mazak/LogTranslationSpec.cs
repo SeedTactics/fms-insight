@@ -222,6 +222,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       public int Process { get; set; }
       public int Path { get; set; }
       public int NumProcess { get; set; }
+      public string Workorder { get; set; } = "";
 
       // extra data to set data in a single place to keep actual tests shorter.
       public DateTime EventStartTime { get; set; }
@@ -239,7 +240,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           NumProcesses = NumProcess,
           Face = Process,
           Serial = SerialSettings.ConvertToBase62(MaterialID).PadLeft(10, '0'),
-          Workorder = "",
+          Workorder = Workorder,
         };
       }
     }
@@ -252,7 +253,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int proc,
       int numProc,
       long matID,
-      int partIdx = 1
+      int partIdx = 1,
+      string workorder = ""
     )
     {
       return new TestMaterial()
@@ -266,6 +268,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         NumProcess = numProc,
         EventStartTime = t,
         Pallet = pal,
+        Workorder = workorder,
       };
     }
 
@@ -1947,12 +1950,21 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       AddTestPart(unique: "uniqqq", part: "pppart", numProc: 2);
 
-      var p1 = BuildMaterial(t, pal: 1, unique: "uniqqq", part: "pppart", proc: 1, numProc: 2, matID: 1);
+      var p1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "uniqqq",
+        part: "pppart",
+        proc: 1,
+        numProc: 2,
+        matID: 1,
+        workorder: "provWork"
+      );
 
       LoadStart(p1, offset: 0, load: 1);
-      LoadEnd(p1, offset: 4, load: 1, elapMin: 5, expectWork: "provWork");
-      ExpectPalletStart(t, pal: 3, offset: 2, mats: [p1]);
-      MovePallet(t, offset: 3, load: 1, pal: 3);
+      LoadEnd(p1, offset: 4, load: 1, elapMin: 4, expectWork: "provWork");
+      ExpectPalletStart(t, pal: 3, offset: 4, mats: [p1]);
+      MovePallet(t, offset: 4, load: 1, pal: 3);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
