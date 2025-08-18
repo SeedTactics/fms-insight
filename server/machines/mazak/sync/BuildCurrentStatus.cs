@@ -877,10 +877,9 @@ namespace MazakMachineInterface
 
           // Check for queued material
           List<BlackMaple.MachineFramework.QueuedMaterial> queuedMat = null;
-          if (jobsByUniq.ContainsKey(uniq))
+          jobsByUniq.TryGetValue(uniq, out var job);
+          if (job != null)
           {
-            var job = jobsByUniq[uniq];
-
             // add loads on process 1 into the job started.  Loads on other
             // processes are calculated during AddMachiningOrCompletedToStarted
             if (operation.Process == 1)
@@ -925,6 +924,10 @@ namespace MazakMachineInterface
               mat.Paths != null && mat.Paths.TryGetValue(Math.Max(operation.Process - 1, 1), out var path)
                 ? path
                 : 1;
+          }
+          else if (operation.Process == 1 && !string.IsNullOrEmpty(job?.DbJob?.ProvisionalWorkorderId))
+          {
+            workId = job.DbJob.ProvisionalWorkorderId;
           }
 
           material.Add(

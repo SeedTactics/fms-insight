@@ -222,6 +222,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       public int Process { get; set; }
       public int Path { get; set; }
       public int NumProcess { get; set; }
+      public string Workorder { get; set; } = "";
 
       // extra data to set data in a single place to keep actual tests shorter.
       public DateTime EventStartTime { get; set; }
@@ -239,7 +240,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           NumProcesses = NumProcess,
           Face = Process,
           Serial = SerialSettings.ConvertToBase62(MaterialID).PadLeft(10, '0'),
-          Workorder = "",
+          Workorder = Workorder,
         };
       }
     }
@@ -252,7 +253,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int proc,
       int numProc,
       long matID,
-      int partIdx = 1
+      int partIdx = 1,
+      string workorder = ""
     )
     {
       return new TestMaterial()
@@ -266,6 +268,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         NumProcess = numProc,
         EventStartTime = t,
         Pallet = pal,
+        Workorder = workorder,
       };
     }
 
@@ -652,11 +655,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int elapMin,
       int activeMin = 0,
       bool expectMark = true,
+      string expectWork = null,
       int totalActiveMin = 0,
       int? totalMatCnt = null
     )
     {
-      LoadEnd(new[] { mat }, offset, load, elapMin, activeMin, expectMark, totalActiveMin, totalMatCnt);
+      LoadEnd(
+        new[] { mat },
+        offset,
+        load,
+        elapMin,
+        activeMin,
+        expectMark,
+        expectWork,
+        totalActiveMin,
+        totalMatCnt
+      );
     }
 
     protected void LoadEnd(
@@ -666,6 +680,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int elapMin,
       int activeMin = 0,
       bool expectMark = true,
+      string expectWork = null,
       int totalActiveMin = 0,
       int? totalMatCnt = null,
       IReadOnlySet<long> matsToSkipMark = null
@@ -715,22 +730,44 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       foreach (var mat in mats)
       {
-        if (mat.Process > 1 || expectMark == false || matsToSkipMark?.Contains(mat.MaterialID) == true)
+        if (mat.Process > 1)
           continue;
-        expected.Add(
-          new BlackMaple.MachineFramework.LogEntry(
-            cntr: -1,
-            mat: [mat.ToLogMat() with { Process = 0, Path = null, Face = 0 }],
-            pal: 0,
-            ty: LogType.PartMark,
-            locName: "Mark",
-            locNum: 1,
-            prog: "MARK",
-            start: false,
-            endTime: mat.EventStartTime.AddMinutes(offset),
-            result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0')
-          )
-        );
+
+        if (expectMark == true && matsToSkipMark?.Contains(mat.MaterialID) != true)
+        {
+          expected.Add(
+            new BlackMaple.MachineFramework.LogEntry(
+              cntr: -1,
+              mat: [mat.ToLogMat() with { Process = 0, Path = null, Face = 0 }],
+              pal: 0,
+              ty: LogType.PartMark,
+              locName: "Mark",
+              locNum: 1,
+              prog: "MARK",
+              start: false,
+              endTime: mat.EventStartTime.AddMinutes(offset),
+              result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0')
+            )
+          );
+        }
+
+        if (!string.IsNullOrEmpty(expectWork))
+        {
+          expected.Add(
+            new BlackMaple.MachineFramework.LogEntry(
+              cntr: -1,
+              mat: [mat.ToLogMat() with { Process = 0, Path = null, Face = 0 }],
+              pal: 0,
+              ty: LogType.OrderAssignment,
+              locName: "Order",
+              locNum: 1,
+              prog: "",
+              start: false,
+              endTime: mat.EventStartTime.AddMinutes(offset),
+              result: expectWork
+            )
+          );
+        }
       }
     }
 
@@ -1885,6 +1922,49 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       ExpectPalletCycle(t, pal: 1, offset: 45, elapMin: 45 - 24, mats: [.. proc2, .. proc1snd]);
       ExpectPalletStart(t, pal: 1, offset: 45, mats: [.. proc2snd, .. proc1thrd]);
       MovePallet(t, pal: 1, offset: 50, load: 1);
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Test]
+    public void ProvisionalWorkorder()
+    {
+      var j = new Job()
+      {
+        UniqueStr = "uniqqq",
+        PartName = "pppart",
+        Processes =
+        [
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+        ],
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        ProvisionalWorkorderId = "provWork",
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = [j], ScheduleId = "schId" }, null, addAsCopiedToSystem: true);
+
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      AddTestPart(unique: "uniqqq", part: "pppart", numProc: 2);
+
+      var p1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "uniqqq",
+        part: "pppart",
+        proc: 1,
+        numProc: 2,
+        matID: 1,
+        workorder: "provWork"
+      );
+
+      LoadStart(p1, offset: 0, load: 1);
+      LoadEnd(p1, offset: 4, load: 1, elapMin: 4, expectWork: "provWork");
+      ExpectPalletStart(t, pal: 3, offset: 4, mats: [p1]);
+      MovePallet(t, offset: 4, load: 1, pal: 3);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
