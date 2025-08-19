@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { addDays, addMinutes, startOfDay, startOfWeek } from "date-fns";
-import { atom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
+import { Atom, atom, WritableAtom } from "jotai";
+import { atomWithStorage, atomFamily } from "jotai/utils";
 
 export type Last30ChartStart =
   | "StartOfToday"
@@ -62,33 +62,84 @@ export const last30WeekdayStartMinuteOffset = atomWithStorage<number>(
   6 * 60,
 );
 
-// TODO: deep equality?
-export const last30ChartStartTimes = atom<Record<Last30ChartStart, Date | null>>((get) => {
-  const weekStart = get(last30WeekdayStartIdx);
-  const weekStartMins = get(last30WeekdayStartMinuteOffset);
-  const mins = get(minsSinceEpochAtom);
-  const now = new Date(mins * 60_000);
-  const startOfT = startOfDay(now);
-  const startOfW = addMinutes(startOfWeek(now, { weekStartsOn: weekStart }), weekStartMins);
+export const last30ChartStartTimes = atomFamily<Last30ChartStart, Atom<Date>>((start) =>
+  atom((get) => {
+    const weekStart = get(last30WeekdayStartIdx);
+    const weekStartMins = get(last30WeekdayStartMinuteOffset);
+    const mins = get(minsSinceEpochAtom);
+    const now = new Date(mins * 60_000);
+    const startOfT = startOfDay(now);
+    const startOfW = addMinutes(startOfWeek(now, { weekStartsOn: weekStart }), weekStartMins);
 
-  return {
-    StartOfToday: startOfT,
-    StartOfYesterday: addDays(startOfT, -1),
-    StartOfWeek: startOfW,
-    StartOfLastWeek: addDays(startOfW, -7),
-    Last30: null,
-  };
-});
+    switch (start) {
+      case "StartOfToday":
+        return startOfT;
+      case "StartOfYesterday":
+        return addDays(startOfT, -1);
+      case "StartOfWeek":
+        return startOfW;
+      case "StartOfLastWeek":
+        return addDays(startOfW, -7);
+      case "Last30":
+        return addDays(now, -30);
+    }
+  }),
+);
 
-export const last30ChartEndTimes = atom<Record<Last30ChartEnd, Date | null>>((get) => {
-  const weekStart = get(last30WeekdayStartIdx);
-  const weekStartMins = get(last30WeekdayStartMinuteOffset);
-  const mins = get(minsSinceEpochAtom);
-  const now = new Date(mins * 60_000);
+export const last30ChartEndTimes = atomFamily<Last30ChartEnd, Atom<Date | null>>((cEnd) =>
+  atom((get) => {
+    if (cEnd === "Now") {
+      return null;
+    }
 
-  return {
-    Now: null,
-    EndOfYesterday: startOfDay(now),
-    EndOfLastWeek: addMinutes(startOfWeek(now, { weekStartsOn: weekStart }), weekStartMins),
-  };
-});
+    const weekStart = get(last30WeekdayStartIdx);
+    const weekStartMins = get(last30WeekdayStartMinuteOffset);
+    const mins = get(minsSinceEpochAtom);
+    const now = new Date(mins * 60_000);
+
+    switch (cEnd) {
+      case "EndOfYesterday":
+        return startOfDay(now);
+      case "EndOfLastWeek":
+        return addMinutes(startOfWeek(now, { weekStartsOn: weekStart }), weekStartMins);
+    }
+  }),
+);
+
+export type Last30ChartRangeAtom = WritableAtom<
+  {
+    readonly startType: Last30ChartStart | Date;
+    readonly endType: Last30ChartEnd | Date;
+    readonly startDate: Date | null;
+    readonly endDate: Date | null;
+  },
+  [{ start: Last30ChartStart | Date } | { end: Last30ChartEnd | Date }],
+  void
+>;
+
+export function chartRangeAtom(chartName: string): Last30ChartRangeAtom {
+  const startA = atomWithStorage<Last30ChartStart | Date>(`charts_${chartName}_start`, "StartOfWeek");
+
+  const endA = atomWithStorage<Last30ChartEnd | Date>(`charts_${chartName}_end`, "Now");
+
+  return atom(
+    (get) => {
+      const start = get(startA);
+      const end = get(endA);
+      return {
+        startType: start,
+        endType: end,
+        startDate: start instanceof Date ? start : get(last30ChartStartTimes(start)),
+        endDate: end instanceof Date ? end : get(last30ChartEndTimes(end)),
+      };
+    },
+    (_, set, update) => {
+      if ("start" in update) {
+        set(startA, update.start);
+      }
+      if ("end" in update) {
+        set(endA, update.end);
+      }
+    },
+  );
+}
