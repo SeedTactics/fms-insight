@@ -158,13 +158,26 @@ namespace BlackMaple.FMSInsight.Makino
 
       var job = _jobCache.Lookup(m.OrderName);
 
-      TimeSpan active;
-      if (job != null && m.ProcessNum <= job.Processes.Count)
+      TimeSpan active = TimeSpan.Zero;
+      if (job != null && m.ProcessNum >= 1 && m.ProcessNum <= job.Processes.Count)
       {
-        active = job.Processes[m.ProcessNum - 1].Paths[0].Stops[0].ExpectedCycleTime;
+        var proc = job.Processes[m.ProcessNum - 1];
+        if (proc.Paths.Count > 0)
+        {
+          var path = proc.Paths[0];
+          if (path.Stops.Count > 0)
+          {
+            active = path.Stops[0].ExpectedCycleTime;
+          }
+        }
       }
-      else
+
+      if (active == TimeSpan.Zero)
       {
+        Log.Debug(
+          "Unable to determine active time for {job} on makino order {order}",
+          job?.UniqueStr,
+          m.OrderName);
         active = TimeSpan.FromSeconds(m.SpindleTimeSeconds);
       }
 

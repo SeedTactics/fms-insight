@@ -32,7 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
@@ -368,6 +370,59 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .DontScrubDateTimes()
         .UseDirectory("read-snapshots")
         .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+    }
+
+    [Test]
+    public async Task ProvisionalWorkorder()
+    {
+      using var repo = _repoCfg.OpenConnection();
+
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+
+      newJobs = newJobs with
+      {
+        Jobs = newJobs
+          .Jobs.Select(j =>
+            j.UniqueStr == "ccc-schId1234" ? j with { ProvisionalWorkorderId = "provWorkCCC" } : j
+          )
+          .ToImmutableList(),
+      };
+      repo.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      var allData = JsonSerializer.Deserialize<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-load-material.data.json")
+        ),
+        jsonSettings
+      );
+
+      CurrentStatus status;
+      try
+      {
+        status = BuildCurrentStatus.Build(
+          repo,
+          _settings,
+          _mazakCfg,
+          allData,
+          machineGroupName: "MC",
+          null,
+          new DateTime(2025, 8, 18, 16, 12, 3, DateTimeKind.Utc)
+        );
+      }
+      finally
+      {
+        repo.Dispose();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+      }
+
+      var loadingMat = status.Material.Where(m =>
+        m.Action.Type == InProcessMaterialAction.ActionType.Loading
+      );
+      await Assert.That(loadingMat.Count()).IsEqualTo(2);
+      await Assert.That(loadingMat.Select(m => m.WorkorderId)).IsEquivalentTo(["provWorkCCC", "provWorkCCC"]);
     }
   }
 }

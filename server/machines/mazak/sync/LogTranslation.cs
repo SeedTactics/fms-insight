@@ -764,9 +764,27 @@ namespace MazakMachineInterface
           Log.Debug("Creating new material for unique {unique} process 1", unique);
           for (int i = 1; i <= fixQty; i += 1)
           {
-            mats.Add(
-              repo.AllocateMaterialIDAndGenerateSerial(unique, e.JobPartName, numProc, e.TimeUTC, out var _)
+            var mid = repo.AllocateMaterialIDAndGenerateSerial(
+              unique,
+              e.JobPartName,
+              numProc,
+              e.TimeUTC,
+              out var _
             );
+            if (!string.IsNullOrEmpty(job?.ProvisionalWorkorderId))
+            {
+              repo.RecordWorkorderForMaterialID(
+                new EventLogMaterial()
+                {
+                  MaterialID = mid,
+                  Process = 0,
+                  Face = 0,
+                },
+                job.ProvisionalWorkorderId,
+                e.TimeUTC
+              );
+            }
+            mats.Add(mid);
           }
         }
         else
