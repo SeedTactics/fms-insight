@@ -66,9 +66,8 @@ export const last30ChartStartTimes = atomFamily<Last30ChartStart, Atom<Date>>((s
   atom((get) => {
     const weekStart = get(last30WeekdayStartIdx);
     const weekStartMins = get(last30WeekdayStartMinuteOffset);
-    const mins = get(minsSinceEpochAtom);
-    const now = new Date(mins * 60_000);
-    const startOfT = startOfDay(now);
+    const now = new Date(get(minsSinceEpochAtom) * 60_000);
+    const startOfT = addMinutes(startOfDay(now), weekStartMins);
     const startOfW = addMinutes(startOfWeek(now, { weekStartsOn: weekStart }), weekStartMins);
 
     switch (start) {
@@ -94,12 +93,11 @@ export const last30ChartEndTimes = atomFamily<Last30ChartEnd, Atom<Date | null>>
 
     const weekStart = get(last30WeekdayStartIdx);
     const weekStartMins = get(last30WeekdayStartMinuteOffset);
-    const mins = get(minsSinceEpochAtom);
-    const now = new Date(mins * 60_000);
+    const now = new Date(get(minsSinceEpochAtom) * 60_000);
 
     switch (cEnd) {
       case "EndOfYesterday":
-        return startOfDay(now);
+        return addMinutes(startOfDay(now), weekStartMins);
       case "EndOfLastWeek":
         return addMinutes(startOfWeek(now, { weekStartsOn: weekStart }), weekStartMins);
     }

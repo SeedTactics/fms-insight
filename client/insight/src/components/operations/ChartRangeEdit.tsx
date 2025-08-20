@@ -33,37 +33,197 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { memo, useState } from "react";
 import {
+  Last30ChartEnd,
+  last30ChartEndTimes,
   Last30ChartRangeAtom,
+  Last30ChartStart,
   last30ChartStartTimes,
   last30WeekdayStartIdx,
   last30WeekdayStartMinuteOffset,
 } from "../../data/chart-times";
 import { useAtom, useAtomValue } from "jotai";
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
-  FormControl,
-  FormControlLabel,
+  Divider,
+  IconButton,
   MenuItem,
   Radio,
   RadioGroup,
-  Select,
   Stack,
   TextField,
+  Tooltip,
+  Typography,
 } from "@mui/material";
+import { Edit } from "@mui/icons-material";
+import { addMinutes, startOfToday } from "date-fns";
 
 function RadioLabel({ label, date }: { label: string; date: Date | null }) {
   return (
-    <span>
-      {label} {date ? `(${date.toLocaleString()})` : ""}
-    </span>
+    <Box>
+      <Typography>{label}</Typography>
+      {date ? <Typography variant="subtitle2">({date.toLocaleString()})</Typography> : undefined}
+    </Box>
   );
 }
 
-function CustomDateLabel() {
-  return <span>Custom Date</span>;
+function CustomDateLabel({
+  date,
+  setDate,
+  enabled,
+}: {
+  enabled: boolean;
+  date: Date | null;
+  setDate: (date: Date) => void;
+}) {
+  const last30 = useAtomValue(last30ChartStartTimes("Last30"));
+  return (
+    <TextField
+      type="datetime-local"
+      value={
+        date ? new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""
+      }
+      onChange={(event) => setDate(new Date(event.target.value))}
+      disabled={!enabled}
+      label="Custom Date"
+      slotProps={{
+        inputLabel: { shrink: true },
+        htmlInput: {
+          min: new Date(last30.getTime() - last30.getTimezoneOffset() * 60000).toISOString().slice(0, 16),
+        },
+      }}
+    />
+  );
+}
+
+function RangeStart({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
+  const [chartRange, setChartRange] = useAtom(chartAtom);
+  const dayStart = useAtomValue(last30WeekdayStartMinuteOffset);
+  const [customDate, setCustomDate] = useState<Date | null>(
+    chartRange.startType instanceof Date ? chartRange.startType : addMinutes(startOfToday(), dayStart),
+  );
+
+  function setTy(type: Last30ChartStart | "CustomDate") {
+    if (type === "CustomDate") {
+      setChartRange({ start: customDate ?? new Date() });
+    } else {
+      setChartRange({ start: type });
+    }
+  }
+
+  function setDate(date: Date) {
+    setCustomDate(date);
+    setChartRange({ start: date });
+  }
+
+  const stOfToday = useAtomValue(last30ChartStartTimes("StartOfToday"));
+  const startOfYesterday = useAtomValue(last30ChartStartTimes("StartOfYesterday"));
+  const startOfWeek = useAtomValue(last30ChartStartTimes("StartOfWeek"));
+  const startOfLastWeek = useAtomValue(last30ChartStartTimes("StartOfLastWeek"));
+  const last30 = useAtomValue(last30ChartStartTimes("Last30"));
+
+  return (
+    <Box>
+      <Typography variant="h6">Range Start</Typography>
+      <RadioGroup
+        value={chartRange.startType instanceof Date ? "CustomDate" : chartRange.startType}
+        onChange={(event) => setTy(event.target.value as Last30ChartStart | "CustomDate")}
+      >
+        <Stack direction="column" spacing={2}>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="StartOfToday" />
+            <RadioLabel label="Start of Today" date={stOfToday} />
+          </Stack>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="StartOfYesterday" />
+            <RadioLabel label="Start of Yesterday" date={startOfYesterday} />
+          </Stack>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="StartOfWeek" />
+            <RadioLabel label="Start of This Week" date={startOfWeek} />
+          </Stack>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="StartOfLastWeek" />
+            <RadioLabel label="Start of Last Week" date={startOfLastWeek} />
+          </Stack>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="Last30" />
+            <RadioLabel label="Last 30 Days" date={last30} />
+          </Stack>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="CustomDate" />
+            <CustomDateLabel
+              enabled={chartRange.startType instanceof Date}
+              date={customDate}
+              setDate={setDate}
+            />
+          </Stack>
+        </Stack>
+      </RadioGroup>
+    </Box>
+  );
+}
+
+function RangeEnd({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
+  const [chartRange, setChartRange] = useAtom(chartAtom);
+  const dayStart = useAtomValue(last30WeekdayStartMinuteOffset);
+  const [customDate, setCustomDate] = useState<Date>(
+    chartRange.endType instanceof Date ? chartRange.endType : addMinutes(startOfToday(), dayStart),
+  );
+
+  function setTy(type: Last30ChartEnd | "CustomDate") {
+    if (type === "CustomDate") {
+      setChartRange({ end: customDate ?? new Date() });
+    } else {
+      setChartRange({ end: type });
+    }
+  }
+
+  function setDate(date: Date) {
+    setCustomDate(date);
+    setChartRange({ end: date });
+  }
+
+  const endOfYesterday = useAtomValue(last30ChartEndTimes("EndOfYesterday"));
+  const endOfLastWeek = useAtomValue(last30ChartEndTimes("EndOfLastWeek"));
+
+  return (
+    <Box>
+      <Typography variant="h6">Range End</Typography>
+      <RadioGroup
+        value={chartRange.endType instanceof Date ? "CustomDate" : chartRange.endType}
+        onChange={(event) => setTy(event.target.value as Last30ChartEnd | "CustomDate")}
+      >
+        <Stack direction="column" spacing={2}>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="Now" />
+            <Typography>Now</Typography>
+          </Stack>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="EndOfYesterday" />
+            <RadioLabel label="End of Yesterday" date={endOfYesterday} />
+          </Stack>
+          <Box sx={{ height: "3em" }} />
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="EndOfLastWeek" />
+            <RadioLabel label="End of Last Week" date={endOfLastWeek} />
+          </Stack>
+          <Box sx={{ height: "3em" }} />
+          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+            <Radio value="CustomDate" />
+            <CustomDateLabel
+              enabled={chartRange.endType instanceof Date}
+              date={customDate}
+              setDate={setDate}
+            />
+          </Stack>
+        </Stack>
+      </RadioGroup>
+    </Box>
+  );
 }
 
 function minutesToTimespan(m: number) {
@@ -72,61 +232,33 @@ function minutesToTimespan(m: number) {
   return `${h.toString().padStart(2, "0")}:${min.toString().padStart(2, "0")}`;
 }
 
-function RangeDialog({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
-  const [chartRange, setChartRange] = useAtom(chartAtom);
-  const [open, setOpen] = useState(false);
-
+function RangeDialog({
+  chartAtom,
+  open,
+  setOpen,
+}: {
+  chartAtom: Last30ChartRangeAtom;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
   const [weekdayStart, setWeekdayStart] = useAtom(last30WeekdayStartIdx);
   const [weekdayStartMinuteOffset, setWeekdayStartMinuteOffset] = useAtom(last30WeekdayStartMinuteOffset);
 
-  const startOfToday = useAtomValue(last30ChartStartTimes("StartOfToday"));
-  const startOfYesterday = useAtomValue(last30ChartStartTimes("StartOfYesterday"));
-  const startOfWeek = useAtomValue(last30ChartStartTimes("StartOfWeek"));
-  const startOfLastWeek = useAtomValue(last30ChartStartTimes("StartOfLastWeek"));
-  const last30 = useAtomValue(last30ChartStartTimes("Last30"));
-
   return (
-    <Dialog open={open} onClose={() => setOpen(false)}>
+    <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md">
       <DialogContent>
-        <Stack direction="column" spacing={2}>
-          <FormControl>
-            <RadioGroup
-              value={chartRange.startType instanceof Date ? "CustomDate" : chartRange.startType}
-              onChange={(event) => setChartRange(event.target.value)}
-            >
-              <FormControlLabel
-                value="StartOfToday"
-                control={<Radio />}
-                label={<RadioLabel label="Start of Today" date={startOfToday} />}
-              />
-              <FormControlLabel
-                value="StartOfYesterday"
-                control={<Radio />}
-                label={<RadioLabel label="Start of Yesterday" date={startOfYesterday} />}
-              />
-              <FormControlLabel
-                value="StartOfWeek"
-                control={<Radio />}
-                label={<RadioLabel label="Start of Week" date={startOfWeek} />}
-              />
-              <FormControlLabel
-                value="StartOfLastWeek"
-                control={<Radio />}
-                label={<RadioLabel label="Start of Last Week" date={startOfLastWeek} />}
-              />
-              <FormControlLabel
-                value="Last30"
-                control={<Radio />}
-                label={<RadioLabel label="Last 30 Days" date={last30} />}
-              />
-              <FormControlLabel value="CustomDate" control={<Radio />} label={<CustomDateLabel />} />
-            </RadioGroup>
-          </FormControl>
+        <Stack direction="column" spacing={2} divider={<Divider orientation="horizontal" flexItem />}>
+          <Stack direction="row" spacing={2} divider={<Divider orientation="vertical" flexItem />}>
+            <RangeStart chartAtom={chartAtom} />
+            <RangeEnd chartAtom={chartAtom} />
+          </Stack>
           <Stack direction="row" justifyContent="space-around">
-            <Select
+            <TextField
+              select
               label="First Day Of Week"
+              sx={{ minWidth: "10em" }}
               value={weekdayStart}
-              onChange={(e) => setWeekdayStart(e.target.value)}
+              onChange={(e) => setWeekdayStart(parseInt(e.target.value) as 0 | 1 | 2 | 3 | 4 | 5 | 6)}
             >
               <MenuItem value={0}>Sunday</MenuItem>
               <MenuItem value={1}>Monday</MenuItem>
@@ -135,22 +267,23 @@ function RangeDialog({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
               <MenuItem value={4}>Thursday</MenuItem>
               <MenuItem value={5}>Friday</MenuItem>
               <MenuItem value={6}>Saturday</MenuItem>
-            </Select>
+            </TextField>
+            <TextField
+              type="time"
+              label="Day Start Time"
+              sx={{ minWidth: "10em" }}
+              value={minutesToTimespan(weekdayStartMinuteOffset)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "") {
+                  setWeekdayStartMinuteOffset(0);
+                } else {
+                  const [h, m] = val.split(":").map(Number);
+                  setWeekdayStartMinuteOffset(h * 60 + m);
+                }
+              }}
+            />
           </Stack>
-          <TextField
-            type="time"
-            label="Day Start Time"
-            value={minutesToTimespan(weekdayStartMinuteOffset)}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === "") {
-                setWeekdayStartMinuteOffset(0);
-              } else {
-                const [h, m] = val.split(":").map(Number);
-                setWeekdayStartMinuteOffset(h * 60 + m);
-              }
-            }}
-          />
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -160,11 +293,60 @@ function RangeDialog({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
   );
 }
 
+function formatStart(ty: Last30ChartStart | Date, d: Date | null) {
+  if (ty instanceof Date) {
+    return ty.toLocaleString();
+  }
+  switch (ty) {
+    case "StartOfToday":
+      return `Start of Today${d ? ` (${d.toLocaleString()})` : ""}`;
+    case "StartOfYesterday":
+      return `Start of Yesterday${d ? ` (${d.toLocaleString()})` : ""}`;
+    case "StartOfWeek":
+      return `Start of This Week${d ? ` (${d.toLocaleString()})` : ""}`;
+    case "StartOfLastWeek":
+      return `Start of Last Week${d ? ` (${d.toLocaleString()})` : ""}`;
+    case "Last30":
+      return `Last 30 Days${d ? ` (${d.toLocaleString()})` : ""}`;
+  }
+}
+
+function formatEnd(ty: Last30ChartEnd | Date, d: Date | null) {
+  if (ty instanceof Date) {
+    return ty.toLocaleString();
+  }
+  switch (ty) {
+    case "Now":
+      return "Now";
+    case "EndOfYesterday":
+      return `End of Yesterday${d ? ` (${d.toLocaleString()})` : ""}`;
+    case "EndOfLastWeek":
+      return `End of Last Week${d ? ` (${d.toLocaleString()})` : ""}`;
+  }
+}
+
 export const Last30ChartRangeToolbar = memo(function Last30ChartRangeToolbar({
   chartAtom,
 }: {
   chartAtom: Last30ChartRangeAtom;
 }) {
-  const [chartRange, setChartRange] = useAtom(chartAtom);
-  return null;
+  const chartRange = useAtomValue(chartAtom);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  return (
+    <>
+      <Stack direction="row" spacing={2} alignItems="center">
+        <Typography variant="body2" color="textSecondary">
+          Range: {formatStart(chartRange.startType, chartRange.startDate)} -{" "}
+          {formatEnd(chartRange.endType, chartRange.endDate)}
+        </Typography>
+        <Tooltip title="Edit Range">
+          <IconButton onClick={() => setDialogOpen(true)}>
+            <Edit />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      <RangeDialog open={dialogOpen} setOpen={setDialogOpen} chartAtom={chartAtom} />
+    </>
+  );
 });

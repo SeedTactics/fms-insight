@@ -34,9 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collections";
 import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import { atom } from "jotai";
-import { addDays, addMinutes, startOfToday, startOfWeek } from "date-fns";
+import { addMinutes } from "date-fns";
 import { last30StationCycles } from "../cell-status/station-cycles";
 import { splitTimeToDays } from "./results.oee";
+import { chartRangeAtom } from "./chart-times";
 
 export type PartSummary = {
   readonly part: string;
@@ -64,30 +65,21 @@ function isAbnormal(m: MaterialSummaryAndCompletedData): boolean {
   }
 }
 
-export const last30PartSummaryRange = atom<"Today" | "PastTwoDays" | "ThisWeek" | "LastTwoWeeks">("ThisWeek");
-
-export function last30PartSummaryRangeStart(
-  range: "Today" | "PastTwoDays" | "ThisWeek" | "LastTwoWeeks",
-): Date {
-  return range === "Today"
-    ? startOfToday()
-    : range === "PastTwoDays"
-      ? addDays(startOfToday(), -1)
-      : range === "ThisWeek"
-        ? startOfWeek(new Date())
-        : addDays(startOfWeek(new Date()), -7);
-}
+export const last30PartSummaryRange = chartRangeAtom("part-summary");
 
 export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
   const mats = get(last30MaterialSummary);
   const cycles = get(last30StationCycles);
 
   const range = get(last30PartSummaryRange);
-  const start = last30PartSummaryRangeStart(range);
 
   const stationTimes = cycles
     .valuesToLazySeq()
-    .filter((c) => c.endTime >= start)
+    .filter(
+      (c) =>
+        (range.startDate === null || c.endTime >= range.startDate) &&
+        (range.endDate === null || c.endTime <= range.endDate),
+    )
     .toLookupOrderedMap(
       (c) => c.part,
       (c) => c.stationGroup,
@@ -111,7 +103,8 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
       Boolean(
         m.numProcesses &&
           m.unloaded_processes?.[m.numProcesses] &&
-          m.unloaded_processes[m.numProcesses] >= start,
+          (range.startDate === null || m.unloaded_processes[m.numProcesses] >= range.startDate) &&
+          (range.endDate === null || m.unloaded_processes[m.numProcesses] <= range.endDate),
       ),
     )
     .toOrderedLookup((m) => m.partName)
