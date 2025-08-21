@@ -74,15 +74,11 @@ import {
   useCompleteCloseout,
 } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
-import { Atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { Atom, useAtomValue, useSetAtom } from "jotai";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
-import {
-  last30PartSummary,
-  last30PartSummaryRange,
-  last30PartSummaryRangeStart,
-  PartSummary,
-} from "../../data/part-summary.js";
+import { last30PartSummary, last30PartSummaryRange, PartSummary } from "../../data/part-summary.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
+import { Last30ChartRangeToolbar } from "./ChartRangeEdit.js";
 
 type PartSummaryAtom = Atom<ReadonlyArray<PartSummary>>;
 
@@ -618,51 +614,15 @@ const CompletedPartsMaterialDialog = memo(function CompletedPartsMaterialDialog(
   return <MaterialDialog buttons={<CompPartsMatDialogBtns />} />;
 });
 
-function RecentCompletedToolbar() {
-  const [range, setRange] = useAtom(last30PartSummaryRange);
-  const start = last30PartSummaryRangeStart(range);
-
-  return (
-    <Box
-      component="nav"
-      sx={{
-        display: "flex",
-        minHeight: "2.5em",
-        alignItems: "center",
-      }}
-    >
-      <Typography variant="subtitle1">
-        Completed Parts from{" "}
-        {start.toLocaleString(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        })}{" "}
-        to now
-      </Typography>
-      <Box flexGrow={1} />
-      <Select
-        value={range}
-        onChange={(v) => setRange(v.target.value as "Today" | "PastTwoDays" | "ThisWeek" | "LastTwoWeeks")}
-        sx={{ minWidth: "10em" }}
-      >
-        <MenuItem value="Today">Today</MenuItem>
-        <MenuItem value="PastTwoDays">Past Two Days</MenuItem>
-        <MenuItem value="ThisWeek">This Week</MenuItem>
-        <MenuItem value="LastTwoWeeks">Last Two Weeks</MenuItem>
-      </Select>
-    </Box>
-  );
-}
-
 export function RecentCompletedPartsPage(): ReactNode {
   useSetTitle("Completed Parts");
 
   return (
     <Box component="main" padding="24px">
-      <RecentCompletedToolbar />
+      <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+        <span>Completed Parts</span>
+        <Last30ChartRangeToolbar chartAtom={last30PartSummaryRange} />
+      </Stack>
       <CompletedPartsTable partsAtom={last30PartSummary} />
       <CompletedPartsMaterialDialog />
       <SelectWorkorderDialog />
