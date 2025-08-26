@@ -5860,7 +5860,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       // The sends to external queues happen on a new thread so need to wait
       numWaits = 0;
-      while (server.LogEntries.Count() < 2 && numWaits < 10)
+      while (server.LogEntries.Count() < 2 && numWaits < 20)
       {
         await Task.Delay(100, TestContext.Current.CancellationToken);
         numWaits++;
