@@ -34,16 +34,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collections";
 import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import { atom } from "jotai";
-import { addMinutes } from "date-fns";
 import { last30StationCycles } from "../cell-status/station-cycles";
-import { splitTimeToDays } from "./results.oee";
 import { chartRangeAtom } from "./chart-times";
 
 export type PartSummary = {
   readonly part: string;
   readonly completedQty: number;
   readonly abnormalQty: number;
-  readonly stationMins: OrderedMap<string, { readonly active: number; readonly elapsed: number }>;
+  readonly stationMins: OrderedMap<
+    string,
+    {
+      readonly active: number;
+      readonly elapsed: number;
+      readonly medianElapsed: number;
+    }
+  >;
   readonly mats: ReadonlyArray<MaterialSummaryAndCompletedData>;
   readonly workorders: OrderedSet<string>;
 };
@@ -83,18 +88,16 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
     .toLookupOrderedMap(
       (c) => c.part,
       (c) => c.stationGroup,
-      (c) => {
-        const elapTime = c.elapsedMinsPerMaterial * c.material.length;
-        const startTime = addMinutes(c.endTime, -elapTime);
-        const elapDays = splitTimeToDays(startTime, c.endTime, elapTime);
-        const activeDays = splitTimeToDays(startTime, c.endTime, c.activeMinutes);
-        // only the final day, since the range is >= start
-        return {
-          elapsed: elapDays[elapDays.length - 1].value,
-          active: activeDays[activeDays.length - 1].value,
-        };
-      },
-      (a, b) => ({ elapsed: a.elapsed + b.elapsed, active: a.active + b.active }),
+      (c) => ({
+        elapsed: c.elapsedMinsPerMaterial * c.material.length,
+        active: c.activeMinutes,
+        medianElapsed: c.medianCycleMinutes,
+      }),
+      (a, b) => ({
+        elapsed: a.elapsed + b.elapsed,
+        active: a.active + b.active,
+        medianElapsed: a.medianElapsed + b.medianElapsed,
+      }),
     );
 
   return mats.matsById

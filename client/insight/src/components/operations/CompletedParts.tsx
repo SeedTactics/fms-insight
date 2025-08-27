@@ -64,6 +64,7 @@ import {
   Check,
   ErrorOutline,
   SavedSearch,
+  HelpOutline,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
 import { LazySeq, mkCompareByProperties, ToComparableBase } from "@seedtactics/immutable-collections";
@@ -85,7 +86,14 @@ type PartSummaryAtom = Atom<ReadonlyArray<PartSummary>>;
 const numFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
 const partColCount = 6;
-type SortColumn = "PartName" | "CompletedQty" | "AbnormalQty" | "Workorders" | "Elapsed" | "Active";
+type SortColumn =
+  | "PartName"
+  | "CompletedQty"
+  | "AbnormalQty"
+  | "Workorders"
+  | "Elapsed"
+  | "Active"
+  | "Median";
 
 function sortPartSummary(
   parts: ReadonlyArray<PartSummary>,
@@ -119,6 +127,13 @@ function sortPartSummary(
           .toAscLazySeq()
           .filter(([stat, _]) => stat !== "L/U")
           .sumBy(([_, t]) => t.active);
+      break;
+    case "Median":
+      sortCol = (j) =>
+        j.stationMins
+          .toAscLazySeq()
+          .filter(([stat, _]) => stat !== "L/U")
+          .sumBy(([_, t]) => t.medianElapsed);
       break;
   }
   const sorted = [...parts];
@@ -389,6 +404,7 @@ const PartDetails = memo(function PartDetails({ part }: { readonly part: PartSum
               <TableCell>Station</TableCell>
               <TableCell>Active Hours</TableCell>
               <TableCell>Elapsed Hours</TableCell>
+              <TableCell>Total Median Hours</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -397,6 +413,7 @@ const PartDetails = memo(function PartDetails({ part }: { readonly part: PartSum
                 <TableCell>{st}</TableCell>
                 <TableCell>{numFormat.format(times.active / 60)}</TableCell>
                 <TableCell>{numFormat.format(times.elapsed / 60)}</TableCell>
+                <TableCell>{numFormat.format(times.medianElapsed / 60)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -453,6 +470,14 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
               .sumBy(([, t]) => t.elapsed) / 60,
           )}
         </TableCell>
+        <TableCell align="right">
+          {numFormat.format(
+            part.stationMins
+              .toAscLazySeq()
+              .filter(([stat, _]) => stat !== "L/U")
+              .sumBy(([, t]) => t.medianElapsed) / 60,
+          )}
+        </TableCell>
         <TableCell align="left">
           {part.workorders.size <= 1 ? (
             <WorkorderLink workorderId={part.workorders.lookupMin() ?? null} />
@@ -499,6 +524,36 @@ function CopyToClipboardBtn({ partsAtom }: { partsAtom: PartSummaryAtom }) {
   );
 }
 
+function MedianHelpTooltip() {
+  return (
+    <Tooltip title="Total Median Hours are calculated by taking the median cycle time (excluding outliers) and adding up for each piece of material.">
+      <span style={{ verticalAlign: "middle", marginLeft: "0.5em", fontSize: 16 }}>
+        <HelpOutline fontSize="inherit" />
+      </span>
+    </Tooltip>
+  );
+}
+
+function TimeCuttoffHelpTooltip() {
+  return (
+    <Tooltip title="The entire cycle time is credited at the time the cycle completes, so it may be that a day has more than 24 hours of credited time for example.">
+      <span style={{ verticalAlign: "middle", marginLeft: "0.5em", fontSize: 16 }}>
+        <HelpOutline fontSize="inherit" />
+      </span>
+    </Tooltip>
+  );
+}
+
+function AbnormalHelpTooltip() {
+  return (
+    <Tooltip title="An abnormal part is one which was quarantined, had a failed inspection, or was explicitly marked as failing closeout.  A successful closeout overrides this and will never be an abnormal part.">
+      <span style={{ verticalAlign: "middle", marginLeft: "0.5em", fontSize: 16 }}>
+        <HelpOutline fontSize="inherit" />
+      </span>
+    </Tooltip>
+  );
+}
+
 const PartHeader = memo(function PartHeader({
   partsAtom,
   order,
@@ -528,14 +583,17 @@ const PartHeader = memo(function PartHeader({
         <SortColHeader align="right" col="CompletedQty" {...sort}>
           Completed Quantity
         </SortColHeader>
-        <SortColHeader align="right" col="AbnormalQty" {...sort}>
+        <SortColHeader align="right" col="AbnormalQty" {...sort} extraIcon={<AbnormalHelpTooltip />}>
           Abnormal Quantity
         </SortColHeader>
-        <SortColHeader align="right" col="Active" {...sort}>
+        <SortColHeader align="right" col="Active" {...sort} extraIcon={<TimeCuttoffHelpTooltip />}>
           Active Hours
         </SortColHeader>
-        <SortColHeader align="right" col="Elapsed" {...sort}>
+        <SortColHeader align="right" col="Elapsed" {...sort} extraIcon={<TimeCuttoffHelpTooltip />}>
           Elapsed Hours
+        </SortColHeader>
+        <SortColHeader align="right" col="Median" {...sort} extraIcon={<MedianHelpTooltip />}>
+          Total Median Hours
         </SortColHeader>
         <SortColHeader align="left" col="Workorders" {...sort}>
           Workorders
@@ -638,6 +696,7 @@ function copyPartsToClipboard(parts: ReadonlyArray<PartSummary>) {
   table += "<th>Workorders</th>";
   table += "<th>Active Time (mins)</th>";
   table += "<th>Elapsed Time (mins)</th>";
+  table += "<th>Total Median Time (mins)</th>";
   table += "</tr></thead>\n<tbody>\n";
 
   for (const p of parts) {
@@ -653,6 +712,11 @@ function copyPartsToClipboard(parts: ReadonlyArray<PartSummary>) {
     table += `<td>${p.stationMins
       .toAscLazySeq()
       .map(([st, t]) => `${st}: ${t.elapsed}`)
+      .toRArray()
+      .join(";")}</td>`;
+    table += `<td>${p.stationMins
+      .toAscLazySeq()
+      .map(([st, t]) => `${st}: ${t.medianElapsed}`)
       .toRArray()
       .join(";")}</td>`;
     table += "</tr>\n";
