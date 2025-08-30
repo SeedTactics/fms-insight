@@ -364,7 +364,10 @@ namespace BlackMaple.MachineFramework
             Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
             Material = [],
             Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-            Alarms = ["FMS Insight is starting up..."],
+            Alarms = _syncError == null ?
+              ["FMS Insight is starting up..."] :
+              [$"Error communicating with machines: {_syncError}. Will try again in a few minutes."]
+            ,
           };
         }
         else if (_syncError != null)
