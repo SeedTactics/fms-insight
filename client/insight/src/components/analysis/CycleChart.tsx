@@ -49,7 +49,6 @@ import { chartTheme, seriesColor } from "../../util/chart-colors.js";
 import { grey } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
-import { Group } from "@visx/group";
 import { ChartTooltip } from "../ChartTooltip.js";
 import { Axis } from "@visx/axis";
 import { GridColumns, GridRows } from "@visx/grid";
@@ -272,7 +271,7 @@ const SetYZoomButton = memo(function SetYZoomButton(props: {
             <TextField
               type="number"
               label="Y Low"
-              value={low !== undefined ? (isNaN(low) ? "" : low) : props.yZoom?.y_low ?? ""}
+              value={low !== undefined ? (isNaN(low) ? "" : low) : (props.yZoom?.y_low ?? "")}
               onChange={(e) => setLow(parseFloat(e.target.value))}
               onBlur={() => {
                 if (low) {
@@ -285,7 +284,7 @@ const SetYZoomButton = memo(function SetYZoomButton(props: {
             <TextField
               type="number"
               label="Y High"
-              value={high !== undefined ? (isNaN(high) ? "" : high) : props.yZoom?.y_high ?? ""}
+              value={high !== undefined ? (isNaN(high) ? "" : high) : (props.yZoom?.y_high ?? "")}
               onChange={(e) => setHigh(parseFloat(e.target.value))}
               onBlur={() => {
                 if (high) {
@@ -728,7 +727,7 @@ function CycleChartSvg(
 
   return (
     <svg width={width} height={height}>
-      <Group left={marginLeft} top={marginTop}>
+      <g transform={`translate(${marginLeft}, ${marginTop})`}>
         <AxisAndGrid xScale={xScale} yScale={yScale} />
         <StatsSeries
           median={props.median}
@@ -754,7 +753,7 @@ function CycleChartSvg(
             showTooltip={props.showTooltip}
           />
         </NoPointerEvents>
-      </Group>
+      </g>
     </svg>
   );
 }

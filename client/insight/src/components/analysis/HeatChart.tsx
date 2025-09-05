@@ -40,7 +40,6 @@ import { ParentSize } from "@visx/responsive";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { chartTheme } from "../../util/chart-colors.js";
 import { Axis } from "@visx/axis";
-import { Group } from "@visx/group";
 import { localPoint } from "@visx/event";
 import { ChartTooltip } from "../ChartTooltip.js";
 
@@ -291,7 +290,7 @@ const HeatChart = memo(function HeatChart(props: HeatChartProps & { readonly par
   return (
     <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
       <svg width={width} height={height}>
-        <Group left={marginLeft} top={marginTop}>
+        <g transform={`translate(${marginLeft}, ${marginTop})`}>
           <HeatSeries
             points={props.points}
             xScale={xScale}
@@ -300,7 +299,7 @@ const HeatChart = memo(function HeatChart(props: HeatChartProps & { readonly par
             setTooltip={setTooltip}
           />
           <HeatAxis xScale={xScale} yScale={yScale} colorScale={colorScale} />
-        </Group>
+        </g>
       </svg>
       <HeatTooltip yType={props.y_title} seriesLabel={props.label_title} tooltip={tooltip} />
     </div>

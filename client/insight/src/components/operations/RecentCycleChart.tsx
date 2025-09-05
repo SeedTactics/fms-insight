@@ -48,7 +48,6 @@ import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
 import { addHours, differenceInMinutes } from "date-fns";
 import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { Grid } from "@visx/grid";
-import { Group } from "@visx/group";
 import { Axis } from "@visx/axis";
 import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import { chartTheme } from "../../util/chart-colors.js";
@@ -552,7 +551,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   return (
     <div style={{ position: "relative" }}>
       <svg height={height} width={width}>
-        <Group left={marginLeft} top={marginTop}>
+        <g transform={`translate(${marginLeft}, ${marginTop})`}>
           <clipPath id="recent-cycle-clip-body">
             <rect
               x={0}
@@ -587,7 +586,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
             />
           </g>
           <NowLine now={now} xScale={xScale} yScale={yScale} />
-        </Group>
+        </g>
       </svg>
       <Tooltip />
     </div>

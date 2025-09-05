@@ -46,7 +46,6 @@ import {
 import InspectionDataTable from "./InspectionDataTable.js";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
 import { isDemoAtom } from "../routes.js";
-import { Group } from "@visx/group";
 import { green } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { ParentSize } from "@visx/responsive";
@@ -115,7 +114,7 @@ function NodeDisplay({ node }: { readonly node: NodeWithData }) {
   if (node.x1 === undefined || node.x0 === undefined || node.y1 === undefined || node.y0 === undefined)
     return null;
   return (
-    <Group top={node.y0} left={node.x0}>
+    <g transform={`translate(${node.x0}, ${node.y0})`}>
       <rect
         width={node.x1 - node.x0}
         height={node.y1 - node.y0}
@@ -127,7 +126,7 @@ function NodeDisplay({ node }: { readonly node: NodeWithData }) {
       <text x={18} y={(node.y1 - node.y0) / 2}>
         {node.name}
       </text>
-    </Group>
+    </g>
   );
 }
 
