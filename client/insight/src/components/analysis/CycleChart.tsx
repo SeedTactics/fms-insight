@@ -41,19 +41,18 @@ import {
   styled,
   ToggleButton,
   Stack,
-  Box,
 } from "@mui/material";
 import { ZoomIn } from "@mui/icons-material";
 import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times.js";
 import { seriesColor } from "../../util/chart-colors.js";
 import { grey } from "@mui/material/colors";
-import { localPoint } from "@visx/event";
 import { ScaleLinear, scaleLinear, ScaleTime, scaleTime } from "d3-scale";
-import { ChartTooltip } from "../ChartTooltip.js";
+import { ChartWithTooltip } from "../ChartTooltip.js";
 import { AxisBottom, AxisLeft, ChartGrid } from "../AxisAndGrid.js";
 import { useSpring, useSprings, animated } from "@react-spring/web";
-import { ParentSize } from "@visx/responsive";
 import { HashSet, LazySeq } from "@seedtactics/immutable-collections";
+import { atom, useSetAtom } from "jotai";
+import { localPoint } from "../../util/chart-helpers.js";
 
 export interface CycleChartPoint {
   readonly cntr: number;
@@ -619,46 +618,44 @@ const CycleChartTooltip = memo(function CycleChartTooltip({
 }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip left={tooltip.left} top={tooltip.top}>
-      <Stack direction="column" spacing={0.6}>
-        <div>
-          Time:{" "}
-          {tooltip.pt.x.toLocaleString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}
-        </div>
-        <div>
-          {seriesLabel}: {tooltip.seriesName}
-        </div>
-        <div>Cycle Time: {tooltip.pt.y.toFixed(1)} minutes</div>
-        {extraTooltip
-          ? extraTooltip(tooltip.pt).map((e, idx) => (
-              <div key={idx}>
-                {e.title}:{" "}
-                {e.link ? (
-                  <a
-                    style={{
-                      color: "white",
-                      pointerEvents: "auto",
-                      cursor: "pointer",
-                      borderBottom: "1px solid",
-                    }}
-                    onClick={e.link}
-                  >
-                    {e.value}
-                  </a>
-                ) : (
-                  <span>e.value</span>
-                )}
-              </div>
-            ))
-          : undefined}
-      </Stack>
-    </ChartTooltip>
+    <Stack direction="column" spacing={0.6}>
+      <div>
+        Time:{" "}
+        {tooltip.pt.x.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })}
+      </div>
+      <div>
+        {seriesLabel}: {tooltip.seriesName}
+      </div>
+      <div>Cycle Time: {tooltip.pt.y.toFixed(1)} minutes</div>
+      {extraTooltip
+        ? extraTooltip(tooltip.pt).map((e, idx) => (
+            <div key={idx}>
+              {e.title}:{" "}
+              {e.link ? (
+                <a
+                  style={{
+                    color: "white",
+                    pointerEvents: "auto",
+                    cursor: "pointer",
+                    borderBottom: "1px solid",
+                  }}
+                  onClick={e.link}
+                >
+                  {e.value}
+                </a>
+              ) : (
+                <span>e.value</span>
+              )}
+            </div>
+          ))
+        : undefined}
+    </Stack>
   );
 });
 
@@ -722,7 +719,8 @@ function CycleChartSvg(
 
 export const CycleChart = memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const tooltipAtom = useMemo(() => atom<TooltipData | null>(null), []);
+  const setTooltip = useSetAtom(tooltipAtom);
   const [disabledSeries, setDisabled] = useState(HashSet.empty<string>());
 
   const [highlightStart, setHighlightStart] = useState<{
@@ -743,28 +741,33 @@ export const CycleChart = memo(function CycleChart(props: CycleChartProps) {
   }, [setTooltip, setHighlightStart]);
 
   return (
-    <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
-      <Box
+    <div onPointerLeave={pointerLeave}>
+      <ChartWithTooltip
         sx={{ height: { xs: "calc(100vh - 320px)", md: "calc(100vh - 280px)", xl: "calc(100vh - 220px)" } }}
-      >
-        <ParentSize>
-          {(parent) => (
-            <CycleChartSvg
-              {...props}
-              containerHeight={parent.height}
-              containerWidth={parent.width}
-              series={series}
-              median={median}
-              yZoom={props.yZoom}
-              setYZoom={props.setYZoom}
-              highlightStart={highlightStart}
-              setHighlightStart={setHighlightStart}
-              showTooltip={setTooltip}
-              disabledSeries={disabledSeries}
-            />
-          )}
-        </ParentSize>
-      </Box>
+        tooltipAtom={tooltipAtom}
+        TooltipContent={({ tooltip }) => (
+          <CycleChartTooltip
+            tooltip={tooltip}
+            seriesLabel={props.series_label}
+            extraTooltip={props.extra_tooltip}
+          />
+        )}
+        chart={({ width, height }) => (
+          <CycleChartSvg
+            {...props}
+            containerHeight={height}
+            containerWidth={width}
+            series={series}
+            median={median}
+            yZoom={props.yZoom}
+            setYZoom={props.setYZoom}
+            highlightStart={highlightStart}
+            setHighlightStart={setHighlightStart}
+            showTooltip={setTooltip}
+            disabledSeries={disabledSeries}
+          />
+        )}
+      />
       <div style={{ display: "flex", flexWrap: "wrap" }}>
         <div style={{ color: "#6b6b76" }}>Click on a point for details</div>
         <div style={{ flexGrow: 1 }} />
@@ -777,11 +780,6 @@ export const CycleChart = memo(function CycleChart(props: CycleChartProps) {
         />
       </div>
       <Legend series={series} disabledSeries={disabledSeries} adjustDisabled={setDisabled} />
-      <CycleChartTooltip
-        tooltip={tooltip}
-        seriesLabel={props.series_label}
-        extraTooltip={props.extra_tooltip}
-      />
     </div>
   );
 });

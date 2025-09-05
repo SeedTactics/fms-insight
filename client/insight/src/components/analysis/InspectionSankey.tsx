@@ -47,11 +47,10 @@ import InspectionDataTable from "./InspectionDataTable.js";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
 import { isDemoAtom } from "../routes.js";
 import { green } from "@mui/material/colors";
-import { localPoint } from "@visx/event";
-import { ParentSize } from "@visx/responsive";
-import { ChartTooltip } from "../ChartTooltip.js";
-import { atom, useAtom } from "jotai";
+import { localPoint } from "../../util/chart-helpers.js";
+import { atom, useAtom, useSetAtom } from "jotai";
 import { atomWithDefault } from "jotai/utils";
+import { ChartWithTooltip } from "../ChartTooltip.js";
 
 type NodeWithData = D3SankeyNode<SankeyNode, { readonly value: number }>;
 type LinkWithData = {
@@ -182,41 +181,35 @@ const SankeyDisplay = memo(function InspectionSankeyDiagram({
   );
 });
 
-const LinkTooltip = memo(function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
+function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip left={tooltip.left} top={tooltip.top}>
+    <div>
       {tooltip.data.source.name} ➞ {tooltip.data.target.name}: {tooltip.data.value} parts
-    </ChartTooltip>
+    </div>
   );
-});
+}
 
 const InspectionDiagram = memo(function InspectionDiagram({
   data,
 }: {
   readonly data: Iterable<InspectionLogEntry>;
 }) {
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const tooltipAtom = useMemo(() => atom<TooltipData | null>(null), []);
+  const setTooltip = useSetAtom(tooltipAtom);
   return (
     <div style={{ position: "relative" }}>
-      <Box
+      <ChartWithTooltip
         sx={{
           height: { xs: "calc(100vh - 230px)", md: "calc(100vh - 182px)", xl: "calc(100vh - 130px)" },
           width: "100%",
         }}
-      >
-        <ParentSize>
-          {(parent) => (
-            <SankeyDisplay
-              data={data}
-              setTooltip={setTooltip}
-              parentHeight={parent.height}
-              parentWidth={parent.width}
-            />
-          )}
-        </ParentSize>
-      </Box>
-      <LinkTooltip tooltip={tooltip} />
+        chart={({ height, width }) => (
+          <SankeyDisplay data={data} setTooltip={setTooltip} parentHeight={height} parentWidth={width} />
+        )}
+        tooltipAtom={tooltipAtom}
+        TooltipContent={LinkTooltip}
+      />
     </div>
   );
 });

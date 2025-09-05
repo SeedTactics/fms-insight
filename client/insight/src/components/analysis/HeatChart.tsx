@@ -30,18 +30,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { PointerEvent, useMemo, memo, useRef, useCallback, useState } from "react";
+import { PointerEvent, useMemo, memo, useRef, useCallback } from "react";
 import { addDays } from "date-fns";
 import { Select, MenuItem, Tooltip, IconButton, Stack, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import { ScaleBand, scaleBand, ScaleLinear, scaleLinear } from "d3-scale";
-import { ParentSize } from "@visx/responsive";
 
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { localPoint } from "@visx/event";
-import { ChartTooltip } from "../ChartTooltip.js";
+import { localPoint } from "../../util/chart-helpers.js";
 import { AxisBottom, AxisLeft } from "../AxisAndGrid.js";
 import { measureSvgString } from "../../util/chart-helpers.js";
+import { atom, useSetAtom } from "jotai";
+import { ChartWithTooltip } from "../ChartTooltip.js";
 
 export type HeatChartYType = "Station" | "Part";
 
@@ -239,23 +239,25 @@ const HeatTooltip = memo(function HeatTooltip({
 }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip left={tooltip.left} top={tooltip.top}>
-      <Stack direction="column" spacing={0.6}>
-        <div>
-          {yType}: {tooltip.data.y}
-        </div>
-        <div>Day: {tooltip.data.x.toDateString()}</div>
-        <div>
-          {seriesLabel}: {tooltip.data.label}
-        </div>
-      </Stack>
-    </ChartTooltip>
+    <Stack direction="column" spacing={0.6}>
+      <div>
+        {yType}: {tooltip.data.y}
+      </div>
+      <div>Day: {tooltip.data.x.toDateString()}</div>
+      <div>
+        {seriesLabel}: {tooltip.data.label}
+      </div>
+    </Stack>
   );
 });
 
-const HeatChart = memo(function HeatChart(props: HeatChartProps & { readonly parentWidth: number }) {
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
-
+function HeatChart(props: {
+  readonly y_title: HeatChartYType;
+  readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly dateRange: [Date, Date];
+  readonly parentWidth: number;
+  readonly setTooltip: ShowTooltipFunc;
+}) {
   const { width, height, xScale, yScale, colorScale, marginLeft } = useScales({
     yType: props.y_title,
     points: props.points,
@@ -263,28 +265,21 @@ const HeatChart = memo(function HeatChart(props: HeatChartProps & { readonly par
     containerWidth: props.parentWidth,
   });
 
-  const pointerLeave = useCallback(() => {
-    setTooltip(null);
-  }, [setTooltip]);
-
   return (
-    <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
-      <svg width={width} height={height}>
-        <g transform={`translate(${marginLeft}, ${marginTop})`}>
-          <HeatSeries
-            points={props.points}
-            xScale={xScale}
-            yScale={yScale}
-            colorScale={colorScale}
-            setTooltip={setTooltip}
-          />
-          <HeatAxis xScale={xScale} yScale={yScale} colorScale={colorScale} />
-        </g>
-      </svg>
-      <HeatTooltip yType={props.y_title} seriesLabel={props.label_title} tooltip={tooltip} />
-    </div>
+    <svg width={width} height={height}>
+      <g transform={`translate(${marginLeft}, ${marginTop})`}>
+        <HeatSeries
+          points={props.points}
+          xScale={xScale}
+          yScale={yScale}
+          colorScale={colorScale}
+          setTooltip={props.setTooltip}
+        />
+        <HeatAxis xScale={xScale} yScale={yScale} colorScale={colorScale} />
+      </g>
+    </svg>
   );
-});
+}
 
 //--------------------------------------------------------------------------------
 // Selection and Card
@@ -345,6 +340,12 @@ function ChartToolbar<T extends string>(props: SelectableHeatCardProps<T>) {
 export type SelectableHeatChartProps<T extends string> = HeatChartProps & SelectableHeatCardProps<T>;
 
 export function SelectableHeatChart<T extends string>(props: SelectableHeatChartProps<T>) {
+  const tooltipAtom = useMemo(() => atom<TooltipData | null>(null), []);
+  const setTooltip = useSetAtom(tooltipAtom);
+  const pointerLeave = useCallback(() => {
+    setTooltip(null);
+  }, [setTooltip]);
+
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
       <ChartToolbar
@@ -354,18 +355,24 @@ export function SelectableHeatChart<T extends string>(props: SelectableHeatChart
         onExport={props.onExport}
         options={props.options}
       />
-      <main>
-        <ParentSize>
-          {(parent) => (
+      <main onPointerLeave={pointerLeave}>
+        <ChartWithTooltip
+          sx={{ width: "100%" }}
+          tooltipAtom={tooltipAtom}
+          autoHeight
+          chart={({ width }) => (
             <HeatChart
               points={props.points}
               y_title={props.y_title}
               dateRange={props.dateRange}
-              label_title={props.label_title}
-              parentWidth={parent.width}
+              parentWidth={width}
+              setTooltip={setTooltip}
             />
           )}
-        </ParentSize>
+          TooltipContent={({ tooltip }) => (
+            <HeatTooltip yType={props.y_title} seriesLabel={props.label_title} tooltip={tooltip} />
+          )}
+        />
       </main>
     </Box>
   );

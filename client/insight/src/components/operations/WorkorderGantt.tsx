@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { PointerEvent, memo, useRef, useCallback, useMemo } from "react";
+import { PointerEvent, useRef, useCallback, useMemo } from "react";
 import { IActiveWorkorder } from "../../network/api";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { chartTheme } from "../../util/chart-colors";
@@ -39,11 +39,11 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { addDays, differenceInDays } from "date-fns";
 import { currentStatus } from "../../cell-status/current-status";
 import { Box, Stack } from "@mui/material";
-import { ChartTooltip } from "../ChartTooltip";
 import { PartIdenticon } from "../station-monitor/Material";
-import { localPoint } from "@visx/event";
+import { localPoint } from "../../util/chart-helpers.js";
 import { AxisTop, GridCols } from "../AxisAndGrid";
 import { scaleBand, ScaleBand, scaleTime, ScaleTime } from "d3-scale";
+import { Tooltip } from "../ChartTooltip";
 
 interface TooltipData {
   readonly left: number;
@@ -98,26 +98,20 @@ function useScales(workorders: ReadonlyArray<Readonly<IActiveWorkorder>>): Chart
   return { xScale, yScale };
 }
 
-const Tooltip = memo(function Tooltip() {
-  const tooltip = useAtomValue(tooltipData);
-
-  if (tooltip === null) return null;
-
+function WorkorderTooltip({ tooltip }: { tooltip: TooltipData }) {
   return (
-    <ChartTooltip top={tooltip.top} left={tooltip.left}>
-      <Stack>
-        <div>Workorder: {tooltip.data.workorderId}</div>
-        <div>Part: {tooltip.data.part}</div>
-        <div>Due Date: {tooltip.data.dueDate.toLocaleDateString()}</div>
-        <div>Priority: {tooltip.data.priority}</div>
-        <div>Planned Quantity: {tooltip.data.plannedQuantity}</div>
-        <div>Completed Quantity: {tooltip.data.completedQuantity}</div>
-        <div>Projected Start: {utcDateOnlyToLocal(tooltip.data.simulatedStart)?.toLocaleDateString()}</div>
-        <div>Projected Filled: {utcDateOnlyToLocal(tooltip.data.simulatedFilled)?.toLocaleDateString()}</div>
-      </Stack>
-    </ChartTooltip>
+    <Stack>
+      <div>Workorder: {tooltip.data.workorderId}</div>
+      <div>Part: {tooltip.data.part}</div>
+      <div>Due Date: {tooltip.data.dueDate.toLocaleDateString()}</div>
+      <div>Priority: {tooltip.data.priority}</div>
+      <div>Planned Quantity: {tooltip.data.plannedQuantity}</div>
+      <div>Completed Quantity: {tooltip.data.completedQuantity}</div>
+      <div>Projected Start: {utcDateOnlyToLocal(tooltip.data.simulatedStart)?.toLocaleDateString()}</div>
+      <div>Projected Filled: {utcDateOnlyToLocal(tooltip.data.simulatedFilled)?.toLocaleDateString()}</div>
+    </Stack>
   );
-});
+}
 
 function YAxis({ workorders }: { workorders: ReadonlyArray<Readonly<IActiveWorkorder>> }) {
   return (
@@ -240,7 +234,12 @@ export function WorkorderGantt() {
             </g>
           </svg>
         </div>
-        <Tooltip />
+        <Tooltip
+          atom={tooltipData}
+          TooltipContent={WorkorderTooltip}
+          chartHeight={yScale.range()[1] + marginTop + marginBottom}
+          chartWidth={xScale.range()[1] + marginRight + marginLeft}
+        />
       </Box>
     </Box>
   );

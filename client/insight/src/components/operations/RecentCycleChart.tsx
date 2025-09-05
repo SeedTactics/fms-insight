@@ -36,7 +36,6 @@ import {
   PointerEvent,
   useMemo,
   useCallback,
-  memo,
   useState,
   useRef,
   useEffect,
@@ -50,9 +49,9 @@ import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import { chartTheme } from "../../util/chart-colors.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { red, green, grey } from "@mui/material/colors";
-import { localPoint } from "@visx/event";
+import { localPoint } from "../../util/chart-helpers.js";
 import { Stack } from "@mui/material";
-import { ChartTooltip } from "../ChartTooltip.js";
+import { Tooltip } from "../ChartTooltip.js";
 import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
@@ -381,81 +380,75 @@ function SimSeries({
   );
 }
 
-const Tooltip = memo(function Tooltip() {
-  const tooltip = useAtomValue(tooltipData);
-
-  if (tooltip === null) return null;
-
+function RecentTooltip({ tooltip }: { tooltip: TooltipData }) {
   return (
-    <ChartTooltip top={tooltip.top} left={tooltip.left}>
-      <Stack>
-        {tooltip.data.kind === "actual" ? (
-          <>
-            {tooltip.data.cycle.outlier ? (
-              <div>Outlier Cycle for {tooltip.data.cycle.station}</div>
-            ) : (
-              <div>{tooltip.data.cycle.station}</div>
-            )}
-            <div>Start: {tooltip.data.cycle.startTime.toLocaleString()}</div>
-            <div>End: {tooltip.data.cycle.endOccupied.toLocaleString()}</div>
-            {tooltip.data.cycle.endActive !== undefined ? (
-              <div>
-                Active Minutes:{" "}
-                {differenceInMinutes(tooltip.data.cycle.endActive, tooltip.data.cycle.startTime)}
-              </div>
-            ) : undefined}
+    <Stack>
+      {tooltip.data.kind === "actual" ? (
+        <>
+          {tooltip.data.cycle.outlier ? (
+            <div>Outlier Cycle for {tooltip.data.cycle.station}</div>
+          ) : (
+            <div>{tooltip.data.cycle.station}</div>
+          )}
+          <div>Start: {tooltip.data.cycle.startTime.toLocaleString()}</div>
+          <div>End: {tooltip.data.cycle.endOccupied.toLocaleString()}</div>
+          {tooltip.data.cycle.endActive !== undefined ? (
             <div>
-              Occupied Minutes:{" "}
-              {differenceInMinutes(tooltip.data.cycle.endOccupied, tooltip.data.cycle.startTime)}
+              Active Minutes:{" "}
+              {differenceInMinutes(tooltip.data.cycle.endActive, tooltip.data.cycle.startTime)}
             </div>
-            {tooltip.data.cycle.parts.map((p, idx) => (
-              <div key={idx}>
-                Part: {p.part} {p.oper}
-              </div>
-            ))}
-          </>
-        ) : tooltip.data.kind === "sim" ? (
-          <>
-            <div>Simulation of {tooltip.data.cycle.station}</div>
-            {tooltip.data.cycle.parts.map((p, idx) => (
-              <div key={idx}>Part: {p}</div>
-            ))}
-            <div>Predicted Start: {tooltip.data.cycle.start.toLocaleString()}</div>
-            <div>Predicted End: {tooltip.data.cycle.end.toLocaleString()}</div>
-            {tooltip.data.cycle.plannedDown ? <div>Planned Downtime</div> : undefined}
-          </>
-        ) : (
-          <>
-            {tooltip.data.cycle.isOutlier ? (
-              <div>Current Outlier Cycle for {tooltip.data.cycle.station}</div>
-            ) : (
-              <div>Current {tooltip.data.cycle.station}</div>
-            )}
-            <div>Start: {tooltip.data.cycle.start.toLocaleString()}</div>
-            <div>Expected End: {tooltip.data.cycle.expectedEnd.toLocaleString()}</div>
-            {tooltip.data.cycle.expectedEnd < tooltip.data.now ? (
-              <div>
-                Cycle Exceeding Expected By{" "}
-                {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.expectedEnd)} Minutes
-              </div>
-            ) : (
-              <div>
-                Expected Remaining Minutes:{" "}
-                {differenceInMinutes(tooltip.data.cycle.expectedEnd, tooltip.data.now)}
-              </div>
-            )}
-            <div>Occupied Minutes: {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.start)}</div>
-            {tooltip.data.cycle.parts.map((p, idx) => (
-              <div key={idx}>
-                Part: {p.part} {p.oper}
-              </div>
-            ))}
-          </>
-        )}
-      </Stack>
-    </ChartTooltip>
+          ) : undefined}
+          <div>
+            Occupied Minutes:{" "}
+            {differenceInMinutes(tooltip.data.cycle.endOccupied, tooltip.data.cycle.startTime)}
+          </div>
+          {tooltip.data.cycle.parts.map((p, idx) => (
+            <div key={idx}>
+              Part: {p.part} {p.oper}
+            </div>
+          ))}
+        </>
+      ) : tooltip.data.kind === "sim" ? (
+        <>
+          <div>Simulation of {tooltip.data.cycle.station}</div>
+          {tooltip.data.cycle.parts.map((p, idx) => (
+            <div key={idx}>Part: {p}</div>
+          ))}
+          <div>Predicted Start: {tooltip.data.cycle.start.toLocaleString()}</div>
+          <div>Predicted End: {tooltip.data.cycle.end.toLocaleString()}</div>
+          {tooltip.data.cycle.plannedDown ? <div>Planned Downtime</div> : undefined}
+        </>
+      ) : (
+        <>
+          {tooltip.data.cycle.isOutlier ? (
+            <div>Current Outlier Cycle for {tooltip.data.cycle.station}</div>
+          ) : (
+            <div>Current {tooltip.data.cycle.station}</div>
+          )}
+          <div>Start: {tooltip.data.cycle.start.toLocaleString()}</div>
+          <div>Expected End: {tooltip.data.cycle.expectedEnd.toLocaleString()}</div>
+          {tooltip.data.cycle.expectedEnd < tooltip.data.now ? (
+            <div>
+              Cycle Exceeding Expected By{" "}
+              {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.expectedEnd)} Minutes
+            </div>
+          ) : (
+            <div>
+              Expected Remaining Minutes:{" "}
+              {differenceInMinutes(tooltip.data.cycle.expectedEnd, tooltip.data.now)}
+            </div>
+          )}
+          <div>Occupied Minutes: {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.start)}</div>
+          {tooltip.data.cycle.parts.map((p, idx) => (
+            <div key={idx}>
+              Part: {p.part} {p.oper}
+            </div>
+          ))}
+        </>
+      )}
+    </Stack>
   );
-});
+}
 
 function NowLine({ now, xScale, yScale }: Pick<ChartScales, "xScale" | "yScale"> & { now: Date }): ReactNode {
   const x = xScale(now);
@@ -516,7 +509,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   if (height <= 0 || width <= 0) return null;
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", overflow: "hidden" }}>
       <svg height={height} width={width}>
         <g transform={`translate(${marginLeft}, ${marginTop})`}>
           <clipPath id="recent-cycle-clip-body">
@@ -555,7 +548,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
           <NowLine now={now} xScale={xScale} yScale={yScale} />
         </g>
       </svg>
-      <Tooltip />
+      <Tooltip chartHeight={height} chartWidth={width} atom={tooltipData} TooltipContent={RecentTooltip} />
     </div>
   );
 }

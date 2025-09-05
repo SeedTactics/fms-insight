@@ -25,9 +25,6 @@
     "@react-spring/web": "^9.7.5",
     "@seedtactics/immutable-collections": "^1.0.2",
     "@visx/curve": "^3.12.0",
-    "@visx/event": "^3.12.0",
-    "@visx/responsive": "^3.12.0",
-    "@visx/tooltip": "^3.12.0",
     "@visx/xychart": "^3.12.0",
     "@yudiel/react-qr-scanner": "^2.3.1",
     "copy-to-clipboard": "^3.3.3",
@@ -43,6 +40,7 @@
     "react-calendar": "^6.0.0",
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.0.0",
+    "react-resize-detector": "^12.3.0",
     "react-timeago": "^8.3.0",
     "react-to-print": "^3.1.1",
     "urlpattern-polyfill": "^10.1.0"
