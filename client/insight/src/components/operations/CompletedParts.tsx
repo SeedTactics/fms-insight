@@ -394,10 +394,10 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
 const PartDetails = memo(function PartDetails({ part }: { readonly part: PartSummary }) {
   return (
     <Stack direction="row" flexWrap="wrap" justifyContent="space-around" ml="1em" mr="1em">
-      <div>
+      <Box sx={{ width: "60em", overflow: "auto" }}>
         <MaterialTable material={part.mats} />
-      </div>
-      <div>
+      </Box>
+      <Box sx={{ width: "40em", overflow: "auto" }}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -418,7 +418,7 @@ const PartDetails = memo(function PartDetails({ part }: { readonly part: PartSum
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Box>
     </Stack>
   );
 });
