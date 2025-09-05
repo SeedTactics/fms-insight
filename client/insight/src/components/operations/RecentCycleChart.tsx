@@ -46,7 +46,6 @@ import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
 import { addHours, differenceInMinutes } from "date-fns";
-import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import { chartTheme } from "../../util/chart-colors.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
@@ -60,6 +59,7 @@ import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { AxisBottom, AxisLeft, GridCols } from "../AxisAndGrid.js";
 import { measureSvgString } from "../../util/chart-helpers.js";
+import { scaleBand, ScaleBand, scaleTime, ScaleTime } from "d3-scale";
 
 const projectedColor = green[200];
 const activeColor = green[600];
@@ -117,9 +117,9 @@ interface TooltipData {
 const tooltipData = atom<TooltipData | null>(null);
 
 interface ChartScales {
-  readonly xScale: PickD3Scale<"time", number>;
-  readonly yScale: PickD3Scale<"band", number, string>;
-  readonly actualPlannedScale: PickD3Scale<"band", number, "actual" | "planned">;
+  readonly xScale: ScaleTime<number, number>;
+  readonly yScale: ScaleBand<string>;
+  readonly actualPlannedScale: ScaleBand<string>;
 }
 
 const stationFontSize = 14;
@@ -146,23 +146,14 @@ function useScales(
   const xMax = Math.max(containerWidth - marginLeft - marginRight, 5);
   const yMax = Math.max(containerHeight - marginTop - marginBottom, 5);
 
-  const xScale = scaleTime({
-    domain: [addHours(now, -12), addHours(now, 8)],
-    range: [0, xMax],
-  });
-
-  const yScale = scaleBand({
-    domain: Array.from(stats),
-    range: [0, yMax],
-    padding: 0.3,
-  });
-
-  const actualPlannedScale = scaleBand({
-    domain: ["actual", "planned"] as ["actual", "planned"],
-    range: [0, yScale.bandwidth()],
-    padding: 0.1,
-  });
-
+  const xScale = scaleTime()
+    .domain([addHours(now, -12), addHours(now, 8)])
+    .range([0, xMax]);
+  const yScale = scaleBand().domain(Array.from(stats)).range([0, yMax]).padding(0.3);
+  const actualPlannedScale = scaleBand()
+    .domain(["actual", "planned"] as ["actual", "planned"])
+    .range([0, yScale.bandwidth()])
+    .padding(0.1);
   return { xScale, yScale, actualPlannedScale, marginLeft };
 }
 

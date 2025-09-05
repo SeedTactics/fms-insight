@@ -34,7 +34,7 @@ import { PointerEvent, useMemo, memo, useRef, useCallback, useState } from "reac
 import { addDays } from "date-fns";
 import { Select, MenuItem, Tooltip, IconButton, Stack, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
-import { PickD3Scale, scaleBand, scaleLinear } from "@visx/scale";
+import { ScaleBand, scaleBand, ScaleLinear, scaleLinear } from "d3-scale";
 import { ParentSize } from "@visx/responsive";
 
 import { LazySeq } from "@seedtactics/immutable-collections";
@@ -66,9 +66,9 @@ interface HeatChartDimensions {
 }
 
 interface HeatChartScales {
-  readonly xScale: PickD3Scale<"band", number, Date>;
-  readonly yScale: PickD3Scale<"band", number, string>;
-  readonly colorScale: PickD3Scale<"linear", string, string>;
+  readonly xScale: ScaleBand<Date>;
+  readonly yScale: ScaleBand<string>;
+  readonly colorScale: ScaleLinear<string, string>;
 }
 
 const marginBottom = 20;
@@ -119,12 +119,7 @@ function useScales({
         d = addDays(d, 1);
       }
     }
-    return scaleBand({
-      domain: xValues,
-      range: [0, xMax],
-      align: 0,
-      padding: 0.05,
-    });
+    return scaleBand<Date>().domain(xValues).range([0, xMax]).align(0).padding(0.05);
   }, [dateRangeStart, dateRangeEnd, xMax]);
 
   const { yScale, height, colorScale } = useMemo(() => {
@@ -135,25 +130,17 @@ function useScales({
 
     const yMax = 60 * yValues.size;
     const height = yMax + marginTop + marginBottom;
-    const yScale = scaleBand({
-      domain: Array.from(yValues).sort((a, b) => a.localeCompare(b)),
-      range: [0, yMax],
-      align: 0,
-      padding: 0.05,
-    });
-
-    let colorScale: PickD3Scale<"linear", string, string>;
+    const yScale = scaleBand()
+      .domain(Array.from(yValues).sort((a, b) => a.localeCompare(b)))
+      .range([0, yMax])
+      .align(0)
+      .padding(0.05);
+    let colorScale: ScaleLinear<string, string>;
     if (yType === "Station") {
-      colorScale = scaleLinear({
-        domain: [0, 1],
-        range: [color1, color2],
-      });
+      colorScale = scaleLinear<string, string>().domain([0, 1]).range([color1, color2]);
     } else {
       const maxCnt = LazySeq.of(points).maxBy((pt) => pt.color)?.color ?? 1;
-      colorScale = scaleLinear({
-        domain: [0, maxCnt],
-        range: [color1, color2],
-      });
+      colorScale = scaleLinear<string, string>().domain([0, maxCnt]).range([color1, color2]);
     }
 
     return { yScale, height, colorScale };

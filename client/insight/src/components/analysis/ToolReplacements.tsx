@@ -63,7 +63,7 @@ import {
   useTableZoomForPeriod,
 } from "./DataTable.js";
 import { LazySeq, OrderedMap, ToComparable } from "@seedtactics/immutable-collections";
-import { scaleLinear, scaleTime } from "@visx/scale";
+import { scaleLinear, scaleTime } from "d3-scale";
 import { addDays, addMonths, startOfToday } from "date-fns";
 import { ChartTooltip } from "../ChartTooltip.js";
 import { localPoint } from "@visx/event";
@@ -195,16 +195,8 @@ const ReplacementGraph = memo(function ReplacementGraph({ row }: { readonly row:
     readonly r: ToolReplacementAndStationDate;
   } | null>(null);
 
-  const timeScale = scaleTime({
-    domain: [zoom.start, zoom.end],
-    range: [0, 1000],
-  });
-
-  const yScale = scaleLinear({
-    domain: [0, row.maxY],
-    range: [33, 3],
-  });
-
+  const timeScale = scaleTime().domain([zoom.start, zoom.end]).range([0, 1000]);
+  const yScale = scaleLinear().domain([0, row.maxY]).range([33, 3]);
   const avgUse =
     row.numReplacements === 0 ? null : yScale(row.totalUseOfAllReplacements / row.numReplacements);
 

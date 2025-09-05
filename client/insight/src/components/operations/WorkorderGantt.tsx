@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { PointerEvent, memo, useRef, useCallback, useMemo } from "react";
 import { IActiveWorkorder } from "../../network/api";
-import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { chartTheme } from "../../util/chart-colors";
 import { green } from "@mui/material/colors";
@@ -44,6 +43,7 @@ import { ChartTooltip } from "../ChartTooltip";
 import { PartIdenticon } from "../station-monitor/Material";
 import { localPoint } from "@visx/event";
 import { AxisTop, GridCols } from "../AxisAndGrid";
+import { scaleBand, ScaleBand, scaleTime, ScaleTime } from "d3-scale";
 
 interface TooltipData {
   readonly left: number;
@@ -54,8 +54,8 @@ interface TooltipData {
 const tooltipData = atom<TooltipData | null>(null);
 
 interface ChartScales {
-  readonly xScale: PickD3Scale<"time", number>;
-  readonly yScale: PickD3Scale<"band", number, string>;
+  readonly xScale: ScaleTime<number, number>;
+  readonly yScale: ScaleBand<string>;
 }
 
 const namesWidth = 150;
@@ -93,16 +93,8 @@ function useScales(workorders: ReadonlyArray<Readonly<IActiveWorkorder>>): Chart
   const xMax = Math.max(differenceInDays(end, start) * 50, 30);
   const yMax = Math.max(workKeys.length * rowSize, rowSize);
 
-  const xScale = scaleTime({
-    domain: [start, end],
-    range: [0, xMax],
-  });
-
-  const yScale = scaleBand({
-    domain: workKeys,
-    range: [0, yMax],
-  });
-
+  const xScale = scaleTime().domain([start, end]).range([0, xMax]);
+  const yScale = scaleBand().domain(workKeys).range([0, yMax]);
   return { xScale, yScale };
 }
 

@@ -48,7 +48,7 @@ import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times.js
 import { seriesColor } from "../../util/chart-colors.js";
 import { grey } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
-import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
+import { ScaleLinear, scaleLinear, ScaleTime, scaleTime } from "d3-scale";
 import { ChartTooltip } from "../ChartTooltip.js";
 import { AxisBottom, AxisLeft, ChartGrid } from "../AxisAndGrid.js";
 import { useSpring, useSprings, animated } from "@react-spring/web";
@@ -136,8 +136,8 @@ interface CycleChartDimensions {
 }
 
 interface CycleChartScales {
-  readonly xScale: PickD3Scale<"time", number>;
-  readonly yScale: PickD3Scale<"linear", number>;
+  readonly xScale: ScaleTime<number, number>;
+  readonly yScale: ScaleLinear<number, number>;
 }
 
 function useScales({
@@ -161,15 +161,9 @@ function useScales({
 
   const xScale = useMemo(() => {
     if (current_date_zoom) {
-      return scaleTime({
-        domain: [current_date_zoom.start, current_date_zoom.end],
-        range: [0, xMax],
-      });
+      return scaleTime().domain([current_date_zoom.start, current_date_zoom.end]).range([0, xMax]);
     } else {
-      return scaleTime({
-        domain: [default_date_range[0], default_date_range[1]],
-        range: [0, xMax],
-      });
+      return scaleTime().domain([default_date_range[0], default_date_range[1]]).range([0, xMax]);
     }
   }, [current_date_zoom, default_date_range, xMax]);
 
@@ -185,15 +179,9 @@ function useScales({
 
   const yScale = useMemo(() => {
     if (yZoom) {
-      return scaleLinear({
-        domain: [yZoom.y_low, yZoom.y_high],
-        range: [yMax, 0],
-      });
+      return scaleLinear().domain([yZoom.y_low, yZoom.y_high]).range([yMax, 0]);
     } else {
-      return scaleLinear({
-        domain: [0, maxYVal],
-        range: [yMax, 0],
-      });
+      return scaleLinear().domain([0, maxYVal]).range([yMax, 0]);
     }
   }, [yMax, yZoom, maxYVal]);
 

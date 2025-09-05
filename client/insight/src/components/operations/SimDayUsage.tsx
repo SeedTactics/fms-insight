@@ -38,7 +38,7 @@ import { atom, useAtomValue } from "jotai";
 import { latestSimDayUsage } from "../../cell-status/sim-day-usage";
 import { ISimulatedDayUsage } from "../../network/api";
 import { useSetTitle } from "../routes";
-import { scaleLinear } from "@visx/scale";
+import { scaleLinear } from "d3-scale";
 import { Warning as WarningIcon } from "@mui/icons-material";
 
 const color1 = green[50];
@@ -150,11 +150,7 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
   const maxUse = useAtomValue(maxUsage);
 
   const dayColor = useMemo(() => {
-    const scale = scaleLinear({
-      domain: [0, maxUse],
-      range: [color1, color2],
-    });
-
+    const scale = scaleLinear<string, string>().domain([0, maxUse]).range([color1, color2]);
     return (d: Date): string => {
       if (maxDay && d > maxDay) {
         return "white";
