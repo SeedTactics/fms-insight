@@ -64,7 +64,6 @@ import {
 } from "./DataTable.js";
 import { LazySeq, OrderedMap, ToComparable } from "@seedtactics/immutable-collections";
 import { scaleLinear, scaleTime } from "@visx/scale";
-import { Circle } from "@visx/shape";
 import { addDays, addMonths, startOfToday } from "date-fns";
 import { ChartTooltip } from "../ChartTooltip.js";
 import { localPoint } from "@visx/event";
@@ -222,7 +221,7 @@ const ReplacementGraph = memo(function ReplacementGraph({ row }: { readonly row:
           <line x1="0" y1={avgUse} x2="1000" y2={avgUse} stroke="red" strokeWidth={0.5} />
         ) : undefined}
         {row.replacements.map((r, i) => (
-          <Circle
+          <circle
             key={i}
             cx={timeScale(r.time)}
             cy={yScale(replacementToYVal(row, r))}
@@ -525,7 +524,7 @@ const ChooseMachine = memo(function ChooseMachineSelect(props: {
           value={selMachineIdx}
           style={{ marginLeft: "1em" }}
           onChange={(e) => {
-            const v = e.target.value as number;
+            const v = e.target.value;
             if (v === -1) {
               props.setSelectedStation(null);
             } else {
@@ -586,7 +585,7 @@ export const ToolReplacementPage = memo(function ToolReplacementCard() {
             autoWidth
             value={type}
             style={{ marginLeft: "1em" }}
-            onChange={(e) => setType(e.target.value as "summary" | "details")}
+            onChange={(e) => setType(e.target.value)}
           >
             <MenuItem value="summary">Summary</MenuItem>
             <MenuItem value="details">Details</MenuItem>
