@@ -47,8 +47,6 @@ import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-tim
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
 import { addHours, differenceInMinutes } from "date-fns";
 import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
-import { Grid } from "@visx/grid";
-import { Axis } from "@visx/axis";
 import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import { chartTheme } from "../../util/chart-colors.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
@@ -60,6 +58,8 @@ import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
+import { AxisBottom, AxisLeft, GridCols } from "../AxisAndGrid.js";
+import { measureSvgString } from "../../util/chart-helpers.js";
 
 const projectedColor = green[200];
 const activeColor = green[600];
@@ -122,7 +122,7 @@ interface ChartScales {
   readonly actualPlannedScale: PickD3Scale<"band", number, "actual" | "planned">;
 }
 
-const marginLeft = 150;
+const stationFontSize = 14;
 const marginBottom = 20;
 const marginTop = 10;
 const marginRight = 2;
@@ -133,8 +133,15 @@ function useScales(
   now: Date,
   containerWidth: number,
   containerHeight: number,
-): ChartScales {
+): ChartScales & { readonly marginLeft: number } {
   const stats = OrderedSet.build(cycles, (c) => c.station).union(OrderedSet.build(current, (c) => c.station));
+
+  const maxStatLen =
+    stats
+      .toAscLazySeq()
+      .map((s) => measureSvgString(s, stationFontSize))
+      .maxBy((w) => w ?? 0) ?? 20;
+  const marginLeft = maxStatLen + 30;
 
   const xMax = Math.max(containerWidth - marginLeft - marginRight, 5);
   const yMax = Math.max(containerHeight - marginTop - marginBottom, 5);
@@ -156,46 +163,15 @@ function useScales(
     padding: 0.1,
   });
 
-  return { xScale, yScale, actualPlannedScale };
+  return { xScale, yScale, actualPlannedScale, marginLeft };
 }
 
 function AxisAndGrid({ xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">): ReactNode {
   return (
     <>
-      <Axis
-        scale={xScale}
-        top={yScale.range()[1]}
-        orientation="bottom"
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.x.bottom.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.x.bottom.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.x.bottom.tickLength}
-        tickStroke={chartTheme.axisStyles.x.bottom.tickLine.stroke}
-        tickLabelProps={() => chartTheme.axisStyles.x.bottom.tickLabel}
-      />
-      <Axis
-        scale={yScale}
-        orientation="left"
-        left={xScale.range()[0]}
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.y.left.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.y.left.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.y.left.tickLength}
-        tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
-        tickLabelProps={() => ({
-          ...chartTheme.axisStyles.y.left.tickLabel,
-          width: marginLeft,
-          fontSize: "large",
-        })}
-      />
-      <Grid
-        xScale={xScale}
-        yScale={yScale}
-        width={xScale.range()[1] - xScale.range()[0]}
-        height={yScale.range()[1] - yScale.range()[0]}
-        rowLineStyle={chartTheme.gridStyles}
-        columnLineStyle={chartTheme.gridStyles}
-      />
+      <AxisBottom scale={xScale} top={yScale.range()[1]} />
+      <AxisLeft scale={yScale} left={xScale.range()[0]} fontSize={stationFontSize} />
+      <GridCols scale={xScale} height={yScale.range()[1] - yScale.range()[0]} />
     </>
   );
 }
@@ -543,7 +519,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
     );
   });
 
-  const { xScale, yScale, actualPlannedScale } = useScales(cycles, current, now, width, height);
+  const { xScale, yScale, actualPlannedScale, marginLeft } = useScales(cycles, current, now, width, height);
   const hideTooltipRef = useRef<NodeJS.Timeout | null>(null);
 
   if (height <= 0 || width <= 0) return null;

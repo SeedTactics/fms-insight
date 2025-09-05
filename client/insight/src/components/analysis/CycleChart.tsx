@@ -45,13 +45,12 @@ import {
 } from "@mui/material";
 import { ZoomIn } from "@mui/icons-material";
 import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times.js";
-import { chartTheme, seriesColor } from "../../util/chart-colors.js";
+import { seriesColor } from "../../util/chart-colors.js";
 import { grey } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
 import { ChartTooltip } from "../ChartTooltip.js";
-import { Axis } from "@visx/axis";
-import { GridColumns, GridRows } from "@visx/grid";
+import { AxisBottom, AxisLeft, ChartGrid } from "../AxisAndGrid.js";
 import { useSpring, useSprings, animated } from "@react-spring/web";
 import { ParentSize } from "@visx/responsive";
 import { HashSet, LazySeq } from "@seedtactics/immutable-collections";
@@ -204,38 +203,13 @@ function useScales({
 const AxisAndGrid = memo(function AxisAndGrid({ xScale, yScale }: CycleChartScales) {
   return (
     <>
-      <Axis
-        scale={xScale}
-        top={yScale.range()[0]}
-        orientation="bottom"
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.x.bottom.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.x.bottom.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.x.bottom.tickLength}
-        tickStroke={chartTheme.axisStyles.x.bottom.tickLine.stroke}
-        tickLabelProps={() => chartTheme.axisStyles.x.bottom.tickLabel}
-      />
-      <Axis
-        scale={yScale}
-        orientation="left"
-        left={xScale.range()[0]}
-        label="Minutes"
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.y.left.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.y.left.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.y.left.tickLength}
-        tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
-        tickLabelProps={() => ({ ...chartTheme.axisStyles.y.left.tickLabel, width: marginLeft })}
-      />
-      <GridColumns
-        height={yScale.range()[0] - yScale.range()[1]}
-        scale={xScale}
-        lineStyle={chartTheme.gridStyles}
-      />
-      <GridRows
+      <AxisBottom scale={xScale} top={yScale.range()[0]} />
+      <AxisLeft scale={yScale} left={xScale.range()[0]} label="Minutes" />
+      <ChartGrid
         width={xScale.range()[1] - xScale.range()[0]}
-        scale={yScale}
-        lineStyle={chartTheme.gridStyles}
+        height={yScale.range()[0] - yScale.range()[1]}
+        xScale={xScale}
+        yScale={yScale}
       />
     </>
   );

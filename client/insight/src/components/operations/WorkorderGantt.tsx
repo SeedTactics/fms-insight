@@ -35,8 +35,6 @@ import { IActiveWorkorder } from "../../network/api";
 import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { chartTheme } from "../../util/chart-colors";
-import { Axis } from "@visx/axis";
-import { Grid } from "@visx/grid";
 import { green } from "@mui/material/colors";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { addDays, differenceInDays } from "date-fns";
@@ -45,6 +43,7 @@ import { Box, Stack } from "@mui/material";
 import { ChartTooltip } from "../ChartTooltip";
 import { PartIdenticon } from "../station-monitor/Material";
 import { localPoint } from "@visx/event";
+import { AxisTop, GridCols } from "../AxisAndGrid";
 
 interface TooltipData {
   readonly left: number;
@@ -154,25 +153,8 @@ function YAxis({ workorders }: { workorders: ReadonlyArray<Readonly<IActiveWorko
 function XAxis({ xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">) {
   return (
     <>
-      <Axis
-        scale={xScale}
-        top={0}
-        orientation="top"
-        labelProps={chartTheme.axisStyles.x.top.axisLabel}
-        stroke={chartTheme.axisStyles.x.top.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.x.top.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.x.top.tickLength}
-        tickStroke={chartTheme.axisStyles.x.top.tickLine.stroke}
-        tickLabelProps={() => chartTheme.axisStyles.x.top.tickLabel}
-      />
-      <Grid
-        xScale={xScale}
-        yScale={yScale}
-        width={xScale.range()[1] - xScale.range()[0]}
-        height={yScale.range()[1] - yScale.range()[0]}
-        rowLineStyle={chartTheme.gridStyles}
-        columnLineStyle={chartTheme.gridStyles}
-      />
+      <AxisTop scale={xScale} top={0} />
+      <GridCols scale={xScale} height={yScale.range()[1] - yScale.range()[0]} />
     </>
   );
 }

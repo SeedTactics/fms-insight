@@ -38,10 +38,10 @@ import { PickD3Scale, scaleBand, scaleLinear } from "@visx/scale";
 import { ParentSize } from "@visx/responsive";
 
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { chartTheme } from "../../util/chart-colors.js";
-import { Axis } from "@visx/axis";
 import { localPoint } from "@visx/event";
 import { ChartTooltip } from "../ChartTooltip.js";
+import { AxisBottom, AxisLeft } from "../AxisAndGrid.js";
+import { measureSvgString } from "../../util/chart-helpers.js";
 
 export type HeatChartYType = "Station" | "Part";
 
@@ -62,6 +62,7 @@ export interface HeatChartProps {
 interface HeatChartDimensions {
   readonly height: number;
   readonly width: number;
+  readonly marginLeft: number;
 }
 
 interface HeatChartScales {
@@ -70,7 +71,6 @@ interface HeatChartScales {
   readonly colorScale: PickD3Scale<"linear", string, string>;
 }
 
-const marginLeft = 50;
 const marginBottom = 20;
 const marginTop = 10;
 const marginRight = 2;
@@ -90,6 +90,18 @@ function useScales({
 }): HeatChartDimensions & HeatChartScales {
   const width =
     containerWidth === null || containerWidth === undefined || containerWidth === 0 ? 400 : containerWidth;
+
+  const maxStatLen = useMemo(
+    () =>
+      LazySeq.of(points)
+        .map((p) => p.y)
+        .distinct()
+        .map(measureSvgString)
+        .maxBy((w) => w ?? 0) ?? 20,
+    [points],
+  );
+
+  const marginLeft = maxStatLen + 5;
 
   const xMax = width - marginLeft - marginRight;
 
@@ -147,37 +159,18 @@ function useScales({
     return { yScale, height, colorScale };
   }, [points, yType]);
 
-  return { height, width, xScale, yScale, colorScale };
+  return { height, width, xScale, yScale, colorScale, marginLeft };
 }
 
 const HeatAxis = memo(function HeatAxis({ xScale, yScale }: HeatChartScales) {
   return (
     <>
-      <Axis
+      <AxisBottom
         scale={xScale}
         top={yScale.range()[1]}
-        orientation="bottom"
-        numTicks={15}
         tickFormat={(d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.x.bottom.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.x.bottom.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.x.bottom.tickLength}
-        tickStroke={chartTheme.axisStyles.x.bottom.tickLine.stroke}
-        tickLabelProps={() => chartTheme.axisStyles.x.bottom.tickLabel}
       />
-      <Axis
-        scale={yScale}
-        orientation="left"
-        left={xScale.range()[0]}
-        tickValues={yScale.domain()}
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.y.left.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.y.left.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.y.left.tickLength}
-        tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
-        tickLabelProps={() => ({ ...chartTheme.axisStyles.y.left.tickLabel, width: marginLeft })}
-      />
+      <AxisLeft scale={yScale} left={xScale.range()[0]} />
     </>
   );
 });
@@ -276,7 +269,7 @@ const HeatTooltip = memo(function HeatTooltip({
 const HeatChart = memo(function HeatChart(props: HeatChartProps & { readonly parentWidth: number }) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
 
-  const { width, height, xScale, yScale, colorScale } = useScales({
+  const { width, height, xScale, yScale, colorScale, marginLeft } = useScales({
     yType: props.y_title,
     points: props.points,
     dateRange: props.dateRange,

@@ -519,11 +519,7 @@ const SimulatedWarning = memo(function SimulatedWarning({ showSim }: { showSim: 
         </Stack>
       ) : undefined}
       <FormControl size="small">
-        <Select
-          variant="outlined"
-          value={selected}
-          onChange={(e) => setSelected(e.target.value as "table" | "gantt")}
-        >
+        <Select variant="outlined" value={selected} onChange={(e) => setSelected(e.target.value)}>
           <MenuItem value="table">Table</MenuItem>
           <MenuItem value="gantt">Gantt</MenuItem>
         </Select>
