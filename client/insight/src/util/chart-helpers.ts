@@ -37,11 +37,11 @@ export function measureSvgString(str: string, fontSize?: number) {
       svg.style.width = "0";
       svg.style.height = "0";
       svg.style.opacity = "0";
-      if (fontSize) {
-        svg.style.fontSize = fontSize.toString();
-      }
       txtElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
       txtElem.setAttribute("id", measureTextId);
+      if (fontSize) {
+        txtElem.style.fontSize = fontSize.toString();
+      }
       svg.appendChild(txtElem);
       document.body.appendChild(svg);
     }
