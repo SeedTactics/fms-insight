@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2025, John Lenz
 
 All rights reserved.
 
@@ -31,25 +31,151 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ComponentType, ChangeEvent, memo, useState, useMemo } from "react";
+import { ComponentType, ChangeEvent, memo, useState, useMemo, useRef, useCallback } from "react";
 import { addDays, startOfToday, addMonths } from "date-fns";
-import { curveCatmullRom } from "@visx/curve";
-import { XYChart, AnimatedAxis, AnimatedLineSeries, Grid } from "@visx/xychart";
-import { BufferChartPoint, buildBufferChart } from "../../data/results.bufferchart.js";
-import { chartTheme, seriesColor } from "../../util/chart-colors.js";
+import { curveCatmullRom, line } from "d3-shape";
+import { BufferChartPoint, BufferChartSeries, buildBufferChart } from "../../data/results.bufferchart.js";
+import { seriesColor } from "../../util/chart-colors.js";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers.js";
-import { Box, ToggleButton, Slider, Typography } from "@mui/material";
+import { Box, ToggleButton, Slider, Typography, debounce } from "@mui/material";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
-import { HashSet } from "@seedtactics/immutable-collections";
+import { HashSet, LazySeq } from "@seedtactics/immutable-collections";
+import { scaleLinear, scaleTime } from "d3-scale";
+import { AxisBottom, AxisLeft, ChartGrid } from "../AxisAndGrid.js";
+import { useResizeDetector } from "react-resize-detector";
+import { animated, useSpring } from "@react-spring/web";
+import { interpolatePath } from "d3-interpolate-path";
 
-type BufferChartProps = {
-  readonly movingAverageDistanceInHours: number;
-};
+const AnimatedPath = memo(function AnimatedPath({
+  series,
+  xScale,
+  yScale,
+  color,
+}: {
+  series: BufferChartSeries;
+  xScale: (d: Date) => number;
+  yScale: (d: number) => number;
+  color: string;
+}) {
+  const d =
+    line<BufferChartPoint>()
+      .curve(curveCatmullRom)
+      .x((p) => xScale(p.x))
+      .y((p) => yScale(p.y))(series.points) ?? "";
 
-const BufferChart = memo(function BufferChart(props: BufferChartProps) {
+  // don't update in quick succession
+  const previous = useRef(d);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const setPrevious = useCallback(
+    debounce((val: string) => {
+      previous.current = val;
+    }, 50),
+    [],
+  );
+
+  const interpolate = interpolatePath(previous.current, d);
+  setPrevious(d);
+
+  const { t } = useSpring({
+    from: { t: 0 },
+    to: { t: 1 },
+    reset: true,
+    delay: 0,
+  });
+
+  return (
+    <animated.path
+      d={t.to(interpolate)}
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      fill="transparent"
+    />
+  );
+});
+
+const marginLeft = 60;
+const marginBottom = 50;
+const marginTop = 20;
+const marginRight = 20;
+
+function BufferChartSVG({
+  width,
+  height,
+  series,
+  disabled,
+}: {
+  width: number;
+  height: number;
+  series: ReadonlyArray<BufferChartSeries>;
+  disabled: HashSet<string>;
+}) {
+  const [dateMin, dateMax] = useMemo(() => {
+    let min: Date | null = null;
+    let max: Date | null = null;
+    for (const s of series) {
+      for (const p of s.points) {
+        if (min === null || p.x < min) {
+          min = p.x;
+        }
+        if (max === null || p.x > max) {
+          max = p.x;
+        }
+      }
+    }
+    return [min ?? new Date(), max ?? new Date()];
+  }, [series]);
+
+  const xScale = useMemo(
+    () =>
+      scaleTime()
+        .range([0, width - marginLeft - marginRight])
+        .domain([dateMin, dateMax]),
+    [width, dateMin, dateMax],
+  );
+
+  const yMax = height - marginBottom - marginTop;
+
+  const yScale = useMemo(
+    () =>
+      scaleLinear()
+        .domain([
+          0,
+          LazySeq.of(series)
+            .flatMap((s) => s.points)
+            .map((p) => p.y)
+            .maxBy((y) => y) ?? 1,
+        ])
+        .range([yMax, 0]),
+    [series, yMax],
+  );
+
+  return (
+    <svg width={width} height={height}>
+      <g transform={`translate(${marginLeft},${marginTop})`}>
+        <AxisBottom scale={xScale} top={yMax} />
+        <AxisLeft scale={yScale} left={0} label="Buffer Size" />
+        <ChartGrid xScale={xScale} yScale={yScale} width={width - marginLeft - marginRight} height={yMax} />
+        {series.map((s, idx) =>
+          disabled.has(s.label) ? undefined : (
+            <AnimatedPath
+              key={s.label}
+              series={s}
+              xScale={xScale}
+              yScale={yScale}
+              color={seriesColor(idx, series.length)}
+            />
+          ),
+        )}
+      </g>
+    </svg>
+  );
+}
+
+const BufferChart = memo(function BufferChart(props: { movingAverageDistanceInHours: number }) {
   const period = useAtomValue(selectedAnalysisPeriod);
   const defaultDateRange =
     period.type === "Last30"
@@ -74,40 +200,27 @@ const BufferChart = memo(function BufferChart(props: BufferChartProps) {
     [defaultDateRangeStart, defaultDateRangeEnd, entries, props.movingAverageDistanceInHours, rawMatQueues],
   );
 
-  const emptySeries = series.findIndex((s) => !disabledBuffers.has(s.label)) < 0;
+  const {
+    width,
+    height,
+    ref: chartRef,
+  } = useResizeDetector({
+    refreshMode: "debounce",
+    refreshRate: 100,
+  });
 
   return (
     <div>
       <Box
-        sx={{ height: { xs: "calc(100vh - 350px)", md: "calc(100vh - 285px)", xl: "calc(100vh - 220px)" } }}
+        ref={chartRef}
+        sx={{
+          height: { xs: "calc(100vh - 350px)", md: "calc(100vh - 285px)", xl: "calc(100vh - 220px)" },
+          overflow: "hidden",
+        }}
       >
-        <XYChart xScale={{ type: "time" }} yScale={{ type: "linear" }} theme={chartTheme}>
-          <AnimatedAxis orientation="bottom" />
-          <AnimatedAxis orientation="left" label="Buffer Size" />
-          <Grid />
-          {series.map((s, idx) =>
-            disabledBuffers.has(s.label) ? undefined : (
-              <AnimatedLineSeries
-                key={s.label}
-                dataKey={s.label}
-                data={s.points as BufferChartPoint[]}
-                stroke={seriesColor(idx, series.length)}
-                curve={curveCatmullRom}
-                xAccessor={(p) => p.x}
-                yAccessor={(p) => p.y}
-              />
-            ),
-          )}
-          {emptySeries ? (
-            <AnimatedLineSeries
-              dataKey="__emptyInvisibleSeries"
-              stroke="transparent"
-              data={defaultDateRange}
-              xAccessor={(p) => p}
-              yAccessor={(_) => 1}
-            />
-          ) : undefined}
-        </XYChart>
+        {width && height && width > 0 && height > 0 && (
+          <BufferChartSVG width={width} height={height} series={series} disabled={disabledBuffers} />
+        )}
       </Box>
       <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-around" }}>
         {series.map((s, idx) => (

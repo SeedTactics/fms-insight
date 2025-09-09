@@ -46,7 +46,6 @@ import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-tim
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
 import { addHours, differenceInMinutes } from "date-fns";
 import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
-import { chartTheme } from "../../util/chart-colors.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { red, green, grey } from "@mui/material/colors";
 import { localPoint } from "../../util/chart-helpers.js";
@@ -455,19 +454,8 @@ function NowLine({ now, xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">
   const fontSize = 11;
   return (
     <g>
-      <line
-        x1={x}
-        x2={x}
-        y1={yScale.range()[0]}
-        y2={yScale.range()[1] + chartTheme.axisStyles.x.bottom.tickLength}
-        stroke="black"
-      />
-      <text
-        x={x}
-        y={yScale.range()[1] + chartTheme.axisStyles.x.bottom.tickLength + fontSize}
-        textAnchor="middle"
-        fontSize={fontSize}
-      >
+      <line x1={x} x2={x} y1={yScale.range()[0]} y2={yScale.range()[1] + 8} stroke="black" />
+      <text x={x} y={yScale.range()[1] + 8 + fontSize} textAnchor="middle" fontSize={fontSize}>
         Now
       </text>
     </g>

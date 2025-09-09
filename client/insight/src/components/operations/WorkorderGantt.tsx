@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { PointerEvent, useRef, useCallback, useMemo } from "react";
 import { IActiveWorkorder } from "../../network/api";
 import { atom, useAtomValue, useSetAtom } from "jotai";
-import { chartTheme } from "../../util/chart-colors";
 import { green } from "@mui/material/colors";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { addDays, differenceInDays } from "date-fns";
@@ -125,8 +124,8 @@ function YAxis({ workorders }: { workorders: ReadonlyArray<Readonly<IActiveWorko
           paddingRight="10px"
           justifyContent="center"
         >
-          <Box color={chartTheme.axisStyles.y.left.axisLabel.fill}>{work.workorderId}</Box>
-          <Box color={chartTheme.axisStyles.y.left.axisLabel.fill} display="flex" alignItems="center">
+          <Box>{work.workorderId}</Box>
+          <Box display="flex" alignItems="center">
             <PartIdenticon part={work.part} size={18} />
             <Box ml="3px">{work.part}</Box>
           </Box>
