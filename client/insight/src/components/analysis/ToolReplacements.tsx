@@ -257,7 +257,7 @@ function Replacements({
           key={i}
           cx={timeScale(r.time)}
           cy={yScale(replacementToYVal(row, r))}
-          r={r === t?.r ? 3 : 1}
+          r={r === t?.r ? 4 : 2}
           onMouseEnter={(e) => setTooltip({ top: 0, left: localPoint(e)?.x ?? 0, r })}
           fill="black"
         />

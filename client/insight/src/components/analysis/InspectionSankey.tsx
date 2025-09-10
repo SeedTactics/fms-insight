@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { PointerEvent, useState, memo, useMemo } from "react";
+import { MouseEvent, useState, memo, useMemo } from "react";
 import { Select, MenuItem, Tooltip, IconButton, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode } from "d3-sankey";
@@ -86,7 +86,7 @@ function LinkDisplay({
 }) {
   const [over, setOver] = useState(false);
   if (path === null) return null;
-  function pointerOver(e: PointerEvent) {
+  function pointerOver(e: MouseEvent) {
     const pt = localPoint(e);
     if (pt === null) return;
     setTooltip({ left: pt.x, top: pt.y, data: link });
@@ -103,8 +103,8 @@ function LinkDisplay({
       strokeWidth={strokeWidth}
       opacity={0.2}
       fill="none"
-      onPointerOver={pointerOver}
-      onPointerOut={pointerOut}
+      onMouseMove={pointerOver}
+      onMouseLeave={pointerOut}
     />
   );
 }

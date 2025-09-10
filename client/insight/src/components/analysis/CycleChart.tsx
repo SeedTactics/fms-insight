@@ -125,7 +125,7 @@ function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): Dat
 }
 
 const marginLeft = 50;
-const marginBottom = 20;
+const marginBottom = 30;
 const marginTop = 10;
 const marginRight = 2;
 
