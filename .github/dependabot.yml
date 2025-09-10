@@ -9,13 +9,6 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-          - "@react-spring/*"
       insight:
         patterns:
           - "*"
