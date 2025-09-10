@@ -472,6 +472,13 @@ namespace BlackMaple.MachineFramework
       IEnumerable<PathInspection> inspections,
       DateTime? mutcNow = null
     );
+    LogEntry StoreInspectionDecision(
+      long matID,
+      int proc,
+      PathInspection insp,
+      bool inspect,
+      DateTime? utcNow = null
+    );
     LogEntry ForceInspection(long matID, string inspType);
     LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect);
     LogEntry ForceInspection(EventLogMaterial mat, string inspType, bool inspect);

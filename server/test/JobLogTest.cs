@@ -956,6 +956,43 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.GetLogForJobUnique("sofusadouf").ShouldBeEmpty();
 
       //inspection, wash, and general
+      var inspDecision = _jobLog.StoreInspectionDecision(
+        matID: mat2.MaterialID,
+        proc: 2,
+        insp: new PathInspection()
+        {
+          InspectionType = "insptype_mat2",
+          Counter = "thecounter_mat2",
+          MaxVal = 1000,
+          RandomFreq = 0,
+          TimeInterval = TimeSpan.Zero,
+        },
+        inspect: true,
+        utcNow: start.AddHours(8).AddMinutes(10)
+      );
+      var expectedInspDecision = new LogEntry(
+        inspDecision.Counter,
+        [mat2 with { Face = 0, Process = 2 }],
+        0,
+        LogType.Inspection,
+        "Inspect",
+        1,
+        "thecounter_mat2",
+        false,
+        inspDecision.EndTimeUTC,
+        "True"
+      ) with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add("InspectionType", "insptype_mat2")
+          .Add(
+            "ActualPath",
+            "[{\"MaterialID\":4,\"Process\":1,\"Pallet\":3,\"LoadStation\":111,\"Stops\":[{\"StationName\":\"xxx\",\"StationNum\":177}],\"UnloadStation\":14}]"
+          ),
+      };
+      logsForMat2.Add(expectedInspDecision);
+      inspDecision.ShouldBeEquivalentTo(expectedInspDecision);
+
       var inspCompLog = _jobLog.RecordInspectionCompleted(
         EventLogMaterial.FromLogMat(mat1),
         5,
