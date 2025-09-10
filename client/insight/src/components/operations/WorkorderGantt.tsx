@@ -58,9 +58,9 @@ interface ChartScales {
 }
 
 const namesWidth = 150;
-const marginTop = 20;
+const marginTop = 40;
 const marginBottom = 10;
-const marginLeft = 10;
+const marginLeft = 20;
 const marginRight = 10;
 const rowSize = 80;
 
