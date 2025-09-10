@@ -41,21 +41,18 @@ import {
   styled,
   ToggleButton,
   Stack,
-  Box,
 } from "@mui/material";
 import { ZoomIn } from "@mui/icons-material";
 import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times.js";
-import { chartTheme, seriesColor } from "../../util/chart-colors.js";
+import { seriesColor } from "../../util/chart-colors.js";
 import { grey } from "@mui/material/colors";
-import { localPoint } from "@visx/event";
-import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
-import { Group } from "@visx/group";
-import { ChartTooltip } from "../ChartTooltip.js";
-import { Axis } from "@visx/axis";
-import { GridColumns, GridRows } from "@visx/grid";
+import { ScaleLinear, scaleLinear, ScaleTime, scaleTime } from "d3-scale";
+import { ChartWithTooltip } from "../ChartTooltip.js";
+import { AxisBottom, AxisLeft, ChartGrid } from "../AxisAndGrid.js";
 import { useSpring, useSprings, animated } from "@react-spring/web";
-import { ParentSize } from "@visx/responsive";
 import { HashSet, LazySeq } from "@seedtactics/immutable-collections";
+import { atom, useSetAtom } from "jotai";
+import { localPoint } from "../../util/chart-helpers.js";
 
 export interface CycleChartPoint {
   readonly cntr: number;
@@ -128,7 +125,7 @@ function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): Dat
 }
 
 const marginLeft = 50;
-const marginBottom = 20;
+const marginBottom = 30;
 const marginTop = 10;
 const marginRight = 2;
 
@@ -138,8 +135,8 @@ interface CycleChartDimensions {
 }
 
 interface CycleChartScales {
-  readonly xScale: PickD3Scale<"time", number>;
-  readonly yScale: PickD3Scale<"linear", number>;
+  readonly xScale: ScaleTime<number, number>;
+  readonly yScale: ScaleLinear<number, number>;
 }
 
 function useScales({
@@ -163,15 +160,9 @@ function useScales({
 
   const xScale = useMemo(() => {
     if (current_date_zoom) {
-      return scaleTime({
-        domain: [current_date_zoom.start, current_date_zoom.end],
-        range: [0, xMax],
-      });
+      return scaleTime().domain([current_date_zoom.start, current_date_zoom.end]).range([0, xMax]);
     } else {
-      return scaleTime({
-        domain: [default_date_range[0], default_date_range[1]],
-        range: [0, xMax],
-      });
+      return scaleTime().domain([default_date_range[0], default_date_range[1]]).range([0, xMax]);
     }
   }, [current_date_zoom, default_date_range, xMax]);
 
@@ -187,15 +178,9 @@ function useScales({
 
   const yScale = useMemo(() => {
     if (yZoom) {
-      return scaleLinear({
-        domain: [yZoom.y_low, yZoom.y_high],
-        range: [yMax, 0],
-      });
+      return scaleLinear().domain([yZoom.y_low, yZoom.y_high]).range([yMax, 0]);
     } else {
-      return scaleLinear({
-        domain: [0, maxYVal],
-        range: [yMax, 0],
-      });
+      return scaleLinear().domain([0, maxYVal]).range([yMax, 0]);
     }
   }, [yMax, yZoom, maxYVal]);
 
@@ -205,38 +190,13 @@ function useScales({
 const AxisAndGrid = memo(function AxisAndGrid({ xScale, yScale }: CycleChartScales) {
   return (
     <>
-      <Axis
-        scale={xScale}
-        top={yScale.range()[0]}
-        orientation="bottom"
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.x.bottom.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.x.bottom.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.x.bottom.tickLength}
-        tickStroke={chartTheme.axisStyles.x.bottom.tickLine.stroke}
-        tickLabelProps={() => chartTheme.axisStyles.x.bottom.tickLabel}
-      />
-      <Axis
-        scale={yScale}
-        orientation="left"
-        left={xScale.range()[0]}
-        label="Minutes"
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.y.left.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.y.left.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.y.left.tickLength}
-        tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
-        tickLabelProps={() => ({ ...chartTheme.axisStyles.y.left.tickLabel, width: marginLeft })}
-      />
-      <GridColumns
-        height={yScale.range()[0] - yScale.range()[1]}
-        scale={xScale}
-        lineStyle={chartTheme.gridStyles}
-      />
-      <GridRows
+      <AxisBottom scale={xScale} top={yScale.range()[0]} />
+      <AxisLeft scale={yScale} left={xScale.range()[0]} label="Minutes" />
+      <ChartGrid
         width={xScale.range()[1] - xScale.range()[0]}
-        scale={yScale}
-        lineStyle={chartTheme.gridStyles}
+        height={yScale.range()[0] - yScale.range()[1]}
+        xScale={xScale}
+        yScale={yScale}
       />
     </>
   );
@@ -272,7 +232,7 @@ const SetYZoomButton = memo(function SetYZoomButton(props: {
             <TextField
               type="number"
               label="Y Low"
-              value={low !== undefined ? (isNaN(low) ? "" : low) : props.yZoom?.y_low ?? ""}
+              value={low !== undefined ? (isNaN(low) ? "" : low) : (props.yZoom?.y_low ?? "")}
               onChange={(e) => setLow(parseFloat(e.target.value))}
               onBlur={() => {
                 if (low) {
@@ -285,7 +245,7 @@ const SetYZoomButton = memo(function SetYZoomButton(props: {
             <TextField
               type="number"
               label="Y High"
-              value={high !== undefined ? (isNaN(high) ? "" : high) : props.yZoom?.y_high ?? ""}
+              value={high !== undefined ? (isNaN(high) ? "" : high) : (props.yZoom?.y_high ?? "")}
               onChange={(e) => setHigh(parseFloat(e.target.value))}
               onBlur={() => {
                 if (high) {
@@ -658,46 +618,44 @@ const CycleChartTooltip = memo(function CycleChartTooltip({
 }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip left={tooltip.left} top={tooltip.top}>
-      <Stack direction="column" spacing={0.6}>
-        <div>
-          Time:{" "}
-          {tooltip.pt.x.toLocaleString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}
-        </div>
-        <div>
-          {seriesLabel}: {tooltip.seriesName}
-        </div>
-        <div>Cycle Time: {tooltip.pt.y.toFixed(1)} minutes</div>
-        {extraTooltip
-          ? extraTooltip(tooltip.pt).map((e, idx) => (
-              <div key={idx}>
-                {e.title}:{" "}
-                {e.link ? (
-                  <a
-                    style={{
-                      color: "white",
-                      pointerEvents: "auto",
-                      cursor: "pointer",
-                      borderBottom: "1px solid",
-                    }}
-                    onClick={e.link}
-                  >
-                    {e.value}
-                  </a>
-                ) : (
-                  <span>e.value</span>
-                )}
-              </div>
-            ))
-          : undefined}
-      </Stack>
-    </ChartTooltip>
+    <Stack direction="column" spacing={0.6}>
+      <div>
+        Time:{" "}
+        {tooltip.pt.x.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })}
+      </div>
+      <div>
+        {seriesLabel}: {tooltip.seriesName}
+      </div>
+      <div>Cycle Time: {tooltip.pt.y.toFixed(1)} minutes</div>
+      {extraTooltip
+        ? extraTooltip(tooltip.pt).map((e, idx) => (
+            <div key={idx}>
+              {e.title}:{" "}
+              {e.link ? (
+                <a
+                  style={{
+                    color: "white",
+                    pointerEvents: "auto",
+                    cursor: "pointer",
+                    borderBottom: "1px solid",
+                  }}
+                  onClick={e.link}
+                >
+                  {e.value}
+                </a>
+              ) : (
+                <span>e.value</span>
+              )}
+            </div>
+          ))
+        : undefined}
+    </Stack>
   );
 });
 
@@ -728,7 +686,7 @@ function CycleChartSvg(
 
   return (
     <svg width={width} height={height}>
-      <Group left={marginLeft} top={marginTop}>
+      <g transform={`translate(${marginLeft}, ${marginTop})`}>
         <AxisAndGrid xScale={xScale} yScale={yScale} />
         <StatsSeries
           median={props.median}
@@ -754,14 +712,15 @@ function CycleChartSvg(
             showTooltip={props.showTooltip}
           />
         </NoPointerEvents>
-      </Group>
+      </g>
     </svg>
   );
 }
 
 export const CycleChart = memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const tooltipAtom = useMemo(() => atom<TooltipData | null>(null), []);
+  const setTooltip = useSetAtom(tooltipAtom);
   const [disabledSeries, setDisabled] = useState(HashSet.empty<string>());
 
   const [highlightStart, setHighlightStart] = useState<{
@@ -782,28 +741,33 @@ export const CycleChart = memo(function CycleChart(props: CycleChartProps) {
   }, [setTooltip, setHighlightStart]);
 
   return (
-    <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
-      <Box
+    <div onPointerLeave={pointerLeave}>
+      <ChartWithTooltip
         sx={{ height: { xs: "calc(100vh - 320px)", md: "calc(100vh - 280px)", xl: "calc(100vh - 220px)" } }}
-      >
-        <ParentSize>
-          {(parent) => (
-            <CycleChartSvg
-              {...props}
-              containerHeight={parent.height}
-              containerWidth={parent.width}
-              series={series}
-              median={median}
-              yZoom={props.yZoom}
-              setYZoom={props.setYZoom}
-              highlightStart={highlightStart}
-              setHighlightStart={setHighlightStart}
-              showTooltip={setTooltip}
-              disabledSeries={disabledSeries}
-            />
-          )}
-        </ParentSize>
-      </Box>
+        tooltipAtom={tooltipAtom}
+        TooltipContent={({ tooltip }) => (
+          <CycleChartTooltip
+            tooltip={tooltip}
+            seriesLabel={props.series_label}
+            extraTooltip={props.extra_tooltip}
+          />
+        )}
+        chart={({ width, height }) => (
+          <CycleChartSvg
+            {...props}
+            containerHeight={height}
+            containerWidth={width}
+            series={series}
+            median={median}
+            yZoom={props.yZoom}
+            setYZoom={props.setYZoom}
+            highlightStart={highlightStart}
+            setHighlightStart={setHighlightStart}
+            showTooltip={setTooltip}
+            disabledSeries={disabledSeries}
+          />
+        )}
+      />
       <div style={{ display: "flex", flexWrap: "wrap" }}>
         <div style={{ color: "#6b6b76" }}>Click on a point for details</div>
         <div style={{ flexGrow: 1 }} />
@@ -816,11 +780,6 @@ export const CycleChart = memo(function CycleChart(props: CycleChartProps) {
         />
       </div>
       <Legend series={series} disabledSeries={disabledSeries} adjustDisabled={setDisabled} />
-      <CycleChartTooltip
-        tooltip={tooltip}
-        seriesLabel={props.series_label}
-        extraTooltip={props.extra_tooltip}
-      />
     </div>
   );
 });

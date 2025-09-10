@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2025, John Lenz
 
 All rights reserved.
 
@@ -31,12 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ReactNode } from "react";
-import { styled } from "@mui/material/styles";
+import { styled, SxProps } from "@mui/material/styles";
 import { grey } from "@mui/material/colors";
-import { TooltipWithBounds } from "@visx/tooltip";
+import { useResizeDetector } from "react-resize-detector";
+import { Atom, useAtomValue } from "jotai";
+import { ComponentType } from "react";
+import { Box } from "@mui/material";
 
-const ChartTooltipContent = styled("div")({
+const ChartTooltipContainer = styled("div")({
   backgroundColor: grey[700],
   color: "white",
   padding: "0.3rem 0.5rem",
@@ -45,20 +47,112 @@ const ChartTooltipContent = styled("div")({
   pointerEvents: "none",
 });
 
-export function ChartTooltip({
-  left,
-  top,
-  children,
-  zIndex,
+export type TooltipAtom<T> = Atom<
+  ({ readonly left: number; readonly top: number; readonly zIndex?: number } & T) | null
+>;
+
+export function Tooltip<T>({
+  chartHeight,
+  chartWidth,
+  atom,
+  TooltipContent,
 }: {
-  left: number;
-  top: number;
-  children: ReactNode;
-  zIndex?: number;
+  chartHeight: number;
+  chartWidth: number;
+  atom: TooltipAtom<T>;
+  TooltipContent: ComponentType<{ tooltip: T }>;
 }) {
+  const pos = useAtomValue(atom);
+  const {
+    ref: tooltipRef,
+    width: tooltipWidth,
+    height: tooltipHeight,
+  } = useResizeDetector<HTMLDivElement>({
+    refreshMode: "debounce",
+    refreshRate: 100,
+  });
+
+  if (!pos) return null;
+
+  let tLeft = pos.left;
+  let tTop = pos.top;
+
+  if (tooltipWidth !== undefined) {
+    // Adjust tooltip position if it overflows the chart boundaries
+    // Check if the right edge (tLeft + 10 + tooltipWidth) is beyond the chart width
+    // and also that we are past halfway across
+    if (tLeft + 10 + tooltipWidth > chartWidth && tLeft + 10 > chartWidth / 2) {
+      tLeft = tLeft - tooltipWidth - 30;
+    } else {
+      tLeft = tLeft + 10;
+    }
+  }
+
+  if (tooltipHeight !== undefined) {
+    // Adjust tooltip position if it overflows the chart boundaries
+    // Check if the bottom edge (tTop + 10 + tooltipHeight) is beyond the chart height
+    // and also that we are past halfway down
+    if (tTop + 10 + tooltipHeight > chartHeight && tTop + 10 > chartHeight / 2) {
+      tTop = tTop - tooltipHeight - 10;
+    } else {
+      tTop = tTop + 10;
+    }
+  }
+
   return (
-    <TooltipWithBounds top={top} left={left} unstyled applyPositionStyle>
-      <ChartTooltipContent style={zIndex ? { zIndex } : undefined}>{children}</ChartTooltipContent>
-    </TooltipWithBounds>
+    <div
+      style={{
+        visibility: tooltipHeight !== undefined && tooltipWidth !== undefined ? "visible" : "hidden",
+        position: "absolute",
+        left: tLeft,
+        top: tTop,
+        zIndex: 10,
+      }}
+    >
+      <ChartTooltipContainer ref={tooltipRef} style={pos?.zIndex ? { zIndex: pos.zIndex } : undefined}>
+        <TooltipContent tooltip={pos} />
+      </ChartTooltipContainer>
+    </div>
+  );
+}
+
+export function ChartWithTooltip<T>({
+  chart,
+  tooltipAtom,
+  TooltipContent,
+  sx,
+  autoHeight,
+}: {
+  chart: ({ width, height }: { width: number; height: number }) => React.ReactNode;
+  tooltipAtom: TooltipAtom<T>;
+  TooltipContent: ComponentType<{ tooltip: T }>;
+  sx?: SxProps;
+  autoHeight?: boolean;
+}) {
+  const {
+    ref: chartRef,
+    width: chartWidth,
+    height: chartHeight,
+  } = useResizeDetector<HTMLDivElement>({
+    refreshMode: "debounce",
+    refreshRate: 100,
+  });
+
+  return (
+    <Box ref={chartRef} sx={sx}>
+      <Box sx={{ position: "relative", overflow: "hidden" }}>
+        {chartWidth && (chartHeight || autoHeight)
+          ? chart({ width: chartWidth, height: chartHeight ?? 0 })
+          : undefined}
+        {chartHeight && chartWidth ? (
+          <Tooltip
+            chartHeight={chartHeight}
+            chartWidth={chartWidth}
+            atom={tooltipAtom}
+            TooltipContent={TooltipContent}
+          />
+        ) : undefined}
+      </Box>
+    </Box>
   );
 }

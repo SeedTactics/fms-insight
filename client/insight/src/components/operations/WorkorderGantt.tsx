@@ -30,21 +30,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { PointerEvent, memo, useRef, useCallback, useMemo } from "react";
+import { PointerEvent, useRef, useCallback, useMemo } from "react";
 import { IActiveWorkorder } from "../../network/api";
-import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { atom, useAtomValue, useSetAtom } from "jotai";
-import { chartTheme } from "../../util/chart-colors";
-import { Axis } from "@visx/axis";
-import { Grid } from "@visx/grid";
 import { green } from "@mui/material/colors";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { addDays, differenceInDays } from "date-fns";
 import { currentStatus } from "../../cell-status/current-status";
 import { Box, Stack } from "@mui/material";
-import { ChartTooltip } from "../ChartTooltip";
 import { PartIdenticon } from "../station-monitor/Material";
-import { localPoint } from "@visx/event";
+import { localPoint } from "../../util/chart-helpers.js";
+import { AxisTop, GridCols } from "../AxisAndGrid";
+import { scaleBand, ScaleBand, scaleTime, ScaleTime } from "d3-scale";
+import { Tooltip } from "../ChartTooltip";
 
 interface TooltipData {
   readonly left: number;
@@ -55,14 +53,14 @@ interface TooltipData {
 const tooltipData = atom<TooltipData | null>(null);
 
 interface ChartScales {
-  readonly xScale: PickD3Scale<"time", number>;
-  readonly yScale: PickD3Scale<"band", number, string>;
+  readonly xScale: ScaleTime<number, number>;
+  readonly yScale: ScaleBand<string>;
 }
 
 const namesWidth = 150;
-const marginTop = 20;
+const marginTop = 40;
 const marginBottom = 10;
-const marginLeft = 10;
+const marginLeft = 20;
 const marginRight = 10;
 const rowSize = 80;
 
@@ -94,39 +92,25 @@ function useScales(workorders: ReadonlyArray<Readonly<IActiveWorkorder>>): Chart
   const xMax = Math.max(differenceInDays(end, start) * 50, 30);
   const yMax = Math.max(workKeys.length * rowSize, rowSize);
 
-  const xScale = scaleTime({
-    domain: [start, end],
-    range: [0, xMax],
-  });
-
-  const yScale = scaleBand({
-    domain: workKeys,
-    range: [0, yMax],
-  });
-
+  const xScale = scaleTime().domain([start, end]).range([0, xMax]);
+  const yScale = scaleBand().domain(workKeys).range([0, yMax]);
   return { xScale, yScale };
 }
 
-const Tooltip = memo(function Tooltip() {
-  const tooltip = useAtomValue(tooltipData);
-
-  if (tooltip === null) return null;
-
+function WorkorderTooltip({ tooltip }: { tooltip: TooltipData }) {
   return (
-    <ChartTooltip top={tooltip.top} left={tooltip.left}>
-      <Stack>
-        <div>Workorder: {tooltip.data.workorderId}</div>
-        <div>Part: {tooltip.data.part}</div>
-        <div>Due Date: {tooltip.data.dueDate.toLocaleDateString()}</div>
-        <div>Priority: {tooltip.data.priority}</div>
-        <div>Planned Quantity: {tooltip.data.plannedQuantity}</div>
-        <div>Completed Quantity: {tooltip.data.completedQuantity}</div>
-        <div>Projected Start: {utcDateOnlyToLocal(tooltip.data.simulatedStart)?.toLocaleDateString()}</div>
-        <div>Projected Filled: {utcDateOnlyToLocal(tooltip.data.simulatedFilled)?.toLocaleDateString()}</div>
-      </Stack>
-    </ChartTooltip>
+    <Stack>
+      <div>Workorder: {tooltip.data.workorderId}</div>
+      <div>Part: {tooltip.data.part}</div>
+      <div>Due Date: {tooltip.data.dueDate.toLocaleDateString()}</div>
+      <div>Priority: {tooltip.data.priority}</div>
+      <div>Planned Quantity: {tooltip.data.plannedQuantity}</div>
+      <div>Completed Quantity: {tooltip.data.completedQuantity}</div>
+      <div>Projected Start: {utcDateOnlyToLocal(tooltip.data.simulatedStart)?.toLocaleDateString()}</div>
+      <div>Projected Filled: {utcDateOnlyToLocal(tooltip.data.simulatedFilled)?.toLocaleDateString()}</div>
+    </Stack>
   );
-});
+}
 
 function YAxis({ workorders }: { workorders: ReadonlyArray<Readonly<IActiveWorkorder>> }) {
   return (
@@ -140,8 +124,8 @@ function YAxis({ workorders }: { workorders: ReadonlyArray<Readonly<IActiveWorko
           paddingRight="10px"
           justifyContent="center"
         >
-          <Box color={chartTheme.axisStyles.y.left.axisLabel.fill}>{work.workorderId}</Box>
-          <Box color={chartTheme.axisStyles.y.left.axisLabel.fill} display="flex" alignItems="center">
+          <Box>{work.workorderId}</Box>
+          <Box display="flex" alignItems="center">
             <PartIdenticon part={work.part} size={18} />
             <Box ml="3px">{work.part}</Box>
           </Box>
@@ -154,25 +138,8 @@ function YAxis({ workorders }: { workorders: ReadonlyArray<Readonly<IActiveWorko
 function XAxis({ xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">) {
   return (
     <>
-      <Axis
-        scale={xScale}
-        top={0}
-        orientation="top"
-        labelProps={chartTheme.axisStyles.x.top.axisLabel}
-        stroke={chartTheme.axisStyles.x.top.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.x.top.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.x.top.tickLength}
-        tickStroke={chartTheme.axisStyles.x.top.tickLine.stroke}
-        tickLabelProps={() => chartTheme.axisStyles.x.top.tickLabel}
-      />
-      <Grid
-        xScale={xScale}
-        yScale={yScale}
-        width={xScale.range()[1] - xScale.range()[0]}
-        height={yScale.range()[1] - yScale.range()[0]}
-        rowLineStyle={chartTheme.gridStyles}
-        columnLineStyle={chartTheme.gridStyles}
-      />
+      <AxisTop scale={xScale} top={0} />
+      <GridCols scale={xScale} height={yScale.range()[1] - yScale.range()[0]} />
     </>
   );
 }
@@ -266,7 +233,12 @@ export function WorkorderGantt() {
             </g>
           </svg>
         </div>
-        <Tooltip />
+        <Tooltip
+          atom={tooltipData}
+          TooltipContent={WorkorderTooltip}
+          chartHeight={yScale.range()[1] + marginTop + marginBottom}
+          chartWidth={xScale.range()[1] + marginRight + marginLeft}
+        />
       </Box>
     </Box>
   );

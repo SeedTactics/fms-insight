@@ -3070,7 +3070,8 @@ namespace BlackMaple.MachineFramework
             removeQueueEvts
               .Where(e => e.LogType == LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
               .Select(e => e.LocationName)
-              .FirstOrDefault() ?? quarantineQueue;
+              .FirstOrDefault()
+            ?? quarantineQueue;
 
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
@@ -5219,6 +5220,28 @@ namespace BlackMaple.MachineFramework
       }
 
       return logEntries;
+    }
+
+    public LogEntry StoreInspectionDecision(
+      long matID,
+      int proc,
+      PathInspection insp,
+      bool inspect,
+      DateTime? utcNow = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+        StoreInspectionDecision(
+          trans: trans,
+          matID: matID,
+          proc: proc,
+          actualPath: LookupActualPath(trans, matID),
+          inspType: insp.InspectionType,
+          counter: insp.Counter,
+          utcNow: utcNow ?? DateTime.UtcNow,
+          inspect: inspect
+        )
+      );
     }
 
     private LogEntry StoreInspectionDecision(

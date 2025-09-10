@@ -16,7 +16,6 @@ updates:
           - "@types/react"
           - "@types/react-dom"
           - "@react-spring/*"
-          - "@visx/*"
       insight:
         patterns:
           - "*"

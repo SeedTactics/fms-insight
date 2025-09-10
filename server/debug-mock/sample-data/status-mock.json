@@ -1342,8 +1342,8 @@
       "DueDate": "2023-05-19",
       "Priority": 3,
       "CompletedQuantity": 8,
-      "SimulatedStartUTC": "2023-05-19T22:00:00Z",
-      "SimulatedFilledUTC": "2023-05-27T03:00:00Z",
+      "SimulatedStart": "2023-05-19",
+      "SimulatedFilled": "2023-05-27",
       "Material": [
         {
           "MaterialID": 630,
@@ -1386,8 +1386,8 @@
       "DueDate": "2023-05-19",
       "Priority": 3,
       "CompletedQuantity": 4,
-      "SimulatedStartUTC": "2023-05-19T22:00:00Z",
-      "SimulatedFilledUTC": "2023-05-27T03:00:00Z",
+      "SimulatedStart": "2023-05-19",
+      "SimulatedFilled": "2023-05-27",
       "Material": [
         {
           "MaterialID": 756,
@@ -1427,8 +1427,8 @@
       "DueDate": "2023-05-20",
       "Priority": 6,
       "CompletedQuantity": 12,
-      "SimulatedStartUTC": "2023-05-20T11:00:00Z",
-      "SimulatedFilledUTC": "2023-06-02T14:00:00Z",
+      "SimulatedStart": "2023-05-20",
+      "SimulatedFilled": "2023-06-02",
       "Material": [
         {
           "MaterialID": 694,

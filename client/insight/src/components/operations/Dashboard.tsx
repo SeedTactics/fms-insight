@@ -35,10 +35,10 @@ import { Box, LinearProgress, Typography } from "@mui/material";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { IProcPathInfo } from "../../network/api.js";
-import { ParentSize } from "@visx/responsive";
 import { RecentCycleChart } from "./RecentCycleChart.js";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
+import { useResizeDetector } from "react-resize-detector";
 
 const pctFormat = new Intl.NumberFormat(undefined, { style: "percent", minimumFractionDigits: 1 });
 
@@ -105,28 +105,33 @@ const CompletedParts = memo(function CompletedParts() {
 });
 
 function FillViewportDashboard() {
+  const { ref, width, height } = useResizeDetector<HTMLDivElement>({
+    refreshMode: "debounce",
+    refreshRate: 100,
+  });
   return (
     <main style={{ height: "calc(100vh - 64px)", display: "flex", flexDirection: "column" }}>
       <div>
         <CompletedParts />
       </div>
-      <div style={{ flexGrow: 1, overflow: "hidden", margin: "8px" }}>
-        <ParentSize debounceTime={10}>
-          {({ width, height }) => <RecentCycleChart width={width} height={height} />}
-        </ParentSize>
+      <div ref={ref} style={{ flexGrow: 1, overflow: "hidden", margin: "8px" }}>
+        {width && height && <RecentCycleChart width={width} height={height} />}
       </div>
     </main>
   );
 }
 
 export function ScrollableDashboard() {
+  const { ref, width } = useResizeDetector<HTMLDivElement>({
+    refreshMode: "debounce",
+    refreshRate: 100,
+    handleHeight: false,
+  });
   return (
     <main style={{ padding: "8px" }}>
       <CompletedParts />
-      <div style={{ overflow: "hidden" }}>
-        <ParentSize ignoreDimensions={["height", "top"]}>
-          {({ width }) => <RecentCycleChart width={width} height={500} />}
-        </ParentSize>
+      <div ref={ref} style={{ overflow: "hidden" }}>
+        {width && <RecentCycleChart width={width} height={500} />}
       </div>
     </main>
   );

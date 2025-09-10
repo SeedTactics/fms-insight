@@ -42,7 +42,7 @@ import {
   Typography,
 } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
-import { createContext, memo, useContext, useState, useMemo } from "react";
+import { createContext, memo, useContext, useMemo } from "react";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import {
   last30ToolReplacements,
@@ -63,13 +63,13 @@ import {
   useTableZoomForPeriod,
 } from "./DataTable.js";
 import { LazySeq, OrderedMap, ToComparable } from "@seedtactics/immutable-collections";
-import { scaleLinear, scaleTime } from "@visx/scale";
-import { Circle } from "@visx/shape";
+import { scaleLinear, scaleTime } from "d3-scale";
 import { addDays, addMonths, startOfToday } from "date-fns";
-import { ChartTooltip } from "../ChartTooltip.js";
-import { localPoint } from "@visx/event";
+import { Tooltip as ChartTooltip } from "../ChartTooltip.js";
+import { localPoint } from "../../util/chart-helpers.js";
 import { useSetTitle } from "../routes.js";
-import { atom, useAtom, useAtomValue } from "jotai";
+import { atom, PrimitiveAtom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useResizeDetector } from "react-resize-detector";
 
 type ReplacementTableProps = {
   readonly station: StationGroupAndNum | null;
@@ -189,91 +189,115 @@ const CurZoomContext = createContext<{ readonly start: Date; readonly end: Date 
   end: new Date(),
 });
 
+type TooltipData = {
+  readonly top: number;
+  readonly left: number;
+  readonly r: ToolReplacementAndStationDate;
+};
+
+function ReplacementTooltip({ tooltip }: { tooltip: TooltipData }) {
+  return (
+    <Stack spacing={0.5}>
+      <div>Tool: {tooltip.r.tool}</div>
+      <div>Pocket: {tooltip.r.pocket}</div>
+      <div>Time: {tooltip.r.time.toLocaleString()}</div>
+      <div>
+        Station: {tooltip.r.station.group} #{tooltip.r.station.num}
+      </div>
+      {tooltip.r.type === "ReplaceBeforeCycleStart" ? (
+        <>
+          {tooltip.r.useAtReplacement !== null ? (
+            <div>Minutes at replacement: {decimalFormat.format(tooltip.r.useAtReplacement)}</div>
+          ) : undefined}
+          {tooltip.r.cntAtReplacement !== null ? (
+            <div>Count at replacement: {decimalFormat.format(tooltip.r.cntAtReplacement)}</div>
+          ) : undefined}
+        </>
+      ) : (
+        <>
+          {tooltip.r.totalUseAtBeginningOfCycle !== null ? (
+            <div>
+              Minutes at beginning of cycle: {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
+            </div>
+          ) : undefined}
+          {tooltip.r.totalUseAtEndOfCycle !== null ? (
+            <div>Minutes at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtEndOfCycle)}</div>
+          ) : undefined}
+          {tooltip.r.totalCntAtBeginningOfCycle !== null ? (
+            <div>
+              Count at beginning of cycle: {decimalFormat.format(tooltip.r.totalCntAtBeginningOfCycle)}
+            </div>
+          ) : undefined}
+          {tooltip.r.totalCntAtEndOfCycle !== null ? (
+            <div>Count at end of cycle: {decimalFormat.format(tooltip.r.totalCntAtEndOfCycle)}</div>
+          ) : undefined}
+        </>
+      )}
+    </Stack>
+  );
+}
+
+function Replacements({
+  row,
+  tooltip,
+  timeScale,
+  yScale,
+}: {
+  row: ToolReplacementSummary;
+  tooltip: PrimitiveAtom<TooltipData | null>;
+  timeScale: (t: Date) => number;
+  yScale: (y: number) => number;
+}) {
+  const [t, setTooltip] = useAtom(tooltip);
+
+  return (
+    <g>
+      {row.replacements.map((r, i) => (
+        <circle
+          key={i}
+          cx={timeScale(r.time)}
+          cy={yScale(replacementToYVal(row, r))}
+          r={r === t?.r ? 4 : 2}
+          onMouseEnter={(e) => setTooltip({ top: 0, left: localPoint(e)?.x ?? 0, r })}
+          fill="black"
+        />
+      ))}
+    </g>
+  );
+}
+
 const ReplacementGraph = memo(function ReplacementGraph({ row }: { readonly row: ToolReplacementSummary }) {
   const zoom = useContext(CurZoomContext);
-  const [tooltip, setTooltip] = useState<{
-    readonly left: number;
-    readonly r: ToolReplacementAndStationDate;
-  } | null>(null);
+  const tooltip = useMemo(() => atom<TooltipData | null>(null), []);
+  const setTooltip = useSetAtom(tooltip);
 
-  const timeScale = scaleTime({
-    domain: [zoom.start, zoom.end],
-    range: [0, 1000],
+  const { ref: chartRef, width: chartWidth } = useResizeDetector<HTMLDivElement>({
+    refreshMode: "debounce",
+    refreshRate: 100,
+    handleHeight: false,
   });
 
-  const yScale = scaleLinear({
-    domain: [0, row.maxY],
-    range: [33, 3],
-  });
-
+  const timeScale = scaleTime()
+    .domain([zoom.start, zoom.end])
+    .range([0, chartWidth ?? 1000]);
+  const yScale = scaleLinear().domain([0, row.maxY]).range([33, 3]);
   const avgUse =
     row.numReplacements === 0 ? null : yScale(row.totalUseOfAllReplacements / row.numReplacements);
 
   return (
-    <div style={{ position: "relative" }}>
-      <svg
-        height="35"
-        width="100%"
-        viewBox="0 0 1000 35"
-        preserveAspectRatio="none"
-        onMouseLeave={() => setTooltip(null)}
-      >
+    <div ref={chartRef} style={{ position: "relative", width: "100%", height: "35px" }}>
+      <svg height="35" width={chartWidth ?? 1000} onMouseLeave={() => setTooltip(null)}>
         {avgUse !== null ? (
-          <line x1="0" y1={avgUse} x2="1000" y2={avgUse} stroke="red" strokeWidth={0.5} />
+          <line x1="0" y1={avgUse} x2={chartWidth ?? 1000} y2={avgUse} stroke="red" strokeWidth={0.5} />
         ) : undefined}
-        {row.replacements.map((r, i) => (
-          <Circle
-            key={i}
-            cx={timeScale(r.time)}
-            cy={yScale(replacementToYVal(row, r))}
-            r={r === tooltip?.r ? 3 : 1}
-            onMouseEnter={(e) => setTooltip({ left: localPoint(e)?.x ?? 0, r })}
-            fill="black"
-          />
-        ))}
+        <Replacements row={row} tooltip={tooltip} timeScale={timeScale} yScale={yScale} />
       </svg>
-      {tooltip !== null ? (
-        <ChartTooltip left={tooltip.left} top={0} zIndex={10}>
-          <Stack spacing={0.5}>
-            <div>Tool: {tooltip.r.tool}</div>
-            <div>Pocket: {tooltip.r.pocket}</div>
-            <div>Time: {tooltip.r.time.toLocaleString()}</div>
-            <div>
-              Station: {tooltip.r.station.group} #{tooltip.r.station.num}
-            </div>
-            {tooltip.r.type === "ReplaceBeforeCycleStart" ? (
-              <>
-                {tooltip.r.useAtReplacement !== null ? (
-                  <div>Minutes at replacement: {decimalFormat.format(tooltip.r.useAtReplacement)}</div>
-                ) : undefined}
-                {tooltip.r.cntAtReplacement !== null ? (
-                  <div>Count at replacement: {decimalFormat.format(tooltip.r.cntAtReplacement)}</div>
-                ) : undefined}
-              </>
-            ) : (
-              <>
-                {tooltip.r.totalUseAtBeginningOfCycle !== null ? (
-                  <div>
-                    Minutes at beginning of cycle:{" "}
-                    {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
-                  </div>
-                ) : undefined}
-                {tooltip.r.totalUseAtEndOfCycle !== null ? (
-                  <div>Minutes at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtEndOfCycle)}</div>
-                ) : undefined}
-                {tooltip.r.totalCntAtBeginningOfCycle !== null ? (
-                  <div>
-                    Count at beginning of cycle: {decimalFormat.format(tooltip.r.totalCntAtBeginningOfCycle)}
-                  </div>
-                ) : undefined}
-                {tooltip.r.totalCntAtEndOfCycle !== null ? (
-                  <div>Count at end of cycle: {decimalFormat.format(tooltip.r.totalCntAtEndOfCycle)}</div>
-                ) : undefined}
-              </>
-            )}
-          </Stack>
-        </ChartTooltip>
-      ) : undefined}
+      <ChartTooltip
+        atom={tooltip}
+        TooltipContent={ReplacementTooltip}
+        chartHeight={35}
+        chartWidth={chartWidth ?? 1000}
+      />
     </div>
   );
 });
@@ -525,7 +549,7 @@ const ChooseMachine = memo(function ChooseMachineSelect(props: {
           value={selMachineIdx}
           style={{ marginLeft: "1em" }}
           onChange={(e) => {
-            const v = e.target.value as number;
+            const v = e.target.value;
             if (v === -1) {
               props.setSelectedStation(null);
             } else {
@@ -586,7 +610,7 @@ export const ToolReplacementPage = memo(function ToolReplacementCard() {
             autoWidth
             value={type}
             style={{ marginLeft: "1em" }}
-            onChange={(e) => setType(e.target.value as "summary" | "details")}
+            onChange={(e) => setType(e.target.value)}
           >
             <MenuItem value="summary">Summary</MenuItem>
             <MenuItem value="details">Details</MenuItem>

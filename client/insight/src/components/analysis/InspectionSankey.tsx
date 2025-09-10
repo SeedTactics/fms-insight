@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { PointerEvent, useState, memo, useMemo } from "react";
+import { MouseEvent, useState, memo, useMemo } from "react";
 import { Select, MenuItem, Tooltip, IconButton, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode } from "d3-sankey";
@@ -46,13 +46,11 @@ import {
 import InspectionDataTable from "./InspectionDataTable.js";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
 import { isDemoAtom } from "../routes.js";
-import { Group } from "@visx/group";
 import { green } from "@mui/material/colors";
-import { localPoint } from "@visx/event";
-import { ParentSize } from "@visx/responsive";
-import { ChartTooltip } from "../ChartTooltip.js";
-import { atom, useAtom } from "jotai";
+import { localPoint } from "../../util/chart-helpers.js";
+import { atom, useAtom, useSetAtom } from "jotai";
 import { atomWithDefault } from "jotai/utils";
+import { ChartWithTooltip } from "../ChartTooltip.js";
 
 type NodeWithData = D3SankeyNode<SankeyNode, { readonly value: number }>;
 type LinkWithData = {
@@ -88,7 +86,7 @@ function LinkDisplay({
 }) {
   const [over, setOver] = useState(false);
   if (path === null) return null;
-  function pointerOver(e: PointerEvent) {
+  function pointerOver(e: MouseEvent) {
     const pt = localPoint(e);
     if (pt === null) return;
     setTooltip({ left: pt.x, top: pt.y, data: link });
@@ -105,8 +103,8 @@ function LinkDisplay({
       strokeWidth={strokeWidth}
       opacity={0.2}
       fill="none"
-      onPointerOver={pointerOver}
-      onPointerOut={pointerOut}
+      onMouseMove={pointerOver}
+      onMouseLeave={pointerOut}
     />
   );
 }
@@ -115,7 +113,7 @@ function NodeDisplay({ node }: { readonly node: NodeWithData }) {
   if (node.x1 === undefined || node.x0 === undefined || node.y1 === undefined || node.y0 === undefined)
     return null;
   return (
-    <Group top={node.y0} left={node.x0}>
+    <g transform={`translate(${node.x0}, ${node.y0})`}>
       <rect
         width={node.x1 - node.x0}
         height={node.y1 - node.y0}
@@ -127,7 +125,7 @@ function NodeDisplay({ node }: { readonly node: NodeWithData }) {
       <text x={18} y={(node.y1 - node.y0) / 2}>
         {node.name}
       </text>
-    </Group>
+    </g>
   );
 }
 
@@ -183,41 +181,35 @@ const SankeyDisplay = memo(function InspectionSankeyDiagram({
   );
 });
 
-const LinkTooltip = memo(function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
+function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip left={tooltip.left} top={tooltip.top}>
+    <div>
       {tooltip.data.source.name} ➞ {tooltip.data.target.name}: {tooltip.data.value} parts
-    </ChartTooltip>
+    </div>
   );
-});
+}
 
 const InspectionDiagram = memo(function InspectionDiagram({
   data,
 }: {
   readonly data: Iterable<InspectionLogEntry>;
 }) {
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const tooltipAtom = useMemo(() => atom<TooltipData | null>(null), []);
+  const setTooltip = useSetAtom(tooltipAtom);
   return (
     <div style={{ position: "relative" }}>
-      <Box
+      <ChartWithTooltip
         sx={{
           height: { xs: "calc(100vh - 230px)", md: "calc(100vh - 182px)", xl: "calc(100vh - 130px)" },
           width: "100%",
         }}
-      >
-        <ParentSize>
-          {(parent) => (
-            <SankeyDisplay
-              data={data}
-              setTooltip={setTooltip}
-              parentHeight={parent.height}
-              parentWidth={parent.width}
-            />
-          )}
-        </ParentSize>
-      </Box>
-      <LinkTooltip tooltip={tooltip} />
+        chart={({ height, width }) => (
+          <SankeyDisplay data={data} setTooltip={setTooltip} parentHeight={height} parentWidth={width} />
+        )}
+        tooltipAtom={tooltipAtom}
+        TooltipContent={LinkTooltip}
+      />
     </div>
   );
 });

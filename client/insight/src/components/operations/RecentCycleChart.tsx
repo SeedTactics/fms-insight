@@ -36,7 +36,6 @@ import {
   PointerEvent,
   useMemo,
   useCallback,
-  memo,
   useState,
   useRef,
   useEffect,
@@ -46,21 +45,19 @@ import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
 import { addHours, differenceInMinutes } from "date-fns";
-import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
-import { Grid } from "@visx/grid";
-import { Group } from "@visx/group";
-import { Axis } from "@visx/axis";
 import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
-import { chartTheme } from "../../util/chart-colors.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { red, green, grey } from "@mui/material/colors";
-import { localPoint } from "@visx/event";
+import { localPoint } from "../../util/chart-helpers.js";
 import { Stack } from "@mui/material";
-import { ChartTooltip } from "../ChartTooltip.js";
+import { Tooltip } from "../ChartTooltip.js";
 import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
+import { AxisBottom, AxisLeft, GridCols } from "../AxisAndGrid.js";
+import { measureSvgString } from "../../util/chart-helpers.js";
+import { scaleBand, ScaleBand, scaleTime, ScaleTime } from "d3-scale";
 
 const projectedColor = green[200];
 const activeColor = green[600];
@@ -118,12 +115,12 @@ interface TooltipData {
 const tooltipData = atom<TooltipData | null>(null);
 
 interface ChartScales {
-  readonly xScale: PickD3Scale<"time", number>;
-  readonly yScale: PickD3Scale<"band", number, string>;
-  readonly actualPlannedScale: PickD3Scale<"band", number, "actual" | "planned">;
+  readonly xScale: ScaleTime<number, number>;
+  readonly yScale: ScaleBand<string>;
+  readonly actualPlannedScale: ScaleBand<string>;
 }
 
-const marginLeft = 150;
+const stationFontSize = 14;
 const marginBottom = 20;
 const marginTop = 10;
 const marginRight = 2;
@@ -134,69 +131,36 @@ function useScales(
   now: Date,
   containerWidth: number,
   containerHeight: number,
-): ChartScales {
+): ChartScales & { readonly marginLeft: number } {
   const stats = OrderedSet.build(cycles, (c) => c.station).union(OrderedSet.build(current, (c) => c.station));
+
+  const maxStatLen =
+    stats
+      .toAscLazySeq()
+      .map((s) => measureSvgString(s, stationFontSize))
+      .maxBy((w) => w ?? 0) ?? 20;
+  const marginLeft = maxStatLen + 30;
 
   const xMax = Math.max(containerWidth - marginLeft - marginRight, 5);
   const yMax = Math.max(containerHeight - marginTop - marginBottom, 5);
 
-  const xScale = scaleTime({
-    domain: [addHours(now, -12), addHours(now, 8)],
-    range: [0, xMax],
-  });
-
-  const yScale = scaleBand({
-    domain: Array.from(stats),
-    range: [0, yMax],
-    padding: 0.3,
-  });
-
-  const actualPlannedScale = scaleBand({
-    domain: ["actual", "planned"] as ["actual", "planned"],
-    range: [0, yScale.bandwidth()],
-    padding: 0.1,
-  });
-
-  return { xScale, yScale, actualPlannedScale };
+  const xScale = scaleTime()
+    .domain([addHours(now, -12), addHours(now, 8)])
+    .range([0, xMax]);
+  const yScale = scaleBand().domain(Array.from(stats)).range([0, yMax]).padding(0.3);
+  const actualPlannedScale = scaleBand()
+    .domain(["actual", "planned"] as ["actual", "planned"])
+    .range([0, yScale.bandwidth()])
+    .padding(0.1);
+  return { xScale, yScale, actualPlannedScale, marginLeft };
 }
 
 function AxisAndGrid({ xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">): ReactNode {
   return (
     <>
-      <Axis
-        scale={xScale}
-        top={yScale.range()[1]}
-        orientation="bottom"
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.x.bottom.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.x.bottom.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.x.bottom.tickLength}
-        tickStroke={chartTheme.axisStyles.x.bottom.tickLine.stroke}
-        tickLabelProps={() => chartTheme.axisStyles.x.bottom.tickLabel}
-      />
-      <Axis
-        scale={yScale}
-        orientation="left"
-        left={xScale.range()[0]}
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.y.left.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.y.left.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.y.left.tickLength}
-        tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
-        tickLabelProps={() => ({
-          ...chartTheme.axisStyles.y.left.tickLabel,
-          width: marginLeft,
-          fontSize: "large",
-        })}
-      />
-      <Grid
-        xScale={xScale}
-        yScale={yScale}
-        width={xScale.range()[1] - xScale.range()[0]}
-        height={yScale.range()[1] - yScale.range()[0]}
-        rowLineStyle={chartTheme.gridStyles}
-        columnLineStyle={chartTheme.gridStyles}
-      />
+      <AxisBottom scale={xScale} top={yScale.range()[1]} />
+      <AxisLeft scale={yScale} left={xScale.range()[0]} fontSize={stationFontSize} />
+      <GridCols scale={xScale} height={yScale.range()[1] - yScale.range()[0]} />
     </>
   );
 }
@@ -415,100 +379,83 @@ function SimSeries({
   );
 }
 
-const Tooltip = memo(function Tooltip() {
-  const tooltip = useAtomValue(tooltipData);
-
-  if (tooltip === null) return null;
-
+function RecentTooltip({ tooltip }: { tooltip: TooltipData }) {
   return (
-    <ChartTooltip top={tooltip.top} left={tooltip.left}>
-      <Stack>
-        {tooltip.data.kind === "actual" ? (
-          <>
-            {tooltip.data.cycle.outlier ? (
-              <div>Outlier Cycle for {tooltip.data.cycle.station}</div>
-            ) : (
-              <div>{tooltip.data.cycle.station}</div>
-            )}
-            <div>Start: {tooltip.data.cycle.startTime.toLocaleString()}</div>
-            <div>End: {tooltip.data.cycle.endOccupied.toLocaleString()}</div>
-            {tooltip.data.cycle.endActive !== undefined ? (
-              <div>
-                Active Minutes:{" "}
-                {differenceInMinutes(tooltip.data.cycle.endActive, tooltip.data.cycle.startTime)}
-              </div>
-            ) : undefined}
+    <Stack>
+      {tooltip.data.kind === "actual" ? (
+        <>
+          {tooltip.data.cycle.outlier ? (
+            <div>Outlier Cycle for {tooltip.data.cycle.station}</div>
+          ) : (
+            <div>{tooltip.data.cycle.station}</div>
+          )}
+          <div>Start: {tooltip.data.cycle.startTime.toLocaleString()}</div>
+          <div>End: {tooltip.data.cycle.endOccupied.toLocaleString()}</div>
+          {tooltip.data.cycle.endActive !== undefined ? (
             <div>
-              Occupied Minutes:{" "}
-              {differenceInMinutes(tooltip.data.cycle.endOccupied, tooltip.data.cycle.startTime)}
+              Active Minutes:{" "}
+              {differenceInMinutes(tooltip.data.cycle.endActive, tooltip.data.cycle.startTime)}
             </div>
-            {tooltip.data.cycle.parts.map((p, idx) => (
-              <div key={idx}>
-                Part: {p.part} {p.oper}
-              </div>
-            ))}
-          </>
-        ) : tooltip.data.kind === "sim" ? (
-          <>
-            <div>Simulation of {tooltip.data.cycle.station}</div>
-            {tooltip.data.cycle.parts.map((p, idx) => (
-              <div key={idx}>Part: {p}</div>
-            ))}
-            <div>Predicted Start: {tooltip.data.cycle.start.toLocaleString()}</div>
-            <div>Predicted End: {tooltip.data.cycle.end.toLocaleString()}</div>
-            {tooltip.data.cycle.plannedDown ? <div>Planned Downtime</div> : undefined}
-          </>
-        ) : (
-          <>
-            {tooltip.data.cycle.isOutlier ? (
-              <div>Current Outlier Cycle for {tooltip.data.cycle.station}</div>
-            ) : (
-              <div>Current {tooltip.data.cycle.station}</div>
-            )}
-            <div>Start: {tooltip.data.cycle.start.toLocaleString()}</div>
-            <div>Expected End: {tooltip.data.cycle.expectedEnd.toLocaleString()}</div>
-            {tooltip.data.cycle.expectedEnd < tooltip.data.now ? (
-              <div>
-                Cycle Exceeding Expected By{" "}
-                {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.expectedEnd)} Minutes
-              </div>
-            ) : (
-              <div>
-                Expected Remaining Minutes:{" "}
-                {differenceInMinutes(tooltip.data.cycle.expectedEnd, tooltip.data.now)}
-              </div>
-            )}
-            <div>Occupied Minutes: {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.start)}</div>
-            {tooltip.data.cycle.parts.map((p, idx) => (
-              <div key={idx}>
-                Part: {p.part} {p.oper}
-              </div>
-            ))}
-          </>
-        )}
-      </Stack>
-    </ChartTooltip>
+          ) : undefined}
+          <div>
+            Occupied Minutes:{" "}
+            {differenceInMinutes(tooltip.data.cycle.endOccupied, tooltip.data.cycle.startTime)}
+          </div>
+          {tooltip.data.cycle.parts.map((p, idx) => (
+            <div key={idx}>
+              Part: {p.part} {p.oper}
+            </div>
+          ))}
+        </>
+      ) : tooltip.data.kind === "sim" ? (
+        <>
+          <div>Simulation of {tooltip.data.cycle.station}</div>
+          {tooltip.data.cycle.parts.map((p, idx) => (
+            <div key={idx}>Part: {p}</div>
+          ))}
+          <div>Predicted Start: {tooltip.data.cycle.start.toLocaleString()}</div>
+          <div>Predicted End: {tooltip.data.cycle.end.toLocaleString()}</div>
+          {tooltip.data.cycle.plannedDown ? <div>Planned Downtime</div> : undefined}
+        </>
+      ) : (
+        <>
+          {tooltip.data.cycle.isOutlier ? (
+            <div>Current Outlier Cycle for {tooltip.data.cycle.station}</div>
+          ) : (
+            <div>Current {tooltip.data.cycle.station}</div>
+          )}
+          <div>Start: {tooltip.data.cycle.start.toLocaleString()}</div>
+          <div>Expected End: {tooltip.data.cycle.expectedEnd.toLocaleString()}</div>
+          {tooltip.data.cycle.expectedEnd < tooltip.data.now ? (
+            <div>
+              Cycle Exceeding Expected By{" "}
+              {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.expectedEnd)} Minutes
+            </div>
+          ) : (
+            <div>
+              Expected Remaining Minutes:{" "}
+              {differenceInMinutes(tooltip.data.cycle.expectedEnd, tooltip.data.now)}
+            </div>
+          )}
+          <div>Occupied Minutes: {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.start)}</div>
+          {tooltip.data.cycle.parts.map((p, idx) => (
+            <div key={idx}>
+              Part: {p.part} {p.oper}
+            </div>
+          ))}
+        </>
+      )}
+    </Stack>
   );
-});
+}
 
 function NowLine({ now, xScale, yScale }: Pick<ChartScales, "xScale" | "yScale"> & { now: Date }): ReactNode {
   const x = xScale(now);
   const fontSize = 11;
   return (
     <g>
-      <line
-        x1={x}
-        x2={x}
-        y1={yScale.range()[0]}
-        y2={yScale.range()[1] + chartTheme.axisStyles.x.bottom.tickLength}
-        stroke="black"
-      />
-      <text
-        x={x}
-        y={yScale.range()[1] + chartTheme.axisStyles.x.bottom.tickLength + fontSize}
-        textAnchor="middle"
-        fontSize={fontSize}
-      >
+      <line x1={x} x2={x} y1={yScale.range()[0]} y2={yScale.range()[1] + 8} stroke="black" />
+      <text x={x} y={yScale.range()[1] + 8 + fontSize} textAnchor="middle" fontSize={fontSize}>
         Now
       </text>
     </g>
@@ -544,15 +491,15 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
     );
   });
 
-  const { xScale, yScale, actualPlannedScale } = useScales(cycles, current, now, width, height);
+  const { xScale, yScale, actualPlannedScale, marginLeft } = useScales(cycles, current, now, width, height);
   const hideTooltipRef = useRef<NodeJS.Timeout | null>(null);
 
   if (height <= 0 || width <= 0) return null;
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", overflow: "hidden" }}>
       <svg height={height} width={width}>
-        <Group left={marginLeft} top={marginTop}>
+        <g transform={`translate(${marginLeft}, ${marginTop})`}>
           <clipPath id="recent-cycle-clip-body">
             <rect
               x={0}
@@ -587,9 +534,9 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
             />
           </g>
           <NowLine now={now} xScale={xScale} yScale={yScale} />
-        </Group>
+        </g>
       </svg>
-      <Tooltip />
+      <Tooltip chartHeight={height} chartWidth={width} atom={tooltipData} TooltipContent={RecentTooltip} />
     </div>
   );
 }

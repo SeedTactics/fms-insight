@@ -1,6 +1,3 @@
-import { buildChartTheme } from "@visx/xychart";
-import { grey } from "@mui/material/colors";
-
 // https://personal.sron.nl/~pault/
 const paulTolQualitativeColors = [
   ["4477aa"],
@@ -118,28 +115,3 @@ export function seriesColor(idx: number, count: number): string {
     return "#" + mpn65Colors[idx % mpn65Colors.length];
   }
 }
-
-export const chartTheme = buildChartTheme({
-  backgroundColor: "#fff",
-  gridColor: grey[300],
-  gridColorDark: grey[300],
-  tickLength: 4,
-  colors: paulTolQualitativeColors[5],
-  htmlLabel: {
-    fontFamily: "inherit",
-    fontWeight: 500,
-    fontSize: 12,
-  },
-  svgLabelSmall: {
-    fontFamily: "inherit",
-    fontWeight: 300,
-    fontSize: 11,
-    fill: grey[800],
-  },
-  svgLabelBig: {
-    fontFamily: "inherit",
-    fontWeight: 500,
-    fontSize: 12,
-    fill: grey[600],
-  },
-});

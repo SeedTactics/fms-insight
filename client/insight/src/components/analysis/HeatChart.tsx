@@ -30,19 +30,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { PointerEvent, useMemo, memo, useRef, useCallback, useState } from "react";
+import { PointerEvent, useMemo, memo, useRef, useCallback } from "react";
 import { addDays } from "date-fns";
 import { Select, MenuItem, Tooltip, IconButton, Stack, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
-import { PickD3Scale, scaleBand, scaleLinear } from "@visx/scale";
-import { ParentSize } from "@visx/responsive";
+import { ScaleBand, scaleBand, ScaleLinear, scaleLinear } from "d3-scale";
 
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { chartTheme } from "../../util/chart-colors.js";
-import { Axis } from "@visx/axis";
-import { Group } from "@visx/group";
-import { localPoint } from "@visx/event";
-import { ChartTooltip } from "../ChartTooltip.js";
+import { localPoint } from "../../util/chart-helpers.js";
+import { AxisBottom, AxisLeft } from "../AxisAndGrid.js";
+import { measureSvgString } from "../../util/chart-helpers.js";
+import { atom, useSetAtom } from "jotai";
+import { ChartWithTooltip } from "../ChartTooltip.js";
 
 export type HeatChartYType = "Station" | "Part";
 
@@ -63,15 +62,15 @@ export interface HeatChartProps {
 interface HeatChartDimensions {
   readonly height: number;
   readonly width: number;
+  readonly marginLeft: number;
 }
 
 interface HeatChartScales {
-  readonly xScale: PickD3Scale<"band", number, Date>;
-  readonly yScale: PickD3Scale<"band", number, string>;
-  readonly colorScale: PickD3Scale<"linear", string, string>;
+  readonly xScale: ScaleBand<Date>;
+  readonly yScale: ScaleBand<string>;
+  readonly colorScale: ScaleLinear<string, string>;
 }
 
-const marginLeft = 50;
 const marginBottom = 20;
 const marginTop = 10;
 const marginRight = 2;
@@ -92,6 +91,18 @@ function useScales({
   const width =
     containerWidth === null || containerWidth === undefined || containerWidth === 0 ? 400 : containerWidth;
 
+  const maxStatLen = useMemo(
+    () =>
+      LazySeq.of(points)
+        .map((p) => p.y)
+        .distinct()
+        .map(measureSvgString)
+        .maxBy((w) => w ?? 0) ?? 20,
+    [points],
+  );
+
+  const marginLeft = maxStatLen + 5;
+
   const xMax = width - marginLeft - marginRight;
 
   const dateRangeStart = dateRange[0];
@@ -108,12 +119,7 @@ function useScales({
         d = addDays(d, 1);
       }
     }
-    return scaleBand({
-      domain: xValues,
-      range: [0, xMax],
-      align: 0,
-      padding: 0.05,
-    });
+    return scaleBand<Date>().domain(xValues).range([0, xMax]).align(0).padding(0.05);
   }, [dateRangeStart, dateRangeEnd, xMax]);
 
   const { yScale, height, colorScale } = useMemo(() => {
@@ -124,61 +130,34 @@ function useScales({
 
     const yMax = 60 * yValues.size;
     const height = yMax + marginTop + marginBottom;
-    const yScale = scaleBand({
-      domain: Array.from(yValues).sort((a, b) => a.localeCompare(b)),
-      range: [0, yMax],
-      align: 0,
-      padding: 0.05,
-    });
-
-    let colorScale: PickD3Scale<"linear", string, string>;
+    const yScale = scaleBand()
+      .domain(Array.from(yValues).sort((a, b) => a.localeCompare(b)))
+      .range([0, yMax])
+      .align(0)
+      .padding(0.05);
+    let colorScale: ScaleLinear<string, string>;
     if (yType === "Station") {
-      colorScale = scaleLinear({
-        domain: [0, 1],
-        range: [color1, color2],
-      });
+      colorScale = scaleLinear<string, string>().domain([0, 1]).range([color1, color2]);
     } else {
       const maxCnt = LazySeq.of(points).maxBy((pt) => pt.color)?.color ?? 1;
-      colorScale = scaleLinear({
-        domain: [0, maxCnt],
-        range: [color1, color2],
-      });
+      colorScale = scaleLinear<string, string>().domain([0, maxCnt]).range([color1, color2]);
     }
 
     return { yScale, height, colorScale };
   }, [points, yType]);
 
-  return { height, width, xScale, yScale, colorScale };
+  return { height, width, xScale, yScale, colorScale, marginLeft };
 }
 
 const HeatAxis = memo(function HeatAxis({ xScale, yScale }: HeatChartScales) {
   return (
     <>
-      <Axis
+      <AxisBottom
         scale={xScale}
         top={yScale.range()[1]}
-        orientation="bottom"
-        numTicks={15}
         tickFormat={(d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.x.bottom.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.x.bottom.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.x.bottom.tickLength}
-        tickStroke={chartTheme.axisStyles.x.bottom.tickLine.stroke}
-        tickLabelProps={() => chartTheme.axisStyles.x.bottom.tickLabel}
       />
-      <Axis
-        scale={yScale}
-        orientation="left"
-        left={xScale.range()[0]}
-        tickValues={yScale.domain()}
-        labelProps={chartTheme.axisStyles.y.left.axisLabel}
-        stroke={chartTheme.axisStyles.y.left.axisLine.stroke}
-        strokeWidth={chartTheme.axisStyles.y.left.axisLine.strokeWidth}
-        tickLength={chartTheme.axisStyles.y.left.tickLength}
-        tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
-        tickLabelProps={() => ({ ...chartTheme.axisStyles.y.left.tickLabel, width: marginLeft })}
-      />
+      <AxisLeft scale={yScale} left={xScale.range()[0]} />
     </>
   );
 });
@@ -260,52 +239,47 @@ const HeatTooltip = memo(function HeatTooltip({
 }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip left={tooltip.left} top={tooltip.top}>
-      <Stack direction="column" spacing={0.6}>
-        <div>
-          {yType}: {tooltip.data.y}
-        </div>
-        <div>Day: {tooltip.data.x.toDateString()}</div>
-        <div>
-          {seriesLabel}: {tooltip.data.label}
-        </div>
-      </Stack>
-    </ChartTooltip>
+    <Stack direction="column" spacing={0.6}>
+      <div>
+        {yType}: {tooltip.data.y}
+      </div>
+      <div>Day: {tooltip.data.x.toDateString()}</div>
+      <div>
+        {seriesLabel}: {tooltip.data.label}
+      </div>
+    </Stack>
   );
 });
 
-const HeatChart = memo(function HeatChart(props: HeatChartProps & { readonly parentWidth: number }) {
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
-
-  const { width, height, xScale, yScale, colorScale } = useScales({
+function HeatChart(props: {
+  readonly y_title: HeatChartYType;
+  readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly dateRange: [Date, Date];
+  readonly parentWidth: number;
+  readonly setTooltip: ShowTooltipFunc;
+}) {
+  const { width, height, xScale, yScale, colorScale, marginLeft } = useScales({
     yType: props.y_title,
     points: props.points,
     dateRange: props.dateRange,
     containerWidth: props.parentWidth,
   });
 
-  const pointerLeave = useCallback(() => {
-    setTooltip(null);
-  }, [setTooltip]);
-
   return (
-    <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
-      <svg width={width} height={height}>
-        <Group left={marginLeft} top={marginTop}>
-          <HeatSeries
-            points={props.points}
-            xScale={xScale}
-            yScale={yScale}
-            colorScale={colorScale}
-            setTooltip={setTooltip}
-          />
-          <HeatAxis xScale={xScale} yScale={yScale} colorScale={colorScale} />
-        </Group>
-      </svg>
-      <HeatTooltip yType={props.y_title} seriesLabel={props.label_title} tooltip={tooltip} />
-    </div>
+    <svg width={width} height={height}>
+      <g transform={`translate(${marginLeft}, ${marginTop})`}>
+        <HeatSeries
+          points={props.points}
+          xScale={xScale}
+          yScale={yScale}
+          colorScale={colorScale}
+          setTooltip={props.setTooltip}
+        />
+        <HeatAxis xScale={xScale} yScale={yScale} colorScale={colorScale} />
+      </g>
+    </svg>
   );
-});
+}
 
 //--------------------------------------------------------------------------------
 // Selection and Card
@@ -366,6 +340,12 @@ function ChartToolbar<T extends string>(props: SelectableHeatCardProps<T>) {
 export type SelectableHeatChartProps<T extends string> = HeatChartProps & SelectableHeatCardProps<T>;
 
 export function SelectableHeatChart<T extends string>(props: SelectableHeatChartProps<T>) {
+  const tooltipAtom = useMemo(() => atom<TooltipData | null>(null), []);
+  const setTooltip = useSetAtom(tooltipAtom);
+  const pointerLeave = useCallback(() => {
+    setTooltip(null);
+  }, [setTooltip]);
+
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
       <ChartToolbar
@@ -375,18 +355,24 @@ export function SelectableHeatChart<T extends string>(props: SelectableHeatChart
         onExport={props.onExport}
         options={props.options}
       />
-      <main>
-        <ParentSize>
-          {(parent) => (
+      <main onPointerLeave={pointerLeave}>
+        <ChartWithTooltip
+          sx={{ width: "100%" }}
+          tooltipAtom={tooltipAtom}
+          autoHeight
+          chart={({ width }) => (
             <HeatChart
               points={props.points}
               y_title={props.y_title}
               dateRange={props.dateRange}
-              label_title={props.label_title}
-              parentWidth={parent.width}
+              parentWidth={width}
+              setTooltip={setTooltip}
             />
           )}
-        </ParentSize>
+          TooltipContent={({ tooltip }) => (
+            <HeatTooltip yType={props.y_title} seriesLabel={props.label_title} tooltip={tooltip} />
+          )}
+        />
       </main>
     </Box>
   );

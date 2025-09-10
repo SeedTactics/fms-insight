@@ -498,9 +498,18 @@ namespace DebugMachineWatchApiServer
         }
         else if (e.LogType == LogType.Inspection)
         {
-          LogDB.ForceInspection(
-            mat: EventLogMaterial.FromLogMat(e.Material[0]),
-            inspType: e.ProgramDetails["InspectionType"],
+          LogDB.StoreInspectionDecision(
+            matID: e.Material[0].MaterialID,
+            proc: e.Material[0].Process,
+            insp: new PathInspection()
+            {
+              InspectionType = e.ProgramDetails["InspectionType"],
+              Counter = e.Program,
+              // Rest of fields are not used when storing, just making the decision
+              MaxVal = 100,
+              RandomFreq = 0,
+              TimeInterval = TimeSpan.Zero,
+            },
             utcNow: e.EndTimeUTC.Add(offset),
             inspect: bool.Parse(e.Result)
           );
