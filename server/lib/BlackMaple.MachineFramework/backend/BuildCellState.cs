@@ -1052,11 +1052,13 @@ public static class BuildCellState
 
   public static ImmutableDictionary<string, QueueInfo> CalcQueueRoles(
     IEnumerable<Job> jobs,
-    FMSSettings settings
+    FMSSettings settings,
+    IRepository db
   )
   {
-    var rawMatQueues = new HashSet<string>();
-    var inProcQueues = new HashSet<string>();
+    var (dbRawMat, dbInProc) = db.QueuesOnMostRecentSchedule();
+    var rawMatQueues = dbRawMat.ToBuilder();
+    var inProcQueues = dbInProc.ToBuilder();
 
     foreach (var j in jobs)
     {

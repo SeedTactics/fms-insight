@@ -179,6 +179,26 @@ namespace BlackMaple.FMSInsight.Tests
             .ToList()
         );
 
+      var (rawMatQ, inProcQ) = _jobDB.QueuesOnMostRecentSchedule();
+      rawMatQ.ShouldBe(
+        job1.Processes[0].Paths.Select(p => p.InputQueue).Where(q => !string.IsNullOrEmpty(q)).ToHashSet(),
+        ignoreOrder: true
+      );
+      inProcQ.ShouldBe(
+        job1.Processes.SelectMany(
+            (proc, procIdx) =>
+              proc.Paths.SelectMany<ProcPathInfo, string>(path =>
+                [
+                  .. procIdx > 0 ? [path.InputQueue] : Enumerable.Empty<string>(),
+                  .. procIdx < job1.Processes.Count - 1 ? [path.OutputQueue] : Enumerable.Empty<string>(),
+                ]
+              )
+          )
+          .Where(q => !string.IsNullOrEmpty(q))
+          .ToHashSet(),
+        ignoreOrder: true
+      );
+
       // Add second job
       var schId2 = "ZZ" + schId;
       var job2 = RandJob(job1.RouteStartUTC.AddHours(4)) with

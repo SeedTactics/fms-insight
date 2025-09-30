@@ -32,16 +32,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { useState, memo, useRef, useEffect, useMemo } from "react";
-import { Button, Stack, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
-import { ListItemText } from "@mui/material";
-import { ListItemIcon } from "@mui/material";
-import { MenuItem } from "@mui/material";
-import { Dialog } from "@mui/material";
-import { DialogActions } from "@mui/material";
-import { DialogContent } from "@mui/material";
-import { DialogTitle } from "@mui/material";
-import { CircularProgress } from "@mui/material";
-import { TextField } from "@mui/material";
+import {
+  Button,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  ListItemText,
+  ListItemIcon,
+  MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  CircularProgress,
+  TextField,
+} from "@mui/material";
 import { useReactToPrint } from "react-to-print";
 
 import { MaterialDetailTitle, PartIdenticon } from "./Material.js";
@@ -54,73 +62,84 @@ import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue, usePrintLabel } from "../../cell-status/material-details.js";
 import { castingNames } from "../../cell-status/names.js";
-import { atom, useAtom, useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { JobsBackend } from "../../network/backend.js";
 import { LogEntries } from "../LogEntry.js";
 
 export const bulkAddCastingToQueue = atom<string | null>(null);
 
-function AddAndPrintOnClientButton({
-  operator,
-  selectedCasting,
-  queue,
-  close,
-  qty,
-  disabled,
-}: {
-  operator: string | null;
-  selectedCasting: string | null;
-  queue: string | null;
-  close: () => void;
-  qty: number | null;
-  disabled: boolean;
-}) {
+type WaitingForMaterialAssignment = {
+  readonly selectedCasting: string;
+  readonly operator: string | null;
+  readonly materialIds: ReadonlySet<number>;
+};
+
+const waitingForMaterialAssignmentDialog = atom<WaitingForMaterialAssignment | null>(null);
+
+function WaitingForMaterialDialog() {
+  const [waiting, setWaiting] = useAtom(waitingForMaterialAssignmentDialog);
+  const st = useAtomValue(currentStatus);
   const printRef = useRef<HTMLDivElement>(null);
-  const [adding, setAdding] = useState<boolean>(false);
+  const printStarted = useRef<boolean>(false);
   const print = useReactToPrint({
     contentRef: printRef,
-    onAfterPrint: close,
+    onAfterPrint: () => setWaiting(null),
     ignoreGlobalStyles: true,
   });
-  const [materialToPrint, setMaterialToPrint] = useState<ReadonlyArray<api.IInProcessMaterial>>([]);
-  const [addNewCasting] = useAddNewCastingToQueue();
+
+  let materialToPrint = waiting ? st.material.filter((m) => waiting.materialIds.has(m.materialID)) : null;
+  if (materialToPrint?.length !== waiting?.materialIds.size) {
+    materialToPrint = null;
+  }
 
   useEffect(() => {
-    if (materialToPrint.length === 0) return;
-    print();
-  }, [materialToPrint, print]);
-
-  function addAndPrint() {
-    if (queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
-      setAdding(true);
-      addNewCasting({
-        casting: selectedCasting,
-        quantity: qty,
-        queue: queue,
-        operator: operator,
-        workorder: null,
-        onNewMaterial: (mats) => {
-          setMaterialToPrint(mats);
-        },
-        onError: () => {
-          close();
-        },
-      });
+    if (waiting === null) {
+      if (printStarted.current) {
+        printStarted.current = false;
+      }
+      return;
     }
-  }
+
+    if (printStarted.current || materialToPrint === null) return;
+    print();
+    printStarted.current = true;
+  }, [waiting, materialToPrint, printStarted, print]);
+
+  console.log(waiting, materialToPrint);
 
   return (
     <>
-      <Button color="primary" disabled={disabled || adding} onClick={addAndPrint}>
-        {adding ? <CircularProgress size={10} /> : undefined}
-        Add to {queue}
-      </Button>
+      <Dialog open={waiting !== null}>
+        <DialogTitle>Waiting for Material Assignment</DialogTitle>
+        <DialogContent>
+          {materialToPrint === null ? (
+            waiting === null ? (
+              <div />
+            ) : (
+              <Stack direction="column" spacing={2} mt="0.5em" mb="0.5em">
+                <CircularProgress color="secondary" />
+                <div>
+                  Waiting for material assignment. This could take a while if a download is currently in
+                  progress.
+                </div>
+              </Stack>
+            )
+          ) : (
+            <div>Printing...</div>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button color="primary" onClick={() => setWaiting(null)}>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
       <div style={{ display: "none" }}>
         <div ref={printRef}>
           <PrintedLabel
-            materialName={selectedCasting}
+            materialName={waiting?.selectedCasting}
             material={materialToPrint}
-            operator={operator}
+            operator={waiting?.operator}
             oneJobPerPage={true}
           />
         </div>
@@ -142,12 +161,14 @@ function JobsForCasting({ casting }: { casting: string }) {
   return (
     <Table size="small">
       <TableHead>
-        <TableCell>Job</TableCell>
-        <TableCell align="right">Plan</TableCell>
-        <TableCell align="right">Remaining</TableCell>
-        <TableCell align="right">Assigned</TableCell>
-        <TableCell align="right">Required</TableCell>
-        <TableCell align="right">Available</TableCell>
+        <TableRow>
+          <TableCell>Job</TableCell>
+          <TableCell align="right">Plan</TableCell>
+          <TableCell align="right">Remaining</TableCell>
+          <TableCell align="right">Assigned</TableCell>
+          <TableCell align="right">Required</TableCell>
+          <TableCell align="right">Available</TableCell>
+        </TableRow>
       </TableHead>
       <TableBody>
         {jobs.map((j, idx) => (
@@ -184,6 +205,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
   const fmsInfo = useAtomValue(fmsInformation);
   const printOnAdd = fmsInfo.usingLabelPrinterForSerials && fmsInfo.useClientPrinterForLabels;
   const [addNewCasting] = useAddNewCastingToQueue();
+  const setWaitingToPrint = useSetAtom(waitingForMaterialAssignmentDialog);
 
   const [selectedCasting, setSelectedCasting] = useState<string | null>(null);
   const [enteredQty, setQty] = useState<number | null>(null);
@@ -235,9 +257,33 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
     close();
   }
 
+  function addAndPrint() {
+    if (queue !== null && selectedCasting !== null && enteredQty !== null && !isNaN(enteredQty)) {
+      setAdding(true);
+      addNewCasting({
+        casting: selectedCasting,
+        quantity: enteredQty,
+        queue: queue,
+        operator: operator,
+        workorder: null,
+        onNewMaterial: (mats) => {
+          setWaitingToPrint({
+            selectedCasting: selectedCasting,
+            operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
+            materialIds: new Set(mats.map((m) => m.materialID)),
+          });
+          close();
+        },
+        onError: () => {
+          close();
+        },
+      });
+    }
+  }
+
   return (
     <>
-      <Dialog open={queue !== null} onClose={() => close()}>
+      <Dialog open={queue !== null} onClose={() => close()} maxWidth="md">
         <DialogTitle>Add Raw Material</DialogTitle>
         <DialogContent>
           <Stack direction="column" spacing={2} mt="0.5em">
@@ -248,18 +294,20 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
               select
               fullWidth
               label="Raw Material"
-              SelectProps={{
-                renderValue:
-                  selectedCasting === null
-                    ? undefined
-                    : () => (
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          <div style={{ marginRight: "0.5em" }}>
-                            <PartIdenticon part={selectedCasting} size={25} />
+              slotProps={{
+                select: {
+                  renderValue:
+                    selectedCasting === null
+                      ? undefined
+                      : () => (
+                          <div style={{ display: "flex", alignItems: "center" }}>
+                            <div style={{ marginRight: "0.5em" }}>
+                              <PartIdenticon part={selectedCasting} size={25} />
+                            </div>
+                            <div>{selectedCasting}</div>
                           </div>
-                          <div>{selectedCasting}</div>
-                        </div>
-                      ),
+                        ),
+                },
               }}
             >
               {castings.map(([casting, jobCnt], idx) => (
@@ -269,7 +317,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
                   </ListItemIcon>
                   <ListItemText
                     primary={casting}
-                    primaryTypographyProps={{ variant: "h4" }}
+                    slotProps={{ primary: { variant: "h4" } }}
                     secondary={
                       jobCnt === 0
                         ? "Not used by any current jobs"
@@ -284,7 +332,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
               type="number"
               label="Quantity"
               disabled={selectedCasting === null}
-              inputProps={{ min: "1" }}
+              slotProps={{ htmlInput: { min: "1" } }}
               value={enteredQty === null || isNaN(enteredQty) || enteredQty <= 0 ? "" : enteredQty}
               onChange={(e) => setQty(parseInt(e.target.value))}
             />
@@ -303,21 +351,21 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
         </DialogContent>
         <DialogActions>
           {printOnAdd ? (
-            <AddAndPrintOnClientButton
-              queue={queue}
-              selectedCasting={selectedCasting}
-              operator={fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator}
-              qty={enteredQty}
-              close={close}
+            <Button
+              color="primary"
               disabled={
+                adding ||
                 selectedCasting === null ||
                 enteredQty === null ||
                 isNaN(enteredQty) ||
-                enteredQty <= 0 ||
-                (!!fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
                   (enteredOperator === null || enteredOperator === ""))
               }
-            />
+              onClick={addAndPrint}
+            >
+              {adding ? <CircularProgress size={10} /> : undefined}
+              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to {queue}
+            </Button>
           ) : (
             <Button
               color="primary"
@@ -338,6 +386,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
           </Button>
         </DialogActions>
       </Dialog>
+      <WaitingForMaterialDialog />
     </>
   );
 });

@@ -1011,6 +1011,50 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public (ImmutableHashSet<string> rawMatQ, ImmutableHashSet<string> inProcQ) QueuesOnMostRecentSchedule()
+    {
+      using var trans = _connection.BeginTransaction();
+      var latestSchId = LatestJobScheduleId(trans);
+
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText =
+        "SELECT DISTINCT s.InputQueue FROM pathdata s "
+        + " JOIN jobs j ON s.UniqueStr = j.UniqueStr "
+        + " WHERE j.ScheduleId = $sid AND s.InputQueue IS NOT NULL AND s.Process = 1";
+      cmd.Transaction = trans;
+      cmd.Parameters.Add("sid", SqliteType.Text).Value = latestSchId;
+
+      var rawMatQ = ImmutableHashSet.CreateBuilder<string>();
+
+      using (var reader = cmd.ExecuteReader())
+      {
+        while (reader.Read())
+        {
+          rawMatQ.Add(reader.GetString(0));
+        }
+      }
+
+      cmd.CommandText =
+        "SELECT s.OutputQueue FROM pathdata s "
+        + " JOIN jobs j ON s.UniqueStr = j.UniqueStr "
+        + " WHERE j.ScheduleId = $sid AND s.OutputQueue IS NOT NULL AND s.Process < j.NumProcess"
+        + " UNION "
+        + "SELECT s.InputQueue FROM pathdata s "
+        + " JOIN jobs j ON s.UniqueStr = j.UniqueStr "
+        + " WHERE j.ScheduleId = $sid AND s.InputQueue IS NOT NULL AND s.Process > 1";
+
+      var inProcQ = ImmutableHashSet.CreateBuilder<string>();
+      using (var reader = cmd.ExecuteReader())
+      {
+        while (reader.Read())
+        {
+          inProcQ.Add(reader.GetString(0));
+        }
+      }
+
+      return (rawMatQ.ToImmutable(), inProcQ.ToImmutable());
+    }
+
     public ImmutableList<HistoricJob> LoadJobsBetween(string startingUniqueStr, string endingUniqueStr)
     {
       using (var cmd = _connection.CreateCommand())
