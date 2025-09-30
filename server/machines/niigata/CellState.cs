@@ -190,7 +190,11 @@ namespace BlackMaple.FMSInsight.Niigata
             .Select(m => m.Mat)
             .Concat(SetLongTool(pals))
             .ToImmutableList(),
-          Queues = BlackMaple.MachineFramework.BuildCellState.CalcQueueRoles(jobCache.AllJobs, _settings),
+          Queues = BlackMaple.MachineFramework.BuildCellState.CalcQueueRoles(
+            jobCache.AllJobs,
+            _settings,
+            logDB
+          ),
           Alarms = pals.Where(pal => pal.Status.Tracking.Alarm)
             .Select(pal => AlarmCodeToString(pal.Status.Master.PalletNum, pal.Status.Tracking.AlarmCode))
             .Concat(

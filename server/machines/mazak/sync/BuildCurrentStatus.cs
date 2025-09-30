@@ -468,7 +468,7 @@ namespace MazakMachineInterface
         Jobs = allJobs,
         Pallets = palletsByName.ToImmutable(),
         Material = material.ToImmutable(),
-        Queues = BuildCellState.CalcQueueRoles(allJobs.Values, fmsSettings),
+        Queues = BuildCellState.CalcQueueRoles(allJobs.Values, fmsSettings, jobDB),
         Alarms = (mazakData.Alarms ?? Enumerable.Empty<MazakAlarmRow>())
           .Where(a => !string.IsNullOrEmpty(a.AlarmMessage))
           .Select(a => a.AlarmMessage)

@@ -506,6 +506,7 @@ namespace BlackMaple.MachineFramework
     RecentHistoricData LoadRecentJobHistory(DateTime startUTC, IEnumerable<string> alreadyKnownSchIds = null);
     MostRecentSchedule LoadMostRecentSchedule();
     IEnumerable<string> StationGroupsOnMostRecentSchedule();
+    (ImmutableHashSet<string> rawMatQ, ImmutableHashSet<string> inProcQ) QueuesOnMostRecentSchedule();
     ImmutableList<Workorder> WorkordersById(string workorderId);
     ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(IReadOnlySet<string> workorderId);
     ImmutableList<Rebooking> LoadUnscheduledRebookings();
