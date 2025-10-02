@@ -118,21 +118,21 @@ function sortPartSummary(
       sortCol = (j) =>
         j.stationMins
           .toAscLazySeq()
-          .filter(([stat, _]) => stat !== "L/U")
+          .filter(([_, stat]) => !stat.isLoadUnload)
           .sumBy(([, t]) => t.elapsed);
       break;
     case "Active":
       sortCol = (j) =>
         j.stationMins
           .toAscLazySeq()
-          .filter(([stat, _]) => stat !== "L/U")
+          .filter(([_, stat]) => !stat.isLoadUnload)
           .sumBy(([_, t]) => t.active);
       break;
     case "Median":
       sortCol = (j) =>
         j.stationMins
           .toAscLazySeq()
-          .filter(([stat, _]) => stat !== "L/U")
+          .filter(([_, stat]) => !stat.isLoadUnload)
           .sumBy(([_, t]) => t.medianElapsed);
       break;
   }
@@ -458,7 +458,7 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
           {numFormat.format(
             part.stationMins
               .toAscLazySeq()
-              .filter(([stat, _]) => stat !== "L/U")
+              .filter(([_, stat]) => !stat.isLoadUnload)
               .sumBy(([_, t]) => t.active) / 60,
           )}
         </TableCell>
@@ -466,7 +466,7 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
           {numFormat.format(
             part.stationMins
               .toAscLazySeq()
-              .filter(([stat, _]) => stat !== "L/U")
+              .filter(([_, stat]) => !stat.isLoadUnload)
               .sumBy(([, t]) => t.elapsed) / 60,
           )}
         </TableCell>
@@ -474,7 +474,7 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
           {numFormat.format(
             part.stationMins
               .toAscLazySeq()
-              .filter(([stat, _]) => stat !== "L/U")
+              .filter(([_, stat]) => !stat.isLoadUnload)
               .sumBy(([, t]) => t.medianElapsed) / 60,
           )}
         </TableCell>
@@ -694,34 +694,41 @@ function copyPartsToClipboard(parts: ReadonlyArray<PartSummary>) {
   table += "<th>Completed Qty</th>";
   table += "<th>Abnormal Qty</th>";
   table += "<th>Workorders</th>";
-  table += "<th>Active Time (mins)</th>";
-  table += "<th>Elapsed Time (mins)</th>";
-  table += "<th>Total Median Time (mins)</th>";
+  table += "<th>Active Machine Time (mins)</th>";
+  table += "<th>Elapsed Machine Time (mins)</th>";
+  table += "<th>Total Median Machine Time (mins)</th>";
+  table += "<th>Active L/U Time (mins)</th>";
+  table += "<th>Elapsed L/U Time (mins)</th>";
+  table += "<th>Total Median L/U Time (mins)</th>";
   table += "</tr></thead>\n<tbody>\n";
 
   for (const p of parts) {
     table += "<tr>";
     table += `<td>${p.part}</td>`;
     table += `<td>${p.completedQty}</td>`;
+    table += `<td>${p.abnormalQty}</td>`;
     table += `<td>${p.workorders.toAscLazySeq().toRArray().join(";")}</td>`;
-    table += `<td>${p.stationMins
-      .toAscLazySeq()
-      .map(([st, t]) => `${st}: ${t.active}`)
-      .toRArray()
-      .join(";")}</td>`;
-    table += `<td>${p.stationMins
-      .toAscLazySeq()
-      .map(([st, t]) => `${st}: ${t.elapsed}`)
-      .toRArray()
-      .join(";")}</td>`;
-    table += `<td>${p.stationMins
-      .toAscLazySeq()
-      .map(([st, t]) => `${st}: ${t.medianElapsed}`)
-      .toRArray()
-      .join(";")}</td>`;
+    for (const lul of [false, true]) {
+      const stats = p.stationMins
+        .toAscLazySeq()
+        .filter(([_, stat]) => stat.isLoadUnload === lul)
+        .toRArray();
+
+      if (stats.length === 0) {
+        table += `<td>0</td><td>0</td><td>0</td>`;
+      } else if (stats.length === 1) {
+        table += `<td>${stats[0][1].active}</td>`;
+        table += `<td>${stats[0][1].elapsed}</td>`;
+        table += `<td>${stats[0][1].medianElapsed}</td>`;
+      } else {
+        table += `<td>${stats.map(([st, t]) => `${st}: ${t.active}`).join(";")}</td>`;
+        table += `<td>${stats.map(([st, t]) => `${st}: ${t.elapsed}`).join(";")}</td>`;
+        table += `<td>${stats.map(([st, t]) => `${st}: ${t.medianElapsed}`).join(";")}</td>`;
+      }
+    }
     table += "</tr>\n";
   }
   table += "</tbody></table>\n";
 
-  copy(table);
+  copy(table, { format: "text/html" });
 }

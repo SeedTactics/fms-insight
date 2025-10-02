@@ -44,6 +44,7 @@ export type PartSummary = {
   readonly stationMins: OrderedMap<
     string,
     {
+      readonly isLoadUnload: boolean;
       readonly active: number;
       readonly elapsed: number;
       readonly medianElapsed: number;
@@ -89,11 +90,13 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
       (c) => c.part,
       (c) => c.stationGroup,
       (c) => ({
+        isLoadUnload: c.isLabor,
         elapsed: c.elapsedMinsPerMaterial * c.material.length,
         active: c.activeMinutes,
         medianElapsed: c.medianCycleMinutes,
       }),
       (a, b) => ({
+        isLoadUnload: a.isLoadUnload || b.isLoadUnload,
         elapsed: a.elapsed + b.elapsed,
         active: a.active + b.active,
         medianElapsed: a.medianElapsed + b.medianElapsed,
