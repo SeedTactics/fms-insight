@@ -46,7 +46,7 @@
     "urlpattern-polyfill": "^10.1.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.37.0",
+    "@eslint/js": "^9.38.0",
     "@faker-js/faker": "^10.1.0",
     "@types/d3-interpolate-path": "^2.0.3",
     "@types/d3-sankey": "^0.12.4",
