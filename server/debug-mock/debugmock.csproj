@@ -6,6 +6,9 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" VersionOverride="9.0.10" />
+    <PackageReference Include="Microsoft.Data.Sqlite" VersionOverride="9.0.10" />
+  <PackageReference Include="System.Collections.Immutable" VersionOverride="9.0.10" />
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <PackageReference Include="NSwag.AspNetCore" />
   </ItemGroup>
