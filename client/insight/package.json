@@ -24,7 +24,7 @@
     "@react-spring/rafz": "^10.0.3",
     "@react-spring/web": "^10.0.3",
     "@seedtactics/immutable-collections": "^1.0.2",
-    "@yudiel/react-qr-scanner": "^2.3.1",
+    "@yudiel/react-qr-scanner": "^2.4.1",
     "copy-to-clipboard": "^3.3.3",
     "d3-interpolate-path": "^2.3.0",
     "d3-sankey": "^0.12.3",
@@ -67,6 +67,6 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
     "vite": "^7.1.10",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.3"
   }
 }
