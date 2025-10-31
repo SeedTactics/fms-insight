@@ -300,7 +300,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     // the error handling waits 2 seconds and tries again, so wait 3 seconds.
     // This checks that since the error is the same the OnNewCurrentStatus is not raised,
     // since it would get an error since OnNewCurrentStatus checks for task completion to be null
-    await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+    await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.Execution.CancellationToken);
 
     // clear the error, and then wait for a new current status since the error changed
     var newStatusTask = CreateTaskToWaitForNewStatus();
@@ -351,7 +351,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     // the error handling waits 2 seconds and tries again, so wait 3 seconds.
     // This checks that since the error is the same the OnNewCurrentStatus is not raised,
     // since it would get an error since OnNewCurrentStatus checks for task completion to be null
-    await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+    await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.Execution.CancellationToken);
 
     // clear the error, and then wait for the new current status again
     var newStatusTask = CreateTaskToWaitForNewStatus();

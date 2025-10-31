@@ -276,11 +276,11 @@ public sealed class ProxyDBspec : IDisposable
         Response.Create().WithStatusCode(200).WithBodyAsJson(false).WithDelay(TimeSpan.FromSeconds(1.5))
       );
 
-    await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
+    await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.Execution.CancellationToken);
 
     eventRaised.ShouldBeFalse();
 
-    await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
+    await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.Execution.CancellationToken);
 
     // responded with false
     eventRaised.ShouldBeFalse();
@@ -291,7 +291,7 @@ public sealed class ProxyDBspec : IDisposable
         Response.Create().WithStatusCode(200).WithBodyAsJson(true).WithDelay(TimeSpan.FromSeconds(1.5))
       );
 
-    await Task.Delay(TimeSpan.FromSeconds(4), TestContext.Current.CancellationToken);
+    await Task.Delay(TimeSpan.FromSeconds(4), TestContext.Current.Execution.CancellationToken);
 
     eventRaised.ShouldBeTrue();
   }

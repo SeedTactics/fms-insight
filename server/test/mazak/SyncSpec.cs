@@ -105,7 +105,7 @@ public sealed class MazakSyncSpec : IDisposable
     _mazakDB.OnNewEvent += Raise.Event<Action>();
 
     if (
-      await Task.WhenAny(complete.Task, Task.Delay(5000, TestContext.Current.CancellationToken))
+      await Task.WhenAny(complete.Task, Task.Delay(5000, TestContext.Current.Execution.CancellationToken))
       != complete.Task
     )
     {
