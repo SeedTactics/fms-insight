@@ -31,16 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import {
-  MutableRefObject,
-  PointerEvent,
-  useMemo,
-  useCallback,
-  useState,
-  useRef,
-  useEffect,
-  ReactNode,
-} from "react";
+import { PointerEvent, useMemo, useCallback, useState, useRef, useEffect, ReactNode, RefObject } from "react";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
@@ -173,7 +164,7 @@ function RecentSeries({
   hideTooltipRef,
 }: ChartScales & {
   cycles: ReadonlyArray<RecentCycle>;
-  hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
+  hideTooltipRef: RefObject<ReturnType<typeof setTimeout> | null>;
 }): ReactNode {
   const actualOffset = actualPlannedScale("actual") ?? 0;
   const setTooltip = useSetAtom(tooltipData);
@@ -254,7 +245,7 @@ function CurrentSeries({
 }: ChartScales & {
   now: Date;
   cycles: ReadonlyArray<CurrentCycle>;
-  hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
+  hideTooltipRef: RefObject<ReturnType<typeof setTimeout> | null>;
 }): ReactNode {
   const actualOffset = actualPlannedScale("actual") ?? 0;
   const setTooltip = useSetAtom(tooltipData);
@@ -335,7 +326,7 @@ function SimSeries({
   hideTooltipRef,
 }: ChartScales & {
   sim: ReadonlyArray<SimCycle>;
-  hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
+  hideTooltipRef: RefObject<ReturnType<typeof setTimeout> | null>;
 }): ReactNode {
   const plannedOffset = actualPlannedScale("planned") ?? 0;
 
@@ -480,7 +471,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   // ensure a re-render at least every 5 minutes, but reset the timer if the data changes
   const now = new Date();
   const [, forceRerender] = useState<number>(0);
-  const refreshRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (refreshRef.current !== null) clearTimeout(refreshRef.current);
     refreshRef.current = setTimeout(
@@ -492,7 +483,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   });
 
   const { xScale, yScale, actualPlannedScale, marginLeft } = useScales(cycles, current, now, width, height);
-  const hideTooltipRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTooltipRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (height <= 0 || width <= 0) return null;
 

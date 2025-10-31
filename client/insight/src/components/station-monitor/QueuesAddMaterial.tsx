@@ -103,6 +103,7 @@ type NewMaterialToQueueType =
       readonly kind: "JobAndProc";
       readonly jobUnique: string;
       readonly last_proc: number;
+      readonly workorder: string | null;
     }
   | { readonly kind: "RawMat"; readonly rawMatName: string };
 
@@ -178,6 +179,7 @@ function SelectJob({
                     kind: "JobAndProc",
                     jobUnique: j.jobUnique,
                     last_proc: j.machinedProcs[0].lastProc,
+                    workorder: j.workorder,
                   })
                 }
               >
@@ -251,6 +253,7 @@ function SelectJob({
                           kind: "JobAndProc",
                           jobUnique: j.jobUnique,
                           last_proc: p.lastProc,
+                          workorder: j.workorder,
                         })
                       }
                     >
@@ -593,7 +596,7 @@ export function AddToQueueButton({
                   jobUnique: newMaterialTy.jobUnique,
                   lastCompletedProcess: newMaterialTy.last_proc,
                   serial: newSerial ?? undefined,
-                  workorder: newWorkorder ?? null,
+                  workorder: newWorkorder ?? newMaterialTy?.workorder,
                   queue: toQueue ?? "",
                   queuePosition: -1,
                   operator: enteredOperator ?? operator,

@@ -157,6 +157,7 @@ namespace BlackMaple.MachineFramework
     public required string JobUnique { get; init; }
 
     public required int LastCompletedProcess { get; init; }
+    public string? Workorder { get; init; }
   }
 
   public record ScannedPotentialNewMaterial

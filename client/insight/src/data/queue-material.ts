@@ -45,6 +45,7 @@ import { last30Jobs } from "../cell-status/scheduled-jobs.js";
 export type SelectableJob = {
   readonly jobUnique: string;
   readonly job: Readonly<api.IJob> | null;
+  readonly workorder: string | null;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
     readonly details?: string;
@@ -116,6 +117,10 @@ function possibleJobs(
       return {
         jobUnique: uniq,
         job: job ?? null,
+        workorder:
+          LazySeq.of(procs)
+            .collect((p) => p.workorder)
+            .head() ?? null,
         machinedProcs: procs.map((proc) => ({
           lastProc: proc.lastCompletedProcess,
           details: job?.procsAndPaths[proc.lastCompletedProcess].paths.map(describePath).join(" | ") ?? "",

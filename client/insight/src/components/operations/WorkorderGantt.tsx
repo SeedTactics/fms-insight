@@ -150,7 +150,7 @@ function Series({
   yScale,
 }: { workorders: ReadonlyArray<Readonly<IActiveWorkorder>> } & ChartScales) {
   const setTooltip = useSetAtom(tooltipData);
-  const hideTooltipRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTooltipRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showTooltip(w: Readonly<IActiveWorkorder>): (e: PointerEvent<SVGGElement>) => void {
     return (e) => {
