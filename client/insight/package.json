@@ -19,7 +19,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/roboto": "^5.2.8",
-    "@mui/icons-material": "^7.3.4",
+    "@mui/icons-material": "^7.3.5",
     "@mui/material": "^7.3.4",
     "@react-spring/rafz": "^10.0.3",
     "@react-spring/web": "^10.0.3",
