@@ -3059,5 +3059,216 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes.Count.ShouldBe(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(1);
     }
+
+    [Test]
+    [Arguments(null, true)]
+    [Arguments(null, false)]
+    [Arguments("mycasting", true)]
+    [Arguments("mycasting", false)]
+    public void AllocatesPlannedQtyByPriority(string casting, bool differentQueues)
+    {
+      using var _logDB = _repoCfg.OpenConnection();
+      var read = new TestMazakData();
+
+      // job2 has higher priority and higher quantity (30)
+      // job1 has lower priority and lower quantity (15)
+      // thus, when adding castings which are enough for job1 but not job2, they
+      // should not be assigned to IF the queues are the same
+
+      var schRow1 = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuu1",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 15,
+        complete: 0
+      );
+      AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 0);
+
+      var schRow2 = AddSchedule(
+        read,
+        schId: 11,
+        unique: "uuu2",
+        part: "pppp",
+        numProc: 1,
+        pri: 8, // lower numbers of mazak is higher priority
+        plan: 30,
+        complete: 0
+      );
+      AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 0);
+
+      var j1 = new Job()
+      {
+        UniqueStr = "uuu1",
+        PartName = "pppp",
+        RouteStartUTC = DateTime.UtcNow.AddHours(-2),
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = differentQueues ? "queue1" : "thequeue",
+                Casting = casting,
+              }
+            ),
+          }
+        ),
+      };
+      var j2 = new Job()
+      {
+        UniqueStr = "uuu2",
+        PartName = "pppp",
+        RouteStartUTC = DateTime.UtcNow.AddHours(-5),
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = differentQueues ? "queue2" : "thequeue",
+                Casting = casting,
+              }
+            ),
+          }
+        ),
+      };
+
+      if (casting == null)
+      {
+        casting = "pppp";
+      }
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j1, j2), ScheduleId = "sch017" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      // add 20 to the job1 queue (which might also be the job2 queue)
+      var matIds = Enumerable
+        .Range(0, 20)
+        .Select(i => AddCasting(casting, j1.Processes[0].Paths[0].InputQueue))
+        .ToList();
+
+      _logDB
+        .GetMaterialInAllQueues()
+        .ToList()
+        .ShouldBeEquivalentTo(
+          matIds
+            .Select(
+              (id, idx) =>
+                new QueuedMaterial()
+                {
+                  MaterialID = id,
+                  Queue = differentQueues ? "queue1" : "thequeue",
+                  Position = idx,
+                  Unique = "",
+                  PartNameOrCasting = casting,
+                  NumProcesses = 1,
+                  AddTimeUTC = _now,
+                  NextProcess = 1,
+                  Paths = ImmutableDictionary<int, int>.Empty,
+                }
+            )
+            .ToList()
+        );
+
+      // now try and assign
+
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
+
+      // if the same queue, the no assignments.
+      // if different queues, 15 should be assigned to job1
+      if (differentQueues)
+      {
+        _logDB
+          .GetMaterialInAllQueues()
+          .ToList()
+          .ShouldBeEquivalentTo(
+            matIds
+              .Take(15)
+              .Select(
+                (id, idx) =>
+                  new QueuedMaterial()
+                  {
+                    MaterialID = id,
+                    Queue = j1.Processes[0].Paths[0].InputQueue,
+                    Position = idx,
+                    Unique = j1.UniqueStr,
+                    PartNameOrCasting = j1.PartName,
+                    NumProcesses = 1,
+                    AddTimeUTC = _now,
+                    NextProcess = 1,
+                    Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+                  }
+              )
+              .Concat(
+                matIds
+                  .Skip(15)
+                  .Select(
+                    (id, idx) =>
+                      new QueuedMaterial()
+                      {
+                        MaterialID = id,
+                        Queue = j1.Processes[0].Paths[0].InputQueue,
+                        Position = idx + 15,
+                        Unique = "",
+                        PartNameOrCasting = casting,
+                        NumProcesses = 1,
+                        AddTimeUTC = _now,
+                        NextProcess = 1,
+                        Paths = ImmutableDictionary<int, int>.Empty,
+                      }
+                  )
+              )
+              .ToList()
+          );
+
+        trans.Schedules.Count.ShouldBe(1);
+        trans.Schedules[0].Priority.ShouldBe(10);
+        trans.Schedules[0].Id.ShouldBe(10);
+        trans.Schedules[0].Processes.Count.ShouldBe(1);
+        trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(15);
+      }
+      else
+      {
+        _logDB
+          .GetMaterialInAllQueues()
+          .ToList()
+          .ShouldBeEquivalentTo(
+            matIds
+              .Select(
+                (id, idx) =>
+                  new QueuedMaterial()
+                  {
+                    MaterialID = id,
+                    Queue = differentQueues ? "queue1" : "thequeue",
+                    Position = idx,
+                    Unique = "",
+                    PartNameOrCasting = casting,
+                    NumProcesses = 1,
+                    AddTimeUTC = _now,
+                    NextProcess = 1,
+                    Paths = ImmutableDictionary<int, int>.Empty,
+                  }
+              )
+              .ToList()
+          );
+
+        trans.Schedules.Count.ShouldBe(0);
+      }
+    }
   }
 }
