@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { useState, useMemo, memo, useCallback, ReactNode } from "react";
-import { Table, Box, styled } from "@mui/material";
+import { Table, Box } from "@mui/material";
+import { styled } from "@mui/material/styles";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableRow } from "@mui/material";
@@ -230,7 +231,10 @@ interface RawMaterialJobTableProps {
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentSt = useAtomValue(currentStatus);
-  const jobs = useMemo(() => extractJobRawMaterial(currentSt.jobs, currentSt.material), [currentSt]);
+  const jobs = useMemo(
+    () => extractJobRawMaterial(currentSt.jobs, currentSt.material, props.queue),
+    [currentSt, props.queue],
+  );
 
   if (jobs.length === 0) return null;
 
