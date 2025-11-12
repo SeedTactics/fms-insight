@@ -148,12 +148,15 @@ function WaitingForMaterialDialog() {
   );
 }
 
-function JobsForCasting({ casting }: { casting: string }) {
+function JobsForCasting({ casting, queue }: { casting: string; queue: string }) {
   const currentSt = useAtomValue(currentStatus);
 
   const jobs = useMemo(
-    () => extractJobRawMaterial(currentSt.jobs, currentSt.material).filter((j) => j.rawMatName === casting),
-    [currentSt.jobs, currentSt.material, casting],
+    () =>
+      extractJobRawMaterial(currentSt.jobs, currentSt.material, queue).filter(
+        (j) => j.rawMatName === casting,
+      ),
+    [currentSt.jobs, currentSt.material, casting, queue],
   );
 
   if (jobs.length === 0) return null;
@@ -345,7 +348,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
               />
             ) : undefined}
             {selectedCasting !== null && queue !== null ? (
-              <JobsForCasting casting={selectedCasting} />
+              <JobsForCasting casting={selectedCasting} queue={queue} />
             ) : undefined}
           </Stack>
         </DialogContent>

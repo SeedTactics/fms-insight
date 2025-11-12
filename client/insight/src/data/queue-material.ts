@@ -181,17 +181,23 @@ export function extractJobRawMaterial(
     [key: string]: Readonly<api.IActiveJob>;
   },
   mats: Iterable<Readonly<api.IInProcessMaterial>>,
+  queue: string,
 ): ReadonlyArray<JobRawMaterialData> {
   return LazySeq.ofObject(jobs)
     .filter(([, j]) => j.remainingToStart === undefined || j.remainingToStart > 0)
-    .map(([, j]) => {
+    .collect(([, j]) => {
+      const paths = (j.procsAndPaths?.[0]?.paths ?? []).filter((p) => p.inputQueue === queue);
+      if (paths.length === 0) {
+        return null;
+      }
+
       const rawMatName: string =
-        LazySeq.of(j.procsAndPaths?.[0]?.paths ?? [])
+        LazySeq.of(paths)
           .collect((path) => (path.casting && path.casting !== "" ? path.casting : undefined))
           .head() ?? j.partName;
       return {
         job: j,
-        startingTime: LazySeq.of(j.procsAndPaths?.[0]?.paths ?? [])
+        startingTime: LazySeq.of(paths)
           .map((p) => p.simulatedStartingUTC)
           .minBy((d) => d),
         rawMatName: rawMatName,

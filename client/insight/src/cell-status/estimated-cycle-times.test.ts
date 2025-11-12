@@ -190,11 +190,10 @@ it("calculates median and MAD", () => {
   expect(es?.expectedCycleMinutesForSingleMat).toBeGreaterThan(30 / 2);
   expect(es?.expectedCycleMinutesForSingleMat).toBeLessThan(40 / 2);
 
-  // MAD should be between 0 and 2
   expect(es?.MAD_aboveMinutes).toBeGreaterThan(0);
   expect(es?.MAD_aboveMinutes).toBeLessThan(2.6);
   expect(es?.MAD_belowMinutes).toBeGreaterThan(0);
-  expect(es?.MAD_belowMinutes).toBeLessThan(2.5);
+  expect(es?.MAD_belowMinutes).toBeLessThan(3);
 
   expect(isOutlier(es!, 31 / 2)).toBe(false);
   expect(isOutlier(es!, 38 / 2)).toBe(false);

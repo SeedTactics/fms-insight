@@ -326,7 +326,7 @@ namespace MazakMachineInterface
         .OrderBy(s => s.SchRow.DueDate)
         .ThenBy(s => s.SchRow.Priority);
 
-      var skippedCastings = new HashSet<string>();
+      var skippedCastings = new HashSet<(string casting, string queue)>();
 
       foreach (var sch in schsToAssign)
       {
@@ -334,7 +334,7 @@ namespace MazakMachineInterface
         var started = CountCompletedOrMachiningStarted(sch);
         var curCastings = (schProc1.TargetMaterialCount ?? schProc1.SchProcRow.ProcessMaterialQuantity);
 
-        if (skippedCastings.Contains(schProc1.Casting))
+        if (skippedCastings.Contains((casting: schProc1.Casting, queue: schProc1.InputQueue)))
           continue;
 
         if (started + curCastings < sch.SchRow.PlanQuantity && curCastings < schProc1.SchProcRow.FixQuantity)
@@ -384,7 +384,7 @@ namespace MazakMachineInterface
             // if we tried to add but didn't have enough, dont let schedules with higher priority
             // snatch up these castings.  If the user wants to run it, they can edit priority
             // in mazak.
-            skippedCastings.Add(schProc1.Casting);
+            skippedCastings.Add((casting: schProc1.Casting, queue: schProc1.InputQueue));
           }
         }
       }
