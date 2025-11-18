@@ -93,7 +93,7 @@ export const BarcodeListener = memo(function BarcodeListener(): null {
         k.stopPropagation();
         k.preventDefault();
       } else if (scanActive && k.key && k.key.length === 1) {
-        if (/[a-zA-Z0-9-_,;]/.test(k.key)) {
+        if (/[a-zA-Z0-9-|_,;]/.test(k.key)) {
           scannedTxt += k.key;
           k.stopPropagation();
           k.preventDefault();
