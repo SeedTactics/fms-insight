@@ -30,9 +30,10 @@ Filename: {sys}\sc.exe; Parameters: "delete fmsinsightmazakproxy" ; Flags: runhi
 [Registry]
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
   ValueName: "Port"; ValueData: "{code:GetPort}"; \
+  Flags: createvalueifdoesntexist uninsdeletekey
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
   ValueName: "DBType"; ValueData: "{code:GetDBType}"; \
-Flags: createvalueifdoesntexist uninsdeletekey
+  Flags: createvalueifdoesntexist uninsdeletekey
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
   ValueName: "OleDbDatabasePath"; ValueData: "{code:GetDatabasePath}"; \
   Flags: createvalueifdoesntexist uninsdeletekey
@@ -45,7 +46,7 @@ Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: s
 
 [Code]
 var
-  PortPage: TInputOptionWizardPage;
+  PortPage: TInputQueryWizardPage;
   VersionPage: TInputOptionWizardPage;
   DatabasePage: TInputDirWizardPage;
   LogCSVPage: TInputDirWizardPage;
@@ -75,12 +76,11 @@ begin
   VersionPage.Add('Version E');
   VersionPage.Add('Web');
 
-  PortPage := CreateInputOptionPage(VersionPage.ID,
-    'Mazak Proxy Port', 'Please select the port for the Mazak Proxy Service',
-    'Select the port number that the Mazak Proxy Service will listen on');
-  PortPage.Add("Port: ", False);
+  PortPage := CreateInputQueryPage(VersionPage.ID,
+    'Mazak Proxy Port', 'Select the port',
+    'Please select the port for the Mazak Proxy Service');
+  PortPage.Add('Port: ', False);
   PortPage.Values[0] := '5200';
-
 
   DatabasePage := CreateInputDirPage(PortPage.ID,
     'Select Mazak Database Path', 'Where are the Mazak databases located?',
@@ -108,28 +108,12 @@ begin
       exit;
     end;
 
-  if PageID = DatabasePage.ID then begin
-    if VersionPage.Values[2] then begin
-      Result := True
-    end else begin
-      Result := False
-    end;
-  end;
-
   if PageID = LogCSVPage.ID then begin
     if VersionPage.Values[0] then begin
       Result := True
     end else begin
       Result := False
     end
-  end;
-
-  if PageID = LoadCSVPage.ID then begin
-    if VersionPage.Values[2] then begin
-      Result := True
-    end else begin
-      Result := False
-    end;
   end;
 end;
 
@@ -160,5 +144,5 @@ end;
 
 function GetPort(Param: string): string;
 begin
-  Result := PortPage.Values[0].Trim();
+  Result := PortPage.Values[0];
 end;
