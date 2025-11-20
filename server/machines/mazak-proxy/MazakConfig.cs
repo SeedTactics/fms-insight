@@ -38,6 +38,7 @@ namespace MazakMachineInterface;
 public class MazakConfig
 {
   public MazakDbType DBType { get; init; }
+  public int Port { get; init; } = 5200;
   public string SQLConnectionString { get; init; }
   public string OleDbDatabasePath { get; init; }
   public string LogCSVPath { get; init; }
@@ -55,6 +56,7 @@ public class MazakConfig
     {
       return new MazakConfig()
       {
+        Port = int.TryParse(key.GetValue("Port", "5200").ToString(), out var p) ? p : 5200,
         DBType = (MazakDbType)Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString()),
         SQLConnectionString = key.GetValue("SQLConnectionString", DefaultConnectionStr).ToString(),
         OleDbDatabasePath = key.GetValue("OleDbDatabasePath", "c:\\Mazak\\NFMS\\DB").ToString(),
@@ -75,6 +77,16 @@ public class MazakConfig
 
       return new MazakConfig()
       {
+        Port = int.TryParse(
+          RegistryWOW6432.GetRegKey32(
+            RegHive.HKEY_LOCAL_MACHINE,
+            @"Software\SeedTactics\FMS Insight Mazak Proxy",
+            "Port"
+          ),
+          out var p
+        )
+          ? p
+          : 5200,
         DBType = string.IsNullOrEmpty(dbTy)
           ? MazakDbType.MazakWeb
           : (MazakDbType)Enum.Parse(typeof(MazakDbType), dbTy),

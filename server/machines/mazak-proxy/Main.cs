@@ -65,6 +65,7 @@ public class ProxyService : System.ServiceProcess.ServiceBase
       var svc = new ProxyService(
         new MazakConfig()
         {
+          Port = 5200,
           DBType = MazakDbType.MazakVersionE,
           OleDbDatabasePath = "c:\\Mazak\\NFMS\\DB",
           SQLConnectionString = MazakConfig.DefaultConnectionStr,
@@ -97,6 +98,7 @@ public class ProxyService : System.ServiceProcess.ServiceBase
           "",
           [
             "Starting Mazak Proxy Service with config: ",
+            " Port: " + _cfg.Port,
             " DBType: " + _cfg.DBType,
             " OleDbDatabasePath: " + _cfg.OleDbDatabasePath,
             " LogCSVPath: " + _cfg.LogCSVPath,
@@ -118,7 +120,7 @@ public class ProxyService : System.ServiceProcess.ServiceBase
       _db = new OpenDatabaseKitDB(_cfg, _load);
       _db.OnNewEvent += OnNewEvent;
 
-      _server = new HttpServer("http://*:5200/");
+      _server = new HttpServer($"http://*:{_cfg.Port}/");
 
       _server.AddLoadingHandler("/all-data", _db.LoadAllData);
       _server.AddPostHandler<string, MazakAllDataAndLogs>("/all-data-and-logs", _db.LoadAllDataAndLogs);

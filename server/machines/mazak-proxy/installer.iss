@@ -29,6 +29,8 @@ Filename: {sys}\sc.exe; Parameters: "delete fmsinsightmazakproxy" ; Flags: runhi
 
 [Registry]
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
+  ValueName: "Port"; ValueData: "{code:GetPort}"; \
+Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
   ValueName: "DBType"; ValueData: "{code:GetDBType}"; \
 Flags: createvalueifdoesntexist uninsdeletekey
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
@@ -43,6 +45,7 @@ Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: s
 
 [Code]
 var
+  PortPage: TInputOptionWizardPage;
   VersionPage: TInputOptionWizardPage;
   DatabasePage: TInputDirWizardPage;
   LogCSVPage: TInputDirWizardPage;
@@ -72,7 +75,14 @@ begin
   VersionPage.Add('Version E');
   VersionPage.Add('Web');
 
-  DatabasePage := CreateInputDirPage(VersionPage.ID,
+  PortPage := CreateInputOptionPage(VersionPage.ID,
+    'Mazak Proxy Port', 'Please select the port for the Mazak Proxy Service',
+    'Select the port number that the Mazak Proxy Service will listen on');
+  PortPage.Add("Port: ", False);
+  PortPage.Values[0] := '5200';
+
+
+  DatabasePage := CreateInputDirPage(PortPage.ID,
     'Select Mazak Database Path', 'Where are the Mazak databases located?',
     'Select the folder where the Mazak transaction and read-only databases are located',
     False, '');
@@ -146,4 +156,9 @@ end;
 function GetLoadCSVPath(Param: string): string;
 begin
   Result := LoadCSVPage.Values[0]
+end;
+
+function GetPort(Param: string): string;
+begin
+  Result := PortPage.Values[0].Trim();
 end;
