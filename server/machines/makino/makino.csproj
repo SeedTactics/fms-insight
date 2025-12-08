@@ -3,7 +3,7 @@
     <AssemblyName>BlackMaple.FMSInsight.Makino</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Makino</PackageId>
     <OutputType>Library</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Title>SeedTactics FMS Insight Makino Backend</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>

@@ -3,7 +3,7 @@
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
     <OutputType>Library</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Title>SeedTactics FMS Insight for Flexibile Manufacturing Systems</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -26,15 +26,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="..\..\..\client\insight\dist\**\*">
-      <PackagePath>contentFiles\any\net9.0\wwwroot</PackagePath>
+      <PackagePath>contentFiles\any\net10.0\wwwroot</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <Content Include="..\..\..\client\insight\package.json">
-      <PackagePath>contentFiles\any\net9.0\insight-client\package.json</PackagePath>
+      <PackagePath>contentFiles\any\net10.0\insight-client\package.json</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <Content Include="..\..\..\client\insight\src\**\*">
-      <PackagePath>contentFiles\any\net9.0\insight-client\src</PackagePath>
+      <PackagePath>contentFiles\any\net10.0\insight-client\src</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
   </ItemGroup>
@@ -48,6 +48,5 @@
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="CsvHelper" />
-    <PackageReference Include="System.Collections.Immutable" />
   </ItemGroup>
 </Project>

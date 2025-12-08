@@ -3,7 +3,7 @@
     <AssemblyName>BlackMaple.FMSInsight.Niigata</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Niigata</PackageId>
     <OutputType>Library</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Title>Niigata backend for FMS Insight</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>

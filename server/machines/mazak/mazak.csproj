@@ -3,7 +3,7 @@
     <AssemblyName>BlackMaple.FMSInsight.Mazak</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Mazak</PackageId>
     <OutputType>Library</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Title>SeedTactcs FMS Insight Mazak Backend</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>
@@ -25,15 +25,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="..\mazak-proxy\mazak-proxy.csproj">
-      <PackagePath>contentFiles\any\net9.0\mazak-proxy\mazak-proxy.csproj</PackagePath>
+      <PackagePath>contentFiles\any\net10.0\mazak-proxy\mazak-proxy.csproj</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <Content Include="..\mazak-proxy\installer.iss">
-      <PackagePath>contentFiles\any\net9.0\mazak-proxy\installer.iss</PackagePath>
+      <PackagePath>contentFiles\any\net10.0\mazak-proxy\installer.iss</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <Content Include="..\mazak-proxy\*.cs">
-      <PackagePath>contentFiles\any\net9.0\mazak-proxy</PackagePath>
+      <PackagePath>contentFiles\any\net10.0\mazak-proxy</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
   </ItemGroup>

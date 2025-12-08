@@ -2,14 +2,13 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework.DebugMock</PackageId>
     <AssemblyName>BlackMaple.MachineFramework.DebugMock</AssemblyName>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
-    <PackageReference Include="System.Collections.Immutable" />
     <PackageReference Include="NSwag.AspNetCore" />
   </ItemGroup>
 </Project>

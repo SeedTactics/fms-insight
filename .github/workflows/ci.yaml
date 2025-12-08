@@ -33,7 +33,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: server\test\bin\Debug\net9.0\TestResults\server-cov.xml
+          files: server\test\bin\Debug\net10.0\TestResults\server-cov.xml
           flags: server-unittests
 
       - name: Reverse proxy build

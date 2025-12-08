@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.FMSInsight.Tests</PackageId>
     <AssemblyName>BlackMaple.FMSInsight.Tests</AssemblyName>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
