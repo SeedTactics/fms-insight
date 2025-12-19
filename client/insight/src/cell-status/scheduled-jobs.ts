@@ -35,7 +35,7 @@ import type { ServerEventAndTime } from "./loading.js";
 import { IHistoricData, IHistoricJob, IRecentHistoricData } from "../network/api.js";
 import { HashMap, HashSet, LazySeq } from "@seedtactics/immutable-collections";
 import { Atom, atom } from "jotai";
-import { atomFamily } from "jotai/utils";
+import { atomFamily } from "jotai-family";
 
 const last30JobsRW = atom(HashMap.empty<string, Readonly<IHistoricJob>>());
 export const last30Jobs: Atom<HashMap<string, Readonly<IHistoricJob>>> = last30JobsRW;

@@ -33,7 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { addDays, addMinutes, startOfDay, startOfWeek } from "date-fns";
 import { Atom, atom, WritableAtom } from "jotai";
-import { atomWithStorage, atomFamily } from "jotai/utils";
+import { atomWithStorage } from "jotai/utils";
+import { atomFamily } from "jotai-family";
 
 export type Last30ChartStart =
   | "StartOfToday"

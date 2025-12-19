@@ -57,9 +57,10 @@ import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
 import { useSetTitle } from "../routes.js";
 import { atom, useAtom, useAtomValue } from "jotai";
-import { atomWithStorage, atomFamily } from "jotai/utils";
+import { atomWithStorage } from "jotai/utils";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
 import { durationToSeconds } from "../../util/parseISODuration.js";
+import { atomFamily } from "jotai-family";
 
 const machineCostPerYear = atomWithStorage<MachineCostPerYear>("MachineCostPerYear", {});
 const automationCostPerYear = atomWithStorage<number | null>("AutomationCostPerYear", null);
