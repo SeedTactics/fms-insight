@@ -136,10 +136,14 @@ jobs:
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
       - name: Publish Niigata
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
-      - name: Publish Insight Client Package
-        run: pnpm --dir client/insight publish --access public ${{ env.RELEASE_TAG }}
+
+      - name: Build Insight client package for publishing
+        run: pnpm --dir client/insight run build:package
+      - name: Publish Insight client package
+        run: pnpm --dir client/insight publish --access public ${{ env.RELEASE_TAG }} --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
 
       # ----------------------------------------------------------
       # Create Release
