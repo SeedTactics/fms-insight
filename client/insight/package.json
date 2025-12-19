@@ -5,6 +5,9 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
+  "repository": {
+    "url": "https://github.com/seedtactics/fms-insight"
+  },
   "scripts": {
     "build": "tsc --noEmit --skipLibCheck && vite build",
     "start": "vite",
@@ -12,7 +15,11 @@
     "test:watch": "vitest watch",
     "nswag": "./node_modules/nswag/bin/nswag.js aspnetcore2openapi /project:../../server/debug-mock /output:../../server/fms-insight-api.json && ./node_modules/nswag/bin/nswag.js openapi2tsclient /UseAbortSignal:true /input:../../server/fms-insight-api.json /output:src/network/api.ts"
   },
-  "packageManager": "pnpm@10.9.0",
+  "packageManager": "pnpm@10.25.0",
+  "files": [
+    "src",
+    "docs"
+  ],
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
