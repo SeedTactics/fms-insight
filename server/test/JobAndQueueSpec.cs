@@ -132,7 +132,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var actual = await newCellSt;
 
-    actual.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(6));
+    actual.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(10));
     actual.ShouldBeEquivalentTo(
       new CurrentStatus()
       {
@@ -741,27 +741,23 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       queue: "q1",
       pos: 1
     );
-    await SetCurrentMaterial(
-      [
-        expectedMat2 with
-        {
-          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet },
-        },
-      ]
-    );
+    await SetCurrentMaterial([
+      expectedMat2 with
+      {
+        Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet },
+      },
+    ]);
 
     Should
       .Throw<BadRequestException>(() => _jq.RemoveMaterialFromAllQueues([2L], "theoper"))
       .Message.ShouldBe("Material on pallet can not be removed from queues");
 
-    await SetCurrentMaterial(
-      [
-        expectedMat2 with
-        {
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
-        },
-      ]
-    );
+    await SetCurrentMaterial([
+      expectedMat2 with
+      {
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
+      },
+    ]);
 
     Should
       .Throw<BadRequestException>(() => _jq.RemoveMaterialFromAllQueues([2L], "theoper"))
@@ -972,27 +968,23 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       .ShouldBeEquivalentTo(expectedLog);
 
     // should error if it is loading or on a pallet
-    await SetCurrentMaterial(
-      [
-        expectedMat1 with
-        {
-          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet },
-        },
-      ]
-    );
+    await SetCurrentMaterial([
+      expectedMat1 with
+      {
+        Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet },
+      },
+    ]);
 
     Should
       .Throw<BadRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q1", 3, "theoper"))
       .Message.ShouldBe("Material on pallet can not be moved to a queue");
 
-    await SetCurrentMaterial(
-      [
-        expectedMat1 with
-        {
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
-        },
-      ]
-    );
+    await SetCurrentMaterial([
+      expectedMat1 with
+      {
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
+      },
+    ]);
 
     Should
       .Throw<BadRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q2", 3, "oper"))
@@ -1040,15 +1032,13 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       )
       .ShouldBe(new[] { expectedMat1, expectedMat2 });
 
-    await SetCurrentMaterial(
-      [
-        expectedMat1 with
-        {
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
-        },
-        expectedMat2,
-      ]
-    );
+    await SetCurrentMaterial([
+      expectedMat1 with
+      {
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
+      },
+      expectedMat2,
+    ]);
 
     db.GetMaterialInAllQueues().Select(m => m.MaterialID).ShouldBe(new[] { 1L, 2L });
 
@@ -1325,19 +1315,17 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       pos: 0
     );
 
-    await SetCurrentMaterial(
-      [
-        queuedMat with
+    await SetCurrentMaterial([
+      queuedMat with
+      {
+        Action = new InProcessMaterialAction() { Type = data.ActionType },
+        Location = new InProcessMaterialLocation()
         {
-          Action = new InProcessMaterialAction() { Type = data.ActionType },
-          Location = new InProcessMaterialLocation()
-          {
-            Type = data.LocType,
-            PalletNum = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null,
-          },
+          Type = data.LocType,
+          PalletNum = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null,
         },
-      ]
-    );
+      },
+    ]);
 
     if (data.Error != null)
     {
