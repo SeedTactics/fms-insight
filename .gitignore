@@ -3,6 +3,7 @@
 **/obj/
 node_modules/
 client/insight/dist/
+client/insight/docs/
 client/insight/projdist/
 client/backup-viewer/.tsbuildinfo
 client/backup-viewer/build/

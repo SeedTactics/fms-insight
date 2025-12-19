@@ -6,10 +6,25 @@
   "type": "module",
   "main": "./src/index.ts",
   "repository": {
-    "url": "https://github.com/seedtactics/fms-insight"
+    "url": "https://github.com/seedtactics/fms-insight.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "exports": {
+    "./cell-status/*": "./dist/cell-status/*.js",
+    "./components/*": "./dist/components/*.js",
+    "./components/analysis/*": "./dist/components/analysis/*.js",
+    "./components/operations/*": "./dist/components/operations/*.js",
+    "./components/quality/*": "./dist/components/quality/*.js",
+    "./components/station-monitor/*": "./dist/components/station-monitor/*.js",
+    "./data/*": "./dist/data/*.js",
+    "./network/*": "./dist/network/*.js",
+    "./util/*": "./dist/util/*.js"
   },
   "scripts": {
     "build": "tsc --noEmit --skipLibCheck && vite build",
+    "build:package": "tsc --project tsconfig.publish.json && cp -Tr ../../docs ./docs",
     "start": "vite",
     "test": "vitest run",
     "test:watch": "vitest watch",
@@ -17,7 +32,7 @@
   },
   "packageManager": "pnpm@10.25.0",
   "files": [
-    "src",
+    "dist",
     "docs"
   ],
   "dependencies": {

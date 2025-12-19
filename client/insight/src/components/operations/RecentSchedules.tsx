@@ -64,21 +64,22 @@ import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
+import { StyledComponent } from "@emotion/styled";
 
-export const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
-  (props: { $darkRow?: boolean }) => ({
-    "& > *": {
-      borderBottom: "unset",
-    },
-    ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
-  }),
-);
+export const JobTableRow: StyledComponent<{ $darkRow?: boolean; children?: ReactNode }> = styled(TableRow, {
+  shouldForwardProp: (prop) => prop.toString()[0] !== "$",
+})((props: { $darkRow?: boolean }) => ({
+  "& > *": {
+    borderBottom: "unset",
+  },
+  ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
+}));
 
-export const JobDetailRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
-  (props: { $darkRow?: boolean }) => ({
-    ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
-  }),
-);
+export const JobDetailRow: StyledComponent<{ $darkRow?: boolean; children?: ReactNode }> = styled(TableRow, {
+  shouldForwardProp: (prop) => prop.toString()[0] !== "$",
+})((props: { $darkRow?: boolean }) => ({
+  ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
+}));
 
 interface JobsRowProps {
   readonly job: ScheduledJobDisplay;
