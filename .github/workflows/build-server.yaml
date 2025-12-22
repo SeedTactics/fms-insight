@@ -17,13 +17,12 @@ on:
           - minor
           - major
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       # ----------------------------------------------------------
@@ -35,6 +34,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "latest"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Corepack
         run: corepack enable
