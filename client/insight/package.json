@@ -3,7 +3,6 @@
   "version": "16.4.1",
   "license": "BSD-3-Clause",
   "type": "module",
-  "main": "./src/index.ts",
   "repository": {
     "url": "https://github.com/seedtactics/fms-insight.git"
   },
