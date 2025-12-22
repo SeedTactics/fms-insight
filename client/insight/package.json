@@ -8,9 +8,6 @@
   "repository": {
     "url": "https://github.com/seedtactics/fms-insight.git"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
   "exports": {
     "./cell-status/*": "./dist/cell-status/*.js",
     "./components/*": "./dist/components/*.js",

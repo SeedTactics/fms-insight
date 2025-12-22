@@ -204,7 +204,7 @@ client is compiled using vite and the resulting
 HTML and Javascript is included in the server builds. The code lives in
 [client/insight](client/insight/).
 
-I use VSCode as an editor and there are VSCode tasks for launching parcel in
+I use VSCode as an editor and there are VSCode tasks for launching vite in
 development/watch mode and a debug configuration for launching Chrome. There
 is also a mock server which I use while developing the client. The mock
 server lives in [server/debug-mock](server/debug-mock/).

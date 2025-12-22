@@ -17,6 +17,10 @@ on:
           - minor
           - major
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
@@ -142,7 +146,6 @@ jobs:
       - name: Publish Insight client package
         run: pnpm --dir client/insight publish --access public ${{ env.RELEASE_TAG }} --provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
       # ----------------------------------------------------------
