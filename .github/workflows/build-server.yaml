@@ -132,6 +132,14 @@ jobs:
       # Publish
       # ----------------------------------------------------------
 
+      - name: Build Insight client package for publishing
+        run: pnpm --dir client/insight run build:package
+      - name: Publish Insight client package
+        run: pnpm publish --access public --tag ${{ env.RELEASE_TAG }} --provenance
+        working-directory: client/insight
+        env:
+          NPM_CONFIG_PROVENANCE: true
+
       - name: Publish MachineFramework
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
       - name: Publish Mazak
@@ -140,14 +148,6 @@ jobs:
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
       - name: Publish Niigata
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
-
-      - name: Build Insight client package for publishing
-        run: pnpm --dir client/insight run build:package
-      - name: Publish Insight client package
-        run: pnpm publish --access public --tag ${{ env.RELEASE_TAG }} --provenance
-        working-directory: client/insight
-        env:
-          NPM_CONFIG_PROVENANCE: true
 
       # ----------------------------------------------------------
       # Create Release
