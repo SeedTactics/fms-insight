@@ -132,6 +132,10 @@ jobs:
       # Publish
       # ----------------------------------------------------------
 
+      # Try updating npm to get OIDC support?  Was suggested in several issues
+      - name: Upgrade npm for OIDC support
+        run: npm install -g npm@latest
+
       - name: Build Insight client package for publishing
         run: pnpm --dir client/insight run build:package
       - name: Publish Insight client package
