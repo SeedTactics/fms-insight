@@ -144,7 +144,7 @@ jobs:
       - name: Build Insight client package for publishing
         run: pnpm --dir client/insight run build:package
       - name: Publish Insight client package
-        run: pnpm --dir client/insight publish --access public ${{ env.RELEASE_TAG }} --provenance
+        run: pnpm --dir client/insight publish --access public --tag ${{ env.RELEASE_TAG }} --provenance
         env:
           NPM_CONFIG_PROVENANCE: true
 
