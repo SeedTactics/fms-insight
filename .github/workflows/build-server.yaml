@@ -17,6 +17,10 @@ on:
           - minor
           - major
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
@@ -69,7 +73,10 @@ jobs:
         if: startsWith(github.event.inputs.release-type, 'pre') != true
         shell: bash
         working-directory: client/insight
-        run: echo "NEW_VERSION=$(npm --no-git-tag-version version $RELEASE_TYPE)" >> $GITHUB_ENV
+        run: |
+          echo "NEW_VERSION=$(npm --no-git-tag-version version $RELEASE_TYPE)" >> $GITHUB_ENV
+          echo "RELEASE_TAG=latest" >> $GITHUB_ENV
+
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release-type }}
 
@@ -77,7 +84,9 @@ jobs:
         if: startsWith(github.event.inputs.release-type, 'pre')
         shell: bash
         working-directory: client/insight
-        run: echo "NEW_VERSION=$(npm --no-git-tag-version --preid=beta version $RELEASE_TYPE)" >> $GITHUB_ENV
+        run: |
+          echo "NEW_VERSION=$(npm --no-git-tag-version --preid=beta version $RELEASE_TYPE)" >> $GITHUB_ENV
+          echo "RELEASE_TAG=beta" >> $GITHUB_ENV
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release-type }}
 
@@ -131,6 +140,13 @@ jobs:
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
       - name: Publish Niigata
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
+
+      - name: Build Insight client package for publishing
+        run: pnpm --dir client/insight run build:package
+      - name: Publish Insight client package
+        run: pnpm --dir client/insight publish --access public --tag ${{ env.RELEASE_TAG }} --provenance
+        env:
+          NPM_CONFIG_PROVENANCE: true
 
       # ----------------------------------------------------------
       # Create Release

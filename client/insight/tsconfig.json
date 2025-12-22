@@ -12,7 +12,6 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "allowImportingTsExtensions": true,
 
     "strict": true,
     "forceConsistentCasingInFileNames": true,
