@@ -4,7 +4,7 @@
   "license": "BSD-3-Clause",
   "type": "module",
   "repository": {
-    "url": "https://github.com/seedtactics/fms-insight.git"
+    "url": "https://github.com/SeedTactics/fms-insight"
   },
   "exports": {
     "./cell-status/*": "./dist/cell-status/*.js",
