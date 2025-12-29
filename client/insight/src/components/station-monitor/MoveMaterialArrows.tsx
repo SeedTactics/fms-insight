@@ -133,9 +133,11 @@ const MoveMaterialArrowCtx = createContext<MoveMaterialArrowContext | undefined>
 export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContainer({
   children,
   hideArrows,
+  whiteBackground,
 }: {
   children?: ReactNode;
   hideArrows?: boolean;
+  whiteBackground?: boolean;
 }) {
   const container = useRef<HTMLDivElement | null>(null);
   const [nodes, setNodes] = useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement | null>>>(
@@ -168,6 +170,8 @@ export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContain
           height: "100%",
           top: 0,
           right: 0,
+          zIndex: -1,
+          backgroundColor: whiteBackground ? "white" : "#F8F8F8",
         }}
       >
         <defs>
