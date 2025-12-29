@@ -129,7 +129,15 @@ const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
   if (!fsize) return { fontSize: "1.25rem" };
   switch (fsize) {
     case "normal":
-      return { fontSize: "1.5rem" };
+      return {
+        fontSize: "1rem",
+        [theme.breakpoints.up("md")]: {
+          fontSize: "1.25rem",
+        },
+        [theme.breakpoints.up("lg")]: {
+          fontSize: "1.5rem",
+        },
+      };
     case "large":
       return {
         fontSize: "1.5rem",
@@ -162,7 +170,12 @@ const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
   if (!fsize) return { fontSize: "0.75rem" };
   switch (fsize) {
     case "normal":
-      return { fontSize: "1rem" };
+      return {
+        fontSize: "0.75rem",
+        [theme.breakpoints.up("md")]: {
+          fontSize: "1rem",
+        },
+      };
     case "large":
       return {
         fontSize: "1rem",

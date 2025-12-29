@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, John Lenz
+/* Copyright (c) 2025, John Lenz
 
 All rights reserved.
 
@@ -756,16 +756,18 @@ function useGridLayout({
       cols += " 4.5em";
     }
 
+    const equalRows = `minmax(calc((100vh - 64px) / ${maxNumFaces}), max-content)`;
     for (let i = 0; i < maxNumFaces; i++) {
-      rows += `"${colNames} palface${i} completed" 1fr\n`;
+      const rowSize = i === maxNumFaces - 1 ? `1fr` : equalRows;
+      rows += `"${colNames} palface${i} completed" ${rowSize}\n`;
     }
   } else {
     cols = "1fr";
-    for (let i = 0; i < numMatCols; i++) {
-      rows += `"mat${i}" minmax(134px, max-content)\n`;
-    }
     for (let i = 0; i < maxNumFaces; i++) {
       rows += `"palface${i}" minmax(134px, max-content)\n`;
+    }
+    for (let i = 0; i < numMatCols; i++) {
+      rows += `"mat${i}" minmax(134px, max-content)\n`;
     }
     rows += '"completed" minmax(134px, max-content)\n';
   }
@@ -814,12 +816,11 @@ export function LoadStation(props: LoadStationProps) {
   });
 
   return (
-    <MoveMaterialArrowContainer hideArrows={!fillViewPort}>
+    <MoveMaterialArrowContainer hideArrows={!fillViewPort} whiteBackground={props.whiteBackground}>
       <Box
         component="main"
         sx={{
           width: "100%",
-          bgcolor: props.whiteBackground ? "white" : "#F8F8F8",
           display: "grid",
           gridTemplate: grid,
           minHeight: {
