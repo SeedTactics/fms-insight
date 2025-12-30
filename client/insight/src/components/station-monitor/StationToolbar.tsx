@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { Box, Select, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Checkbox, Divider, FormControlLabel, Select, useMediaQuery, useTheme } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { Input } from "@mui/material";
 import { FormControl } from "@mui/material";
@@ -42,6 +42,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { SystemOverviewDialogButton } from "./SystemOverview.js";
 import { useAtom, useAtomValue } from "jotai";
 import { ReactNode } from "react";
+import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
 
 const toolbarStyle = {
   display: "flex",
@@ -68,6 +69,17 @@ enum StationMonitorType {
   CloseOut = "CloseOut",
   Queues = "Queues",
   AllMaterial = "AllMaterial",
+}
+
+function HideNonLoadingCheckbox() {
+  const [hide, setHide] = useAtom(hideNonLoadingMaterialOnLoadStation);
+  return (
+    <FormControlLabel
+      control={<Checkbox size="small" checked={hide} onChange={(e) => setHide(e.target.checked)} />}
+      label="Hide Non-Loading Material"
+      sx={{ pl: 2, pr: 2 }}
+    />
+  );
 }
 
 export function StationToolbar(): ReactNode {
@@ -217,6 +229,8 @@ export function StationToolbar(): ReactNode {
             <MenuItem value={completedSym}>
               <i>Completed</i>
             </MenuItem>
+            <Divider />
+            <HideNonLoadingCheckbox />
           </Select>
         </FormControl>
       ) : undefined}

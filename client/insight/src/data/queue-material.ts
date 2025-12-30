@@ -41,6 +41,7 @@ import { rawMaterialQueues } from "../cell-status/names.js";
 import { barcodePotentialNewMaterial } from "../cell-status/material-details.js";
 import { useMemo } from "react";
 import { last30Jobs } from "../cell-status/scheduled-jobs.js";
+import { atomWithStorage } from "jotai/utils";
 
 export type SelectableJob = {
   readonly jobUnique: string;
@@ -61,6 +62,11 @@ export type SelectableMaterialType = {
   readonly castings: ReadonlyArray<SelectableCasting>;
   readonly jobs: ReadonlyArray<SelectableJob>;
 };
+
+export const hideNonLoadingMaterialOnLoadStation = atomWithStorage(
+  "fmsinsight.hide-nonloading-loadstation",
+  false,
+);
 
 function describePath(path: Readonly<api.IProcPathInfo>): string {
   return `${

@@ -79,6 +79,7 @@ import { addHours } from "date-fns";
 import { PromptForQueue } from "./QueuesAddMaterial.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { PrintLabelButton } from "./PrintedLabel.js";
+import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -86,7 +87,7 @@ type LoadStationData = {
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: OrderedMap<number, MaterialList>;
   readonly freeLoadingMaterial: MaterialList;
-  readonly queues: ReadonlyMap<string, MaterialList>;
+  readonly queues: ReadonlyMap<string, { readonly mats: MaterialList; readonly hiddenCnt: number }>;
   readonly elapsedLoadingTime: string | null;
   readonly fsize: MatCardFontSize;
 };
@@ -95,6 +96,7 @@ function selectLoadStationAndQueueProps(
   loadNum: number,
   queues: ReadonlyArray<string>,
   curSt: Readonly<api.ICurrentStatus>,
+  hideNonLoading: boolean,
 ): LoadStationData {
   // search for pallet
   let pal: Readonly<api.IPalletStatus> | undefined;
@@ -136,8 +138,8 @@ function selectLoadStationAndQueueProps(
     }
   }
 
-  const queueMat = new Map<string, Array<api.IInProcessMaterial>>(
-    LazySeq.of(queuesToShow).map((q) => [q, []]),
+  const queueMat = new Map<string, { readonly mats: Array<api.IInProcessMaterial>; hiddenCnt: number }>(
+    LazySeq.of(queuesToShow).map((q) => [q, { mats: [], hiddenCnt: 0 }]),
   );
   const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
   let palFaces = OrderedMap.empty<number, Array<api.IInProcessMaterial>>();
@@ -195,15 +197,26 @@ function selectLoadStationAndQueueProps(
       queueMat.has(m.location.currentQueue)
     ) {
       const old = queueMat.get(m.location.currentQueue);
-      if (old === undefined) {
-        queueMat.set(m.location.currentQueue, [m]);
+      if (
+        hideNonLoading &&
+        (m.action.type !== api.ActionType.Loading || m.action.loadOntoPalletNum !== pal?.palletNum)
+      ) {
+        if (old === undefined) {
+          queueMat.set(m.location.currentQueue, { mats: [], hiddenCnt: 1 });
+        } else {
+          old.hiddenCnt += 1;
+        }
       } else {
-        old.push(m);
+        if (old === undefined) {
+          queueMat.set(m.location.currentQueue, { mats: [m], hiddenCnt: 0 });
+        } else {
+          old.mats.push(m);
+        }
       }
     }
   }
 
-  queueMat.forEach((mats) => mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
+  queueMat.forEach((m) => m.mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
 
   const matCount = freeLoading.length + palFaces.valuesToAscLazySeq().sumBy((x) => x.length);
 
@@ -225,7 +238,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
     if (pal) {
       return LazySeq.of(loadData.face.values())
         .append(loadData.freeLoadingMaterial)
-        .concat(loadData.queues.values())
+        .concat(LazySeq.of(loadData.queues).collect(([_, v]) => v.mats))
         .flatMap((x) => x)
         .collect((mat) => {
           if (
@@ -365,12 +378,16 @@ function MaterialRegion({
   mat,
 }: {
   readonly data: LoadStationData;
-  mat: { readonly label: string; readonly material: MaterialList; readonly isFree: boolean };
+  mat: {
+    readonly label: string;
+    readonly material: { readonly mats: MaterialList; readonly hiddenCnt: number };
+    readonly isFree: boolean;
+  };
 }) {
   return (
     <div>
       <Typography variant="h4">{mat.label}</Typography>
-      {mat.material.map((m, matIdx) => (
+      {mat.material.mats.map((m, matIdx) => (
         <MoveMaterialArrowNode
           key={matIdx}
           kind={{
@@ -406,6 +423,11 @@ function MaterialRegion({
           )}
         </MoveMaterialArrowNode>
       ))}
+      {mat.material.hiddenCnt > 0 ? (
+        <Typography variant="body2" color="textSecondary" textAlign="center" mt="0.5em">
+          +{mat.material.hiddenCnt} hidden
+        </Typography>
+      ) : null}
     </div>
   );
 }
@@ -415,7 +437,11 @@ function MaterialColumn({
   region,
 }: {
   readonly data: LoadStationData;
-  region: { readonly label: string; readonly material: MaterialList; readonly isFree: boolean };
+  region: {
+    readonly label: string;
+    readonly material: { readonly mats: MaterialList; readonly hiddenCnt: number };
+    readonly isFree: boolean;
+  };
 }) {
   return (
     <MoveMaterialArrowNode
@@ -432,7 +458,7 @@ function MaterialColumn({
         <MaterialRegion data={data} mat={region} />
       ) : (
         <SortableRegion
-          matIds={region.material.map((m) => m.materialID)}
+          matIds={region.material.mats.map((m) => m.materialID)}
           direction="vertical"
           queueName={region.label}
           renderDragOverlay={(mat) => (
@@ -777,9 +803,10 @@ function useGridLayout({
 
 export function LoadStation(props: LoadStationProps) {
   const currentSt = useAtomValue(currentStatus);
+  const hideNonLoading = useAtomValue(hideNonLoadingMaterialOnLoadStation);
   const data = useMemo(
-    () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt),
-    [currentSt, props.loadNum, props.queues],
+    () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt, hideNonLoading),
+    [currentSt, props.loadNum, props.queues, hideNonLoading],
   );
 
   let matColsSeq = LazySeq.of(data.queues)
@@ -793,7 +820,7 @@ export function LoadStation(props: LoadStationProps) {
   if (data.queues.size === 0 || data.freeLoadingMaterial.length > 0) {
     matColsSeq = matColsSeq.append({
       label: "Material",
-      material: data.freeLoadingMaterial,
+      material: { mats: data.freeLoadingMaterial, hiddenCnt: 0 },
       isFree: true,
     });
   }
