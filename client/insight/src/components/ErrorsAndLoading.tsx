@@ -35,7 +35,7 @@ import { ReactNode, Suspense } from "react";
 import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
-import { ErrorBoundary } from "react-error-boundary";
+import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { ApiException } from "../network/api.js";
 
 export function Loading() {
@@ -47,7 +47,7 @@ export function Loading() {
   );
 }
 
-export function DisplayError({ error }: { readonly error?: Error }) {
+export function DisplayError({ error }: FallbackProps) {
   if (error === undefined) return <></>;
   if (ApiException.isApiException(error)) {
     return (
@@ -58,10 +58,20 @@ export function DisplayError({ error }: { readonly error?: Error }) {
         </CardContent>
       </Card>
     );
-  } else {
+  } else if (error instanceof Error) {
     return (
       <Card>
         <CardContent>{error.message}</CardContent>
+      </Card>
+    );
+  } else {
+    return (
+      <Card>
+        <CardContent>
+          <h3>Unknown Error</h3>
+          {/*eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+          <p>{String(error)}</p>
+        </CardContent>
       </Card>
     );
   }
