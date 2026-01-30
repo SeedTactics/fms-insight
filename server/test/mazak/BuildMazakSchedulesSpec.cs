@@ -494,6 +494,91 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public void CorrectPriorityWithPerPalletStartTimes()
+    {
+      var baseTime = new DateTime(2026, 1, 17, 14, 0, 0, DateTimeKind.Utc);
+
+      var jobA = new HistoricJob()
+      {
+        UniqueStr = "uniqA",
+        PartName = "partA",
+        RouteStartUTC = baseTime,
+        RouteEndUTC = DateTime.MinValue,
+        Cycles = 5,
+        Archived = false,
+        CopiedToSystem = true,
+        Processes = new[]
+        {
+          new ProcessInfo()
+          {
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                PalletNums = [1, 2, 3, 4],
+                SimulatedStartTimePerPallet = ImmutableDictionary<int, DateTime>
+                  .Empty.Add(1, baseTime.AddHours(7))
+                  .Add(2, baseTime.AddHours(7))
+                  .Add(3, baseTime)
+                  .Add(4, baseTime),
+                SimulatedStartingUTC = baseTime,
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
+      };
+
+      var jobB = new HistoricJob()
+      {
+        UniqueStr = "uniqB",
+        PartName = "partB",
+        RouteStartUTC = baseTime,
+        RouteEndUTC = DateTime.MinValue,
+        Cycles = 5,
+        Archived = false,
+        CopiedToSystem = true,
+        Processes = new[]
+        {
+          new ProcessInfo()
+          {
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                PalletNums = [1, 2],
+                SimulatedStartTimePerPallet = ImmutableDictionary<int, DateTime>
+                  .Empty.Add(1, baseTime.AddHours(6))
+                  .Add(2, baseTime.AddHours(6)),
+                SimulatedStartingUTC = baseTime.AddHours(6),
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
+      };
+
+      var curData = new MazakAllData()
+      {
+        Parts = new[]
+        {
+          new MazakPartRow() { PartName = "partA:1:1", Comment = "uniqA-Insight" },
+          new MazakPartRow() { PartName = "partB:1:1", Comment = "uniqB-Insight" },
+        },
+        Schedules = Array.Empty<MazakScheduleRow>(),
+      };
+
+      var actions = BuildMazakSchedules.AddSchedules(
+        curData,
+        new[] { jobA, jobB },
+        new MazakConfig() { DBType = MazakDbType.MazakSmooth, UseStartingOffsetForDueDate = true }
+      );
+
+      var schA = actions.Schedules.Single(s => s.Comment == "uniqA-Insight");
+      var schB = actions.Schedules.Single(s => s.Comment == "uniqB-Insight");
+
+      schB.Priority.ShouldBeLessThan(schA.Priority);
+    }
+
+    [Test]
     [MatrixDataSource]
     public void UsesZeroQtyForProc1(
       [Matrix(true, false)] bool hasInputQueue,

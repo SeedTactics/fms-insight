@@ -203,6 +203,8 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableSortedSet<SimulatedProduction>? SimulatedProduction { get; init; }
 
+    public ImmutableDictionary<int, DateTime>? SimulatedStartTimePerPallet { get; init; }
+
     public required DateTime SimulatedStartingUTC { get; init; }
 
     public required TimeSpan SimulatedAverageFlowTime { get; init; } // average time a part takes to complete the entire sequence

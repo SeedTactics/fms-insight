@@ -229,21 +229,17 @@ namespace MazakMachineInterface
       if (startT == DateTime.MinValue)
         return 0;
 
+      var myPath = jobToCheck.Processes[0].Paths[0];
+      var myPalletTimes = myPath.SimulatedStartTimePerPallet;
+
       // first, calculate the fixtures and faces used by the job to check
       var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
-      var usedPallets = new HashSet<int>();
+      var usedPallets = new HashSet<int>(myPath.PalletNums);
       for (int proc = 1; proc <= jobToCheck.Processes.Count; proc++)
       {
         var plannedFix = jobToCheck.Processes[proc - 1].Paths[0].Fixture;
         var plannedFace = jobToCheck.Processes[proc - 1].Paths[0].Face ?? 1;
-        if (string.IsNullOrEmpty(plannedFix))
-        {
-          foreach (var p in jobToCheck.Processes[proc - 1].Paths[0].PalletNums)
-          {
-            usedPallets.Add(p);
-          }
-        }
-        else
+        if (!string.IsNullOrEmpty(plannedFix))
         {
           usedFixtureFaces.Add((plannedFix, plannedFace.ToString()));
         }
@@ -256,31 +252,63 @@ namespace MazakMachineInterface
         if (otherJob.UniqueStr == jobToCheck.UniqueStr)
           continue;
 
-        // see if the process 1 starting time is later and if so skip the remaining checks
         var otherStart = otherJob.Processes[0].Paths[0].SimulatedStartingUTC;
         if (otherStart == DateTime.MinValue)
           continue;
-        if (
-          otherStart > startT
-          || (otherStart == startT && otherJob.UniqueStr.CompareTo(jobToCheck.UniqueStr) > 0)
-        )
-          continue;
 
-        //the job starts earlier than the jobToCheck, but need to see if it conflicts.
-
-        // go through all processes and if a fixture face matches, count it as a conflict.
+        // go through all processes and check for conflicts
         for (var otherProc = 1; otherProc <= otherJob.Processes.Count; otherProc++)
         {
+          // if a fixture face matches and the overall time is earlier, count it as a conflict.
           var otherFix = otherJob.Processes[otherProc - 1].Paths[0].Fixture;
           var otherFace = otherJob.Processes[otherProc - 1].Paths[0].Face ?? 1;
           if (usedFixtureFaces.Contains((otherFix, otherFace.ToString())))
           {
-            earlierConflicts += 1;
+            if (
+              otherStart < startT
+              || (otherStart == startT && otherJob.UniqueStr.CompareTo(jobToCheck.UniqueStr) < 0)
+            )
+            {
+              earlierConflicts += 1;
+            }
             goto checkNextPath;
           }
-          if (otherJob.Processes[otherProc - 1].Paths[0].PalletNums.Any(usedPallets.Contains))
+
+          // If a process 1 pallet matches, check per-pallet times and fall back to overall time
+          if (otherProc == 1 && otherJob.Processes[0].Paths[0].PalletNums.Any(usedPallets.Contains))
           {
-            earlierConflicts += 1;
+            var otherPath = otherJob.Processes[0].Paths[0];
+            var otherPalletTimes = otherPath.SimulatedStartTimePerPallet;
+            var sharedPallets = otherPath.PalletNums.Where(usedPallets.Contains).ToList();
+            if (sharedPallets.Count == 0)
+              goto checkNextPath;
+
+            bool isEarlierOnSharedPallet = false;
+            foreach (var pallet in sharedPallets)
+            {
+              var myTime =
+                myPalletTimes != null && myPalletTimes.TryGetValue(pallet, out var myPalTime)
+                  ? myPalTime
+                  : startT;
+              var otherTime =
+                otherPalletTimes != null && otherPalletTimes.TryGetValue(pallet, out var otherPalTime)
+                  ? otherPalTime
+                  : otherStart;
+
+              if (
+                otherTime < myTime
+                || (otherTime == myTime && otherJob.UniqueStr.CompareTo(jobToCheck.UniqueStr) < 0)
+              )
+              {
+                isEarlierOnSharedPallet = true;
+                break;
+              }
+            }
+
+            if (isEarlierOnSharedPallet)
+            {
+              earlierConflicts += 1;
+            }
             goto checkNextPath;
           }
         }

@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 37;
+    private const int Version = 38;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -198,6 +198,10 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet INTEGER, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE pallet_start_times(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet INTEGER, StartTimeUTC INTEGER, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -477,6 +481,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 37)
             Ver36ToVer37(trans, updateJobsTables);
+
+          if (curVersion < 38)
+            Ver37ToVer38(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1207,6 +1214,19 @@ namespace BlackMaple.MachineFramework
       using var cmd = trans.Connection.CreateCommand();
 
       cmd.CommandText = "ALTER TABLE jobs ADD ProvisionalWorkorderId TEXT";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver37ToVer38(IDbTransaction trans, bool updateJobTables)
+    {
+      if (!updateJobTables)
+        return;
+
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText =
+        "CREATE TABLE pallet_start_times(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet INTEGER, StartTimeUTC INTEGER, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
       cmd.ExecuteNonQuery();
     }
 

@@ -85,7 +85,10 @@ namespace BlackMaple.FMSInsight.Niigata
         .OrderBy(pal =>
           pal.Material.Min(m =>
             m.Mat.Process >= 1
-              ? m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].SimulatedStartingUTC
+              ? GetPalletStartTime(
+                m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1],
+                pal.Status.Master.PalletNum
+              )
               : DateTime.MaxValue
           )
         )
@@ -138,6 +141,19 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return false;
+    }
+
+    private static DateTime GetPalletStartTime(ProcPathInfo path, int pallet)
+    {
+      if (
+        path.SimulatedStartTimePerPallet != null
+        && path.SimulatedStartTimePerPallet.TryGetValue(pallet, out var palletTime)
+      )
+      {
+        return palletTime;
+      }
+
+      return path.SimulatedStartingUTC;
     }
 
     private bool IsPalletReadyToUnload(PalletAndMaterial pal)
