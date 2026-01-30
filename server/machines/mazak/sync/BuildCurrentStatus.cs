@@ -189,7 +189,10 @@ namespace MazakMachineInterface
         .ToDictionary(g => mazakCfg.TranslatePalletNumber(g.Key), g => g.Any(p => p.IsOnHold > 0));
       foreach (var palRow in mazakData.Pallets)
       {
-        if (palRow.PalletNumber > 0 && !palletsByName.ContainsKey(mazakCfg.TranslatePalletNumber(palRow.PalletNumber)))
+        if (
+          palRow.PalletNumber > 0
+          && !palletsByName.ContainsKey(mazakCfg.TranslatePalletNumber(palRow.PalletNumber))
+        )
         {
           var palName = mazakCfg.TranslatePalletNumber(palRow.PalletNumber);
           var palLoc = FindPalletLocation(machineGroupName, mazakData, mazakCfg, palRow.PalletNumber);
@@ -379,7 +382,12 @@ namespace MazakMachineInterface
             new PalletStatus()
             {
               PalletNum = pal.Key,
-              CurrentPalletLocation = FindPalletLocation(machineGroupName, mazakData, mazakCfg, mazakCfg.InversePalletNumber(pal.Key)),
+              CurrentPalletLocation = FindPalletLocation(
+                machineGroupName,
+                mazakData,
+                mazakCfg,
+                mazakCfg.InversePalletNumber(pal.Key)
+              ),
               FixtureOnPallet = "",
               NumFaces = 1,
               OnHold = true,

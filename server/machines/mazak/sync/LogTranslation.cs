@@ -257,7 +257,12 @@ namespace MazakMachineInterface
         previouslyUnloaded: null,
         pallet: pallet,
         lulNum: mazakConfig.TranslateLoadStationNumber(es[0].StationNumber),
-        totalElapsed: CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, mazakConfig.TranslateLoadStationNumber(es[0].StationNumber)),
+        totalElapsed: CalculateElapsed(
+          es[0].TimeUTC,
+          LogType.LoadUnloadCycle,
+          cycle,
+          mazakConfig.TranslateLoadStationNumber(es[0].StationNumber)
+        ),
         timeUTC: es[0].TimeUTC,
         externalQueues: fmsSettings.ExternalQueues
       );
