@@ -131,6 +131,45 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public void TranslatesPalletNumbersWhenWriting()
+    {
+      // Job has FMS Insight pallet numbers (101, 102) which should be translated
+      // to Mazak-internal numbers (1, 2) when writing to the database
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 1,
+        pals: new[] { new[] { 101, 102 } }
+      );
+
+      var log = new List<string>();
+      var dset = CreateReadSet();
+
+      CreateProgram(dset, "1234");
+
+      var mazakCfg = defaultMazakCfg with { StartingPalletNumber = 101 };
+
+      var pMap = ConvertJobsToMazakParts.JobsToMazak(
+        new Job[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        mazakCfg,
+        fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
+        errors: log
+      );
+      log.ShouldBeEmpty();
+
+      var trans = pMap.CreatePartPalletDatabaseRows(mazakCfg);
+
+      // Pallet numbers should be translated: 101 -> 1, 102 -> 2
+      // Check each pallet row has the Mazak-internal pallet number
+      trans.Pallets.Select(p => p.PalletNumber).OrderBy(p => p).ShouldBe(new[] { 1, 2 });
+      trans.Pallets.ShouldAllBe(p => p.Fixture == "F:3:1:1");
+    }
+
+    [Test]
     [Arguments(true)]
     [Arguments(false)]
     public void FromJobReuseOrIgnoreFixtures(bool useStartingOffset)
