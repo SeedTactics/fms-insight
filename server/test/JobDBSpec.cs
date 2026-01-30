@@ -2401,13 +2401,11 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB
         .GetActiveWorkorders()
         .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
-        .ShouldBe(
-          [
-            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
-            (w2.WorkorderId, w2.Part, w2.Priority, w2.DueDate, w2.Quantity),
-            (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity),
-          ]
-        );
+        .ShouldBe([
+          (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+          (w2.WorkorderId, w2.Part, w2.Priority, w2.DueDate, w2.Quantity),
+          (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity),
+        ]);
 
       // now update w2 with new data, delete w4, and add a new w5
       var w2New = _fixture

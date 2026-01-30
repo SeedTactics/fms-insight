@@ -96,6 +96,8 @@ namespace BlackMaple.MachineFramework
       public ImmutableSortedSet<PathInspection>.Builder Insps { get; } =
         ImmutableSortedSet.CreateBuilder<PathInspection>();
       public ImmutableSortedSet<int>.Builder Pals { get; } = ImmutableSortedSet.CreateBuilder<int>();
+      public ImmutableDictionary<int, DateTime>.Builder PalletStartTimes { get; } =
+        ImmutableDictionary.CreateBuilder<int, DateTime>();
       public ImmutableSortedSet<SimulatedProduction>.Builder SimProd { get; } =
         ImmutableSortedSet.CreateBuilder<SimulatedProduction>();
       public SortedList<int, PathStopRow> Stops { get; } = new SortedList<int, PathStopRow>();
@@ -141,8 +143,6 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
         cmd.Parameters.Add("$uniq", SqliteType.Text).Value = uniq;
-
-        //read plan quantity
         cmd.CommandText = "SELECT Path, PlanQty FROM planqty WHERE UniqueStr = $uniq";
         var cyclesOnFirstProc = new SortedDictionary<int, int>();
         using (IDataReader reader = cmd.ExecuteReader())
@@ -238,6 +238,25 @@ namespace BlackMaple.MachineFramework
               {
                 pathRow.Pals.Add(reader.GetInt32(2));
               }
+            }
+          }
+        }
+
+        // read per-pallet simulated start times
+        cmd.CommandText =
+          "SELECT Process, Path, Pallet, StartTimeUTC FROM pallet_start_times WHERE UniqueStr = $uniq";
+        using (IDataReader reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            if (
+              pathDatRows.TryGetValue((proc: reader.GetInt32(0), path: reader.GetInt32(1)), out var pathRow)
+            )
+            {
+              pathRow.PalletStartTimes[reader.GetInt32(2)] = new DateTime(
+                reader.GetInt64(3),
+                DateTimeKind.Utc
+              );
             }
           }
         }
@@ -473,6 +492,8 @@ namespace BlackMaple.MachineFramework
                     })
                     .ToImmutableList(),
                   SimulatedProduction = p.SimProd.ToImmutable(),
+                  SimulatedStartTimePerPallet =
+                    p.PalletStartTimes.Count == 0 ? null : p.PalletStartTimes.ToImmutable(),
                   SimulatedStartingUTC = p.StartingUTC,
                   SimulatedAverageFlowTime = p.SimAverageFlowTime,
                   HoldMachining = p.MachHold?.ToHoldPattern(),
@@ -1380,6 +1401,34 @@ namespace BlackMaple.MachineFramework
               cmd.Parameters[1].Value = i;
               cmd.Parameters[2].Value = j;
               cmd.Parameters[3].Value = pal;
+              cmd.ExecuteNonQuery();
+            }
+          }
+        }
+
+        cmd.CommandText =
+          "INSERT INTO pallet_start_times(UniqueStr, Process, Path, Pallet, StartTimeUTC) VALUES ($uniq,$proc,$path,$pal,$time)";
+        cmd.Parameters.Clear();
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
+        cmd.Parameters.Add("proc", SqliteType.Integer);
+        cmd.Parameters.Add("path", SqliteType.Integer);
+        cmd.Parameters.Add("pal", SqliteType.Integer);
+        cmd.Parameters.Add("time", SqliteType.Integer);
+
+        for (int i = 1; i <= job.Processes.Count; i++)
+        {
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
+          {
+            var path = proc.Paths[j - 1];
+            if (path.SimulatedStartTimePerPallet == null)
+              continue;
+            foreach (var entry in path.SimulatedStartTimePerPallet)
+            {
+              cmd.Parameters[1].Value = i;
+              cmd.Parameters[2].Value = j;
+              cmd.Parameters[3].Value = entry.Key;
+              cmd.Parameters[4].Value = entry.Value.Ticks;
               cmd.ExecuteNonQuery();
             }
           }
