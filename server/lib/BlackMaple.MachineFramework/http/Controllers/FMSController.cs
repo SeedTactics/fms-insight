@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -78,6 +79,8 @@ namespace BlackMaple.MachineFramework.Controllers
     public bool? AllowSwapSerialAtLoadStation { get; init; }
 
     public bool? AllowInvalidateMaterialAtLoadStation { get; init; }
+
+    public ImmutableDictionary<int, string>? LoadStationNames { get; init; }
 
     // Closeout Page Options
     public bool? RequireScanAtCloseout { get; init; }
@@ -178,6 +181,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AllowSwapSerialAtLoadStation = _cfg.AllowSwapSerialAtLoadStation,
         LicenseExpires = _checkLicense?.LicenseExpires(),
         CustomStationMonitorDialogUrl = _cfg.CustomStationMonitorDialogUrl,
+        LoadStationNames = _cfg.LoadStationNames,
       };
     }
 

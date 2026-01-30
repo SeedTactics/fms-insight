@@ -45,7 +45,7 @@ namespace MazakMachineInterface
     private readonly MazakAllDataAndLogs mazakData;
     private readonly string machGroupName;
     private readonly FMSSettings fmsSettings;
-    private readonly Action<LogEntry> onMazakLog;
+    private readonly Action<LogChunk> onMazakLog;
     private readonly MazakConfig mazakConfig;
     private readonly Func<IEnumerable<ToolPocketRow>> loadTools;
 
@@ -54,7 +54,7 @@ namespace MazakMachineInterface
       MazakAllDataAndLogs mazakData,
       string machGroupName,
       FMSSettings fmsSettings,
-      Action<LogEntry> onMazakLog,
+      Action<LogChunk> onMazakLog,
       MazakConfig mazakConfig,
       Func<IEnumerable<ToolPocketRow>> loadTools
     )
@@ -73,7 +73,7 @@ namespace MazakMachineInterface
       MazakAllDataAndLogs mazakData,
       string machGroupName,
       FMSSettings fmsSettings,
-      Action<LogEntry> onMazakLog,
+      Action<LogChunk> onMazakLog,
       MazakConfig mazakConfig,
       Func<IEnumerable<ToolPocketRow>> loadTools
     )
@@ -115,7 +115,7 @@ namespace MazakMachineInterface
 
     #region Events
     // should be union
-    private record LogChunk
+    public record LogChunk
     {
       public IReadOnlyList<LogEntry> LulEndChunk { get; init; }
       public LogEntry NonLulEndEvt { get; init; }
@@ -192,10 +192,7 @@ namespace MazakMachineInterface
           try
           {
             HandleLoadEnd(e.LulEndChunk);
-            foreach (var lul in e.LulEndChunk)
-            {
-              onMazakLog(lul);
-            }
+            onMazakLog(e);
           }
           catch (Exception ex)
           {
@@ -213,7 +210,7 @@ namespace MazakMachineInterface
             }
             else
             {
-              onMazakLog(e.NonLulEndEvt);
+              onMazakLog(e);
             }
           }
           catch (Exception ex)
@@ -244,7 +241,7 @@ namespace MazakMachineInterface
 
     private void HandleLoadEnd(IReadOnlyList<LogEntry> es)
     {
-      int pallet = es[0].Pallet;
+      int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
 
       var cycle = new List<MWI.LogEntry>();
       if (pallet >= 1)
@@ -259,8 +256,13 @@ namespace MazakMachineInterface
         toUnload: toUnload,
         previouslyUnloaded: null,
         pallet: pallet,
-        lulNum: es[0].StationNumber,
-        totalElapsed: CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, es[0].StationNumber),
+        lulNum: mazakConfig.TranslateLoadStationNumber(es[0].StationNumber),
+        totalElapsed: CalculateElapsed(
+          es[0].TimeUTC,
+          LogType.LoadUnloadCycle,
+          cycle,
+          mazakConfig.TranslateLoadStationNumber(es[0].StationNumber)
+        ),
         timeUTC: es[0].TimeUTC,
         externalQueues: fmsSettings.ExternalQueues
       );
@@ -268,9 +270,10 @@ namespace MazakMachineInterface
 
     private bool HandleNonLulEndEvent(LogEntry e)
     {
+      var translatedPallet = mazakConfig.TranslatePalletNumber(e.Pallet);
       var cycle = new List<MWI.LogEntry>();
-      if (e.Pallet >= 1)
-        cycle = repo.CurrentPalletLog(e.Pallet);
+      if (translatedPallet >= 1)
+        cycle = repo.CurrentPalletLog(translatedPallet);
 
       Log.Debug(
         "Handling mazak event {@event} with pallets {@palletPos} with {@contents}",
@@ -293,8 +296,8 @@ namespace MazakMachineInterface
                 Face = 0,
               },
             ],
-            pallet: e.Pallet,
-            lulNum: e.StationNumber,
+            pallet: translatedPallet,
+            lulNum: mazakConfig.TranslateLoadStationNumber(e.StationNumber),
             timeUTC: e.TimeUTC,
             foreignId: e.ForeignID
           );
@@ -305,8 +308,8 @@ namespace MazakMachineInterface
 
           repo.RecordUnloadStart(
             mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
-            pallet: e.Pallet,
-            lulNum: e.StationNumber,
+            pallet: translatedPallet,
+            lulNum: mazakConfig.TranslateLoadStationNumber(e.StationNumber),
             timeUTC: e.TimeUTC,
             foreignId: e.ForeignID
           );
@@ -331,7 +334,7 @@ namespace MazakMachineInterface
           LookupProgram(machineMats, e, out var progName, out var progRev);
           repo.RecordMachineStart(
             mats: machineMats.Select(m => m.Mat),
-            pallet: e.Pallet,
+            pallet: translatedPallet,
             statName: machGroupName,
             statNum: mcNum,
             program: progName,
@@ -383,7 +386,7 @@ namespace MazakMachineInterface
             LookupProgram(machineMats, e, out var progName, out var progRev);
             var s = repo.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
-              pallet: e.Pallet,
+              pallet: translatedPallet,
               statName: machGroupName,
               statNum: mcNum,
               program: progName,
@@ -407,7 +410,7 @@ namespace MazakMachineInterface
             Log.Warning(
               "Ignoring machine cycle at {time} on pallet {pallet} because it is less than 30 seconds",
               e.TimeUTC,
-              e.Pallet
+              translatedPallet
             );
           }
 
@@ -423,7 +426,7 @@ namespace MazakMachineInterface
           }
           repo.RecordPalletDepartRotaryInbound(
             mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-            pallet: e.Pallet,
+            pallet: translatedPallet,
             statName: machGroupName,
             statNum: mcNum,
             timeUTC: e.TimeUTC,
@@ -457,7 +460,7 @@ namespace MazakMachineInterface
               }
               repo.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: e.Pallet,
+                pallet: translatedPallet,
                 statName: machGroupName,
                 statNum: mcNum,
                 rotateIntoWorktable: false,
@@ -473,7 +476,7 @@ namespace MazakMachineInterface
             {
               repo.RecordPalletDepartStocker(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: e.Pallet,
+                pallet: translatedPallet,
                 stockerNum: stockerNum,
                 timeUTC: e.TimeUTC,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
@@ -505,7 +508,7 @@ namespace MazakMachineInterface
               }
               repo.RecordPalletArriveRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: e.Pallet,
+                pallet: translatedPallet,
                 statName: machGroupName,
                 statNum: mcNum,
                 timeUTC: e.TimeUTC,
@@ -519,7 +522,7 @@ namespace MazakMachineInterface
             {
               repo.RecordPalletArriveStocker(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: e.Pallet,
+                pallet: translatedPallet,
                 stockerNum: stockerNum,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
                 timeUTC: e.TimeUTC,

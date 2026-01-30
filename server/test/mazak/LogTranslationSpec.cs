@@ -117,7 +117,20 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         },
         machGroupName: "machinespec",
         fmsSettings: settings,
-        e => raisedByEvent.Add(e),
+        chunk =>
+        {
+          if (chunk.LulEndChunk != null)
+          {
+            foreach (var le in chunk.LulEndChunk)
+            {
+              raisedByEvent.Add(le);
+            }
+          }
+          else if (chunk.NonLulEndEvt != null)
+          {
+            raisedByEvent.Add(chunk.NonLulEndEvt);
+          }
+        },
         mazakConfig: mazakCfg,
         loadTools: () => mazakDataTools
       );
@@ -145,7 +158,20 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         },
         machGroupName: "machinespec",
         fmsSettings: settings,
-        e => raisedByEvent.Add(e),
+        chunk =>
+        {
+          if (chunk.LulEndChunk != null)
+          {
+            foreach (var le in chunk.LulEndChunk)
+            {
+              raisedByEvent.Add(le);
+            }
+          }
+          else if (chunk.NonLulEndEvt != null)
+          {
+            raisedByEvent.Add(chunk.NonLulEndEvt);
+          }
+        },
         mazakConfig: mazakCfg,
         loadTools: () => mazakDataTools
       );

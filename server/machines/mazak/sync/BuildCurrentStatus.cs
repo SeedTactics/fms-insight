@@ -186,12 +186,15 @@ namespace MazakMachineInterface
       var material = ImmutableList.CreateBuilder<InProcessMaterial>();
       var palOnHold = mazakData
         .PalletStatuses?.GroupBy(p => p.PalletNumber)
-        .ToDictionary(g => g.Key, g => g.Any(p => p.IsOnHold > 0));
+        .ToDictionary(g => mazakCfg.TranslatePalletNumber(g.Key), g => g.Any(p => p.IsOnHold > 0));
       foreach (var palRow in mazakData.Pallets)
       {
-        if (palRow.PalletNumber > 0 && !palletsByName.ContainsKey(palRow.PalletNumber))
+        if (
+          palRow.PalletNumber > 0
+          && !palletsByName.ContainsKey(mazakCfg.TranslatePalletNumber(palRow.PalletNumber))
+        )
         {
-          var palName = palRow.PalletNumber;
+          var palName = mazakCfg.TranslatePalletNumber(palRow.PalletNumber);
           var palLoc = FindPalletLocation(machineGroupName, mazakData, mazakCfg, palRow.PalletNumber);
 
           //Create the pallet
@@ -379,7 +382,12 @@ namespace MazakMachineInterface
             new PalletStatus()
             {
               PalletNum = pal.Key,
-              CurrentPalletLocation = FindPalletLocation(machineGroupName, mazakData, mazakCfg, pal.Key),
+              CurrentPalletLocation = FindPalletLocation(
+                machineGroupName,
+                mazakData,
+                mazakCfg,
+                mazakCfg.InversePalletNumber(pal.Key)
+              ),
               FixtureOnPallet = "",
               NumFaces = 1,
               OnHold = true,
@@ -586,7 +594,7 @@ namespace MazakMachineInterface
         {
           if (palRow.PalletNumber > 0 && palRow.Fixture == partProcRow.Fixture)
           {
-            pals.Add(palRow.PalletNumber);
+            pals.Add(mazakCfg.TranslatePalletNumber(palRow.PalletNumber));
           }
         }
 
@@ -1149,7 +1157,7 @@ namespace MazakMachineInterface
         {
           Location = PalletLocationEnum.LoadUnload,
           StationGroup = "L/U",
-          Num = Convert.ToInt32(pos.Substring(3)),
+          Num = cfg.TranslateLoadStationNumber(Convert.ToInt32(pos.Substring(3))),
         };
       }
       else if (pos.StartsWith("M"))
@@ -1208,7 +1216,7 @@ namespace MazakMachineInterface
         {
           Location = PalletLocationEnum.LoadUnload,
           StationGroup = "L/U",
-          Num = Convert.ToInt32(pos.Substring(3, 1)),
+          Num = cfg.TranslateLoadStationNumber(Convert.ToInt32(pos.Substring(3, 1))),
         };
       }
       else if (pos.StartsWith("M"))

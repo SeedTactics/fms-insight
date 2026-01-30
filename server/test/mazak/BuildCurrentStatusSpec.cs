@@ -39,6 +39,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
+using Shouldly;
 using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
@@ -72,6 +73,34 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     public void Dispose()
     {
       _repoCfg.Dispose();
+    }
+
+    [Test]
+    public void TestPalletNumberTranslation()
+    {
+      var cfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth, StartingPalletNumber = 1 };
+      cfg.TranslatePalletNumber(1).ShouldBe(1);
+      cfg.InversePalletNumber(1).ShouldBe(1);
+
+      cfg = cfg with { StartingPalletNumber = 101 };
+      cfg.TranslatePalletNumber(1).ShouldBe(101);
+      cfg.TranslatePalletNumber(3).ShouldBe(103);
+      cfg.InversePalletNumber(101).ShouldBe(1);
+      cfg.InversePalletNumber(103).ShouldBe(3);
+    }
+
+    [Test]
+    public void TestLoadStationNumberTranslation()
+    {
+      var cfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth, StartingLoadStationNumber = 1 };
+      cfg.TranslateLoadStationNumber(1).ShouldBe(1);
+      cfg.InverseLoadStationNumber(1).ShouldBe(1);
+
+      cfg = cfg with { StartingLoadStationNumber = 201 };
+      cfg.TranslateLoadStationNumber(1).ShouldBe(201);
+      cfg.TranslateLoadStationNumber(2).ShouldBe(202);
+      cfg.InverseLoadStationNumber(201).ShouldBe(1);
+      cfg.InverseLoadStationNumber(202).ShouldBe(2);
     }
 
     /*
@@ -358,6 +387,82 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         _mazakCfg with
         {
           MachineNumbers = [101, 102, 103, 104],
+        },
+        allData,
+        machineGroupName: "MC",
+        null,
+        new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+      );
+
+      await Verifier
+        .Verify(status)
+        .DontScrubDateTimes()
+        .UseDirectory("read-snapshots")
+        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+    }
+
+    [Test]
+    public async Task WithPalletNumbers()
+    {
+      using var repository = _repoCfg.OpenConnection();
+
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      var allData = JsonSerializer.Deserialize<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting.data.json")
+        ),
+        jsonSettings
+      );
+
+      var status = BuildCurrentStatus.Build(
+        repository,
+        _settings,
+        _mazakCfg with
+        {
+          StartingPalletNumber = 101,
+        },
+        allData,
+        machineGroupName: "MC",
+        null,
+        new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+      );
+
+      await Verifier
+        .Verify(status)
+        .DontScrubDateTimes()
+        .UseDirectory("read-snapshots")
+        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+    }
+
+    [Test]
+    public async Task WithLoadStationNumbers()
+    {
+      using var repository = _repoCfg.OpenConnection();
+
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      var allData = JsonSerializer.Deserialize<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting.data.json")
+        ),
+        jsonSettings
+      );
+
+      var status = BuildCurrentStatus.Build(
+        repository,
+        _settings,
+        _mazakCfg with
+        {
+          StartingLoadStationNumber = 201,
         },
         allData,
         machineGroupName: "MC",

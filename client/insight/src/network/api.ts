@@ -2243,6 +2243,7 @@ export class FMSInfo implements IFMSInfo {
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowSwapSerialAtLoadStation?: boolean | undefined;
     allowInvalidateMaterialAtLoadStation?: boolean | undefined;
+    loadStationNames?: { [key: string]: string; } | undefined;
     requireScanAtCloseout?: boolean | undefined;
     requireWorkorderBeforeAllowCloseoutComplete?: boolean | undefined;
     addToQueueButton?: AddToQueueButton | undefined;
@@ -2281,6 +2282,13 @@ export class FMSInfo implements IFMSInfo {
             this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.allowSwapSerialAtLoadStation = _data["AllowSwapSerialAtLoadStation"];
             this.allowInvalidateMaterialAtLoadStation = _data["AllowInvalidateMaterialAtLoadStation"];
+            if (_data["LoadStationNames"]) {
+                this.loadStationNames = {} as any;
+                for (let key in _data["LoadStationNames"]) {
+                    if (_data["LoadStationNames"].hasOwnProperty(key))
+                        (this.loadStationNames as any)![key] = _data["LoadStationNames"][key];
+                }
+            }
             this.requireScanAtCloseout = _data["RequireScanAtCloseout"];
             this.requireWorkorderBeforeAllowCloseoutComplete = _data["RequireWorkorderBeforeAllowCloseoutComplete"];
             this.addToQueueButton = _data["AddToQueueButton"];
@@ -2319,6 +2327,13 @@ export class FMSInfo implements IFMSInfo {
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["AllowSwapSerialAtLoadStation"] = this.allowSwapSerialAtLoadStation;
         data["AllowInvalidateMaterialAtLoadStation"] = this.allowInvalidateMaterialAtLoadStation;
+        if (this.loadStationNames) {
+            data["LoadStationNames"] = {};
+            for (let key in this.loadStationNames) {
+                if (this.loadStationNames.hasOwnProperty(key))
+                    (data["LoadStationNames"] as any)[key] = (this.loadStationNames as any)[key];
+            }
+        }
         data["RequireScanAtCloseout"] = this.requireScanAtCloseout;
         data["RequireWorkorderBeforeAllowCloseoutComplete"] = this.requireWorkorderBeforeAllowCloseoutComplete;
         data["AddToQueueButton"] = this.addToQueueButton;
@@ -2346,6 +2361,7 @@ export interface IFMSInfo {
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowSwapSerialAtLoadStation?: boolean | undefined;
     allowInvalidateMaterialAtLoadStation?: boolean | undefined;
+    loadStationNames?: { [key: string]: string; } | undefined;
     requireScanAtCloseout?: boolean | undefined;
     requireWorkorderBeforeAllowCloseoutComplete?: boolean | undefined;
     addToQueueButton?: AddToQueueButton | undefined;

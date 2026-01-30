@@ -178,7 +178,20 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       mazakData,
       machGroupName: machineGroupName,
       settings,
-      le => MazakLogEvent?.Invoke(le, db),
+      chunk =>
+      {
+        if (chunk.LulEndChunk != null)
+        {
+          foreach (var le in chunk.LulEndChunk)
+          {
+            MazakLogEvent?.Invoke(le, db);
+          }
+        }
+        else if (chunk.NonLulEndEvt != null)
+        {
+          MazakLogEvent?.Invoke(chunk.NonLulEndEvt, db);
+        }
+      },
       mazakConfig: mazakConfig,
       loadTools: mazakDB.LoadTools
     );

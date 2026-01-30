@@ -401,10 +401,13 @@ namespace MazakMachineInterface
       var ret = new List<MazakPalletRow>();
       foreach (var palNum in Pallets.OrderBy(p => p))
       {
+        // palNum is an FMS Insight pallet number; convert to Mazak-internal number
+        var mazakPalNum = cfg.InversePalletNumber(palNum);
+
         bool foundExisting = false;
         foreach (var palRow in oldData.Pallets)
         {
-          if (palRow.PalletNumber == palNum && palRow.Fixture == MazakFixtureName)
+          if (palRow.PalletNumber == mazakPalNum && palRow.Fixture == MazakFixtureName)
           {
             foundExisting = true;
             break;
@@ -417,7 +420,7 @@ namespace MazakMachineInterface
         var newRow = new MazakPalletRow()
         {
           Command = MazakWriteCommand.Add,
-          PalletNumber = palNum,
+          PalletNumber = mazakPalNum,
           Fixture = MazakFixtureName,
           RecordID = 0,
           FixtureGroupV2 = cfg.OverrideFixtureGroupToZero ? 0 : FixtureGroup,
