@@ -2221,6 +2221,13 @@
             "type": "boolean",
             "nullable": true
           },
+          "LoadStationNames": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
           "RequireScanAtCloseout": {
             "type": "boolean",
             "nullable": true
