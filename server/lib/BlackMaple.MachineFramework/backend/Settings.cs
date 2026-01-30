@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
@@ -193,6 +194,8 @@ public record FMSSettings
   public Dictionary<string, string> ExternalQueues { get; } = [];
 
   public IReadOnlyList<string> AdditionalLogServers { get; init; } = [];
+
+  public ImmutableDictionary<int, string>? LoadStationNames { get; init; } = null;
 
   // If null, rebookings are not allowed.  Otherwise, this prefix followed by a UUID is
   // the booking ID created for rebookings.

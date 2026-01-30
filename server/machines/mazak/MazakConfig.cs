@@ -55,6 +55,8 @@ namespace MazakMachineInterface
     public bool SynchronizeRawMaterialInQueues { get; init; } = true;
 
     public ImmutableList<int>? MachineNumbers { get; init; } = null;
+    public int StartingPalletNumber { get; init; } = 1;
+    public int StartingLoadStationNumber { get; init; } = 1;
 
     // When a robot is configured in the Mazak software, it can jump ahead when searching
     // for the next part to load, which can cause parts to run out of sequence (because
@@ -70,6 +72,18 @@ namespace MazakMachineInterface
     public Func<IRepository, CurrentStatus, CurrentStatus>? AdjustCurrentStatus { get; init; }
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
+
+    // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
+    public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
+
+    // Convert FMS Insight pallet number back to Mazak-internal number
+    public int InversePalletNumber(int fmsPallet) => fmsPallet - StartingPalletNumber + 1;
+
+    // Convert Mazak-internal load station number to FMS Insight load station number
+    public int TranslateLoadStationNumber(int mazakLul) => mazakLul - 1 + StartingLoadStationNumber;
+
+    // Convert FMS Insight load station number back to Mazak-internal number
+    public int InverseLoadStationNumber(int fmsLul) => fmsLul - StartingLoadStationNumber + 1;
 
     public static MazakConfig Load(IConfiguration configuration)
     {
@@ -173,6 +187,8 @@ namespace MazakMachineInterface
           cfg.GetValue("Use Starting Offset For Due Date", "true")
         ),
         WaitForAllCastings = cfg.GetValue<bool>("Wait For All Castings", false),
+        StartingPalletNumber = cfg.GetValue<int>("Starting Pallet Number", 1),
+        StartingLoadStationNumber = cfg.GetValue<int>("Starting Load Station Number", 1),
       };
     }
 
