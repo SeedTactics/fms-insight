@@ -53,6 +53,15 @@ namespace BlackMaple.MachineFramework
     public QueueRole? Role { get; init; }
   }
 
+  public record BasketStatus
+  {
+    public required int BasketId { get; init; }
+
+    public required string LocationName { get; init; }
+
+    public int? LocationPosition { get; init; }
+  }
+
   public record CurrentStatus
   {
     public required DateTime TimeOfCurrentStatusUTC { get; init; }
@@ -72,6 +81,8 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<MachineLocation>? MachineLocations { get; init; }
 
     public ImmutableList<ActiveWorkorder>? Workorders { get; init; } = null;
+
+    public ImmutableDictionary<int, BasketStatus>? Baskets { get; init; }
   }
 
   public record JobAndDecrementQuantity

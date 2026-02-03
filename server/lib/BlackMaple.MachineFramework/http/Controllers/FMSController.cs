@@ -95,6 +95,8 @@ namespace BlackMaple.MachineFramework.Controllers
     public string? AllowEditJobPlanQuantityFromQueuesPage { get; init; }
 
     public bool? AllowInvalidateMaterialOnQueuesPage { get; init; } = false;
+
+    public string? BasketName { get; init; }
   }
 
   [ApiController]

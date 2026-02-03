@@ -62,8 +62,14 @@ namespace BlackMaple.MachineFramework
 
     public int? PathAfterLoad { get; init; }
 
+    public int? LoadFromBasketId { get; init; }
+
     //If Type = UnloadToInProcess
     public string? UnloadIntoQueue { get; init; }
+
+    public int? UnloadToBasketId { get; init; }
+
+    public int? UnloadToBasketSubPosition { get; init; }
 
     //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
     public TimeSpan? ElapsedLoadUnloadTime { get; init; }
@@ -77,6 +83,7 @@ namespace BlackMaple.MachineFramework
   }
 
   ///Stores the current location of a piece of material.  If a transfer operation is currently in process
+  ///Stores the current location of a piece of material.  If a transfer operation is currently in process
   ///(such as unloading), the location will store the previous location and the action will store the new location.
   public record InProcessMaterialLocation
   {
@@ -86,6 +93,7 @@ namespace BlackMaple.MachineFramework
       Free = 0,
       OnPallet,
       InQueue,
+      InBasket,
     }
 
     public required LocType Type { get; init; }
@@ -100,6 +108,11 @@ namespace BlackMaple.MachineFramework
 
     //If Type == InQueue or Type == Free
     public int? QueuePosition { get; init; }
+
+    //If Type == InBasket
+    public int? BasketId { get; init; }
+
+    public int? BasketSubPosition { get; init; }
   }
 
   //Stores information about a piece of material, where it is, and what is happening to it.
@@ -123,6 +136,8 @@ namespace BlackMaple.MachineFramework
     public required ImmutableList<string> SignaledInspections { get; init; }
 
     public bool? QuarantineAfterUnload { get; init; }
+
+    public string? Problem { get; init; }
 
     // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
     // indicate no machining stops have yet completed.

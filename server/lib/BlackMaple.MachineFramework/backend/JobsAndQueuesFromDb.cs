@@ -36,6 +36,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace BlackMaple.MachineFramework
 {
@@ -48,6 +49,7 @@ namespace BlackMaple.MachineFramework
     ///loads info
     CurrentStatus GetCurrentStatus();
     void RecalculateCellState();
+    Task<bool> RecalculateCellStateAndWaitAsync(CancellationToken cancellationToken);
     event NewCurrentStatus? OnNewCurrentStatus;
 
     //checks to see if the jobs are valid.  Some machine types might not support all the different
@@ -185,6 +187,12 @@ namespace BlackMaple.MachineFramework
     private St? _lastCurrentStatus = default;
     private string? _syncError = null;
 
+    // Waiting requests for RecalculateCellStateAndWaitAsync
+    private readonly System.Collections.Concurrent.ConcurrentBag<(
+      CancellationToken token,
+      TaskCompletionSource<bool> tcs
+    )> _waitingRequests = new();
+
     #region Thread and Messages
     private readonly Thread _thread;
     private readonly AutoResetEvent _shutdown = new(false);
@@ -195,6 +203,29 @@ namespace BlackMaple.MachineFramework
     public void RecalculateCellState()
     {
       _recheck.Set();
+    }
+
+    public async Task<bool> RecalculateCellStateAndWaitAsync(CancellationToken cancellationToken)
+    {
+      var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+      var reg = cancellationToken.Register(() => tcs.TrySetCanceled(cancellationToken));
+
+      _waitingRequests.Add((cancellationToken, tcs));
+
+      _recheck.Set();
+
+      try
+      {
+        return await tcs.Task;
+      }
+      catch (OperationCanceledException)
+      {
+        return false;
+      }
+      finally
+      {
+        reg.Dispose();
+      }
     }
 
     private void NewCellState()
@@ -247,8 +278,20 @@ namespace BlackMaple.MachineFramework
 
     private TimeSpan Synchronize(bool raiseNewCurStatus)
     {
+      var waitingRequests = new List<(CancellationToken token, TaskCompletionSource<bool> tcs)>();
+
       try
       {
+        // pull out waiting requests before starting the synchronization, so if a wait is added in the middle
+        // it will have to wait until the next synchronization cycle
+        while (_waitingRequests.TryTake(out var request))
+        {
+          if (!request.token.IsCancellationRequested)
+          {
+            waitingRequests.Add(request);
+          }
+        }
+
         lock (_changeLock)
         {
           bool actionPerformed = false;
@@ -289,6 +332,15 @@ namespace BlackMaple.MachineFramework
             raiseNewCurStatus = true;
           }
 
+          // signal waiting requests
+          foreach (var (token, tcs) in waitingRequests)
+          {
+            if (!token.IsCancellationRequested)
+            {
+              tcs.SetResult(true);
+            }
+          }
+
           return timeUntilNextRefresh;
         }
       }
@@ -312,6 +364,16 @@ namespace BlackMaple.MachineFramework
           _syncronizeErrorCount,
           msToWait
         );
+
+        // put the waiting requests back into the bag
+        foreach (var (token, tcs) in waitingRequests)
+        {
+          if (!token.IsCancellationRequested)
+          {
+            _waitingRequests.Add((token, tcs));
+          }
+        }
+
         return TimeSpan.FromMilliseconds(msToWait);
       }
       finally
@@ -364,10 +426,10 @@ namespace BlackMaple.MachineFramework
             Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
             Material = [],
             Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-            Alarms = _syncError == null ?
-              ["FMS Insight is starting up..."] :
-              [$"Error communicating with machines: {_syncError}. Will try again in a few minutes."]
-            ,
+            Alarms =
+              _syncError == null
+                ? ["FMS Insight is starting up..."]
+                : [$"Error communicating with machines: {_syncError}. Will try again in a few minutes."],
           };
         }
         else if (_syncError != null)

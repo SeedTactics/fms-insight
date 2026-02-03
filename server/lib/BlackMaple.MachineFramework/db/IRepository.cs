@@ -61,6 +61,8 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     DateTime LastPalletCycleTime(int pallet);
+    List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
+    DateTime LastBasketCycleTime(int basketId);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -114,6 +116,23 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues
     );
+
+    // RecordBasketOnlyLoadUnload is used for basket-only load/unload operations (no pallet involved).
+    // This includes:
+    //   - Basket to/from queue (material loaded from queue onto basket, or unloaded from basket to queue)
+    //   - Basket to/from basket (material transferred between baskets)
+    IEnumerable<LogEntry> RecordBasketOnlyLoadUnload(
+      IReadOnlyList<MaterialToLoadOntoBasket> toLoad,
+      IReadOnlyList<EventLogMaterial> previouslyLoaded,
+      IReadOnlyList<MaterialToUnloadFromBasket> toUnload,
+      IReadOnlyList<EventLogMaterial> previouslyUnloaded,
+      int lulNum,
+      int basketId,
+      TimeSpan totalElapsed,
+      DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues
+    );
+
     IEnumerable<LogEntry> RecordEmptyPallet(
       int pallet,
       DateTime timeUTC,
@@ -204,6 +223,41 @@ namespace BlackMaple.MachineFramework
       int stockerNum,
       DateTime timeUTC,
       bool waitForMachine,
+      TimeSpan elapsed,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketLoadBegin(
+      IEnumerable<EventLogMaterial> mats,
+      int basketId,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketUnloadBegin(
+      IEnumerable<EventLogMaterial> mats,
+      int basketId,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketArriveLocation(
+      IEnumerable<EventLogMaterial> mats,
+      int basketId,
+      string locationName,
+      int locationPosition,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketDepartLocation(
+      IEnumerable<EventLogMaterial> mats,
+      int basketId,
+      string locationName,
+      int locationPosition,
+      DateTime timeUTC,
       TimeSpan elapsed,
       string foreignId = null,
       string originalMessage = null
@@ -620,10 +674,36 @@ namespace BlackMaple.MachineFramework
     public string OriginalMessage { get; init; } = null;
   }
 
+  public record UnloadDestination
+  {
+    public string Queue { get; init; } // should be string? but no #nullable yet
+    public int? BasketId { get; init; }
+  }
+
   public record MaterialToUnloadFromFace
   {
-    public required ImmutableDictionary<long, string> MaterialIDToQueue { get; init; }
+    public required ImmutableDictionary<long, UnloadDestination> MaterialIDToDestination { get; init; }
     public required int FaceNum { get; init; }
+    public required int Process { get; init; }
+    public required TimeSpan ActiveOperationTime { get; init; }
+    public string ForeignID { get; init; } = null;
+    public string OriginalMessage { get; init; } = null;
+  }
+
+  // Parameter types for basket-only load/unload operations (no pallet involved)
+  public record MaterialToLoadOntoBasket
+  {
+    public required ImmutableList<long> MaterialIDs { get; init; }
+    public required int Process { get; init; }
+    public required int? Path { get; init; }
+    public required TimeSpan ActiveOperationTime { get; init; }
+    public string ForeignID { get; init; } = null;
+    public string OriginalMessage { get; init; } = null;
+  }
+
+  public record MaterialToUnloadFromBasket
+  {
+    public required ImmutableDictionary<long, UnloadDestination> MaterialIDToDestination { get; init; }
     public required int Process { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }
     public string ForeignID { get; init; } = null;

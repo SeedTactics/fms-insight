@@ -727,9 +727,12 @@ public static class BuildCellState
 
       return new MaterialToUnloadFromFace()
       {
-        MaterialIDToQueue = face.Material.ToImmutableDictionary(
+        MaterialIDToDestination = face.Material.ToImmutableDictionary(
           m => m.MaterialID,
-          m => matIdsToLoad.Contains(m.MaterialID) ? null : outputQueue
+          m =>
+            matIdsToLoad.Contains(m.MaterialID)
+              ? null
+              : new UnloadDestination() { Queue = outputQueue }
         ),
         Process = face.Process,
         FaceNum = face.FaceNum,

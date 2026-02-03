@@ -457,7 +457,7 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>
               .Empty.Add(mat20.MaterialID, null)
               .Add(mat19.MaterialID, null),
             FaceNum = mat20.Face,
@@ -466,7 +466,7 @@ namespace BlackMaple.FMSInsight.Tests
           },
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat1.MaterialID, null),
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(mat1.MaterialID, null),
             FaceNum = mat1.Face,
             Process = mat1.Process,
             ActiveOperationTime = TimeSpan.FromMinutes(211),
@@ -812,7 +812,7 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>
               .Empty.Add(mat2.MaterialID, null)
               .Add(mat20.MaterialID, null),
             FaceNum = mat2.Face,
@@ -1695,7 +1695,7 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>
               .Empty.Add(mat1_proc2.MaterialID, null)
               .Add(mat2_proc1.MaterialID, null),
             Process = 2,
@@ -1770,9 +1770,9 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = new[] { mat3, mat4, mat5, mat6 }.ToImmutableDictionary(
+            MaterialIDToDestination = new[] { mat3, mat4, mat5, mat6 }.ToImmutableDictionary(
               m => m.MaterialID,
-              _ => (string)null
+              _ => (UnloadDestination)null
             ),
             Process = mat3.Process,
             FaceNum = mat3.Face,
@@ -2152,7 +2152,7 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat1_proc2.MaterialID, null),
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(mat1_proc2.MaterialID, null),
             Process = mat1_proc2.Process,
             FaceNum = mat1_proc2.Face,
             ActiveOperationTime = TimeSpan.FromMinutes(40),
@@ -2185,7 +2185,7 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat2_proc1.MaterialID, null),
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(mat2_proc1.MaterialID, null),
             Process = 1,
             FaceNum = mat2_proc1.Face,
             ActiveOperationTime = TimeSpan.FromMinutes(61),
@@ -2229,7 +2229,7 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat3.MaterialID, null),
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(mat3.MaterialID, null),
             Process = mat3.Process,
             FaceNum = mat3.Face,
             ActiveOperationTime = TimeSpan.FromMinutes(81),
@@ -2262,7 +2262,7 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat4.MaterialID, null),
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(mat4.MaterialID, null),
             Process = mat4.Process,
             FaceNum = mat4.Face,
             ActiveOperationTime = TimeSpan.FromMinutes(101),
@@ -3351,9 +3351,9 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = ImmutableDictionary<long, string>
-              .Empty.Add(mat1.MaterialID, "AAAA")
-              .Add(mat3.MaterialID, "AAAA")
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>
+              .Empty.Add(mat1.MaterialID, new UnloadDestination() { Queue = "AAAA" })
+              .Add(mat3.MaterialID, new UnloadDestination() { Queue = "AAAA" })
               .Add(mat4.MaterialID, null),
             FaceNum = mat1.Face,
             Process = mat1.Process,
@@ -5647,7 +5647,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new MaterialToUnloadFromFace()
             {
-              MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat1, "queue1"),
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(mat1, new UnloadDestination() { Queue = "queue1" }),
               FaceNum = 1,
               Process = 1,
               ActiveOperationTime = TimeSpan.FromMinutes(5),
@@ -5784,14 +5784,14 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new MaterialToUnloadFromFace()
             {
-              MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat2, "queue1"),
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(mat2, new UnloadDestination() { Queue = "queue1" }),
               FaceNum = 3,
               Process = 2,
               ActiveOperationTime = TimeSpan.FromMinutes(4),
             },
             new MaterialToUnloadFromFace()
             {
-              MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat3, "queue1"),
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(mat3, new UnloadDestination() { Queue = "queue1" }),
               FaceNum = 1,
               Process = 1,
               ActiveOperationTime = TimeSpan.FromMinutes(5),
@@ -6097,6 +6097,719 @@ namespace BlackMaple.FMSInsight.Tests
     {
       return copy => copy with { ActiveOperationTime = TimeSpan.Zero };
     }
+    #endregion
+
+    #region Basket Tests
+
+    [Test]
+    public void BasketLogEvents()
+    {
+      using var _jobLog = _repoCfg.OpenConnection();
+
+      var mat1 = MkLogMat.Mk(
+        _jobLog.AllocateMaterialID("unique1", "part1", 2),
+        "unique1",
+        1,
+        "part1",
+        2,
+        "",
+        "",
+        ""
+      );
+      var mat2 = MkLogMat.Mk(
+        _jobLog.AllocateMaterialID("unique2", "part2", 2),
+        "unique2",
+        1,
+        "part2",
+        2,
+        "",
+        "",
+        ""
+      );
+
+      var start = DateTime.UtcNow.AddHours(-2);
+
+      // Test BasketLoadUnload with Program = "LOAD"
+      var loadToBasket = _jobLog.RecordBasketLoadBegin(
+        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 5,
+        lulNum: 10,
+        timeUTC: start
+      );
+
+      loadToBasket
+        .ShouldBeEquivalentTo(
+          new LogEntry(
+            loadToBasket.Counter,
+            new[] { mat1, mat2 },
+            0,
+            LogType.BasketLoadUnload,
+            "L/U",
+            5, // LocationNum = basketId
+            "LOAD",
+            true, // StartOfCycle = true for standalone calls
+            start,
+            "LOAD",
+            TimeSpan.Zero,
+            TimeSpan.Zero
+          )
+        );
+
+      // Test BasketLoadUnload with Program = "UNLOAD"
+      var unloadFromBasket = _jobLog.RecordBasketUnloadBegin(
+        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 5,
+        lulNum: 10,
+        timeUTC: start.AddMinutes(10)
+      );
+
+      unloadFromBasket
+        .ShouldBeEquivalentTo(
+          new LogEntry(
+            unloadFromBasket.Counter,
+            new[] { mat1, mat2 },
+            0,
+            LogType.BasketLoadUnload,
+            "L/U",
+            5, // LocationNum = basketId
+            "UNLOAD",
+            true, // StartOfCycle = true for standalone calls
+            start.AddMinutes(10),
+            "UNLOAD",
+            TimeSpan.Zero,
+            TimeSpan.Zero
+          )
+        );
+
+      // Test BasketInLocation arrive
+      var basketArrive = _jobLog.RecordBasketArriveLocation(
+        mats: new[] { mat1 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 3,
+        locationName: "Tower1",
+        locationPosition: 5,
+        timeUTC: start.AddMinutes(20)
+      );
+
+      basketArrive.Counter.ShouldBeGreaterThan(0);
+      basketArrive.Material.ShouldBe(new[] { mat1 });
+      basketArrive.Pallet.ShouldBe(0);
+      basketArrive.LogType.ShouldBe(LogType.BasketInLocation);
+      basketArrive.LocationName.ShouldBe("Tower1");
+      basketArrive.LocationNum.ShouldBe(3); // basketId
+      basketArrive.Program.ShouldBe("Arrive");
+      basketArrive.StartOfCycle.ShouldBe(true);
+      basketArrive.EndTimeUTC.ShouldBe(start.AddMinutes(20));
+      basketArrive.Result.ShouldBe("");
+      basketArrive.ElapsedTime.ShouldBe(TimeSpan.Zero);
+      basketArrive.ActiveOperationTime.ShouldBe(TimeSpan.Zero);
+      basketArrive.ProgramDetails["LocationPosition"].ShouldBe("5");
+
+      // Test BasketInLocation depart
+      var basketDepart = _jobLog.RecordBasketDepartLocation(
+        mats: new[] { mat1 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 3,
+        locationName: "Tower1",
+        locationPosition: 5,
+        timeUTC: start.AddMinutes(30),
+        elapsed: TimeSpan.FromMinutes(10)
+      );
+
+      basketDepart.Counter.ShouldBeGreaterThan(0);
+      basketDepart.Material.ShouldBe(new[] { mat1 });
+      basketDepart.Pallet.ShouldBe(0);
+      basketDepart.LogType.ShouldBe(LogType.BasketInLocation);
+      basketDepart.LocationName.ShouldBe("Tower1");
+      basketDepart.LocationNum.ShouldBe(3); // basketId
+      basketDepart.Program.ShouldBe("Depart");
+      basketDepart.StartOfCycle.ShouldBe(false);
+      basketDepart.EndTimeUTC.ShouldBe(start.AddMinutes(30));
+      basketDepart.Result.ShouldBe("");
+      basketDepart.ElapsedTime.ShouldBe(TimeSpan.FromMinutes(10));
+      basketDepart.ActiveOperationTime.ShouldBe(TimeSpan.Zero);
+      basketDepart.ProgramDetails["LocationPosition"].ShouldBe("5");
+    }
+
+    [Test]
+    public void BasketRepositoryMethods()
+    {
+      using var _jobLog = _repoCfg.OpenConnection();
+
+      // Test empty basket
+      _jobLog.CurrentBasketLog(1).ShouldBeEmpty();
+      _jobLog.CurrentBasketLog(2).ShouldBeEmpty();
+      _jobLog.LastBasketCycleTime(1).ShouldBe(DateTime.MinValue);
+      _jobLog.LastBasketCycleTime(2).ShouldBe(DateTime.MinValue);
+
+      var mat1 = MkLogMat.Mk(
+        _jobLog.AllocateMaterialID("unique1", "part1", 2),
+        "unique1",
+        1,
+        "part1",
+        2,
+        "",
+        "",
+        ""
+      );
+      var mat2 = MkLogMat.Mk(
+        _jobLog.AllocateMaterialID("unique2", "part2", 2),
+        "unique2",
+        1,
+        "part2",
+        2,
+        "",
+        "",
+        ""
+      );
+
+      var start = DateTime.UtcNow.AddHours(-5);
+      var basket1Events = new List<LogEntry>();
+
+      // Add some events to basket 1
+      var loadEvt = _jobLog.RecordBasketLoadBegin(
+        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 1,
+        lulNum: 5,
+        timeUTC: start
+      );
+      basket1Events.Add(loadEvt);
+
+      // Also test BasketInLocation, but it's not included in CurrentBasketLog
+      var arriveEvt = _jobLog.RecordBasketArriveLocation(
+        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 1,
+        locationName: "Tower1",
+        locationPosition: 3,
+        timeUTC: start.AddMinutes(5)
+      );
+      // Note: CurrentBasketLog only includes BasketLoadUnload and BasketCycle events, not BasketInLocation
+
+      // CurrentBasketLog should return events since last basket cycle
+      var currentLog = _jobLog.CurrentBasketLog(1);
+      currentLog.EventsShouldBe(basket1Events);
+      _jobLog.CurrentBasketLog(2).ShouldBeEmpty();
+
+      // Record a basket cycle to mark boundary
+      var cycleTime = start.AddMinutes(20);
+      var unloadEvt = _jobLog.RecordBasketUnloadBegin(
+        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 1,
+        lulNum: 5,
+        timeUTC: cycleTime
+      );
+
+      // After basket cycle, CurrentBasketLog should be empty
+      _jobLog.LastBasketCycleTime(1).ShouldBe(cycleTime);
+      _jobLog.CurrentBasketLog(1).ShouldBeEmpty();
+
+      // Test includeLastCycleEvt parameter
+      var logsWithCycle = _jobLog.CurrentBasketLog(1, includeLastCycleEvt: true);
+      logsWithCycle.Count.ShouldBe(1);
+      logsWithCycle[0].LogType.ShouldBe(LogType.BasketCycle);
+
+      // Add new events after cycle
+      var basket1NewEvents = new List<LogEntry>();
+      var loadEvt2 = _jobLog.RecordBasketLoadBegin(
+        mats: new[] { mat1 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 1,
+        lulNum: 5,
+        timeUTC: start.AddMinutes(30)
+      );
+      basket1NewEvents.Add(loadEvt2);
+
+      _jobLog.CurrentBasketLog(1).EventsShouldBe(basket1NewEvents);
+
+      // Test multiple baskets tracked independently
+      var basket2Events = new List<LogEntry>();
+      var basket2Load = _jobLog.RecordBasketLoadBegin(
+        mats: new[] { mat2 }.Select(EventLogMaterial.FromLogMat),
+        basketId: 2,
+        lulNum: 8,
+        timeUTC: start.AddMinutes(40)
+      );
+      basket2Events.Add(basket2Load);
+
+      _jobLog.CurrentBasketLog(1).EventsShouldBe(basket1NewEvents);
+      _jobLog.CurrentBasketLog(2).EventsShouldBe(basket2Events);
+      _jobLog.LastBasketCycleTime(2).ShouldBe(DateTime.MinValue);
+    }
+
+    [Test]
+    public void LoadUnloadBetweenPalletAndBasket()
+    {
+      using var _jobLog = _repoCfg.OpenConnection();
+      var start = DateTime.UtcNow.AddHours(-10);
+
+      var mat1 = MkLogMat.Mk(1, "uniq1", 1, "part1", 2, "", "", "");
+      _jobLog.CreateMaterialID(1, "uniq1", "part1", 2);
+      var mat2 = MkLogMat.Mk(2, "uniq2", 1, "part2", 2, "", "", "");
+      _jobLog.CreateMaterialID(2, "uniq2", "part2", 2);
+
+      // First, load material onto basket from queue
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial() { MaterialID = mat1.MaterialID, Process = 0, Face = 0 },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start
+      );
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial() { MaterialID = mat2.MaterialID, Process = 0, Face = 0 },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start
+      );
+
+      // Load from queue to pallet, then unload to basket
+      var loadToPallet = _jobLog.RecordLoadUnloadComplete(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace()
+          {
+            MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
+            Process = 1,
+            Path = null,
+            FaceNum = 1,
+            ActiveOperationTime = TimeSpan.FromMinutes(10),
+          },
+        ],
+        toUnload: null,
+        previouslyLoaded: null,
+        previouslyUnloaded: null,
+        pallet: 1,
+        lulNum: 5,
+        totalElapsed: TimeSpan.FromMinutes(5),
+        timeUTC: start.AddMinutes(10),
+        externalQueues: null
+      );
+
+      // Now unload from pallet to basket
+      var unloadToBasket = _jobLog.RecordLoadUnloadComplete(
+        toLoad: null,
+        toUnload:
+        [
+          new MaterialToUnloadFromFace()
+          {
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>
+              .Empty.Add(mat1.MaterialID, new UnloadDestination() { BasketId = 3 })
+              .Add(mat2.MaterialID, new UnloadDestination() { BasketId = 3 }),
+            FaceNum = 1,
+            Process = 1,
+            ActiveOperationTime = TimeSpan.FromMinutes(15),
+          },
+        ],
+        previouslyLoaded: null,
+        previouslyUnloaded: null,
+        pallet: 1,
+        lulNum: 5,
+        totalElapsed: TimeSpan.FromMinutes(20),
+        timeUTC: start.AddMinutes(30),
+        externalQueues: null
+      );
+
+      // Should have LoadUnloadCycle for pallet unload
+      var palletUnload = unloadToBasket.FirstOrDefault(e =>
+        e.LogType == LogType.LoadUnloadCycle && e.Program == "UNLOAD"
+      );
+      palletUnload.ShouldNotBeNull();
+      palletUnload.Material.Count.ShouldBe(2);
+      palletUnload.Material[0].MaterialID.ShouldBe(mat1.MaterialID);
+      palletUnload.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
+
+      // Should have BasketLoadUnload for basket load
+      var basketLoad = unloadToBasket.FirstOrDefault(e =>
+        e.LogType == LogType.BasketLoadUnload && e.Program == "LOAD"
+      );
+      basketLoad.ShouldNotBeNull();
+      basketLoad.Material.Count.ShouldBe(2);
+      basketLoad.Material[0].MaterialID.ShouldBe(mat1.MaterialID);
+      basketLoad.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
+
+      // Should have PalletCycle end
+      var palletCycleEnd = unloadToBasket.FirstOrDefault(e =>
+        e.LogType == LogType.PalletCycle && e.StartOfCycle == false
+      );
+      palletCycleEnd.ShouldNotBeNull();
+
+      // Should have BasketCycle start
+      var basketCycleStart = unloadToBasket.FirstOrDefault(e =>
+        e.LogType == LogType.BasketCycle && e.StartOfCycle == true
+      );
+      basketCycleStart.ShouldNotBeNull();
+      basketCycleStart.Material.Count.ShouldBe(2);
+      basketCycleStart.Material[0].MaterialID.ShouldBe(mat1.MaterialID);
+      basketCycleStart.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
+
+      // Now load from basket back to pallet
+      var loadFromBasket = _jobLog.RecordLoadUnloadComplete(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace()
+          {
+            MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
+            Process = 2,
+            Path = null,
+            FaceNum = 2,
+            ActiveOperationTime = TimeSpan.FromMinutes(12),
+          },
+        ],
+        toUnload: null,
+        previouslyLoaded: null,
+        previouslyUnloaded: null,
+        pallet: 2,
+        lulNum: 6,
+        totalElapsed: TimeSpan.FromMinutes(8),
+        timeUTC: start.AddMinutes(50),
+        externalQueues: null
+      );
+
+      // Should have BasketLoadUnload for basket unload
+      var basketUnload = loadFromBasket.FirstOrDefault(e =>
+        e.LogType == LogType.BasketLoadUnload && e.Program == "UNLOAD"
+      );
+      basketUnload.ShouldNotBeNull();
+      basketUnload.Material.Count.ShouldBe(2);
+      basketUnload.Material[0].MaterialID.ShouldBe(mat1.MaterialID);
+      basketUnload.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
+
+      // Should have LoadUnloadCycle for pallet load
+      var palletLoad = loadFromBasket.FirstOrDefault(e =>
+        e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD"
+      );
+      palletLoad.ShouldNotBeNull();
+      palletLoad.Material.Count.ShouldBe(2);
+      palletLoad.Material[0].MaterialID.ShouldBe(mat1.MaterialID);
+      palletLoad.Material[0].Face.ShouldBe(2);
+      palletLoad.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
+      palletLoad.Material[1].Face.ShouldBe(2);
+
+      // Should have BasketCycle end
+      var basketCycleEnd = loadFromBasket.FirstOrDefault(e =>
+        e.LogType == LogType.BasketCycle && e.StartOfCycle == false
+      );
+      basketCycleEnd.ShouldNotBeNull();
+      basketCycleEnd.Material.Count.ShouldBe(2);
+      basketCycleEnd.Material[0].MaterialID.ShouldBe(mat1.MaterialID);
+      basketCycleEnd.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
+
+      // Should have PalletCycle start
+      var palletCycleStart = loadFromBasket.FirstOrDefault(e =>
+        e.LogType == LogType.PalletCycle && e.StartOfCycle == true
+      );
+      palletCycleStart.ShouldNotBeNull();
+    }
+
+    [Test]
+    public void LoadUnloadBetweenBasketAndQueue()
+    {
+      using var _jobLog = _repoCfg.OpenConnection();
+      var start = DateTime.UtcNow.AddHours(-10);
+
+      var mat1 = MkLogMat.Mk(1, "uniq1", 1, "part1", 2, "", "", "");
+      _jobLog.CreateMaterialID(1, "uniq1", "part1", 2);
+      var mat2 = MkLogMat.Mk(2, "uniq2", 1, "part2", 2, "", "", "");
+      _jobLog.CreateMaterialID(2, "uniq2", "part2", 2);
+
+      // Add material to queue
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial() { MaterialID = mat1.MaterialID, Process = 0, Face = 0 },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start
+      );
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial() { MaterialID = mat2.MaterialID, Process = 0, Face = 0 },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start
+      );
+
+      // Load from queue to basket using RecordBasketOnlyLoadUnload
+      var loadLogs = _jobLog.RecordBasketOnlyLoadUnload(
+        toLoad: [
+          new MaterialToLoadOntoBasket()
+          {
+            MaterialIDs = [mat1.MaterialID],
+            Process = 1,
+            Path = null,
+            ActiveOperationTime = TimeSpan.FromMinutes(5),
+          }
+        ],
+        previouslyLoaded: null,
+        toUnload: null,
+        previouslyUnloaded: null,
+        lulNum: 10,
+        basketId: 5,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        timeUTC: start.AddMinutes(10),
+        externalQueues: null
+      );
+
+      // Should have created basket cycle start and load events
+      loadLogs.Count().ShouldBeGreaterThan(0);
+      loadLogs.Any(e => e.LogType == LogType.BasketCycle && e.StartOfCycle).ShouldBeTrue();
+      loadLogs.Any(e => e.LogType == LogType.BasketLoadUnload && e.Program == "LOAD").ShouldBeTrue();
+
+      // Material should not be in queue now
+      var queuedMats = _jobLog.GetMaterialInAllQueues();
+      queuedMats.Count(m => m.MaterialID == mat1.MaterialID).ShouldBe(0);
+
+      // Now unload from basket back to queue using RecordBasketOnlyLoadUnload
+      var unloadLogs = _jobLog.RecordBasketOnlyLoadUnload(
+        toLoad: null,
+        previouslyLoaded: null,
+        toUnload: [
+          new MaterialToUnloadFromBasket()
+          {
+            MaterialIDToDestination = new Dictionary<long, UnloadDestination>()
+            {
+              [mat1.MaterialID] = new UnloadDestination() { Queue = "QUEUE2" }
+            }.ToImmutableDictionary(),
+            Process = 1,
+            ActiveOperationTime = TimeSpan.FromMinutes(5),
+          }
+        ],
+        previouslyUnloaded: null,
+        lulNum: 10,
+        basketId: 5,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        timeUTC: start.AddMinutes(30),
+        externalQueues: null
+      );
+
+      // Should have created basket cycle end and unload events
+      unloadLogs.Count().ShouldBeGreaterThan(0);
+      unloadLogs.Any(e => e.LogType == LogType.BasketCycle && !e.StartOfCycle).ShouldBeTrue();
+      unloadLogs.Any(e => e.LogType == LogType.BasketLoadUnload && e.Program == "UNLOAD").ShouldBeTrue();
+
+      // Should have added to queue
+      var queuedMats2 = _jobLog.GetMaterialInAllQueues().ToList();
+      queuedMats2.Count(m => m.MaterialID == mat1.MaterialID && m.Queue == "QUEUE2").ShouldBe(1);
+    }
+
+    [Test]
+    public void BasketOnlySimultaneousLoadUnload()
+    {
+      using var _jobLog = _repoCfg.OpenConnection();
+      var start = DateTime.UtcNow.AddHours(-10);
+
+      var mat1 = MkLogMat.Mk(1, "uniq1", 1, "part1", 2, "", "", "");
+      _jobLog.CreateMaterialID(1, "uniq1", "part1", 2);
+      var mat2 = MkLogMat.Mk(2, "uniq2", 1, "part2", 2, "", "", "");
+      _jobLog.CreateMaterialID(2, "uniq2", "part2", 2);
+      var mat3 = MkLogMat.Mk(3, "uniq3", 1, "part3", 2, "", "", "");
+      _jobLog.CreateMaterialID(3, "uniq3", "part3", 2);
+
+      // Add mat1 and mat2 to queue
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial() { MaterialID = mat1.MaterialID, Process = 0, Face = 0 },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start
+      );
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial() { MaterialID = mat2.MaterialID, Process = 0, Face = 0 },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start
+      );
+
+      // Load mat3 onto basket 5 first
+      _jobLog.RecordBasketOnlyLoadUnload(
+        toLoad: [
+          new MaterialToLoadOntoBasket()
+          {
+            MaterialIDs = [mat3.MaterialID],
+            Process = 1,
+            Path = 1,
+            ActiveOperationTime = TimeSpan.FromMinutes(3),
+          }
+        ],
+        previouslyLoaded: null,
+        toUnload: null,
+        previouslyUnloaded: null,
+        lulNum: 10,
+        basketId: 5,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        timeUTC: start.AddMinutes(5),
+        externalQueues: null
+      );
+
+      // Now do a simultaneous load and unload operation:
+      // - Load mat1 and mat2 from queue onto basket 5
+      // - Unload mat3 from basket 5 to basket 7
+      var logs = _jobLog.RecordBasketOnlyLoadUnload(
+        toLoad: [
+          new MaterialToLoadOntoBasket()
+          {
+            MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
+            Process = 1,
+            Path = 1,
+            ActiveOperationTime = TimeSpan.FromMinutes(5),
+          }
+        ],
+        previouslyLoaded: [
+          new EventLogMaterial() { MaterialID = mat3.MaterialID, Process = 1, Face = 0 }
+        ],
+        toUnload: [
+          new MaterialToUnloadFromBasket()
+          {
+            MaterialIDToDestination = new Dictionary<long, UnloadDestination>()
+            {
+              [mat3.MaterialID] = new UnloadDestination() { BasketId = 7 }
+            }.ToImmutableDictionary(),
+            Process = 1,
+            ActiveOperationTime = TimeSpan.FromMinutes(3),
+          }
+        ],
+        previouslyUnloaded: null,
+        lulNum: 10,
+        basketId: 5,
+        totalElapsed: TimeSpan.FromMinutes(3),
+        timeUTC: start.AddMinutes(10),
+        externalQueues: null
+      );
+
+      // Verify events created
+      logs.Count().ShouldBeGreaterThan(0);
+
+      // Should have basket cycle end for basket 5 (mat3 unloaded)
+      logs.Count(e =>
+        e.LogType == LogType.BasketCycle && e.LocationNum == 5 && !e.StartOfCycle
+      ).ShouldBe(1);
+
+      // Should have unload event for basket 5
+      logs.Count(e =>
+        e.LogType == LogType.BasketLoadUnload && e.LocationNum == 5 && e.Program == "UNLOAD"
+      ).ShouldBe(1);
+
+      // Should have load event for basket 7 (mat3 transferred)
+      logs.Count(e =>
+        e.LogType == LogType.BasketLoadUnload && e.LocationNum == 7 && e.Program == "LOAD"
+      ).ShouldBe(1);
+
+      // Should have basket cycle start for basket 5 (mat1, mat2, mat3 loaded)
+      var cycleStart = logs.FirstOrDefault(e =>
+        e.LogType == LogType.BasketCycle && e.LocationNum == 5 && e.StartOfCycle
+      );
+      cycleStart.ShouldNotBeNull();
+      cycleStart.Material.Count.ShouldBe(3); // mat1, mat2, mat3 (previously loaded)
+
+      // Should have load event for basket 5 (mat1, mat2)
+      logs.Count(e =>
+        e.LogType == LogType.BasketLoadUnload && e.LocationNum == 5 && e.Program == "LOAD"
+      ).ShouldBe(1);
+
+      // Verify queue state
+      var queued = _jobLog.GetMaterialInAllQueues();
+      queued.Count(m => m.MaterialID == mat1.MaterialID).ShouldBe(0);
+      queued.Count(m => m.MaterialID == mat2.MaterialID).ShouldBe(0);
+
+      // Verify CurrentBasketLog
+      var basket5Log = _jobLog.CurrentBasketLog(5);
+      basket5Log.Count.ShouldBeGreaterThan(0);
+      basket5Log.Any(e => e.LogType == LogType.BasketLoadUnload).ShouldBeTrue();
+    }
+
+    [Test]
+    public void BasketCycleInvalidation()
+    {
+      using var _jobLog = _repoCfg.OpenConnection();
+      var start = DateTime.UtcNow.AddHours(-5);
+
+      var mat1 = MkLogMat.Mk(1, "uniq1", 1, "part1", 2, "", "", "");
+      _jobLog.CreateMaterialID(1, "uniq1", "part1", 2);
+
+      // Add material to queue
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial() { MaterialID = mat1.MaterialID, Process = 0, Face = 0 },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start
+      );
+
+      // Load from queue to basket using RecordBasketOnlyLoadUnload
+      _jobLog.RecordBasketOnlyLoadUnload(
+        toLoad: [
+          new MaterialToLoadOntoBasket()
+          {
+            MaterialIDs = [mat1.MaterialID],
+            Process = 1,
+            Path = null,
+            ActiveOperationTime = TimeSpan.Zero,
+          }
+        ],
+        previouslyLoaded: null,
+        toUnload: null,
+        previouslyUnloaded: null,
+        lulNum: 10,
+        basketId: 5,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        timeUTC: start.AddMinutes(10),
+        externalQueues: null
+      );
+
+      // Material should not be in queue now
+      _jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
+      // NextProcessForQueuedMaterial returns the material's NEXT process from log events
+      // After loading to process 1, it should return 2 (process + 1)
+      _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).ShouldBe(2);
+
+      // Get log before invalidation
+      var logBeforeInvalidate = _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false);
+      var basketEventsBeforeInvalidateCount = logBeforeInvalidate.Count(e =>
+        e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle
+      );
+      basketEventsBeforeInvalidateCount.ShouldBeGreaterThan(0);
+
+      // Invalidate the cycle
+      var invalidateResults = _jobLog.InvalidatePalletCycle(
+        matId: mat1.MaterialID,
+        process: 1,
+        operatorName: "operator"
+      );
+      invalidateResults.ShouldNotBeNull();
+
+      // After invalidation, basket events should be excluded from queries that don't include invalidated cycles
+      var logAfterInvalidate = _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false);
+      var basketEventsAfterInvalidate = logAfterInvalidate.Count(e =>
+        e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle
+      );
+      basketEventsAfterInvalidate.ShouldBe(0);
+
+      // But should be included when we explicitly ask for invalidated cycles
+      var logWithInvalidated = _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: true);
+      var invalidatedBasketEvents = logWithInvalidated.Count(e =>
+        (e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle)
+          && e.ProgramDetails.ContainsKey("PalletCycleInvalidated")
+      );
+      invalidatedBasketEvents.ShouldBeGreaterThan(0);
+
+      // Material should NOT be returned to basket (can't put it back), should go to quarantine queue
+      var queuedMats = _jobLog.GetMaterialInAllQueues();
+      if (queuedMats.Any())
+      {
+        // Should be in quarantine queue
+        queuedMats.ShouldHaveSingleItem().Queue.ShouldContain("quarantine", Case.Insensitive);
+      }
+
+      // Should have an InvalidateCycle event
+      var invalidateEvt = logWithInvalidated.FirstOrDefault(e => e.LogType == LogType.InvalidateCycle);
+      invalidateEvt.ShouldNotBeNull();
+    }
+
     #endregion
   }
 

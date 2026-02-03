@@ -608,7 +608,10 @@ namespace DebugMachineWatchApiServer
             [
               new MaterialToUnloadFromFace()
               {
-                MaterialIDToQueue = e.Material.ToImmutableDictionary(m => m.MaterialID, m => (string)null),
+                MaterialIDToDestination = e.Material.ToImmutableDictionary(
+                  m => m.MaterialID,
+                  m => (UnloadDestination)null
+                ),
                 FaceNum = e.Material[0].Face,
                 Process = e.Material[0].Process,
                 ActiveOperationTime = e.ActiveOperationTime,
