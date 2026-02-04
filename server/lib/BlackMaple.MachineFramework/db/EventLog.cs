@@ -1833,9 +1833,9 @@ namespace BlackMaple.MachineFramework
     // This includes:
     //   - Basket to/from queue (material loaded from queue onto basket, or unloaded from basket to queue)
     public IEnumerable<LogEntry> RecordBasketOnlyLoadUnload(
-      IReadOnlyList<MaterialToLoadOntoBasket> toLoad,
+      MaterialToLoadOntoBasket toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,
-      IReadOnlyList<MaterialToUnloadFromBasket> toUnload,
+      MaterialToUnloadFromBasket toUnload,
       IReadOnlyList<EventLogMaterial> previouslyUnloaded,
       int lulNum,
       int basketId,
@@ -1851,124 +1851,112 @@ namespace BlackMaple.MachineFramework
         var logs = new List<LogEntry>();
 
         // Calculate total active time and total material count
-        var totMatCnt =
-          (toLoad?.Sum(l => l.MaterialIDs.Count) ?? 0) + (toUnload?.Sum(l => l.MaterialIDToQueue.Count) ?? 0);
+        var totMatCnt = (toLoad?.MaterialIDs.Count ?? 0) + (toUnload?.MaterialIDToQueue.Count ?? 0);
 
         bool allHaveActive = true;
         TimeSpan totalActive = TimeSpan.Zero;
-        foreach (var l in toLoad ?? [])
+        if (toLoad?.ActiveOperationTime > TimeSpan.Zero)
         {
-          if (l.ActiveOperationTime > TimeSpan.Zero)
-          {
-            totalActive += l.ActiveOperationTime;
-          }
-          else
-          {
-            allHaveActive = false;
-          }
+          totalActive += toLoad.ActiveOperationTime;
         }
-        foreach (var u in toUnload ?? [])
+        else
         {
-          if (u.ActiveOperationTime > TimeSpan.Zero)
-          {
-            totalActive += u.ActiveOperationTime;
-          }
-          else
-          {
-            allHaveActive = false;
-          }
+          allHaveActive = false;
+        }
+        if (toUnload?.ActiveOperationTime > TimeSpan.Zero)
+        {
+          totalActive += toUnload.ActiveOperationTime;
+        }
+        else
+        {
+          allHaveActive = false;
         }
 
         // Process unloads from basket
         if (toUnload != null)
         {
-          foreach (var unload in toUnload)
+          TimeSpan elapsed = totalElapsed;
+          if (allHaveActive && totalActive > TimeSpan.Zero)
           {
-            TimeSpan elapsed = totalElapsed;
-            if (allHaveActive && totalActive > TimeSpan.Zero)
+            elapsed = TimeSpan.FromSeconds(
+              Math.Round(totalElapsed.TotalSeconds * toUnload.MaterialIDToQueue.Count / totMatCnt, 1)
+            );
+          }
+
+          // Create BasketLoadUnload event for unload
+          logs.Add(
+            AddLogEntry(
+              trans,
+              new NewEventLogEntry()
+              {
+                Material = toUnload.MaterialIDToQueue.Keys.Select(m => new EventLogMaterial()
+                {
+                  MaterialID = m,
+                  Face = 0,
+                  Process = toUnload.Process,
+                }),
+                Pallet = basketId,
+                LogType = LogType.BasketLoadUnload,
+                LocationName = "L/U",
+                LocationNum = lulNum,
+                Program = "UNLOAD",
+                StartOfCycle = true,
+                EndTimeUTC = timeUTC,
+                ElapsedTime = elapsed,
+                ActiveOperationTime = toUnload.ActiveOperationTime,
+                Result = "UNLOAD",
+              },
+              toUnload.ForeignID,
+              toUnload.OriginalMessage
+            )
+          );
+
+          // Handle queue destinations
+          foreach (var kv in toUnload.MaterialIDToQueue)
+          {
+            var matId = kv.Key;
+            var queue = kv.Value;
+            var evt = new EventLogMaterial()
             {
-              elapsed = TimeSpan.FromSeconds(
-                Math.Round(totalElapsed.TotalSeconds * unload.MaterialIDToQueue.Count / totMatCnt, 1)
+              MaterialID = matId,
+              Process = toUnload.Process,
+              Face = 0,
+            };
+            if (externalQueues != null && externalQueues.TryGetValue(queue, out var extQueue))
+            {
+              sendToExternal.Add(
+                new MaterialToSendToExternalQueue()
+                {
+                  Server = extQueue,
+                  PartName = "",
+                  Queue = queue,
+                  Serial = "",
+                }
               );
             }
-
-            // Create BasketLoadUnload event for unload
-            logs.Add(
-              AddLogEntry(
-                trans,
-                new NewEventLogEntry()
-                {
-                  Material = unload.MaterialIDToQueue.Keys.Select(m => new EventLogMaterial()
-                  {
-                    MaterialID = m,
-                    Face = 0,
-                    Process = unload.Process,
-                  }),
-                  Pallet = basketId,
-                  LogType = LogType.BasketLoadUnload,
-                  LocationName = "L/U",
-                  LocationNum = lulNum,
-                  Program = "UNLOAD",
-                  StartOfCycle = true,
-                  EndTimeUTC = timeUTC,
-                  ElapsedTime = elapsed,
-                  ActiveOperationTime = unload.ActiveOperationTime,
-                  Result = "UNLOAD",
-                },
-                unload.ForeignID,
-                unload.OriginalMessage
-              )
-            );
-
-            // Handle queue destinations
-            foreach (var kv in unload.MaterialIDToQueue)
+            else
             {
-              var matId = kv.Key;
-              var queue = kv.Value;
-              var evt = new EventLogMaterial()
-              {
-                MaterialID = matId,
-                Process = unload.Process,
-                Face = 0,
-              };
-              if (externalQueues != null && externalQueues.TryGetValue(queue, out var extQueue))
-              {
-                sendToExternal.Add(
-                  new MaterialToSendToExternalQueue()
-                  {
-                    Server = extQueue,
-                    PartName = "",
-                    Queue = queue,
-                    Serial = "",
-                  }
-                );
-              }
-              else
-              {
-                AddToQueue(
-                  trans: trans,
-                  mat: evt,
-                  queue: queue,
-                  position: -1,
-                  operatorName: null,
-                  reason: null,
-                  timeUTC: timeUTC
-                );
-              }
+              AddToQueue(
+                trans: trans,
+                mat: evt,
+                queue: queue,
+                position: -1,
+                operatorName: null,
+                reason: null,
+                timeUTC: timeUTC
+              );
             }
           }
         }
 
         // Create basket cycle end if basket is now empty
         var allUnload = (previouslyUnloaded ?? []).Concat(
-          (toUnload ?? []).SelectMany(u =>
-            u.MaterialIDToQueue.Keys.Select(mid => new EventLogMaterial()
-            {
-              MaterialID = mid,
-              Process = u.Process,
-              Face = 0,
-            })
-          )
+          toUnload?.MaterialIDToQueue.Keys.Select(mid => new EventLogMaterial()
+          {
+            MaterialID = mid,
+            Process = toUnload.Process,
+            Face = 0,
+          }) ?? []
         );
         if (allUnload.Any())
         {
@@ -1983,14 +1971,12 @@ namespace BlackMaple.MachineFramework
 
         // Create basket cycle start if basket is now loaded
         var allLoad = (previouslyLoaded ?? []).Concat(
-          (toLoad ?? []).SelectMany(l =>
-            l.MaterialIDs.Select(mid => new EventLogMaterial()
-            {
-              MaterialID = mid,
-              Process = l.Process,
-              Face = 0,
-            })
-          )
+          toLoad?.MaterialIDs.Select(mid => new EventLogMaterial()
+          {
+            MaterialID = mid,
+            Process = toLoad.Process,
+            Face = 0,
+          }) ?? []
         );
         if (allLoad.Any())
         {
@@ -2006,57 +1992,54 @@ namespace BlackMaple.MachineFramework
         // Process loads onto basket
         if (toLoad != null)
         {
-          foreach (var load in toLoad)
+          TimeSpan elapsed = totalElapsed;
+          if (allHaveActive && totalActive > TimeSpan.Zero)
           {
-            TimeSpan elapsed = totalElapsed;
-            if (allHaveActive && totalActive > TimeSpan.Zero)
-            {
-              elapsed = TimeSpan.FromSeconds(
-                Math.Round(totalElapsed.TotalSeconds * load.MaterialIDs.Count / totMatCnt, 1)
-              );
-            }
-
-            // Remove from queues if loading from queue
-            foreach (var matId in load.MaterialIDs)
-            {
-              var mat = new EventLogMaterial()
-              {
-                MaterialID = matId,
-                Process = load.Process,
-                Face = 0,
-              };
-              RemoveFromAllQueues(trans, mat, operatorName: null, reason: null, timeUTC: timeUTC);
-            }
-
-            // Create BasketLoadUnload event for load
-            logs.Add(
-              AddLogEntry(
-                trans,
-                new NewEventLogEntry()
-                {
-                  Material = load.MaterialIDs.Select(m => new EventLogMaterial()
-                  {
-                    MaterialID = m,
-                    Face = 0,
-                    Process = load.Process,
-                  }),
-                  Pallet = basketId,
-                  LogType = LogType.BasketLoadUnload,
-                  LocationName = "L/U",
-                  LocationNum = lulNum,
-                  Program = "LOAD",
-                  StartOfCycle = false,
-                  // Add 1 second to be after the basket cycle
-                  EndTimeUTC = timeUTC.AddSeconds(1),
-                  Result = "LOAD",
-                  ElapsedTime = elapsed,
-                  ActiveOperationTime = load.ActiveOperationTime,
-                },
-                load.ForeignID,
-                load.OriginalMessage
-              )
+            elapsed = TimeSpan.FromSeconds(
+              Math.Round(totalElapsed.TotalSeconds * toLoad.MaterialIDs.Count / totMatCnt, 1)
             );
           }
+
+          // Remove from queues if loading from queue
+          foreach (var matId in toLoad.MaterialIDs)
+          {
+            var mat = new EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = toLoad.Process,
+              Face = 0,
+            };
+            RemoveFromAllQueues(trans, mat, operatorName: null, reason: null, timeUTC: timeUTC);
+          }
+
+          // Create BasketLoadUnload event for load
+          logs.Add(
+            AddLogEntry(
+              trans,
+              new NewEventLogEntry()
+              {
+                Material = toLoad.MaterialIDs.Select(m => new EventLogMaterial()
+                {
+                  MaterialID = m,
+                  Face = 0,
+                  Process = toLoad.Process,
+                }),
+                Pallet = basketId,
+                LogType = LogType.BasketLoadUnload,
+                LocationName = "L/U",
+                LocationNum = lulNum,
+                Program = "LOAD",
+                StartOfCycle = false,
+                // Add 1 second to be after the basket cycle
+                EndTimeUTC = timeUTC.AddSeconds(1),
+                Result = "LOAD",
+                ElapsedTime = elapsed,
+                ActiveOperationTime = toLoad.ActiveOperationTime,
+              },
+              toLoad.ForeignID,
+              toLoad.OriginalMessage
+            )
+          );
         }
 
         return logs;

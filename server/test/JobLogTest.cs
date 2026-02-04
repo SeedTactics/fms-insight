@@ -6584,15 +6584,12 @@ namespace BlackMaple.FMSInsight.Tests
 
       // Load from queue to basket using RecordBasketOnlyLoadUnload
       var loadLogs = _jobLog.RecordBasketOnlyLoadUnload(
-        toLoad:
-        [
-          new MaterialToLoadOntoBasket()
-          {
-            MaterialIDs = [mat1.MaterialID],
-            Process = 1,
-            ActiveOperationTime = TimeSpan.FromMinutes(5),
-          },
-        ],
+        toLoad: new MaterialToLoadOntoBasket()
+        {
+          MaterialIDs = [mat1.MaterialID],
+          Process = 1,
+          ActiveOperationTime = TimeSpan.FromMinutes(5),
+        },
         previouslyLoaded: null,
         toUnload: null,
         previouslyUnloaded: null,
@@ -6620,18 +6617,15 @@ namespace BlackMaple.FMSInsight.Tests
       var unloadLogs = _jobLog.RecordBasketOnlyLoadUnload(
         toLoad: null,
         previouslyLoaded: null,
-        toUnload:
-        [
-          new MaterialToUnloadFromBasket()
+        toUnload: new MaterialToUnloadFromBasket()
+        {
+          MaterialIDToQueue = new Dictionary<long, string>()
           {
-            MaterialIDToQueue = new Dictionary<long, string>()
-            {
-              [mat1.MaterialID] = "QUEUE2",
-            }.ToImmutableDictionary(),
-            Process = 1,
-            ActiveOperationTime = TimeSpan.FromMinutes(5),
-          },
-        ],
+            [mat1.MaterialID] = "QUEUE2",
+          }.ToImmutableDictionary(),
+          Process = 1,
+          ActiveOperationTime = TimeSpan.FromMinutes(5),
+        },
         previouslyUnloaded: null,
         lulNum: 10,
         basketId: 5,
@@ -6699,15 +6693,12 @@ namespace BlackMaple.FMSInsight.Tests
 
       // Load mat3 onto basket 5 first
       _jobLog.RecordBasketOnlyLoadUnload(
-        toLoad:
-        [
-          new MaterialToLoadOntoBasket()
-          {
-            MaterialIDs = [mat3.MaterialID],
-            Process = 1,
-            ActiveOperationTime = TimeSpan.FromMinutes(3),
-          },
-        ],
+        toLoad: new MaterialToLoadOntoBasket()
+        {
+          MaterialIDs = [mat3.MaterialID],
+          Process = 1,
+          ActiveOperationTime = TimeSpan.FromMinutes(3),
+        },
         previouslyLoaded: null,
         toUnload: null,
         previouslyUnloaded: null,
@@ -6722,15 +6713,12 @@ namespace BlackMaple.FMSInsight.Tests
       // - Load mat1 and mat2 from queue onto basket 5
       // - Unload mat3 from basket 5 to queue
       var logs = _jobLog.RecordBasketOnlyLoadUnload(
-        toLoad:
-        [
-          new MaterialToLoadOntoBasket()
-          {
-            MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
-            Process = 1,
-            ActiveOperationTime = TimeSpan.FromMinutes(5),
-          },
-        ],
+        toLoad: new MaterialToLoadOntoBasket()
+        {
+          MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
+          Process = 1,
+          ActiveOperationTime = TimeSpan.FromMinutes(5),
+        },
         previouslyLoaded:
         [
           new EventLogMaterial()
@@ -6740,18 +6728,15 @@ namespace BlackMaple.FMSInsight.Tests
             Face = 0,
           },
         ],
-        toUnload:
-        [
-          new MaterialToUnloadFromBasket()
+        toUnload: new MaterialToUnloadFromBasket()
+        {
+          MaterialIDToQueue = new Dictionary<long, string>()
           {
-            MaterialIDToQueue = new Dictionary<long, string>()
-            {
-              [mat3.MaterialID] = "QUEUE2",
-            }.ToImmutableDictionary(),
-            Process = 1,
-            ActiveOperationTime = TimeSpan.FromMinutes(3),
-          },
-        ],
+            [mat3.MaterialID] = "QUEUE2",
+          }.ToImmutableDictionary(),
+          Process = 1,
+          ActiveOperationTime = TimeSpan.FromMinutes(3),
+        },
         previouslyUnloaded: null,
         lulNum: 10,
         basketId: 5,
@@ -6822,15 +6807,12 @@ namespace BlackMaple.FMSInsight.Tests
 
       // Load from queue to basket using RecordBasketOnlyLoadUnload
       _jobLog.RecordBasketOnlyLoadUnload(
-        toLoad:
-        [
-          new MaterialToLoadOntoBasket()
-          {
-            MaterialIDs = [mat1.MaterialID],
-            Process = 1,
-            ActiveOperationTime = TimeSpan.Zero,
-          },
-        ],
+        toLoad: new MaterialToLoadOntoBasket()
+        {
+          MaterialIDs = [mat1.MaterialID],
+          Process = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+        },
         previouslyLoaded: null,
         toUnload: null,
         previouslyUnloaded: null,
