@@ -96,6 +96,22 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
+    LogEntry RecordBasketLoadBegin(
+      IEnumerable<EventLogMaterial> mats,
+      int basketId,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketUnloadBegin(
+      IEnumerable<EventLogMaterial> mats,
+      int basketId,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
     IEnumerable<LogEntry> RecordPartialLoadUnload(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<MaterialToUnloadFromFace> toUnload,
@@ -228,22 +244,6 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       bool waitForMachine,
       TimeSpan elapsed,
-      string foreignId = null,
-      string originalMessage = null
-    );
-    LogEntry RecordBasketLoadBegin(
-      IEnumerable<EventLogMaterial> mats,
-      int basketId,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null
-    );
-    LogEntry RecordBasketUnloadBegin(
-      IEnumerable<EventLogMaterial> mats,
-      int basketId,
-      int lulNum,
-      DateTime timeUTC,
       string foreignId = null,
       string originalMessage = null
     );

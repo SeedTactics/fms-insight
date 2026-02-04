@@ -2901,26 +2901,7 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = TimeSpan.Zero,
           ActiveOperationTime = TimeSpan.Zero,
         };
-        var unloadEvt = AddLogEntry(trans, entry, foreignId, originalMessage);
-
-        // Create BasketCycle event to mark basket is now empty
-        var cycleEntry = new NewEventLogEntry()
-        {
-          Material = mats,
-          Pallet = basketId,
-          LogType = LogType.BasketCycle,
-          LocationName = "Basket Cycle",
-          LocationNum = 0,
-          Program = "",
-          StartOfCycle = false,
-          EndTimeUTC = timeUTC,
-          Result = "BasketCycle",
-          ElapsedTime = TimeSpan.Zero,
-          ActiveOperationTime = TimeSpan.Zero,
-        };
-        AddLogEntry(trans, cycleEntry, foreignId, originalMessage);
-
-        return unloadEvt;
+        return AddLogEntry(trans, entry, foreignId, originalMessage);
       });
     }
 
