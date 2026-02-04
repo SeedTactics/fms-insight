@@ -689,7 +689,7 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.CommandText =
-          "SELECT TimeUTC FROM stations WHERE StationNum = $basketId AND StationLoc = $logType AND Result = 'BasketCycle' "
+          "SELECT TimeUTC FROM stations WHERE Pallet = $basketId AND StationLoc = $logType AND Result = 'BasketCycle' "
           + "ORDER BY Counter DESC LIMIT 1";
         cmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
         cmd.Parameters.Add("logType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
@@ -718,7 +718,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT MAX(Counter) FROM stations WHERE StationNum = $basketId AND StationLoc = $logType AND Result = 'BasketCycle'";
+          "SELECT MAX(Counter) FROM stations WHERE Pallet = $basketId AND StationLoc = $logType AND Result = 'BasketCycle'";
         cmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
         cmd.Parameters.Add("logType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
 
@@ -729,7 +729,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
             + " FROM stations s "
-            + " WHERE StationNum = $basketId AND StationLoc IN ($loadUnloadType, $cycleType) AND "
+            + " WHERE Pallet = $basketId AND StationLoc IN ($loadUnloadType, $cycleType) AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
           cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)LogType.BasketLoadUnload;
@@ -744,7 +744,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
             + " FROM stations s "
-            + " WHERE StationNum = $basketId AND StationLoc IN ($loadUnloadType, $cycleType) AND Counter "
+            + " WHERE Pallet = $basketId AND StationLoc IN ($loadUnloadType, $cycleType) AND Counter "
             + (includeLastCycleEvt ? ">=" : ">")
             + " $cntr AND "
             + ignoreInvalidEventCondition
@@ -1904,10 +1904,10 @@ namespace BlackMaple.MachineFramework
                     Face = 0,
                     Process = unload.Process,
                   }),
-                  Pallet = 0,
+                  Pallet = basketId,
                   LogType = LogType.BasketLoadUnload,
                   LocationName = "L/U",
-                  LocationNum = basketId,
+                  LocationNum = lulNum,
                   Program = "UNLOAD",
                   StartOfCycle = true,
                   EndTimeUTC = timeUTC,
@@ -2040,10 +2040,10 @@ namespace BlackMaple.MachineFramework
                     Face = 0,
                     Process = load.Process,
                   }),
-                  Pallet = 0,
+                  Pallet = basketId,
                   LogType = LogType.BasketLoadUnload,
                   LocationName = "L/U",
-                  LocationNum = basketId,
+                  LocationNum = lulNum,
                   Program = "LOAD",
                   StartOfCycle = false,
                   // Add 1 second to be after the basket cycle
@@ -2164,7 +2164,7 @@ namespace BlackMaple.MachineFramework
             {
               MaterialID = matAndDest.Key,
               Process = face.Process,
-              Face = face.FaceNum,
+              Face = 0,
             };
 
             if (!materialPerBasket.ContainsKey(basketId))
@@ -2230,10 +2230,10 @@ namespace BlackMaple.MachineFramework
         var entry1 = new NewEventLogEntry()
         {
           Material = mats,
-          Pallet = 0,
+          Pallet = basketId,
           LogType = LogType.BasketLoadUnload,
           LocationName = "L/U",
-          LocationNum = basketId,
+          LocationNum = lulNum,
           Program = "LOAD",
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
@@ -2335,10 +2335,10 @@ namespace BlackMaple.MachineFramework
           new NewEventLogEntry()
           {
             Material = mats,
-            Pallet = 0,
+            Pallet = basketId,
             LogType = LogType.BasketCycle,
             LocationName = "Basket Cycle",
-            LocationNum = basketId,
+            LocationNum = 0,
             Program = "",
             StartOfCycle = true,
             EndTimeUTC = timeUTC,
@@ -2362,7 +2362,7 @@ namespace BlackMaple.MachineFramework
     {
       using var lastTimeCmd = _connection.CreateCommand();
       lastTimeCmd.CommandText =
-        "SELECT TimeUTC FROM stations where StationLoc = $basketId AND Result = 'BasketCycle' "
+        "SELECT TimeUTC FROM stations where Pallet = $basketId AND Result = 'BasketCycle' "
         + "ORDER BY Counter DESC LIMIT 1";
       lastTimeCmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
 
@@ -2377,10 +2377,10 @@ namespace BlackMaple.MachineFramework
           new NewEventLogEntry()
           {
             Material = mats,
-            Pallet = 0,
+            Pallet = basketId,
             LogType = LogType.BasketCycle,
             LocationName = "Basket Cycle",
-            LocationNum = basketId,
+            LocationNum = 0,
             Program = "",
             StartOfCycle = false,
             EndTimeUTC = timeUTC,
@@ -2438,7 +2438,7 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = (SqliteTransaction)trans;
             cmd.CommandText =
-              "SELECT s.StationNum FROM stations s "
+              "SELECT s.Pallet FROM stations s "
               + "INNER JOIN stations_mat sm ON s.Counter = sm.Counter "
               + "WHERE sm.MaterialID = $mid "
               + "  AND s.StationLoc = $logType "
@@ -2450,7 +2450,7 @@ namespace BlackMaple.MachineFramework
             var basketIdObj = cmd.ExecuteScalar();
             if (basketIdObj != null && basketIdObj != DBNull.Value)
             {
-              var basketId = (int)(long)basketIdObj; // StationNum is integer stored as long
+              var basketId = (int)(long)basketIdObj; // Pallet is integer stored as long
               var matOnBasket = new EventLogMaterial()
               {
                 MaterialID = mat,
@@ -2535,10 +2535,10 @@ namespace BlackMaple.MachineFramework
         var entry2 = new NewEventLogEntry()
         {
           Material = mats,
-          Pallet = 0,
+          Pallet = basketId,
           LogType = LogType.BasketLoadUnload,
           LocationName = "L/U",
-          LocationNum = basketId,
+          LocationNum = lulNum,
           Program = "UNLOAD",
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
@@ -2847,10 +2847,10 @@ namespace BlackMaple.MachineFramework
         var entry = new NewEventLogEntry()
         {
           Material = mats,
-          Pallet = 0,
+          Pallet = basketId,
           LogType = LogType.BasketLoadUnload,
           LocationName = "L/U",
-          LocationNum = basketId,
+          LocationNum = lulNum,
           Program = "LOAD",
           StartOfCycle = true,
           EndTimeUTC = timeUTC,
@@ -2877,10 +2877,10 @@ namespace BlackMaple.MachineFramework
         var entry = new NewEventLogEntry()
         {
           Material = mats,
-          Pallet = 0,
+          Pallet = basketId,
           LogType = LogType.BasketLoadUnload,
           LocationName = "L/U",
-          LocationNum = basketId,
+          LocationNum = lulNum,
           Program = "UNLOAD",
           StartOfCycle = true,
           EndTimeUTC = timeUTC,
@@ -2894,10 +2894,10 @@ namespace BlackMaple.MachineFramework
         var cycleEntry = new NewEventLogEntry()
         {
           Material = mats,
-          Pallet = 0,
+          Pallet = basketId,
           LogType = LogType.BasketCycle,
-          LocationName = "L/U",
-          LocationNum = basketId,
+          LocationName = "Basket Cycle",
+          LocationNum = 0,
           Program = "",
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
@@ -2926,10 +2926,10 @@ namespace BlackMaple.MachineFramework
         var entry = new NewEventLogEntry()
         {
           Material = mats,
-          Pallet = 0,
+          Pallet = basketId,
           LogType = LogType.BasketInLocation,
           LocationName = locationName,
-          LocationNum = basketId,
+          LocationNum = locationPosition,
           Program = "Arrive",
           StartOfCycle = true,
           EndTimeUTC = timeUTC,
@@ -2937,7 +2937,6 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = TimeSpan.Zero,
           ActiveOperationTime = TimeSpan.Zero,
         };
-        entry.ProgramDetails.Add("LocationPosition", locationPosition.ToString());
         return AddLogEntry(trans, entry, foreignId, originalMessage);
       });
     }
@@ -2958,10 +2957,10 @@ namespace BlackMaple.MachineFramework
         var entry = new NewEventLogEntry()
         {
           Material = mats,
-          Pallet = 0,
+          Pallet = basketId,
           LogType = LogType.BasketInLocation,
           LocationName = locationName,
-          LocationNum = basketId,
+          LocationNum = locationPosition,
           Program = "Depart",
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
@@ -2969,7 +2968,6 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = elapsed,
           ActiveOperationTime = TimeSpan.Zero,
         };
-        entry.ProgramDetails.Add("LocationPosition", locationPosition.ToString());
         return AddLogEntry(trans, entry, foreignId, originalMessage);
       });
     }

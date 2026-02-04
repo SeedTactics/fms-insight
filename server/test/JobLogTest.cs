@@ -6177,10 +6177,10 @@ namespace BlackMaple.FMSInsight.Tests
         new LogEntry(
           loadToBasket.Counter,
           new[] { mat1, mat2 },
-          0,
+          5, // Pallet = basketId
           LogType.BasketLoadUnload,
           "L/U",
-          5, // LocationNum = basketId
+          10, // LocationNum = lulNum
           "LOAD",
           true, // StartOfCycle = true for standalone calls
           start,
@@ -6202,10 +6202,10 @@ namespace BlackMaple.FMSInsight.Tests
         new LogEntry(
           unloadFromBasket.Counter,
           new[] { mat1, mat2 },
-          0,
+          5, // Pallet = basketId
           LogType.BasketLoadUnload,
           "L/U",
-          5, // LocationNum = basketId
+          10, // LocationNum = lulNum
           "UNLOAD",
           true, // StartOfCycle = true for standalone calls
           start.AddMinutes(10),
@@ -6226,17 +6226,16 @@ namespace BlackMaple.FMSInsight.Tests
 
       basketArrive.Counter.ShouldBeGreaterThan(0);
       basketArrive.Material.ShouldBe(new[] { mat1 });
-      basketArrive.Pallet.ShouldBe(0);
+      basketArrive.Pallet.ShouldBe(3); // basketId
       basketArrive.LogType.ShouldBe(LogType.BasketInLocation);
       basketArrive.LocationName.ShouldBe("Tower1");
-      basketArrive.LocationNum.ShouldBe(3); // basketId
+      basketArrive.LocationNum.ShouldBe(5); // locationPosition
       basketArrive.Program.ShouldBe("Arrive");
       basketArrive.StartOfCycle.ShouldBe(true);
       basketArrive.EndTimeUTC.ShouldBe(start.AddMinutes(20));
       basketArrive.Result.ShouldBe("");
       basketArrive.ElapsedTime.ShouldBe(TimeSpan.Zero);
       basketArrive.ActiveOperationTime.ShouldBe(TimeSpan.Zero);
-      basketArrive.ProgramDetails["LocationPosition"].ShouldBe("5");
 
       // Test BasketInLocation depart
       var basketDepart = _jobLog.RecordBasketDepartLocation(
@@ -6250,17 +6249,16 @@ namespace BlackMaple.FMSInsight.Tests
 
       basketDepart.Counter.ShouldBeGreaterThan(0);
       basketDepart.Material.ShouldBe(new[] { mat1 });
-      basketDepart.Pallet.ShouldBe(0);
+      basketDepart.Pallet.ShouldBe(3); // basketId
       basketDepart.LogType.ShouldBe(LogType.BasketInLocation);
       basketDepart.LocationName.ShouldBe("Tower1");
-      basketDepart.LocationNum.ShouldBe(3); // basketId
+      basketDepart.LocationNum.ShouldBe(5); // locationPosition
       basketDepart.Program.ShouldBe("Depart");
       basketDepart.StartOfCycle.ShouldBe(false);
       basketDepart.EndTimeUTC.ShouldBe(start.AddMinutes(30));
       basketDepart.Result.ShouldBe("");
       basketDepart.ElapsedTime.ShouldBe(TimeSpan.FromMinutes(10));
       basketDepart.ActiveOperationTime.ShouldBe(TimeSpan.Zero);
-      basketDepart.ProgramDetails["LocationPosition"].ShouldBe("5");
     }
 
     [Test]
@@ -6766,15 +6764,15 @@ namespace BlackMaple.FMSInsight.Tests
       logs.Count().ShouldBeGreaterThan(0);
 
       // Should have basket cycle end for basket 5 (mat3 unloaded)
-      logs.Count(e => e.LogType == LogType.BasketCycle && e.LocationNum == 5 && !e.StartOfCycle).ShouldBe(1);
+      logs.Count(e => e.LogType == LogType.BasketCycle && e.Pallet == 5 && !e.StartOfCycle).ShouldBe(1);
 
       // Should have unload event for basket 5
-      logs.Count(e => e.LogType == LogType.BasketLoadUnload && e.LocationNum == 5 && e.Program == "UNLOAD")
+      logs.Count(e => e.LogType == LogType.BasketLoadUnload && e.Pallet == 5 && e.Program == "UNLOAD")
         .ShouldBe(1);
 
       // Should have basket cycle start for basket 5 (mat1, mat2 loaded; mat3 previously loaded)
       var cycleStart = logs.FirstOrDefault(e =>
-        e.LogType == LogType.BasketCycle && e.LocationNum == 5 && e.StartOfCycle
+        e.LogType == LogType.BasketCycle && e.Pallet == 5 && e.StartOfCycle
       );
       cycleStart.ShouldNotBeNull();
       cycleStart.Material.Count.ShouldBe(3); // mat1, mat2, mat3 (previously loaded)
@@ -6784,7 +6782,7 @@ namespace BlackMaple.FMSInsight.Tests
       queuedMats.Count(m => m.MaterialID == mat3.MaterialID && m.Queue == "QUEUE2").ShouldBe(1);
 
       // Should have load event for basket 5 (mat1, mat2)
-      logs.Count(e => e.LogType == LogType.BasketLoadUnload && e.LocationNum == 5 && e.Program == "LOAD")
+      logs.Count(e => e.LogType == LogType.BasketLoadUnload && e.Pallet == 5 && e.Program == "LOAD")
         .ShouldBe(1);
 
       // Verify queue state
