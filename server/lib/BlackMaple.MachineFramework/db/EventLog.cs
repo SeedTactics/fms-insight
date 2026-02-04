@@ -2085,6 +2085,35 @@ namespace BlackMaple.MachineFramework
       );
     }
 
+    public IEnumerable<LogEntry> RecordEmptyBasket(
+      int basketId,
+      DateTime timeUTC,
+      string foreignId = null,
+      bool basketEnd = false
+    )
+    {
+      return AddEntryInTransaction(trans =>
+      {
+        var logs = new List<LogEntry>();
+        if (basketEnd)
+        {
+          RecordBasketCycleEnd(basketId: basketId, mats: [], timeUTC: timeUTC, logs: logs, trans: trans);
+        }
+        else
+        {
+          RecordBasketCycleStart(
+            basketId: basketId,
+            mats: [],
+            timeUTC: timeUTC,
+            logs: logs,
+            trans: trans,
+            foreignId: foreignId
+          );
+        }
+        return logs;
+      });
+    }
+
     private void RecordUnloadEnd(
       IEnumerable<MaterialToUnloadFromFace> toUnload,
       int lulNum,
@@ -2309,7 +2338,8 @@ namespace BlackMaple.MachineFramework
       IEnumerable<EventLogMaterial> mats,
       DateTime timeUTC,
       List<LogEntry> logs,
-      IDbTransaction trans
+      IDbTransaction trans,
+      string foreignId = null
     )
     {
       logs.Add(
@@ -2329,7 +2359,7 @@ namespace BlackMaple.MachineFramework
             ElapsedTime = TimeSpan.Zero,
             ActiveOperationTime = TimeSpan.Zero,
           },
-          foreignID: null,
+          foreignID: foreignId,
           null
         )
       );

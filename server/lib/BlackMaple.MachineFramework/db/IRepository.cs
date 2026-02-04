@@ -137,6 +137,12 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       bool palletEnd = false
     );
+    IEnumerable<LogEntry> RecordEmptyBasket(
+      int basketId,
+      DateTime timeUTC,
+      string foreignId = null,
+      bool basketEnd = false
+    );
     LogEntry RecordManualWorkAtLULStart(
       IEnumerable<EventLogMaterial> mats,
       int pallet,
