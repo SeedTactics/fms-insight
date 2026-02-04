@@ -695,7 +695,6 @@ namespace BlackMaple.MachineFramework
   {
     public required ImmutableList<long> MaterialIDs { get; init; }
     public required int Process { get; init; }
-    public required int? Path { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }
     public string ForeignID { get; init; } = null;
     public string OriginalMessage { get; init; } = null;

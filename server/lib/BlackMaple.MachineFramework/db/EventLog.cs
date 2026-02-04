@@ -712,11 +712,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private List<LogEntry> CurrentBasketLog(
-      int basketId,
-      bool includeLastCycleEvt,
-      SqliteTransaction trans
-    )
+    private List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt, SqliteTransaction trans)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -2044,21 +2040,6 @@ namespace BlackMaple.MachineFramework
           );
         }
 
-        // Record material paths for loads
-        if (toLoad != null)
-        {
-          foreach (var load in toLoad)
-          {
-            if (load.Path.HasValue)
-            {
-              foreach (var matId in load.MaterialIDs)
-              {
-                RecordPathForProcess(matId, load.Process, load.Path.Value, trans);
-              }
-            }
-          }
-        }
-
         // Create basket cycle start if basket is now loaded
         var allLoad = (previouslyLoaded ?? []).Concat(
           (toLoad ?? []).SelectMany(l =>
@@ -2321,13 +2302,7 @@ namespace BlackMaple.MachineFramework
         };
         logs.Add(AddLogEntry(trans, entry1, null, null));
 
-        RecordBasketCycleStart(
-          basketId: basketId,
-          mats: mats,
-          timeUTC: timeUTC,
-          logs: logs,
-          trans: trans
-        );
+        RecordBasketCycleStart(basketId: basketId, mats: mats, timeUTC: timeUTC, logs: logs, trans: trans);
       }
     }
 
@@ -2614,13 +2589,7 @@ namespace BlackMaple.MachineFramework
         var basketId = basketKv.Key;
         var mats = basketKv.Value;
 
-        RecordBasketCycleEnd(
-          basketId: basketId,
-          mats: mats,
-          timeUTC: timeUTC,
-          logs: logs,
-          trans: trans
-        );
+        RecordBasketCycleEnd(basketId: basketId, mats: mats, timeUTC: timeUTC, logs: logs, trans: trans);
 
         var entry2 = new NewEventLogEntry()
         {
