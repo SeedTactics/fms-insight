@@ -323,7 +323,8 @@ namespace BlackMaple.FMSInsight.Makino
           j.Processes.SelectMany(p => p.Paths)
             .SelectMany(p => p.Stops)
             .Select(s => s.Program)
-            .FirstOrDefault(prog => !string.IsNullOrEmpty(prog)) ?? j.PartName;
+            .FirstOrDefault(prog => !string.IsNullOrEmpty(prog))
+          ?? j.PartName;
       }
       else
       {

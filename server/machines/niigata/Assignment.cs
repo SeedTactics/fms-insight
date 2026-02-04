@@ -993,7 +993,8 @@ namespace BlackMaple.FMSInsight.Niigata
                     _statNames == null || !_statNames.ReclampGroupNames.Contains(s.StationGroup)
                   )
                   .ElementAtOrDefault(workProg.StopIndex ?? 0)
-                  ?.ExpectedCycleTime ?? TimeSpan.Zero;
+                  ?.ExpectedCycleTime
+                ?? TimeSpan.Zero;
             }
           }
         }

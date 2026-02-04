@@ -177,7 +177,8 @@ namespace BlackMaple.FMSInsight.Makino
         Log.Debug(
           "Unable to determine active time for {job} on makino order {order}",
           job?.UniqueStr,
-          m.OrderName);
+          m.OrderName
+        );
         active = TimeSpan.FromSeconds(m.SpindleTimeSeconds);
       }
 

@@ -118,9 +118,7 @@ namespace BlackMaple.MachineFramework
     );
 
     // RecordBasketOnlyLoadUnload is used for basket-only load/unload operations (no pallet involved).
-    // This includes:
-    //   - Basket to/from queue (material loaded from queue onto basket, or unloaded from basket to queue)
-    //   - Basket to/from basket (material transferred between baskets)
+    // This is used for material loaded from queue onto basket, or unloaded from basket to queue.
     IEnumerable<LogEntry> RecordBasketOnlyLoadUnload(
       IReadOnlyList<MaterialToLoadOntoBasket> toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,

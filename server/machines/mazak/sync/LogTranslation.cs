@@ -871,7 +871,7 @@ namespace MazakMachineInterface
           {
             matToQueue[mat.Mat.MaterialID] = new UnloadDestination()
             {
-              Queue = signalQuarantine.LocationName ?? fmsSettings.QuarantineQueue
+              Queue = signalQuarantine.LocationName ?? fmsSettings.QuarantineQueue,
             };
           }
           else

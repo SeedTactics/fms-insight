@@ -322,9 +322,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _jobDB
         .LoadUnarchivedJobs()
         .Select(j => (j.UniqueStr, j.CopiedToSystem))
-        .ShouldBe(
-          [("uniq2", true), ("aaa-schId1234", true), ("bbb-schId1234", true), ("ccc-schId1234", true)]
-        );
+        .ShouldBe([
+          ("uniq2", true),
+          ("aaa-schId1234", true),
+          ("bbb-schId1234", true),
+          ("ccc-schId1234", true),
+        ]);
 
       WriteJobs
         .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)

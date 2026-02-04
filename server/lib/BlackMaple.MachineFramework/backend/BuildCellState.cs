@@ -729,10 +729,7 @@ public static class BuildCellState
       {
         MaterialIDToDestination = face.Material.ToImmutableDictionary(
           m => m.MaterialID,
-          m =>
-            matIdsToLoad.Contains(m.MaterialID)
-              ? null
-              : new UnloadDestination() { Queue = outputQueue }
+          m => matIdsToLoad.Contains(m.MaterialID) ? null : new UnloadDestination() { Queue = outputQueue }
         ),
         Process = face.Process,
         FaceNum = face.FaceNum,
