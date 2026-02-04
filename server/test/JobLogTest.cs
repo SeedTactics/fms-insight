@@ -6626,9 +6626,9 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromBasket()
           {
-            MaterialIDToDestination = new Dictionary<long, UnloadDestination>()
+            MaterialIDToQueue = new Dictionary<long, string>()
             {
-              [mat1.MaterialID] = new UnloadDestination() { Queue = "QUEUE2" },
+              [mat1.MaterialID] = "QUEUE2",
             }.ToImmutableDictionary(),
             Process = 1,
             ActiveOperationTime = TimeSpan.FromMinutes(5),
@@ -6722,7 +6722,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       // Now do a simultaneous load and unload operation:
       // - Load mat1 and mat2 from queue onto basket 5
-      // - Unload mat3 from basket 5 to basket 7
+      // - Unload mat3 from basket 5 to queue
       var logs = _jobLog.RecordBasketOnlyLoadUnload(
         toLoad:
         [
@@ -6746,9 +6746,9 @@ namespace BlackMaple.FMSInsight.Tests
         [
           new MaterialToUnloadFromBasket()
           {
-            MaterialIDToDestination = new Dictionary<long, UnloadDestination>()
+            MaterialIDToQueue = new Dictionary<long, string>()
             {
-              [mat3.MaterialID] = new UnloadDestination() { BasketId = 7 },
+              [mat3.MaterialID] = "QUEUE2",
             }.ToImmutableDictionary(),
             Process = 1,
             ActiveOperationTime = TimeSpan.FromMinutes(3),
@@ -6772,16 +6772,16 @@ namespace BlackMaple.FMSInsight.Tests
       logs.Count(e => e.LogType == LogType.BasketLoadUnload && e.LocationNum == 5 && e.Program == "UNLOAD")
         .ShouldBe(1);
 
-      // Should have load event for basket 7 (mat3 transferred)
-      logs.Count(e => e.LogType == LogType.BasketLoadUnload && e.LocationNum == 7 && e.Program == "LOAD")
-        .ShouldBe(1);
-
-      // Should have basket cycle start for basket 5 (mat1, mat2, mat3 loaded)
+      // Should have basket cycle start for basket 5 (mat1, mat2 loaded; mat3 previously loaded)
       var cycleStart = logs.FirstOrDefault(e =>
         e.LogType == LogType.BasketCycle && e.LocationNum == 5 && e.StartOfCycle
       );
       cycleStart.ShouldNotBeNull();
       cycleStart.Material.Count.ShouldBe(3); // mat1, mat2, mat3 (previously loaded)
+
+      // mat3 should be in QUEUE2 now
+      var queuedMats = _jobLog.GetMaterialInAllQueues().ToList();
+      queuedMats.Count(m => m.MaterialID == mat3.MaterialID && m.Queue == "QUEUE2").ShouldBe(1);
 
       // Should have load event for basket 5 (mat1, mat2)
       logs.Count(e => e.LogType == LogType.BasketLoadUnload && e.LocationNum == 5 && e.Program == "LOAD")

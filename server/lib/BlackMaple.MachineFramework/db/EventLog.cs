@@ -1704,7 +1704,7 @@ namespace BlackMaple.MachineFramework
     // This includes:
     //   - Pallet to/from queue (material loaded from queue onto pallet, or unloaded from pallet to queue)
     //   - Pallet to/from basket (material transferred between pallet face and basket)
-    // For basket-only operations (basket to/from queue, basket to/from basket), use RecordBasketOnlyLoadUnload instead.
+    // For basket-only operations (basket to/from queue), use RecordBasketOnlyLoadUnload instead.
     public IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,
@@ -1832,7 +1832,6 @@ namespace BlackMaple.MachineFramework
     // RecordBasketOnlyLoadUnload is used for basket-only load/unload operations (no pallet involved).
     // This includes:
     //   - Basket to/from queue (material loaded from queue onto basket, or unloaded from basket to queue)
-    //   - Basket to/from basket (material transferred between baskets)
     public IEnumerable<LogEntry> RecordBasketOnlyLoadUnload(
       IReadOnlyList<MaterialToLoadOntoBasket> toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,
@@ -1853,8 +1852,7 @@ namespace BlackMaple.MachineFramework
 
         // Calculate total active time and total material count
         var totMatCnt =
-          (toLoad?.Sum(l => l.MaterialIDs.Count) ?? 0)
-          + (toUnload?.Sum(l => l.MaterialIDToDestination.Count) ?? 0);
+          (toLoad?.Sum(l => l.MaterialIDs.Count) ?? 0) + (toUnload?.Sum(l => l.MaterialIDToQueue.Count) ?? 0);
 
         bool allHaveActive = true;
         TimeSpan totalActive = TimeSpan.Zero;
@@ -1890,31 +1888,8 @@ namespace BlackMaple.MachineFramework
             if (allHaveActive && totalActive > TimeSpan.Zero)
             {
               elapsed = TimeSpan.FromSeconds(
-                Math.Round(totalElapsed.TotalSeconds * unload.MaterialIDToDestination.Count / totMatCnt, 1)
+                Math.Round(totalElapsed.TotalSeconds * unload.MaterialIDToQueue.Count / totMatCnt, 1)
               );
-            }
-
-            // Group by destination
-            var toQueue = new List<long>();
-            var toOtherBasket = new Dictionary<int, List<long>>();
-
-            foreach (var kv in unload.MaterialIDToDestination)
-            {
-              var matId = kv.Key;
-              var dest = kv.Value;
-
-              if (dest.Queue != null)
-              {
-                toQueue.Add(matId);
-              }
-              else if (dest.BasketId.HasValue)
-              {
-                if (!toOtherBasket.ContainsKey(dest.BasketId.Value))
-                {
-                  toOtherBasket[dest.BasketId.Value] = new List<long>();
-                }
-                toOtherBasket[dest.BasketId.Value].Add(matId);
-              }
             }
 
             // Create BasketLoadUnload event for unload
@@ -1923,7 +1898,7 @@ namespace BlackMaple.MachineFramework
                 trans,
                 new NewEventLogEntry()
                 {
-                  Material = unload.MaterialIDToDestination.Keys.Select(m => new EventLogMaterial()
+                  Material = unload.MaterialIDToQueue.Keys.Select(m => new EventLogMaterial()
                   {
                     MaterialID = m,
                     Face = 0,
@@ -1946,23 +1921,24 @@ namespace BlackMaple.MachineFramework
             );
 
             // Handle queue destinations
-            foreach (var matId in toQueue)
+            foreach (var kv in unload.MaterialIDToQueue)
             {
-              var dest = unload.MaterialIDToDestination[matId];
+              var matId = kv.Key;
+              var queue = kv.Value;
               var evt = new EventLogMaterial()
               {
                 MaterialID = matId,
                 Process = unload.Process,
                 Face = 0,
               };
-              if (externalQueues != null && externalQueues.TryGetValue(dest.Queue, out var extQueue))
+              if (externalQueues != null && externalQueues.TryGetValue(queue, out var extQueue))
               {
                 sendToExternal.Add(
                   new MaterialToSendToExternalQueue()
                   {
                     Server = extQueue,
                     PartName = "",
-                    Queue = dest.Queue,
+                    Queue = queue,
                     Serial = "",
                   }
                 );
@@ -1972,7 +1948,7 @@ namespace BlackMaple.MachineFramework
                 AddToQueue(
                   trans: trans,
                   mat: evt,
-                  queue: dest.Queue,
+                  queue: queue,
                   position: -1,
                   operatorName: null,
                   reason: null,
@@ -1980,48 +1956,13 @@ namespace BlackMaple.MachineFramework
                 );
               }
             }
-
-            // Handle basket-to-basket transfers
-            foreach (var kv in toOtherBasket)
-            {
-              var destBasketId = kv.Key;
-              var mats = kv.Value.Select(m => new EventLogMaterial()
-              {
-                MaterialID = m,
-                Process = unload.Process,
-                Face = 0,
-              });
-
-              // Create BasketLoadUnload event for load onto destination basket
-              logs.Add(
-                AddLogEntry(
-                  trans,
-                  new NewEventLogEntry()
-                  {
-                    Material = mats,
-                    Pallet = 0,
-                    LogType = LogType.BasketLoadUnload,
-                    LocationName = "L/U",
-                    LocationNum = destBasketId,
-                    Program = "LOAD",
-                    StartOfCycle = true,
-                    EndTimeUTC = timeUTC,
-                    ElapsedTime = TimeSpan.Zero,
-                    ActiveOperationTime = TimeSpan.Zero,
-                    Result = "LOAD",
-                  },
-                  null,
-                  null
-                )
-              );
-            }
           }
         }
 
         // Create basket cycle end if basket is now empty
         var allUnload = (previouslyUnloaded ?? []).Concat(
           (toUnload ?? []).SelectMany(u =>
-            u.MaterialIDToDestination.Keys.Select(mid => new EventLogMaterial()
+            u.MaterialIDToQueue.Keys.Select(mid => new EventLogMaterial()
             {
               MaterialID = mid,
               Process = u.Process,

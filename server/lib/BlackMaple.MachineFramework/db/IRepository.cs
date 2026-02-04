@@ -702,7 +702,7 @@ namespace BlackMaple.MachineFramework
 
   public record MaterialToUnloadFromBasket
   {
-    public required ImmutableDictionary<long, UnloadDestination> MaterialIDToDestination { get; init; }
+    public required ImmutableDictionary<long, string> MaterialIDToQueue { get; init; }
     public required int Process { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }
     public string ForeignID { get; init; } = null;
