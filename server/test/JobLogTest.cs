@@ -6944,6 +6944,43 @@ namespace BlackMaple.FMSInsight.Tests
       invalidateEvt.ShouldNotBeNull();
     }
 
+    [Test]
+    public void CurrentBasketLogHandlesInvalidation()
+    {
+      var start = new DateTime(2018, 01, 15, 17, 30, 0, DateTimeKind.Utc);
+      using var _jobLog = _repoCfg.OpenConnection();
+
+      // Create material and load it onto a basket
+      var m1 = _jobLog.AllocateMaterialID("U1", "Part1", 1);
+
+      _jobLog.RecordBasketOnlyLoadUnload(
+        toLoad: new MaterialToLoadOntoBasket()
+        {
+          MaterialIDs = [m1],
+          Process = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+        },
+        previouslyLoaded: null,
+        toUnload: null,
+        lulNum: 1,
+        basketId: 55,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: start,
+        externalQueues: null
+      );
+
+      // Verify CurrentBasketLog returns events
+      var logBefore = _jobLog.CurrentBasketLog(55);
+      logBefore.ShouldNotBeEmpty();
+
+      // Invalidate the cycle
+      _jobLog.InvalidatePalletCycle(m1, 1, "test-operator");
+
+      // Verify CurrentBasketLog is now empty
+      var logAfter = _jobLog.CurrentBasketLog(55);
+      logAfter.ShouldBeEmpty();
+    }
+
     #endregion
   }
 
