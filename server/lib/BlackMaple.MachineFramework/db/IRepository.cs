@@ -112,6 +112,10 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
+
+    // RecordPartialLoadUnload is for partial pallet <-> queue or pallet <-> basket events.
+    // The phrases load and unload in this method refer to the pallet, so toLoad is material
+    // being loaded onto the pallet.  Material here must later be passed to `RecordLoadUnloadComplete`.
     IEnumerable<LogEntry> RecordPartialLoadUnload(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<MaterialToUnloadFromFace> toUnload,
@@ -121,6 +125,13 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues
     );
+
+    // The main method for recoding a completed pallet load/unload, which combines
+    // pallet <-> queue and pallet <-> basket operations along with any previously
+    // recorded partial options in calls to `RecordPartialLoadUnload`.  This will
+    // emit a cycle event for the pallet.  The optional `filledBaskets` field
+    // contains any baskets which are now filled, and this method will emit a basket
+    // cycle event for each of them.
     IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,
@@ -130,16 +141,31 @@ namespace BlackMaple.MachineFramework
       int pallet,
       TimeSpan totalElapsed,
       DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues,
+      IReadOnlyDictionary<int, IEnumerable<EventLogMaterial>> filledBaskets = null
+    );
+
+    // RecordPartialBasketOnlyLoadUnload is for partial basket-only operations.
+    // Records BasketLoadUnload events but NO BasketCycle events.  Material loaded here
+    // should be later passed into either `filledBaskets` on `RecordLoadUnloadComplete`
+    // or `previouslyLoaded` in `RecordBasketOnlyLoadUnload`.
+    IEnumerable<LogEntry> RecordPartialBasketOnlyLoadUnload(
+      MaterialToLoadOntoBasket toLoad,
+      MaterialToUnloadFromBasket toUnload,
+      int lulNum,
+      int basketId,
+      TimeSpan totalElapsed,
+      DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues
     );
 
     // RecordBasketOnlyLoadUnload is used for basket-only load/unload operations (no pallet involved).
     // This is used for material loaded from queue onto basket, or unloaded from basket to queue.
+    // Emits BasketCycle events (end of previous cycle if any, start of new cycle with material).
     IEnumerable<LogEntry> RecordBasketOnlyLoadUnload(
       MaterialToLoadOntoBasket toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,
       MaterialToUnloadFromBasket toUnload,
-      IReadOnlyList<EventLogMaterial> previouslyUnloaded,
       int lulNum,
       int basketId,
       TimeSpan totalElapsed,

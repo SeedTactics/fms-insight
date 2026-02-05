@@ -6296,14 +6296,53 @@ namespace BlackMaple.FMSInsight.Tests
       var start = DateTime.UtcNow.AddHours(-5);
       var basket1Events = new List<LogEntry>();
 
-      // Add some events to basket 1
-      var loadEvt = _jobLog.RecordBasketLoadBegin(
-        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
-        basketId: 1,
-        lulNum: 5,
-        timeUTC: start
+      // Add material to queues first so we can load them onto baskets
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial()
+        {
+          MaterialID = mat1.MaterialID,
+          Process = 0,
+          Face = 0,
+        },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start.AddMinutes(-10)
       );
-      basket1Events.Add(loadEvt);
+      _jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial()
+        {
+          MaterialID = mat2.MaterialID,
+          Process = 0,
+          Face = 0,
+        },
+        "QUEUE1",
+        -1,
+        null,
+        null,
+        start.AddMinutes(-10)
+      );
+
+      // Load material onto basket 1 using RecordBasketOnlyLoadUnload
+      // This creates both BasketLoadUnload and BasketCycle events
+      var loadLogs = _jobLog.RecordBasketOnlyLoadUnload(
+        toLoad: new MaterialToLoadOntoBasket()
+        {
+          MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
+          Process = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+        },
+        previouslyLoaded: null,
+        toUnload: null,
+        lulNum: 5,
+        basketId: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: start,
+        externalQueues: null
+      );
+      // Add only the BasketLoadUnload events (not the cycle) to basket1Events
+      basket1Events.AddRange(loadLogs.Where(e => e.LogType == LogType.BasketLoadUnload));
 
       // Also test BasketInLocation, but it's not included in CurrentBasketLog
       var arriveEvt = _jobLog.RecordBasketArriveLocation(
@@ -6315,18 +6354,32 @@ namespace BlackMaple.FMSInsight.Tests
       );
       // Note: CurrentBasketLog only includes BasketLoadUnload and BasketCycle events, not BasketInLocation
 
-      // CurrentBasketLog should return events since last basket cycle
+      // CurrentBasketLog should return events since last basket cycle (the cycle start is not included by default)
       var currentLog = _jobLog.CurrentBasketLog(1);
       currentLog.EventsShouldBe(basket1Events);
       _jobLog.CurrentBasketLog(2).ShouldBeEmpty();
 
-      // Record a basket cycle to mark boundary
+      // Use RecordBasketOnlyLoadUnload to create basket cycle end (unload from basket to queue)
+      // This will emit both BasketLoadUnload UNLOAD and BasketCycle end events
       var cycleTime = start.AddMinutes(20);
-      var unloadEvt = _jobLog.RecordBasketUnloadBegin(
-        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
-        basketId: 1,
+      var cycleLogs = _jobLog.RecordBasketOnlyLoadUnload(
+        toLoad: null,
+        previouslyLoaded: null,
+        toUnload: new MaterialToUnloadFromBasket()
+        {
+          MaterialIDToQueue = new Dictionary<long, string>()
+          {
+            [mat1.MaterialID] = "QUEUE1",
+            [mat2.MaterialID] = "QUEUE1",
+          }.ToImmutableDictionary(),
+          Process = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+        },
         lulNum: 5,
-        timeUTC: cycleTime
+        basketId: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: cycleTime,
+        externalQueues: null
       );
 
       // After basket cycle, CurrentBasketLog should be empty
@@ -6428,6 +6481,7 @@ namespace BlackMaple.FMSInsight.Tests
       );
 
       // Now unload from pallet to basket
+      // Pass filledBaskets to emit basket cycle events for basket 3
       var unloadToBasket = _jobLog.RecordLoadUnloadComplete(
         toLoad: null,
         toUnload:
@@ -6448,7 +6502,25 @@ namespace BlackMaple.FMSInsight.Tests
         lulNum: 5,
         totalElapsed: TimeSpan.FromMinutes(20),
         timeUTC: start.AddMinutes(30),
-        externalQueues: null
+        externalQueues: null,
+        filledBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
+        {
+          [3] = new[]
+          {
+            new EventLogMaterial()
+            {
+              MaterialID = mat1.MaterialID,
+              Process = 1,
+              Face = 0,
+            },
+            new EventLogMaterial()
+            {
+              MaterialID = mat2.MaterialID,
+              Process = 1,
+              Face = 0,
+            },
+          },
+        }
       );
 
       // Should have LoadUnloadCycle for pallet unload
@@ -6485,6 +6557,7 @@ namespace BlackMaple.FMSInsight.Tests
       basketCycleStart.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
 
       // Now load from basket back to pallet
+      // Pass filledBaskets with empty material to emit basket cycle end for basket 3
       var loadFromBasket = _jobLog.RecordLoadUnloadComplete(
         toLoad:
         [
@@ -6504,7 +6577,11 @@ namespace BlackMaple.FMSInsight.Tests
         lulNum: 6,
         totalElapsed: TimeSpan.FromMinutes(8),
         timeUTC: start.AddMinutes(50),
-        externalQueues: null
+        externalQueues: null,
+        filledBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
+        {
+          [3] = [], // Basket 3 is now empty
+        }
       );
 
       // Should have BasketLoadUnload for basket unload
@@ -6592,7 +6669,6 @@ namespace BlackMaple.FMSInsight.Tests
         },
         previouslyLoaded: null,
         toUnload: null,
-        previouslyUnloaded: null,
         lulNum: 10,
         basketId: 5,
         totalElapsed: TimeSpan.FromMinutes(2),
@@ -6626,7 +6702,6 @@ namespace BlackMaple.FMSInsight.Tests
           Process = 1,
           ActiveOperationTime = TimeSpan.FromMinutes(5),
         },
-        previouslyUnloaded: null,
         lulNum: 10,
         basketId: 5,
         totalElapsed: TimeSpan.FromMinutes(2),
@@ -6701,7 +6776,6 @@ namespace BlackMaple.FMSInsight.Tests
         },
         previouslyLoaded: null,
         toUnload: null,
-        previouslyUnloaded: null,
         lulNum: 10,
         basketId: 5,
         totalElapsed: TimeSpan.FromMinutes(2),
@@ -6737,7 +6811,6 @@ namespace BlackMaple.FMSInsight.Tests
           Process = 1,
           ActiveOperationTime = TimeSpan.FromMinutes(3),
         },
-        previouslyUnloaded: null,
         lulNum: 10,
         basketId: 5,
         totalElapsed: TimeSpan.FromMinutes(3),
@@ -6815,7 +6888,6 @@ namespace BlackMaple.FMSInsight.Tests
         },
         previouslyLoaded: null,
         toUnload: null,
-        previouslyUnloaded: null,
         lulNum: 10,
         basketId: 5,
         totalElapsed: TimeSpan.FromMinutes(2),
