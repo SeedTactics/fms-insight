@@ -129,8 +129,8 @@ namespace BlackMaple.MachineFramework
     // The main method for recoding a completed pallet load/unload, which combines
     // pallet <-> queue and pallet <-> basket operations along with any previously
     // recorded partial options in calls to `RecordPartialLoadUnload`.  This will
-    // emit a cycle event for the pallet.  The optional `filledBaskets` field
-    // contains any baskets which are now filled, and this method will emit a basket
+    // emit a cycle event for the pallet.  The optional `completedBaskets` field
+    // contains any baskets which are now filled or empty, and this method will emit a basket
     // cycle event for each of them.
     IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
@@ -142,12 +142,12 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      IReadOnlyDictionary<int, IEnumerable<EventLogMaterial>> filledBaskets = null
+      IReadOnlyDictionary<int, IEnumerable<EventLogMaterial>> completedBaskets = null
     );
 
     // RecordPartialBasketOnlyLoadUnload is for partial basket-only operations.
     // Records BasketLoadUnload events but NO BasketCycle events.  Material loaded here
-    // should be later passed into either `filledBaskets` on `RecordLoadUnloadComplete`
+    // should be later passed into either `completedBaskets` on `RecordLoadUnloadComplete`
     // or `previouslyLoaded` in `RecordBasketOnlyLoadUnload`.
     IEnumerable<LogEntry> RecordPartialBasketOnlyLoadUnload(
       MaterialToLoadOntoBasket toLoad,

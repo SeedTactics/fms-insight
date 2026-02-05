@@ -1706,7 +1706,7 @@ namespace BlackMaple.MachineFramework
     //   - Pallet to/from basket (material transferred between pallet face and basket)
     // For basket-only operations (basket to/from queue), use RecordBasketOnlyLoadUnload instead.
     //
-    // The filledBaskets parameter controls when basket cycle events are emitted. If null/empty,
+    // The completedBaskets parameter controls when basket cycle events are emitted. If null/empty,
     // no basket cycle events are emitted even if material was loaded/unloaded from baskets.
     // When provided, maps basket ID to the material now on that basket (for the cycle start event).
     public IEnumerable<LogEntry> RecordLoadUnloadComplete(
@@ -1719,7 +1719,7 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      IReadOnlyDictionary<int, IEnumerable<EventLogMaterial>> filledBaskets = null
+      IReadOnlyDictionary<int, IEnumerable<EventLogMaterial>> completedBaskets = null
     )
     {
       var sendToExternal = new List<MaterialToSendToExternalQueue>();
@@ -1788,9 +1788,9 @@ namespace BlackMaple.MachineFramework
           RecordPalletCycleEnd(pallet: pallet, mats: allUnload, timeUTC: timeUTC, logs: logs, trans: trans);
         }
 
-        // Emit basket cycle ends for baskets in filledBaskets
+        // Emit basket cycle ends for baskets in completedBaskets
         // (must be after pallet cycle end, before pallet cycle start)
-        foreach (var basketKv in filledBaskets ?? new Dictionary<int, IEnumerable<EventLogMaterial>>())
+        foreach (var basketKv in completedBaskets ?? new Dictionary<int, IEnumerable<EventLogMaterial>>())
         {
           RecordBasketCycleEnd(basketId: basketKv.Key, timeUTC: timeUTC, logs: logs, trans: trans);
         }
@@ -1819,9 +1819,9 @@ namespace BlackMaple.MachineFramework
           );
         }
 
-        // Emit basket cycle starts for baskets in filledBaskets
+        // Emit basket cycle starts for baskets in completedBaskets
         // (must be after pallet cycle start)
-        foreach (var basketKv in filledBaskets ?? new Dictionary<int, IEnumerable<EventLogMaterial>>())
+        foreach (var basketKv in completedBaskets ?? new Dictionary<int, IEnumerable<EventLogMaterial>>())
         {
           if (basketKv.Value.Any())
           {

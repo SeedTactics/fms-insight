@@ -6481,7 +6481,7 @@ namespace BlackMaple.FMSInsight.Tests
       );
 
       // Now unload from pallet to basket
-      // Pass filledBaskets to emit basket cycle events for basket 3
+      // Pass completedBaskets to emit basket cycle events for basket 3
       var unloadToBasket = _jobLog.RecordLoadUnloadComplete(
         toLoad: null,
         toUnload:
@@ -6503,7 +6503,7 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(20),
         timeUTC: start.AddMinutes(30),
         externalQueues: null,
-        filledBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
+        completedBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
         {
           [3] = new[]
           {
@@ -6557,7 +6557,7 @@ namespace BlackMaple.FMSInsight.Tests
       basketCycleStart.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
 
       // Now load from basket back to pallet
-      // Pass filledBaskets with empty material to emit basket cycle end for basket 3
+      // Pass completedBaskets with empty material to emit basket cycle end for basket 3
       var loadFromBasket = _jobLog.RecordLoadUnloadComplete(
         toLoad:
         [
@@ -6578,7 +6578,7 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(8),
         timeUTC: start.AddMinutes(50),
         externalQueues: null,
-        filledBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
+        completedBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
         {
           [3] = [], // Basket 3 is now empty
         }
