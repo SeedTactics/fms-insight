@@ -133,20 +133,6 @@ namespace BlackMaple.MachineFramework
       IReadOnlyDictionary<string, string> externalQueues
     );
 
-    // RecordPartialBasketOnlyLoadUnload is used for partial basket-only operations.
-    // Records BasketLoadUnload events but NOT BasketCycle events.
-    // Call RecordBasketOnlyLoadUnload at the end with previouslyLoaded/previouslyUnloaded
-    // to emit the basket cycle events.
-    IEnumerable<LogEntry> RecordPartialBasketOnlyLoadUnload(
-      MaterialToLoadOntoBasket toLoad,
-      MaterialToUnloadFromBasket toUnload,
-      int lulNum,
-      int basketId,
-      TimeSpan totalElapsed,
-      DateTime timeUTC,
-      IReadOnlyDictionary<string, string> externalQueues
-    );
-
     // RecordBasketOnlyLoadUnload is used for basket-only load/unload operations (no pallet involved).
     // This is used for material loaded from queue onto basket, or unloaded from basket to queue.
     IEnumerable<LogEntry> RecordBasketOnlyLoadUnload(
