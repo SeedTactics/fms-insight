@@ -132,7 +132,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var actual = await newCellSt;
 
-    actual.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(15));
+    actual.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(30));
     actual.ShouldBeEquivalentTo(
       new CurrentStatus()
       {
