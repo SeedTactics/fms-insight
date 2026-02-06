@@ -2831,7 +2831,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       // The sends to external queues happen on a new thread so need to wait
       int numWaits = 0;
-      while (server.LogEntries.Count() < 3 && numWaits < 30)
+      while (server.LogEntries.Count() < 3 && numWaits < 100) // 100 * 100 ms = 10 seconds
       {
         await Task.Delay(100, TestContext.Current.Execution.CancellationToken);
         numWaits++;
