@@ -2255,6 +2255,10 @@
           "AllowInvalidateMaterialOnQueuesPage": {
             "type": "boolean",
             "nullable": true
+          },
+          "BasketName": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -2463,7 +2467,10 @@
           "InvalidateCycle",
           "SwapMaterialOnPallet",
           "Rebooking",
-          "CancelRebooking"
+          "CancelRebooking",
+          "BasketLoadUnload",
+          "BasketCycle",
+          "BasketInLocation"
         ],
         "enum": [
           "LoadUnloadCycle",
@@ -2485,7 +2492,10 @@
           "InvalidateCycle",
           "SwapMaterialOnPallet",
           "Rebooking",
-          "CancelRebooking"
+          "CancelRebooking",
+          "BasketLoadUnload",
+          "BasketCycle",
+          "BasketInLocation"
         ]
       },
       "ToolUse": {
@@ -3282,6 +3292,13 @@
             "items": {
               "$ref": "#/components/schemas/ActiveWorkorder"
             }
+          },
+          "Baskets": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BasketStatus"
+            }
           }
         }
       },
@@ -3528,6 +3545,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "Problem": {
+            "type": "string",
+            "nullable": true
+          },
           "LastCompletedMachiningRouteStopIndex": {
             "type": "integer",
             "format": "int32",
@@ -3569,6 +3590,16 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "BasketId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "BasketSubPosition": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         }
       },
@@ -3578,12 +3609,14 @@
         "x-enumNames": [
           "Free",
           "OnPallet",
-          "InQueue"
+          "InQueue",
+          "InBasket"
         ],
         "enum": [
           "Free",
           "OnPallet",
-          "InQueue"
+          "InQueue",
+          "InBasket"
         ]
       },
       "InProcessMaterialAction": {
@@ -3616,8 +3649,23 @@
             "format": "int32",
             "nullable": true
           },
+          "LoadFromBasketId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
           "UnloadIntoQueue": {
             "type": "string",
+            "nullable": true
+          },
+          "UnloadToBasketId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "UnloadToBasketSubPosition": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           },
           "ElapsedLoadUnloadTime": {
@@ -3863,6 +3911,28 @@
           "ClosedOut",
           "CloseOutFailed"
         ]
+      },
+      "BasketStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "BasketId",
+          "LocationName"
+        ],
+        "properties": {
+          "BasketId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "LocationName": {
+            "type": "string"
+          },
+          "LocationPosition": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
       },
       "EditMaterialInLogEvents": {
         "type": "object",
