@@ -60,9 +60,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
-    DateTime LastPalletCycleTime(int pallet);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
-    DateTime LastBasketCycleTime(int basketId);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);

@@ -1156,7 +1156,6 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobLog.CurrentPalletLog(123).ShouldBeEmpty();
       _jobLog.CurrentPalletLog(4).ShouldBeEmpty();
-      _jobLog.LastPalletCycleTime(212).ShouldBe(DateTime.MinValue);
 
       var pal1Initial = new List<LogEntry>();
       var pal1Cycle = new List<LogEntry>();
@@ -1216,7 +1215,6 @@ namespace BlackMaple.FMSInsight.Tests
       );
       var initialPalCycle = initialLoad.First(e => e.LogType == LogType.PalletCycle);
       pal1Initial.AddRange(initialLoad.Where(e => e.LogType != LogType.PalletCycle));
-      _jobLog.LastPalletCycleTime(1).ShouldBe(pal1InitialTime.AddMinutes(5));
 
       // *********** Add machine cycle on pal1
       pal1Initial.Add(
@@ -1274,7 +1272,6 @@ namespace BlackMaple.FMSInsight.Tests
         )
       );
 
-      _jobLog.LastPalletCycleTime(1).ShouldBe(pal1InitialTime.AddMinutes(25));
       _jobLog
         .GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow)
         .EventsShouldBe([loadStart, initialPalCycle, .. pal1Initial, pal1CycleEvt]);
@@ -1443,7 +1440,6 @@ namespace BlackMaple.FMSInsight.Tests
         )
       );
 
-      _jobLog.LastPalletCycleTime(1).ShouldBe(pal1CycleTime.AddMinutes(40));
       _jobLog.CurrentPalletLog(1).ShouldBeEmpty();
 
       // add invalidated when loading all entries
@@ -6269,8 +6265,6 @@ namespace BlackMaple.FMSInsight.Tests
       // Test empty basket
       _jobLog.CurrentBasketLog(1).ShouldBeEmpty();
       _jobLog.CurrentBasketLog(2).ShouldBeEmpty();
-      _jobLog.LastBasketCycleTime(1).ShouldBe(DateTime.MinValue);
-      _jobLog.LastBasketCycleTime(2).ShouldBe(DateTime.MinValue);
 
       var mat1 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("unique1", "part1", 2),
@@ -6383,7 +6377,6 @@ namespace BlackMaple.FMSInsight.Tests
       );
 
       // After basket cycle, CurrentBasketLog should be empty
-      _jobLog.LastBasketCycleTime(1).ShouldBe(cycleTime);
       _jobLog.CurrentBasketLog(1).ShouldBeEmpty();
 
       // Test includeLastCycleEvt parameter
@@ -6415,7 +6408,6 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobLog.CurrentBasketLog(1).EventsShouldBe(basket1NewEvents);
       _jobLog.CurrentBasketLog(2).EventsShouldBe(basket2Events);
-      _jobLog.LastBasketCycleTime(2).ShouldBe(DateTime.MinValue);
     }
 
     [Test]

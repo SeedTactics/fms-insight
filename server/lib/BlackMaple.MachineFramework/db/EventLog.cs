@@ -609,23 +609,6 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public DateTime LastPalletCycleTime(int pallet)
-    {
-      using (var cmd = _connection.CreateCommand())
-      {
-        cmd.CommandText =
-          "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' "
-          + "ORDER BY Counter DESC LIMIT 1";
-        cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
-
-        var date = cmd.ExecuteScalar();
-        if (date == null || date == DBNull.Value)
-          return DateTime.MinValue;
-        else
-          return new DateTime((long)date, DateTimeKind.Utc);
-      }
-    }
-
     //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
     public List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false)
     {
@@ -681,23 +664,6 @@ namespace BlackMaple.MachineFramework
             return LoadLog(reader, trans).ToList();
           }
         }
-      }
-    }
-
-    public DateTime LastBasketCycleTime(int basketId)
-    {
-      using (var cmd = _connection.CreateCommand())
-      {
-        cmd.CommandText =
-          "SELECT TimeUTC FROM stations WHERE Pallet = $basketId AND StationLoc = $logType AND Result = 'BasketCycle' "
-          + "ORDER BY Counter DESC LIMIT 1";
-        cmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
-        cmd.Parameters.Add("logType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
-
-        var date = cmd.ExecuteScalar();
-        return (date == null || date == DBNull.Value)
-          ? DateTime.MinValue
-          : new DateTime((long)date, DateTimeKind.Utc);
       }
     }
 
