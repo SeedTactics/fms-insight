@@ -695,10 +695,9 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("logType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
 
         var date = cmd.ExecuteScalar();
-        if (date == null || date == DBNull.Value)
-          return DateTime.MinValue;
-        else
-          return new DateTime((long)date, DateTimeKind.Utc);
+        return (date == null || date == DBNull.Value)
+          ? DateTime.MinValue
+          : new DateTime((long)date, DateTimeKind.Utc);
       }
     }
 
@@ -1952,13 +1951,17 @@ namespace BlackMaple.MachineFramework
             };
             if (externalQueues != null && externalQueues.TryGetValue(queue, out var extQueue))
             {
+              // Look up material details for consistency with pallet unloads
+              var matDetails = GetMaterialDetails(matId, trans);
+              var partName = matDetails != null ? matDetails.PartName : "";
+              var serial = matDetails != null ? matDetails.Serial : "";
               sendToExternal.Add(
                 new MaterialToSendToExternalQueue()
                 {
                   Server = extQueue,
-                  PartName = "",
+                  PartName = partName,
                   Queue = queue,
-                  Serial = "",
+                  Serial = serial,
                 }
               );
             }
@@ -2157,13 +2160,16 @@ namespace BlackMaple.MachineFramework
             };
             if (externalQueues != null && externalQueues.TryGetValue(queue, out var extQueue))
             {
+              var matDetails = GetMaterialDetails(matId, trans);
+              var partName = matDetails != null ? matDetails.PartName : "";
+              var serial = matDetails != null ? matDetails.Serial : "";
               sendToExternal.Add(
                 new MaterialToSendToExternalQueue()
                 {
                   Server = extQueue,
-                  PartName = "",
+                  PartName = partName,
                   Queue = queue,
-                  Serial = "",
+                  Serial = serial,
                 }
               );
             }
@@ -2444,7 +2450,8 @@ namespace BlackMaple.MachineFramework
           LocationNum = lulNum,
           Program = "LOAD",
           StartOfCycle = false,
-          EndTimeUTC = timeUTC,
+          // Add 1 second to be after the basket cycle
+          EndTimeUTC = timeUTC.AddSeconds(1),
           Result = "LOAD",
           ElapsedTime = TimeSpan.Zero,
           ActiveOperationTime = TimeSpan.Zero,
@@ -2575,7 +2582,9 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = (SqliteTransaction)trans;
       cmd.CommandText =
-        "SELECT Counter, Start, TimeUTC FROM stations "
+        "SELECT Counter, Start, TimeUTC, "
+        + "  (SELECT COUNT(*) FROM program_details WHERE program_details.Counter = stations.Counter AND program_details.Key = 'PalletCycleInvalidated') AS Invalidated "
+        + "FROM stations "
         + "WHERE Pallet = $basketId AND Result = 'BasketCycle' "
         + "ORDER BY Counter DESC LIMIT 1";
       cmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
@@ -2590,11 +2599,12 @@ namespace BlackMaple.MachineFramework
       var lastCounter = reader.GetInt64(0);
       var lastIsStart = reader.GetBoolean(1);
       var lastTimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
+      var isInvalidated = reader.GetInt64(3) > 0;
       reader.Close();
 
-      if (!lastIsStart)
+      if (!lastIsStart || isInvalidated)
       {
-        // Most recent event is already an end - we missed a start, don't emit
+        // Most recent event is already an end, or it's invalidated - don't emit
         return;
       }
 
@@ -2690,24 +2700,36 @@ namespace BlackMaple.MachineFramework
             Face = 0,
           };
 
-          // Check if material is on a basket by looking for most recent BasketLoadUnload event
+          // Check if material is on a basket by looking for most recent non-invalidated BasketCycle START event
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = (SqliteTransaction)trans;
             cmd.CommandText =
-              "SELECT s.Pallet FROM stations s "
+              "SELECT s.Pallet, "
+              + "(SELECT COUNT(*) FROM program_details WHERE program_details.Counter = s.Counter AND program_details.Key = 'PalletCycleInvalidated') As Invalidated "
+              + "FROM stations s "
               + "INNER JOIN stations_mat sm ON s.Counter = sm.Counter "
               + "WHERE sm.MaterialID = $mid "
-              + "  AND s.StationLoc = $logType "
-              + "  AND s.Program = 'LOAD' "
+              + "  AND s.StationLoc = $basketCycleType "
+              + "  AND s.Result = 'BasketCycle' "
+              + "  AND s.Start = 1 "
               + "ORDER BY s.Counter DESC LIMIT 1";
             cmd.Parameters.Add("mid", SqliteType.Integer).Value = mat;
-            cmd.Parameters.Add("logType", SqliteType.Integer).Value = (int)LogType.BasketLoadUnload;
+            cmd.Parameters.Add("basketCycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
 
-            var basketIdObj = cmd.ExecuteScalar();
-            if (basketIdObj != null && basketIdObj != DBNull.Value)
+            int basketId = 0;
+            int invalidated = 0;
+            using (var reader = cmd.ExecuteReader())
             {
-              var basketId = (int)(long)basketIdObj; // Pallet is integer stored as long
+              if (reader.Read())
+              {
+                basketId = reader.GetInt32(0);
+                invalidated = reader.GetInt32(1);
+              }
+            }
+
+            if (basketId != 0 && invalidated == 0)
+            {
               var matOnBasket = new EventLogMaterial()
               {
                 MaterialID = mat,
@@ -4016,7 +4038,7 @@ namespace BlackMaple.MachineFramework
       using var checkQueueCmd = _connection.CreateCommand();
 
       getCycles.CommandText =
-        "SELECT s.Counter, s.Pallet FROM stations s WHERE "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.Start FROM stations s WHERE "
         + " EXISTS ("
         + "   SELECT 1 FROM stations_mat m "
         + "        WHERE s.Counter = m.Counter "
@@ -4065,6 +4087,7 @@ namespace BlackMaple.MachineFramework
       // load old events
       var invalidatedCntrs = new List<long>();
       var allMatIds = new HashSet<(long matId, int proc)>();
+      bool wasOnBasket = false; // Will be set to true if we invalidate a basket cycle START event
       using (var reader = getCycles.ExecuteReader())
       {
         while (reader.Read())
@@ -4090,6 +4113,15 @@ namespace BlackMaple.MachineFramework
             }
           }
           var cntr = reader.GetInt64(0);
+          var eventType = (LogType)reader.GetInt32(2);
+          var isStart = reader.GetBoolean(3);
+
+          // Check if this is a basket cycle START event
+          if (eventType == LogType.BasketCycle && isStart)
+          {
+            wasOnBasket = true;
+          }
+
           invalidatedCntrs.Add(cntr);
 
           getMatsCmd.Parameters[0].Value = cntr;
@@ -4140,27 +4172,9 @@ namespace BlackMaple.MachineFramework
       }
       newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
 
-      // Check if material was loaded from a basket
-      bool wasOnBasket = false;
-      using (var checkBasketCmd = _connection.CreateCommand())
-      {
-        checkBasketCmd.CommandText =
-          "SELECT 1 FROM stations s "
-          + "INNER JOIN stations_mat sm ON s.Counter = sm.Counter "
-          + "WHERE sm.MaterialID = $matid "
-          + "  AND s.StationLoc = $logType "
-          + "  AND s.Program = 'UNLOAD' "
-          + "ORDER BY s.Counter DESC LIMIT 1";
-        checkBasketCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
-        checkBasketCmd.Parameters.Add("logType", SqliteType.Integer).Value = (int)LogType.BasketLoadUnload;
-        checkBasketCmd.Transaction = trans;
-
-        var result = checkBasketCmd.ExecuteScalar();
-        wasOnBasket = result != null && result != DBNull.Value;
-      }
-
       // Only re-add to queue if material was in a queue, not on a basket
       // (we can't put material back onto a basket since it may have moved)
+      // wasOnBasket is set to true during the loop if we invalidated a basket cycle START event
       if (!wasOnBasket)
       {
         string queue = null;

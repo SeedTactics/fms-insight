@@ -126,7 +126,7 @@ namespace BlackMaple.MachineFramework
       IReadOnlyDictionary<string, string> externalQueues
     );
 
-    // The main method for recoding a completed pallet load/unload, which combines
+    // The main method for recording a completed pallet load/unload, which combines
     // pallet <-> queue and pallet <-> basket operations along with any previously
     // recorded partial options in calls to `RecordPartialLoadUnload`.  This will
     // emit a cycle event for the pallet.  The optional `completedBaskets` field

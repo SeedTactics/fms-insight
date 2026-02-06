@@ -208,7 +208,7 @@ namespace BlackMaple.MachineFramework
     public async Task<bool> RecalculateCellStateAndWaitAsync(CancellationToken cancellationToken)
     {
       var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-      var reg = cancellationToken.Register(() => tcs.TrySetCanceled(cancellationToken));
+      using var reg = cancellationToken.Register(() => tcs.TrySetCanceled(cancellationToken));
 
       _waitingRequests.Add((cancellationToken, tcs));
 
@@ -221,10 +221,6 @@ namespace BlackMaple.MachineFramework
       catch (OperationCanceledException)
       {
         return false;
-      }
-      finally
-      {
-        reg.Dispose();
       }
     }
 

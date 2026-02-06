@@ -83,7 +83,6 @@ namespace BlackMaple.MachineFramework
   }
 
   ///Stores the current location of a piece of material.  If a transfer operation is currently in process
-  ///Stores the current location of a piece of material.  If a transfer operation is currently in process
   ///(such as unloading), the location will store the previous location and the action will store the new location.
   public record InProcessMaterialLocation
   {
