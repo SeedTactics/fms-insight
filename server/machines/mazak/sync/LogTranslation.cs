@@ -859,7 +859,7 @@ namespace MazakMachineInterface
 
         var mats = GetMaterialOnPallet(e, oldEvents);
 
-        var matToQueue = ImmutableDictionary.CreateBuilder<long, string>();
+        var matToQueue = ImmutableDictionary.CreateBuilder<long, UnloadDestination>();
 
         foreach (var mat in mats)
         {
@@ -869,7 +869,10 @@ namespace MazakMachineInterface
 
           if (signalQuarantine != null)
           {
-            matToQueue[mat.Mat.MaterialID] = signalQuarantine.LocationName ?? fmsSettings.QuarantineQueue;
+            matToQueue[mat.Mat.MaterialID] = new UnloadDestination()
+            {
+              Queue = signalQuarantine.LocationName ?? fmsSettings.QuarantineQueue,
+            };
           }
           else
           {
@@ -883,7 +886,7 @@ namespace MazakMachineInterface
                 && (fmsSettings.Queues.ContainsKey(q) || fmsSettings.ExternalQueues.ContainsKey(q))
               )
               {
-                matToQueue[mat.Mat.MaterialID] = q;
+                matToQueue[mat.Mat.MaterialID] = new UnloadDestination() { Queue = q };
               }
               else
               {
@@ -900,7 +903,7 @@ namespace MazakMachineInterface
         ret.Add(
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = matToQueue.ToImmutable(),
+            MaterialIDToDestination = matToQueue.ToImmutable(),
             Process = e.Process,
             FaceNum = e.Process,
             ActiveOperationTime = CalculateActiveUnloadTime(mats),

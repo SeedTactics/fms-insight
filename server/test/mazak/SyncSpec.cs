@@ -180,12 +180,10 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync
       .CheckNewJobs(db, newJ)
-      .ShouldBe(
-        [
-          "Part aaa program 1002 does not exist in the cell controller.",
-          "Part bbb program 1002 does not exist in the cell controller.",
-        ]
-      );
+      .ShouldBe([
+        "Part aaa program 1002 does not exist in the cell controller.",
+        "Part bbb program 1002 does not exist in the cell controller.",
+      ]);
   }
 
   [Test]
@@ -271,12 +269,10 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync
       .CheckNewJobs(db, newJ)
-      .ShouldBe(
-        [
-          " Job aaa-schId1234 has an output queue queueAAA which is not configured as a queue in FMS Insight. Non-final processes must have a configured local queue, not an external queue",
-          " Job aaa-schId1234 has an input queue queueAAA which is not configured as a local queue in FMS Insight. All input queues must be local queues, not an external queue.",
-        ]
-      );
+      .ShouldBe([
+        " Job aaa-schId1234 has an output queue queueAAA which is not configured as a queue in FMS Insight. Non-final processes must have a configured local queue, not an external queue",
+        " Job aaa-schId1234 has an input queue queueAAA which is not configured as a local queue in FMS Insight. All input queues must be local queues, not an external queue.",
+      ]);
   }
 
   [Test]

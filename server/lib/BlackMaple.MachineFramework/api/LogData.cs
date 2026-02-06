@@ -109,6 +109,9 @@ namespace BlackMaple.MachineFramework
 
     Rebooking = 114,
     CancelRebooking = 115,
+    BasketLoadUnload = 116,
+    BasketCycle = 117,
+    BasketInLocation = 118,
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 

@@ -66,9 +66,10 @@ namespace BlackMaple.FMSInsight.Niigata
       _mcc = mcc;
       _assign =
         assign
-        ?? new MultiPalletAssign(
-          [new AssignNewRoutesOnPallets(settings.StationNames), new SizedQueues(fmsSt.Queues)]
-        );
+        ?? new MultiPalletAssign([
+          new AssignNewRoutesOnPallets(settings.StationNames),
+          new SizedQueues(fmsSt.Queues),
+        ]);
     }
 
     public event Action NewCellState

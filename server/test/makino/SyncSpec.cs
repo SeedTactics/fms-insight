@@ -184,11 +184,9 @@ public sealed class SyncSpec : IDisposable
           ],
         }
       )
-      .ShouldBe(
-        [
-          $"FMS Insight does not support multiple processes currently, please change {partName} to have one process.",
-        ]
-      );
+      .ShouldBe([
+        $"FMS Insight does not support multiple processes currently, please change {partName} to have one process.",
+      ]);
   }
 
   [Test]
@@ -221,11 +219,9 @@ public sealed class SyncSpec : IDisposable
           ],
         }
       )
-      .ShouldBe(
-        [
-          $"FMS Insight does not support paths with the same color, please make sure each path has a distinct color in {partName}",
-        ]
-      );
+      .ShouldBe([
+        $"FMS Insight does not support paths with the same color, please make sure each path has a distinct color in {partName}",
+      ]);
   }
 
   [Test]
@@ -281,12 +277,10 @@ public sealed class SyncSpec : IDisposable
           ],
         }
       )
-      .ShouldBe(
-        [
-          $"The flexibility plan for part {partName} uses machine bad number 1, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
-          $"The flexibility plan for part {partName} uses machine Mach number 500, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
-        ]
-      );
+      .ShouldBe([
+        $"The flexibility plan for part {partName} uses machine bad number 1, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
+        $"The flexibility plan for part {partName} uses machine Mach number 500, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
+      ]);
   }
 
   [Test]

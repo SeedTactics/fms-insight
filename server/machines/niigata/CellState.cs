@@ -936,9 +936,13 @@ namespace BlackMaple.FMSInsight.Niigata
         toUnload.Add(
           new MaterialToUnloadFromFace()
           {
-            MaterialIDToQueue = face.ToImmutableDictionary(
+            MaterialIDToDestination = face.ToImmutableDictionary(
               m => m.Mat.MaterialID,
-              m => OutputQueueForMaterial(m, pallet.Log, defaultToScrap: false)
+              m =>
+              {
+                var q = OutputQueueForMaterial(m, pallet.Log, defaultToScrap: false);
+                return q == null ? null : new UnloadDestination() { Queue = q };
+              }
             ),
             FaceNum = face.Key ?? 0,
             Process = proc,

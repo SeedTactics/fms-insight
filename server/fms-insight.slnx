@@ -13,5 +13,4 @@
   <Project Path="./machines/niigata/niigata.csproj" />
   <Project Path="./reverse-proxy/reverse-proxy.csproj" />
   <Project Path="./test/FMSInsight.Tests.csproj" />
-
 </Solution>

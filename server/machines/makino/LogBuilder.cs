@@ -177,7 +177,8 @@ namespace BlackMaple.FMSInsight.Makino
         Log.Debug(
           "Unable to determine active time for {job} on makino order {order}",
           job?.UniqueStr,
-          m.OrderName);
+          m.OrderName
+        );
         active = TimeSpan.FromSeconds(m.SpindleTimeSeconds);
       }
 
@@ -329,7 +330,10 @@ namespace BlackMaple.FMSInsight.Makino
           toUnload.Add(
             new MaterialToUnloadFromFace()
             {
-              MaterialIDToQueue = matList.ToImmutableDictionary(m => m.MaterialID, m => (string?)null),
+              MaterialIDToDestination = matList.ToImmutableDictionary(
+                m => m.MaterialID,
+                m => (UnloadDestination?)null
+              ),
               FaceNum = w.FixtureNumber,
               Process = w.UnloadProcessNum,
               ActiveOperationTime = active * matList.Count,

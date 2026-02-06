@@ -1160,19 +1160,17 @@ public sealed class LogBuilderSpec : IDisposable
       );
 
     db.LookupInspectionDecisions(mat.StartingMatID)
-      .ShouldBe(
-        [
-          new Decision()
-          {
-            Counter = $"CMM,{mat.PartName},1",
-            CreateUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(15 + 5),
-            Forced = false,
-            InspType = "CMM",
-            Inspect = false,
-            MaterialID = mat.StartingMatID,
-          },
-        ]
-      );
+      .ShouldBe([
+        new Decision()
+        {
+          Counter = $"CMM,{mat.PartName},1",
+          CreateUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(15 + 5),
+          Forced = false,
+          InspType = "CMM",
+          Inspect = false,
+          MaterialID = mat.StartingMatID,
+        },
+      ]);
   }
 
   [Test]
