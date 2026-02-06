@@ -2250,6 +2250,7 @@ export class FMSInfo implements IFMSInfo {
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
     allowInvalidateMaterialOnQueuesPage?: boolean | undefined;
+    basketName?: string | undefined;
 
     constructor(data?: IFMSInfo) {
         if (data) {
@@ -2295,6 +2296,7 @@ export class FMSInfo implements IFMSInfo {
             this.requireOperatorNamePromptWhenAddingMaterial = _data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowEditJobPlanQuantityFromQueuesPage = _data["AllowEditJobPlanQuantityFromQueuesPage"];
             this.allowInvalidateMaterialOnQueuesPage = _data["AllowInvalidateMaterialOnQueuesPage"];
+            this.basketName = _data["BasketName"];
         }
     }
 
@@ -2340,6 +2342,7 @@ export class FMSInfo implements IFMSInfo {
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
         data["AllowInvalidateMaterialOnQueuesPage"] = this.allowInvalidateMaterialOnQueuesPage;
+        data["BasketName"] = this.basketName;
         return data;
     }
 }
@@ -2368,6 +2371,7 @@ export interface IFMSInfo {
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
     allowInvalidateMaterialOnQueuesPage?: boolean | undefined;
+    basketName?: string | undefined;
 }
 
 export enum AddToQueueButton {
@@ -2633,6 +2637,9 @@ export enum LogType {
     SwapMaterialOnPallet = "SwapMaterialOnPallet",
     Rebooking = "Rebooking",
     CancelRebooking = "CancelRebooking",
+    BasketLoadUnload = "BasketLoadUnload",
+    BasketCycle = "BasketCycle",
+    BasketInLocation = "BasketInLocation",
 }
 
 export class ToolUse implements IToolUse {
@@ -3896,6 +3903,7 @@ export class CurrentStatus implements ICurrentStatus {
     queues!: { [key: string]: QueueInfo; };
     machineLocations?: MachineLocation[] | undefined;
     workorders?: ActiveWorkorder[] | undefined;
+    baskets?: { [key: string]: BasketStatus; } | undefined;
 
     constructor(data?: ICurrentStatus) {
         if (data) {
@@ -3957,6 +3965,13 @@ export class CurrentStatus implements ICurrentStatus {
                 for (let item of _data["Workorders"])
                     this.workorders!.push(ActiveWorkorder.fromJS(item));
             }
+            if (_data["Baskets"]) {
+                this.baskets = {} as any;
+                for (let key in _data["Baskets"]) {
+                    if (_data["Baskets"].hasOwnProperty(key))
+                        (this.baskets as any)![key] = _data["Baskets"][key] ? BasketStatus.fromJS(_data["Baskets"][key]) : new BasketStatus();
+                }
+            }
         }
     }
 
@@ -4011,6 +4026,13 @@ export class CurrentStatus implements ICurrentStatus {
             for (let item of this.workorders)
                 data["Workorders"].push(item ? item.toJSON() : undefined as any);
         }
+        if (this.baskets) {
+            data["Baskets"] = {};
+            for (let key in this.baskets) {
+                if (this.baskets.hasOwnProperty(key))
+                    (data["Baskets"] as any)[key] = this.baskets[key] ? this.baskets[key].toJSON() : undefined as any;
+            }
+        }
         return data;
     }
 }
@@ -4024,6 +4046,7 @@ export interface ICurrentStatus {
     queues: { [key: string]: QueueInfo; };
     machineLocations?: MachineLocation[] | undefined;
     workorders?: ActiveWorkorder[] | undefined;
+    baskets?: { [key: string]: BasketStatus; } | undefined;
 }
 
 export class HistoricJob extends Job implements IHistoricJob {
@@ -4329,6 +4352,7 @@ export class InProcessMaterial implements IInProcessMaterial {
     workorderId?: string | undefined;
     signaledInspections!: string[];
     quarantineAfterUnload?: boolean | undefined;
+    problem?: string | undefined;
     lastCompletedMachiningRouteStopIndex?: number | undefined;
     location!: InProcessMaterialLocation;
     action!: InProcessMaterialAction;
@@ -4362,6 +4386,7 @@ export class InProcessMaterial implements IInProcessMaterial {
                     this.signaledInspections!.push(item);
             }
             this.quarantineAfterUnload = _data["QuarantineAfterUnload"];
+            this.problem = _data["Problem"];
             this.lastCompletedMachiningRouteStopIndex = _data["LastCompletedMachiningRouteStopIndex"];
             this.location = _data["Location"] ? InProcessMaterialLocation.fromJS(_data["Location"]) : new InProcessMaterialLocation();
             this.action = _data["Action"] ? InProcessMaterialAction.fromJS(_data["Action"]) : new InProcessMaterialAction();
@@ -4390,6 +4415,7 @@ export class InProcessMaterial implements IInProcessMaterial {
                 data["SignaledInspections"].push(item);
         }
         data["QuarantineAfterUnload"] = this.quarantineAfterUnload;
+        data["Problem"] = this.problem;
         data["LastCompletedMachiningRouteStopIndex"] = this.lastCompletedMachiningRouteStopIndex;
         data["Location"] = this.location ? this.location.toJSON() : undefined as any;
         data["Action"] = this.action ? this.action.toJSON() : undefined as any;
@@ -4407,6 +4433,7 @@ export interface IInProcessMaterial {
     workorderId?: string | undefined;
     signaledInspections: string[];
     quarantineAfterUnload?: boolean | undefined;
+    problem?: string | undefined;
     lastCompletedMachiningRouteStopIndex?: number | undefined;
     location: InProcessMaterialLocation;
     action: InProcessMaterialAction;
@@ -4418,6 +4445,8 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
     face?: number | undefined;
     currentQueue?: string | undefined;
     queuePosition?: number | undefined;
+    basketId?: number | undefined;
+    basketSubPosition?: number | undefined;
 
     constructor(data?: IInProcessMaterialLocation) {
         if (data) {
@@ -4435,6 +4464,8 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
             this.face = _data["Face"];
             this.currentQueue = _data["CurrentQueue"];
             this.queuePosition = _data["QueuePosition"];
+            this.basketId = _data["BasketId"];
+            this.basketSubPosition = _data["BasketSubPosition"];
         }
     }
 
@@ -4452,6 +4483,8 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
         data["Face"] = this.face;
         data["CurrentQueue"] = this.currentQueue;
         data["QueuePosition"] = this.queuePosition;
+        data["BasketId"] = this.basketId;
+        data["BasketSubPosition"] = this.basketSubPosition;
         return data;
     }
 }
@@ -4462,12 +4495,15 @@ export interface IInProcessMaterialLocation {
     face?: number | undefined;
     currentQueue?: string | undefined;
     queuePosition?: number | undefined;
+    basketId?: number | undefined;
+    basketSubPosition?: number | undefined;
 }
 
 export enum LocType {
     Free = "Free",
     OnPallet = "OnPallet",
     InQueue = "InQueue",
+    InBasket = "InBasket",
 }
 
 export class InProcessMaterialAction implements IInProcessMaterialAction {
@@ -4476,7 +4512,10 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     loadOntoFace?: number | undefined;
     processAfterLoad?: number | undefined;
     pathAfterLoad?: number | undefined;
+    loadFromBasketId?: number | undefined;
     unloadIntoQueue?: string | undefined;
+    unloadToBasketId?: number | undefined;
+    unloadToBasketSubPosition?: number | undefined;
     elapsedLoadUnloadTime?: string | undefined;
     program?: string | undefined;
     elapsedMachiningTime?: string | undefined;
@@ -4498,7 +4537,10 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
             this.loadOntoFace = _data["LoadOntoFace"];
             this.processAfterLoad = _data["ProcessAfterLoad"];
             this.pathAfterLoad = _data["PathAfterLoad"];
+            this.loadFromBasketId = _data["LoadFromBasketId"];
             this.unloadIntoQueue = _data["UnloadIntoQueue"];
+            this.unloadToBasketId = _data["UnloadToBasketId"];
+            this.unloadToBasketSubPosition = _data["UnloadToBasketSubPosition"];
             this.elapsedLoadUnloadTime = _data["ElapsedLoadUnloadTime"];
             this.program = _data["Program"];
             this.elapsedMachiningTime = _data["ElapsedMachiningTime"];
@@ -4520,7 +4562,10 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
         data["LoadOntoFace"] = this.loadOntoFace;
         data["ProcessAfterLoad"] = this.processAfterLoad;
         data["PathAfterLoad"] = this.pathAfterLoad;
+        data["LoadFromBasketId"] = this.loadFromBasketId;
         data["UnloadIntoQueue"] = this.unloadIntoQueue;
+        data["UnloadToBasketId"] = this.unloadToBasketId;
+        data["UnloadToBasketSubPosition"] = this.unloadToBasketSubPosition;
         data["ElapsedLoadUnloadTime"] = this.elapsedLoadUnloadTime;
         data["Program"] = this.program;
         data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
@@ -4535,7 +4580,10 @@ export interface IInProcessMaterialAction {
     loadOntoFace?: number | undefined;
     processAfterLoad?: number | undefined;
     pathAfterLoad?: number | undefined;
+    loadFromBasketId?: number | undefined;
     unloadIntoQueue?: string | undefined;
+    unloadToBasketId?: number | undefined;
+    unloadToBasketSubPosition?: number | undefined;
     elapsedLoadUnloadTime?: string | undefined;
     program?: string | undefined;
     elapsedMachiningTime?: string | undefined;
@@ -4880,6 +4928,50 @@ export enum WorkorderSerialCloseout {
     None = "None",
     ClosedOut = "ClosedOut",
     CloseOutFailed = "CloseOutFailed",
+}
+
+export class BasketStatus implements IBasketStatus {
+    basketId!: number;
+    locationName!: string;
+    locationPosition?: number | undefined;
+
+    constructor(data?: IBasketStatus) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (this as any)[property] = (data as any)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.basketId = _data["BasketId"];
+            this.locationName = _data["LocationName"];
+            this.locationPosition = _data["LocationPosition"];
+        }
+    }
+
+    static fromJS(data: any): BasketStatus {
+        data = typeof data === 'object' ? data : {};
+        let result = new BasketStatus();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["BasketId"] = this.basketId;
+        data["LocationName"] = this.locationName;
+        data["LocationPosition"] = this.locationPosition;
+        return data;
+    }
+}
+
+export interface IBasketStatus {
+    basketId: number;
+    locationName: string;
+    locationPosition?: number | undefined;
 }
 
 export class EditMaterialInLogEvents implements IEditMaterialInLogEvents {
