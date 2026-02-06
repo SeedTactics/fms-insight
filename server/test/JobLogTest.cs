@@ -6346,7 +6346,7 @@ namespace BlackMaple.FMSInsight.Tests
         locationPosition: 3,
         timeUTC: start.AddMinutes(5)
       );
-      // Note: CurrentBasketLog only includes BasketLoadUnload and BasketCycle events, not BasketInLocation
+      basket1Events.Add(arriveEvt);
 
       // CurrentBasketLog should return events since last basket cycle (the cycle start is not included by default)
       var currentLog = _jobLog.CurrentBasketLog(1);

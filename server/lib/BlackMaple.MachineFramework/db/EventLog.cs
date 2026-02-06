@@ -683,9 +683,8 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT MAX(Counter) FROM stations WHERE Pallet = $basketId AND StationLoc = $logType AND Result = 'BasketCycle'";
+          "SELECT MAX(Counter) FROM stations WHERE Pallet = $basketId AND Result = 'BasketCycle'";
         cmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
-        cmd.Parameters.Add("logType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
 
         var counter = cmd.ExecuteScalar();
 
@@ -694,7 +693,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
             + " FROM stations s "
-            + " WHERE Pallet = $basketId AND StationLoc IN ($loadUnloadType, $cycleType) AND "
+            + " WHERE Pallet = $basketId AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
           cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)LogType.BasketLoadUnload;
@@ -709,7 +708,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
             + " FROM stations s "
-            + " WHERE Pallet = $basketId AND StationLoc IN ($loadUnloadType, $cycleType) AND Counter "
+            + " WHERE Pallet = $basketId AND Counter "
             + (includeLastCycleEvt ? ">=" : ">")
             + " $cntr AND "
             + ignoreInvalidEventCondition
