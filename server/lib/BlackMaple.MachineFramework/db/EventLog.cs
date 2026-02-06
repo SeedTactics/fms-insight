@@ -1626,7 +1626,7 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        RecordUnloadEnd(
+        var materialPerBasket = RecordUnloadEnd(
           toUnload: toUnload,
           lulNum: lulNum,
           pallet: pallet,
@@ -1639,6 +1639,8 @@ namespace BlackMaple.MachineFramework
           sendToExternal: sendToExternal,
           trans: trans
         );
+
+        RecordBasketUnloadEnds(toLoad, lulNum: lulNum, timeUTC: timeUTC, trans: trans, logs: logs);
 
         RecordLoadMaterialPaths(toLoad: toLoad, trans: trans);
 
@@ -1653,6 +1655,8 @@ namespace BlackMaple.MachineFramework
           logs: logs,
           trans: trans
         );
+
+        RecordBasketLoadEnds(materialPerBasket, lulNum: lulNum, timeUTC: timeUTC, logs: logs, trans: trans);
 
         return logs;
       });
@@ -1724,7 +1728,7 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        RecordUnloadEnd(
+        var materialPerBasket = RecordUnloadEnd(
           toUnload: toUnload,
           lulNum: lulNum,
           pallet: pallet,
@@ -1737,6 +1741,8 @@ namespace BlackMaple.MachineFramework
           sendToExternal: sendToExternal,
           trans: trans
         );
+
+        RecordBasketUnloadEnds(toLoad, lulNum: lulNum, timeUTC: timeUTC, trans: trans, logs: logs);
 
         var allUnload = (previouslyUnloaded ?? []).Concat(
           (toUnload ?? []).SelectMany(u =>
@@ -1812,6 +1818,9 @@ namespace BlackMaple.MachineFramework
           logs: logs,
           trans: trans
         );
+
+        RecordBasketLoadEnds(materialPerBasket, lulNum: lulNum, timeUTC: timeUTC, logs: logs, trans: trans);
+
         return logs;
       });
 
@@ -2401,6 +2410,20 @@ namespace BlackMaple.MachineFramework
         );
       }
 
+      // Return materialPerBasket so it can be passed to RecordBasketLoadEnds later.
+      // This allows the basket loads to be sequenced after the basket cycle (if any)
+
+      return materialPerBasket.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<EventLogMaterial>)kv.Value);
+    }
+
+    private void RecordBasketLoadEnds(
+      IReadOnlyDictionary<int, IReadOnlyList<EventLogMaterial>> materialPerBasket,
+      IDbTransaction trans,
+      int lulNum,
+      DateTime timeUTC,
+      List<LogEntry> logs
+    )
+    {
       // Emit BasketLoadUnload LOAD events for each basket (but no cycle events)
       foreach (var basketKv in materialPerBasket)
       {
@@ -2424,8 +2447,6 @@ namespace BlackMaple.MachineFramework
         };
         logs.Add(AddLogEntry(trans, entry1, null, null));
       }
-
-      return materialPerBasket.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<EventLogMaterial>)kv.Value);
     }
 
     private void RecordPalletCycleStart(
@@ -2638,10 +2659,8 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    // Records basket unload events and pallet load events.
-    // Returns a dictionary of basket ID to material that was unloaded from those baskets.
-    // Does NOT emit basket cycle events - caller controls when to emit those.
-    private IReadOnlyDictionary<int, IReadOnlyList<EventLogMaterial>> RecordLoadEnd(
+    // Records pallet load events.
+    private void RecordLoadEnd(
       IEnumerable<MaterialToLoadOntoFace> toLoad,
       int lulNum,
       int pallet,
@@ -2653,8 +2672,6 @@ namespace BlackMaple.MachineFramework
       IDbTransaction trans
     )
     {
-      var materialPerBasket = new Dictionary<int, List<EventLogMaterial>>();
-
       foreach (var face in toLoad ?? [])
       {
         foreach (var mat in face.MaterialIDs)
@@ -2665,51 +2682,6 @@ namespace BlackMaple.MachineFramework
             Process = face.Process - 1,
             Face = 0,
           };
-
-          // Check if material is on a basket by looking for most recent non-invalidated BasketCycle START event
-          using (var cmd = _connection.CreateCommand())
-          {
-            cmd.Transaction = (SqliteTransaction)trans;
-            cmd.CommandText =
-              "SELECT s.Pallet, "
-              + "(SELECT COUNT(*) FROM program_details WHERE program_details.Counter = s.Counter AND program_details.Key = 'PalletCycleInvalidated') As Invalidated "
-              + "FROM stations s "
-              + "INNER JOIN stations_mat sm ON s.Counter = sm.Counter "
-              + "WHERE sm.MaterialID = $mid "
-              + "  AND s.StationLoc = $basketCycleType "
-              + "  AND s.Result = 'BasketCycle' "
-              + "  AND s.Start = 1 "
-              + "ORDER BY s.Counter DESC LIMIT 1";
-            cmd.Parameters.Add("mid", SqliteType.Integer).Value = mat;
-            cmd.Parameters.Add("basketCycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
-
-            int basketId = 0;
-            int invalidated = 0;
-            using (var reader = cmd.ExecuteReader())
-            {
-              if (reader.Read())
-              {
-                basketId = reader.GetInt32(0);
-                invalidated = reader.GetInt32(1);
-              }
-            }
-
-            if (basketId != 0 && invalidated == 0)
-            {
-              var matOnBasket = new EventLogMaterial()
-              {
-                MaterialID = mat,
-                Process = face.Process - 1,
-                Face = 0,
-              };
-
-              if (!materialPerBasket.ContainsKey(basketId))
-              {
-                materialPerBasket[basketId] = new List<EventLogMaterial>();
-              }
-              materialPerBasket[basketId].Add(matOnBasket);
-            }
-          }
 
           logs.AddRange(
             RemoveFromAllQueues(
@@ -2769,8 +2741,79 @@ namespace BlackMaple.MachineFramework
           )
         );
       }
+    }
 
-      // Emit BasketLoadUnload UNLOAD events for each basket (but no cycle events)
+    // Basket Unload Ends come from material that is being loaded
+    // (if it is loaded out of a basket and not a queue)
+    private void RecordBasketUnloadEnds(
+      IEnumerable<MaterialToLoadOntoFace> toLoad,
+      int lulNum,
+      DateTime timeUTC,
+      IDbTransaction trans,
+      List<LogEntry> logs
+    )
+    {
+      var materialPerBasket = new Dictionary<int, List<EventLogMaterial>>();
+
+      foreach (var face in toLoad ?? [])
+      {
+        foreach (var mat in face.MaterialIDs)
+        {
+          var prevProcMat = new EventLogMaterial()
+          {
+            MaterialID = mat,
+            Process = face.Process - 1,
+            Face = 0,
+          };
+
+          // Check if material is on a basket by looking for most recent non-invalidated BasketCycle START event
+          using (var cmd = _connection.CreateCommand())
+          {
+            cmd.Transaction = (SqliteTransaction)trans;
+            cmd.CommandText =
+              "SELECT s.Pallet, "
+              + "(SELECT COUNT(*) FROM program_details WHERE program_details.Counter = s.Counter AND program_details.Key = 'PalletCycleInvalidated') As Invalidated "
+              + "FROM stations s "
+              + "INNER JOIN stations_mat sm ON s.Counter = sm.Counter "
+              + "WHERE sm.MaterialID = $mid "
+              + "  AND s.StationLoc = $basketCycleType "
+              + "  AND s.Result = 'BasketCycle' "
+              + "  AND s.Start = 1 "
+              + "ORDER BY s.Counter DESC LIMIT 1";
+            cmd.Parameters.Add("mid", SqliteType.Integer).Value = mat;
+            cmd.Parameters.Add("basketCycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
+
+            int basketId = 0;
+            int invalidated = 0;
+            using (var reader = cmd.ExecuteReader())
+            {
+              if (reader.Read())
+              {
+                basketId = reader.GetInt32(0);
+                invalidated = reader.GetInt32(1);
+              }
+            }
+
+            if (basketId != 0 && invalidated == 0)
+            {
+              var matOnBasket = new EventLogMaterial()
+              {
+                MaterialID = mat,
+                Process = face.Process - 1,
+                Face = 0,
+              };
+
+              if (!materialPerBasket.ContainsKey(basketId))
+              {
+                materialPerBasket[basketId] = new List<EventLogMaterial>();
+              }
+              materialPerBasket[basketId].Add(matOnBasket);
+            }
+          }
+        }
+      }
+
+      // Emit BasketLoadUnload UNLOAD events for each basket
       foreach (var basketKv in materialPerBasket)
       {
         var basketId = basketKv.Key;
@@ -2792,8 +2835,6 @@ namespace BlackMaple.MachineFramework
         };
         logs.Add(AddLogEntry(trans, entry2, null, null));
       }
-
-      return materialPerBasket.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<EventLogMaterial>)kv.Value);
     }
 
     public LogEntry RecordManualWorkAtLULStart(
