@@ -286,14 +286,37 @@ namespace MazakMachineInterface
             bool isEarlierOnSharedPallet = false;
             foreach (var pallet in sharedPallets)
             {
-              var myTime =
-                myPalletTimes != null && myPalletTimes.TryGetValue(pallet, out var myPalTime)
-                  ? myPalTime
-                  : startT;
-              var otherTime =
-                otherPalletTimes != null && otherPalletTimes.TryGetValue(pallet, out var otherPalTime)
-                  ? otherPalTime
-                  : otherStart;
+              // When per-pallet times exist but don't have an entry for this pallet,
+              // the simulation never ran the job on that pallet.
+              //
+              // For jobToCheck (myTime): treat missing entries as DateTime.MaxValue.
+              // The simulation never got around to running on this pallet, so the job
+              // is effectively "last in line" and any other job with a real time
+              // should count as an earlier conflict.
+              //
+              // For otherJob (otherTime): skip this pallet. The other job never ran
+              // on this pallet, so it should NOT count as an earlier conflict here.
+              DateTime myTime;
+              if (myPalletTimes != null)
+              {
+                if (!myPalletTimes.TryGetValue(pallet, out myTime))
+                  myTime = DateTime.MaxValue;
+              }
+              else
+              {
+                myTime = startT;
+              }
+
+              DateTime otherTime;
+              if (otherPalletTimes != null)
+              {
+                if (!otherPalletTimes.TryGetValue(pallet, out otherTime))
+                  continue;
+              }
+              else
+              {
+                otherTime = otherStart;
+              }
 
               if (
                 otherTime < myTime

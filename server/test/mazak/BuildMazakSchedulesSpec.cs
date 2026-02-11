@@ -579,6 +579,135 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public void CorrectPriorityWhenExclusivePalletsSkipShared()
+    {
+      // Simulates the scenario where some parts only run on exclusive pallets in the
+      // simulation but are configured for shared pallets too. Per-pallet times only
+      // exist for the exclusive pallets, not the shared ones. The job that never ran
+      // on shared pallets should get a higher Mazak priority number (runs later).
+      var baseTime = new DateTime(2026, 2, 6, 15, 0, 0, DateTimeKind.Utc);
+
+      // jobA: runs on shared pallets 9-12, booking priority 1
+      var jobA = new HistoricJob()
+      {
+        UniqueStr = "uniqA",
+        PartName = "partA",
+        RouteStartUTC = baseTime,
+        RouteEndUTC = DateTime.MinValue,
+        Cycles = 24,
+        Archived = false,
+        CopiedToSystem = true,
+        Processes = new[]
+        {
+          new ProcessInfo()
+          {
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                PalletNums = [9, 10, 11, 12],
+                SimulatedStartTimePerPallet = ImmutableDictionary<int, DateTime>
+                  .Empty.Add(9, baseTime.AddHours(5))
+                  .Add(10, baseTime.AddHours(4))
+                  .Add(11, baseTime.AddHours(4.5))
+                  .Add(12, baseTime.AddHours(3)),
+                SimulatedStartingUTC = baseTime.AddHours(3),
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
+      };
+
+      // jobB: runs on shared pallets 9-12, booking priority 2
+      var jobB = new HistoricJob()
+      {
+        UniqueStr = "uniqB",
+        PartName = "partB",
+        RouteStartUTC = baseTime,
+        RouteEndUTC = DateTime.MinValue,
+        Cycles = 12,
+        Archived = false,
+        CopiedToSystem = true,
+        Processes = new[]
+        {
+          new ProcessInfo()
+          {
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                PalletNums = [9, 10, 11, 12],
+                SimulatedStartTimePerPallet = ImmutableDictionary<int, DateTime>
+                  .Empty.Add(9, baseTime.AddHours(15))
+                  .Add(10, baseTime.AddHours(16))
+                  .Add(11, baseTime.AddHours(17))
+                  .Add(12, baseTime.AddHours(19)),
+                SimulatedStartingUTC = baseTime.AddHours(15),
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
+      };
+
+      // jobC: runs ONLY on exclusive pallets 5,7 in the simulation, but configured for
+      // shared pallets 9-12 too. Booking priority 3 — should run AFTER jobB on shared pallets.
+      var jobC = new HistoricJob()
+      {
+        UniqueStr = "uniqC",
+        PartName = "partC",
+        RouteStartUTC = baseTime,
+        RouteEndUTC = DateTime.MinValue,
+        Cycles = 12,
+        Archived = false,
+        CopiedToSystem = true,
+        Processes = new[]
+        {
+          new ProcessInfo()
+          {
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                PalletNums = [5, 7, 9, 10, 11, 12],
+                // Per-pallet times only for exclusive pallets 5,7 — not shared 9-12
+                SimulatedStartTimePerPallet = ImmutableDictionary<int, DateTime>
+                  .Empty.Add(5, baseTime.AddHours(3.5))
+                  .Add(7, baseTime.AddHours(5.5)),
+                SimulatedStartingUTC = baseTime.AddHours(3.5),
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
+      };
+
+      var curData = new MazakAllData()
+      {
+        Parts = new[]
+        {
+          new MazakPartRow() { PartName = "partA:1:1", Comment = "uniqA-Insight" },
+          new MazakPartRow() { PartName = "partB:1:1", Comment = "uniqB-Insight" },
+          new MazakPartRow() { PartName = "partC:1:1", Comment = "uniqC-Insight" },
+        },
+        Schedules = Array.Empty<MazakScheduleRow>(),
+      };
+
+      var actions = BuildMazakSchedules.AddSchedules(
+        curData,
+        new[] { jobA, jobB, jobC },
+        new MazakConfig() { DBType = MazakDbType.MazakSmooth, UseStartingOffsetForDueDate = true }
+      );
+
+      var schA = actions.Schedules.Single(s => s.Comment == "uniqA-Insight");
+      var schB = actions.Schedules.Single(s => s.Comment == "uniqB-Insight");
+      var schC = actions.Schedules.Single(s => s.Comment == "uniqC-Insight");
+
+      // jobA should run first (lowest priority number)
+      schA.Priority.ShouldBeLessThan(schB.Priority);
+      // jobB should run before jobC (jobC never ran on shared pallets)
+      schB.Priority.ShouldBeLessThan(schC.Priority);
+    }
+
+    [Test]
     [MatrixDataSource]
     public void UsesZeroQtyForProc1(
       [Matrix(true, false)] bool hasInputQueue,
