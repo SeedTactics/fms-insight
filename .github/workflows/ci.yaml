@@ -30,7 +30,7 @@ jobs:
               --coverage --coverage-output-format cobertura --coverage-output server-cov.xml
 
       - name: Upload Code Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: server\test\bin\Debug\net10.0\TestResults\server-cov.xml
