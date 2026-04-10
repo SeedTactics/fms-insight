@@ -72,7 +72,13 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
   }, [outlierTy, allCycles]);
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -86,7 +92,11 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
           {outlierTy === "labor" ? "Load/Unload" : "Machine"} cycles from the past 5 days statistically
           outside expected range
         </Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <Tooltip title="Copy to Clipboard">
           <IconButton
             style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}

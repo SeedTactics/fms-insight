@@ -301,7 +301,13 @@ export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
   );
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -315,7 +321,11 @@ export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
           {ty === "labor" ? "Load/Unload" : "Machine"} OEE: comparing flexplan hours between actual and
           simulated production
         </Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <FormControl size="small">
           <Select
             autoWidth

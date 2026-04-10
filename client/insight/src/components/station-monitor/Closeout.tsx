@@ -211,8 +211,8 @@ export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean })
     <>
       <Box sx={{ display: forceSingleColumn ? undefined : { md: "flex" } }}>
         <Box
-          padding="8px"
           sx={{
+            padding: "8px",
             minHeight: forceSingleColumn ? undefined : { md: "calc(100vh - 64px)" },
             width: forceSingleColumn ? "100%" : { md: "50vw" },
             borderRight: forceSingleColumn ? undefined : { md: "1px solid black" },
@@ -220,15 +220,32 @@ export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean })
           }}
         >
           <Typography variant="h4">Recently Completed</Typography>
-          <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
             {material.uncompleted.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
           </Box>
         </Box>
-        <Box padding="8px" sx={{ width: forceSingleColumn ? "100%" : { md: "50vw" } }}>
+        <Box
+          sx={{
+            padding: "8px",
+            width: forceSingleColumn ? "100%" : { md: "50vw" },
+          }}
+        >
           <Typography variant="h4">Recently Closed Out</Typography>
-          <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
             {material.closed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}

@@ -666,7 +666,13 @@ export function ToolReportPage(): ReactNode {
   useSetTitle("Tool Report");
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <ToolNavHeader />
       <main>
         <DisplayLoadingAndError>

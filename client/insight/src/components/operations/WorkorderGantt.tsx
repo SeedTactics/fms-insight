@@ -118,16 +118,29 @@ function YAxis({ workorders }: { workorders: ReadonlyArray<Readonly<IActiveWorko
       {workorders.map((work) => (
         <Stack
           key={workorderKey(work)}
-          height={rowSize}
           direction="column"
-          alignItems="flex-end"
-          paddingRight="10px"
-          justifyContent="center"
+          sx={{
+            height: rowSize,
+            alignItems: "flex-end",
+            paddingRight: "10px",
+            justifyContent: "center",
+          }}
         >
           <Box>{work.workorderId}</Box>
-          <Box display="flex" alignItems="center">
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <PartIdenticon part={work.part} size={18} />
-            <Box ml="3px">{work.part}</Box>
+            <Box
+              sx={{
+                ml: "3px",
+              }}
+            >
+              {work.part}
+            </Box>
           </Box>
         </Stack>
       ))}
@@ -213,15 +226,27 @@ export function WorkorderGantt() {
   const { xScale, yScale } = useScales(sortedWorkorders);
 
   return (
-    <Box display="flex">
+    <Box
+      sx={{
+        display: "flex",
+      }}
+    >
       <Box
-        height={yScale.range()[1] + marginTop + marginBottom}
-        width={namesWidth}
-        paddingTop={`${marginTop}px`}
+        sx={{
+          height: yScale.range()[1] + marginTop + marginBottom,
+          width: namesWidth,
+          paddingTop: `${marginTop}px`,
+        }}
       >
         <YAxis workorders={sortedWorkorders} />
       </Box>
-      <Box flexGrow={1} width={0} position="relative">
+      <Box
+        sx={{
+          flexGrow: 1,
+          width: 0,
+          position: "relative",
+        }}
+      >
         <div style={{ overflowX: "visible" }}>
           <svg
             height={yScale.range()[1] + marginTop + marginBottom}

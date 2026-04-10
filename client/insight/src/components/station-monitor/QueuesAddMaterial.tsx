@@ -136,8 +136,10 @@ function SelectRawMaterial({
             </ListItemIcon>
             <ListItemText
               primary={casting.casting}
-              primaryTypographyProps={{ variant: "h4" }}
               secondary={casting.message ?? undefined}
+              slotProps={{
+                primary: { variant: "h4" },
+              }}
             />
           </ListItemButton>
         </ListItem>

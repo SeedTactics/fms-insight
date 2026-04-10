@@ -141,10 +141,19 @@ export const QRScanButton = memo(function QRScanButton() {
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <DialogTitle>Scan a QR Code</DialogTitle>
         <DialogContent>
-          <Box width="15em" height="15em">
+          <Box
+            sx={{
+              width: "15em",
+              height: "15em",
+            }}
+          >
             {dialogOpen ? <Scanner onScan={onScan} /> : undefined}
           </Box>
-          <Box marginTop="1em">
+          <Box
+            sx={{
+              marginTop: "1em",
+            }}
+          >
             <TextField
               label="Manual Entry"
               value={manual}
@@ -204,11 +213,20 @@ export const AddByBarcodeDialog = memo(function AddByBarcodeDialog() {
       <DialogContent>
         {window.location.protocol === "https:" ||
         (import.meta.env.DEV && window.location.hostname === "localhost") ? (
-          <Box width="15em" height="15em">
+          <Box
+            sx={{
+              width: "15em",
+              height: "15em",
+            }}
+          >
             {queue !== null ? <Scanner onScan={onScan} /> : undefined}
           </Box>
         ) : undefined}
-        <Box marginTop="1em">
+        <Box
+          sx={{
+            marginTop: "1em",
+          }}
+        >
           <TextField
             label="Manual Entry"
             value={manual}

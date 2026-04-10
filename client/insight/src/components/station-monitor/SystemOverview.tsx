@@ -374,11 +374,27 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
         <Badge badgeContent={mats.length > 1 ? mats.length : 0} color="secondary">
           <ButtonBase focusRipple onClick={click} ref={btnRef}>
             <Collapse orientation="horizontal" in={open} collapsedSize={CollapsedIconSize}>
-              <Box display="flex">
+              <Box
+                sx={{
+                  display: "flex",
+                }}
+              >
                 <PartIdenticon part={mats[0].partName} size={CollapsedIconSize} />
-                <Box marginLeft="10px" marginRight="10px" whiteSpace="nowrap" textAlign="left">
+                <Box
+                  sx={{
+                    marginLeft: "10px",
+                    marginRight: "10px",
+                    whiteSpace: "nowrap",
+                    textAlign: "left",
+                  }}
+                >
                   <Collapse in={open} collapsedSize={CollapsedIconSize}>
-                    <Stack direction="column" marginBottom="0.2em">
+                    <Stack
+                      direction="column"
+                      sx={{
+                        marginBottom: "0.2em",
+                      }}
+                    >
                       <Typography variant="h6">
                         {mats[0].partName}-{mats[0].process}
                       </Typography>
@@ -443,7 +459,13 @@ function PalletFaces({
 }) {
   if (showExpanded && maxNumFaces === 1) {
     return (
-      <Box display="flex" flexDirection="column" flexWrap="wrap">
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          flexWrap: "wrap",
+        }}
+      >
         {mats.map((mat) => (
           <InProcMaterial key={mat.materialID} mat={mat} />
         ))}
@@ -462,16 +484,24 @@ function PalletFaces({
 
     return (
       <Box
-        display="grid"
-        gridTemplateRows={`${CollapsedIconSize}px`}
-        gridTemplateColumns={`repeat(${maxNumFaces}, ${CollapsedIconSize}px)`}
-        columnGap="5px"
-        height="100%"
-        alignContent="center"
-        justifyContent="center"
+        sx={{
+          display: "grid",
+          gridTemplateRows: `${CollapsedIconSize}px`,
+          gridTemplateColumns: `repeat(${maxNumFaces}, ${CollapsedIconSize}px)`,
+          columnGap: "5px",
+          height: "100%",
+          alignContent: "center",
+          justifyContent: "center",
+        }}
       >
         {byFace.map(([face, mats]) => (
-          <Box key={face} gridColumn={face} gridRow={1}>
+          <Box
+            key={face}
+            sx={{
+              gridColumn: face,
+              gridRow: 1,
+            }}
+          >
             <MaterialIcon mats={mats} />
           </Box>
         ))}
@@ -563,61 +593,133 @@ function MachineLabel({ machine }: { machine: MachineStatus }) {
 function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: MachineStatus }) {
   return (
     <Box
-      display="grid"
-      border="1px solid black"
-      margin="5px"
-      gridTemplateRows={`auto ${rowSize}px ${rowSize}px ${rowSize}px`}
-      gridTemplateColumns={gridTemplateColumns(maxNumFaces, true)}
-      gridTemplateAreas={`"machname machname" "inboundpal inboundmat" "worktablepal worktablemat" "outboundpal outboundmat"`}
+      sx={{
+        display: "grid",
+        border: "1px solid black",
+        margin: "5px",
+        gridTemplateRows: `auto ${rowSize}px ${rowSize}px ${rowSize}px`,
+        gridTemplateColumns: gridTemplateColumns(maxNumFaces, true),
+        gridTemplateAreas: `"machname machname" "inboundpal inboundmat" "worktablepal worktablemat" "outboundpal outboundmat"`,
+      }}
     >
-      <Box gridArea="machname" padding="0.2em" borderBottom="1px solid black">
+      <Box
+        sx={{
+          gridArea: "machname",
+          padding: "0.2em",
+          borderBottom: "1px solid black",
+        }}
+      >
         <MachineLabel machine={machine} />
       </Box>
-      <Box gridArea="inboundpal" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
+      <Box
+        sx={{
+          gridArea: "inboundpal",
+          borderRight: "1px solid black",
+          borderBottom: "1px solid black",
+          padding: "2px",
+        }}
+      >
         <Stack>
-          <Typography variant="body1" textAlign="center">
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: "center",
+            }}
+          >
             In
           </Typography>
           {machine.inbound ? (
-            <Typography variant="h6" textAlign="center">
+            <Typography
+              variant="h6"
+              sx={{
+                textAlign: "center",
+              }}
+            >
               {machine.inbound.pallet.palletNum}
             </Typography>
           ) : undefined}
         </Stack>
       </Box>
-      <Box gridArea="inboundmat" borderBottom="1px solid black">
+      <Box
+        sx={{
+          gridArea: "inboundmat",
+          borderBottom: "1px solid black",
+        }}
+      >
         {machine.inbound ? <PalletFaces mats={machine.inbound.mats} maxNumFaces={maxNumFaces} /> : undefined}
       </Box>
-      <Box gridArea="worktablepal" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
+      <Box
+        sx={{
+          gridArea: "worktablepal",
+          borderRight: "1px solid black",
+          borderBottom: "1px solid black",
+          padding: "2px",
+        }}
+      >
         <Stack>
-          <Typography variant="body1" textAlign="center">
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: "center",
+            }}
+          >
             Work
           </Typography>
           {machine.worktable ? (
-            <Typography variant="h6" textAlign="center">
+            <Typography
+              variant="h6"
+              sx={{
+                textAlign: "center",
+              }}
+            >
               {machine.worktable.pallet.palletNum}
             </Typography>
           ) : undefined}
         </Stack>
       </Box>
-      <Box gridArea="worktablemat" borderBottom="1px solid black">
+      <Box
+        sx={{
+          gridArea: "worktablemat",
+          borderBottom: "1px solid black",
+        }}
+      >
         {machine.worktable ? (
           <PalletFaces mats={machine.worktable.mats} maxNumFaces={maxNumFaces} />
         ) : undefined}
       </Box>
-      <Box gridArea="outboundpal" borderRight="1px solid black" padding="2px">
+      <Box
+        sx={{
+          gridArea: "outboundpal",
+          borderRight: "1px solid black",
+          padding: "2px",
+        }}
+      >
         <Stack>
-          <Typography variant="body1" textAlign="center">
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: "center",
+            }}
+          >
             Out
           </Typography>
           {machine.outbound ? (
-            <Typography variant="h6" textAlign="center">
+            <Typography
+              variant="h6"
+              sx={{
+                textAlign: "center",
+              }}
+            >
               {machine.outbound.pallet.palletNum}
             </Typography>
           ) : undefined}
         </Stack>
       </Box>
-      <Box gridArea="outboundmat">
+      <Box
+        sx={{
+          gridArea: "outboundmat",
+        }}
+      >
         {machine.outbound ? (
           <PalletFaces mats={machine.outbound.mats} maxNumFaces={maxNumFaces} />
         ) : undefined}
@@ -655,7 +757,13 @@ function useElapsedLoadTime(
 function LoadStationLabel({ load }: { load: LoadStatus }) {
   const status = useElapsedLoadTime(load.pal?.mats);
   return (
-    <Box display="flex" justifyContent="space-between" alignItems="baseline">
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+      }}
+    >
       <Typography variant="h5">L/U {load.lulNum}</Typography>
       <Typography variant="body1">{status}</Typography>
     </Box>
@@ -665,22 +773,47 @@ function LoadStationLabel({ load }: { load: LoadStatus }) {
 function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadStatus }) {
   return (
     <Box
-      display="grid"
-      border="1px solid black"
-      margin="5px"
-      gridTemplateRows={`auto ${rowSize}px ${rowSize}px`}
-      gridTemplateColumns={gridTemplateColumns(maxNumFaces, true)}
-      gridTemplateAreas={`"lulname lulname" "loading loadingmat" "currentpal currentmat"`}
+      sx={{
+        display: "grid",
+        border: "1px solid black",
+        margin: "5px",
+        gridTemplateRows: `auto ${rowSize}px ${rowSize}px`,
+        gridTemplateColumns: gridTemplateColumns(maxNumFaces, true),
+        gridTemplateAreas: `"lulname lulname" "loading loadingmat" "currentpal currentmat"`,
+      }}
     >
-      <Box gridArea="lulname" padding="0.2em" borderBottom="1px solid black">
+      <Box
+        sx={{
+          gridArea: "lulname",
+          padding: "0.2em",
+          borderBottom: "1px solid black",
+        }}
+      >
         <LoadStationLabel load={load} />
       </Box>
-      <Box gridArea="loading" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
+      <Box
+        sx={{
+          gridArea: "loading",
+          borderRight: "1px solid black",
+          borderBottom: "1px solid black",
+          padding: "2px",
+        }}
+      >
         <Stack>
-          <Typography variant="body1" textAlign="center">
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: "center",
+            }}
+          >
             To
           </Typography>
-          <Typography variant="body1" textAlign="center">
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: "center",
+            }}
+          >
             Load
           </Typography>
         </Stack>
@@ -690,19 +823,39 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
           <PalletFaces mats={load.pal.mats} maxNumFaces={maxNumFaces} loadingOntoPallet />
         ) : undefined}
       </Box>
-      <Box gridArea="currentpal" borderRight="1px solid black" padding="2px">
+      <Box
+        sx={{
+          gridArea: "currentpal",
+          borderRight: "1px solid black",
+          padding: "2px",
+        }}
+      >
         <Stack>
-          <Typography variant="body1" textAlign="center">
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: "center",
+            }}
+          >
             Pallet
           </Typography>
           {load.pal ? (
-            <Typography variant="h6" textAlign="center">
+            <Typography
+              variant="h6"
+              sx={{
+                textAlign: "center",
+              }}
+            >
               {load.pal.pallet.palletNum}
             </Typography>
           ) : undefined}
         </Stack>
       </Box>
-      <Box gridArea="currentmat">
+      <Box
+        sx={{
+          gridArea: "currentmat",
+        }}
+      >
         {load.pal ? <PalletFaces mats={load.pal.mats} maxNumFaces={maxNumFaces} /> : undefined}
       </Box>
     </Box>
@@ -745,59 +898,119 @@ function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
 function MachineAtLoad({ maxNumFaces, status }: { maxNumFaces: number; status: MachineAtLoadStatus }) {
   return (
     <Box
-      display="grid"
-      border="1px solid black"
-      margin="5px"
-      gridTemplateRows={`minmax(104px, max-content) repeat(3, ${
-        maxNumFaces > 1 ? rowSize.toString() + "px" : "minmax(110px, max-content)"
-      })`}
-      gridTemplateColumns={
-        maxNumFaces === 1 ? "60px minmax(230px, max-content)" : gridTemplateColumns(maxNumFaces, true)
-      }
-      gridTemplateAreas={`"name name" "ready readymat" "machining machiningmat" "loadstation loadstationmat"`}
+      sx={{
+        display: "grid",
+        border: "1px solid black",
+        margin: "5px",
+
+        gridTemplateRows: `minmax(104px, max-content) repeat(3, ${
+          maxNumFaces > 1 ? rowSize.toString() + "px" : "minmax(110px, max-content)"
+        })`,
+
+        gridTemplateColumns:
+          maxNumFaces === 1 ? "60px minmax(230px, max-content)" : gridTemplateColumns(maxNumFaces, true),
+        gridTemplateAreas: `"name name" "ready readymat" "machining machiningmat" "loadstation loadstationmat"`,
+      }}
     >
-      <Box gridArea="name" padding="0.2em" borderBottom="1px solid black">
+      <Box
+        sx={{
+          gridArea: "name",
+          padding: "0.2em",
+          borderBottom: "1px solid black",
+        }}
+      >
         <MachineAtLoadLabel status={status} />
       </Box>
-      <Box gridArea="ready" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
-        <Typography variant="body1" textAlign="center">
+      <Box
+        sx={{
+          gridArea: "ready",
+          borderRight: "1px solid black",
+          borderBottom: "1px solid black",
+          padding: "2px",
+        }}
+      >
+        <Typography
+          variant="body1"
+          sx={{
+            textAlign: "center",
+          }}
+        >
           Ready
         </Typography>
       </Box>
       <Box
-        gridArea="readymat"
-        borderBottom="1px solid black"
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
+        sx={{
+          gridArea: "readymat",
+          borderBottom: "1px solid black",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
       >
         <PalletFaces mats={status.readyMats} maxNumFaces={maxNumFaces} showExpanded />
       </Box>
-      <Box gridArea="machining" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
-        <Typography variant="body1" textAlign="center">
+      <Box
+        sx={{
+          gridArea: "machining",
+          borderRight: "1px solid black",
+          borderBottom: "1px solid black",
+          padding: "2px",
+        }}
+      >
+        <Typography
+          variant="body1"
+          sx={{
+            textAlign: "center",
+          }}
+        >
           Work
         </Typography>
       </Box>
       <Box
-        gridArea="machiningmat"
-        borderBottom="1px solid black"
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
+        sx={{
+          gridArea: "machiningmat",
+          borderBottom: "1px solid black",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
       >
         <PalletFaces mats={status.machiningMats} maxNumFaces={maxNumFaces} showExpanded />
       </Box>
-      <Box gridArea="loadstation" borderRight="1px solid black" padding="2px">
+      <Box
+        sx={{
+          gridArea: "loadstation",
+          borderRight: "1px solid black",
+          padding: "2px",
+        }}
+      >
         <Stack>
-          <Typography variant="body1" textAlign="center">
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: "center",
+            }}
+          >
             Load
           </Typography>
-          <Typography variant="body1" textAlign="center">
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: "center",
+            }}
+          >
             Station
           </Typography>
         </Stack>
       </Box>
-      <Box gridArea="loadstationmat" display="flex" flexDirection="column" justifyContent="center">
+      <Box
+        sx={{
+          gridArea: "loadstationmat",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
         <PalletFaces mats={status.loadingMats} maxNumFaces={maxNumFaces} showExpanded noFilter />
       </Box>
     </Box>
@@ -807,17 +1020,30 @@ function MachineAtLoad({ maxNumFaces, status }: { maxNumFaces: number; status: M
 function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: PalletAndMaterial }) {
   return (
     <Box
-      display="grid"
-      border="1px solid black"
-      margin="5px"
-      gridTemplateRows={`auto ${rowSize}px`}
-      gridTemplateColumns={gridTemplateColumns(maxNumFaces, false)}
-      gridTemplateAreas={`"palname" "palmat"`}
+      sx={{
+        display: "grid",
+        border: "1px solid black",
+        margin: "5px",
+        gridTemplateRows: `auto ${rowSize}px`,
+        gridTemplateColumns: gridTemplateColumns(maxNumFaces, false),
+        gridTemplateAreas: `"palname" "palmat"`,
+      }}
     >
-      <Typography variant="h5" gridArea="palname" padding="0.2em" borderBottom="1px solid black">
+      <Typography
+        variant="h5"
+        sx={{
+          gridArea: "palname",
+          padding: "0.2em",
+          borderBottom: "1px solid black",
+        }}
+      >
         Pallet {pallet.pallet.palletNum}
       </Typography>
-      <Box gridArea="palmat">
+      <Box
+        sx={{
+          gridArea: "palmat",
+        }}
+      >
         <PalletFaces mats={pallet.mats} maxNumFaces={maxNumFaces} />
       </Box>
     </Box>
@@ -828,28 +1054,53 @@ export const SystemOverview = memo(function SystemOverview({ overview }: { overv
   return (
     <div>
       {overview.machines.toAscLazySeq().map(([group, machines]) => (
-        <Box key={group} display="flex" flexWrap="wrap" justifyContent="space-evenly">
+        <Box
+          key={group}
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-evenly",
+          }}
+        >
           {machines.map((machine) => (
             <Machine key={machine.name} machine={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
           ))}
         </Box>
       ))}
       {overview.loads.length > 0 ? (
-        <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-evenly",
+          }}
+        >
           {overview.loads.map((machine) => (
             <LoadStation key={machine.lulNum} load={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
           ))}
         </Box>
       ) : undefined}
       {overview.machineAtLoad.length > 0 ? (
-        <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-evenly",
+          }}
+        >
           {overview.machineAtLoad.map((status) => (
             <MachineAtLoad key={status.lulNum} status={status} maxNumFaces={overview.maxNumFacesOnPallet} />
           ))}
         </Box>
       ) : undefined}
       {overview.stockerPals.length > 0 ? (
-        <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-evenly",
+          }}
+        >
           {overview.stockerPals.map((pal) => (
             <StockerPallet
               key={pal.pallet.palletNum}
@@ -1098,7 +1349,13 @@ export const SystemOverviewDialogButton = memo(function SystemOverviewDialogButt
           </AppBar>
         ) : undefined}
         <DialogContent>
-          <Box paddingBottom="2em" paddingLeft="5em" paddingRight="5em">
+          <Box
+            sx={{
+              paddingBottom: "2em",
+              paddingLeft: "5em",
+              paddingRight: "5em",
+            }}
+          >
             <SystemOverview overview={overview} />
           </Box>
         </DialogContent>

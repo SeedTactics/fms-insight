@@ -160,7 +160,13 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
   }, [points, ty, curOperation]);
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -173,7 +179,11 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
         <Typography variant="subtitle1">
           Recent {ty === "labor" ? "Load/Unload Occupancy" : "Machine Cycles"}
         </Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <FormControl size="small">
           <Select
             name="Station-Cycles-chart-or-table-select"

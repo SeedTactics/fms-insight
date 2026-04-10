@@ -108,9 +108,9 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
     .filter((m) =>
       Boolean(
         m.numProcesses &&
-          m.unloaded_processes?.[m.numProcesses] &&
-          (range.startDate === null || m.unloaded_processes[m.numProcesses] >= range.startDate) &&
-          (range.endDate === null || m.unloaded_processes[m.numProcesses] <= range.endDate),
+        m.unloaded_processes?.[m.numProcesses] &&
+        (range.startDate === null || m.unloaded_processes[m.numProcesses] >= range.startDate) &&
+        (range.endDate === null || m.unloaded_processes[m.numProcesses] <= range.endDate),
       ),
     )
     .toOrderedLookup((m) => m.partName)

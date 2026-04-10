@@ -62,7 +62,7 @@ import {
 import { useSetTitle } from "../routes.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
-import { Check, ErrorOutline, MoreHoriz, SkipNext, SkipPrevious } from "@mui/icons-material";
+import { Check, ErrorOutlined, MoreHoriz, SkipNext, SkipPrevious } from "@mui/icons-material";
 
 function CloseoutDialogButtons() {
   const setWorkorderDialogOpen = useSetAtom(selectWorkorderDialogOpen);
@@ -119,7 +119,13 @@ function NavigateDay({
 }) {
   const today = startOfToday();
   return (
-    <Stack direction="row" spacing={2} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{
+        alignItems: "center",
+      }}
+    >
       <Tooltip title="Previous Day">
         <div>
           <IconButton disabled={day <= addDays(today, -28)} onClick={() => setDay((d) => addDays(d, -1))}>
@@ -280,7 +286,13 @@ const CloseoutRow = memo(function CloseoutRow({ mat }: { mat: MaterialSummaryAnd
       <TableCell>{mat.last_unload_time ? timeOnlyFormat.format(mat.last_unload_time) : ""}</TableCell>
       <TableCell>{mat.serial}</TableCell>
       <TableCell>
-        <Stack direction="row" spacing="2" alignItems="center">
+        <Stack
+          direction="row"
+          spacing="2"
+          sx={{
+            alignItems: "center",
+          }}
+        >
           <PartIdenticon part={mat.partName} size={25} />
           <Typography variant="body2">{mat.partName}</Typography>
         </Stack>
@@ -290,7 +302,7 @@ const CloseoutRow = memo(function CloseoutRow({ mat }: { mat: MaterialSummaryAnd
         {mat.closeout_completed === null || mat.closeout_completed === undefined ? (
           ""
         ) : mat.closeout_failed ? (
-          <ErrorOutline fontSize="inherit" />
+          <ErrorOutlined fontSize="inherit" />
         ) : (
           <Check fontSize="inherit" />
         )}
@@ -364,8 +376,18 @@ export function CloseoutReport(): ReactNode {
   const [day, setDay] = useState(startOfToday());
 
   return (
-    <Box padding="24px">
-      <Box component="nav" display="flex" justifyContent="center">
+    <Box
+      sx={{
+        padding: "24px",
+      }}
+    >
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         <NavigateDay day={day} setDay={setDay} />
       </Box>
       <main>

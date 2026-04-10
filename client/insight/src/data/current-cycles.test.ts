@@ -137,7 +137,7 @@ function fakeLoad({
     jobUnique: uniq,
     partName: part,
     process: ty === "load" ? 123094345 : proc,
-    path: ty === "load" ? 1239829345 : path ?? 1,
+    path: ty === "load" ? 1239829345 : (path ?? 1),
     signaledInspections: [],
     action: new InProcessMaterialAction({
       type:
@@ -149,7 +149,7 @@ function fakeLoad({
       elapsedLoadUnloadTime: `PT${elapsedMin}M`,
       loadOntoPalletNum: ty === "load" ? pal : undefined,
       processAfterLoad: ty === "load" ? proc : undefined,
-      pathAfterLoad: ty === "load" ? path ?? 1 : undefined,
+      pathAfterLoad: ty === "load" ? (path ?? 1) : undefined,
     }),
     location:
       ty === "load"

@@ -123,7 +123,13 @@ const columns: ReadonlyArray<Col> = [
     label: "Part",
     getDisplay: (r) => r.partName,
     Cell: ({ row }: { row: Row }) => (
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: "center",
+        }}
+      >
         <PartIdenticon part={row.partName} size={25} />
         {row.partName}
       </Stack>
@@ -353,7 +359,7 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
                   label="Part Name"
                   slotProps={{
                     input: {
-                      ...params.InputProps,
+                      ...params.slotProps.input,
                       startAdornment: (
                         <>
                           {rebooking.part !== "" ? (
@@ -361,7 +367,7 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
                               <PartIdenticon part={rebooking.part} size={25} />
                             </InputAdornment>
                           ) : undefined}
-                          {params.InputProps.startAdornment}
+                          {params.slotProps.input?.startAdornment}
                         </>
                       ),
                     },
@@ -370,7 +376,13 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
               )}
               renderOption={(props, option) => (
                 <li {...props}>
-                  <Stack direction="row" spacing="1" alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing="1"
+                    sx={{
+                      alignItems: "center",
+                    }}
+                  >
                     <PartIdenticon part={option} size={25} />
                     {option}
                   </Stack>

@@ -69,7 +69,7 @@ import {
   MoreHoriz,
   Warning as WarningIcon,
   Check,
-  ErrorOutline,
+  ErrorOutlined,
   SavedSearch,
   Search,
   Clear,
@@ -160,7 +160,15 @@ const WorkorderDetails = memo(function WorkorderDetails({
   }
 
   return (
-    <Stack direction="row" flexWrap="wrap" justifyContent="space-around" ml="1em" mr="1em">
+    <Stack
+      direction="row"
+      sx={{
+        flexWrap: "wrap",
+        justifyContent: "space-around",
+        ml: "1em",
+        mr: "1em",
+      }}
+    >
       <div>
         <Table size="small" stickyHeader>
           <TableHead>
@@ -180,7 +188,7 @@ const WorkorderDetails = memo(function WorkorderDetails({
                   {s.quarantined ? <SavedSearch fontSize="inherit" /> : ""}
                 </TableCell>
                 <TableCell sx={{ textAlign: "center" }} padding="checkbox">
-                  {s.inspectionFailed ? <ErrorOutline fontSize="inherit" /> : ""}
+                  {s.inspectionFailed ? <ErrorOutlined fontSize="inherit" /> : ""}
                 </TableCell>
                 <TableCell sx={{ textAlign: "center" }} padding="checkbox">
                   {s.closeout === WorkorderSerialCloseout.None ? (
@@ -188,7 +196,7 @@ const WorkorderDetails = memo(function WorkorderDetails({
                   ) : s.closeout === WorkorderSerialCloseout.ClosedOut ? (
                     <Check fontSize="inherit" />
                   ) : (
-                    <ErrorOutline fontSize="inherit" />
+                    <ErrorOutlined fontSize="inherit" />
                   )}
                 </TableCell>
                 <TableCell padding="checkbox">
@@ -299,7 +307,13 @@ function WorkorderRow({
               <PartIdenticon part={workorder.part} size={25} />
             </Box>
             <div>
-              <Typography variant="body2" component="span" display="block">
+              <Typography
+                variant="body2"
+                component="span"
+                sx={{
+                  display: "block",
+                }}
+              >
                 {workorder.part}
               </Typography>
             </div>
@@ -511,9 +525,23 @@ const SimulatedWarning = memo(function SimulatedWarning({ showSim }: { showSim: 
   const [selected, setSelected] = useAtom(tableOrGantt);
 
   return (
-    <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center">
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{
+        justifyContent: "flex-end",
+        alignItems: "center",
+      }}
+    >
       {showSim ? (
-        <Stack direction="row" spacing={2} alignItems="center" flexGrow={1}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            alignItems: "center",
+            flexGrow: 1,
+          }}
+        >
           <WarningIcon fontSize="small" />
           <Typography variant="caption">Projected dates are estimates</Typography>
         </Stack>
@@ -777,7 +805,15 @@ function SearchingWorkorder() {
   return (
     <TableRow>
       <TableCell colSpan={10}>
-        <Stack direction="column" mt="3em" flex="flex" alignItems="center" width="100%">
+        <Stack
+          direction="column"
+          sx={{
+            mt: "3em",
+            flex: "flex",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
           <Stack direction="row" spacing="3">
             <CircularProgress />
             {workId && workId !== "" ? (
@@ -877,7 +913,12 @@ export const CurrentWorkordersPage = memo(function RecentWorkordersPage({
   );
 
   return (
-    <Box component="main" padding="24px">
+    <Box
+      component="main"
+      sx={{
+        padding: "24px",
+      }}
+    >
       {showSim ? <SimulatedWarning showSim={showSim} /> : undefined}
       {display === "table" ? (
         <WorkorderTable showSim={showSim} disableSearch={disableSearch} />

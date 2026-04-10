@@ -162,7 +162,13 @@ const fulldayFormat = new Intl.DateTimeFormat(undefined, {
 
 function PartCell({ row }: { row: ProdRow }) {
   return (
-    <Stack direction="row" spacing={1} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={1}
+      sx={{
+        alignItems: "center",
+      }}
+    >
       <PartIdenticon part={row.part} size={25} />
       <span>{row.part}</span>
     </Stack>
@@ -294,7 +300,13 @@ function NavigateDay({
 }) {
   const today = startOfToday();
   return (
-    <Stack direction="row" spacing={2} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{
+        alignItems: "center",
+      }}
+    >
       <Tooltip title="Previous Day">
         <div>
           <IconButton disabled={day <= addDays(today, -28)} onClick={() => setDay((d) => addDays(d, -1))}>
@@ -343,13 +355,28 @@ const RecentProductionToolbar = function RecentProductionToolbar({
         maxWidth: "calc(100vw - 24px - 24px)",
       }}
     >
-      <Box gridArea="shifts" justifySelf="flex-start">
+      <Box
+        sx={{
+          gridArea: "shifts",
+          justifySelf: "flex-start",
+        }}
+      >
         <ShiftStart />
       </Box>
-      <Box gridArea="day" justifySelf="center">
+      <Box
+        sx={{
+          gridArea: "day",
+          justifySelf: "center",
+        }}
+      >
         <NavigateDay day={day} setDay={setDay} />
       </Box>
-      <Box gridArea="export" justifySelf="flex-end">
+      <Box
+        sx={{
+          gridArea: "export",
+          justifySelf: "flex-end",
+        }}
+      >
         <Tooltip title="Copy to Clipboard">
           <IconButton onClick={() => copyTableToClipboard(columns, rows)}>
             <ImportExport />
@@ -366,7 +393,13 @@ export function RecentProductionPage(): ReactNode {
   const columns = useColumns(day);
   const rows = useRows(day);
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <RecentProductionToolbar day={day} setDay={setDay} rows={rows} columns={columns} />
       <main>
         <RecentProductionTable rows={rows} columns={columns} />

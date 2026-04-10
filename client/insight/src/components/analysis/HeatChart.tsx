@@ -307,7 +307,11 @@ function ChartToolbar<T extends string>(props: SelectableHeatCardProps<T>) {
       }}
     >
       <Typography variant="subtitle1">{props.label}</Typography>
-      <Box flexGrow={1} />
+      <Box
+        sx={{
+          flexGrow: 1,
+        }}
+      />
       {setSelected ? (
         <FormControl size="small">
           <Select
@@ -347,7 +351,13 @@ export function SelectableHeatChart<T extends string>(props: SelectableHeatChart
   }, [setTooltip]);
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <ChartToolbar
         label={props.label}
         setSelected={props.setSelected}

@@ -172,8 +172,8 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
     <>
       <Box sx={{ display: forceSingleColumn ? undefined : { md: "flex" } }}>
         <Box
-          padding="8px"
           sx={{
+            padding: "8px",
             minHeight: forceSingleColumn ? undefined : { md: "calc(100vh - 64px)" },
             width: forceSingleColumn ? "100%" : { md: "50vw" },
             borderRight: forceSingleColumn ? undefined : { md: "1px solid black" },
@@ -181,15 +181,32 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
           }}
         >
           <Typography variant="h4">Parts to Inspect</Typography>
-          <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
             {recent_inspections.waiting_to_inspect.map((m, idx) => (
               <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideWarningIcon />
             ))}
           </Box>
         </Box>
-        <Box padding="8px" sx={{ width: forceSingleColumn ? "100%" : { md: "50vw" } }}>
+        <Box
+          sx={{
+            padding: "8px",
+            width: forceSingleColumn ? "100%" : { md: "50vw" },
+          }}
+        >
           <Typography variant="h4">Recently Inspected</Typography>
-          <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
             {recent_inspections.inspect_completed.map((m, idx) => (
               <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideWarningIcon />
             ))}

@@ -160,7 +160,11 @@ export function RecentFailedInspectionsTable() {
         }}
       >
         <Typography variant="subtitle1">Inspections marked as failed in the last 5 days</Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <Tooltip title="Copy to Clipboard">
           <IconButton
             style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
