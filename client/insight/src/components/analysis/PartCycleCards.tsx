@@ -211,7 +211,13 @@ export function PartMachineCycleChart() {
   }, [points, curOperation]);
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -224,7 +230,11 @@ export function PartMachineCycleChart() {
         <Typography variant="subtitle1">
           Machine Cycles for <DisplayDateRange range={zoomDateRange ?? defaultDateRange} />
         </Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <FormControl size="small">
           <Select
             autoWidth
@@ -520,7 +530,13 @@ export function PartLoadStationCycleChart() {
   }, [points, selectedOperation]);
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -533,7 +549,11 @@ export function PartLoadStationCycleChart() {
         <Typography variant="subtitle1">
           Load/Unload Cycles for <DisplayDateRange range={zoomDateRange ?? defaultDateRange} />
         </Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <FormControl size="small">
           <Select
             autoWidth

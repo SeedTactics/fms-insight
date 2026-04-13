@@ -144,7 +144,13 @@ export function PalletCycleChart() {
   );
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -155,7 +161,11 @@ export function PalletCycleChart() {
         }}
       >
         <Typography variant="subtitle1">Pallet Cycles</Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <FormControl size="small">
           <Select
             autoWidth

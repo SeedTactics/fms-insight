@@ -339,25 +339,55 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
   return (
     <div>
       {faceNum === 1 ? (
-        <Box display="grid" gridTemplateColumns={data.pallet.numFaces > 1 ? "1fr 1fr 1fr" : "1fr 1fr"}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: data.pallet.numFaces > 1 ? "1fr 1fr 1fr" : "1fr 1fr",
+          }}
+        >
           <Typography variant="h4">Pallet {data.pallet.palletNum}</Typography>
           {data.pallet.numFaces > 1 ? (
-            <Typography variant="h6" justifySelf="center">
+            <Typography
+              variant="h6"
+              sx={{
+                justifySelf: "center",
+              }}
+            >
               {data.pallet.faceNames?.[faceNum - 1] ?? "Face 1"}
             </Typography>
           ) : undefined}
-          <Box justifySelf="flex-end">
+          <Box
+            sx={{
+              justifySelf: "flex-end",
+            }}
+          >
             <ElapsedLoadTime elapsedLoadTime={data.elapsedLoadingTime} />
           </Box>
         </Box>
       ) : data.pallet.numFaces > 1 ? (
-        <Box display="flex" justifyContent="center">
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
           <Typography variant="h6">{data.pallet.faceNames?.[faceNum - 1] ?? `Face ${faceNum}`}</Typography>
         </Box>
       ) : undefined}
-      <Box ml="4em" mr="4em">
+      <Box
+        sx={{
+          ml: "4em",
+          mr: "4em",
+        }}
+      >
         <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: faceNum }}>
-          <Box display="flex" flexWrap="wrap" justifyContent="space-around">
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "space-around",
+            }}
+          >
             {face.map((m, idx) => (
               <MoveMaterialArrowNode
                 key={idx}
@@ -424,7 +454,14 @@ function MaterialRegion({
         </MoveMaterialArrowNode>
       ))}
       {mat.material.hiddenCnt > 0 ? (
-        <Typography variant="body2" color="textSecondary" textAlign="center" mt="0.5em">
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          sx={{
+            textAlign: "center",
+            mt: "0.5em",
+          }}
+        >
           +{mat.material.hiddenCnt} hidden
         </Typography>
       ) : null}
@@ -519,10 +556,32 @@ const CompletedCol = memo(function CompletedCol({
   });
   if (showMaterial && fillViewPort) {
     return (
-      <Box padding="8px" display="flex" flexDirection="column" height="100%" ref={ref}>
+      <Box
+        ref={ref}
+        sx={{
+          padding: "8px",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+        }}
+      >
         <Typography variant="h4">Completed</Typography>
-        <Box position="relative" flexGrow={1}>
-          <Box position="absolute" top="0" left="0" right="0" bottom="0" overflow="auto">
+        <Box
+          sx={{
+            position: "relative",
+            flexGrow: 1,
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "0",
+              left: "0",
+              right: "0",
+              bottom: "0",
+              overflow: "auto",
+            }}
+          >
             <RecentCompletedMaterial />
           </Box>
         </Box>
@@ -530,18 +589,32 @@ const CompletedCol = memo(function CompletedCol({
     );
   } else if (showMaterial) {
     return (
-      <Box padding="8px" ref={ref}>
+      <Box
+        ref={ref}
+        sx={{
+          padding: "8px",
+        }}
+      >
         <Typography variant="h4">Completed</Typography>
         <RecentCompletedMaterial />
       </Box>
     );
   } else {
     return (
-      <Box display="flex" justifyContent={fillViewPort ? "flex-end" : undefined} padding="8px" ref={ref}>
+      <Box
+        ref={ref}
+        sx={{
+          display: "flex",
+          justifyContent: fillViewPort ? "flex-end" : undefined,
+          padding: "8px",
+        }}
+      >
         <Typography
           variant="h4"
-          margin="4px"
-          sx={fillViewPort ? { textOrientation: "mixed", writingMode: "vertical-rl" } : undefined}
+          sx={{
+            margin: "4px",
+            ...(fillViewPort ? { textOrientation: "mixed", writingMode: "vertical-rl" } : {}),
+          }}
         >
           Completed
         </Typography>
@@ -861,10 +934,12 @@ export function LoadStation(props: LoadStationProps) {
         {matCols.map((col, idx) => (
           <Box
             key={idx}
-            gridArea={`mat${idx}`}
-            padding="8px"
-            borderRight={fillViewPort ? "1px solid black" : undefined}
-            borderBottom={!fillViewPort ? "1px solid black" : undefined}
+            sx={{
+              gridArea: `mat${idx}`,
+              padding: "8px",
+              borderRight: fillViewPort ? "1px solid black" : undefined,
+              borderBottom: !fillViewPort ? "1px solid black" : undefined,
+            }}
           >
             <MaterialColumn data={data} region={col} />
           </Box>
@@ -872,18 +947,22 @@ export function LoadStation(props: LoadStationProps) {
         {data.face.keysToAscLazySeq().map((faceNum, idx) => (
           <Box
             key={faceNum}
-            marginLeft="15px"
-            gridArea={`palface${idx}`}
-            padding="8px"
-            borderTop={data.pallet && idx !== 0 ? "1px solid black" : undefined}
+            sx={{
+              marginLeft: "15px",
+              gridArea: `palface${idx}`,
+              padding: "8px",
+              borderTop: data.pallet && idx !== 0 ? "1px solid black" : undefined,
+            }}
           >
             <PalletFace data={data} faceNum={faceNum} />
           </Box>
         ))}
         <Box
-          borderLeft={fillViewPort ? "1px solid black" : undefined}
-          borderTop={!fillViewPort ? "1px solid black" : undefined}
-          gridArea="completed"
+          sx={{
+            borderLeft: fillViewPort ? "1px solid black" : undefined,
+            borderTop: !fillViewPort ? "1px solid black" : undefined,
+            gridArea: "completed",
+          }}
         >
           <CompletedCol fillViewPort={fillViewPort} showMaterial={props.completed} />
         </Box>

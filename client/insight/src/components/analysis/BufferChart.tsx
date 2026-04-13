@@ -254,7 +254,13 @@ export function BufferOccupancyChart() {
 
   const [movingAverageHours, setMovingAverage] = useState(12);
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -267,7 +273,11 @@ export function BufferOccupancyChart() {
         <Typography variant="subtitle1">
           Average material occupancy of rotary tables and stocker positions over time
         </Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <span style={{ fontSize: "small", marginRight: "1em" }}>Moving Average Window: </span>
         <SliderAny
           style={{ width: "10em" }}
@@ -279,7 +289,6 @@ export function BufferOccupancyChart() {
           onChange={(e: ChangeEvent<unknown>, v: number) => setMovingAverage(v)}
         />
       </Box>
-
       <main>
         <BufferChart movingAverageDistanceInHours={movingAverageHours} />
       </main>

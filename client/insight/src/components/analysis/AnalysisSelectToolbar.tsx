@@ -54,9 +54,11 @@ export const AnalysisSelectToolbar = memo(function AnalysisSelectToolbar() {
       component="nav"
       direction="row"
       spacing={3}
-      paddingLeft="24px"
-      paddingRight="24px"
-      alignItems="center"
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        alignItems: "center",
+      }}
     >
       <FormControlLabel
         control={

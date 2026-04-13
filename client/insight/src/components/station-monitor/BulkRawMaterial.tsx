@@ -116,7 +116,14 @@ function WaitingForMaterialDialog() {
             waiting === null ? (
               <div />
             ) : (
-              <Stack direction="column" spacing={2} mt="0.5em" mb="0.5em">
+              <Stack
+                direction="column"
+                spacing={2}
+                sx={{
+                  mt: "0.5em",
+                  mb: "0.5em",
+                }}
+              >
                 <CircularProgress color="secondary" />
                 <div>
                   Waiting for material assignment. This could take a while if a download is currently in
@@ -289,7 +296,13 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
       <Dialog open={queue !== null} onClose={() => close()} maxWidth="md">
         <DialogTitle>Add Raw Material</DialogTitle>
         <DialogContent>
-          <Stack direction="column" spacing={2} mt="0.5em">
+          <Stack
+            direction="column"
+            spacing={2}
+            sx={{
+              mt: "0.5em",
+            }}
+          >
             <TextField
               style={{ minWidth: "15em" }}
               value={selectedCasting || ""}

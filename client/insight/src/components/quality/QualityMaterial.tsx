@@ -94,7 +94,15 @@ function SerialLookup() {
 
   return (
     <>
-      <Stack direction="row" spacing={2} alignItems="center" marginLeft="auto" marginRight="auto">
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          alignItems: "center",
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
         <div>
           <TextField
             label={serial === "" ? "Serial" : "Serial (press enter)"}
@@ -169,7 +177,13 @@ function DetailsStepButtons({ setStep }: { setStep: (step: number) => void }) {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   return (
-    <Stack direction="row" spacing={2} mt="2em">
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{
+        mt: "2em",
+      }}
+    >
       {mat ? (
         <Button
           variant="contained"

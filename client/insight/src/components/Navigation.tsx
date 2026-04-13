@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { ReactNode, ComponentType, useTransition } from "react";
-import { Notifications, HelpOutline, ExitToApp } from "@mui/icons-material";
+import { Notifications, HelpOutlined, ExitToApp } from "@mui/icons-material";
 import {
   Typography,
   Tooltip,
@@ -131,7 +131,7 @@ function HelpButton() {
   return (
     <Tooltip title="Help">
       <IconButton aria-label="Help" href={helpUrl(route)} target="_help" size="large">
-        <HelpOutline />
+        <HelpOutlined />
       </IconButton>
     </Tooltip>
   );
@@ -191,7 +191,12 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
           const item = menuNavs.find((i) => ("separator" in i ? false : i.route.route === curRoute.route));
           if (!item || "separator" in item) return null;
           return (
-            <Box display="flex" alignItems="center">
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
               {item.icon}
               <Typography variant="h6" style={{ marginLeft: "1em" }}>
                 {typeof item.name === "string" ? item.name : item.name(fmsInfo)}
@@ -238,21 +243,40 @@ export function Header({
       <AppBar position="static" sx={{ display: { xs: "none", md: "block" } }}>
         <Toolbar>
           <Box
-            display="grid"
-            gridTemplateColumns={Nav2 ? "1fr auto 1fr" : "minmax(200px, 1fr) auto"}
-            width="100vw"
-            gridTemplateAreas={Nav2 ? '"nav navCenter tools"' : '"nav tools"'}
+            sx={{
+              display: "grid",
+              gridTemplateColumns: Nav2 ? "1fr auto 1fr" : "minmax(200px, 1fr) auto",
+              width: "100vw",
+              gridTemplateAreas: Nav2 ? '"nav navCenter tools"' : '"nav tools"',
+            }}
           >
-            <Box gridArea="nav" display="flex" alignItems="center">
+            <Box
+              sx={{
+                gridArea: "nav",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
               <Brand />
               {Nav1 ? <Nav1 /> : undefined}
             </Box>
             {Nav2 ? (
-              <Box gridArea="navCenter">
+              <Box
+                sx={{
+                  gridArea: "navCenter",
+                }}
+              >
                 <Nav2 />
               </Box>
             ) : undefined}
-            <Box gridArea="tools" display="flex" alignItems="center" justifyContent="flex-end">
+            <Box
+              sx={{
+                gridArea: "tools",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+              }}
+            >
               {showOperator ? <OperatorSelect /> : undefined}
               <ToolButtons {...{ showAlarms, showLogout, showSearch }} />
             </Box>
@@ -265,9 +289,26 @@ export function Header({
           <div style={{ flexGrow: 1 }} />
           <ToolButtons {...{ showAlarms, showLogout, showSearch }} />
         </Toolbar>
-        <Box display="grid" gridTemplateColumns="minmax(200px, 1fr) auto">
-          <Box gridColumn="1">{Nav1 ? <Nav1 /> : undefined}</Box>
-          <Box gridColumn="2">{Nav2 ? <Nav2 /> : undefined}</Box>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "minmax(200px, 1fr) auto",
+          }}
+        >
+          <Box
+            sx={{
+              gridColumn: "1",
+            }}
+          >
+            {Nav1 ? <Nav1 /> : undefined}
+          </Box>
+          <Box
+            sx={{
+              gridColumn: "2",
+            }}
+          >
+            {Nav2 ? <Nav2 /> : undefined}
+          </Box>
         </Box>
       </AppBar>
       {menuNavs && menuNavs.length > 0 ? (

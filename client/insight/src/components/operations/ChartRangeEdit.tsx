@@ -133,27 +133,63 @@ function RangeStart({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
         onChange={(event) => setTy(event.target.value as Last30ChartStart | "CustomDate")}
       >
         <Stack direction="column" spacing={2}>
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="StartOfToday" />
             <RadioLabel label="Start of Today" date={stOfToday} />
           </Stack>
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="StartOfYesterday" />
             <RadioLabel label="Start of Yesterday" date={startOfYesterday} />
           </Stack>
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="StartOfWeek" />
             <RadioLabel label="Start of This Week" date={startOfWeek} />
           </Stack>
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="StartOfLastWeek" />
             <RadioLabel label="Start of Last Week" date={startOfLastWeek} />
           </Stack>
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="Last30" />
             <RadioLabel label="Last 30 Days" date={last30} />
           </Stack>
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="CustomDate" />
             <CustomDateLabel
               enabled={chartRange.startType instanceof Date}
@@ -198,21 +234,45 @@ function RangeEnd({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
         onChange={(event) => setTy(event.target.value as Last30ChartEnd | "CustomDate")}
       >
         <Stack direction="column" spacing={2}>
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="Now" />
             <Typography>Now</Typography>
           </Stack>
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="EndOfYesterday" />
             <RadioLabel label="End of Yesterday" date={endOfYesterday} />
           </Stack>
           <Box sx={{ height: "3em" }} />
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="EndOfLastWeek" />
             <RadioLabel label="End of Last Week" date={endOfLastWeek} />
           </Stack>
           <Box sx={{ height: "3em" }} />
-          <Stack direction="row" alignItems="center" sx={{ minHeight: "3em" }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              minHeight: "3em",
+            }}
+          >
             <Radio value="CustomDate" />
             <CustomDateLabel
               enabled={chartRange.endType instanceof Date}
@@ -252,7 +312,12 @@ function RangeDialog({
             <RangeStart chartAtom={chartAtom} />
             <RangeEnd chartAtom={chartAtom} />
           </Stack>
-          <Stack direction="row" justifyContent="space-around">
+          <Stack
+            direction="row"
+            sx={{
+              justifyContent: "space-around",
+            }}
+          >
             <TextField
               select
               label="First Day Of Week"
@@ -335,7 +400,13 @@ export const Last30ChartRangeToolbar = memo(function Last30ChartRangeToolbar({
 
   return (
     <>
-      <Stack direction="row" spacing={2} alignItems="center">
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          alignItems: "center",
+        }}
+      >
         <Typography variant="body2" color="textSecondary">
           Range: {formatStart(chartRange.startType, chartRange.startDate)} -{" "}
           {formatEnd(chartRange.endType, chartRange.endDate)}

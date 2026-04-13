@@ -467,9 +467,21 @@ const MatCard = forwardRef(function MatCard(
           )
         }
       >
-        <Box display="flex" textAlign="left" alignItems="center" width="100%">
+        <Box
+          sx={{
+            display: "flex",
+            textAlign: "left",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
           <PartIdenticon part={props.mat.partName} />
-          <Box marginLeft="8px" flexGrow={1}>
+          <Box
+            sx={{
+              marginLeft: "8px",
+              flexGrow: 1,
+            }}
+          >
             <MatCardHeader fsize={props.fsize}>{props.mat.partName}</MatCardHeader>
             {props.displayJob ? (
               <MatCardDetail fsize={props.fsize}>
@@ -507,12 +519,14 @@ const MatCard = forwardRef(function MatCard(
             {completedMsg}
           </Box>
           <Box
-            marginLeft="4px"
-            display="flex"
-            flexDirection="column"
-            justifyContent="space-between"
-            alignItems="flex-end"
-            alignSelf="start"
+            sx={{
+              marginLeft: "4px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+              alignSelf: "start",
+            }}
           >
             {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
               <div>
@@ -655,9 +669,19 @@ export const MultiMaterial = memo(function MultiMaterial(props: MultiMaterialPro
     <Paper elevation={4} sx={{ display: "flex", minWidth: "10em", padding: "8px", margin: "8px" }}>
       <Badge badgeContent={props.material.length < 2 ? 0 : props.material.length} color="secondary">
         <ButtonBase focusRipple onClick={() => props.onOpen()}>
-          <Box display="flex" textAlign="left">
+          <Box
+            sx={{
+              display: "flex",
+              textAlign: "left",
+            }}
+          >
             <PartIdenticon part={props.partOrCasting} />
-            <Box marginLeft="8px" flexGrow={1}>
+            <Box
+              sx={{
+                marginLeft: "8px",
+                flexGrow: 1,
+              }}
+            >
               <Typography variant="h6">{props.partOrCasting}</Typography>
               <MatCardDetail fsize={props.fsize}>
                 {props.assignedJobUnique && props.assignedJobUnique !== ""
@@ -708,9 +732,19 @@ export const MaterialDetailTitle = memo(function MaterialDetailTitle({
   }
 
   return (
-    <Box display="flex" textAlign="left">
+    <Box
+      sx={{
+        display: "flex",
+        textAlign: "left",
+      }}
+    >
       {partName === "" ? <SearchIcon /> : <PartIdenticon part={partName} />}
-      <Box marginLeft="8px" flexGrow={1}>
+      <Box
+        sx={{
+          marginLeft: "8px",
+          flexGrow: 1,
+        }}
+      >
         <Typography variant="h6">{title}</Typography>
         {subtitle ? <Typography variant="caption">{subtitle}</Typography> : undefined}
       </Box>

@@ -105,13 +105,33 @@ function ShowMonth({
   const dayStart = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   const numDaysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   return (
-    <Box width={monthWidth}>
-      <Typography variant="h6" textAlign="center">
+    <Box
+      sx={{
+        width: monthWidth,
+      }}
+    >
+      <Typography
+        variant="h6"
+        sx={{
+          textAlign: "center",
+        }}
+      >
         {date.toLocaleString("default", { month: "long", year: "numeric" })}
       </Typography>
-      <Box display="flex" flexWrap="wrap">
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+        }}
+      >
         {LazySeq.ofRange(0, dayStart).map((_, i) => (
-          <Box key={i} height={monthBoxSize} width={monthBoxSize} />
+          <Box
+            key={i}
+            sx={{
+              height: monthBoxSize,
+              width: monthBoxSize,
+            }}
+          />
         ))}
         {LazySeq.ofRange(1, numDaysInMonth + 1).map((d, i) => (
           <div
@@ -124,7 +144,14 @@ function ShowMonth({
             }}
           >
             <Tooltip title={tooltip(new Date(date.getFullYear(), date.getMonth(), d))}>
-              <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "100%",
+                }}
+              >
                 {d}
               </Box>
             </Tooltip>
@@ -137,7 +164,13 @@ function ShowMonth({
 
 function Warning() {
   return (
-    <Stack direction="row" spacing={2} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{
+        alignItems: "center",
+      }}
+    >
       <WarningIcon fontSize="small" />
       <Typography variant="caption">Projected dates are estimates</Typography>
     </Stack>
@@ -193,13 +226,24 @@ export function SimDayUsagePage() {
   const groups = useAtomValue(machineGroups);
   const months = useAtomValue(usageMonths);
   return (
-    <Box component="main" padding="24px">
+    <Box
+      component="main"
+      sx={{
+        padding: "24px",
+      }}
+    >
       <Stack direction="column" spacing={5}>
         <Warning />
         {groups.toAscLazySeq().map((g) => (
           <div key={g}>
             <Typography variant="h4">{g}</Typography>
-            <Box display="flex" flexWrap="wrap" columnGap="50px">
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                columnGap: "50px",
+              }}
+            >
               {months.toAscLazySeq().map((m) => (
                 <MonthHeatmap key={m.getTime()} group={g} month={m} />
               ))}

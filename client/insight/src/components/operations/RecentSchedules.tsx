@@ -110,7 +110,13 @@ function JobsRow(props: JobsRowProps) {
               <PartIdenticon part={job.partName} size={25} />
             </Box>
             <div>
-              <Typography variant="body2" component="span" display="block">
+              <Typography
+                variant="body2"
+                component="span"
+                sx={{
+                  display: "block",
+                }}
+              >
                 {job.partName}
               </Typography>
             </div>
@@ -128,7 +134,12 @@ function JobsRow(props: JobsRowProps) {
                 <Box sx={{ mr: "0.2em" }}>
                   <PartIdenticon part={job.casting} size={25} />
                 </Box>
-                <Typography variant="body2" display="block">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    display: "block",
+                  }}
+                >
                   {job.casting}
                 </Typography>
               </Box>

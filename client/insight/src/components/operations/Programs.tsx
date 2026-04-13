@@ -837,7 +837,13 @@ export function ProgramReportPage(): ReactNode {
   useSetTitle("Programs");
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <ProgNavHeader />
       <main>
         <DisplayLoadingAndError>

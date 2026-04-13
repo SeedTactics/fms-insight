@@ -254,7 +254,13 @@ export function InspectionSankey(props: InspectionSankeyProps) {
     .distinct()
     .toSortedArray((x) => x);
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -265,7 +271,11 @@ export function InspectionSankey(props: InspectionSankeyProps) {
         }}
       >
         {props.subtitle ? <Typography variant="subtitle1">{props.subtitle}</Typography> : undefined}
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         {props.onlyTable ? undefined : (
           <FormControl size="small">
             <Select

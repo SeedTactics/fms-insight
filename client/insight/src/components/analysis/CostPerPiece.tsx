@@ -126,7 +126,6 @@ function AutomationCostInput() {
       type="number"
       label="Cost for automated handling system per year"
       style={{ marginTop: "1.5em" }}
-      inputProps={{ min: 0 }}
       variant="outlined"
       value={cost === null ? (automationCost ?? "") : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
@@ -136,6 +135,9 @@ function AutomationCostInput() {
           saveAutomationCostPerYear(newCost);
         }
         setCost(null);
+      }}
+      slotProps={{
+        htmlInput: { min: 0 },
       }}
     />
   );
@@ -156,7 +158,6 @@ function LaborCost() {
           ? "last 30 days"
           : month.toLocaleDateString(undefined, { month: "long", year: "numeric" }))
       }
-      inputProps={{ min: 0 }}
       variant="outlined"
       value={cost === null ? (laborCost ?? "") : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
@@ -166,6 +167,9 @@ function LaborCost() {
           saveCost(newCost);
         }
         setCost(null);
+      }}
+      slotProps={{
+        htmlInput: { min: 0 },
       }}
     />
   );
@@ -181,7 +185,6 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
   return (
     <TextField
       type="number"
-      inputProps={{ min: 0 }}
       variant="outlined"
       label={"Cost for " + props.machineGroup + " per station per year"}
       style={{ marginTop: "1.5em" }}
@@ -198,6 +201,9 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
           saveCost(newCost);
         }
         setCost(null);
+      }}
+      slotProps={{
+        htmlInput: { min: 0 },
       }}
     />
   );
@@ -229,7 +235,13 @@ export function CostBreakdownPage() {
   const costs = useAtomValue(costPercentages);
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -240,7 +252,11 @@ export function CostBreakdownPage() {
         }}
       >
         <Typography variant="subtitle1">Part Cost Percentage Breakdown</Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <Tooltip title="Copy to Clipboard">
           <IconButton
             style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
@@ -282,7 +298,13 @@ export function CostBreakdownPage() {
                         <PartIdenticon part={c.part} size={25} />
                       </Box>
                       <div>
-                        <Typography variant="body2" component="span" display="block">
+                        <Typography
+                          variant="body2"
+                          component="span"
+                          sx={{
+                            display: "block",
+                          }}
+                        >
                           {c.part}
                         </Typography>
                       </div>
@@ -350,7 +372,13 @@ function CostOutputCard() {
                     <PartIdenticon part={c.part} size={25} />
                   </Box>
                   <div>
-                    <Typography variant="body2" component="span" display="block">
+                    <Typography
+                      variant="body2"
+                      component="span"
+                      sx={{
+                        display: "block",
+                      }}
+                    >
                       {c.part}
                     </Typography>
                   </div>
@@ -380,7 +408,14 @@ export const CostPerPiecePage = memo(function CostPerPiecePage() {
   useSetTitle("Cost Per Piece");
 
   return (
-    <Box component="main" paddingLeft="24px" paddingRight="24px" paddingTop="20px">
+    <Box
+      component="main"
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "20px",
+      }}
+    >
       <Stack direction="column" spacing={4}>
         <Stack direction="column" spacing={2}>
           <LaborCost />

@@ -62,9 +62,9 @@ import {
   ImportExport,
   MoreHoriz,
   Check,
-  ErrorOutline,
+  ErrorOutlined,
   SavedSearch,
-  HelpOutline,
+  HelpOutlined,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
 import { LazySeq, mkCompareByProperties, ToComparableBase } from "@seedtactics/immutable-collections";
@@ -293,7 +293,7 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
               </TableCell>
               <TableCell sx={{ textAlign: "center" }} padding="checkbox">
                 {LazySeq.ofObject(s.completedInspections ?? {}).some(([, insp]) => insp.success === false) ? (
-                  <ErrorOutline fontSize="inherit" />
+                  <ErrorOutlined fontSize="inherit" />
                 ) : (
                   ""
                 )}
@@ -304,7 +304,7 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
                 ) : s.closeout_failed === false ? (
                   <Check fontSize="inherit" />
                 ) : (
-                  <ErrorOutline fontSize="inherit" />
+                  <ErrorOutlined fontSize="inherit" />
                 )}
               </TableCell>
               <TableCell padding="checkbox">
@@ -393,7 +393,15 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
 
 const PartDetails = memo(function PartDetails({ part }: { readonly part: PartSummary }) {
   return (
-    <Stack direction="row" flexWrap="wrap" justifyContent="space-around" ml="1em" mr="1em">
+    <Stack
+      direction="row"
+      sx={{
+        flexWrap: "wrap",
+        justifyContent: "space-around",
+        ml: "1em",
+        mr: "1em",
+      }}
+    >
       <Box sx={{ width: "60em", overflow: "auto" }}>
         <MaterialTable material={part.mats} />
       </Box>
@@ -446,7 +454,13 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
               <PartIdenticon part={part.part} size={25} />
             </Box>
             <div>
-              <Typography variant="body2" component="span" display="block">
+              <Typography
+                variant="body2"
+                component="span"
+                sx={{
+                  display: "block",
+                }}
+              >
                 {part.part}
               </Typography>
             </div>
@@ -528,7 +542,7 @@ function MedianHelpTooltip() {
   return (
     <Tooltip title="Total Median Hours are calculated by taking the median cycle time (excluding outliers) and adding up for each piece of material.">
       <span style={{ verticalAlign: "middle", marginLeft: "0.5em", fontSize: 16 }}>
-        <HelpOutline fontSize="inherit" />
+        <HelpOutlined fontSize="inherit" />
       </span>
     </Tooltip>
   );
@@ -538,7 +552,7 @@ function TimeCuttoffHelpTooltip() {
   return (
     <Tooltip title="The entire cycle time is credited at the time the cycle completes, so it may be that a day has more than 24 hours of credited time for example.">
       <span style={{ verticalAlign: "middle", marginLeft: "0.5em", fontSize: 16 }}>
-        <HelpOutline fontSize="inherit" />
+        <HelpOutlined fontSize="inherit" />
       </span>
     </Tooltip>
   );
@@ -548,7 +562,7 @@ function AbnormalHelpTooltip() {
   return (
     <Tooltip title="An abnormal part is one which was quarantined, had a failed inspection, or was explicitly marked as failing closeout.  A successful closeout overrides this and will never be an abnormal part.">
       <span style={{ verticalAlign: "middle", marginLeft: "0.5em", fontSize: 16 }}>
-        <HelpOutline fontSize="inherit" />
+        <HelpOutlined fontSize="inherit" />
       </span>
     </Tooltip>
   );
@@ -676,8 +690,20 @@ export function RecentCompletedPartsPage(): ReactNode {
   useSetTitle("Completed Parts");
 
   return (
-    <Box component="main" padding="24px">
-      <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+    <Box
+      component="main"
+      sx={{
+        padding: "24px",
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <span>Completed Parts</span>
         <Last30ChartRangeToolbar chartAtom={last30PartSummaryRange} />
       </Stack>

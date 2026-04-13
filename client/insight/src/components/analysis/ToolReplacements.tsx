@@ -593,7 +593,13 @@ export const ToolReplacementPage = memo(function ToolReplacementCard() {
   const [type, setType] = useAtom(selectedType);
 
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <Box
+      sx={{
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        paddingTop: "10px",
+      }}
+    >
       <Box
         component="nav"
         sx={{
@@ -604,7 +610,11 @@ export const ToolReplacementPage = memo(function ToolReplacementCard() {
         }}
       >
         <Typography variant="subtitle1">Tool Replacements</Typography>
-        <Box flexGrow={1} />
+        <Box
+          sx={{
+            flexGrow: 1,
+          }}
+        />
         <FormControl size="small">
           <Select
             autoWidth

@@ -147,7 +147,13 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
               <PartIdenticon part={j.job.partName} size={25} />
             </Box>
             <div>
-              <Typography variant="body2" component="span" display="block">
+              <Typography
+                variant="body2"
+                component="span"
+                sx={{
+                  display: "block",
+                }}
+              >
                 {j.job.unique}
               </Typography>
             </div>
@@ -167,7 +173,12 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
               <Box sx={{ mr: "0.2em" }}>
                 <PartIdenticon part={j.rawMatName} size={25} />
               </Box>
-              <Typography variant="body2" display="block">
+              <Typography
+                variant="body2"
+                sx={{
+                  display: "block",
+                }}
+              >
                 {j.rawMatName}
               </Typography>
             </Box>
@@ -284,7 +295,12 @@ const RawMaterialWorkorderRow = memo(function RawMaterialWorkorderRow({
           <Box sx={{ mr: "0.2em" }}>
             <PartIdenticon part={workorder.part} size={25} />
           </Box>
-          <Typography variant="body2" display="block">
+          <Typography
+            variant="body2"
+            sx={{
+              display: "block",
+            }}
+          >
             {workorder.part}
           </Typography>
         </Box>
@@ -482,13 +498,15 @@ const EditJobPlanQtyDialog = memo(function EditJobPlanQtyProps(props: EditJobPla
               variant="outlined"
               fullWidth
               autoFocus
-              inputProps={{
-                style: { textAlign: "right" },
-                min: (props.job.job.cycles ?? 0) - props.job.remainingToStart,
-              }}
               type="number"
               value={newQty === null ? "" : newQty}
               onChange={(e) => setNewQty(parseInt(e.target.value))}
+              slotProps={{
+                htmlInput: {
+                  style: { textAlign: "right" },
+                  min: (props.job.job.cycles ?? 0) - props.job.remainingToStart,
+                },
+              }}
             />
           </DialogContent>
           <DialogActions>
@@ -747,9 +765,23 @@ export const Queues = (props: QueueProps) => {
               />
             )}
           >
-            <Box minHeight="134px">
-              <Box display="flex" margin="4px">
-                <Typography variant="h4" flexGrow={1}>
+            <Box
+              sx={{
+                minHeight: "134px",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  margin: "4px",
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    flexGrow: 1,
+                  }}
+                >
                   {region.label}
                 </Typography>
                 {region.free ? undefined : (
@@ -760,7 +792,13 @@ export const Queues = (props: QueueProps) => {
                   />
                 )}
               </Box>
-              <Box justifyContent="flex-start" display="flex" flexWrap="wrap">
+              <Box
+                sx={{
+                  justifyContent: "flex-start",
+                  display: "flex",
+                  flexWrap: "wrap",
+                }}
+              >
                 {region.material.map((m, matIdx) => (
                   <SortableInProcMaterial
                     key={matIdx}

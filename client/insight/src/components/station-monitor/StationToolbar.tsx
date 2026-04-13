@@ -274,7 +274,14 @@ export function StationToolbarOverviewButton() {
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
   return (
-    <Box display="flex" alignItems="center" height="100%" bgcolor={full ? "#E0E0E0" : undefined}>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        height: "100%",
+        bgcolor: full ? "#E0E0E0" : undefined,
+      }}
+    >
       <SystemOverviewDialogButton full={full} />
     </Box>
   );
