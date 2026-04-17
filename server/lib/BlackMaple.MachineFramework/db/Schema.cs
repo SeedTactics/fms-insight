@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 38;
+    private const int Version = 39;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -194,6 +194,14 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, Casting TEXT, PRIMARY KEY(UniqueStr,Process,Path))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE procdata(UniqueStr TEXT, Process INTEGER, BasketLoadTime INTEGER, BasketUnloadTime INTEGER, PRIMARY KEY(UniqueStr,Process))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE basketloadunload(UniqueStr TEXT, Process INTEGER, StatNum INTEGER, Load INTEGER, PRIMARY KEY(UniqueStr,Process,StatNum,Load))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -484,6 +492,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 38)
             Ver37ToVer38(trans, updateJobsTables);
+
+          if (curVersion < 39)
+            Ver38ToVer39(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1227,6 +1238,23 @@ namespace BlackMaple.MachineFramework
 
       cmd.CommandText =
         "CREATE TABLE pallet_start_times(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet INTEGER, StartTimeUTC INTEGER, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver38ToVer39(IDbTransaction trans, bool updateJobTables)
+    {
+      if (!updateJobTables)
+        return;
+
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText =
+        "CREATE TABLE procdata(UniqueStr TEXT, Process INTEGER, BasketLoadTime INTEGER, BasketUnloadTime INTEGER, PRIMARY KEY(UniqueStr,Process))";
+      cmd.ExecuteNonQuery();
+
+      cmd.CommandText =
+        "CREATE TABLE basketloadunload(UniqueStr TEXT, Process INTEGER, StatNum INTEGER, Load INTEGER, PRIMARY KEY(UniqueStr,Process,StatNum,Load))";
       cmd.ExecuteNonQuery();
     }
 

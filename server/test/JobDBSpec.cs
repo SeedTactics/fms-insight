@@ -375,6 +375,46 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
+    public void PersistsBasketProcessData()
+    {
+      using var _jobDB = _repoCfg.OpenConnection();
+      var schId = "SchId" + _fixture.Create<string>();
+      var baseJob = RandJob();
+      var job = baseJob with
+      {
+        ManuallyCreated = false,
+        Processes =
+        [
+          baseJob.Processes[0] with
+          {
+            BasketLoadStations = [41, 42],
+            ExpectedBasketLoadTime = TimeSpan.FromMinutes(9),
+            BasketUnloadStations = [55],
+            ExpectedBasketUnloadTime = TimeSpan.FromMinutes(11),
+          },
+          .. baseJob.Processes.Skip(1),
+        ],
+      };
+
+      _jobDB.AddJobs(
+        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job) },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      _jobDB
+        .LoadJob(job.UniqueStr)
+        .ShouldBeEquivalentTo(
+          job.CloneToDerived<HistoricJob, Job>() with
+          {
+            ScheduleId = schId,
+            CopiedToSystem = true,
+            Decrements = ImmutableList<DecrementQuantity>.Empty,
+          }
+        );
+    }
+
+    [Test]
     public void SimDays()
     {
       using var _jobDB = _repoCfg.OpenConnection();

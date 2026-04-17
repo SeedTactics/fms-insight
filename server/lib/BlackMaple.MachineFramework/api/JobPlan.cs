@@ -179,6 +179,14 @@ namespace BlackMaple.MachineFramework
 
   public record ProcessInfo
   {
+    public ImmutableSortedSet<int>? BasketLoadStations { get; init; }
+
+    public TimeSpan? ExpectedBasketLoadTime { get; init; }
+
+    public ImmutableSortedSet<int>? BasketUnloadStations { get; init; }
+
+    public TimeSpan? ExpectedBasketUnloadTime { get; init; }
+
     [JsonPropertyName("paths")]
     public required ImmutableList<ProcPathInfo> Paths { get; init; } = ImmutableList<ProcPathInfo>.Empty;
   }
