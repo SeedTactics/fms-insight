@@ -42,6 +42,7 @@ import { ImportExport } from "@mui/icons-material";
 import StationDataTable from "../analysis/StationDataTable.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import {
+  CarrierKindFilter,
   filterStationCycles,
   FilterAnyMachineKey,
   copyCyclesToClipboard,
@@ -49,6 +50,7 @@ import {
   loadOccupancyCycles,
   LoadCycleData,
   FilterAnyLoadKey,
+  normalizeCarrierKindFilter,
   PartAndProcess,
 } from "../../data/results.cycles.js";
 import * as matDetails from "../../cell-status/material-details.js";
@@ -58,10 +60,15 @@ import {
   last30EstimatedCycleTimes,
   PartAndStationOperation,
 } from "../../cell-status/estimated-cycle-times.js";
-import { last30StationCycles } from "../../cell-status/station-cycles.js";
+import {
+  basketDisplayName,
+  last30HasBasketCycles,
+  last30StationCycles,
+} from "../../cell-status/station-cycles.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { fmsInformation } from "../../network/server-settings.js";
 
 export type CycleType = "labor" | "machine";
 
@@ -70,6 +77,7 @@ const machineShowGraphAtom = atom<boolean>(true);
 const lulSelectedPartAtom = atom<PartAndProcess | undefined>(undefined);
 const machineSelectedPartAtom = atom<PartAndProcess | undefined>(undefined);
 const machineSelectedOperation = atom<PartAndStationOperation | undefined>(undefined);
+const lulSelectedCarrierAtom = atom<CarrierKindFilter>("Any");
 const lulSelectedPalletAtom = atom<number | undefined>(undefined);
 const machineSelectedPalletAtom = atom<number | undefined>(undefined);
 const lulChartZoomAtom = atom<{ zoom?: { start: Date; end: Date } }>({});
@@ -112,10 +120,15 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
     ty === "labor" ? lulSelectedPartAtom : machineSelectedPartAtom,
   );
   const [selectedOperation, setSelectedOperation] = useAtom(machineSelectedOperation);
+  const [selectedCarrier, setSelectedCarrier] = useAtom(lulSelectedCarrierAtom);
   const [selectedPallet, setSelectedPallet] = useAtom(
     ty === "labor" ? lulSelectedPalletAtom : machineSelectedPalletAtom,
   );
   const [yZoom, setYZoom] = useAtom(ty === "labor" ? lulYZoomAtom : machineYZoomAtom);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const basketName = basketDisplayName(fmsInfo.basketName);
+  const hasBasketCycles = useAtomValue(last30HasBasketCycles);
+  const carrierFilter = normalizeCarrierKindFilter(selectedCarrier, ty === "labor" ? hasBasketCycles : true);
 
   const estimatedCycleTimes = useAtomValue(last30EstimatedCycleTimes);
   const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];
@@ -130,12 +143,14 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
         partAndProc: selectedPart,
         pallet: selectedPallet,
         operation: selectedOperation,
+        carrierKind: carrierFilter,
       });
     } else if (ty === "labor" && showGraph) {
       return loadOccupancyCycles(cycles.valuesToLazySeq(), {
         zoom: { start: addDays(today, -4), end: addDays(today, 1) },
         partAndProc: selectedPart,
         pallet: selectedPallet,
+        carrierKind: carrierFilter,
       });
     } else {
       return filterStationCycles(cycles.valuesToLazySeq(), {
@@ -143,9 +158,10 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
         partAndProc: selectedPart,
         pallet: selectedPallet,
         station: ty === "labor" ? FilterAnyLoadKey : FilterAnyMachineKey,
+        carrierKind: carrierFilter,
       });
     }
-  }, [cycles, ty, selectedPart, selectedPallet, selectedOperation, showGraph]);
+  }, [cycles, ty, selectedPart, selectedPallet, selectedOperation, showGraph, carrierFilter]);
   // If we have selected a part and there is only one operation, default to it.
   const curOperation = selectedPart
     ? (selectedOperation ??
@@ -264,30 +280,64 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
             </Select>
           </FormControl>
         ) : undefined}
-        <FormControl size="small">
-          <Select<number | "">
-            name="Station-Cycles-cycle-chart-station-pallet"
-            autoWidth
-            displayEmpty
-            value={selectedPallet || ""}
-            style={{ marginLeft: "1em" }}
-            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
-          >
-            <MenuItem key={0} value="">
-              <em>Any Pallet</em>
-            </MenuItem>
-            {points.allPalletNames.map((n) => (
-              <MenuItem key={n} value={n}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <span style={{ marginRight: "1em" }}>{n}</span>
-                </div>
+        {ty === "labor" && hasBasketCycles ? (
+          <FormControl size="small">
+            <Select
+              autoWidth
+              displayEmpty
+              value={carrierFilter}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => {
+                const carrier = e.target.value as CarrierKindFilter;
+                setSelectedCarrier(carrier);
+                if (carrier === "Basket") {
+                  setSelectedPallet(undefined);
+                }
+              }}
+            >
+              <MenuItem value="Any">
+                <em>Any Carrier</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              <MenuItem value="Pallet">Pallet</MenuItem>
+              <MenuItem value="Basket">{basketName}</MenuItem>
+            </Select>
+          </FormControl>
+        ) : undefined}
+        {ty !== "labor" || carrierFilter !== "Basket" ? (
+          <FormControl size="small">
+            <Select<number | "">
+              name="Station-Cycles-cycle-chart-station-pallet"
+              autoWidth
+              displayEmpty
+              value={selectedPallet || ""}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+            >
+              <MenuItem key={0} value="">
+                <em>Any Pallet</em>
+              </MenuItem>
+              {points.allPalletNames.map((n) => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : undefined}
         <Tooltip title="Copy to Clipboard">
           <IconButton
-            onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined, ty === "labor")}
+            onClick={() =>
+              copyCyclesToClipboard(
+                points,
+                matSummary.matsById,
+                undefined,
+                ty === "labor",
+                fmsInfo.loadStationNames,
+                basketName,
+              )
+            }
             style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
             size="large"
           >

@@ -41,6 +41,7 @@ export type MaterialBinId = string;
 export const LoadStationBinId: MaterialBinId = "__FMS_INSIGHT_LOAD_STATION_BIN__";
 export const PalletsBinId: MaterialBinId = "__FMS_INSIGHT_PALLETS_BIN__";
 export const ActiveQueuesBinId: MaterialBinId = "__FMS_INSIGHT_ACTIVE_QUEUE_BIN__";
+export const BasketsBinId: MaterialBinId = "__FMS_INSIGHT_BASKETS_BIN__";
 
 export interface MaterialBinState {
   readonly curBinOrder: ReadonlyArray<MaterialBinId>;
@@ -76,6 +77,7 @@ export enum MaterialBinType {
   LoadStations = "Bin_LoadStations",
   Pallets = "Bin_Pallets",
   ActiveQueues = "Bin_ActiveQueues",
+  Baskets = "Bin_Baskets",
   QuarantineQueues = "Bin_Quarantine",
 }
 
@@ -96,11 +98,31 @@ export type MaterialBin =
       readonly byQueue: ReadonlyMap<string, MaterialList>;
     }
   | {
+      readonly type: MaterialBinType.Baskets;
+      readonly binId: MaterialBinId;
+      readonly byBasket: ReadonlyMap<number, MaterialList>;
+      readonly basketLocations: ReadonlyMap<number, string>;
+    }
+  | {
       readonly type: MaterialBinType.QuarantineQueues;
       readonly binId: MaterialBinId;
       readonly queueName: string;
       readonly material: MaterialList;
     };
+
+function basketLocation(st: Readonly<api.IBasketStatus>): string {
+  let loc: string;
+  if (st.locationTitle && st.locationTitle.length > 0) {
+    loc = st.locationTitle;
+  } else {
+    loc = st.location + " " + st.locationNum.toString();
+  }
+
+  if (st.slot) {
+    loc += `-${st.slot}`;
+  }
+  return loc;
+}
 
 export function selectAllMaterialIntoBins(
   curSt: Readonly<api.ICurrentStatus>,
@@ -109,6 +131,7 @@ export function selectAllMaterialIntoBins(
   const loadStations = new Map<number, Array<Readonly<api.IInProcessMaterial>>>();
   const pallets = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
   const queues = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
+  const baskets = new Map<number, Array<Readonly<api.IInProcessMaterial>>>();
 
   const palLoc = LazySeq.ofObject(curSt.pallets).toRMap(([, st]) => [
     st.palletNum,
@@ -161,6 +184,12 @@ export function selectAllMaterialIntoBins(
             break;
         }
         break;
+
+      case api.LocType.InBasket:
+        if (mat.location.basketId !== undefined) {
+          addToMap(baskets, mat.location.basketId, mat);
+        }
+        break;
     }
   }
 
@@ -187,10 +216,18 @@ export function selectAllMaterialIntoBins(
     .toRSet(([qname, _]) => qname);
 
   const bins = curBinOrder.filter(
-    (b) => b === LoadStationBinId || b === PalletsBinId || b === ActiveQueuesBinId || quarantineQueues.has(b),
+    (b) =>
+      b === LoadStationBinId ||
+      b === PalletsBinId ||
+      b === ActiveQueuesBinId ||
+      b === BasketsBinId ||
+      quarantineQueues.has(b),
   );
   if (bins.indexOf(ActiveQueuesBinId) < 0) {
     bins.unshift(ActiveQueuesBinId);
+  }
+  if (baskets.size > 0 && bins.indexOf(BasketsBinId) < 0) {
+    bins.unshift(BasketsBinId);
   }
   if (bins.indexOf(PalletsBinId) < 0) {
     bins.unshift(PalletsBinId);
@@ -221,6 +258,22 @@ export function selectAllMaterialIntoBins(
           },
           (ms1, ms2) => ms1.concat(ms2), // TODO: rework to use toLookup
         ),
+      };
+    } else if (binId === BasketsBinId) {
+      return {
+        type: MaterialBinType.Baskets as const,
+        binId: BasketsBinId,
+        byBasket: new Map(baskets),
+        basketLocations: LazySeq.ofObject(curSt.baskets ?? {})
+          .collect(([id, st]) => {
+            const basketId = parseInt(id);
+            if (basketId > 0) {
+              return [parseInt(id), basketLocation(st)] as const;
+            } else {
+              return null;
+            }
+          })
+          .toRMap((x) => x),
       };
     } else {
       const queueName = binId;

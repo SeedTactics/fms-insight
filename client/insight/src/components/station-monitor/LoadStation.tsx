@@ -80,17 +80,76 @@ import { PromptForQueue } from "./QueuesAddMaterial.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { PrintLabelButton } from "./PrintedLabel.js";
 import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
+import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 type LoadStationData = {
   readonly pallet?: Readonly<api.IPalletStatus>;
+  readonly activeBasket?: Readonly<api.IBasketStatus>;
   readonly face: OrderedMap<number, MaterialList>;
   readonly freeLoadingMaterial: MaterialList;
   readonly queues: ReadonlyMap<string, { readonly mats: MaterialList; readonly hiddenCnt: number }>;
+  readonly baskets: ReadonlyMap<number, { readonly mats: MaterialList; readonly hiddenCnt: number }>;
   readonly elapsedLoadingTime: string | null;
   readonly fsize: MatCardFontSize;
 };
+
+type RegionMaterial = {
+  readonly mats: MaterialList;
+  readonly hiddenCnt: number;
+};
+
+type QueueMaterialRegion = {
+  readonly kind: "queue";
+  readonly label: string;
+  readonly material: RegionMaterial;
+};
+
+type BasketMaterialRegion = {
+  readonly kind: "baskets";
+  readonly label: string;
+  readonly baskets: ReadonlyArray<{
+    readonly basketId: number;
+    readonly label: string;
+    readonly material: RegionMaterial;
+  }>;
+};
+
+type FreeMaterialRegion = {
+  readonly kind: "free";
+  readonly label: string;
+  readonly material: RegionMaterial;
+};
+
+type MaterialColumnRegion = QueueMaterialRegion | BasketMaterialRegion | FreeMaterialRegion;
+
+function encodeLoadStationRegionIdPart(value: string | number): string {
+  return encodeURIComponent(value.toString());
+}
+
+function materialColumnTestId(region: MaterialColumnRegion): string {
+  switch (region.kind) {
+    case "queue":
+      return `load-station-queue-${encodeLoadStationRegionIdPart(region.label)}`;
+    case "baskets":
+      return "load-station-baskets";
+    case "free":
+      return "load-station-material";
+  }
+}
+
+function isLoadingToDisplayedTarget(
+  mat: Readonly<api.IInProcessMaterial>,
+  pallet: Readonly<api.IPalletStatus> | undefined,
+  activeBasket: Readonly<api.IBasketStatus> | undefined,
+): boolean {
+  return (
+    mat.action.type === api.ActionType.Loading &&
+    ((pallet !== undefined && mat.action.loadOntoPalletNum === pallet.palletNum) ||
+      (activeBasket !== undefined && mat.action.loadFromBasketId === activeBasket.basketId))
+  );
+}
 
 function selectLoadStationAndQueueProps(
   loadNum: number,
@@ -100,6 +159,8 @@ function selectLoadStationAndQueueProps(
 ): LoadStationData {
   // search for pallet
   let pal: Readonly<api.IPalletStatus> | undefined;
+  let activeBasket: Readonly<api.IBasketStatus> | undefined;
+  const basketsToShow = new Set<number>();
   if (loadNum >= 0) {
     for (const p of Object.values(curSt.pallets)) {
       if (
@@ -108,6 +169,16 @@ function selectLoadStationAndQueueProps(
       ) {
         pal = p;
         break;
+      }
+    }
+
+    for (const basket of Object.values(curSt.baskets ?? {})) {
+      if (basket.locationNum !== loadNum) continue;
+
+      if (basket.location === api.BasketLocationEnum.LoadUnload) {
+        activeBasket = basket;
+      } else if (basket.location === api.BasketLocationEnum.LoadStationStaging) {
+        basketsToShow.add(basket.basketId);
       }
     }
   }
@@ -126,6 +197,26 @@ function selectLoadStationAndQueueProps(
         queuesToShow.add(m.location.currentQueue);
       }
 
+      // Loading from basket
+      if (
+        m.action.type === api.ActionType.Loading &&
+        m.action.loadOntoPalletNum === pal.palletNum &&
+        m.action.loadFromBasketId
+      ) {
+        basketsToShow.add(m.action.loadFromBasketId);
+      }
+
+      // Unloading to basket
+      if (
+        (m.action.type === api.ActionType.UnloadToInProcess ||
+          m.action.type === api.ActionType.UnloadToCompletedMaterial) &&
+        m.action.unloadToBasketId &&
+        m.location.type === api.LocType.OnPallet &&
+        m.location.palletNum === pal.palletNum
+      ) {
+        basketsToShow.add(m.action.unloadToBasketId);
+      }
+
       if (
         (m.action.type === api.ActionType.UnloadToInProcess ||
           m.action.type === api.ActionType.UnloadToCompletedMaterial) &&
@@ -136,10 +227,34 @@ function selectLoadStationAndQueueProps(
         queuesToShow.add(m.action.unloadIntoQueue);
       }
     }
+  } else if (activeBasket !== undefined) {
+    for (const m of curSt.material) {
+      if (
+        m.location.type === api.LocType.InBasket &&
+        m.location.basketId === activeBasket.basketId &&
+        (m.action.type === api.ActionType.UnloadToInProcess ||
+          m.action.type === api.ActionType.UnloadToCompletedMaterial) &&
+        m.action.unloadIntoQueue
+      ) {
+        queuesToShow.add(m.action.unloadIntoQueue);
+      }
+
+      if (
+        m.location.type === api.LocType.InQueue &&
+        m.location.currentQueue &&
+        m.action.type === api.ActionType.Loading &&
+        m.action.loadFromBasketId === activeBasket.basketId
+      ) {
+        queuesToShow.add(m.location.currentQueue);
+      }
+    }
   }
 
   const queueMat = new Map<string, { readonly mats: Array<api.IInProcessMaterial>; hiddenCnt: number }>(
     LazySeq.of(queuesToShow).map((q) => [q, { mats: [], hiddenCnt: 0 }]),
+  );
+  const basketMat = new Map<number, { readonly mats: Array<api.IInProcessMaterial>; hiddenCnt: number }>(
+    LazySeq.of(basketsToShow).map((b) => [b, { mats: [], hiddenCnt: 0 }]),
   );
   const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
   let palFaces = OrderedMap.empty<number, Array<api.IInProcessMaterial>>();
@@ -150,6 +265,8 @@ function selectLoadStationAndQueueProps(
     for (let i = 1; i <= pal.numFaces; i++) {
       palFaces = palFaces.set(i, []);
     }
+  } else if (activeBasket) {
+    palFaces = palFaces.set(1, []);
   }
 
   for (const m of curSt.material) {
@@ -188,6 +305,29 @@ function selectLoadStationAndQueueProps(
           }
         });
       }
+    } else if (activeBasket) {
+      if (isLoadingToDisplayedTarget(m, pal, activeBasket) && m.action.elapsedLoadUnloadTime) {
+        elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
+      }
+
+      if (m.location.type === api.LocType.InBasket && m.location.basketId === activeBasket.basketId) {
+        if (
+          (m.action.type === api.ActionType.UnloadToCompletedMaterial ||
+            m.action.type === api.ActionType.UnloadToInProcess) &&
+          m.action.elapsedLoadUnloadTime
+        ) {
+          elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
+        }
+
+        palFaces = palFaces.alter(1, (oldMats) => {
+          if (oldMats) {
+            oldMats.push(m);
+            return oldMats;
+          } else {
+            return [m];
+          }
+        });
+      }
     }
 
     // add all material in the configured queues
@@ -197,10 +337,7 @@ function selectLoadStationAndQueueProps(
       queueMat.has(m.location.currentQueue)
     ) {
       const old = queueMat.get(m.location.currentQueue);
-      if (
-        hideNonLoading &&
-        (m.action.type !== api.ActionType.Loading || m.action.loadOntoPalletNum !== pal?.palletNum)
-      ) {
+      if (hideNonLoading && !isLoadingToDisplayedTarget(m, pal, activeBasket)) {
         if (old === undefined) {
           queueMat.set(m.location.currentQueue, { mats: [], hiddenCnt: 1 });
         } else {
@@ -214,17 +351,42 @@ function selectLoadStationAndQueueProps(
         }
       }
     }
+
+    // add all material in baskets
+    if (
+      m.location.type === api.LocType.InBasket &&
+      m.location.basketId &&
+      basketMat.has(m.location.basketId)
+    ) {
+      const old = basketMat.get(m.location.basketId);
+      if (hideNonLoading && !isLoadingToDisplayedTarget(m, pal, activeBasket)) {
+        if (old === undefined) {
+          basketMat.set(m.location.basketId, { mats: [], hiddenCnt: 1 });
+        } else {
+          old.hiddenCnt += 1;
+        }
+      } else {
+        if (old === undefined) {
+          basketMat.set(m.location.basketId, { mats: [m], hiddenCnt: 0 });
+        } else {
+          old.mats.push(m);
+        }
+      }
+    }
   }
 
   queueMat.forEach((m) => m.mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
+  basketMat.forEach((m) => m.mats.sort(mkCompareByProperties((m) => m.location.basketSubPosition ?? 0)));
 
   const matCount = freeLoading.length + palFaces.valuesToAscLazySeq().sumBy((x) => x.length);
 
   return {
     pallet: pal,
+    activeBasket,
     face: palFaces,
     freeLoadingMaterial: freeLoading,
     queues: queueMat,
+    baskets: basketMat,
     elapsedLoadingTime,
     fsize: matCount <= 2 ? "x-large" : matCount <= 6 ? "large" : "normal",
   };
@@ -334,10 +496,70 @@ function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }
 
 function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number }) {
   const face = data.face.get(faceNum);
-  if (!face || !data.pallet) return null;
+  const fmsInfo = useAtomValue(fmsInformation);
+  const basketName = basketDisplayName(fmsInfo.basketName);
+  if (!face) return null;
+
+  if (data.activeBasket && !data.pallet) {
+    return (
+      <div data-testid="load-station-active-basket">
+        {faceNum === 1 ? (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
+            }}
+          >
+            <Typography variant="h4">
+              {basketName} {data.activeBasket.basketId}
+            </Typography>
+            <Box
+              sx={{
+                justifySelf: "flex-end",
+              }}
+            >
+              <ElapsedLoadTime elapsedLoadTime={data.elapsedLoadingTime} />
+            </Box>
+          </Box>
+        ) : null}
+        <Box
+          sx={{
+            ml: "4em",
+            mr: "4em",
+          }}
+        >
+          <MoveMaterialArrowNode
+            kind={{
+              type: MoveMaterialNodeKindType.BasketZone,
+              basketId: data.activeBasket.basketId,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "space-around",
+              }}
+            >
+              {face.map((m, idx) => (
+                <MoveMaterialArrowNode
+                  key={idx}
+                  kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
+                >
+                  <InProcMaterial mat={m} fsize={data.fsize} />
+                </MoveMaterialArrowNode>
+              ))}
+            </Box>
+          </MoveMaterialArrowNode>
+        </Box>
+      </div>
+    );
+  }
+
+  if (!data.pallet) return null;
 
   return (
-    <div>
+    <div data-testid={`load-station-pallet-face-${faceNum}`}>
       {faceNum === 1 ? (
         <Box
           sx={{
@@ -412,20 +634,21 @@ function MaterialRegion({
     readonly label: string;
     readonly material: { readonly mats: MaterialList; readonly hiddenCnt: number };
     readonly isFree: boolean;
+    readonly sortable?: boolean;
   };
 }) {
   return (
     <div>
-      <Typography variant="h4">{mat.label}</Typography>
+      {mat.label !== "" ? <Typography variant="h4">{mat.label}</Typography> : null}
       {mat.material.mats.map((m, matIdx) => (
         <MoveMaterialArrowNode
           key={matIdx}
           kind={{
             type: MoveMaterialNodeKindType.Material,
-            material: data.pallet && m.action.loadOntoPalletNum === data.pallet.palletNum ? m : null,
+            material: m,
           }}
         >
-          {mat.isFree ? (
+          {mat.isFree || mat.sortable === false ? (
             <InProcMaterial
               mat={m}
               displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
@@ -469,53 +692,118 @@ function MaterialRegion({
   );
 }
 
+function BasketRegion({
+  data,
+  label,
+  baskets,
+}: {
+  readonly data: LoadStationData;
+  readonly label: string;
+  readonly baskets: ReadonlyArray<{
+    readonly basketId: number;
+    readonly label: string;
+    readonly material: RegionMaterial;
+  }>;
+}) {
+  return (
+    <div>
+      <Typography variant="h4">{label}</Typography>
+      {baskets.map((basket, idx) => (
+        <Box
+          key={basket.basketId}
+          data-testid={`load-station-basket-${encodeLoadStationRegionIdPart(basket.basketId)}`}
+          sx={{
+            mt: idx === 0 ? "0.5em" : "1.5em",
+            pt: idx === 0 ? undefined : "1em",
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              mb: "0.5em",
+            }}
+          >
+            {basket.label}
+          </Typography>
+          <MoveMaterialArrowNode
+            kind={{
+              type: MoveMaterialNodeKindType.BasketZone,
+              basketId: basket.basketId,
+            }}
+          >
+            <MaterialRegion
+              data={data}
+              mat={{
+                label: "",
+                material: basket.material,
+                isFree: false,
+                sortable: false,
+              }}
+            />
+          </MoveMaterialArrowNode>
+        </Box>
+      ))}
+    </div>
+  );
+}
+
 function MaterialColumn({
   data,
   region,
 }: {
   readonly data: LoadStationData;
-  region: {
-    readonly label: string;
-    readonly material: { readonly mats: MaterialList; readonly hiddenCnt: number };
-    readonly isFree: boolean;
-  };
+  readonly region: MaterialColumnRegion;
 }) {
-  return (
-    <MoveMaterialArrowNode
-      kind={
-        region.isFree
-          ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
-          : {
-              type: MoveMaterialNodeKindType.QueueZone,
-              queue: region.label,
-            }
-      }
-    >
-      {region.isFree ? (
-        <MaterialRegion data={data} mat={region} />
-      ) : (
-        <SortableRegion
-          matIds={region.material.mats.map((m) => m.materialID)}
-          direction="vertical"
-          queueName={region.label}
-          renderDragOverlay={(mat) => (
-            <DragOverlayInProcMaterial
-              mat={mat}
-              displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
-              fsize={
-                mat.action.type === api.ActionType.Loading &&
-                mat.action.loadOntoPalletNum === data.pallet?.palletNum
-                  ? data.fsize
-                  : undefined
-              }
+  switch (region.kind) {
+    case "free":
+      return (
+        <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.FreeMaterialZone }}>
+          <MaterialRegion
+            data={data}
+            mat={{
+              label: region.label,
+              material: region.material,
+              isFree: true,
+              sortable: false,
+            }}
+          />
+        </MoveMaterialArrowNode>
+      );
+    case "queue":
+      return (
+        <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.QueueZone, queue: region.label }}>
+          <SortableRegion
+            matIds={region.material.mats.map((m) => m.materialID)}
+            direction="vertical"
+            queueName={region.label}
+            renderDragOverlay={(mat) => (
+              <DragOverlayInProcMaterial
+                mat={mat}
+                displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+                fsize={
+                  mat.action.type === api.ActionType.Loading &&
+                  mat.action.loadOntoPalletNum === data.pallet?.palletNum
+                    ? data.fsize
+                    : undefined
+                }
+              />
+            )}
+          >
+            <MaterialRegion
+              data={data}
+              mat={{
+                label: region.label,
+                material: region.material,
+                isFree: false,
+                sortable: true,
+              }}
             />
-          )}
-        >
-          <MaterialRegion data={data} mat={region} />
-        </SortableRegion>
-      )}
-    </MoveMaterialArrowNode>
-  );
+          </SortableRegion>
+        </MoveMaterialArrowNode>
+      );
+    case "baskets":
+      return <BasketRegion data={data} label={region.label} baskets={region.baskets} />;
+  }
 }
 
 function RecentCompletedMaterial() {
@@ -875,6 +1163,9 @@ function useGridLayout({
 }
 
 export function LoadStation(props: LoadStationProps) {
+  const fmsInfo = useAtomValue(fmsInformation);
+  const basketName = basketDisplayName(fmsInfo.basketName);
+  const basketRegionLabel = basketName.endsWith("s") ? basketName : `${basketName}s`;
   const currentSt = useAtomValue(currentStatus);
   const hideNonLoading = useAtomValue(hideNonLoadingMaterialOnLoadStation);
   const data = useMemo(
@@ -882,22 +1173,44 @@ export function LoadStation(props: LoadStationProps) {
     [currentSt, props.loadNum, props.queues, hideNonLoading],
   );
 
-  let matColsSeq = LazySeq.of(data.queues)
+  const queueCols = LazySeq.of(data.queues)
     .sortBy(([q, _]) => q)
     .map(([q, mats]) => ({
+      kind: "queue" as const,
       label: q,
       material: mats,
-      isFree: false,
-    }));
+    }))
+    .toRArray();
 
-  if (data.queues.size === 0 || data.freeLoadingMaterial.length > 0) {
-    matColsSeq = matColsSeq.append({
+  const matCols: MaterialColumnRegion[] = [...queueCols];
+
+  if (data.baskets.size > 0) {
+    const baskets = LazySeq.of(data.baskets)
+      .filter(([b, _]) => b !== data.activeBasket?.basketId)
+      .sortBy(([b, _]) => b)
+      .map(([b, mats]) => ({
+        basketId: b,
+        label: `${basketName} ${b}`,
+        material: mats,
+      }))
+      .toRArray();
+
+    if (baskets.length > 0) {
+      matCols.push({
+        kind: "baskets" as const,
+        label: basketRegionLabel,
+        baskets,
+      });
+    }
+  }
+
+  if ((data.queues.size === 0 && data.baskets.size === 0) || data.freeLoadingMaterial.length > 0) {
+    matCols.push({
+      kind: "free" as const,
       label: "Material",
       material: { mats: data.freeLoadingMaterial, hiddenCnt: 0 },
-      isFree: true,
     });
   }
-  const matCols = matColsSeq.toRArray();
   const numNonPalCols = matCols.length + (props.completed ? 1 : 0);
 
   const fillViewPort = useMediaQuery(
@@ -934,6 +1247,7 @@ export function LoadStation(props: LoadStationProps) {
         {matCols.map((col, idx) => (
           <Box
             key={idx}
+            data-testid={materialColumnTestId(col)}
             sx={{
               gridArea: `mat${idx}`,
               padding: "8px",
@@ -958,6 +1272,7 @@ export function LoadStation(props: LoadStationProps) {
           </Box>
         ))}
         <Box
+          data-testid="load-station-completed"
           sx={{
             borderLeft: fillViewPort ? "1px solid black" : undefined,
             borderTop: !fillViewPort ? "1px solid black" : undefined,
@@ -976,7 +1291,9 @@ export function LoadStation(props: LoadStationProps) {
 }
 
 function LoadStationCheckWidth(props: LoadStationProps): ReactNode {
-  useSetTitle("Load " + props.loadNum.toString());
+  const fmsInfo = useAtomValue(fmsInformation);
+  const title = loadStationDisplayName(props.loadNum, fmsInfo.loadStationNames);
+  useSetTitle(title);
   return <LoadStation {...props} />;
 }
 

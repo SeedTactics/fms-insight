@@ -94,9 +94,11 @@ import {
 import { QuarantineMatButton } from "../station-monitor/QuarantineButton.js";
 import { useSetTitle } from "../routes.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { fmsInformation } from "../../network/server-settings.js";
+import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 
 type ColWithTitleProps = {
-  readonly label: string;
+  readonly label: string | ReactNode;
   readonly binId: MaterialBinId;
   readonly children?: ReactNode;
 };
@@ -234,12 +236,8 @@ interface SystemMaterialProps<T> {
   readonly material: ReadonlyMap<T, ReadonlyArray<Readonly<IInProcessMaterial>>>;
   readonly bin: MaterialBin;
   readonly isDragOverlay?: boolean;
-  readonly renderLabel: (label: T) => string;
+  readonly renderLabel: (label: T) => string | ReactNode;
   readonly compareLabel: (l1: T, l2: T) => number;
-}
-
-function renderLul(lul: number) {
-  return "L/U " + lul.toString();
 }
 
 function compareLul(l1: number, l2: number) {
@@ -268,6 +266,10 @@ function compareQueue(q1: string, q2: string) {
   return q1.localeCompare(q2);
 }
 
+function compareBasket(b1: number, b2: number) {
+  return b1 - b2;
+}
+
 class SystemMaterial<T extends string | number> extends PureComponent<SystemMaterialProps<T>> {
   override render() {
     const Col = this.props.isDragOverlay ? ColumnWithTitle : SortableColumnWithTitle;
@@ -280,8 +282,8 @@ class SystemMaterial<T extends string | number> extends PureComponent<SystemMate
       >
         {LazySeq.of(this.props.material)
           .sortWith(([l1, _m1], [l2, _m2]) => this.props.compareLabel(l1, l2))
-          .map(([label, material], idx) => (
-            <div key={idx}>
+          .map(([label, material], matGroupIdx) => (
+            <div key={matGroupIdx}>
               <Typography variant="caption">{this.props.renderLabel(label)}</Typography>
               {material.map((mat, idx) => (
                 <InProcMaterial key={idx} mat={mat} hideAvatar />
@@ -300,13 +302,15 @@ function MaterialBinColumn({
   readonly matBin: MaterialBin;
   readonly isDragOverlay?: boolean;
 }) {
+  const fmsInfo = useAtomValue(fmsInformation);
+  const basketName = basketDisplayName(fmsInfo.basketName);
   switch (matBin.type) {
     case MaterialBinType.LoadStations:
       return (
         <SystemMaterial
           name="Load Stations"
           binId={matBin.binId}
-          renderLabel={renderLul}
+          renderLabel={(lul) => loadStationDisplayName(lul, fmsInfo.loadStationNames)}
           compareLabel={compareLul}
           material={matBin.byLul}
           bin={matBin}
@@ -333,6 +337,25 @@ function MaterialBinColumn({
           renderLabel={renderQueue}
           compareLabel={compareQueue}
           material={matBin.byQueue}
+          bin={matBin}
+          isDragOverlay={isDragOverlay}
+        />
+      );
+    case MaterialBinType.Baskets:
+      return (
+        <SystemMaterial
+          name={basketName + "s"}
+          binId={matBin.binId}
+          renderLabel={(id) =>
+            basketName +
+            " " +
+            id.toString() +
+            (typeof id === "number" && matBin.basketLocations.get(id)
+              ? ` (${matBin.basketLocations.get(id)})`
+              : "")
+          }
+          compareLabel={compareBasket}
+          material={matBin.byBasket}
           bin={matBin}
           isDragOverlay={isDragOverlay}
         />
@@ -452,11 +475,11 @@ export function AllMaterial(props: AllMaterialProps) {
   const [activeDrag, setActiveDrag] = useState<CurActiveDrag | null>(null);
 
   const allBins = useMemo(() => {
-    const allBins = selectAllMaterialIntoBins(st, matBinOrder);
+    const bins = selectAllMaterialIntoBins(st, matBinOrder);
     if (activeDrag && activeDrag.type === "material" && activeDrag.curOverBinId !== null) {
-      return moveMaterialInBin(allBins, activeDrag.mat, activeDrag.curOverBinId, activeDrag.initialIdx);
+      return moveMaterialInBin(bins, activeDrag.mat, activeDrag.curOverBinId, activeDrag.initialIdx);
     } else {
-      return allBins;
+      return bins;
     }
   }, [st, matBinOrder, activeDrag]);
 

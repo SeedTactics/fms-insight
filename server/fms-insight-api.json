@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v14.7.0.0 (NJsonSchema v11.6.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -2158,12 +2158,10 @@
         ],
         "properties": {
           "Name": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Version": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "LicenseExpires": {
             "type": "string",
@@ -2371,8 +2369,7 @@
             "format": "date-time"
           },
           "loc": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "locnum": {
             "type": "integer",
@@ -2383,12 +2380,10 @@
             "format": "int32"
           },
           "program": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "result": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "elapsed": {
             "type": "string",
@@ -2437,12 +2432,10 @@
             "format": "int64"
           },
           "uniq": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "part": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "proc": {
             "type": "integer",
@@ -2536,8 +2529,7 @@
         ],
         "properties": {
           "Tool": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Pocket": {
             "type": "integer",
@@ -2644,8 +2636,7 @@
         ],
         "properties": {
           "StationName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "StationNum": {
             "type": "integer",
@@ -2664,8 +2655,7 @@
         ],
         "properties": {
           "ScheduleId": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Jobs": {
             "type": "array",
@@ -2758,8 +2748,7 @@
         ],
         "properties": {
           "Unique": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "RouteStartUTC": {
             "type": "string",
@@ -2773,8 +2762,7 @@
             "type": "boolean"
           },
           "PartName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Comment": {
             "type": "string",
@@ -2838,8 +2826,7 @@
             "type": "boolean"
           },
           "ReasonForUserHold": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "HoldUnholdPattern": {
             "type": "array",
@@ -3044,8 +3031,7 @@
         ],
         "properties": {
           "StationGroup": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "StationNums": {
             "type": "array",
@@ -3106,12 +3092,10 @@
         ],
         "properties": {
           "InspectionType": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Counter": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "MaxVal": {
             "type": "integer",
@@ -3149,12 +3133,10 @@
         ],
         "properties": {
           "ScheduleId": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "StationGroup": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "StationNum": {
             "type": "integer",
@@ -3199,8 +3181,7 @@
         ],
         "properties": {
           "JobUnique": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Process": {
             "type": "integer",
@@ -3229,8 +3210,7 @@
             "format": "date"
           },
           "MachineGroup": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Usage": {
             "type": "number",
@@ -3249,12 +3229,10 @@
         ],
         "properties": {
           "WorkorderId": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Part": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Started": {
             "type": "string",
@@ -3285,12 +3263,10 @@
         ],
         "properties": {
           "WorkorderId": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Part": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Quantity": {
             "type": "integer",
@@ -3333,8 +3309,7 @@
             "nullable": true
           },
           "ProgramName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Revision": {
             "type": "integer",
@@ -3356,16 +3331,14 @@
         ],
         "properties": {
           "ProgramName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Comment": {
             "type": "string",
             "nullable": true
           },
           "ProgramContent": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Revision": {
             "type": "integer",
@@ -3573,8 +3546,7 @@
             "format": "int32"
           },
           "FixtureOnPallet": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "OnHold": {
             "type": "boolean"
@@ -3628,8 +3600,7 @@
             "$ref": "#/components/schemas/PalletLocationEnum"
           },
           "group": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "num": {
             "type": "integer",
@@ -3682,12 +3653,10 @@
             "format": "int64"
           },
           "JobUnique": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "PartName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Process": {
             "type": "integer",
@@ -3929,8 +3898,7 @@
         ],
         "properties": {
           "MachineGroup": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "MachineNum": {
             "type": "integer",
@@ -3976,12 +3944,10 @@
         ],
         "properties": {
           "WorkorderId": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Part": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "PlannedQuantity": {
             "type": "integer",
@@ -4050,8 +4016,7 @@
         ],
         "properties": {
           "Comment": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "TimeUTC": {
             "type": "string",
@@ -4111,25 +4076,50 @@
         "additionalProperties": false,
         "required": [
           "BasketId",
-          "LocationName",
+          "Location",
+          "LocationNum",
           "BasketId",
-          "LocationName"
+          "Location",
+          "LocationNum"
         ],
         "properties": {
           "BasketId": {
             "type": "integer",
             "format": "int32"
           },
-          "LocationName": {
-            "type": "string",
-            "minLength": 1
+          "Location": {
+            "$ref": "#/components/schemas/BasketLocationEnum"
           },
-          "LocationPosition": {
+          "LocationNum": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "LocationTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "Slot": {
             "type": "integer",
             "format": "int32",
             "nullable": true
           }
         }
+      },
+      "BasketLocationEnum": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "LoadUnload",
+          "LoadStationStaging",
+          "Storage",
+          "InTransit"
+        ],
+        "enum": [
+          "LoadUnload",
+          "LoadStationStaging",
+          "Storage",
+          "InTransit"
+        ]
       },
       "EditMaterialInLogEvents": {
         "type": "object",
@@ -4229,8 +4219,7 @@
             "nullable": true
           },
           "PartName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "NumProcesses": {
             "type": "integer",
@@ -4299,8 +4288,7 @@
         ],
         "properties": {
           "JobUnique": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "LastCompletedProcess": {
             "type": "integer",
@@ -4373,8 +4361,7 @@
         ],
         "properties": {
           "LatestScheduleId": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Jobs": {
             "type": "array",
@@ -4413,12 +4400,10 @@
         ],
         "properties": {
           "BookingId": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "PartName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Quantity": {
             "type": "integer",
@@ -4456,8 +4441,7 @@
         ],
         "properties": {
           "ScheduleId": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Jobs": {
             "type": "array",
@@ -4525,8 +4509,7 @@
         ],
         "properties": {
           "Queue": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Position": {
             "type": "integer",
@@ -4575,16 +4558,14 @@
             "format": "int64"
           },
           "JobUnique": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "TimeUTC": {
             "type": "string",
             "format": "date-time"
           },
           "Part": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Quantity": {
             "type": "integer",
@@ -4625,8 +4606,7 @@
             "format": "int32"
           },
           "InspectionType": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Success": {
             "type": "boolean"
@@ -4679,8 +4659,7 @@
             "format": "int32"
           },
           "CloseoutType": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "ExtraData": {
             "type": "object",
@@ -4718,8 +4697,7 @@
             ],
             "properties": {
               "MachineGroupName": {
-                "type": "string",
-                "minLength": 1
+                "type": "string"
               },
               "MachineNum": {
                 "type": "integer",
@@ -4744,8 +4722,7 @@
             "format": "int32"
           },
           "ToolName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Serial": {
             "type": "string",
@@ -4784,12 +4761,10 @@
         ],
         "properties": {
           "CellControllerProgramName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "ProgramName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Revision": {
             "type": "integer",
@@ -4813,8 +4788,7 @@
         ],
         "properties": {
           "ProgramName": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "Revision": {
             "type": "integer",

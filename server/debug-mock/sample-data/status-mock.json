@@ -222,6 +222,102 @@
       ],
       "Completed": [[5], [2]]
     },
+    "tray-offline-2018-01-01": {
+      "RouteStartUTC": "2018-01-01T00:00:00Z",
+      "RouteEndUTC": "2018-01-02T00:00:00Z",
+      "Archived": false,
+      "CopiedToSystem": false,
+      "PartName": "tray",
+      "Unique": "tray-offline-2018-01-01",
+      "ScheduleId": "offline-2018-01-01",
+      "Bookings": ["tray-0"],
+      "ManuallyCreated": false,
+      "Inspections": [],
+      "Cycles": 8,
+      "ProcsAndPaths": [
+        {
+          "BasketLoadStations": [3, 4],
+          "BasketUnloadStations": [3, 4],
+          "ExpectedBasketLoadTime": "PT6M",
+          "ExpectedBasketUnloadTime": "PT4M30S",
+          "paths": [
+            {
+              "PalletNums": [9],
+              "Load": [3],
+              "ExpectedLoadTime": "PT6M",
+              "Unload": [3],
+              "ExpectedUnloadTime": "PT4M30S",
+              "InputQueue": "Queue1",
+              "Stops": [
+                {
+                  "Tools": {},
+                  "StationGroup": "Machine",
+                  "ExpectedCycleTime": "PT12M",
+                  "Program": "900",
+                  "StationNums": [2, 3]
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2018-01-01T03:00:00Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2018-01-01T05:10:00Z",
+                  "Quantity": 2
+                }
+              ],
+              "SimulatedStartingUTC": "2018-01-01T03:00:00Z",
+              "SimulatedAverageFlowTime": "PT1H10M",
+              "PartsPerPallet": 1,
+              "Fixture": "7f54f3ce-bfb5-50d0-8986-83f2b197c62e",
+              "Face": 1
+            }
+          ]
+        },
+        {
+          "BasketLoadStations": [3, 4],
+          "BasketUnloadStations": [3, 4],
+          "ExpectedBasketLoadTime": "PT4M30S",
+          "ExpectedBasketUnloadTime": "PT4M",
+          "paths": [
+            {
+              "PalletNums": [10],
+              "Load": [4],
+              "ExpectedLoadTime": "PT4M30S",
+              "Unload": [4],
+              "ExpectedUnloadTime": "PT4M",
+              "InputQueue": "Queue2",
+              "Stops": [
+                {
+                  "Tools": {},
+                  "StationGroup": "Machine",
+                  "ExpectedCycleTime": "PT10M30S",
+                  "Program": "901",
+                  "StationNums": [1, 4]
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2018-01-01T06:15:00Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2018-01-01T08:35:00Z",
+                  "Quantity": 2
+                }
+              ],
+              "SimulatedStartingUTC": "2018-01-01T06:15:00Z",
+              "SimulatedAverageFlowTime": "PT58M",
+              "PartsPerPallet": 1,
+              "Fixture": "7f54f3ce-bfb5-50d0-8986-83f2b197c62e",
+              "Face": 1
+            }
+          ]
+        }
+      ],
+      "Completed": [[2], [1]]
+    },
     "bbb-offline-2018-01-01": {
       "RouteStartUTC": "2018-01-01T00:00:00Z",
       "RouteEndUTC": "2018-01-02T00:00:00Z",
@@ -1011,6 +1107,17 @@
         "num": 3
       },
       "NumFaces": 1
+    },
+    "9": {
+      "PalletNum": 9,
+      "FixtureOnPallet": "fix9",
+      "OnHold": false,
+      "CurrentPalletLocation": {
+        "loc": "LoadUnload",
+        "group": "L/U",
+        "num": 3
+      },
+      "NumFaces": 1
     }
   },
   "Material": [
@@ -1327,12 +1434,218 @@
       "Action": {
         "Type": "Waiting"
       }
+    },
+    {
+      "MaterialID": 200901,
+      "JobUnique": "tray-offline-2018-01-01",
+      "PartName": "tray",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "TRAY01",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "OnPallet",
+        "PalletNum": 9,
+        "Face": 1
+      },
+      "Action": {
+        "Type": "UnloadToInProcess",
+        "UnloadToBasketId": 301,
+        "UnloadToBasketSubPosition": 0,
+        "ElapsedLoadUnloadTime": "PT2M10S"
+      }
+    },
+    {
+      "MaterialID": 200902,
+      "JobUnique": "tray-offline-2018-01-01",
+      "PartName": "tray",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "TRAY02",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InBasket",
+        "BasketId": 302,
+        "BasketSubPosition": 0
+      },
+      "Action": {
+        "Type": "Loading",
+        "LoadOntoPalletNum": 9,
+        "LoadOntoFace": 1,
+        "ProcessAfterLoad": 1,
+        "PathAfterLoad": 1,
+        "LoadFromBasketId": 302,
+        "ElapsedLoadUnloadTime": "PT2M10S"
+      }
+    },
+    {
+      "MaterialID": 200903,
+      "JobUnique": "tray-offline-2018-01-01",
+      "PartName": "tray",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "TRAY03",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InBasket",
+        "BasketId": 401,
+        "BasketSubPosition": 0
+      },
+      "Action": {
+        "Type": "UnloadToInProcess",
+        "UnloadIntoQueue": "Queue2",
+        "ElapsedLoadUnloadTime": "PT1M50S"
+      }
+    },
+    {
+      "MaterialID": 200904,
+      "JobUnique": "tray-offline-2018-01-01",
+      "PartName": "tray",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "TRAY04",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InBasket",
+        "BasketId": 402,
+        "BasketSubPosition": 0
+      },
+      "Action": {
+        "Type": "Waiting"
+      }
+    },
+    {
+      "MaterialID": 200905,
+      "JobUnique": "tray-offline-2018-01-01",
+      "PartName": "tray",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "TRAY05",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InBasket",
+        "BasketId": 502,
+        "BasketSubPosition": 0
+      },
+      "Action": {
+        "Type": "Waiting"
+      }
+    },
+    {
+      "MaterialID": 200906,
+      "JobUnique": "tray-offline-2018-01-01",
+      "PartName": "tray",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "TRAY06",
+      "SignaledInspections": [],
+      "Problem": "Hold for nest verification",
+      "Location": {
+        "Type": "InBasket",
+        "BasketId": 504,
+        "BasketSubPosition": 0
+      },
+      "Action": {
+        "Type": "Waiting"
+      }
+    },
+    {
+      "MaterialID": 200907,
+      "JobUnique": "tray-offline-2018-01-01",
+      "PartName": "tray",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "TRAY07",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InQueue",
+        "CurrentQueue": "Queue2",
+        "QueuePosition": 2
+      },
+      "Action": {
+        "Type": "Waiting"
+      }
+    },
+    {
+      "MaterialID": 200908,
+      "JobUnique": "tray-offline-2018-01-01",
+      "PartName": "tray",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "TRAY08",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InBasket",
+        "BasketId": 505,
+        "BasketSubPosition": 0
+      },
+      "Action": {
+        "Type": "Waiting"
+      }
     }
   ],
   "Alarms": [],
   "Queues": {
     "Queue1": { "Role": "RawMaterial" },
     "Queue2": { "Role": "InProcessTransfer " }
+  },
+  "Baskets": {
+    "301": {
+      "BasketId": 301,
+      "Location": "LoadStationStaging",
+      "LocationTitle": "Load 3",
+      "LocationNum": 3,
+      "Slot": 1
+    },
+    "302": {
+      "BasketId": 302,
+      "Location": "LoadStationStaging",
+      "LocationTitle": "Load 3",
+      "LocationNum": 3,
+      "Slot": 2
+    },
+    "401": {
+      "BasketId": 401,
+      "Location": "LoadUnload",
+      "LocationTitle": "Load 4",
+      "LocationNum": 4
+    },
+    "402": {
+      "BasketId": 402,
+      "Location": "Storage",
+      "LocationTitle": "Tower B",
+      "LocationNum": 2
+    },
+    "501": {
+      "BasketId": 501,
+      "Location": "Storage",
+      "LocationTitle": "Tower A",
+      "LocationNum": 1
+    },
+    "502": {
+      "BasketId": 502,
+      "Location": "Storage",
+      "LocationTitle": "Tower A",
+      "LocationNum": 2
+    },
+    "503": {
+      "BasketId": 503,
+      "Location": "Storage",
+      "LocationTitle": "Rack B",
+      "LocationNum": 1
+    },
+    "504": {
+      "BasketId": 504,
+      "Location": "Storage",
+      "LocationTitle": "Rack B",
+      "LocationNum": 2
+    },
+    "505": {
+      "BasketId": 505,
+      "Location": "InTransit",
+      "LocationTitle": "AGV",
+      "LocationNum": 6
+    }
   },
   "Workorders": [
     {

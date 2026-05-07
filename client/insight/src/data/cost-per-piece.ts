@@ -34,7 +34,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addMonths, getDaysInMonth, addDays } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
-import { PartCycleData } from "../cell-status/station-cycles.js";
+import {
+  isLaborCycle,
+  isMachineCycle,
+  isPalletLoadCycle,
+  PartCycleData,
+} from "../cell-status/station-cycles.js";
 import { HashMap, HashSet, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 
 export interface PartCost {
@@ -54,7 +59,7 @@ export interface CostData {
 }
 
 function isUnloadCycle(c: PartCycleData): boolean {
-  return c.isLabor && c.operation === "UNLOAD";
+  return isPalletLoadCycle(c) && c.operation === "UNLOAD";
 }
 
 function isMonthType(type: { month: Date } | { thirtyDaysAgo: Date }): type is { month: Date } {
@@ -83,9 +88,9 @@ export function compute_monthly_cost_percentages(
     if (isUnloadCycle(c)) {
       totalPalletCycles += 1;
     }
-    if (c.isLabor) {
+    if (isLaborCycle(c)) {
       totalLaborUseMinutes += c.activeMinutes;
-    } else {
+    } else if (isMachineCycle(c)) {
       totalStatUseMinutes.set(
         c.stationGroup,
         c.activeMinutes + (totalStatUseMinutes.get(c.stationGroup) ?? 0),
@@ -117,7 +122,7 @@ export function compute_monthly_cost_percentages(
       part: partName,
       parts_completed: completed.get(partName) ?? 0,
       machine: LazySeq.of(forPart)
-        .filter((c) => !c.isLabor)
+        .filter((c) => isMachineCycle(c))
         .buildOrderedMap<string, number>(
           (c) => c.stationGroup,
           (old, c) => (old ?? 0) + c.activeMinutes,
@@ -127,9 +132,12 @@ export function compute_monthly_cost_percentages(
           return minutes / totalUse;
         }),
       labor: LazySeq.of(forPart)
-        .filter((c) => c.isLabor)
+        .filter((c) => isLaborCycle(c))
         .sumBy((c) => c.activeMinutes / totalLaborUseMinutes),
-      automation: forPart.reduce((acc, v) => (isUnloadCycle(v) ? acc + 1 : acc), 0) / totalPalletCycles,
+      automation:
+        totalPalletCycles > 0
+          ? forPart.reduce((acc, v) => (isUnloadCycle(v) ? acc + 1 : acc), 0) / totalPalletCycles
+          : 0,
     }))
     .toRArray();
 

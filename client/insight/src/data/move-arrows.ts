@@ -41,6 +41,7 @@ export enum MoveMaterialNodeKindType {
   CompletedExpandedMaterialZone,
   PalletFaceZone,
   QueueZone,
+  BasketZone,
 }
 
 export type MoveMaterialNodeKind =
@@ -58,6 +59,10 @@ export type MoveMaterialNodeKind =
   | {
       readonly type: MoveMaterialNodeKindType.QueueZone;
       readonly queue: string;
+    }
+  | {
+      readonly type: MoveMaterialNodeKindType.BasketZone;
+      readonly basketId: number;
     };
 
 export type MoveMaterialIdentifier = string;
@@ -76,6 +81,8 @@ export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIde
       return "PalletFaceZone-" + kind.face.toString();
     case MoveMaterialNodeKindType.QueueZone:
       return "QueueZone-" + kind.queue;
+    case MoveMaterialNodeKindType.BasketZone:
+      return "BasketZone-" + kind.basketId.toString();
   }
 }
 
@@ -91,6 +98,8 @@ export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<
       return [kind.type, kind.face];
     case MoveMaterialNodeKindType.QueueZone:
       return [kind.type, kind.queue];
+    case MoveMaterialNodeKindType.BasketZone:
+      return [kind.type, kind.basketId];
   }
 }
 
@@ -121,6 +130,7 @@ type NodeRectsGroupedByKind = {
   readonly completedMaterial?: MoveMaterialElemRect;
   readonly faces: ReadonlyMap<number, MoveMaterialElemRect>;
   readonly queues: ReadonlyMap<string, MoveMaterialElemRect>;
+  readonly baskets: ReadonlyMap<number, MoveMaterialElemRect>;
 
   readonly material: ReadonlyArray<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>;
 };
@@ -130,6 +140,7 @@ function groupMatByKind(allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>): N
   let completedMaterial: MoveMaterialElemRect | undefined;
   const faces = new Map<number, MoveMaterialElemRect>();
   const queues = new Map<string, MoveMaterialElemRect>();
+  const baskets = new Map<number, MoveMaterialElemRect>();
   const material = new Array<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>();
 
   for (const node of allNodes.values()) {
@@ -147,6 +158,9 @@ function groupMatByKind(allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>): N
       case MoveMaterialNodeKindType.QueueZone:
         queues.set(node.queue, node.elem);
         break;
+      case MoveMaterialNodeKindType.BasketZone:
+        baskets.set(node.basketId, node.elem);
+        break;
       case MoveMaterialNodeKindType.Material:
         if (node.material) {
           material.push([node.elem, node.material]);
@@ -155,7 +169,7 @@ function groupMatByKind(allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>): N
     }
   }
 
-  return { freeMaterial, completedMaterial, faces, queues, material };
+  return { freeMaterial, completedMaterial, faces, queues, baskets, material };
 }
 
 export function computeArrows(
@@ -174,6 +188,7 @@ export function computeArrows(
 
   const faceDestUsed = new Map<number, number>();
   const queueDestUsed = new Map<string, number>();
+  const basketDestUsed = new Map<number, number>();
   let lastFreeUsed = 0;
 
   for (const [rect, mat] of LazySeq.of(byKind.material).sortBy(
@@ -183,7 +198,18 @@ export function computeArrows(
     switch (mat.action.type) {
       case api.ActionType.UnloadToCompletedMaterial:
       case api.ActionType.UnloadToInProcess:
-        if (
+        if (mat.action.unloadToBasketId) {
+          const dest = byKind.baskets.get(mat.action.unloadToBasketId);
+          const lastSlotUsed = basketDestUsed.get(mat.action.unloadToBasketId) ?? 0;
+          basketDestUsed.set(mat.action.unloadToBasketId, lastSlotUsed + 1);
+          arrows.push({
+            fromX: rect.left,
+            fromY: rect.top + rect.height / 2,
+            toX: dest !== undefined ? dest.right - 5 : container.left + 2,
+            toY: dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
+            curveDirection: 1,
+          });
+        } else if (
           mat.action.type === api.ActionType.UnloadToCompletedMaterial &&
           (!mat.action.unloadIntoQueue || mat.action.unloadIntoQueue === "")
         ) {
@@ -216,7 +242,33 @@ export function computeArrows(
         }
         break;
       case api.ActionType.Loading:
-        if (mat.action.loadOntoFace) {
+        if (mat.action.loadFromBasketId && mat.action.loadOntoFace) {
+          // loading from basket onto pallet face
+          const face = byKind.faces.get(mat.action.loadOntoFace);
+          if (face !== undefined) {
+            const faceSpotsUsed = faceDestUsed.get(mat.action.loadOntoFace) ?? 0;
+            faceDestUsed.set(mat.action.loadOntoFace, faceSpotsUsed + 1);
+            arrows.push({
+              fromX: rect.right,
+              fromY: rect.top + rect.height / 2,
+              toX: face.left + 20,
+              toY: face.top + 50 + 20 * faceSpotsUsed,
+              curveDirection: -1,
+            });
+          }
+        } else if (mat.action.loadFromBasketId) {
+          // basket-only load from a queue into the active basket
+          const dest = byKind.baskets.get(mat.action.loadFromBasketId);
+          const lastSlotUsed = basketDestUsed.get(mat.action.loadFromBasketId) ?? 0;
+          basketDestUsed.set(mat.action.loadFromBasketId, lastSlotUsed + 1);
+          arrows.push({
+            fromX: rect.right,
+            fromY: rect.top + rect.height / 2,
+            toX: dest !== undefined ? dest.left + 20 : container.right - 10,
+            toY: dest !== undefined ? dest.top + 50 + 20 * lastSlotUsed : rect.top + rect.height / 2,
+            curveDirection: -1,
+          });
+        } else if (mat.action.loadOntoFace) {
           if (mat.location.type === api.LocType.OnPallet) {
             if (
               mat.location.palletNum === mat.action.loadOntoPalletNum &&

@@ -53,13 +53,25 @@ namespace BlackMaple.MachineFramework
     public QueueRole? Role { get; init; }
   }
 
+  public enum BasketLocationEnum
+  {
+    LoadUnload,
+    LoadStationStaging,
+    Storage,
+    InTransit,
+  }
+
   public record BasketStatus
   {
     public required int BasketId { get; init; }
+    public required BasketLocationEnum Location { get; init; }
+    public required int LocationNum { get; init; }
 
-    public required string LocationName { get; init; }
+    // Location Title is a string which should combine both Location and LocationNum into a human readable string.
+    public string? LocationTitle { get; init; }
 
-    public int? LocationPosition { get; init; }
+    // Slot is an optional integer within the location.
+    public int? Slot { get; init; }
   }
 
   public record CurrentStatus

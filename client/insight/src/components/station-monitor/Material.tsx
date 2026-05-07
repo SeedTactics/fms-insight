@@ -81,6 +81,8 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { loadable } from "jotai/utils";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
+import { fmsInformation } from "../../network/server-settings.js";
+import { basketDisplayName } from "../../cell-status/station-cycles.js";
 
 export class PartIdenticon extends PureComponent<{
   part: string;
@@ -212,9 +214,39 @@ export function MaterialAction({
   fsize?: MatCardFontSize;
 }): ReactNode | null {
   const curSt = useAtomValue(currentStatus);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const basketName = basketDisplayName(fmsInfo.basketName);
 
   switch (mat.action.type) {
     case api.ActionType.Loading:
+      // Check if loading from basket
+      if (mat.action.loadFromBasketId) {
+        if (mat.action.loadOntoPalletNum === null || mat.action.loadOntoPalletNum === undefined) {
+          return (
+            <MatCardDetail fsize={fsize}>
+              Load into {basketName} {mat.action.loadFromBasketId}
+            </MatCardDetail>
+          );
+        } else if (displayActionForSinglePallet === undefined) {
+          return (
+            <MatCardDetail fsize={fsize}>
+              Load from {basketName} {mat.action.loadFromBasketId} to pal {mat.action.loadOntoPalletNum ?? ""}
+            </MatCardDetail>
+          );
+        } else if (displayActionForSinglePallet === mat.action.loadOntoPalletNum) {
+          const faceNum = mat.action.loadOntoFace ?? 0;
+          const faceName = mat.action.loadOntoPalletNum
+            ? curSt.pallets[mat.action.loadOntoPalletNum]?.faceNames?.[faceNum - 1]
+            : null;
+          return (
+            <MatCardDetail fsize={fsize}>
+              Load from {basketName} {mat.action.loadFromBasketId} to {faceName ?? `face ${faceNum}`}
+            </MatCardDetail>
+          );
+        } else {
+          return null;
+        }
+      }
       switch (mat.location.type) {
         case api.LocType.OnPallet:
           if (
@@ -263,7 +295,16 @@ export function MaterialAction({
 
     case api.ActionType.UnloadToInProcess:
     case api.ActionType.UnloadToCompletedMaterial:
-      if (mat.action.unloadIntoQueue) {
+      if (mat.action.unloadToBasketId) {
+        return (
+          <MatCardDetail fsize={fsize}>
+            Unload to {basketName} {mat.action.unloadToBasketId}
+            {mat.action.unloadToBasketSubPosition
+              ? ` position ${mat.action.unloadToBasketSubPosition + 1}`
+              : ""}
+          </MatCardDetail>
+        );
+      } else if (mat.action.unloadIntoQueue) {
         return <MatCardDetail fsize={fsize}>Unload into queue {mat.action.unloadIntoQueue}</MatCardDetail>;
       } else {
         return <MatCardDetail fsize={fsize}>Unload from pallet</MatCardDetail>;
@@ -272,6 +313,12 @@ export function MaterialAction({
     case api.ActionType.Waiting:
       if (mat.location.type === api.LocType.InQueue && !!mat.jobUnique && mat.jobUnique !== "") {
         return <MatCardDetail fsize={fsize}>Waiting; next process is #{mat.process + 1}</MatCardDetail>;
+      } else if (mat.location.type === api.LocType.InBasket) {
+        return (
+          <MatCardDetail fsize={fsize}>
+            In {basketName} {mat.location.basketId}
+          </MatCardDetail>
+        );
       } else if (
         mat.location.type === api.LocType.OnPallet &&
         (mat.lastCompletedMachiningRouteStopIndex === null ||
@@ -515,6 +562,13 @@ const MatCard = forwardRef(function MatCard(
                 displayActionForSinglePallet={props.displayActionForSinglePallet}
                 fsize={props.fsize}
               />
+            ) : undefined}
+            {props.inProcMat?.problem ? (
+              <MatCardDetail fsize={props.fsize}>
+                <Typography variant="body2" color="error" sx={{ fontWeight: "bold" }}>
+                  ⚠ {props.inProcMat.problem}
+                </Typography>
+              </MatCardDetail>
             ) : undefined}
             {completedMsg}
           </Box>

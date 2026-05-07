@@ -46,9 +46,11 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import { LazySeq, HashMap, HashSet } from "@seedtactics/immutable-collections";
+import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 
 import { MoreHoriz } from "@mui/icons-material";
 import { useAtomValue, useSetAtom } from "jotai";
+import { fmsInformation } from "../../network/server-settings.js";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;
@@ -73,6 +75,10 @@ function JobCompleted(props: JobDisplayProps & { procIdx: number; pathIdx: numbe
 }
 
 function JobDisplay(props: JobDisplayProps) {
+  const fmsInfo = useAtomValue(fmsInformation);
+  const displayLoadStations = (stations: ReadonlyArray<number>) =>
+    stations.map((station) => loadStationDisplayName(station, fmsInfo.loadStationNames)).join(", ");
+
   return (
     <div>
       <dl>
@@ -120,8 +126,17 @@ function JobDisplay(props: JobDisplayProps) {
                   ) : undefined}
                   {path.inputQueue ? <div>Input Queue: {path.inputQueue}</div> : undefined}
                   {path.casting ? <div>Raw Material: {path.casting}</div> : undefined}
+                  {proc.basketLoadStations &&
+                  proc.basketLoadStations.length > 0 &&
+                  proc.expectedBasketLoadTime ? (
+                    <div>
+                      Basket Load Stations: {displayLoadStations(proc.basketLoadStations)} |{" "}
+                      {durationToMinutes(proc.expectedBasketLoadTime).toFixed(1)} mins
+                      {path.partsPerPallet > 1 ? " per piece" : ""}
+                    </div>
+                  ) : undefined}
                   <div>
-                    Load Stations: {path.load.join(",")} |{" "}
+                    Load Stations: {displayLoadStations(path.load)} |{" "}
                     {durationToMinutes(path.expectedLoadTime).toFixed(1)} mins
                     {path.partsPerPallet > 1 ? " per piece" : ""}
                   </div>
@@ -136,10 +151,19 @@ function JobDisplay(props: JobDisplayProps) {
                     </Fragment>
                   ))}
                   <div>
-                    Unload Stations: {path.unload.join(",")} |{" "}
+                    Unload Stations: {displayLoadStations(path.unload)} |{" "}
                     {durationToMinutes(path.expectedUnloadTime).toFixed(1)} mins
                     {path.partsPerPallet > 1 ? " per piece" : ""}
                   </div>
+                  {proc.basketUnloadStations &&
+                  proc.basketUnloadStations.length > 0 &&
+                  proc.expectedBasketUnloadTime ? (
+                    <div>
+                      Basket Unload Stations: {displayLoadStations(proc.basketUnloadStations)} |{" "}
+                      {durationToMinutes(proc.expectedBasketUnloadTime).toFixed(1)} mins
+                      {path.partsPerPallet > 1 ? " per piece" : ""}
+                    </div>
+                  ) : undefined}
                   {path.outputQueue ? <div>Output Queue: {path.outputQueue}</div> : undefined}
                   {path.inspections && path.inspections.length > 0 ? (
                     <div>Inspections: {path.inspections.map((i) => i.inspectionType).join(",")}</div>
@@ -160,10 +184,18 @@ interface MaterialStatusProps {
 }
 
 function MaterialStatus(props: MaterialStatusProps) {
+  const fmsInfo = useAtomValue(fmsInformation);
+  const basketName = basketDisplayName(fmsInfo.basketName);
   if (props.inProcMat !== null && props.inProcMat.location.type === api.LocType.OnPallet) {
     return <span>On pallet {props.inProcMat.location.palletNum ?? ""}</span>;
   } else if (props.inProcMat !== null && props.inProcMat.location.type === api.LocType.InQueue) {
     return <span>In queue {props.inProcMat.location.currentQueue ?? ""}</span>;
+  } else if (props.inProcMat !== null && props.inProcMat.location.type === api.LocType.InBasket) {
+    return (
+      <span>
+        In {basketName} {props.inProcMat.location.basketId ?? ""}
+      </span>
+    );
   } else if (props.matSummary?.completed_last_proc_machining) {
     return <span>Completed</span>;
   } else if (props.matSummary !== null && props.matSummary.startedProcess1 === false) {

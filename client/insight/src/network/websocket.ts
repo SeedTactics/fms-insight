@@ -134,9 +134,9 @@ class ReconnectingWebsocket {
       this.onmessage?.(evt);
     };
 
-    localWs.onerror = (evt) => {
-      console.error(evt);
-    };
+    // Browsers expose websocket failures as opaque events with no useful detail.
+    // Reconnect handling is driven by close/open, so avoid polluting stderr by
+    // adding an `onerror` handler that does nothing and can't log useful information.
   }
 }
 

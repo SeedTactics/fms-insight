@@ -39,9 +39,64 @@ import {
   PartAndStationOperation,
   splitElapsedTimeAmongChunk,
 } from "../cell-status/estimated-cycle-times.js";
-import { stat_name_and_num } from "../cell-status/station-cycles.js";
-import { ActionType, ICurrentStatus, PalletLocation } from "../network/api.js";
+import { displayStationName } from "../cell-status/station-cycles.js";
+import { ActionType, BasketLocationEnum, ICurrentStatus, PalletLocation } from "../network/api.js";
 import { durationToMinutes, durationToSeconds } from "../util/parseISODuration.js";
+
+type LoadLocation = {
+  readonly group: string;
+  readonly num: number;
+};
+
+function basketsAtLoad(currentSt: ICurrentStatus): ReadonlyMap<number, LoadLocation> {
+  return LazySeq.ofObject(currentSt.baskets ?? {})
+    .collect(([, basket]) => {
+      if (
+        basket.location === BasketLocationEnum.LoadUnload ||
+        basket.location === BasketLocationEnum.LoadStationStaging
+      ) {
+        return [basket.basketId, { group: "L/U", num: basket.locationNum }] as const;
+      }
+      return null;
+    })
+    .toRMap(([basketId, loc]) => [basketId, loc]);
+}
+
+function locationForLoadActivity(
+  material: ICurrentStatus["material"][number],
+  jobs: ICurrentStatus["jobs"],
+  palToLoc: ReadonlyMap<number, PalletLocation>,
+  basketToLoad: ReadonlyMap<number, LoadLocation>,
+): LoadLocation | null {
+  if (material.action.type === ActionType.Loading) {
+    if (material.action.loadOntoPalletNum) {
+      return palToLoc.get(material.action.loadOntoPalletNum) ?? null;
+    }
+    if (material.action.loadFromBasketId) {
+      return basketToLoad.get(material.action.loadFromBasketId) ?? null;
+    }
+    // queue → basket: neither pallet nor source basket set.  Find a basket at a load station
+    // that is a basket-load station for this job/process.
+    const proc = material.action.processAfterLoad ?? material.process;
+    const procInfo = jobs[material.jobUnique]?.procsAndPaths?.[proc - 1];
+    const basketLoadStations = procInfo?.basketLoadStations ?? [];
+    for (const [, loc] of basketToLoad) {
+      if (basketLoadStations.length === 0 || basketLoadStations.includes(loc.num)) {
+        return loc;
+      }
+    }
+    return null;
+  } else {
+    if (material.location.palletNum) {
+      return palToLoc.get(material.location.palletNum) ?? null;
+    }
+    if (material.location.basketId) {
+      return basketToLoad.get(material.location.basketId) ?? null;
+    }
+  }
+
+  return null;
+}
 
 export type CurrentCycle = {
   readonly station: string;
@@ -55,6 +110,7 @@ function machiningCurrentCycles(
   currentSt: ICurrentStatus,
   estimated: EstimatedCycleTimes,
   palToLoc: ReadonlyMap<number, PalletLocation>,
+  loadStationNames: Readonly<Record<string, string>> | undefined,
 ): LazySeq<CurrentCycle> {
   return LazySeq.of(currentSt.material)
     .collect((m) => {
@@ -76,7 +132,7 @@ function machiningCurrentCycles(
       const elapsedSec = durationToSeconds(mats[0].mat.action.elapsedMachiningTime ?? "PT0S");
       const remainingSec = durationToSeconds(mats[0].mat.action.expectedRemainingMachiningTime ?? "PT0S");
       return {
-        station: stat_name_and_num(statGroup, statNum),
+        station: displayStationName(statGroup, statNum, loadStationNames),
         start: addSeconds(currentSt.timeOfCurrentStatusUTC, -elapsedSec),
         expectedEnd: addSeconds(currentSt.timeOfCurrentStatusUTC, remainingSec),
         isOutlier: stats ? isOutlierAbove(stats, elapsedSec / 60 / mats.length) : false,
@@ -89,20 +145,20 @@ function loadCurrentCycles(
   currentSt: ICurrentStatus,
   estimated: EstimatedCycleTimes,
   palToLoc: ReadonlyMap<number, PalletLocation>,
+  loadStationNames: Readonly<Record<string, string>> | undefined,
 ): LazySeq<CurrentCycle> {
+  const basketToLoad = basketsAtLoad(currentSt);
   return LazySeq.of(currentSt.material)
     .collect((m) => {
       if (
         m.action.type === ActionType.UnloadToCompletedMaterial ||
         m.action.type === ActionType.UnloadToInProcess
       ) {
-        if (!m.location.palletNum) return null;
-        const loc = palToLoc.get(m.location.palletNum);
+        const loc = locationForLoadActivity(m, currentSt.jobs, palToLoc, basketToLoad);
         if (!loc) return null;
         return { mat: m, material: [m], proc: m.process, path: m.path, loc };
       } else if (m.action.type === ActionType.Loading) {
-        if (!m.action.loadOntoPalletNum) return null;
-        const loc = palToLoc.get(m.action.loadOntoPalletNum);
+        const loc = locationForLoadActivity(m, currentSt.jobs, palToLoc, basketToLoad);
         if (!loc) return null;
         return {
           mat: m,
@@ -116,11 +172,20 @@ function loadCurrentCycles(
     })
     .map((m) => {
       const job = currentSt.jobs[m.mat.jobUnique];
+      const procInfo = job?.procsAndPaths?.[m.proc - 1];
       const pathData = job?.procsAndPaths?.[m.proc - 1]?.paths?.[m.path - 1];
       if (m.mat.action.type === ActionType.Loading) {
-        return { ...m, expectedLoadSecs: durationToSeconds(pathData?.expectedLoadTime ?? "PT0S") };
+        const expected =
+          m.mat.action.loadOntoPalletNum !== null && m.mat.action.loadOntoPalletNum !== undefined
+            ? pathData?.expectedLoadTime
+            : (procInfo?.expectedBasketLoadTime ?? pathData?.expectedLoadTime);
+        return { ...m, expectedLoadSecs: durationToSeconds(expected ?? "PT0S") };
       } else {
-        return { ...m, expectedLoadSecs: durationToSeconds(pathData?.expectedUnloadTime ?? "PT0S") };
+        const expected =
+          m.mat.location.palletNum !== null && m.mat.location.palletNum !== undefined
+            ? pathData?.expectedUnloadTime
+            : (procInfo?.expectedBasketUnloadTime ?? pathData?.expectedUnloadTime);
+        return { ...m, expectedLoadSecs: durationToSeconds(expected ?? "PT0S") };
       }
     })
     .groupBy(
@@ -156,7 +221,7 @@ function loadCurrentCycles(
       }
       const elapsedSec = durationToSeconds(mats[0].mat.action.elapsedLoadUnloadTime ?? "PT0S");
       return {
-        station: stat_name_and_num(statGroup, statNum),
+        station: displayStationName(statGroup, statNum, loadStationNames),
         start: addSeconds(currentSt.timeOfCurrentStatusUTC, -elapsedSec),
         expectedEnd: addSeconds(currentSt.timeOfCurrentStatusUTC, -elapsedSec + expectedSecs),
         isOutlier: outlier,
@@ -178,13 +243,14 @@ function loadCurrentCycles(
 export function currentCycles(
   currentSt: ICurrentStatus,
   estimated: EstimatedCycleTimes,
+  loadStationNames?: Readonly<Record<string, string>>,
 ): ReadonlyArray<CurrentCycle> {
   const palToLoc = LazySeq.ofObject(currentSt.pallets).buildHashMap<number, PalletLocation>(
     ([, p]) => p.palletNum,
     (_old, [, pal]) => pal.currentPalletLocation,
   );
 
-  return machiningCurrentCycles(currentSt, estimated, palToLoc)
-    .concat(loadCurrentCycles(currentSt, estimated, palToLoc))
+  return machiningCurrentCycles(currentSt, estimated, palToLoc, loadStationNames)
+    .concat(loadCurrentCycles(currentSt, estimated, palToLoc, loadStationNames))
     .toRArray();
 }

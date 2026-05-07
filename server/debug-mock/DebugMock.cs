@@ -108,6 +108,16 @@ namespace DebugMachineWatchApiServer
         AddToQueueButton = AddToQueueButton.ManualBarcodeScan,
         RebookingPrefix = "RE:",
         RebookingsDisplayName = "DRebook",
+        BasketName = "Tray",
+        LoadStationNames = ImmutableDictionary.CreateRange(
+          new[]
+          {
+            KeyValuePair.Create(1, "Load 1"),
+            KeyValuePair.Create(2, "Load 2"),
+            KeyValuePair.Create(3, "Load 3"),
+            KeyValuePair.Create(4, "Load 4"),
+          }
+        ),
       };
 
       string tempDbFile = null;
@@ -441,6 +451,17 @@ namespace DebugMachineWatchApiServer
       return "Program Content for " + programName + " and revision " + revision.ToString();
     }
 
+    private static string EventDetail(LogEntry entry, string key)
+    {
+      return entry.ProgramDetails?.TryGetValue(key, out var value) == true ? value : null;
+    }
+
+    private static int? EventDetailAsInt(LogEntry entry, string key)
+    {
+      var value = EventDetail(entry, key);
+      return int.TryParse(value, out var parsed) ? parsed : null;
+    }
+
     private void LoadEvents(string sampleDataPath, TimeSpan offset)
     {
       var files = System.IO.Directory.GetFiles(sampleDataPath, "events-*.json");
@@ -610,7 +631,23 @@ namespace DebugMachineWatchApiServer
               {
                 MaterialIDToDestination = e.Material.ToImmutableDictionary(
                   m => m.MaterialID,
-                  m => (UnloadDestination)null
+                  m =>
+                  {
+                    var basketId = EventDetailAsInt(e, "BasketId");
+                    var queue = EventDetail(e, "Queue");
+                    if (basketId.HasValue)
+                    {
+                      return new UnloadDestination() { BasketId = basketId.Value };
+                    }
+                    else if (!string.IsNullOrEmpty(queue))
+                    {
+                      return new UnloadDestination() { Queue = queue };
+                    }
+                    else
+                    {
+                      return null;
+                    }
+                  }
                 ),
                 FaceNum = e.Material[0].Face,
                 Process = e.Material[0].Process,
@@ -687,6 +724,93 @@ namespace DebugMachineWatchApiServer
             active: e.ActiveOperationTime,
             completeTimeUTC: e.EndTimeUTC.Add(offset)
           );
+        }
+        else if (e.LogType == LogType.BasketLoadUnload && e.StartOfCycle && e.Program == "LOAD")
+        {
+          LogDB.RecordBasketLoadBegin(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            basketId: e.Pallet,
+            lulNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset)
+          );
+        }
+        else if (e.LogType == LogType.BasketLoadUnload && e.StartOfCycle && e.Program == "UNLOAD")
+        {
+          LogDB.RecordBasketUnloadBegin(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            basketId: e.Pallet,
+            lulNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset)
+          );
+        }
+        else if (e.LogType == LogType.BasketLoadUnload && !e.StartOfCycle && e.Program == "LOAD")
+        {
+          var queue = EventDetail(e, "Queue");
+          if (!string.IsNullOrEmpty(queue))
+          {
+            LogDB.RecordBasketOnlyLoadUnload(
+              toLoad: new MaterialToLoadOntoBasket()
+              {
+                MaterialIDs = e.Material.Select(m => m.MaterialID).ToImmutableList(),
+                Process = e.Material[0].Process,
+                ActiveOperationTime = e.ActiveOperationTime,
+              },
+              previouslyLoaded: ImmutableList<EventLogMaterial>.Empty,
+              toUnload: null,
+              lulNum: e.LocationNum,
+              basketId: e.Pallet,
+              totalElapsed: e.ElapsedTime,
+              timeUTC: e.EndTimeUTC.Add(offset),
+              externalQueues: null
+            );
+          }
+        }
+        else if (e.LogType == LogType.BasketLoadUnload && !e.StartOfCycle && e.Program == "UNLOAD")
+        {
+          var queue = EventDetail(e, "Queue");
+          if (!string.IsNullOrEmpty(queue))
+          {
+            LogDB.RecordBasketOnlyLoadUnload(
+              toLoad: null,
+              previouslyLoaded: ImmutableList<EventLogMaterial>.Empty,
+              toUnload: new MaterialToUnloadFromBasket()
+              {
+                MaterialIDToQueue = e.Material.ToImmutableDictionary(m => m.MaterialID, _ => queue),
+                Process = e.Material[0].Process,
+                ActiveOperationTime = e.ActiveOperationTime,
+              },
+              lulNum: e.LocationNum,
+              basketId: e.Pallet,
+              totalElapsed: e.ElapsedTime,
+              timeUTC: e.EndTimeUTC.Add(offset),
+              externalQueues: null
+            );
+          }
+        }
+        else if (e.LogType == LogType.BasketInLocation && e.Program == "Arrive")
+        {
+          LogDB.RecordBasketArriveLocation(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            basketId: e.Pallet,
+            locationName: e.LocationName,
+            locationPosition: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset)
+          );
+        }
+        else if (e.LogType == LogType.BasketInLocation && e.Program == "Depart")
+        {
+          LogDB.RecordBasketDepartLocation(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            basketId: e.Pallet,
+            locationName: e.LocationName,
+            locationPosition: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            elapsed: e.ElapsedTime
+          );
+        }
+        else if (e.LogType == LogType.BasketCycle)
+        {
+          // Basket cycle rows are derived from basket load/unload replay above.
         }
         else
         {

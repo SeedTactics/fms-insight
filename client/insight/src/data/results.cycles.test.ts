@@ -32,12 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addHours, addMinutes } from "date-fns";
 
-import { fakeCycle, fakeLoadOrUnload, fakeMachineCycle } from "../../test/events.fake.js";
+import {
+  fakeBasketLoadOrUnload,
+  fakeCycle,
+  fakeLoadOrUnload,
+  fakeMachineCycle,
+} from "../../test/events.fake.js";
 import { ILogEntry } from "../network/api.js";
 import {
   filterStationCycles,
+  loadOccupancyCycles,
   buildCycleTable,
   buildLogEntriesTable,
+  normalizeCarrierKindFilter,
   recentCycles,
 } from "./results.cycles.js";
 import { onLoadLast30Log } from "../cell-status/loading.js";
@@ -196,4 +203,125 @@ it("calculates recent cycles", () => {
   expect(recentCycles(cycles.valuesToLazySeq().filter((e) => e.endTime >= now))).toMatchSnapshot(
     "recent cycles",
   );
+});
+
+it("filters by carrier kind", () => {
+  const now = new Date(Date.UTC(2026, 0, 10, 12, 0, 0));
+
+  const evts = [
+    ...fakeLoadOrUnload({
+      counter: 100,
+      part: "part1",
+      proc: 1,
+      numMats: 1,
+      isLoad: true,
+      time: now,
+      elapsedMin: 5,
+      activeMin: 5,
+    }),
+    ...fakeBasketLoadOrUnload({
+      counter: 200,
+      part: "part1",
+      proc: 1,
+      numMats: 1,
+      basket: 7,
+      isLoad: true,
+      time: now,
+      elapsedMin: 4,
+      activeMin: 4,
+    }),
+  ];
+
+  const store = createStore();
+  store.set(onLoadLast30Log, evts);
+  const cycles = store.get(last30StationCycles);
+
+  const pallet = filterStationCycles(cycles.valuesToLazySeq(), {
+    station: "L/U #1",
+    carrierKind: "Pallet",
+  });
+  // only pallet-lul entries should be in the filtered data
+  for (const [, pts] of pallet.data) {
+    for (const pt of pts) {
+      expect(pt.carrier.kind).toBe("pallet-lul");
+    }
+  }
+
+  const basket = filterStationCycles(cycles.valuesToLazySeq(), {
+    station: "L/U #1",
+    carrierKind: "Basket",
+  });
+  expect(basket.data.size).toBeGreaterThan(0);
+  // every series should only contain basket cycles
+  for (const [, pts] of basket.data) {
+    for (const pt of pts) {
+      expect(pt.carrier.kind).toBe("basket-lul");
+    }
+  }
+
+  const paletteLoad = loadOccupancyCycles(cycles.valuesToLazySeq(), { carrierKind: "Pallet" });
+  // only pallet L/U should remain
+  for (const [, pts] of paletteLoad.data) {
+    for (const pt of pts) {
+      expect(pt.carrier.kind).toBe("pallet-lul");
+    }
+  }
+
+  const basketLoad = loadOccupancyCycles(cycles.valuesToLazySeq(), { carrierKind: "Basket" });
+  // only basket L/U should remain
+  for (const [, pts] of basketLoad.data) {
+    for (const pt of pts) {
+      expect(pt.carrier.kind).toBe("basket-lul");
+    }
+  }
+});
+
+it("normalizes a stale basket carrier filter when there are no basket cycles", () => {
+  expect(normalizeCarrierKindFilter("Basket", false)).toBe("Any");
+  expect(normalizeCarrierKindFilter("Pallet", false)).toBe("Pallet");
+  expect(normalizeCarrierKindFilter("Any", false)).toBe("Any");
+  expect(normalizeCarrierKindFilter("Basket", true)).toBe("Basket");
+});
+
+it("uses configured basket and load-station names in the clipboard table", () => {
+  const now = new Date(Date.UTC(2026, 0, 10, 12, 0, 0));
+
+  const evts = [
+    ...fakeBasketLoadOrUnload({
+      counter: 300,
+      part: "part1",
+      proc: 1,
+      numMats: 1,
+      basket: 7,
+      lulNum: 2,
+      isLoad: true,
+      time: now,
+      elapsedMin: 4,
+      activeMin: 4,
+    }),
+  ];
+
+  const store = createStore();
+  store.set(onLoadLast30Log, evts);
+  const cycles = store.get(last30StationCycles);
+  const matSummary = store.get(last30MaterialSummary);
+  const data = filterStationCycles(cycles.valuesToLazySeq(), {
+    station: "L/U #2",
+    carrierKind: "Basket",
+  });
+
+  const table = buildCycleTable(
+    data,
+    matSummary.matsById,
+    undefined,
+    undefined,
+    undefined,
+    { "2": "Tray Cell" },
+    "Tray",
+  );
+
+  expect(table).toContain("Tray Cell");
+  expect(table).toContain("Tray 7");
+  expect(table).not.toContain("L/U #2");
+  expect(table).not.toContain("Basket 7");
 });

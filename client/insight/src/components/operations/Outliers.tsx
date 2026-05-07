@@ -40,9 +40,10 @@ import { ImportExport } from "@mui/icons-material";
 import StationDataTable from "../analysis/StationDataTable.js";
 import { copyCyclesToClipboard } from "../../data/results.cycles.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
-import { last30StationCycles } from "../../cell-status/station-cycles.js";
+import { isLaborCycle, last30StationCycles } from "../../cell-status/station-cycles.js";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
+import { fmsInformation } from "../../network/server-settings.js";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -53,6 +54,7 @@ export type OutlierType = "labor" | "machine";
 export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
   useSetTitle(outlierTy === "machine" ? "Machine Outliers" : "L/U Outliers");
   const matSummary = useAtomValue(last30MaterialSummary);
+  const fmsInfo = useAtomValue(fmsInformation);
   const today = startOfToday();
   const allCycles = useAtomValue(last30StationCycles);
   const points = useMemo(() => {
@@ -65,7 +67,10 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
         .valuesToLazySeq()
         .filter(
           (c) =>
-            c.isOutlier && c.endTime >= start && c.endTime < end && c.isLabor === (outlierTy === "labor"),
+            c.isOutlier &&
+            c.endTime >= start &&
+            c.endTime < end &&
+            isLaborCycle(c) === (outlierTy === "labor"),
         )
         .toRLookup((e) => e.part + "-" + e.material[0].proc.toString()),
     };
@@ -100,7 +105,16 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
         <Tooltip title="Copy to Clipboard">
           <IconButton
             style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-            onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined)}
+            onClick={() =>
+              copyCyclesToClipboard(
+                points,
+                matSummary.matsById,
+                undefined,
+                undefined,
+                fmsInfo.loadStationNames,
+                fmsInfo.basketName,
+              )
+            }
             size="large"
           >
             <ImportExport />

@@ -390,10 +390,13 @@ Map {
   "306" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 111,
+    },
     "cntr": 306,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-01-06T09:45:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -410,18 +413,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 111,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "304" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 18,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 111,
+    },
     "cntr": 304,
     "elapsedMinsPerMaterial": 18,
     "endTime": 2018-01-06T09:35:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -438,18 +444,21 @@ Map {
     "medianCycleMinutes": 18,
     "operation": "proge",
     "operator": "",
-    "pallet": 111,
     "part": "part222",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "206" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 206,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-01-31T09:51:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -466,18 +475,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "300" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 111,
+    },
     "cntr": 300,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-01-06T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -494,18 +506,21 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 111,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
   "204" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 222,
+    },
     "cntr": 204,
     "elapsedMinsPerMaterial": 24,
     "endTime": 2018-01-31T09:41:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -522,18 +537,21 @@ Map {
     "medianCycleMinutes": 24,
     "operation": "progu",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "106" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 106,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-02-02T09:57:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -550,18 +568,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "200" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 200,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-01-31T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -578,18 +599,21 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
   "104" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 222,
+    },
     "cntr": 104,
     "elapsedMinsPerMaterial": 30,
     "endTime": 2018-02-02T09:47:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -606,18 +630,21 @@ Map {
     "medianCycleMinutes": 30,
     "operation": "progg",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "100" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 100,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-02-02T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -634,9 +661,9 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
 }
@@ -993,10 +1020,13 @@ Map {
   "406" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 333,
+    },
     "cntr": 406,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-02-08T09:39:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1013,18 +1043,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 333,
     "part": "part111",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "404" => {
     "MAD_aboveMinutes": 0,
     "activeMinutes": 12,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 333,
+    },
     "cntr": 404,
     "elapsedMinsPerMaterial": 12,
     "endTime": 2018-02-08T09:29:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -1041,18 +1074,21 @@ Map {
     "medianCycleMinutes": 0,
     "operation": "prog6",
     "operator": "",
-    "pallet": 333,
     "part": "part111",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "400" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 333,
+    },
     "cntr": 400,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-02-08T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1069,18 +1105,21 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 333,
     "part": "part111",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
   "206" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 206,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-01-31T09:51:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1097,18 +1136,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "204" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 222,
+    },
     "cntr": 204,
     "elapsedMinsPerMaterial": 24,
     "endTime": 2018-01-31T09:41:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -1125,18 +1167,21 @@ Map {
     "medianCycleMinutes": 24,
     "operation": "proga",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "106" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 106,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-02-02T09:57:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1153,18 +1198,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "200" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 200,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-01-31T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1181,18 +1229,21 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
   "104" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 222,
+    },
     "cntr": 104,
     "elapsedMinsPerMaterial": 30,
     "endTime": 2018-02-02T09:47:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -1209,18 +1260,21 @@ Map {
     "medianCycleMinutes": 30,
     "operation": "progR",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "100" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 100,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-02-02T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1237,9 +1291,9 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
 }
@@ -1684,10 +1738,13 @@ Map {
   "306" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 111,
+    },
     "cntr": 306,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-01-06T09:45:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1704,18 +1761,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 111,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "304" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 18,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 111,
+    },
     "cntr": 304,
     "elapsedMinsPerMaterial": 18,
     "endTime": 2018-01-06T09:35:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -1732,18 +1792,21 @@ Map {
     "medianCycleMinutes": 18,
     "operation": "progE",
     "operator": "",
-    "pallet": 111,
     "part": "part222",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "206" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 206,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-01-31T09:51:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1760,18 +1823,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "300" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 111,
+    },
     "cntr": 300,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-01-06T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1788,18 +1854,21 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 111,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
   "204" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 222,
+    },
     "cntr": 204,
     "elapsedMinsPerMaterial": 24,
     "endTime": 2018-01-31T09:41:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -1816,18 +1885,21 @@ Map {
     "medianCycleMinutes": 24,
     "operation": "proga",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "106" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 106,
     "elapsedMinsPerMaterial": 3,
     "endTime": 2018-02-02T09:57:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1844,18 +1916,21 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #2",
     "stationNumber": 2,
   },
   "200" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 200,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-01-31T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1872,18 +1947,21 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
   "104" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
+    "carrier": {
+      "kind": "machining",
+      "pallet": 222,
+    },
     "cntr": 104,
     "elapsedMinsPerMaterial": 30,
     "endTime": 2018-02-02T09:47:05.000Z,
-    "isLabor": false,
     "isOutlier": false,
     "material": [
       {
@@ -1900,18 +1978,21 @@ Map {
     "medianCycleMinutes": 30,
     "operation": "progR",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "MC",
+    "stationLabel": "MC #1",
     "stationNumber": 1,
   },
   "100" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
+    "carrier": {
+      "kind": "pallet-lul",
+      "pallet": 222,
+    },
     "cntr": 100,
     "elapsedMinsPerMaterial": 6,
     "endTime": 2018-02-02T09:09:05.000Z,
-    "isLabor": true,
     "isOutlier": false,
     "material": [
       {
@@ -1928,9 +2009,9 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
+    "stationLabel": "L/U #1",
     "stationNumber": 1,
   },
 }

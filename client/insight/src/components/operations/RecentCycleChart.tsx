@@ -46,6 +46,7 @@ import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
+import { fmsInformation } from "../../network/server-settings.js";
 import { AxisBottom, AxisLeft, GridCols } from "../AxisAndGrid.js";
 import { measureSvgString } from "../../util/chart-helpers.js";
 import { scaleBand, ScaleBand, scaleTime, ScaleTime } from "d3-scale";
@@ -76,7 +77,7 @@ function useSimCycles(): ReadonlyArray<SimCycle> {
         // make sure all planned downtimes come last so they are drawn over the top of any cycles
         .sortBy((s) => (s.plannedDown ? 1 : 0))
         .map((s) => ({
-          station: s.station,
+          station: s.stationLabel,
           start: s.start,
           end: s.end,
           plannedDown: s.plannedDown,
@@ -458,6 +459,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   const estimated = useAtomValue(last30EstimatedCycleTimes);
   const sim = useSimCycles();
   const currentSt = useAtomValue(currentStatus);
+  const fmsInfo = useAtomValue(fmsInformation);
 
   const cycles = useMemo(() => {
     const cutoff = addHours(new Date(), -12);
@@ -465,8 +467,8 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   }, [last30Cycles]);
 
   const current = useMemo(() => {
-    return currentCycles(currentSt, estimated);
-  }, [currentSt, estimated]);
+    return currentCycles(currentSt, estimated, fmsInfo.loadStationNames);
+  }, [currentSt, estimated, fmsInfo.loadStationNames]);
 
   // ensure a re-render at least every 5 minutes, but reset the timer if the data changes
   const now = new Date();

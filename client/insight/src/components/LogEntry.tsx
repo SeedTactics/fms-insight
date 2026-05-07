@@ -43,6 +43,10 @@ import { ChevronRight as ChevronRightIcon, ImportExport } from "@mui/icons-mater
 import { copyLogEntriesToClipboard } from "../data/results.cycles.js";
 import { durationToMinutes, durationToSeconds } from "../util/parseISODuration.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { useAtomValue } from "jotai";
+import { fmsInformation } from "../network/server-settings.js";
+import { basketDisplayName, loadStationDisplayName } from "../cell-status/station-cycles.js";
+import { filterRemoveAddQueue } from "./log-entry-queue-filter.js";
 
 type ColoredSpanType =
   | "machine"
@@ -81,13 +85,31 @@ export interface LogEntryProps {
   readonly highlightProcsGreaterOrEqualTo?: number;
 }
 
-function logType(entry: api.ILogEntry): string {
+function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
+  const basketName = basketDisplayName(fmsInfo.basketName);
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
       if (entry.startofcycle) {
         return "Start " + entry.result.charAt(0).toUpperCase() + entry.result.substring(1).toLowerCase();
       } else {
         return "End " + entry.result.charAt(0).toUpperCase() + entry.result.substring(1).toLowerCase();
+      }
+
+    case api.LogType.BasketLoadUnload:
+      if (entry.program === "LOAD") {
+        return `${basketName} Load`;
+      } else {
+        return `${basketName} Unload`;
+      }
+
+    case api.LogType.BasketCycle:
+      return `${basketName} Cycle`;
+
+    case api.LogType.BasketInLocation:
+      if (entry.startofcycle) {
+        return "Depart";
+      } else {
+        return "Arrive";
       }
 
     case api.LogType.MachineCycle:
@@ -168,7 +190,7 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
     }
   } else if (mats.length == 1) {
     if (mats[0].numproc == 1) {
-      return `${mats[0].part}`;
+      return mats[0].part;
     } else {
       return `${mats[0].part}-${mats[0].proc}`;
     }
@@ -187,16 +209,70 @@ function displayQueueMat(mats: ReadonlyArray<api.ILogMaterial>) {
   }
 }
 
-function display(props: LogEntryProps): ReactNode {
+function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
   const entry = props.entry;
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
       return (
         <span>
           {displayMat(entry.material)} on <ColoredSpan $type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
-          <ColoredSpan $type="loadStation">station {entry.locnum.toString()}</ColoredSpan>
+          <ColoredSpan $type="loadStation">
+            {loadStationDisplayName(entry.locnum, fmsInfo.loadStationNames)}
+          </ColoredSpan>
         </span>
       );
+
+    case api.LogType.BasketLoadUnload: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      return (
+        <span>
+          {displayMat(entry.material)} {entry.program === "LOAD" ? "loaded onto" : "unloaded from"}{" "}
+          <ColoredSpan $type="pallet">
+            {basketName} {entry.pal}
+          </ColoredSpan>{" "}
+          at{" "}
+          <ColoredSpan $type="loadStation">
+            {loadStationDisplayName(entry.locnum, fmsInfo.loadStationNames)}
+          </ColoredSpan>
+        </span>
+      );
+    }
+
+    case api.LogType.BasketCycle: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      if (entry.startofcycle) {
+        return (
+          <span>
+            {basketName} {entry.pal} started cycle
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            {basketName} {entry.pal} completed cycle
+          </span>
+        );
+      }
+    }
+
+    case api.LogType.BasketInLocation: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      if (entry.startofcycle) {
+        return (
+          <span>
+            {basketName} {entry.pal} departed from {entry.loc}
+            {entry.locnum > 0 ? ` position ${entry.locnum}` : ""}
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            {basketName} {entry.pal} arrived at {entry.loc}
+            {entry.locnum > 0 ? ` position ${entry.locnum}` : ""}
+          </span>
+        );
+      }
+    }
 
     case api.LogType.MachineCycle:
       return (
@@ -485,6 +561,7 @@ const logTypesToHighlight = [
   api.LogType.AddToQueue,
   api.LogType.RemoveFromQueue,
   api.LogType.LoadUnloadCycle,
+  api.LogType.BasketLoadUnload,
   api.LogType.MachineCycle,
 ];
 
@@ -499,6 +576,7 @@ const LogEntryTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.to
 export const LogEntry = memo(function LogEntry(props: LogEntryProps) {
   const details = detailsForEntry(props.entry);
   const highlight = props.highlightProcsGreaterOrEqualTo;
+  const fmsInfo = useAtomValue(fmsInformation);
 
   return (
     <>
@@ -523,8 +601,8 @@ export const LogEntry = memo(function LogEntry(props: LogEntryProps) {
             minute: "2-digit",
           })}
         </TableCell>
-        <TableCell size="small">{logType(props.entry)}</TableCell>
-        <TableCell size="small">{display(props)}</TableCell>
+        <TableCell size="small">{logType(props.entry, fmsInfo)}</TableCell>
+        <TableCell size="small">{display(props, fmsInfo)}</TableCell>
         <TableCell padding="checkbox">
           {details.length > 0 ? (
             <IconButton
@@ -559,33 +637,6 @@ export const LogEntry = memo(function LogEntry(props: LogEntryProps) {
     </>
   );
 });
-
-export function* filterRemoveAddQueue(
-  entries: Iterable<Readonly<api.ILogEntry>>,
-): Iterable<Readonly<api.ILogEntry>> {
-  let prev: Readonly<api.ILogEntry> | null = null;
-
-  for (const e of entries) {
-    if (
-      prev != null &&
-      prev.type === api.LogType.RemoveFromQueue &&
-      e.type === api.LogType.AddToQueue &&
-      prev.loc === e.loc
-    ) {
-      // skip both prev and e
-      prev = null;
-    } else {
-      if (prev !== null) {
-        yield prev;
-      }
-      prev = e;
-    }
-  }
-
-  if (prev !== null) {
-    yield prev;
-  }
-}
 
 export interface LogEntriesProps {
   entries: Iterable<Readonly<api.ILogEntry>>;

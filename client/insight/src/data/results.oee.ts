@@ -35,7 +35,7 @@ import { startOfDay, addSeconds, addDays, max, min, differenceInMinutes } from "
 import copy from "copy-to-clipboard";
 import { SimStationUse } from "../cell-status/sim-station-use.js";
 import { chunkCyclesWithSimilarEndTime } from "../cell-status/estimated-cycle-times.js";
-import { PartCycleData, stat_name_and_num } from "../cell-status/station-cycles.js";
+import { isLaborCycle, PartCycleData } from "../cell-status/station-cycles.js";
 import { HashMap, hashValues, LazySeq } from "@seedtactics/immutable-collections";
 
 // --------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ function binCycles(
 ): HashMap<DayAndStation, number> {
   return chunkCyclesWithSimilarEndTime(
     LazySeq.of(cycles),
-    (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
+    (c) => c.stationLabel,
     (c) => c.endTime,
   )
     .flatMap(([statNameAndNum, cyclesForStat]) =>
@@ -168,7 +168,7 @@ export function binDowntimeToDayAndStat(simUses: Iterable<SimStationUse>): HashM
   return LazySeq.of(simUses)
     .filter((simUse) => simUse.plannedDown)
     .toLookupOrderedMap(
-      (simUse) => simUse.station,
+      (simUse) => simUse.stationLabel,
       (simUse) => simUse.start,
     )
     .toAscLazySeq()
@@ -192,7 +192,7 @@ export function binSimStationUseByDayAndStat(
   const downtimes = LazySeq.of(simUses)
     .filter((simUse) => simUse.plannedDown)
     .toLookupOrderedMap(
-      (simUse) => simUse.station,
+      (simUse) => simUse.stationLabel,
       (simUse) => simUse.start,
     )
     .mapValues((uses) => mergeSortedIntervals(uses.valuesToAscLazySeq()));
@@ -200,7 +200,7 @@ export function binSimStationUseByDayAndStat(
   return LazySeq.of(simUses)
     .filter((simUse) => !simUse.plannedDown)
     .toLookupOrderedMap(
-      (simUse) => simUse.station,
+      (simUse) => simUse.stationLabel,
       (simUse) => simUse.start,
     )
     .toAscLazySeq()
@@ -305,7 +305,7 @@ export function buildOeeSeries(
   statUse: Iterable<SimStationUse>,
 ): ReadonlyArray<OEEBarSeries> {
   const filteredCycles = LazySeq.of(cycles).filter(
-    (e) => (ty === "labor") === e.isLabor && e.endTime >= start && e.endTime <= end,
+    (e) => (ty === "labor") === isLaborCycle(e) && e.endTime >= start && e.endTime <= end,
   );
   const actualBins = binActiveCyclesByDayAndStat(filteredCycles);
   const filteredStatUse = LazySeq.of(statUse).filter(

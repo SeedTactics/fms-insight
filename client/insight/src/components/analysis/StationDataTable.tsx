@@ -50,7 +50,13 @@ import { Menu } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
-import { PartCycleData } from "../../cell-status/station-cycles.js";
+import {
+  basketDisplayName,
+  carrierLabel,
+  carrierSortKey,
+  displayStationName,
+  PartCycleData,
+} from "../../cell-status/station-cycles.js";
 import {
   HashMap,
   LazySeq,
@@ -58,7 +64,8 @@ import {
   ToComparableBase,
 } from "@seedtactics/immutable-collections";
 import { SelectedAnalysisPeriod } from "../../network/load-specific-month.js";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
+import { fmsInformation } from "../../network/server-settings.js";
 
 enum ColumnId {
   Date,
@@ -77,6 +84,8 @@ enum ColumnId {
 
 function buildColumns(
   matIds: HashMap<number, MaterialSummaryAndCompletedData>,
+  loadStationNames: { [key: string]: string } | undefined,
+  basketName: string,
 ): ReadonlyArray<Column<ColumnId, PartCycleData>> {
   return [
     {
@@ -103,7 +112,7 @@ function buildColumns(
       id: ColumnId.Station,
       numeric: false,
       label: "Station",
-      getDisplay: (c) => c.stationGroup + " " + c.stationNumber.toString(),
+      getDisplay: (c) => displayStationName(c.stationGroup, c.stationNumber, loadStationNames),
     },
     {
       id: ColumnId.Operation,
@@ -114,9 +123,9 @@ function buildColumns(
     {
       id: ColumnId.Pallet,
       numeric: false,
-      label: "Pallet",
-      getDisplay: (c) => c.pallet.toString(),
-      getForSort: (c) => c.pallet,
+      label: "Carrier",
+      getDisplay: (c) => carrierLabel(c, basketName),
+      getForSort: (c) => carrierSortKey(c),
     },
     {
       id: ColumnId.Serial,
@@ -259,7 +268,12 @@ interface DetailMenuData {
 }
 
 export default memo(function StationDataTable(props: StationDataTableProps) {
-  const columns = buildColumns(props.matsById);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const columns = buildColumns(
+    props.matsById,
+    fmsInfo.loadStationNames,
+    basketDisplayName(fmsInfo.basketName),
+  );
   const sort = useColSort(ColumnId.Date, columns);
   const tpage = useTablePage();
   const zoom = useZoom(props);

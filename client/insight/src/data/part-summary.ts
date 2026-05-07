@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collections";
 import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import { atom } from "jotai";
-import { last30StationCycles } from "../cell-status/station-cycles";
+import { isLaborCycle, last30StationCycles } from "../cell-status/station-cycles";
 import { chartRangeAtom } from "./chart-times";
 
 export type PartSummary = {
@@ -90,7 +90,7 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
       (c) => c.part,
       (c) => c.stationGroup,
       (c) => ({
-        isLoadUnload: c.isLabor,
+        isLoadUnload: isLaborCycle(c),
         elapsed: c.elapsedMinsPerMaterial * c.material.length,
         active: c.activeMinutes,
         medianElapsed: c.medianCycleMinutes,

@@ -1,5 +1,6 @@
 import { it, expect } from "vitest";
-import { fakeLoadOrUnload, fakeMachineCycle } from "../../test/events.fake.js";
+import { fakeBasketLoadOrUnload, fakeLoadOrUnload, fakeMachineCycle } from "../../test/events.fake.js";
+import { LogMaterial } from "../network/api.js";
 import { createStore } from "jotai";
 import {
   isOutlier,
@@ -134,6 +135,121 @@ it("calcs expected times", () => {
     expectedCycleMinutesForSingleMat: 3,
     medianMinutesForSingleMat: 3,
   });
+});
+
+it("calcs basket load expected times", () => {
+  const evts = [
+    ...fakeBasketLoadOrUnload({
+      counter: 100,
+      part: "part111",
+      numMats: 2,
+      proc: 4,
+      basket: 44,
+      isLoad: true,
+      time: new Date(2024, 12, 14, 11, 4, 5),
+      elapsedMin: 15,
+      activeMin: 8,
+    }),
+    ...fakeBasketLoadOrUnload({
+      counter: 200,
+      part: "part111",
+      numMats: 2,
+      proc: 4,
+      basket: 44,
+      isLoad: false,
+      time: new Date(2024, 12, 14, 11, 4, 5),
+      elapsedMin: 15,
+      activeMin: 4,
+    }),
+  ];
+
+  const store = createStore();
+  store.set(setLast30EstimatedCycleTimes, evts);
+
+  const estimated = store.get(last30EstimatedCycleTimes);
+
+  expect(estimated.get(new PartAndStationOperation("part111", "L/U", "LOAD-4"))).toEqual({
+    MAD_aboveMinutes: 0.25,
+    MAD_belowMinutes: 0.25,
+    expectedCycleMinutesForSingleMat: 5,
+    medianMinutesForSingleMat: 5,
+  });
+  expect(estimated.get(new PartAndStationOperation("part111", "L/U", "UNLOAD-4"))).toEqual({
+    MAD_aboveMinutes: 0.25,
+    MAD_belowMinutes: 0.25,
+    expectedCycleMinutesForSingleMat: 2.5,
+    medianMinutesForSingleMat: 2.5,
+  });
+});
+
+it("flags a basket load outlier while keeping inliers near the expected cycle time", () => {
+  const evts = [
+    ...Array.from({ length: 6 }, (_unused, idx) =>
+      fakeBasketLoadOrUnload({
+        counter: 1000 + idx * 10,
+        material: [
+          new LogMaterial({
+            id: idx + 1,
+            uniq: "JOB-OUTLIER",
+            part: "part111",
+            proc: 1,
+            path: 1,
+            numproc: 2,
+            face: 1,
+            serial: `INLIER-${idx + 1}`,
+            workorder: "WO-OUTLIER",
+          }),
+        ],
+        part: "part111",
+        proc: 1,
+        basket: 44,
+        isLoad: true,
+        time: addMinutes(new Date(2024, 12, 14, 11, 4, 5), idx),
+        elapsedMin: 4,
+        activeMin: 4,
+      }),
+    ).flat(),
+    ...fakeBasketLoadOrUnload({
+      counter: 2000,
+      material: [
+        new LogMaterial({
+          id: 999,
+          uniq: "JOB-OUTLIER",
+          part: "part111",
+          proc: 1,
+          path: 1,
+          numproc: 2,
+          face: 1,
+          serial: "OUTLIER-1",
+          workorder: "WO-OUTLIER",
+        }),
+      ],
+      part: "part111",
+      proc: 1,
+      basket: 44,
+      isLoad: true,
+      time: addMinutes(new Date(2024, 12, 14, 11, 4, 5), 20),
+      elapsedMin: 15,
+      activeMin: 15,
+    }),
+  ];
+
+  const store = createStore();
+  store.set(setLast30EstimatedCycleTimes, evts);
+
+  const estimated = store
+    .get(last30EstimatedCycleTimes)
+    .get(new PartAndStationOperation("part111", "L/U", "LOAD-1"));
+
+  expect(estimated).toEqual({
+    MAD_aboveMinutes: 0.25,
+    MAD_belowMinutes: 0.25,
+    expectedCycleMinutesForSingleMat: 4,
+    medianMinutesForSingleMat: 4,
+  });
+
+  expect(isOutlier(estimated!, 4)).toBe(false);
+  expect(isOutlier(estimated!, 15)).toBe(true);
 });
 
 //

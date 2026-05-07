@@ -40,7 +40,16 @@ import {
   chunkCyclesWithSimilarEndTime,
   PartAndStationOperation,
 } from "../cell-status/estimated-cycle-times.js";
-import { PartCycleData, stat_name_and_num } from "../cell-status/station-cycles.js";
+import {
+  basketDisplayName,
+  basketForCycle,
+  carrierLabel,
+  displayStationName,
+  isBasketLoadCycle,
+  isLaborCycle,
+  palletForCycle,
+  PartCycleData,
+} from "../cell-status/station-cycles.js";
 import { PalletCyclesByPallet } from "../cell-status/pallet-cycles.js";
 import { HashMap, LazySeq, OrderedSet, OrderedMap } from "@seedtactics/immutable-collections";
 
@@ -55,6 +64,16 @@ export interface CycleFilterOptions {
   readonly allLoadStationNames: ReadonlyArray<string>;
   readonly allMachineNames: ReadonlyArray<string>;
   readonly allMachineOperations: ReadonlyArray<PartAndStationOperation>;
+  readonly hasBasketCycles: boolean;
+}
+
+export type CarrierKindFilter = "Any" | "Pallet" | "Basket";
+
+export function normalizeCarrierKindFilter(
+  carrierKind: CarrierKindFilter | undefined,
+  hasBasketCycles: boolean,
+): CarrierKindFilter | undefined {
+  return !hasBasketCycles && carrierKind === "Basket" ? "Any" : carrierKind;
 }
 
 function extractFilterOptions(
@@ -66,14 +85,19 @@ function extractFilterOptions(
   let mcNames = OrderedSet.empty<string>();
   let partNames = OrderedMap.empty<string, OrderedSet<number>>();
   let oper = OrderedSet.empty<PartAndStationOperation>();
+  let hasBasket = false;
 
   for (const c of cycles) {
-    palNames = palNames.add(c.pallet);
+    const pallet = palletForCycle(c);
+    if (pallet !== undefined) {
+      palNames = palNames.add(pallet);
+    }
+    hasBasket = hasBasket || isBasketLoadCycle(c);
 
-    if (c.isLabor) {
-      lulNames = lulNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
+    if (isLaborCycle(c)) {
+      lulNames = lulNames.add(c.stationLabel);
     } else {
-      mcNames = mcNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
+      mcNames = mcNames.add(c.stationLabel);
 
       if (
         selectedPart &&
@@ -98,6 +122,7 @@ function extractFilterOptions(
       .flatMap(([part, procs]) => procs.toAscLazySeq().map((proc) => ({ part: part, proc: proc })))
       .toRArray(),
     allMachineOperations: oper.toAscLazySeq().toRArray(),
+    hasBasketCycles: hasBasket,
   };
 }
 
@@ -117,6 +142,7 @@ export interface StationCycleFilter {
   readonly pallet?: number;
   readonly station?: string;
   readonly operation?: PartAndStationOperation;
+  readonly carrierKind?: CarrierKindFilter;
 }
 
 export function emptyStationCycles(
@@ -131,7 +157,7 @@ export function emptyStationCycles(
 
 export function filterStationCycles(
   allCycles: Iterable<PartCycleData>,
-  { zoom, partAndProc, pallet, station, operation }: StationCycleFilter,
+  { zoom, partAndProc, pallet, station, operation, carrierKind }: StationCycleFilter,
 ): FilteredStationCycles & CycleFilterOptions {
   const groupByPal =
     partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
@@ -140,7 +166,7 @@ export function filterStationCycles(
 
   return {
     ...extractFilterOptions(allCycles, partAndProc),
-    seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
+    seriesLabel: groupByPal ? "Carrier" : groupByPart ? "Part" : "Station",
     data: LazySeq.of(allCycles)
       .filter((e) => {
         if (zoom && (e.endTime < zoom.start || e.endTime > zoom.end)) {
@@ -152,19 +178,25 @@ export function filterStationCycles(
         ) {
           return false;
         }
-        if (pallet && e.pallet !== pallet) {
+        if (pallet && palletForCycle(e) !== pallet) {
+          return false;
+        }
+        if (carrierKind === "Pallet" && basketForCycle(e) !== undefined) {
+          return false;
+        }
+        if (carrierKind === "Basket" && basketForCycle(e) === undefined) {
           return false;
         }
 
         if (station === FilterAnyMachineKey) {
-          if (e.isLabor) {
+          if (isLaborCycle(e)) {
             return false;
           }
         } else if (station === FilterAnyLoadKey) {
-          if (!e.isLabor) {
+          if (!isLaborCycle(e)) {
             return false;
           }
-        } else if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
+        } else if (station && e.stationLabel !== station) {
           return false;
         }
 
@@ -177,7 +209,7 @@ export function filterStationCycles(
       .toRLookup(
         (e) => {
           if (groupByPal) {
-            return e.pallet.toString();
+            return carrierLabel(e);
           } else if (groupByPart) {
             return (
               e.part +
@@ -189,7 +221,7 @@ export function filterStationCycles(
                 .join(":")
             );
           } else {
-            return stat_name_and_num(e.stationGroup, e.stationNumber);
+            return e.stationLabel;
           }
         },
         (e) => ({
@@ -218,17 +250,24 @@ export interface LoadCycleFilter {
   readonly partAndProc?: PartAndProcess;
   readonly pallet?: number;
   readonly station?: string;
+  readonly carrierKind?: CarrierKindFilter;
 }
 
 export function loadOccupancyCycles(
   allCycles: Iterable<PartCycleData>,
-  { zoom, partAndProc, pallet, station }: LoadCycleFilter,
+  { zoom, partAndProc, pallet, station, carrierKind }: LoadCycleFilter,
 ): FilteredLoadCycles & CycleFilterOptions {
   const filteredCycles = LazySeq.of(allCycles).filter((e) => {
+    if (carrierKind === "Pallet" && basketForCycle(e) !== undefined) {
+      return false;
+    }
+    if (carrierKind === "Basket" && basketForCycle(e) === undefined) {
+      return false;
+    }
     if (!station || station === FilterAnyLoadKey) {
-      return e.isLabor;
+      return isLaborCycle(e);
     } else {
-      return stat_name_and_num(e.stationGroup, e.stationNumber) === station;
+      return isLaborCycle(e) && e.stationLabel === station;
     }
   });
 
@@ -237,7 +276,7 @@ export function loadOccupancyCycles(
     seriesLabel: "Station",
     data: chunkCyclesWithSimilarEndTime(
       filteredCycles,
-      (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
+      (c) => c.stationLabel,
       (c) => c.endTime,
     )
       .map(
@@ -256,7 +295,7 @@ export function loadOccupancyCycles(
                   ) {
                     return false;
                   }
-                  if (pallet && e.pallet !== pallet) {
+                  if (pallet && palletForCycle(e) !== pallet) {
                     return false;
                   }
                   return true;
@@ -316,7 +355,7 @@ export interface RecentCycle {
 export function recentCycles(allCycles: LazySeq<PartCycleData>): ReadonlyArray<RecentCycle> {
   return chunkCyclesWithSimilarEndTime(
     allCycles,
-    (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
+    (c) => c.stationLabel,
     (c) => c.endTime,
   )
     .flatMap(function* procChunk([station, chunks]) {
@@ -405,9 +444,11 @@ export function buildCycleTable(
   startD: Date | undefined,
   endD: Date | undefined,
   hideMedian?: boolean,
+  loadStationNames?: { [key: string]: string },
+  basketName?: string,
 ): string {
   let table = "<table>\n<thead><tr>";
-  table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
+  table += "<th>Date</th><th>Part</th><th>Station</th><th>Carrier</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Inspection</th>";
   table += "<th>Elapsed Min</th><th>Target Min</th>";
   if (!hideMedian) {
@@ -441,8 +482,8 @@ export function buildCycleTable(
         .toRArray()
         .join(":") +
       "</td>";
-    table += "<td>" + stat_name_and_num(cycle.stationGroup, cycle.stationNumber) + "</td>";
-    table += "<td>" + cycle.pallet.toString() + "</td>";
+    table += "<td>" + displayStationName(cycle.stationGroup, cycle.stationNumber, loadStationNames) + "</td>";
+    table += "<td>" + carrierLabel(cycle, basketDisplayName(basketName)) + "</td>";
     table +=
       "<td>" +
       cycle.material
@@ -475,15 +516,25 @@ export function copyCyclesToClipboard(
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   zoom: { start: Date; end: Date } | undefined,
   hideMedian?: boolean,
+  loadStationNames?: { [key: string]: string },
+  basketName?: string,
 ): void {
   copy(
-    buildCycleTable(cycles, matsById, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian),
-  );
+    buildCycleTable(
+      cycles,
+      matsById,
+      zoom ? zoom.start : undefined,
+      zoom ? zoom.end : undefined,
+      hideMedian,
+      loadStationNames,
+      basketName,
+    ),
+  ).catch(console.error);
 }
 
-export function buildPalletCycleTable(points: PalletCyclesByPallet): string {
+export function buildPalletCycleTable(points: PalletCyclesByPallet, carrierLabel = "Pallet"): string {
   let table = "<table>\n<thead><tr>";
-  table += "<th>Pallet</th><th>Date</th><th>Elapsed (min)</th>";
+  table += `<th>${carrierLabel}</th><th>Date</th><th>Elapsed (min)</th>`;
   table += "</tr></thead>\n<tbody>\n";
 
   const pals = points.keysToLazySeq().toSortedArray((x) => x);
@@ -510,8 +561,8 @@ export function buildPalletCycleTable(points: PalletCyclesByPallet): string {
   return table;
 }
 
-export function copyPalletCyclesToClipboard(points: PalletCyclesByPallet): void {
-  copy(buildPalletCycleTable(points));
+export function copyPalletCyclesToClipboard(points: PalletCyclesByPallet, carrierLabel = "Pallet"): void {
+  copy(buildPalletCycleTable(points, carrierLabel)).catch(console.error);
 }
 
 function stat_name(e: Readonly<api.ILogEntry>): string {
@@ -604,5 +655,5 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
 }
 
 export function copyLogEntriesToClipboard(cycles: Iterable<Readonly<api.ILogEntry>>): void {
-  copy(buildLogEntriesTable(cycles));
+  copy(buildLogEntriesTable(cycles)).catch(console.error);
 }

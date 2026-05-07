@@ -55,7 +55,7 @@ import { ShiftStart, ShiftStartAndEnd, useShifts } from "./ShiftSettings.js";
 import { SkipPrevious as SkipPrevIcon, SkipNext as SkipNextIcon, ImportExport } from "@mui/icons-material";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { last30SimProduction, SimPartCompleted } from "../../cell-status/sim-production.js";
-import { last30StationCycles, StationCyclesByCntr } from "../../cell-status/station-cycles.js";
+import { isLaborCycle, last30StationCycles, StationCyclesByCntr } from "../../cell-status/station-cycles.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
@@ -117,7 +117,7 @@ function binCompleted(
     .valuesToLazySeq()
     .filter(
       (cycle) =>
-        cycle.isLabor &&
+        isLaborCycle(cycle) &&
         cycle.operation === "UNLOAD" &&
         LazySeq.of(cycle.material).some((m) => m.proc === m.numproc),
     )
