@@ -36,15 +36,11 @@ jobs:
           node-version: "latest"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Corepack
-        run: corepack enable
-
-      - name: Find pnpm cache
-        id: pnpmcache
-        shell: pwsh
-        run: |
-          $path = pnpm store path | Out-String
-          echo "cachedir=$path" >> $ENV:GITHUB_OUTPUT
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+          cache_dependency_path: client/insight/pnpm-lock.yaml
+          package_json_file: client/insight/package.json
 
       - uses: actions/cache@v5
         with:
@@ -52,13 +48,6 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
-
-      - uses: actions/cache@v5
-        with:
-          path: ${{ steps.pnpmcache.outputs.cachedir }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
 
       - name: Git configuration
         run: |
@@ -164,10 +153,3 @@ jobs:
           git push origin && git push --tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # ----------------------------------------------------------
-      # Cleanup
-      # ----------------------------------------------------------
-
-      - name: Clean pnpm
-        run: pnpm store prune
