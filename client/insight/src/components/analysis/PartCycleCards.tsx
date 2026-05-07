@@ -43,6 +43,7 @@ import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { CycleChart, CycleChartPoint, ExtraTooltip, YZoomRange } from "./CycleChart.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import {
+  CarrierKindFilter,
   filterStationCycles,
   FilterAnyMachineKey,
   copyCyclesToClipboard,
@@ -51,6 +52,7 @@ import {
   loadOccupancyCycles,
   FilterAnyLoadKey,
   emptyStationCycles,
+  normalizeCarrierKindFilter,
   PartAndProcess,
   PartCycleChartData,
 } from "../../data/results.cycles.js";
@@ -63,10 +65,17 @@ import {
   PartAndStationOperation,
   specificMonthEstimatedCycleTimes,
 } from "../../cell-status/estimated-cycle-times.js";
-import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
+import {
+  basketDisplayName,
+  last30HasBasketCycles,
+  last30StationCycles,
+  specificMonthHasBasketCycles,
+  specificMonthStationCycles,
+} from "../../cell-status/station-cycles.js";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomWithDefault } from "jotai/utils";
+import { fmsInformation } from "../../network/server-settings.js";
 
 const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   weekday: "short",
@@ -415,6 +424,7 @@ const loadSelectedOperation = atomWithDefault<LoadCycleFilter>((get) =>
   get(isDemoAtom) ? "LoadOp" : "LULOccupancy",
 );
 const loadSelectedLoad = atom<string>(FilterAnyLoadKey);
+const loadSelectedCarrier = atom<CarrierKindFilter>("Any");
 const loadSelectedPallet = atom<number | undefined>(undefined);
 const loadZoomDateRangeRecent = atom<{ start: Date; end: Date } | undefined>(undefined);
 const loadZoomDateRangeByMonth = atom<OrderedMap<Date, { start: Date; end: Date }>>(
@@ -468,9 +478,17 @@ export function PartLoadStationCycleChart() {
   const [selectedPart, setSelectedPart] = useAtom(loadSelectedPart);
   const [selectedOperation, setSelectedOperation] = useAtom(loadSelectedOperation);
   const [selectedLoadStation, setSelectedLoadStation] = useAtom(loadSelectedLoad);
+  const [selectedCarrier, setSelectedCarrier] = useAtom(loadSelectedCarrier);
   const [selectedPallet, setSelectedPallet] = useAtom(loadSelectedPallet);
   const [zoomDateRange, setZoomRange] = useAtom(loadZoomDateRange);
   const [yZoom, setYZoom] = useAtom(loadYZoom);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const basketName = basketDisplayName(fmsInfo.basketName);
+  const hasBasketCycles = useAtomValue(
+    period.type === "Last30" ? last30HasBasketCycles : specificMonthHasBasketCycles,
+  );
+  const carrierFilter = normalizeCarrierKindFilter(selectedCarrier, hasBasketCycles);
+
   const curOperation = useMemo(
     () =>
       selectedPart && selectedOperation === "LoadOp"
@@ -497,30 +515,38 @@ export function PartLoadStationCycleChart() {
     period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes,
   );
   const points = useMemo(() => {
-    if (selectedPart || selectedPallet || selectedLoadStation !== FilterAnyLoadKey) {
+    if (
+      selectedPart ||
+      selectedPallet ||
+      selectedLoadStation !== FilterAnyLoadKey ||
+      carrierFilter !== "Any"
+    ) {
       if (curOperation) {
         return filterStationCycles(cycles.valuesToLazySeq(), {
           operation: curOperation,
           pallet: selectedPallet,
           station: selectedLoadStation,
+          carrierKind: carrierFilter,
         });
       } else if (showGraph) {
         return loadOccupancyCycles(cycles.valuesToLazySeq(), {
           partAndProc: selectedPart,
           pallet: selectedPallet,
           station: selectedLoadStation,
+          carrierKind: carrierFilter,
         });
       } else {
         return filterStationCycles(cycles.valuesToLazySeq(), {
           partAndProc: selectedPart,
           pallet: selectedPallet,
           station: selectedLoadStation,
+          carrierKind: carrierFilter,
         });
       }
     } else {
       return emptyStationCycles(cycles.valuesToLazySeq());
     }
-  }, [selectedPart, selectedPallet, curOperation, selectedLoadStation, cycles, showGraph]);
+  }, [selectedPart, selectedPallet, curOperation, selectedLoadStation, cycles, showGraph, carrierFilter]);
   const plannedMinutes = useMemo(() => {
     if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
       return plannedOperationMinutes(points, true);
@@ -641,26 +667,51 @@ export function PartLoadStationCycleChart() {
             ))}
           </Select>
         </FormControl>
-        <FormControl size="small">
-          <Select<number | "">
-            autoWidth
-            displayEmpty
-            value={selectedPallet || ""}
-            style={{ marginLeft: "1em" }}
-            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
-          >
-            <MenuItem key={0} value="">
-              <em>Any Pallet</em>
-            </MenuItem>
-            {points.allPalletNames.map((n) => (
-              <MenuItem key={n} value={n}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <span style={{ marginRight: "1em" }}>{n}</span>
-                </div>
+        {hasBasketCycles ? (
+          <FormControl size="small">
+            <Select
+              autoWidth
+              displayEmpty
+              value={carrierFilter}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => {
+                const carrier = e.target.value as CarrierKindFilter;
+                setSelectedCarrier(carrier);
+                if (carrier === "Basket") {
+                  setSelectedPallet(undefined);
+                }
+              }}
+            >
+              <MenuItem value="Any">
+                <em>Any Carrier</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              <MenuItem value="Pallet">Pallet</MenuItem>
+              <MenuItem value="Basket">{basketName}</MenuItem>
+            </Select>
+          </FormControl>
+        ) : undefined}
+        {carrierFilter !== "Basket" ? (
+          <FormControl size="small">
+            <Select<number | "">
+              autoWidth
+              displayEmpty
+              value={selectedPallet || ""}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+            >
+              <MenuItem key={0} value="">
+                <em>Any Pallet</em>
+              </MenuItem>
+              {points.allPalletNames.map((n) => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : undefined}
         {points.data.size > 0 ? (
           <Tooltip title="Copy to Clipboard">
             <IconButton
@@ -670,6 +721,8 @@ export function PartLoadStationCycleChart() {
                   matSummary.matsById,
                   zoomDateRange,
                   selectedOperation === "LULOccupancy",
+                  fmsInfo.loadStationNames,
+                  basketName,
                 )
               }
               style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}

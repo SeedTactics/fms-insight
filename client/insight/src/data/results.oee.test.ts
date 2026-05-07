@@ -46,6 +46,7 @@ import { last30StationCycles } from "../cell-status/station-cycles.js";
 import { it, expect } from "vitest";
 import { toRawJs } from "../../test/to-raw-js.js";
 import { createStore } from "jotai";
+import { fmsInformation } from "../network/server-settings.js";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -129,4 +130,42 @@ it("creates points clipboard table", () => {
   const table = document.createElement("div");
   table.innerHTML = buildOeeHeatmapTable("Station", points);
   expect(table).toMatchSnapshot("clipboard table");
+});
+
+it("bins actual cycles using the stored station label", () => {
+  const now = new Date(2018, 2, 5);
+  const snapshot = createStore();
+
+  snapshot.set(fmsInformation, {
+    name: "FMS Insight",
+    version: "",
+    loadStationNames: { "3": "South Load" },
+  });
+  snapshot.set(onLoadLast30Log, [
+    {
+      counter: 1,
+      material: [fakeMaterial()],
+      pal: 2,
+      type: LogType.LoadUnloadCycle,
+      startofcycle: false,
+      endUTC: now,
+      loc: "L/U",
+      locnum: 3,
+      result: "LOAD",
+      program: "LOAD",
+      elapsed: "PT8M",
+      active: "PT3M",
+    } satisfies ILogEntry,
+  ]);
+
+  const cycles = snapshot.get(last30StationCycles);
+  const byDayAndStat = binActiveCyclesByDayAndStat(cycles.valuesToLazySeq());
+
+  expect(
+    byDayAndStat
+      .keysToLazySeq()
+      .map((d) => d.station)
+      .distinct()
+      .toRArray(),
+  ).toEqual(["South Load"]);
 });

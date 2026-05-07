@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v14.6.3.0 (NJsonSchema v11.5.2.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -2152,6 +2152,8 @@
         "additionalProperties": false,
         "required": [
           "Name",
+          "Version",
+          "Name",
           "Version"
         ],
         "properties": {
@@ -2331,6 +2333,18 @@
           "program",
           "result",
           "elapsed",
+          "active",
+          "counter",
+          "material",
+          "type",
+          "startofcycle",
+          "endUTC",
+          "loc",
+          "locnum",
+          "pal",
+          "program",
+          "result",
+          "elapsed",
           "active"
         ],
         "properties": {
@@ -2399,6 +2413,12 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "id",
+          "uniq",
+          "part",
+          "proc",
+          "numproc",
+          "face",
           "id",
           "uniq",
           "part",
@@ -2503,6 +2523,8 @@
         "additionalProperties": false,
         "required": [
           "Tool",
+          "Pocket",
+          "Tool",
           "Pocket"
         ],
         "properties": {
@@ -2566,6 +2588,12 @@
           "Pallet",
           "LoadStation",
           "Stops",
+          "UnloadStation",
+          "MaterialID",
+          "Process",
+          "Pallet",
+          "LoadStation",
+          "Stops",
           "UnloadStation"
         ],
         "properties": {
@@ -2602,6 +2630,8 @@
         "additionalProperties": false,
         "required": [
           "StationName",
+          "StationNum",
+          "StationName",
           "StationNum"
         ],
         "properties": {
@@ -2618,6 +2648,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "ScheduleId",
+          "Jobs",
           "ScheduleId",
           "Jobs"
         ],
@@ -2705,6 +2737,13 @@
           "Archived",
           "PartName",
           "Cycles",
+          "ProcsAndPaths",
+          "Unique",
+          "RouteStartUTC",
+          "RouteEndUTC",
+          "Archived",
+          "PartName",
+          "Cycles",
           "ProcsAndPaths"
         ],
         "properties": {
@@ -2775,6 +2814,11 @@
           "ReasonForUserHold",
           "HoldUnholdPattern",
           "HoldUnholdPatternStartUTC",
+          "HoldUnholdPatternRepeats",
+          "UserHold",
+          "ReasonForUserHold",
+          "HoldUnholdPattern",
+          "HoldUnholdPatternStartUTC",
           "HoldUnholdPatternRepeats"
         ],
         "properties": {
@@ -2804,9 +2848,36 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "paths",
           "paths"
         ],
         "properties": {
+          "BasketLoadStations": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "ExpectedBasketLoadTime": {
+            "type": "string",
+            "format": "duration",
+            "nullable": true
+          },
+          "BasketUnloadStations": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "ExpectedBasketUnloadTime": {
+            "type": "string",
+            "format": "duration",
+            "nullable": true
+          },
           "paths": {
             "type": "array",
             "items": {
@@ -2819,6 +2890,15 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "PalletNums",
+          "Load",
+          "ExpectedLoadTime",
+          "Unload",
+          "ExpectedUnloadTime",
+          "Stops",
+          "SimulatedStartingUTC",
+          "SimulatedAverageFlowTime",
+          "PartsPerPallet",
           "PalletNums",
           "Load",
           "ExpectedLoadTime",
@@ -2944,6 +3024,9 @@
         "required": [
           "StationGroup",
           "StationNums",
+          "ExpectedCycleTime",
+          "StationGroup",
+          "StationNums",
           "ExpectedCycleTime"
         ],
         "properties": {
@@ -2977,6 +3060,8 @@
         "additionalProperties": false,
         "required": [
           "TimeUTC",
+          "Quantity",
+          "TimeUTC",
           "Quantity"
         ],
         "properties": {
@@ -2994,6 +3079,11 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "InspectionType",
+          "Counter",
+          "MaxVal",
+          "RandomFreq",
+          "TimeInterval",
           "InspectionType",
           "Counter",
           "MaxVal",
@@ -3030,6 +3120,11 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "ScheduleId",
+          "StationGroup",
+          "StationNum",
+          "StartUTC",
+          "EndUTC",
           "ScheduleId",
           "StationGroup",
           "StationNum",
@@ -3079,6 +3174,9 @@
         "required": [
           "JobUnique",
           "Process",
+          "Path",
+          "JobUnique",
+          "Process",
           "Path"
         ],
         "properties": {
@@ -3101,6 +3199,9 @@
         "required": [
           "Day",
           "MachineGroup",
+          "Usage",
+          "Day",
+          "MachineGroup",
           "Usage"
         ],
         "properties": {
@@ -3121,6 +3222,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "WorkorderId",
+          "Part",
           "WorkorderId",
           "Part"
         ],
@@ -3147,6 +3250,11 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "WorkorderId",
+          "Part",
+          "Quantity",
+          "DueDate",
+          "Priority",
           "WorkorderId",
           "Part",
           "Quantity",
@@ -3186,6 +3294,8 @@
         "additionalProperties": false,
         "required": [
           "ProcessNumber",
+          "ProgramName",
+          "ProcessNumber",
           "ProgramName"
         ],
         "properties": {
@@ -3214,6 +3324,9 @@
         "required": [
           "ProgramName",
           "ProgramContent",
+          "Revision",
+          "ProgramName",
+          "ProgramContent",
           "Revision"
         ],
         "properties": {
@@ -3237,6 +3350,12 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "TimeOfCurrentStatusUTC",
+          "Jobs",
+          "Pallets",
+          "Material",
+          "Alarms",
+          "Queues",
           "TimeOfCurrentStatusUTC",
           "Jobs",
           "Pallets",
@@ -3358,6 +3477,7 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
+              "CopiedToSystem",
               "CopiedToSystem"
             ],
             "properties": {
@@ -3385,6 +3505,9 @@
         "required": [
           "DecrementId",
           "TimeUTC",
+          "Quantity",
+          "DecrementId",
+          "TimeUTC",
           "Quantity"
         ],
         "properties": {
@@ -3406,6 +3529,11 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "PalletNum",
+          "FixtureOnPallet",
+          "OnHold",
+          "CurrentPalletLocation",
+          "NumFaces",
           "PalletNum",
           "FixtureOnPallet",
           "OnHold",
@@ -3462,6 +3590,9 @@
         "required": [
           "loc",
           "group",
+          "num",
+          "loc",
+          "group",
           "num"
         ],
         "properties": {
@@ -3499,6 +3630,14 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "MaterialID",
+          "JobUnique",
+          "PartName",
+          "Process",
+          "Path",
+          "SignaledInspections",
+          "Location",
+          "Action",
           "MaterialID",
           "JobUnique",
           "PartName",
@@ -3566,6 +3705,7 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "Type",
           "Type"
         ],
         "properties": {
@@ -3623,6 +3763,7 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "Type",
           "Type"
         ],
         "properties": {
@@ -3749,6 +3890,10 @@
           "MachineGroup",
           "MachineNum",
           "Moving",
+          "PossibleLoadStations",
+          "MachineGroup",
+          "MachineNum",
+          "Moving",
           "PossibleLoadStations"
         ],
         "properties": {
@@ -3780,6 +3925,14 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "WorkorderId",
+          "Part",
+          "PlannedQuantity",
+          "DueDate",
+          "Priority",
+          "CompletedQuantity",
+          "ElapsedStationTime",
+          "ActiveStationTime",
           "WorkorderId",
           "Part",
           "PlannedQuantity",
@@ -3857,6 +4010,8 @@
         "additionalProperties": false,
         "required": [
           "Comment",
+          "TimeUTC",
+          "Comment",
           "TimeUTC"
         ],
         "properties": {
@@ -3873,6 +4028,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "MaterialID",
+          "Quarantined",
+          "InspectionFailed",
+          "Closeout",
           "MaterialID",
           "Quarantined",
           "InspectionFailed",
@@ -3917,27 +4076,58 @@
         "additionalProperties": false,
         "required": [
           "BasketId",
-          "LocationName"
+          "Location",
+          "LocationNum",
+          "BasketId",
+          "Location",
+          "LocationNum"
         ],
         "properties": {
           "BasketId": {
             "type": "integer",
             "format": "int32"
           },
-          "LocationName": {
-            "type": "string"
+          "Location": {
+            "$ref": "#/components/schemas/BasketLocationEnum"
           },
-          "LocationPosition": {
+          "LocationNum": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "LocationTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "Slot": {
             "type": "integer",
             "format": "int32",
             "nullable": true
           }
         }
       },
+      "BasketLocationEnum": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "LoadUnload",
+          "LoadStationStaging",
+          "Storage",
+          "InTransit"
+        ],
+        "enum": [
+          "LoadUnload",
+          "LoadStationStaging",
+          "Storage",
+          "InTransit"
+        ]
+      },
       "EditMaterialInLogEvents": {
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "OldMaterialID",
+          "NewMaterialID",
+          "EditedEvents",
           "OldMaterialID",
           "NewMaterialID",
           "EditedEvents"
@@ -4015,6 +4205,8 @@
         "additionalProperties": false,
         "required": [
           "MaterialID",
+          "PartName",
+          "MaterialID",
           "PartName"
         ],
         "properties": {
@@ -4090,6 +4282,8 @@
         "additionalProperties": false,
         "required": [
           "JobUnique",
+          "LastCompletedProcess",
+          "JobUnique",
           "LastCompletedProcess"
         ],
         "properties": {
@@ -4110,6 +4304,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "Jobs",
+          "StationUse",
           "Jobs",
           "StationUse"
         ],
@@ -4158,6 +4354,9 @@
         "required": [
           "LatestScheduleId",
           "Jobs",
+          "ExtraParts",
+          "LatestScheduleId",
+          "Jobs",
           "ExtraParts"
         ],
         "properties": {
@@ -4190,6 +4389,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "BookingId",
+          "PartName",
+          "Quantity",
+          "TimeUTC",
           "BookingId",
           "PartName",
           "Quantity",
@@ -4229,6 +4432,9 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "ScheduleId",
+          "Jobs",
+          "SimStations",
           "ScheduleId",
           "Jobs",
           "SimStations"
@@ -4297,6 +4503,8 @@
         "additionalProperties": false,
         "required": [
           "Queue",
+          "Position",
+          "Queue",
           "Position"
         ],
         "properties": {
@@ -4313,6 +4521,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "Pallet",
+          "MaterialIDToSetOnPallet",
           "Pallet",
           "MaterialIDToSetOnPallet"
         ],
@@ -4331,6 +4541,11 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "DecrementId",
+          "JobUnique",
+          "TimeUTC",
+          "Part",
+          "Quantity",
           "DecrementId",
           "JobUnique",
           "TimeUTC",
@@ -4362,6 +4577,13 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "MaterialID",
+          "Process",
+          "InspectionLocationNum",
+          "InspectionType",
+          "Success",
+          "Elapsed",
+          "Active",
           "MaterialID",
           "Process",
           "InspectionLocationNum",
@@ -4415,6 +4637,12 @@
           "LocationNum",
           "CloseoutType",
           "Elapsed",
+          "Active",
+          "MaterialID",
+          "Process",
+          "LocationNum",
+          "CloseoutType",
+          "Elapsed",
           "Active"
         ],
         "properties": {
@@ -4463,6 +4691,8 @@
             "additionalProperties": false,
             "required": [
               "MachineGroupName",
+              "MachineNum",
+              "MachineGroupName",
               "MachineNum"
             ],
             "properties": {
@@ -4481,6 +4711,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "Pocket",
+          "ToolName",
           "Pocket",
           "ToolName"
         ],
@@ -4523,6 +4755,8 @@
         "additionalProperties": false,
         "required": [
           "CellControllerProgramName",
+          "ProgramName",
+          "CellControllerProgramName",
           "ProgramName"
         ],
         "properties": {
@@ -4547,6 +4781,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "ProgramName",
+          "Revision",
           "ProgramName",
           "Revision"
         ],

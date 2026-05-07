@@ -38,6 +38,8 @@ import { currentCycles } from "./current-cycles.js";
 import {
   ActionType,
   ActiveJob,
+  BasketLocationEnum,
+  BasketStatus,
   ICurrentStatus,
   InProcessMaterial,
   InProcessMaterialAction,
@@ -61,6 +63,60 @@ function fakePalAtMachine(pal: number, num: number): PalletStatus {
       num,
     }),
     numFaces: 1,
+  });
+}
+
+function fakeBasketAtLoad(basket: number, num: number): BasketStatus {
+  return new BasketStatus({
+    basketId: basket,
+    location: BasketLocationEnum.LoadUnload,
+    locationNum: num,
+  });
+}
+
+function fakeBasketLoad({
+  uniq,
+  part,
+  proc,
+  path,
+  ty,
+  basket,
+  elapsedMin,
+}: {
+  uniq: string;
+  part: string;
+  proc: number;
+  path?: number;
+  ty: "load" | "unload";
+  basket: number;
+  elapsedMin: number;
+}): InProcessMaterial {
+  return new InProcessMaterial({
+    materialID: 200,
+    jobUnique: uniq,
+    partName: part,
+    process: ty === "load" ? 999 : proc,
+    path: ty === "load" ? 999 : (path ?? 1),
+    signaledInspections: [],
+    action: new InProcessMaterialAction({
+      type: ty === "load" ? ActionType.Loading : ActionType.UnloadToInProcess,
+      elapsedLoadUnloadTime: `PT${elapsedMin}M`,
+      loadFromBasketId: ty === "load" ? basket : undefined,
+      processAfterLoad: ty === "load" ? proc : undefined,
+      pathAfterLoad: ty === "load" ? (path ?? 1) : undefined,
+      unloadIntoQueue: ty === "unload" ? "Queue B" : undefined,
+    }),
+    location:
+      ty === "load"
+        ? new InProcessMaterialLocation({
+            type: LocType.InQueue,
+            currentQueue: "Queue A",
+          })
+        : new InProcessMaterialLocation({
+            type: LocType.InBasket,
+            basketId: basket,
+            basketSubPosition: 1,
+          }),
   });
 }
 
@@ -280,4 +336,163 @@ it("calculates current cycles", () => {
   expect(currentCycles({ ...curSt, jobs }, expected)).toMatchSnapshot(
     "current cycles with jobs and expected",
   );
+});
+
+it("calculates current basket load cycles", () => {
+  const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
+
+  const curSt: ICurrentStatus = {
+    timeOfCurrentStatusUTC: now,
+    jobs: {
+      uniq7: new ActiveJob({
+        unique: "uniq7",
+        partName: "tray",
+        cycles: 1,
+        routeStartUTC: now,
+        routeEndUTC: now,
+        archived: false,
+        copiedToSystem: true,
+        procsAndPaths: [
+          new ProcessInfo({
+            expectedBasketLoadTime: "PT5M",
+            expectedBasketUnloadTime: "PT4M",
+            paths: [
+              new ProcPathInfo({
+                palletNums: [],
+                load: [],
+                expectedLoadTime: "PT5M",
+                unload: [],
+                expectedUnloadTime: "PT4M",
+                stops: [],
+                simulatedStartingUTC: now,
+                simulatedAverageFlowTime: "PT0S",
+                partsPerPallet: 1,
+              }),
+            ],
+          }),
+        ],
+      }),
+    },
+    pallets: {},
+    baskets: {
+      77: fakeBasketAtLoad(77, 40),
+    },
+    material: [
+      fakeBasketLoad({ uniq: "uniq7", part: "tray", proc: 1, ty: "load", basket: 77, elapsedMin: 12 }),
+      fakeBasketLoad({ uniq: "uniq7", part: "tray", proc: 1, ty: "unload", basket: 77, elapsedMin: 12 }),
+    ],
+    alarms: [],
+    queues: {},
+  };
+
+  expect(currentCycles(curSt, HashMap.empty())).toEqual([
+    {
+      station: "L/U #40",
+      start: new Date(Date.UTC(2018, 2, 5, 6, 48, 0)),
+      expectedEnd: new Date(Date.UTC(2018, 2, 5, 6, 57, 0)),
+      isOutlier: false,
+      parts: [
+        { part: "tray-1", oper: "LOAD" },
+        { part: "tray-1", oper: "UNLOAD" },
+      ],
+    },
+  ]);
+});
+
+it("calculates current cycles for queue-to-basket load", () => {
+  const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
+
+  const curSt: ICurrentStatus = {
+    timeOfCurrentStatusUTC: now,
+    jobs: {
+      uniq8: new ActiveJob({
+        unique: "uniq8",
+        partName: "tray",
+        cycles: 1,
+        routeStartUTC: now,
+        routeEndUTC: now,
+        archived: false,
+        copiedToSystem: true,
+        procsAndPaths: [
+          new ProcessInfo({
+            basketLoadStations: [40],
+            expectedBasketLoadTime: "PT6M",
+            paths: [
+              new ProcPathInfo({
+                palletNums: [],
+                load: [],
+                expectedLoadTime: "PT0S",
+                unload: [],
+                expectedUnloadTime: "PT0S",
+                stops: [],
+                simulatedStartingUTC: now,
+                simulatedAverageFlowTime: "PT0S",
+                partsPerPallet: 1,
+              }),
+            ],
+          }),
+        ],
+      }),
+    },
+    pallets: {},
+    baskets: {
+      77: fakeBasketAtLoad(77, 40),
+    },
+    material: [
+      new InProcessMaterial({
+        materialID: 300,
+        jobUnique: "uniq8",
+        partName: "tray",
+        process: 1,
+        path: 1,
+        signaledInspections: [],
+        action: new InProcessMaterialAction({
+          type: ActionType.Loading,
+          elapsedLoadUnloadTime: "PT3M",
+          // neither loadOntoPalletNum nor loadFromBasketId: this is a queue → basket load
+        }),
+        location: new InProcessMaterialLocation({
+          type: LocType.InQueue,
+          currentQueue: "Queue A",
+        }),
+      }),
+    ],
+    alarms: [],
+    queues: {},
+  };
+
+  expect(currentCycles(curSt, HashMap.empty())).toEqual([
+    {
+      station: "L/U #40",
+      start: new Date(Date.UTC(2018, 2, 5, 6, 57, 0)),
+      expectedEnd: new Date(Date.UTC(2018, 2, 5, 7, 3, 0)),
+      isOutlier: false,
+      parts: [{ part: "tray-1", oper: "LOAD" }],
+    },
+  ]);
+});
+
+it("uses load station display names for current load cycles when provided", () => {
+  const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
+
+  const curSt: ICurrentStatus = {
+    timeOfCurrentStatusUTC: now,
+    jobs: {},
+    pallets: {
+      1: fakePalAtLoad(1, 40),
+    },
+    material: [fakeLoad({ uniq: "uniq9", part: "tray", proc: 1, pal: 1, ty: "load", elapsedMin: 3 })],
+    alarms: [],
+    queues: {},
+  };
+
+  expect(currentCycles(curSt, HashMap.empty(), { "40": "Tray Cell" })).toEqual([
+    {
+      station: "Tray Cell",
+      start: new Date(Date.UTC(2018, 2, 5, 6, 57, 0)),
+      expectedEnd: new Date(Date.UTC(2018, 2, 5, 6, 57, 0)),
+      isOutlier: false,
+      parts: [{ part: "tray-1", oper: "LOAD" }],
+    },
+  ]);
 });

@@ -105,6 +105,15 @@ namespace BlackMaple.MachineFramework
       public HoldRow LoadHold { get; set; } = null;
     }
 
+    private record ProcDataRow
+    {
+      public required int Process { get; init; }
+      public TimeSpan? BasketLoadTime { get; init; }
+      public TimeSpan? BasketUnloadTime { get; init; }
+      public ImmutableSortedSet<int>.Builder BasketLoads { get; } = ImmutableSortedSet.CreateBuilder<int>();
+      public ImmutableSortedSet<int>.Builder BasketUnloads { get; } = ImmutableSortedSet.CreateBuilder<int>();
+    }
+
     private record JobDetails
     {
       public required ImmutableList<int> CyclesOnFirstProc { get; init; }
@@ -166,6 +175,7 @@ namespace BlackMaple.MachineFramework
 
         //path data
         var pathDatRows = new Dictionary<(int proc, int path), PathDataRow>();
+        var procDatRows = new Dictionary<int, ProcDataRow>();
         cmd.CommandText =
           "SELECT Process, Path, StartingUTC, PartsPerPallet, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face, Casting FROM pathdata WHERE UniqueStr = $uniq";
         using (var reader = cmd.ExecuteReader())
@@ -212,6 +222,47 @@ namespace BlackMaple.MachineFramework
               Face = face,
               Casting = reader.IsDBNull(11) ? null : reader.GetString(11),
             };
+          }
+        }
+
+        cmd.CommandText =
+          "SELECT Process, BasketLoadTime, BasketUnloadTime FROM procdata WHERE UniqueStr = $uniq";
+        using (var reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            var proc = reader.GetInt32(0);
+            procDatRows[proc] = new ProcDataRow()
+            {
+              Process = proc,
+              BasketLoadTime = reader.IsDBNull(1) ? null : (TimeSpan?)TimeSpan.FromTicks(reader.GetInt64(1)),
+              BasketUnloadTime = reader.IsDBNull(2)
+                ? null
+                : (TimeSpan?)TimeSpan.FromTicks(reader.GetInt64(2)),
+            };
+          }
+        }
+
+        cmd.CommandText = "SELECT Process, StatNum, Load FROM basketloadunload WHERE UniqueStr = $uniq";
+        using (var reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            var proc = reader.GetInt32(0);
+            if (!procDatRows.TryGetValue(proc, out var procData))
+            {
+              procData = new ProcDataRow() { Process = proc };
+              procDatRows.Add(proc, procData);
+            }
+
+            if (reader.GetBoolean(2))
+            {
+              procData.BasketLoads.Add(reader.GetInt32(1));
+            }
+            else
+            {
+              procData.BasketUnloads.Add(reader.GetInt32(1));
+            }
           }
         }
 
@@ -471,6 +522,18 @@ namespace BlackMaple.MachineFramework
             .Values.GroupBy(p => p.Process)
             .Select(proc => new ProcessInfo()
             {
+              BasketLoadStations = procDatRows.TryGetValue(proc.Key, out var procData)
+                ? (procData.BasketLoads.Count == 0 ? null : procData.BasketLoads.ToImmutable())
+                : null,
+              ExpectedBasketLoadTime = procDatRows.TryGetValue(proc.Key, out procData)
+                ? procData.BasketLoadTime
+                : null,
+              BasketUnloadStations = procDatRows.TryGetValue(proc.Key, out procData)
+                ? (procData.BasketUnloads.Count == 0 ? null : procData.BasketUnloads.ToImmutable())
+                : null,
+              ExpectedBasketUnloadTime = procDatRows.TryGetValue(proc.Key, out procData)
+                ? procData.BasketUnloadTime
+                : null,
               Paths = proc.OrderBy(p => p.Path)
                 .Select(p => new ProcPathInfo()
                 {
@@ -1519,6 +1582,36 @@ namespace BlackMaple.MachineFramework
         }
 
         cmd.CommandText =
+          "INSERT INTO procdata(UniqueStr, Process, BasketLoadTime, BasketUnloadTime) VALUES ($uniq,$proc,$loadTime,$unloadTime)";
+        cmd.Parameters.Clear();
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
+        cmd.Parameters.Add("proc", SqliteType.Integer);
+        cmd.Parameters.Add("loadTime", SqliteType.Integer);
+        cmd.Parameters.Add("unloadTime", SqliteType.Integer);
+        for (int i = 1; i <= job.Processes.Count; i++)
+        {
+          var proc = job.Processes[i - 1];
+          if (
+            proc.BasketLoadStations == null
+            && proc.BasketUnloadStations == null
+            && !proc.ExpectedBasketLoadTime.HasValue
+            && !proc.ExpectedBasketUnloadTime.HasValue
+          )
+          {
+            continue;
+          }
+
+          cmd.Parameters[1].Value = i;
+          cmd.Parameters[2].Value = proc.ExpectedBasketLoadTime.HasValue
+            ? (object)proc.ExpectedBasketLoadTime.Value.Ticks
+            : DBNull.Value;
+          cmd.Parameters[3].Value = proc.ExpectedBasketUnloadTime.HasValue
+            ? (object)proc.ExpectedBasketUnloadTime.Value.Ticks
+            : DBNull.Value;
+          cmd.ExecuteNonQuery();
+        }
+
+        cmd.CommandText =
           "INSERT INTO stops(UniqueStr, Process, Path, RouteNum, StatGroup, ExpectedCycleTime, Program, ProgramRevision) "
           + "VALUES ($uniq,$proc,$path,$route,$group,$cycle,$prog,$rev)";
         cmd.Parameters.Clear();
@@ -1643,6 +1736,39 @@ namespace BlackMaple.MachineFramework
             foreach (int statNum in path.Unload)
             {
               cmd.Parameters[3].Value = statNum;
+              cmd.ExecuteNonQuery();
+            }
+          }
+        }
+
+        cmd.CommandText =
+          "INSERT INTO basketloadunload(UniqueStr,Process,StatNum,Load) VALUES ($uniq,$proc,$stat,$load)";
+        cmd.Parameters.Clear();
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
+        cmd.Parameters.Add("proc", SqliteType.Integer);
+        cmd.Parameters.Add("stat", SqliteType.Integer);
+        cmd.Parameters.Add("load", SqliteType.Integer);
+
+        for (int i = 1; i <= job.Processes.Count; i++)
+        {
+          var proc = job.Processes[i - 1];
+          cmd.Parameters[1].Value = i;
+          cmd.Parameters[3].Value = true;
+          if (proc.BasketLoadStations != null)
+          {
+            foreach (var statNum in proc.BasketLoadStations)
+            {
+              cmd.Parameters[2].Value = statNum;
+              cmd.ExecuteNonQuery();
+            }
+          }
+
+          cmd.Parameters[3].Value = false;
+          if (proc.BasketUnloadStations != null)
+          {
+            foreach (var statNum in proc.BasketUnloadStations)
+            {
+              cmd.Parameters[2].Value = statNum;
               cmd.ExecuteNonQuery();
             }
           }

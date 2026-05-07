@@ -51,6 +51,7 @@ import * as names from "./names.js";
 import * as estimated from "./estimated-cycle-times.js";
 import * as tool from "./tool-usage.js";
 import * as palCycles from "./pallet-cycles.js";
+import * as basketCycles from "./basket-cycles.js";
 import * as statCycles from "./station-cycles.js";
 import * as toolReplace from "./tool-replacements.js";
 import * as simDayUsage from "./sim-day-usage.js";
@@ -77,6 +78,7 @@ export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   set(names.updateNames, evt);
   set(tool.updateLast30ToolUse, evt);
   set(palCycles.updateLast30PalletCycles, evt);
+  set(basketCycles.updateLast30BasketCycles, evt);
   set(toolReplace.updateLastToolReplacements, evt);
   set(statCycles.updateLast30StationCycles, evt);
   set(rebookings.updateLast30Rebookings, evt);
@@ -106,6 +108,7 @@ export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<I
   set(names.setNamesFromLast30Evts, log);
   set(tool.setLast30ToolUse, log);
   set(palCycles.setLast30PalletCycles, log);
+  set(basketCycles.setLast30BasketCycles, log);
   set(toolReplace.setLast30ToolReplacements, log);
   set(statCycles.setLast30StationCycles, log);
   set(rebookings.setLast30Rebookings, log);
@@ -131,6 +134,7 @@ export const onLoadSpecificMonthLog = atom(null, (_, set, log: ReadonlyArray<Rea
   set(insp.setSpecificMonthInspections, log);
   set(mats.setSpecificMonthMatSummary, log);
   set(palCycles.setSpecificMonthPalletCycles, log);
+  set(basketCycles.setSpecificMonthBasketCycles, log);
   set(toolReplace.setSpecificMonthToolReplacements, log);
   set(statCycles.setSpecificMonthStationCycles, log);
 });

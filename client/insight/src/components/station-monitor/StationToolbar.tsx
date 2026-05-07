@@ -43,6 +43,7 @@ import { SystemOverviewDialogButton } from "./SystemOverview.js";
 import { useAtom, useAtomValue } from "jotai";
 import { ReactNode } from "react";
 import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
+import { fmsInformation } from "../../network/server-settings.js";
 
 const toolbarStyle = {
   display: "flex",
@@ -86,6 +87,7 @@ export function StationToolbar(): ReactNode {
   const [route, setRoute] = useAtom(currentRoute);
   const inspTypes = useAtomValue(last30InspectionTypes);
   const queueNames = Object.keys(useAtomValue(currentStatus).queues).sort((a, b) => a.localeCompare(b));
+  const fmsInfo = useAtomValue(fmsInformation);
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -168,14 +170,32 @@ export function StationToolbar(): ReactNode {
   return (
     <Box component="nav" sx={full ? toolbarStyle : inHeaderStyle}>
       {curType === StationMonitorType.LoadUnload ? (
-        <Input
-          type="number"
-          placeholder="Load Station Number"
-          key="loadnumselect"
-          value={loadNum}
-          onChange={(e) => setLoadNumber(e.target.value)}
-          style={{ width: "3em", marginLeft: "1em" }}
-        />
+        fmsInfo.loadStationNames && Object.keys(fmsInfo.loadStationNames).length > 0 ? (
+          <Select
+            key="loadnumselect"
+            value={loadNum}
+            onChange={(e) => setLoadNumber(e.target.value.toString())}
+            variant="standard"
+            style={{ marginLeft: "1em", minWidth: "8em" }}
+          >
+            {LazySeq.of(Object.entries(fmsInfo.loadStationNames))
+              .sortBy(([key]) => parseInt(key))
+              .map(([stationNum, name]) => (
+                <MenuItem key={stationNum} value={parseInt(stationNum)}>
+                  {name}
+                </MenuItem>
+              ))}
+          </Select>
+        ) : (
+          <Input
+            type="number"
+            placeholder="Load Station Number"
+            key="loadnumselect"
+            value={loadNum}
+            onChange={(e) => setLoadNumber(e.target.value)}
+            style={{ width: "3em", marginLeft: "1em" }}
+          />
+        )
       ) : undefined}
       {curType === StationMonitorType.Inspection ? (
         <Select

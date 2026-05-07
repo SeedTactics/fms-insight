@@ -44,6 +44,12 @@ import { durationToMinutes } from "../util/parseISODuration.js";
 import { addDays } from "date-fns";
 import { HashMap } from "@seedtactics/immutable-collections";
 import { Atom, atom } from "jotai";
+import { fmsInformation } from "../network/server-settings.js";
+
+export type PartCycleCarrier =
+  | { readonly kind: "machining"; readonly pallet: number }
+  | { readonly kind: "pallet-lul"; readonly pallet: number }
+  | { readonly kind: "basket-lul"; readonly basket: number };
 
 export interface PartCycleData {
   readonly endTime: Date;
@@ -52,10 +58,10 @@ export interface PartCycleData {
   readonly part: string;
   readonly stationGroup: string;
   readonly stationNumber: number;
+  readonly stationLabel: string;
   readonly operation: string;
-  readonly pallet: number;
+  readonly carrier: PartCycleCarrier;
   readonly activeMinutes: number; // active time in minutes
-  readonly isLabor: boolean;
   readonly material: ReadonlyArray<Readonly<ILogMaterial>>;
   readonly operator: string;
 
@@ -66,6 +72,30 @@ export interface PartCycleData {
 
 export type StationCyclesByCntr = HashMap<number, PartCycleData>;
 
+export function isLaborCycle(cycle: Readonly<PartCycleData>): boolean {
+  return cycle.carrier.kind !== "machining";
+}
+
+export function isMachineCycle(cycle: Readonly<PartCycleData>): boolean {
+  return cycle.carrier.kind === "machining";
+}
+
+export function isPalletLoadCycle(cycle: Readonly<PartCycleData>): boolean {
+  return cycle.carrier.kind === "pallet-lul";
+}
+
+export function isBasketLoadCycle(cycle: Readonly<PartCycleData>): boolean {
+  return cycle.carrier.kind === "basket-lul";
+}
+
+export function palletForCycle(cycle: Readonly<PartCycleData>): number | undefined {
+  return cycle.carrier.kind === "basket-lul" ? undefined : cycle.carrier.pallet;
+}
+
+export function basketForCycle(cycle: Readonly<PartCycleData>): number | undefined {
+  return cycle.carrier.kind === "basket-lul" ? cycle.carrier.basket : undefined;
+}
+
 export function stat_name_and_num(stationGroup: string, stationNumber: number): string {
   if (stationGroup.startsWith("Inspect")) {
     return stationGroup;
@@ -74,31 +104,102 @@ export function stat_name_and_num(stationGroup: string, stationNumber: number): 
   }
 }
 
-const last30StationCyclesRW = atom<StationCyclesByCntr>(HashMap.empty<number, PartCycleData>());
+export function loadStationDisplayName(
+  stationNumber: number,
+  loadStationNames: { [key: string]: string } | undefined,
+): string {
+  const name = loadStationNames?.[stationNumber.toString()];
+  return name && name.trim().length > 0 ? name : `L/U #${stationNumber}`;
+}
+
+export function displayStationName(
+  stationGroup: string,
+  stationNumber: number,
+  loadStationNames: { [key: string]: string } | undefined,
+): string {
+  return stationGroup === "L/U"
+    ? loadStationDisplayName(stationNumber, loadStationNames)
+    : stat_name_and_num(stationGroup, stationNumber);
+}
+
+export function basketDisplayName(basketName: string | null | undefined): string {
+  return basketName && basketName.trim().length > 0 ? basketName : "Basket";
+}
+
+export function carrierLabel(cycle: Readonly<PartCycleData>, basketName = "Basket"): string {
+  switch (cycle.carrier.kind) {
+    case "machining":
+    case "pallet-lul":
+      return `Pallet ${cycle.carrier.pallet}`;
+    case "basket-lul":
+      return `${basketName} ${cycle.carrier.basket}`;
+  }
+}
+
+export function carrierSortKey(cycle: Readonly<PartCycleData>): number {
+  switch (cycle.carrier.kind) {
+    case "machining":
+    case "pallet-lul":
+      return cycle.carrier.pallet;
+    case "basket-lul":
+      return cycle.carrier.basket + 1000000;
+  }
+}
+
+function hasBasketCycles(cycles: StationCyclesByCntr): boolean {
+  return cycles.valuesToLazySeq().some((cycle) => cycle.carrier.kind === "basket-lul");
+}
+
+const last30StationCyclesRW = atom(HashMap.empty<number, PartCycleData>());
 export const last30StationCycles: Atom<StationCyclesByCntr> = last30StationCyclesRW;
 
-const specificMonthStationCyclesRW = atom<StationCyclesByCntr>(HashMap.empty<number, PartCycleData>());
+export const last30HasBasketCycles: Atom<boolean> = atom((get) =>
+  hasBasketCycles(get(last30StationCyclesRW)),
+);
+
+const specificMonthStationCyclesRW = atom(HashMap.empty<number, PartCycleData>());
 export const specificMonthStationCycles: Atom<StationCyclesByCntr> = specificMonthStationCyclesRW;
+
+export const specificMonthHasBasketCycles: Atom<boolean> = atom((get) =>
+  hasBasketCycles(get(specificMonthStationCyclesRW)),
+);
 
 function convertLogToCycle(
   estimatedCycleTimes: EstimatedCycleTimes,
   cycle: ILogEntry,
   elapsedPerMat: number,
+  loadStationNames: { [key: string]: string } | undefined,
 ): PartCycleData | null {
   if (
     cycle.startofcycle ||
-    (cycle.type !== LogType.LoadUnloadCycle && cycle.type !== LogType.MachineCycle) ||
+    (cycle.type !== LogType.LoadUnloadCycle &&
+      cycle.type !== LogType.BasketLoadUnload &&
+      cycle.type !== LogType.MachineCycle) ||
     cycle.loc === ""
   ) {
     return null;
   }
+
+  const carrier: PartCycleCarrier =
+    cycle.type === LogType.MachineCycle
+      ? { kind: "machining", pallet: cycle.pal }
+      : cycle.type === LogType.LoadUnloadCycle
+        ? { kind: "pallet-lul", pallet: cycle.pal }
+        : { kind: "basket-lul", basket: cycle.pal };
+
+  const activeMinsFromLog = durationToMinutes(cycle.active);
+  if (carrier.kind === "basket-lul" && elapsedPerMat <= 0 && activeMinsFromLog <= 0) {
+    // For pallet <-> basket transfers, the basket-side companion event carries zero time.
+    return null;
+  }
+
   const part = cycle.material.length > 0 ? cycle.material[0].part : "";
   const stats =
     cycle.material.length > 0
       ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
       : undefined;
 
-  let activeMins = durationToMinutes(cycle.active);
+  let activeMins = activeMinsFromLog;
   if (cycle.active === "" || activeMins <= 0 || cycle.material.length == 0) {
     activeMins = (stats?.expectedCycleMinutesForSingleMat ?? 0) * cycle.material.length;
   }
@@ -111,13 +212,13 @@ function convertLogToCycle(
     medianCycleMinutes: (stats?.medianMinutesForSingleMat ?? 0) * cycle.material.length,
     MAD_aboveMinutes: stats?.MAD_aboveMinutes ?? 0,
     part: part,
-    pallet: cycle.pal,
+    carrier: carrier,
     material: cycle.material,
-    isLabor: cycle.type === LogType.LoadUnloadCycle,
     isOutlier: stats ? isOutlier(stats, elapsedPerMat) : false,
     stationGroup: cycle.loc,
     stationNumber: cycle.locnum,
-    operation: cycle.type === LogType.LoadUnloadCycle ? cycle.result : cycle.program,
+    stationLabel: displayStationName(cycle.loc, cycle.locnum, loadStationNames),
+    operation: carrier.kind === "machining" ? cycle.program : cycle.result,
     operator: cycle.details ? cycle.details.operator || "" : "",
   };
 }
@@ -125,9 +226,12 @@ function convertLogToCycle(
 function convertOldLogsToCycles(
   estimateCycleTimes: EstimatedCycleTimes,
   log: ReadonlyArray<Readonly<ILogEntry>>,
+  loadStationNames: { [key: string]: string } | undefined,
 ): StationCyclesByCntr {
   return calcElapsedForCycles(log)
-    .collect((c) => convertLogToCycle(estimateCycleTimes, c.cycle, c.elapsedForSingleMaterialMinutes))
+    .collect((c) =>
+      convertLogToCycle(estimateCycleTimes, c.cycle, c.elapsedForSingleMaterialMinutes, loadStationNames),
+    )
     .buildHashMap((c) => c.cntr);
 }
 
@@ -147,8 +251,9 @@ function process_swap(
 
 export const setLast30StationCycles = atom(null, (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
   const estimatedCycleTimes = get(last30EstimatedCycleTimes);
+  const loadStationNames = get(fmsInformation)?.loadStationNames;
   set(last30StationCyclesRW, (oldCycles) =>
-    oldCycles.union(convertOldLogsToCycles(estimatedCycleTimes, log)),
+    oldCycles.union(convertOldLogsToCycles(estimatedCycleTimes, log, loadStationNames)),
   );
 });
 
@@ -178,7 +283,8 @@ export const updateLast30StationCycles = atom(null, (get, set, { evt, now, expir
         ? durationToMinutes(evt.logEntry.elapsed) / evt.logEntry.material.length
         : 0;
 
-    const converted = convertLogToCycle(estimatedCycleTimes, evt.logEntry, elapsedPerMat);
+    const loadStationNames = get(fmsInformation)?.loadStationNames;
+    const converted = convertLogToCycle(estimatedCycleTimes, evt.logEntry, elapsedPerMat, loadStationNames);
     if (!converted) return;
 
     set(last30StationCyclesRW, (cycles) => {
@@ -201,6 +307,8 @@ export const setSpecificMonthStationCycles = atom(
   null,
   (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     const estimatedCycleTimes = get(specificMonthEstimatedCycleTimes);
-    set(specificMonthStationCyclesRW, convertOldLogsToCycles(estimatedCycleTimes, log));
+    const loadStationNames = get(fmsInformation)?.loadStationNames;
+    const cycles = convertOldLogsToCycles(estimatedCycleTimes, log, loadStationNames);
+    set(specificMonthStationCyclesRW, cycles);
   },
 );

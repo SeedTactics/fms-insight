@@ -82,7 +82,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Station
         </th>
         <th>
-          Pallet
+          Carrier
         </th>
         <th>
           Serial
@@ -123,7 +123,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           L/U #1
         </td>
         <td>
-          5629011361492965
+          Pallet 5629011361492965
         </td>
         <td>
           serialt
@@ -160,7 +160,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           MC #1
         </td>
         <td>
-          5629011361492965
+          Pallet 5629011361492965
         </td>
         <td>
           serialt
@@ -197,7 +197,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           L/U #2
         </td>
         <td>
-          5629011361492965
+          Pallet 5629011361492965
         </td>
         <td>
           serialt
@@ -234,7 +234,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           L/U #1
         </td>
         <td>
-          4688892583065219
+          Pallet 4688892583065219
         </td>
         <td>
           serialL
@@ -271,7 +271,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           MC #1
         </td>
         <td>
-          4688892583065219
+          Pallet 4688892583065219
         </td>
         <td>
           serialL
@@ -308,7 +308,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           L/U #2
         </td>
         <td>
-          4688892583065219
+          Pallet 4688892583065219
         </td>
         <td>
           serialL
@@ -345,7 +345,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           L/U #1
         </td>
         <td>
-          6334762256135281
+          Pallet 6334762256135281
         </td>
         <td>
           serialC
@@ -382,7 +382,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           MC #1
         </td>
         <td>
-          6334762256135281
+          Pallet 6334762256135281
         </td>
         <td>
           serialC
@@ -419,7 +419,7 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           L/U #2
         </td>
         <td>
-          6334762256135281
+          Pallet 6334762256135281
         </td>
         <td>
           serialC
@@ -469,7 +469,7 @@ exports[`creates cycles clipboard table > cycle filtered clipboard table 1`] = `
           Station
         </th>
         <th>
-          Pallet
+          Carrier
         </th>
         <th>
           Serial
@@ -510,7 +510,7 @@ exports[`creates cycles clipboard table > cycle filtered clipboard table 1`] = `
           L/U #1
         </td>
         <td>
-          4688892583065219
+          Pallet 4688892583065219
         </td>
         <td>
           serialL
@@ -547,7 +547,7 @@ exports[`creates cycles clipboard table > cycle filtered clipboard table 1`] = `
           MC #1
         </td>
         <td>
-          4688892583065219
+          Pallet 4688892583065219
         </td>
         <td>
           serialL
@@ -584,7 +584,7 @@ exports[`creates cycles clipboard table > cycle filtered clipboard table 1`] = `
           L/U #2
         </td>
         <td>
-          4688892583065219
+          Pallet 4688892583065219
         </td>
         <td>
           serialL

@@ -85,6 +85,7 @@ export enum RouteLocation {
   Analysis_MachineCycles = "/analysis/machine-cycles",
   Analysis_LoadCycles = "/analysis/load-cycles",
   Analysis_PalletCycles = "/analysis/pallet-cycles",
+  Analysis_BasketCycles = "/analysis/basket-cycles",
   Analysis_Schedules = "/analysis/schedules",
   Analysis_Quality = "/analysis/quality",
   Analysis_ToolReplacements = "/analysis/tool-replacements",
@@ -157,6 +158,7 @@ export type RouteState =
   | { route: RouteLocation.Analysis_MachineCycles }
   | { route: RouteLocation.Analysis_LoadCycles }
   | { route: RouteLocation.Analysis_PalletCycles }
+  | { route: RouteLocation.Analysis_BasketCycles }
   | { route: RouteLocation.Analysis_CostPerPiece }
   | { route: RouteLocation.Analysis_Schedules }
   | { route: RouteLocation.Analysis_CostPercents }

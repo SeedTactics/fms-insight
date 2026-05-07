@@ -33,10 +33,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { onLoadLast30Jobs, onLoadSpecificMonthJobs, onServerEvent } from "./loading.js";
 import { addDays } from "date-fns";
-import { HistoricJob, IHistoricData, NewJobs } from "../network/api.js";
+import {
+  HistoricJob,
+  IHistoricData,
+  NewJobs,
+  SimulatedStationPart,
+  SimulatedStationUtilization,
+} from "../network/api.js";
 import { last30SimProduction, specificMonthSimProduction } from "./sim-production.js";
 import { last30SimStationUse, specificMonthSimStationUse } from "./sim-station-use.js";
 import { last30Jobs, specificMonthJobs } from "./scheduled-jobs.js";
+import { fmsInformation } from "../network/server-settings.js";
 import newJobsJson from "../../../../server/debug-mock/sample-data/newjobs.json";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { it, expect } from "vitest";
@@ -99,4 +106,40 @@ it("processes jobs in a specific month", () => {
   expect(toRawJs(snapshot.get(specificMonthSimProduction))).toMatchSnapshot("sim production");
   expect(toRawJs(snapshot.get(specificMonthSimStationUse))).toMatchSnapshot("sim stations");
   expect(toRawJs(snapshot.get(specificMonthJobs))).toMatchSnapshot("jobs");
+});
+
+it("stores station labels and parts for simulated station use", () => {
+  const snapshot = createStore();
+  const history: IHistoricData = {
+    jobs: {},
+    stationUse: [
+      new SimulatedStationUtilization({
+        scheduleId: "sched1",
+        stationGroup: "L/U",
+        stationNum: 3,
+        startUTC: new Date(Date.UTC(2026, 0, 10, 12, 0, 0)),
+        endUTC: new Date(Date.UTC(2026, 0, 10, 12, 10, 0)),
+        planDown: false,
+        parts: [new SimulatedStationPart({ jobUnique: "uniq1", process: 2, path: 1 })],
+      }),
+    ],
+  };
+
+  snapshot.set(fmsInformation, {
+    name: "FMS Insight",
+    version: "",
+    loadStationNames: { "3": "South Load" },
+  });
+  snapshot.set(onLoadLast30Jobs, history);
+
+  expect(snapshot.get(last30SimStationUse)).toEqual([
+    {
+      station: "L/U #3",
+      stationLabel: "South Load",
+      start: new Date(Date.UTC(2026, 0, 10, 12, 0, 0)),
+      end: new Date(Date.UTC(2026, 0, 10, 12, 10, 0)),
+      plannedDown: false,
+      parts: [{ uniq: "uniq1", proc: 2, path: 1 }],
+    },
+  ]);
 });

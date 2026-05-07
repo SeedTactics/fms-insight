@@ -238,7 +238,7 @@ export function fakeMachineCycle({
     result: "",
     program,
     elapsed: `PT${elapsedMin}M`,
-    active: activeMin ? `PT${activeMin}M` : "PT-1S",
+    active: activeMin !== undefined ? `PT${activeMin}M` : "PT-1S",
     tooluse: tooluse?.map((t) => new ToolUse(t)),
   });
   return es;
@@ -288,7 +288,97 @@ export function fakeLoadOrUnload({
     result: isLoad ? "LOAD" : "UNLOAD",
     program: isLoad ? "LOAD" : "UNLOAD",
     elapsed: `PT${elapsedMin}M`,
-    active: activeMin ? `PT${activeMin}M` : "PT-1S",
+    active: activeMin !== undefined ? `PT${activeMin}M` : "PT-1S",
+  });
+  return es;
+}
+
+export function fakeBasketLoadOrUnload({
+  counter,
+  numMats,
+  material,
+  part,
+  proc,
+  basket,
+  isLoad,
+  lulNum,
+  time,
+  elapsedMin,
+  activeMin,
+}: {
+  counter: number;
+  numMats?: number;
+  material?: LogMaterial[];
+  part: string;
+  proc: number;
+  basket?: number;
+  isLoad: boolean;
+  time: Date;
+  lulNum?: number;
+  elapsedMin: number;
+  activeMin?: number;
+}): ReadonlyArray<ILogEntry> {
+  material =
+    material ??
+    LazySeq.ofRange(0, numMats ?? 1)
+      .map(() => fakeMaterial(part, proc))
+      .toMutableArray();
+
+  const es: Array<ILogEntry> = [];
+  addStartAndEnd(es, {
+    counter,
+    material,
+    pal: basket ?? faker.number.int(),
+    type: LogType.BasketLoadUnload,
+    startofcycle: false,
+    endUTC: time,
+    loc: "L/U",
+    locnum: lulNum ?? 1,
+    result: isLoad ? "LOAD" : "UNLOAD",
+    program: isLoad ? "LOAD" : "UNLOAD",
+    elapsed: `PT${elapsedMin}M`,
+    active: activeMin !== undefined ? `PT${activeMin}M` : "PT-1S",
+  });
+  return es;
+}
+
+export function fakeBasketCycle({
+  counter,
+  numMats,
+  part,
+  proc,
+  basket,
+  time,
+  elapsedMin,
+  activeMin,
+}: {
+  counter: number;
+  numMats?: number;
+  part: string;
+  proc: number;
+  basket?: number;
+  time: Date;
+  elapsedMin: number;
+  activeMin?: number;
+}): ReadonlyArray<ILogEntry> {
+  const material = LazySeq.ofRange(0, numMats ?? 1)
+    .map(() => fakeMaterial(part, proc))
+    .toMutableArray();
+
+  const es: Array<ILogEntry> = [];
+  addStartAndEnd(es, {
+    counter,
+    material,
+    pal: basket ?? faker.number.int(),
+    type: LogType.BasketCycle,
+    startofcycle: false,
+    endUTC: time,
+    loc: "Basket Cycle",
+    locnum: 1,
+    result: "BasketCycle",
+    program: "",
+    elapsed: `PT${elapsedMin}M`,
+    active: activeMin !== undefined ? `PT${activeMin}M` : "PT-1S",
   });
   return es;
 }

@@ -184,6 +184,7 @@ namespace BlackMaple.MachineFramework.Controllers
         LicenseExpires = _checkLicense?.LicenseExpires(),
         CustomStationMonitorDialogUrl = _cfg.CustomStationMonitorDialogUrl,
         LoadStationNames = _cfg.LoadStationNames,
+        BasketName = _cfg.BasketName,
       };
     }
 

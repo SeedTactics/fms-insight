@@ -1,0 +1,404 @@
+[
+  {
+    "counter": 2000,
+    "material": [
+      {
+        "id": 200901,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 1
+      }
+    ],
+    "type": "LoadUnloadCycle",
+    "startofcycle": true,
+    "endUTC": "2018-01-28T21:40:00Z",
+    "loc": "L/U",
+    "locnum": 3,
+    "pal": 9,
+    "program": "LOAD",
+    "result": "LOAD",
+    "elapsed": "PT0S",
+    "active": "PT0S"
+  },
+  {
+    "counter": 2000,
+    "material": [
+      {
+        "id": 200901,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 1
+      }
+    ],
+    "type": "LoadUnloadCycle",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T21:46:00Z",
+    "loc": "L/U",
+    "locnum": 3,
+    "pal": 9,
+    "program": "LOAD",
+    "result": "LOAD",
+    "elapsed": "PT6M",
+    "active": "PT2M30S"
+  },
+  {
+    "counter": 2001,
+    "material": [
+      {
+        "id": 200901,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 1
+      }
+    ],
+    "type": "PartMark",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T21:46:10Z",
+    "loc": "Mark",
+    "locnum": 1,
+    "pal": 0,
+    "program": "MARK",
+    "result": "TRAY01",
+    "elapsed": "PT0S",
+    "active": "PT0S"
+  },
+  {
+    "counter": 2002,
+    "material": [
+      {
+        "id": 200901,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 1
+      }
+    ],
+    "type": "MachineCycle",
+    "startofcycle": true,
+    "endUTC": "2018-01-28T21:50:00Z",
+    "loc": "Machine",
+    "locnum": 2,
+    "pal": 9,
+    "program": "",
+    "result": "",
+    "elapsed": "PT0S",
+    "active": "PT0S"
+  },
+  {
+    "counter": 2002,
+    "material": [
+      {
+        "id": 200901,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 1
+      }
+    ],
+    "type": "MachineCycle",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T22:02:00Z",
+    "loc": "Machine",
+    "locnum": 2,
+    "pal": 9,
+    "program": "900",
+    "result": "",
+    "elapsed": "PT12M",
+    "active": "PT10M30S"
+  },
+  {
+    "counter": 2003,
+    "material": [
+      {
+        "id": 200902,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketLoadUnload",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T22:20:00Z",
+    "loc": "L/U",
+    "locnum": 3,
+    "pal": 302,
+    "program": "LOAD",
+    "result": "LOAD",
+    "elapsed": "PT2M30S",
+    "active": "PT2M10S",
+    "details": {
+      "Queue": "Queue1"
+    }
+  },
+  {
+    "counter": 2004,
+    "material": [
+      {
+        "id": 200904,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketLoadUnload",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T18:10:00Z",
+    "loc": "L/U",
+    "locnum": 4,
+    "pal": 402,
+    "program": "LOAD",
+    "result": "LOAD",
+    "elapsed": "PT2M20S",
+    "active": "PT2M",
+    "details": {
+      "Queue": "Queue1"
+    }
+  },
+  {
+    "counter": 2005,
+    "material": [
+      {
+        "id": 200905,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketLoadUnload",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T18:45:00Z",
+    "loc": "L/U",
+    "locnum": 4,
+    "pal": 502,
+    "program": "LOAD",
+    "result": "LOAD",
+    "elapsed": "PT2M40S",
+    "active": "PT2M15S",
+    "details": {
+      "Queue": "Queue1"
+    }
+  },
+  {
+    "counter": 2006,
+    "material": [
+      {
+        "id": 200905,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketInLocation",
+    "startofcycle": true,
+    "endUTC": "2018-01-28T18:46:00Z",
+    "loc": "Tower A",
+    "locnum": 2,
+    "pal": 502,
+    "program": "Arrive",
+    "result": "",
+    "elapsed": "PT0S",
+    "active": "PT0S"
+  },
+  {
+    "counter": 2007,
+    "material": [
+      {
+        "id": 200906,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketLoadUnload",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T19:20:00Z",
+    "loc": "L/U",
+    "locnum": 4,
+    "pal": 504,
+    "program": "LOAD",
+    "result": "LOAD",
+    "elapsed": "PT2M50S",
+    "active": "PT2M20S",
+    "details": {
+      "Queue": "Queue2"
+    }
+  },
+  {
+    "counter": 2008,
+    "material": [
+      {
+        "id": 200906,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketInLocation",
+    "startofcycle": true,
+    "endUTC": "2018-01-28T19:21:00Z",
+    "loc": "Rack B",
+    "locnum": 2,
+    "pal": 504,
+    "program": "Arrive",
+    "result": "",
+    "elapsed": "PT0S",
+    "active": "PT0S"
+  },
+  {
+    "counter": 2009,
+    "material": [
+      {
+        "id": 200907,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketLoadUnload",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T20:00:00Z",
+    "loc": "L/U",
+    "locnum": 4,
+    "pal": 401,
+    "program": "LOAD",
+    "result": "LOAD",
+    "elapsed": "PT2M10S",
+    "active": "PT1M50S",
+    "details": {
+      "Queue": "Queue2"
+    }
+  },
+  {
+    "counter": 2010,
+    "material": [
+      {
+        "id": 200907,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketLoadUnload",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T20:18:00Z",
+    "loc": "L/U",
+    "locnum": 4,
+    "pal": 401,
+    "program": "UNLOAD",
+    "result": "UNLOAD",
+    "elapsed": "PT2M5S",
+    "active": "PT1M40S",
+    "details": {
+      "Queue": "Queue2"
+    }
+  },
+  {
+    "counter": 2011,
+    "material": [
+      {
+        "id": 200907,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketInLocation",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T20:40:00Z",
+    "loc": "Rack B",
+    "locnum": 2,
+    "pal": 401,
+    "program": "Depart",
+    "result": "",
+    "elapsed": "PT18M",
+    "active": "PT18M"
+  },
+  {
+    "counter": 2012,
+    "material": [
+      {
+        "id": 200907,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketCycle",
+    "startofcycle": true,
+    "endUTC": "2018-01-28T21:10:00Z",
+    "loc": "Basket Cycle",
+    "locnum": 1,
+    "pal": 401,
+    "program": "",
+    "result": "BasketCycle",
+    "elapsed": "PT0S",
+    "active": "PT0S"
+  },
+  {
+    "counter": 2012,
+    "material": [
+      {
+        "id": 200907,
+        "uniq": "tray-offline-2018-01-01",
+        "part": "tray",
+        "proc": 1,
+        "path": 1,
+        "numproc": 2,
+        "face": 0
+      }
+    ],
+    "type": "BasketCycle",
+    "startofcycle": false,
+    "endUTC": "2018-01-28T21:27:00Z",
+    "loc": "Basket Cycle",
+    "locnum": 1,
+    "pal": 401,
+    "program": "",
+    "result": "BasketCycle",
+    "elapsed": "PT17M",
+    "active": "PT14M"
+  }
+]

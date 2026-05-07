@@ -89,6 +89,7 @@ import { BufferOccupancyChart } from "./analysis/BufferChart.js";
 import { CompletedCountHeatmap, StationOeeHeatmap } from "./analysis/EfficiencyPage.js";
 import { PartLoadStationCycleChart, PartMachineCycleChart } from "./analysis/PartCycleCards.js";
 import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
+import { BasketCycleChart } from "./analysis/BasketCycleCards.js";
 import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
 import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
 import { useAtom, useAtomValue } from "jotai";
@@ -97,6 +98,8 @@ import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
 import { CloseoutReport } from "./operations/CloseoutReport.js";
 import { RebookingsPage } from "./operations/Rebookings.js";
 import { RecentCompletedPartsPage } from "./operations/CompletedParts.js";
+import { basketDisplayName } from "../cell-status/station-cycles.js";
+import { last30HasBasketCycleData, specificMonthHasBasketCycleData } from "../cell-status/basket-cycles.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -188,59 +191,67 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
   },
 ];
 
-const analysisReports: ReadonlyArray<MenuNavItem> = [
-  { separator: "Efficiency" },
-  { name: "Buffers", route: { route: routes.RouteLocation.Analysis_Buffers }, icon: <BufferIcon /> },
-  {
-    name: "Station OEE",
-    route: { route: routes.RouteLocation.Analysis_StationOEE },
-    icon: <HourglassIcon />,
-  },
-  {
-    name: "Completed Parts",
-    route: { route: routes.RouteLocation.Analysis_PartsCompleted },
-    icon: <ExtensionIcon />,
-  },
-  { separator: "Cycles" },
-  {
-    name: "Machine Cycles",
-    route: { route: routes.RouteLocation.Analysis_MachineCycles },
-    icon: <WorkIcon />,
-  },
-  {
-    name: "L/U Cycles",
-    route: { route: routes.RouteLocation.Analysis_LoadCycles },
-    icon: <LoadUnloadIcon />,
-  },
-  {
-    name: "Pallet Cycles",
-    route: { route: routes.RouteLocation.Analysis_PalletCycles },
-    icon: <PalletIcon />,
-  },
-  { separator: "Cell" },
-  { name: "Quality", route: { route: routes.RouteLocation.Analysis_Quality }, icon: <BuildIcon /> },
-  {
-    name: "Tool Replacements",
-    route: { route: routes.RouteLocation.Analysis_ToolReplacements },
-    icon: <ToolIcon />,
-  },
-  {
-    name: "Schedules",
-    route: { route: routes.RouteLocation.Analysis_Schedules },
-    icon: <ScheduleIcon />,
-  },
-  { separator: "Costs" },
-  {
-    name: "Percentages",
-    route: { route: routes.RouteLocation.Analysis_CostPercents },
-    icon: <CallSplit />,
-  },
-  {
-    name: "Cost/Piece",
-    route: { route: routes.RouteLocation.Analysis_CostPerPiece },
-    icon: <CostIcon />,
-  },
-];
+function analysisReports(hasBasketCycles: boolean): ReadonlyArray<MenuNavItem> {
+  return [
+    { separator: "Efficiency" },
+    { name: "Buffers", route: { route: routes.RouteLocation.Analysis_Buffers }, icon: <BufferIcon /> },
+    {
+      name: "Station OEE",
+      route: { route: routes.RouteLocation.Analysis_StationOEE },
+      icon: <HourglassIcon />,
+    },
+    {
+      name: "Completed Parts",
+      route: { route: routes.RouteLocation.Analysis_PartsCompleted },
+      icon: <ExtensionIcon />,
+    },
+    { separator: "Cycles" },
+    {
+      name: "Machine Cycles",
+      route: { route: routes.RouteLocation.Analysis_MachineCycles },
+      icon: <WorkIcon />,
+    },
+    {
+      name: "L/U Cycles",
+      route: { route: routes.RouteLocation.Analysis_LoadCycles },
+      icon: <LoadUnloadIcon />,
+    },
+    {
+      name: "Pallet Cycles",
+      route: { route: routes.RouteLocation.Analysis_PalletCycles },
+      icon: <PalletIcon />,
+    },
+    {
+      name: (info) => basketDisplayName(info.basketName) + " Cycles",
+      route: { route: routes.RouteLocation.Analysis_BasketCycles },
+      icon: <PalletIcon />,
+      hidden: () => !hasBasketCycles,
+    },
+    { separator: "Cell" },
+    { name: "Quality", route: { route: routes.RouteLocation.Analysis_Quality }, icon: <BuildIcon /> },
+    {
+      name: "Tool Replacements",
+      route: { route: routes.RouteLocation.Analysis_ToolReplacements },
+      icon: <ToolIcon />,
+    },
+    {
+      name: "Schedules",
+      route: { route: routes.RouteLocation.Analysis_Schedules },
+      icon: <ScheduleIcon />,
+    },
+    { separator: "Costs" },
+    {
+      name: "Percentages",
+      route: { route: routes.RouteLocation.Analysis_CostPercents },
+      icon: <CallSplit />,
+    },
+    {
+      name: "Cost/Piece",
+      route: { route: routes.RouteLocation.Analysis_CostPerPiece },
+      icon: <CostIcon />,
+    },
+  ];
+}
 
 export function NavTabs({ children }: { children?: ReactNode }) {
   const [route, setRoute] = useAtom(routes.currentRoute);
@@ -337,7 +348,10 @@ export interface AppProps {
 const App = memo(function App(props: AppProps) {
   routes.useWatchHistory();
   const fmsInfo = useAtomValue(serverSettings.fmsInformation);
+  const hasLast30BasketCycles = useAtomValue(last30HasBasketCycleData);
+  const hasSpecificMonthBasketCycles = useAtomValue(specificMonthHasBasketCycleData);
   const [route, setRoute] = useAtom(routes.currentRoute);
+  const analysisMenuNavItems = analysisReports(hasLast30BasketCycles || hasSpecificMonthBasketCycles);
 
   const showLogout = fmsInfo.user !== null && fmsInfo.user !== undefined;
 
@@ -406,67 +420,73 @@ const App = memo(function App(props: AppProps) {
       case routes.RouteLocation.Analysis_Quality:
         page = <AnalysisQualityPage />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_ToolReplacements:
         page = <ToolReplacementPage />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_Schedules:
         page = <ScheduleHistory />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_Buffers:
         page = <BufferOccupancyChart />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_StationOEE:
         page = <StationOeeHeatmap />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_PartsCompleted:
         page = <CompletedCountHeatmap />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_MachineCycles:
         page = <PartMachineCycleChart />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_LoadCycles:
         page = <PartLoadStationCycleChart />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_PalletCycles:
         page = <PalletCycleChart />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_BasketCycles:
+        page = <BasketCycleChart />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_CostPercents:
         page = <CostBreakdownPage />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_CostPerPiece:
         page = <CostPerPiecePage />;
         nav1 = AnalysisSelectToolbar;
-        menuNavItems = analysisReports;
+        menuNavItems = analysisMenuNavItems;
         showAlarms = false;
         break;
 

@@ -35,9 +35,12 @@ import { addDays } from "date-fns";
 import type { ServerEventAndTime } from "./loading.js";
 import { IHistoricData, ISimulatedStationUtilization } from "../network/api.js";
 import { Atom, atom } from "jotai";
+import { fmsInformation } from "../network/server-settings.js";
+import { displayStationName } from "./station-cycles.js";
 
 export interface SimStationUse {
   readonly station: string;
+  readonly stationLabel: string;
   readonly start: Date;
   readonly end: Date;
   readonly plannedDown: boolean;
@@ -52,23 +55,31 @@ export const last30SimStationUse: Atom<ReadonlyArray<SimStationUse>> = last30Sim
 const specificMonthSimStationUseRW = atom<ReadonlyArray<SimStationUse>>([]);
 export const specificMonthSimStationUse: Atom<ReadonlyArray<SimStationUse>> = specificMonthSimStationUseRW;
 
-function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): ReadonlyArray<SimStationUse> {
+function procSimUse(
+  apiSimUse: ReadonlyArray<ISimulatedStationUtilization>,
+  loadStationNames: Readonly<Record<string, string>> | undefined,
+): ReadonlyArray<SimStationUse> {
   return apiSimUse.map((simUse) => ({
     station: simUse.stationGroup + " #" + simUse.stationNum.toString(),
+    stationLabel: displayStationName(simUse.stationGroup, simUse.stationNum, loadStationNames),
     start: simUse.startUTC,
     end: simUse.endUTC,
     plannedDown: simUse.planDown ?? false,
-    part: simUse.parts?.map((p) => ({ uniq: p.jobUnique, proc: p.process, path: p.path })),
+    parts: simUse.parts?.map((p) => ({ uniq: p.jobUnique, proc: p.process, path: p.path })),
   }));
 }
 
-export const setLast30SimStatUse = atom(null, (_, set, history: Readonly<IHistoricData>) => {
-  set(last30SimStationUseRW, (oldSimUse) => oldSimUse.concat(procSimUse(history.stationUse)));
+export const setLast30SimStatUse = atom(null, (get, set, history: Readonly<IHistoricData>) => {
+  const loadStationNames = get(fmsInformation)?.loadStationNames;
+  set(last30SimStationUseRW, (oldSimUse) =>
+    oldSimUse.concat(procSimUse(history.stationUse, loadStationNames)),
+  );
 });
 
-export const updateLast30SimStatUse = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+export const updateLast30SimStatUse = atom(null, (get, set, { evt, now, expire }: ServerEventAndTime) => {
   if (evt.newJobs?.stationUse) {
     const apiSimUse = evt.newJobs?.stationUse;
+    const loadStationNames = get(fmsInformation)?.loadStationNames;
     set(last30SimStationUseRW, (simUse) => {
       if (expire) {
         const expireT = addDays(now, -30);
@@ -81,11 +92,12 @@ export const updateLast30SimStatUse = atom(null, (_, set, { evt, now, expire }: 
         simUse = simUse.filter((e) => e.start >= expireT);
       }
 
-      return simUse.concat(procSimUse(apiSimUse));
+      return simUse.concat(procSimUse(apiSimUse, loadStationNames));
     });
   }
 });
 
-export const setSpecificMonthSimStatUse = atom(null, (_, set, history: Readonly<IHistoricData>) => {
-  set(specificMonthSimStationUseRW, procSimUse(history.stationUse));
+export const setSpecificMonthSimStatUse = atom(null, (get, set, history: Readonly<IHistoricData>) => {
+  const loadStationNames = get(fmsInformation)?.loadStationNames;
+  set(specificMonthSimStationUseRW, procSimUse(history.stationUse, loadStationNames));
 });

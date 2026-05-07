@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, useRef, memo } from "react";
+import { useState, useRef, memo, Fragment } from "react";
 import {
   Paper,
   ButtonBase,
@@ -55,6 +55,8 @@ import { Close as CloseIcon } from "@mui/icons-material";
 import { InProcMaterial, MaterialAction, MaterialDialog, PartIdenticon } from "./Material.js";
 import {
   ActionType,
+  BasketLocationEnum,
+  IBasketStatus,
   IInProcessMaterial,
   IPalletStatus,
   LocType,
@@ -78,12 +80,19 @@ import { QuarantineMatButton } from "./QuarantineButton.js";
 import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue, useSetAtom } from "jotai";
+import { fmsInformation } from "../../network/server-settings.js";
+import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
 
 type PalletAndMaterial = {
   readonly pallet: Readonly<IPalletStatus>;
+  readonly mats: ReadonlyArray<Readonly<IInProcessMaterial>>;
+};
+
+type BasketAndMaterial = {
+  readonly basket: Readonly<IBasketStatus>;
   readonly mats: ReadonlyArray<Readonly<IInProcessMaterial>>;
 };
 
@@ -97,6 +106,13 @@ type MachineStatus = {
 type LoadStatus = {
   readonly lulNum: number;
   readonly pal: PalletAndMaterial | null;
+  readonly basket: BasketAndMaterial | null;
+  readonly staging: ReadonlyArray<BasketAndMaterial>;
+  readonly sources: ReadonlyArray<{
+    readonly key: string;
+    readonly label: string;
+    readonly mats: ReadonlyArray<Readonly<IInProcessMaterial>>;
+  }>;
 };
 
 type MachineAtLoadStatus = {
@@ -112,17 +128,34 @@ type CellOverview = {
   readonly machines: OrderedMap<string, ReadonlyArray<MachineStatus>>;
   readonly loads: ReadonlyArray<LoadStatus>;
   readonly stockerPals: ReadonlyArray<PalletAndMaterial>;
+  readonly floatingBaskets: ReadonlyArray<BasketAndMaterial>;
+  readonly storageBaskets: {
+    readonly empty: number;
+    readonly filled: number;
+  } | null;
   readonly machineAtLoad: ReadonlyArray<MachineAtLoadStatus>;
   readonly maxNumFacesOnPallet: number;
+  readonly maxNumStagingRows: number;
+  readonly maxNumSourceRows: number;
 };
 
 function useCellOverview(): CellOverview {
   const currentSt = useAtomValue(currentStatus);
   const jobs = useAtomValue(last30Jobs);
+  const fmsInfo = useAtomValue(fmsInformation);
 
   const matByPal = LazySeq.of(currentSt.material)
     .filter((m) => m.location.type === LocType.OnPallet || m.action.type === ActionType.Loading)
     .toRLookup((m) => m.location.palletNum ?? m.action.loadOntoPalletNum ?? 0);
+
+  const matByBasket = LazySeq.of(currentSt.material)
+    .filter(
+      (m) =>
+        m.location.type === LocType.InBasket &&
+        m.location.basketId !== null &&
+        m.location.basketId !== undefined,
+    )
+    .toRLookup((m) => m.location.basketId ?? 0);
 
   let loads: OrderedMap<number, LoadStatus> = LazySeq.ofObject(currentSt.pallets)
     .filter(([_, p]) => p.currentPalletLocation.loc === PalletLocationEnum.LoadUnload)
@@ -131,6 +164,9 @@ function useCellOverview(): CellOverview {
       {
         lulNum: p.currentPalletLocation.num,
         pal: { pallet: p, mats: matByPal.get(p.palletNum) ?? [] },
+        basket: null,
+        staging: [],
+        sources: [],
       },
     ]);
 
@@ -206,12 +242,21 @@ function useCellOverview(): CellOverview {
   const cutoff = addDays(new Date(), -7);
 
   // now add empty locations
-  const allPaths = jobs
+  // Materialize ProcessInfo so we can iterate it at two levels (proc for basket stations, paths for the rest)
+  const allProcs = jobs
     .valuesToLazySeq()
     .filter((j) => j.routeEndUTC > cutoff)
     .concat(LazySeq.ofObject(currentSt.jobs).map(([_, j]) => j))
     .flatMap((j) => j.procsAndPaths)
-    .flatMap((p) => p.paths);
+    .toRArray();
+
+  for (const proc of allProcs) {
+    for (const lul of (proc.basketLoadStations ?? []).concat(proc.basketUnloadStations ?? [])) {
+      maxLoadNum = Math.max(maxLoadNum, lul);
+    }
+  }
+
+  const allPaths = LazySeq.of(allProcs).flatMap((p) => p.paths);
 
   for (const path of allPaths) {
     for (const lul of path.load.concat(path.unload)) {
@@ -247,6 +292,9 @@ function useCellOverview(): CellOverview {
       return {
         lulNum: i,
         pal: null,
+        basket: null,
+        staging: [],
+        sources: [],
       };
     });
   }
@@ -316,20 +364,140 @@ function useCellOverview(): CellOverview {
     }
   }
 
+  const stagedBaskets = new Map<number, Array<BasketAndMaterial>>();
+  const activeBaskets = new Map<number, Array<BasketAndMaterial>>();
+  const floatingBaskets = new Map<number, BasketAndMaterial>();
+  let storageEmpty = 0;
+  let storageFilled = 0;
+
+  for (const basket of LazySeq.ofObject(currentSt.baskets ?? {})
+    .map(([_, b]) => b)
+    .sortBy((b) => b.basketId)) {
+    const basketWithMaterial: BasketAndMaterial = {
+      basket,
+      mats: matByBasket.get(basket.basketId) ?? [],
+    };
+
+    switch (basket.location) {
+      case BasketLocationEnum.Storage:
+        if (basketWithMaterial.mats.length > 0) {
+          storageFilled += 1;
+        } else {
+          storageEmpty += 1;
+        }
+        break;
+
+      case BasketLocationEnum.LoadUnload:
+      case BasketLocationEnum.LoadStationStaging: {
+        const loadNum = basket.locationNum;
+        if (loadNum === null) {
+          floatingBaskets.set(basket.basketId, basketWithMaterial);
+          break;
+        }
+
+        const byLoad = basket.location === BasketLocationEnum.LoadUnload ? activeBaskets : stagedBaskets;
+        const prev = byLoad.get(loadNum) ?? [];
+        prev.push(basketWithMaterial);
+        byLoad.set(loadNum, prev);
+        break;
+      }
+
+      case BasketLocationEnum.InTransit:
+        floatingBaskets.set(basket.basketId, basketWithMaterial);
+        break;
+    }
+  }
+
+  let maxNumStagingRows = 0;
+  let maxNumSourceRows = 0;
+  loads = loads.mapValues((load) => {
+    const sourceRows = new Map<string, { label: string; mats: Array<Readonly<IInProcessMaterial>> }>();
+    const sourceMats = LazySeq.of(load.pal?.mats ?? load.basket?.mats ?? [])
+      .filter((mat) => mat.location.type !== LocType.OnPallet)
+      .toRArray();
+
+    for (const mat of sourceMats) {
+      if (mat.location.type === LocType.Free) {
+        const key = "free";
+        const row = sourceRows.get(key) ?? {
+          label: "To Load",
+          mats: [],
+        };
+        row.mats.push(mat);
+        sourceRows.set(key, row);
+        continue;
+      }
+
+      if (mat.action.loadFromBasketId !== null && mat.action.loadFromBasketId !== undefined) {
+        const key = `basket:${mat.action.loadFromBasketId}`;
+        const row = sourceRows.get(key) ?? {
+          label: `From ${basketDisplayName(fmsInfo.basketName)} ${mat.action.loadFromBasketId}`,
+          mats: [],
+        };
+        row.mats.push(mat);
+        sourceRows.set(key, row);
+        continue;
+      }
+
+      if (mat.location.type === LocType.InQueue && mat.location.currentQueue) {
+        const key = `queue:${mat.location.currentQueue}`;
+        const row = sourceRows.get(key) ?? {
+          label: `From ${mat.location.currentQueue}`,
+          mats: [],
+        };
+        row.mats.push(mat);
+        sourceRows.set(key, row);
+      }
+    }
+
+    const currentBasket = LazySeq.of(activeBaskets.get(load.lulNum) ?? [])
+      .sortBy((b) => b.basket.locationNum)
+      .toRArray();
+    // Extras beyond the first active basket at this station fall back to floating
+    for (const extra of currentBasket.slice(1)) {
+      floatingBaskets.set(extra.basket.basketId, extra);
+    }
+    const loadingFromBasketIds = new Set(
+      LazySeq.of(load.pal?.mats ?? [])
+        .collect((mat) => mat.action.loadFromBasketId ?? null)
+        .toRArray(),
+    );
+    const staging = LazySeq.of(stagedBaskets.get(load.lulNum) ?? [])
+      .filter((basket) => !loadingFromBasketIds.has(basket.basket.basketId))
+      .sortBy((b) => b.basket.locationNum)
+      .toRArray();
+    maxNumStagingRows = Math.max(maxNumStagingRows, staging.length);
+    const sources = LazySeq.of(sourceRows)
+      .map(([key, row]) => ({ key, label: row.label, mats: row.mats }))
+      .sortBy((row) => row.label)
+      .toRArray();
+    maxNumSourceRows = Math.max(maxNumSourceRows, sources.length);
+    return {
+      ...load,
+      basket: currentBasket[0] ?? null,
+      staging,
+      sources,
+    };
+  });
+
   return {
     machines: machines.mapValues((group) => group.valuesToAscLazySeq().toRArray()),
     loads: loads.valuesToAscLazySeq().toRArray(),
     stockerPals: stockerPals.valuesToAscLazySeq().toRArray(),
+    floatingBaskets: LazySeq.of(floatingBaskets.values()).toRArray(),
+    storageBaskets: storageEmpty + storageFilled > 0 ? { empty: storageEmpty, filled: storageFilled } : null,
     machineAtLoad: machAtLoad.valuesToAscLazySeq().toRArray(),
     maxNumFacesOnPallet,
+    maxNumStagingRows,
+    maxNumSourceRows,
   };
 }
 
 function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
-  const [open, setOpen] = useState<boolean>(false);
+  const [open, setOpen] = useState(false);
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
-  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const setMatToShow = useSetAtom(materialDialogOpen);
   const curSt = useAtomValue(currentStatus);
 
@@ -446,7 +614,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
 
 function PalletFaces({
   maxNumFaces,
-  mats,
+  mats: allMats,
   loadingOntoPallet,
   noFilter,
   showExpanded,
@@ -466,17 +634,17 @@ function PalletFaces({
           flexWrap: "wrap",
         }}
       >
-        {mats.map((mat) => (
+        {allMats.map((mat) => (
           <InProcMaterial key={mat.materialID} mat={mat} />
         ))}
       </Box>
     );
   } else {
     const byFace = loadingOntoPallet
-      ? LazySeq.of(mats)
+      ? LazySeq.of(allMats)
           .filter((m) => noFilter || m.location.type !== LocType.OnPallet)
           .orderedGroupBy((m) => m.action.loadOntoFace ?? 1)
-      : LazySeq.of(mats)
+      : LazySeq.of(allMats)
           .filter((m) => noFilter || m.location.type === LocType.OnPallet)
           .orderedGroupBy((m) =>
             m.action.type === ActionType.Loading ? (m.action.loadOntoFace ?? 1) : (m.location.face ?? 1),
@@ -508,6 +676,56 @@ function PalletFaces({
       </Box>
     );
   }
+}
+
+function BasketContents({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
+  const byPosition = LazySeq.of(mats).orderedGroupBy((m) => (m.location.basketSubPosition ?? 0) + 1);
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "flex-start",
+        alignItems: "flex-start",
+        gap: "5px",
+        minHeight: `${CollapsedIconSize}px`,
+        paddingLeft: "5px",
+        paddingRight: "5px",
+        height: "100%",
+        alignContent: "center",
+      }}
+    >
+      {byPosition.map(([position, bucketMats]) => (
+        <Box key={position}>
+          <MaterialIcon mats={bucketMats} />
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function SourceRowContents({
+  mats,
+  maxNumFaces,
+}: {
+  mats: ReadonlyArray<Readonly<IInProcessMaterial>>;
+  maxNumFaces: number;
+}) {
+  return (
+    <Box
+      sx={{
+        minHeight: `${rowSize}px`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-start",
+        paddingLeft: "5px",
+        gap: "5px",
+        paddingRight: "5px",
+      }}
+    >
+      <PalletFaces mats={mats} maxNumFaces={maxNumFaces} loadingOntoPallet />
+    </Box>
+  );
 }
 
 function gridTemplateColumns(maxNumFaces: number, includeLabelCol: boolean) {
@@ -755,7 +973,8 @@ function useElapsedLoadTime(
 }
 
 function LoadStationLabel({ load }: { load: LoadStatus }) {
-  const status = useElapsedLoadTime(load.pal?.mats);
+  const status = useElapsedLoadTime(load.pal?.mats ?? load.basket?.mats);
+  const fmsInfo = useAtomValue(fmsInformation);
   return (
     <Box
       sx={{
@@ -764,22 +983,53 @@ function LoadStationLabel({ load }: { load: LoadStatus }) {
         alignItems: "baseline",
       }}
     >
-      <Typography variant="h5">L/U {load.lulNum}</Typography>
+      <Typography variant="h5">{loadStationDisplayName(load.lulNum, fmsInfo.loadStationNames)}</Typography>
       <Typography variant="body1">{status}</Typography>
     </Box>
   );
 }
 
-function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadStatus }) {
+function LoadStation({
+  maxNumFaces,
+  maxNumStagingRows,
+  maxNumSourceRows,
+  load,
+}: {
+  maxNumFaces: number;
+  maxNumStagingRows: number;
+  maxNumSourceRows: number;
+  load: LoadStatus;
+}) {
+  const fmsInfo = useAtomValue(fmsInformation);
+  const basketName = basketDisplayName(fmsInfo.basketName);
+  const currentLabel = load.pal ? "Pallet" : load.basket ? basketName : null;
+  const currentValue = load.pal
+    ? load.pal.pallet.palletNum.toString()
+    : load.basket
+      ? load.basket.basket.basketId.toString()
+      : null;
+  const numSourceRows = Math.max(1, maxNumSourceRows);
+  const numStagingRows = Math.max(1, maxNumStagingRows);
+
+  const sourceAreaRows = Array.from({ length: numSourceRows }, (_, i) => `"source${i} sourcemat${i}"`);
+  const stagingAreaRows = Array.from({ length: numStagingRows }, (_, i) => `"stage${i} stagemat${i}"`);
+  const gridTemplateAreas = [
+    '"lulname lulname"',
+    ...sourceAreaRows,
+    '"current currentmat"',
+    ...stagingAreaRows,
+  ].join(" ");
+  const totalDataRows = numSourceRows + 1 + numStagingRows;
+
   return (
     <Box
       sx={{
         display: "grid",
         border: "1px solid black",
         margin: "5px",
-        gridTemplateRows: `auto ${rowSize}px ${rowSize}px`,
+        gridTemplateRows: `auto repeat(${totalDataRows}, ${rowSize}px)`,
         gridTemplateColumns: gridTemplateColumns(maxNumFaces, true),
-        gridTemplateAreas: `"lulname lulname" "loading loadingmat" "currentpal currentmat"`,
+        gridTemplateAreas,
       }}
     >
       <Box
@@ -791,62 +1041,61 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
       >
         <LoadStationLabel load={load} />
       </Box>
+      {Array.from({ length: numSourceRows }, (_, i) => {
+        const row = load.sources[i] ?? null;
+        return (
+          <Fragment key={`source-${i}`}>
+            <Box
+              sx={{
+                gridArea: `source${i}`,
+                borderRight: "1px solid black",
+                borderBottom: "1px solid black",
+                padding: "2px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {row ? (
+                <Typography variant="body2" sx={{ textAlign: "center" }}>
+                  {row.label}
+                </Typography>
+              ) : undefined}
+            </Box>
+            <Box
+              sx={{
+                gridArea: `sourcemat${i}`,
+                borderBottom: "1px solid black",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
+            >
+              {row ? <SourceRowContents mats={row.mats} maxNumFaces={maxNumFaces} /> : undefined}
+            </Box>
+          </Fragment>
+        );
+      })}
       <Box
         sx={{
-          gridArea: "loading",
+          gridArea: "current",
           borderRight: "1px solid black",
           borderBottom: "1px solid black",
           padding: "2px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <Stack>
-          <Typography
-            variant="body1"
-            sx={{
-              textAlign: "center",
-            }}
-          >
-            To
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              textAlign: "center",
-            }}
-          >
-            Load
-          </Typography>
-        </Stack>
-      </Box>
-      <Box sx={{ gridArea: "loadingmat", borderBottom: "1px solid black" }}>
-        {load.pal ? (
-          <PalletFaces mats={load.pal.mats} maxNumFaces={maxNumFaces} loadingOntoPallet />
-        ) : undefined}
-      </Box>
-      <Box
-        sx={{
-          gridArea: "currentpal",
-          borderRight: "1px solid black",
-          padding: "2px",
-        }}
-      >
-        <Stack>
-          <Typography
-            variant="body1"
-            sx={{
-              textAlign: "center",
-            }}
-          >
-            Pallet
-          </Typography>
-          {load.pal ? (
-            <Typography
-              variant="h6"
-              sx={{
-                textAlign: "center",
-              }}
-            >
-              {load.pal.pallet.palletNum}
+          {currentLabel ? (
+            <Typography variant="body1" sx={{ textAlign: "center" }}>
+              {currentLabel}
+            </Typography>
+          ) : undefined}
+          {currentValue ? (
+            <Typography variant="h6" sx={{ textAlign: "center" }}>
+              {currentValue}
             </Typography>
           ) : undefined}
         </Stack>
@@ -854,10 +1103,51 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
       <Box
         sx={{
           gridArea: "currentmat",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          borderBottom: "1px solid black",
         }}
       >
         {load.pal ? <PalletFaces mats={load.pal.mats} maxNumFaces={maxNumFaces} /> : undefined}
+        {!load.pal && load.basket ? <BasketContents mats={load.basket.mats} /> : undefined}
       </Box>
+      {Array.from({ length: numStagingRows }, (_, i) => {
+        const row = load.staging[i] ?? null;
+        const isLastRow = i === numStagingRows - 1;
+        return (
+          <Fragment key={`stage-${i}`}>
+            <Box
+              sx={{
+                gridArea: `stage${i}`,
+                borderRight: "1px solid black",
+                ...(isLastRow ? {} : { borderBottom: "1px solid black" }),
+                padding: "2px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {row ? (
+                <Typography variant="body2" sx={{ textAlign: "center" }}>
+                  Staging {basketName} {row.basket.basketId}
+                </Typography>
+              ) : undefined}
+            </Box>
+            <Box
+              sx={{
+                gridArea: `stagemat${i}`,
+                ...(isLastRow ? {} : { borderBottom: "1px solid black" }),
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
+            >
+              {row ? <BasketContents mats={row.mats} /> : undefined}
+            </Box>
+          </Fragment>
+        );
+      })}
     </Box>
   );
 }
@@ -1050,6 +1340,56 @@ function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: P
   );
 }
 
+function FloatingBasket({ basket }: { basket: BasketAndMaterial }) {
+  const basketName = basketDisplayName(useAtomValue(fmsInformation).basketName);
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        border: "1px solid black",
+        margin: "5px",
+        gridTemplateRows: `auto ${rowSize}px`,
+        gridTemplateColumns: "minmax(120px, max-content)",
+        gridTemplateAreas: '"basketname" "basketmat"',
+      }}
+    >
+      <Typography
+        variant="h5"
+        sx={{
+          gridArea: "basketname",
+          padding: "0.2em",
+          borderBottom: "1px solid black",
+        }}
+      >
+        {basketName} {basket.basket.basketId}
+      </Typography>
+      <Box sx={{ gridArea: "basketmat" }}>
+        <BasketContents mats={basket.mats} />
+      </Box>
+    </Box>
+  );
+}
+
+function BasketStorageSummary({ empty, filled }: { empty: number; filled: number }) {
+  const basketName = basketDisplayName(useAtomValue(fmsInformation).basketName);
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        border: "1px solid black",
+        margin: "5px",
+        padding: "0.5em 1em",
+        alignContent: "center",
+        minWidth: "170px",
+      }}
+    >
+      <Typography variant="h5">{basketName} Storage</Typography>
+      <Typography variant="body1">Empty: {empty}</Typography>
+      <Typography variant="body1">Filled: {filled}</Typography>
+    </Box>
+  );
+}
+
 export const SystemOverview = memo(function SystemOverview({ overview }: { overview: CellOverview }) {
   return (
     <div>
@@ -1076,7 +1416,13 @@ export const SystemOverview = memo(function SystemOverview({ overview }: { overv
           }}
         >
           {overview.loads.map((machine) => (
-            <LoadStation key={machine.lulNum} load={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
+            <LoadStation
+              key={machine.lulNum}
+              load={machine}
+              maxNumFaces={overview.maxNumFacesOnPallet}
+              maxNumStagingRows={overview.maxNumStagingRows}
+              maxNumSourceRows={overview.maxNumSourceRows}
+            />
           ))}
         </Box>
       ) : undefined}
@@ -1093,7 +1439,7 @@ export const SystemOverview = memo(function SystemOverview({ overview }: { overv
           ))}
         </Box>
       ) : undefined}
-      {overview.stockerPals.length > 0 ? (
+      {overview.stockerPals.length > 0 || overview.floatingBaskets.length > 0 || overview.storageBaskets ? (
         <Box
           sx={{
             display: "flex",
@@ -1108,6 +1454,15 @@ export const SystemOverview = memo(function SystemOverview({ overview }: { overv
               maxNumFaces={overview.maxNumFacesOnPallet}
             />
           ))}
+          {overview.floatingBaskets.map((basket) => (
+            <FloatingBasket key={basket.basket.basketId} basket={basket} />
+          ))}
+          {overview.storageBaskets ? (
+            <BasketStorageSummary
+              empty={overview.storageBaskets.empty}
+              filled={overview.storageBaskets.filled}
+            />
+          ) : undefined}
         </Box>
       ) : undefined}
     </div>
@@ -1231,7 +1586,11 @@ function LoadStationIcon({ load }: { load: LoadStatus }) {
   return (
     <polygon
       points="3,27 27,27 15,3"
-      fill={load.pal === null ? "white" : theme.palette.secondary.main}
+      fill={
+        load.pal === null && load.basket === null && load.staging.length === 0
+          ? "white"
+          : theme.palette.secondary.main
+      }
       stroke="black"
     />
   );

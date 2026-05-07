@@ -43,31 +43,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
       - uses: actions/setup-node@v6
         with:
           node-version: "latest"
 
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Find pnpm cache
-        id: pnpmcache
-        shell: bash
-        run: echo "cachedir=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v5
+      - uses: pnpm/action-setup@v6
         with:
-          path: ${{ steps.pnpmcache.outputs.cachedir }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          cache: true
+          cache_dependency_path: client/insight/pnpm-lock.yaml
+          package_json_file: client/insight/package.json
 
       - name: Install client deps
         run: pnpm --dir client/insight install --frozen-lockfile
-      - name: Client Test Suite
-        run: pnpm --dir client/insight run test
+
+      - name: Client Unit Test Suite
+        run: pnpm --dir client/insight run test:unit
+
+      - name: Client Integration Test Suite
+        run: pnpm --dir client/insight run test:integration
+
       - name: Client Main Build
         run: pnpm --dir client/insight run build
-
-      - name: Cleanup pnpm cache
-        run: pnpm store prune

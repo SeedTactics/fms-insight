@@ -105,8 +105,6 @@ function WaitingForMaterialDialog() {
     printStarted.current = true;
   }, [waiting, materialToPrint, printStarted, print]);
 
-  console.log(waiting, materialToPrint);
-
   return (
     <>
       <Dialog open={waiting !== null}>

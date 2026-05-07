@@ -197,6 +197,8 @@ public record FMSSettings
 
   public ImmutableDictionary<int, string>? LoadStationNames { get; init; } = null;
 
+  public string? BasketName { get; init; } = null;
+
   // If null, rebookings are not allowed.  Otherwise, this prefix followed by a UUID is
   // the booking ID created for rebookings.
   public string? RebookingPrefix { get; init; } = null;

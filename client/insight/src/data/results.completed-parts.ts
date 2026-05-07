@@ -35,7 +35,7 @@ import { startOfDay } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
 import { SimPartCompleted } from "../cell-status/sim-production.js";
-import { PartCycleData } from "../cell-status/station-cycles.js";
+import { isMachineCycle, PartCycleData } from "../cell-status/station-cycles.js";
 import { HashMap, hashValues, LazySeq } from "@seedtactics/immutable-collections";
 
 // --------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ export function binCyclesByDayAndPart(
       (cycle) =>
         cycle.endTime >= start &&
         cycle.endTime <= end &&
-        !cycle.isLabor &&
+        isMachineCycle(cycle) &&
         cycle.activeMinutes > 0 &&
         cycle.material.length > 0,
     )
