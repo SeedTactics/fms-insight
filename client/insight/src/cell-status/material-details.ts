@@ -49,7 +49,7 @@ import {
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
 import { atom, useSetAtom } from "jotai";
-import { loadable } from "jotai/utils";
+import { unwrap } from "jotai/utils";
 import { isLogEntryInvalidated } from "../components/LogEntry.js";
 import { currentRoute, RouteLocation } from "../components/routes.js";
 
@@ -90,6 +90,9 @@ export const materialDialogOpen = atom(
 const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | null>>(async (get) => {
   const toShow = get(matToShow);
   if (toShow && toShow.type === "Barcode") {
+    if (typeof FmsServerBackend === "undefined") {
+      return null;
+    }
     const route = get(currentRoute);
     const queues = toShow.toQueue
       ? [toShow.toQueue]
@@ -104,11 +107,11 @@ const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | null>>(a
   }
 });
 
-export const barcodePotentialNewMaterial = atom<Promise<Readonly<IScannedPotentialNewMaterial> | null>>(
-  async (get) => {
-    return (await get(barcodeMaterialDetail))?.potentialNewMaterial ?? null;
-  },
-);
+export const barcodePotentialNewMaterial = atom<
+  Promise<Readonly<IScannedPotentialNewMaterial> | null>
+>(async (get) => {
+  return (await get(barcodeMaterialDetail))?.potentialNewMaterial ?? null;
+});
 
 export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(async (get) => {
   const curMat = get(matToShow);
@@ -137,10 +140,15 @@ export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(asy
     }
     case "ManuallyEnteredSerial":
     case "AddMatWithEnteredSerial": {
+      if (typeof LogBackend === "undefined") {
+        return null;
+      }
       return (await LogBackend.materialForSerial(curMat.serial))?.[0] ?? null;
     }
   }
 });
+
+export const materialInDialogInfoUnwrapped = unwrap(materialInDialogInfo, (prev) => prev ?? null);
 
 export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>>(async (get) => {
   const status = get(currentStatus);
@@ -148,7 +156,9 @@ export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>
   if (toShow === null) return null;
   if (toShow.type === "InProcMat") return toShow.inproc;
   const matId = (await get(materialInDialogInfo))?.materialID ?? null;
-  return matId !== null && matId >= 0 ? (status.material.find((m) => m.materialID === matId) ?? null) : null;
+  return matId !== null && matId >= 0
+    ? (status.material.find((m) => m.materialID === matId) ?? null)
+    : null;
 });
 
 export const serialInMaterialDialog = atom<Promise<string | null>>(async (get) => {
@@ -165,13 +175,20 @@ export const serialInMaterialDialog = atom<Promise<string | null>>(async (get) =
       return toShow.logMat.serial ?? null;
     case "Barcode": {
       const barcodeMat = await get(barcodeMaterialDetail);
-      return barcodeMat?.existingMaterial?.serial ?? barcodeMat?.potentialNewMaterial?.serial ?? null;
+      return (
+        barcodeMat?.existingMaterial?.serial ?? barcodeMat?.potentialNewMaterial?.serial ?? null
+      );
     }
     case "ManuallyEnteredSerial":
     case "AddMatWithEnteredSerial":
       return toShow.serial;
   }
 });
+
+export const serialInMaterialDialogUnwrapped = unwrap(
+  serialInMaterialDialog,
+  (prev) => prev ?? null,
+);
 
 export const workorderInMaterialDialog = atom<Promise<string | null>>(async (get) => {
   const toShow = get(matToShow);
@@ -187,7 +204,11 @@ export const workorderInMaterialDialog = atom<Promise<string | null>>(async (get
       return toShow.logMat.workorder ?? null;
     case "Barcode": {
       const barcodeMat = await get(barcodeMaterialDetail);
-      return barcodeMat?.existingMaterial?.workorder ?? barcodeMat?.potentialNewMaterial?.workorder ?? null;
+      return (
+        barcodeMat?.existingMaterial?.workorder ??
+        barcodeMat?.potentialNewMaterial?.workorder ??
+        null
+      );
     }
     case "ManuallyEnteredSerial":
     case "AddMatWithEnteredSerial":
@@ -201,41 +222,45 @@ export const workorderInMaterialDialog = atom<Promise<string | null>>(async (get
 
 const extraLogEventsFromUpdates = atom<ReadonlyArray<ILogEntry>>([]);
 
-const localMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (get, { signal }) => {
-  const mat = await get(materialInDialogInfo);
-  if (mat === null) {
-    return [];
-  } else if (mat.materialID >= 0) {
-    return await LogBackend.logForMaterial(mat.materialID, signal);
-  } else if (mat.serial && mat.serial !== "") {
-    return await LogBackend.logForSerial(mat.serial);
-  } else {
-    return [];
-  }
-});
-const localMatEventsLoadable = loadable(localMatEvents);
+const localMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(
+  async (get, { signal }) => {
+    const mat = await get(materialInDialogInfo);
+    if (mat === null) {
+      return [];
+    } else if (typeof LogBackend === "undefined") {
+      return [];
+    } else if (mat.materialID >= 0) {
+      return await LogBackend.logForMaterial(mat.materialID, signal);
+    } else if (mat.serial && mat.serial !== "") {
+      return await LogBackend.logForSerial(mat.serial);
+    } else {
+      return [];
+    }
+  },
+);
+const localMatEventsUnwrapped = unwrap(localMatEvents, (prev) => prev ?? []);
 
-const otherMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (get, { signal }) => {
-  const serial = await get(serialInMaterialDialog);
-  if (serial === null || serial === "") return [];
+const otherMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(
+  async (get, { signal }) => {
+    const serial = await get(serialInMaterialDialog);
+    if (serial === null || serial === "") return [];
 
-  const evts: Array<Readonly<ILogEntry>> = [];
+    const evts: Array<Readonly<ILogEntry>> = [];
 
-  for (const b of OtherLogBackends) {
-    evts.push.apply(await b.logForSerial(serial, signal));
-  }
+    for (const b of OtherLogBackends) {
+      evts.push.apply(await b.logForSerial(serial, signal));
+    }
 
-  return evts;
-});
+    return evts;
+  },
+);
 
-const otherMatEventsLoadable = loadable(otherMatEvents);
+const otherMatEventsUnwrapped = unwrap(otherMatEvents, (prev) => prev ?? []);
 
 export const materialInDialogEvents = atom<ReadonlyArray<Readonly<ILogEntry>>>((get) => {
-  const localEvts = get(localMatEventsLoadable);
-  const otherEvts = get(otherMatEventsLoadable);
   const evtsFromUpdate = get(extraLogEventsFromUpdates);
-  return LazySeq.of(localEvts.state === "hasData" ? localEvts.data : [])
-    .concat(otherEvts.state === "hasData" ? otherEvts.data : [])
+  return LazySeq.of(get(localMatEventsUnwrapped))
+    .concat(get(otherMatEventsUnwrapped))
     .sortBy(
       (e) => e.endUTC.getTime(),
       (e) => e.counter,
@@ -249,27 +274,29 @@ export type LargestUsedProces = {
   readonly totalNumProcesses: number;
 };
 
-export const materialInDialogLargestUsedProcess = atom<Promise<LargestUsedProces | null>>(async (get) => {
-  const info = await get(materialInDialogInfo);
-  if (info === null) return null;
-  const evts = get(materialInDialogEvents);
-  const maxEvt = LazySeq.of(evts)
-    .filter(
-      (e) =>
-        !isLogEntryInvalidated(e) &&
-        (e.type === LogType.LoadUnloadCycle ||
-          e.type === LogType.MachineCycle ||
-          e.type === LogType.AddToQueue),
-    )
-    .flatMap((e) => e.material)
-    .filter((e) => e.id === info.materialID)
-    .maxBy((e) => e.proc);
-  if (maxEvt) {
-    return { process: maxEvt.proc, totalNumProcesses: maxEvt.numproc };
-  } else {
-    return null;
-  }
-});
+export const materialInDialogLargestUsedProcess = atom<Promise<LargestUsedProces | null>>(
+  async (get) => {
+    const info = await get(materialInDialogInfo);
+    if (info === null) return null;
+    const evts = get(materialInDialogEvents);
+    const maxEvt = LazySeq.of(evts)
+      .filter(
+        (e) =>
+          !isLogEntryInvalidated(e) &&
+          (e.type === LogType.LoadUnloadCycle ||
+            e.type === LogType.MachineCycle ||
+            e.type === LogType.AddToQueue),
+      )
+      .flatMap((e) => e.material)
+      .filter((e) => e.id === info.materialID)
+      .maxBy((e) => e.proc);
+    if (maxEvt) {
+      return { process: maxEvt.proc, totalNumProcesses: maxEvt.numproc };
+    } else {
+      return null;
+    }
+  },
+);
 
 //--------------------------------------------------------------------------------
 // Inspections
@@ -288,7 +315,9 @@ export const materialInDialogInspections = atom<MaterialToShowInspections>((get)
     return { signaledInspections: [], completedInspections: [] };
   }
 
-  const inspTypes = new Set<string>(curMat.type === "InProcMat" ? curMat.inproc.signaledInspections : []);
+  const inspTypes = new Set<string>(
+    curMat.type === "InProcMat" ? curMat.inproc.signaledInspections : [],
+  );
   const completedTypes = new Set<string>();
 
   evts.forEach((e) => {
@@ -426,7 +455,10 @@ export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boole
   return [callback, updating];
 }
 
-export function useAssignWorkorder(): [(mat: MaterialToShowInfo, workorder: string) => void, boolean] {
+export function useAssignWorkorder(): [
+  (mat: MaterialToShowInfo, workorder: string) => void,
+  boolean,
+] {
   const [updating, setUpdating] = useState<boolean>(false);
   const setExtraLogEvts = useSetAtom(extraLogEventsFromUpdates);
   const callback = useCallback(
@@ -522,7 +554,10 @@ export interface AddExistingMaterialToQueueData {
   readonly operator: string | null;
 }
 
-export function useAddExistingMaterialToQueue(): [(d: AddExistingMaterialToQueueData) => void, boolean] {
+export function useAddExistingMaterialToQueue(): [
+  (d: AddExistingMaterialToQueueData) => void,
+  boolean,
+] {
   const [updating, setUpdating] = useState<boolean>(false);
   const callback = useCallback((d: AddExistingMaterialToQueueData) => {
     setUpdating(true);
@@ -599,9 +634,14 @@ export function useAddNewCastingToQueue(): [(d: AddNewCastingToQueueData) => voi
   const callback = useCallback((d: AddNewCastingToQueueData) => {
     setUpdating(true);
 
-    JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.quantity, d.operator, d.workorder, [
-      ...(d.serials || []),
-    ])
+    JobsBackend.addUnallocatedCastingToQueue(
+      d.casting,
+      d.queue,
+      d.quantity,
+      d.operator,
+      d.workorder,
+      [...(d.serials || [])],
+    )
       .then((ms) => {
         if (d.onNewMaterial) d.onNewMaterial(ms);
       }, d.onError)

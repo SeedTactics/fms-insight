@@ -41,7 +41,7 @@ import {
 import { ILogEntry } from "../network/api.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { atom } from "jotai";
-import { loadable } from "jotai/utils";
+import { unwrap } from "jotai/utils";
 
 export type PathLookupLogEntries = HashMap<PartAndInspType, InspectionLogsByCntr>;
 
@@ -56,6 +56,7 @@ export const pathLookupRange = atom<PathLookupRange | null>(null);
 const localLogEntries = atom<Promise<PathLookupLogEntries>>(async (get, { signal }) => {
   const range = get(pathLookupRange);
   if (range == null) return HashMap.empty();
+  if (typeof LogBackend === "undefined") return HashMap.empty();
 
   const events = await LogBackend.get(range.curStart, range.curEnd, signal);
   return LazySeq.of(events)
@@ -68,7 +69,10 @@ const localLogEntries = atom<Promise<PathLookupLogEntries>>(async (get, { signal
     );
 });
 
-const localLogLoadable = loadable(localLogEntries);
+const localLogEntriesUnwrapped = unwrap(
+  localLogEntries,
+  (prev) => prev ?? HashMap.empty<PartAndInspType, InspectionLogsByCntr>(),
+);
 
 const otherLogEntries = atom<Promise<PathLookupLogEntries>>(async (get) => {
   const range = get(pathLookupRange);
@@ -91,32 +95,17 @@ const otherLogEntries = atom<Promise<PathLookupLogEntries>>(async (get) => {
     );
 });
 
-const otherLogLoadable = loadable(otherLogEntries);
+const otherLogEntriesUnwrapped = unwrap(
+  otherLogEntries,
+  (prev) => prev ?? HashMap.empty<PartAndInspType, InspectionLogsByCntr>(),
+);
 
 export const inspectionLogEntries = atom<PathLookupLogEntries>((get) => {
-  const localEvts = get(localLogLoadable);
-  const otherEvts = get(otherLogLoadable);
-  const localData = localEvts.state === "hasData" ? localEvts.data : null;
-  const otherData = otherEvts.state === "hasData" ? otherEvts.data : null;
-
-  if (localData) {
-    if (!otherData) {
-      return localData;
-    } else {
-      return HashMap.union(
-        (inspsByCntr1: InspectionLogsByCntr, inspsByCntr2: InspectionLogsByCntr) =>
-          inspsByCntr1.union(inspsByCntr2),
-        localData,
-        otherData,
-      );
-    }
-  } else {
-    if (otherData) {
-      return otherData;
-    } else {
-      return HashMap.empty();
-    }
-  }
+  return HashMap.union(
+    (inspsByCntr1: InspectionLogsByCntr, inspsByCntr2: InspectionLogsByCntr) => inspsByCntr1.union(inspsByCntr2),
+    get(localLogEntriesUnwrapped),
+    get(otherLogEntriesUnwrapped),
+  );
 });
 
 export function extendRange(numDays: number): (range: PathLookupRange | null) => PathLookupRange | null {

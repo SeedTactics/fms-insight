@@ -79,7 +79,6 @@ import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { ErrorBoundary } from "react-error-boundary";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { loadable } from "jotai/utils";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { basketDisplayName } from "../../cell-status/station-cycles.js";
@@ -807,10 +806,8 @@ export const MaterialDetailTitle = memo(function MaterialDetailTitle({
 });
 
 function MaterialDialogTitle({ notes }: { notes?: boolean }) {
-  const matL = useAtomValue(loadable(matDetails.materialInDialogInfo));
-  const serialL = useAtomValue(loadable(matDetails.serialInMaterialDialog));
-  const mat = matL.state === "hasData" ? matL.data : null;
-  const serial = serialL.state === "hasData" ? serialL.data : null;
+  const mat = useAtomValue(matDetails.materialInDialogInfoUnwrapped);
+  const serial = useAtomValue(matDetails.serialInMaterialDialogUnwrapped);
   return <MaterialDetailTitle notes={notes} partName={mat?.partName ?? ""} serial={mat?.serial ?? serial} />;
 }
 

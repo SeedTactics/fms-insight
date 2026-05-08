@@ -1,6 +1,6 @@
 declare module "*.svg" {
-  const empty = "";
-  export default empty;
+  const svgUrl: string;
+  export default svgUrl;
 }
 
 declare module "highlight.js" {
