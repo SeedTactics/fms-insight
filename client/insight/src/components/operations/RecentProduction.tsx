@@ -135,19 +135,19 @@ function useRows(day: Date): ReadonlyArray<ProdRow> {
   const sim = useAtomValue(last30SimProduction);
   const shifts = useShifts(day);
   return useMemo(() => {
-    const planned = binSimProduction(sim, shifts);
-    const completed = binCompleted(cycles, shifts);
+    const plannedByDay = binSimProduction(sim, shifts);
+    const completedByDay = binCompleted(cycles, shifts);
 
-    return planned
+    return plannedByDay
       .mapValues<{ planned?: OrderedMap<number, number>; completed?: OrderedMap<number, number> }>((p) => ({
         planned: p,
       }))
-      .adjust(completed, (plan, comp) => ({ ...(plan ?? {}), completed: comp }))
+      .adjust(completedByDay, (plan, comp) => (plan ? { ...plan, completed: comp } : { completed: comp }))
       .toAscLazySeq()
-      .map(([partName, { planned, completed }]) => ({
+      .map(([partName, { planned: plannedCounts, completed: completedCounts }]) => ({
         part: partName,
-        planned: planned ?? OrderedMap.empty(),
-        completed: completed ?? OrderedMap.empty(),
+        planned: plannedCounts ?? OrderedMap.empty(),
+        completed: completedCounts ?? OrderedMap.empty(),
       }))
       .toRArray();
   }, [cycles, sim, shifts]);

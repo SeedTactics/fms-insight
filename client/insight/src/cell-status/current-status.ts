@@ -35,12 +35,15 @@ import {
   InProcessMaterial,
   ICurrentStatus,
   IInProcessMaterial,
+  IInProcessMaterialLocation,
   ILogEntry,
   LogType,
   LocType,
   ActiveJob,
   WorkorderComment,
   ActiveWorkorder,
+  IActiveWorkorder,
+  InProcessMaterialLocation,
 } from "../network/api.js";
 import { last30JobComment } from "./scheduled-jobs.js";
 import type { ServerEventAndTime } from "./loading.js";
@@ -95,7 +98,7 @@ export const addWorkorderComment = atom(
         workorders: st.workorders.map((w) =>
           w.workorderId === workorder
             ? new ActiveWorkorder({
-                ...w,
+                ...(w as IActiveWorkorder),
                 comments: [...(w.comments ?? []), new WorkorderComment({ comment, timeUTC: new Date() })],
               })
             : w,
@@ -216,9 +219,14 @@ export const reorderQueuedMatInCurrentStatus = atom(
 
         if (m.materialID === matId) {
           return new InProcessMaterial({
-            ...m,
-            location: { type: LocType.InQueue, currentQueue: queue, queuePosition: newIdx },
-          } as IInProcessMaterial);
+            ...(m as IInProcessMaterial),
+            location: new InProcessMaterialLocation({
+              ...(m.location as IInProcessMaterialLocation),
+              type: LocType.InQueue,
+              currentQueue: queue,
+              queuePosition: newIdx,
+            }),
+          });
         }
 
         let idx = m.location.queuePosition;
@@ -233,9 +241,12 @@ export const reorderQueuedMatInCurrentStatus = atom(
 
         if (idx !== m.location.queuePosition) {
           return new InProcessMaterial({
-            ...m,
-            location: { ...m.location, queuePosition: idx },
-          } as IInProcessMaterial);
+            ...(m as IInProcessMaterial),
+            location: new InProcessMaterialLocation({
+              ...(m.location as IInProcessMaterialLocation),
+              queuePosition: idx,
+            }),
+          });
         } else {
           return m;
         }

@@ -72,6 +72,10 @@ import { fmsInformation } from "../../network/server-settings.js";
 
 export type CycleType = "labor" | "machine";
 
+function hasLoadCycleOperations(point: CycleChartPoint): point is LoadCycleData {
+  return "operations" in point && (point.operations === undefined || Array.isArray(point.operations));
+}
+
 const lulShowGraphAtom = atom<boolean>(true);
 const machineShowGraphAtom = atom<boolean>(true);
 const lulSelectedPartAtom = atom<PartAndProcess | undefined>(undefined);
@@ -90,18 +94,20 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const extraStationCycleTooltip = useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-      const partC = point as LoadCycleData;
+      if (!hasLoadCycleOperations(point)) {
+        return [];
+      }
       const ret = [];
-      if (partC.operations) {
-        for (const mat of partC.operations) {
+      if (point.operations) {
+        for (const mat of point.operations) {
           ret.push({
             title: (mat.mat.serial ? mat.mat.serial : "Material") + " " + mat.operation,
             value: "Open Card",
             link: () => setMatToShow({ type: "LogMat", logMat: mat.mat }),
           });
         }
-      } else {
-        for (const mat of partC.material) {
+      } else if ("material" in point && Array.isArray(point.material)) {
+        for (const mat of point.material) {
           ret.push({
             title: mat.serial ? mat.serial : "Material",
             value: "Open Card",
@@ -229,7 +235,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
             style={{ marginLeft: "1em" }}
             onChange={(e) => {
               setSelectedPart(
-                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number],
+                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value],
               );
               setSelectedOperation(undefined);
             }}
@@ -261,7 +267,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
                   : -1
               }
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value as number])}
+              onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value])}
             >
               {[
                 ...(points.allMachineOperations.length !== 1

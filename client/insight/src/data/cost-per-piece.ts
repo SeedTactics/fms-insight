@@ -212,7 +212,7 @@ export function buildCostPerPieceTable(costs: CostData): string {
 }
 
 export function copyCostPerPieceToClipboard(costs: CostData): void {
-  copy(buildCostPerPieceTable(costs));
+  void copy(buildCostPerPieceTable(costs));
 }
 
 export function buildCostBreakdownTable(costs: CostData): string {
@@ -249,5 +249,5 @@ export function buildCostBreakdownTable(costs: CostData): string {
 }
 
 export function copyCostBreakdownToClipboard(costs: CostData): void {
-  copy(buildCostBreakdownTable(costs));
+  void copy(buildCostBreakdownTable(costs));
 }

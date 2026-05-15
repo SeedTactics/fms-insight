@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { LogBackend } from "../network/backend.js";
 import { differenceInSeconds } from "date-fns";
 import { useAtomValue } from "jotai";
@@ -241,13 +241,6 @@ export interface QueueData {
   readonly groupedRawMat?: ReadonlyArray<QueueRawMaterialGroup>;
 }
 
-function compareByQueuePos(
-  m1: Readonly<api.IInProcessMaterial>,
-  m2: Readonly<api.IInProcessMaterial>,
-): number {
-  return (m1.location.queuePosition ?? 10000000000) - (m2.location.queuePosition ?? 10000000000);
-}
-
 export function selectQueueData(
   queuesToCheck: ReadonlyArray<string>,
   curSt: Readonly<api.ICurrentStatus>,
@@ -262,13 +255,17 @@ export function selectQueueData(
     const isRawMat = rawMatQueues.has(queueName);
 
     if (isRawMat) {
-      const material: Readonly<api.IInProcessMaterial>[] = [];
+      const materialByPos = OrderedMap.empty<number, api.IInProcessMaterial>();
       const matByPartThenUniq = new Map<string, Map<string | null, Readonly<api.IInProcessMaterial>[]>>();
 
       for (const m of curSt.material) {
-        if (m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName) {
+        if (
+          m.location.type === api.LocType.InQueue &&
+          m.location.currentQueue === queueName &&
+          m.location.queuePosition !== undefined
+        ) {
           if ((m.serial && m.serial !== "") || m.action.type !== api.ActionType.Waiting) {
-            material.push(m);
+            materialByPos.set(m.location.queuePosition, m);
           } else {
             let matsForPart = matByPartThenUniq.get(m.partName);
             if (!matsForPart) {
@@ -311,7 +308,7 @@ export function selectQueueData(
         free: false,
         rawMaterialQueue: true,
         inProcQueue: false,
-        material: material.sort(compareByQueuePos),
+        material: [...materialByPos.values()],
         groupedRawMat: matGroups,
       });
     } else {
@@ -320,9 +317,14 @@ export function selectQueueData(
         free: false,
         rawMaterialQueue: false,
         inProcQueue: inProcQueues.has(queueName),
-        material: curSt.material
-          .filter((m) => m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName)
-          .sort(compareByQueuePos),
+        material: LazySeq.of(curSt.material)
+          .filter(
+            (m) =>
+              m.location.type === api.LocType.InQueue &&
+              m.location.currentQueue === queueName &&
+              m.location.queuePosition !== undefined,
+          )
+          .toSortedArray((m) => m.location.queuePosition ?? 0),
       });
     }
   }
@@ -331,10 +333,10 @@ export function selectQueueData(
 }
 
 export async function loadRawMaterialEvents(
-  material: ReadonlyArray<Readonly<api.IInProcessMaterial>>,
+  materials: ReadonlyArray<Readonly<api.IInProcessMaterial>>,
 ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
   const events: Array<Readonly<api.ILogEntry>> = [];
-  for (const chunk of LazySeq.of(material).chunk(15)) {
+  for (const chunk of LazySeq.of(materials).chunk(15)) {
     events.push(...(await LogBackend.logForMaterials(chunk.map((m) => m.materialID))));
   }
   events.sort((a, b) => a.endUTC.getTime() - b.endUTC.getTime());
@@ -343,19 +345,19 @@ export async function loadRawMaterialEvents(
   for (let i = 0; i < events.length; i++) {
     const evt = events[i];
     if (evt.type === api.LogType.AddToQueue || evt.type === api.LogType.RemoveFromQueue) {
-      const material: Array<api.LogMaterial> = [...evt.material];
+      const groupedMaterial: Array<api.LogMaterial> = [...evt.material];
       while (
         i + 1 < events.length &&
         events[i + 1].type === evt.type &&
         differenceInSeconds(events[i + 1].endUTC, evt.endUTC) < 10
       ) {
-        material.push(...events[i + 1].material);
+        groupedMaterial.push(...events[i + 1].material);
         i += 1;
       }
-      if (material.length === evt.material.length) {
+      if (groupedMaterial.length === evt.material.length) {
         groupedEvents.push(evt);
       } else {
-        groupedEvents.push({ ...evt, material: material });
+        groupedEvents.push({ ...evt, material: groupedMaterial });
       }
     } else {
       groupedEvents.push(events[i]);

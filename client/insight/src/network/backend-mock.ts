@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addSeconds } from "date-fns";
 import * as api from "./api.js";
 import { registerBackend } from "./backend.js";
-import { LazySeq, mkCompareByProperties } from "@seedtactics/immutable-collections";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 export type MockEvents = ReadonlyArray<object /* ILogEntry json */>;
 
@@ -85,13 +85,13 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
     }
   }
 
-  const allNewJobs = mockD.jobs.map(api.NewJobs.fromJS);
+  const allNewJobs = mockD.jobs.map((job) => api.NewJobs.fromJS(job));
   const historicJobs: { [key: string]: api.HistoricJob } = {};
   for (const newJ of allNewJobs) {
     for (const j of newJ.jobs) {
       offsetJob(j, offsetSeconds);
       historicJobs[j.unique] = new api.HistoricJob({
-        ...j,
+        ...(j as api.IJob),
         copiedToSystem: false,
         scheduleId: newJ.scheduleId,
       });
@@ -115,21 +115,29 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
     curSt: status,
     jobs: historic,
     workorders: new Map<string, ReadonlyArray<Readonly<api.IWorkorder>>>(),
-    tools: mockD.tools.map(api.ToolInMachine.fromJS),
-    programs: mockD.programs.map(api.ProgramInCellController.fromJS),
+    tools: mockD.tools.map((tool) => api.ToolInMachine.fromJS(tool)),
+    programs: mockD.programs.map((program) => api.ProgramInCellController.fromJS(program)),
   };
+}
+
+function counterForEventJson(evtJson: object): number | null {
+  return "counter" in evtJson && typeof evtJson.counter === "number" ? evtJson.counter : null;
 }
 
 async function loadEventsJson(
   offsetSeconds: number,
   mockD: Promise<MockData>,
   evts: Promise<MockEvents>,
-): Promise<Readonly<api.ILogEntry>[]> {
+): Promise<Array<Readonly<api.ILogEntry>>> {
   const toolUse = (await mockD).toolUse;
 
   return LazySeq.of(await evts)
-    .map((evtJson) => {
-      const tools = toolUse[(evtJson as { counter: number }).counter.toString()];
+    .collect((evtJson) => {
+      const counter = counterForEventJson(evtJson);
+      if (counter === null) {
+        return undefined;
+      }
+      const tools = toolUse[counter.toString()];
       // the type of pal switched from string to int and I didn't want
       // to regenerate all the data
       if ("pal" in evtJson && typeof evtJson.pal === "string") {
@@ -153,13 +161,11 @@ async function loadEventsJson(
         return true;
       }
     })
-    .toMutableArray()
-    .sort(
-      mkCompareByProperties(
-        (e) => e.endUTC.getTime(),
-        (e) => e.counter,
-      ),
-    );
+    .sortBy(
+      (e: api.LogEntry) => e.endUTC.getTime(),
+      (e: api.LogEntry) => e.counter,
+    )
+    .toMutableArray();
 }
 
 function findMatById(evts: ReadonlyArray<api.ILogEntry>, matId: number): api.LogMaterial | undefined {

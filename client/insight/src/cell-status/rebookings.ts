@@ -36,31 +36,30 @@ import { ServerEventAndTime } from "./loading";
 import { IJob, ILogEntry, IRebooking, IRecentHistoricData, LogType } from "../network/api";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { JobsBackend, LogBackend } from "../network/backend";
-import { loadable } from "jotai/utils";
+import { unwrap } from "jotai/utils";
 import { addDays } from "date-fns";
 import { useCallback, useState } from "react";
 
 const rebookingEvts = atom(OrderedMap.empty<string, Readonly<IRebooking>>());
 
 // unscheduled rebookings should be loaded from the last 30 events, but it is
-// possible for some to be older than 30 days, so load them here.  But don't
-// wait for them to be loaded before rendering, so everything is wrapped in loadable.
-const unschRebookings = loadable(
+// possible for some to be older than 30 days, so load them here without
+// blocking rendering while the request is still pending.
+const unschRebookings = unwrap(
   atom(async (_, { signal }) => {
-    const b = await JobsBackend.unscheduledRebookings(signal);
-    return OrderedMap.build(b, (b) => b.bookingId);
+    if (typeof JobsBackend === "undefined") {
+      return OrderedMap.empty<string, Readonly<IRebooking>>();
+    }
+    const bookings = await JobsBackend.unscheduledRebookings(signal);
+    return OrderedMap.build(bookings, (booking) => booking.bookingId);
   }),
+  (prev) => prev ?? OrderedMap.empty<string, Readonly<IRebooking>>(),
 );
 
 export const last30Rebookings: Atom<OrderedMap<string, Readonly<IRebooking>>> = atom((get) => {
   const evts = get(rebookingEvts);
   const unsch = get(unschRebookings);
-
-  if (unsch.state === "hasData") {
-    return evts.union(unsch.data, (fromEvt, fromUnsch) => fromEvt ?? fromUnsch);
-  } else {
-    return evts;
-  }
+  return evts.union(unsch, (fromEvt, fromUnsch) => fromEvt ?? fromUnsch);
 });
 
 const canceledRebookingsRW = atom(OrderedMap.empty<string, Date>());
@@ -111,15 +110,15 @@ export const setLast30Rebookings = atom(null, (get, set, log: ReadonlyArray<Read
 function updateJobs(set: Setter, jobs: LazySeq<Readonly<IJob>>, expire?: Date) {
   set(scheduledRW, (old) => {
     if (expire) {
-      old = old.filter((b) => b.scheduledTime >= expire);
+      old = old.filter((booking) => booking.scheduledTime >= expire);
     }
     return old.union(
       jobs
         .flatMap((j) =>
           (j.bookings ?? []).map(
-            (b) =>
+            (booking) =>
               [
-                b,
+                booking,
                 {
                   scheduledTime: j.routeStartUTC,
                   jobUnique: j.unique,
@@ -135,7 +134,7 @@ function updateJobs(set: Setter, jobs: LazySeq<Readonly<IJob>>, expire?: Date) {
 export const setLast30RebookingJobs = atom(null, (_, set, historic: Readonly<IRecentHistoricData>) => {
   updateJobs(
     set,
-    LazySeq.ofObject(historic.jobs).map(([_, j]) => j),
+    LazySeq.ofObject(historic.jobs).map(([, j]) => j),
   );
 });
 

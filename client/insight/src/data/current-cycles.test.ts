@@ -315,7 +315,23 @@ it("calculates current cycles", () => {
       routeEndUTC: new Date(),
       archived: false,
       copiedToSystem: true,
-      procsAndPaths: [new ProcessInfo({ paths: [{ expectedLoadTime: "PT4.5M" } as ProcPathInfo] })],
+      procsAndPaths: [
+        new ProcessInfo({
+          paths: [
+            new ProcPathInfo({
+              expectedLoadTime: "PT4.5M",
+              palletNums: [1],
+              load: [2],
+              unload: [3],
+              stops: [],
+              simulatedStartingUTC: new Date(),
+              simulatedAverageFlowTime: "PT0S",
+              partsPerPallet: 2,
+              expectedUnloadTime: "PT4.5M",
+            }),
+          ],
+        }),
+      ],
     }),
     // uniq4 is unloading on proc2
     uniq4: new ActiveJob({
@@ -327,8 +343,22 @@ it("calculates current cycles", () => {
       archived: false,
       copiedToSystem: true,
       procsAndPaths: [
-        {} as ProcessInfo,
-        new ProcessInfo({ paths: [{ expectedUnloadTime: "PT6M" } as ProcPathInfo] }),
+        new ProcessInfo(),
+        new ProcessInfo({
+          paths: [
+            new ProcPathInfo({
+              expectedUnloadTime: "PT6M",
+              expectedLoadTime: "PT6M",
+              palletNums: [1],
+              load: [2],
+              unload: [3],
+              stops: [],
+              simulatedStartingUTC: new Date(),
+              simulatedAverageFlowTime: "PT0S",
+              partsPerPallet: 2,
+            }),
+          ],
+        }),
       ],
     }),
   };

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
 import type { ServerEventAndTime } from "./loading.js";
-import { IHistoricData, IHistoricJob, IRecentHistoricData } from "../network/api.js";
+import { IJob, IHistoricData, HistoricJob, IRecentHistoricData, IHistoricJob } from "../network/api.js";
 import { HashMap, HashSet, LazySeq } from "@seedtactics/immutable-collections";
 import { Atom, atom } from "jotai";
 import { atomFamily } from "jotai-family";
@@ -81,11 +81,19 @@ export const updateLast30Jobs = atom(null, (_, set, { evt, now, expire }: Server
     const newJobs = LazySeq.of(evt.newJobs.jobs);
     set(last30JobsRW, (oldJobs) => {
       if (expire) {
-        const expire = addDays(now, -30);
-        oldJobs = oldJobs.filter((j) => j.routeStartUTC >= expire);
+        const expireDate = addDays(now, -30);
+        oldJobs = oldJobs.filter((j) => j.routeStartUTC >= expireDate);
       }
 
-      return oldJobs.union(newJobs.toHashMap((j) => [j.unique, { ...j, copiedToSystem: true }]));
+      return oldJobs.union(
+        newJobs.toHashMap((j) => {
+          const historicJob = new HistoricJob({
+            ...(j as IJob),
+            copiedToSystem: true,
+          });
+          return [j.unique, historicJob] as const;
+        }),
+      );
     });
     if (schId) {
       set(last30SchIdsRW, (oldIds) => oldIds.add(schId));

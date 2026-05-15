@@ -133,11 +133,11 @@ function ShiftStartInput({ shiftNum }: { shiftNum: number }) {
       error={shiftError(shiftNum, shifts)}
       value={val === undefined ? "" : minutesToTimespan(val)}
       onChange={(e) => {
-        const val = e.target.value;
-        if (val === "") {
+        const inputValue = e.target.value;
+        if (inputValue === "") {
           setShifts((draft) => draft.delete(shiftNum));
         } else {
-          setShifts((draft) => draft.set(shiftNum, timespanToMinutes(val)));
+          setShifts((draft) => draft.set(shiftNum, timespanToMinutes(inputValue)));
         }
       }}
       variant="standard"

@@ -133,7 +133,7 @@ function addReplacementsFromLog(
 
       if ((useDuring || cntDuring) && useDuring === totalUseAtEnd && cntDuring === totalCntAtEnd) {
         // replace before cycle start
-        const last = old.recentUse.get(key)?.find((e) => e.tool === use.tool && e.pocket === use.pocket);
+        const last = old.recentUse.get(key)?.find((entry) => entry.tool === use.tool && entry.pocket === use.pocket);
         if (last) {
           const lastTotalUse = last.totalToolUseAtEndOfCycle
             ? durationToMinutes(last.totalToolUseAtEndOfCycle)

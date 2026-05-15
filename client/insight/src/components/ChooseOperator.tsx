@@ -60,7 +60,7 @@ export const OperatorSelect = memo(function OperatorSelectF() {
   const [newOperOpen, setNewOperOpen] = useState(false);
   const [newOperName, setNewOperName] = useState("");
 
-  function changeOper(evt: SelectChangeEvent<string>) {
+  function changeOper(evt: SelectChangeEvent) {
     if (evt.target.value === NewOper) {
       setNewOperOpen(true);
     } else {

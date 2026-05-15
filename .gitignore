@@ -1,6 +1,7 @@
 **/bin/Debug/
 **/bin/Release/
 **/obj/
+*.lscache
 node_modules/
 client/insight/dist/
 client/insight/docs/

@@ -65,7 +65,12 @@ export const CustomStationMonitorDialog = memo(function CustomStationMonitorDial
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md">
         <DialogTitle>{title}</DialogTitle>
         <DialogContent>
-          <iframe width="100%" src={url} style={{ border: 0, height: "calc(100vh - 250px)" }} />
+          <iframe
+            width="100%"
+            src={url}
+            sandbox="allow-scripts"
+            style={{ border: 0, height: "calc(100vh - 250px)" }}
+          />
         </DialogContent>
         <DialogActions>
           <Button color="primary" onClick={() => setOpen(false)}>

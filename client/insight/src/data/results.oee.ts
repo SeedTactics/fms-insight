@@ -414,7 +414,7 @@ export function copyOeeHeatmapToClipboard(
   yTitle: string,
   points: ReadonlyArray<HeatmapClipboardPoint>,
 ): void {
-  copy(buildOeeHeatmapTable(yTitle, points));
+  void copy(buildOeeHeatmapTable(yTitle, points));
 }
 
 export function buildOeeTable(series: Iterable<OEEBarSeries>): string {
@@ -438,5 +438,5 @@ export function buildOeeTable(series: Iterable<OEEBarSeries>): string {
 }
 
 export function copyOeeToClipboard(series: Iterable<OEEBarSeries>): void {
-  copy(buildOeeTable(series));
+  void copy(buildOeeTable(series));
 }

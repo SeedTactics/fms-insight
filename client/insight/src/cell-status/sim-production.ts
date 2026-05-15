@@ -92,14 +92,14 @@ export const updateLast30JobProduction = atom(null, (_, set, { evt, now, expire 
     const apiNewJobs = evt.newJobs.jobs;
     set(last30SimProductionRW, (simProd) => {
       if (expire) {
-        const expire = addDays(now, -30);
+        const expireDate = addDays(now, -30);
         // check if nothing to expire and no new data
         const minProd = LazySeq.of(simProd).minBy((e) => e.completeTime.getTime());
-        if ((minProd === undefined || minProd.completeTime >= expire) && apiNewJobs.length === 0) {
+        if ((minProd === undefined || minProd.completeTime >= expireDate) && apiNewJobs.length === 0) {
           return simProd;
         }
 
-        simProd = simProd.filter((e) => e.completeTime >= expire);
+        simProd = simProd.filter((e) => e.completeTime >= expireDate);
       }
 
       return [...simProd, ...jobToPartCompleted(apiNewJobs)];

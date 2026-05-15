@@ -58,6 +58,42 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+
+function isStartType(value: string): value is Last30ChartStart | "CustomDate" {
+  return (
+    value === "CustomDate" ||
+    value === "StartOfToday" ||
+    value === "StartOfYesterday" ||
+    value === "StartOfWeek" ||
+    value === "StartOfLastWeek" ||
+    value === "Last30"
+  );
+}
+
+function isEndType(value: string): value is Last30ChartEnd | "CustomDate" {
+  return value === "CustomDate" || value === "Now" || value === "EndOfYesterday" || value === "EndOfLastWeek";
+}
+
+function parseWeekdayStart(value: string): 0 | 1 | 2 | 3 | 4 | 5 | 6 | null {
+  switch (value) {
+    case "0":
+      return 0;
+    case "1":
+      return 1;
+    case "2":
+      return 2;
+    case "3":
+      return 3;
+    case "4":
+      return 4;
+    case "5":
+      return 5;
+    case "6":
+      return 6;
+    default:
+      return null;
+  }
+}
 import { Edit } from "@mui/icons-material";
 import { addMinutes, startOfToday } from "date-fns";
 
@@ -130,7 +166,11 @@ function RangeStart({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
       <Typography variant="h6">Range Start</Typography>
       <RadioGroup
         value={chartRange.startType instanceof Date ? "CustomDate" : chartRange.startType}
-        onChange={(event) => setTy(event.target.value as Last30ChartStart | "CustomDate")}
+        onChange={(event) => {
+          if (isStartType(event.target.value)) {
+            setTy(event.target.value);
+          }
+        }}
       >
         <Stack direction="column" spacing={2}>
           <Stack
@@ -231,7 +271,11 @@ function RangeEnd({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
       <Typography variant="h6">Range End</Typography>
       <RadioGroup
         value={chartRange.endType instanceof Date ? "CustomDate" : chartRange.endType}
-        onChange={(event) => setTy(event.target.value as Last30ChartEnd | "CustomDate")}
+        onChange={(event) => {
+          if (isEndType(event.target.value)) {
+            setTy(event.target.value);
+          }
+        }}
       >
         <Stack direction="column" spacing={2}>
           <Stack
@@ -323,7 +367,12 @@ function RangeDialog({
               label="First Day Of Week"
               sx={{ minWidth: "10em" }}
               value={weekdayStart}
-              onChange={(e) => setWeekdayStart(parseInt(e.target.value) as 0 | 1 | 2 | 3 | 4 | 5 | 6)}
+              onChange={(e) => {
+                const parsed = parseWeekdayStart(e.target.value);
+                if (parsed !== null) {
+                  setWeekdayStart(parsed);
+                }
+              }}
             >
               <MenuItem value={0}>Sunday</MenuItem>
               <MenuItem value={1}>Monday</MenuItem>

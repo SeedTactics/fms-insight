@@ -36,6 +36,7 @@ import { addDays } from "date-fns";
 import {
   HistoricJob,
   IHistoricData,
+  IJob,
   NewJobs,
   SimulatedStationPart,
   SimulatedStationUtilization,
@@ -62,7 +63,13 @@ function jobsToHistory(newJs: Iterable<NewJobs>): IHistoricData {
     jobs: LazySeq.of(newJs)
       .flatMap((s) => s.jobs)
       .toObject(
-        (j) => [j.unique, new HistoricJob({ ...j, copiedToSystem: true })],
+        (j) => {
+          const historicJob = new HistoricJob({
+            ...(j as IJob),
+            copiedToSystem: true,
+          });
+          return [j.unique, historicJob] as const;
+        },
         (a, _) => a,
       ),
     stationUse: LazySeq.of(newJs)

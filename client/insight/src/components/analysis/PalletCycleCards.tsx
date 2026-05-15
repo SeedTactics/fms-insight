@@ -59,6 +59,10 @@ const selectedPartAtom = atom<PartAndProcess | undefined>(undefined);
 const zoomDateRangeAtom = atom<{ start: Date; end: Date } | undefined>(undefined);
 const yZoomAtom = atom<YZoomRange | null>(null);
 
+function isPalletCycleData(point: CycleChartPoint): point is PalletCycleData {
+  return "mats" in point && Array.isArray(point.mats);
+}
+
 const filteredPoints = atom((get) => {
   const selPal = get(selectedPalletAtom);
   const selPart = get(selectedPartAtom);
@@ -133,8 +137,10 @@ export function PalletCycleChart() {
   const setMatToShow = useSetAtom(materialDialogOpen);
   const extraPalletTooltip = useCallback(
     function extraPalletTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-      const palC = point as PalletCycleData;
-      return palC.mats.map((mat) => ({
+      if (!isPalletCycleData(point)) {
+        return [];
+      }
+      return point.mats.map((mat) => ({
         title: mat.part + "-" + mat.proc,
         value: mat.serial ?? "",
         link: mat.serial ? () => setMatToShow({ type: "LogMat", logMat: mat }) : undefined,
@@ -172,7 +178,7 @@ export function PalletCycleChart() {
             displayEmpty
             value={selectedPallet ?? -1}
             onChange={(e) =>
-              setSelectedPallet(e.target.value === -1 ? undefined : (e.target.value as number))
+              setSelectedPallet(e.target.value === -1 ? undefined : (e.target.value))
             }
           >
             <MenuItem key={0} value={-1}>
@@ -202,7 +208,7 @@ export function PalletCycleChart() {
               }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                setSelectedPart(e.target.value === -1 ? undefined : partNames[e.target.value as number]);
+                setSelectedPart(e.target.value === -1 ? undefined : partNames[e.target.value]);
               }}
             >
               <MenuItem key={0} value={-1}>

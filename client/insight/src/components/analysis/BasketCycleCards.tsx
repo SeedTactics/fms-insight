@@ -54,6 +54,10 @@ import { basketDisplayName } from "../../cell-status/station-cycles.js";
 const selectedBasketAtom = atom<number | undefined>(undefined);
 const selectedPartAtom = atom<PartAndProcess | undefined>(undefined);
 const zoomDateRangeAtom = atom<{ start: Date; end: Date } | undefined>(undefined);
+
+function isBasketCycleData(point: CycleChartPoint): point is BasketCycleData {
+  return "mats" in point && Array.isArray(point.mats);
+}
 const yZoomAtom = atom<YZoomRange | null>(null);
 
 const filteredPoints = atom((get) => {
@@ -132,8 +136,10 @@ export function BasketCycleChart() {
   const setMatToShow = useSetAtom(materialDialogOpen);
   const extraBasketTooltip = useCallback(
     function extraBasketTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-      const basketC = point as BasketCycleData;
-      return basketC.mats.map((mat) => ({
+      if (!isBasketCycleData(point)) {
+        return [];
+      }
+      return point.mats.map((mat) => ({
         title: mat.part + "-" + mat.proc,
         value: mat.serial ?? "",
         link: mat.serial ? () => setMatToShow({ type: "LogMat", logMat: mat }) : undefined,
@@ -167,7 +173,7 @@ export function BasketCycleChart() {
             displayEmpty
             value={selectedBasket ?? -1}
             onChange={(e) =>
-              setSelectedBasket(e.target.value === -1 ? undefined : (e.target.value as number))
+              setSelectedBasket(e.target.value === -1 ? undefined : (e.target.value))
             }
           >
             <MenuItem key={0} value={-1}>
@@ -197,7 +203,7 @@ export function BasketCycleChart() {
               }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                setSelectedPart(e.target.value === -1 ? undefined : partNames[e.target.value as number]);
+                setSelectedPart(e.target.value === -1 ? undefined : partNames[e.target.value]);
               }}
             >
               <MenuItem key={0} value={-1}>

@@ -79,7 +79,6 @@ import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { ErrorBoundary } from "react-error-boundary";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { loadable } from "jotai/utils";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { basketDisplayName } from "../../cell-status/station-cycles.js";
@@ -108,13 +107,19 @@ const shakeHorizKeyframes = keyframes`
 `;
 const shakeHorizAnimation = `${shakeHorizKeyframes} 1s ease-in-out infinite`;
 
+function isCssAnimation(animation: Animation): animation is CSSAnimation {
+  return "animationName" in animation;
+}
+
 // global sync of all shake animations
 // the start time can drift due to the pause on hover, so to keep it in sync always
 // round the start time down to be a multiple of the duration (1s)
 function shakeAnimationIteration(event: AnimationEvent<HTMLDivElement>) {
   const anim = event.currentTarget
     .getAnimations()
-    .find((a) => (a as CSSAnimation).animationName === shakeHorizKeyframes.name);
+    .find((animation): animation is CSSAnimation => {
+      return isCssAnimation(animation) && animation.animationName === shakeHorizKeyframes.name;
+    });
   if (anim && typeof anim.startTime === "number") {
     anim.startTime = anim.startTime - (anim.startTime % 1000);
   } else if (anim && typeof anim.startTime === "object" && anim.startTime instanceof CSSNumericValue) {
@@ -807,10 +812,8 @@ export const MaterialDetailTitle = memo(function MaterialDetailTitle({
 });
 
 function MaterialDialogTitle({ notes }: { notes?: boolean }) {
-  const matL = useAtomValue(loadable(matDetails.materialInDialogInfo));
-  const serialL = useAtomValue(loadable(matDetails.serialInMaterialDialog));
-  const mat = matL.state === "hasData" ? matL.data : null;
-  const serial = serialL.state === "hasData" ? serialL.data : null;
+  const mat = useAtomValue(matDetails.materialInDialogInfoUnwrapped);
+  const serial = useAtomValue(matDetails.serialInMaterialDialogUnwrapped);
   return <MaterialDetailTitle notes={notes} partName={mat?.partName ?? ""} serial={mat?.serial ?? serial} />;
 }
 

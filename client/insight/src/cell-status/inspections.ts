@@ -117,8 +117,8 @@ export function convertLogToInspections(
 
   return c.material.map((m) => {
     if (c.type === LogType.Inspection) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const pathsJson: ReadonlyArray<unknown> = JSON.parse((c.details || {}).ActualPath || "[]");
+      const parsedPaths: unknown = JSON.parse((c.details || {}).ActualPath || "[]");
+      const pathsJson: ReadonlyArray<unknown> = Array.isArray(parsedPaths) ? parsedPaths : [];
       const paths: Array<Readonly<IMaterialProcessActualPath>> = [];
       for (const pathJson of pathsJson) {
         paths.push(MaterialProcessActualPath.fromJS(pathJson));

@@ -76,6 +76,12 @@ const statusWithMat: api.ICurrentStatus = {
   ],
 };
 
+function fakeMaterialWithId(id: number): api.LogMaterial {
+  const mat = fakeMaterial();
+  mat.id = id;
+  return mat;
+}
+
 function applyEvent(e: api.ILogEntry): ReturnType<typeof createStore> {
   const store = createStore();
   store.set(onLoadCurrentSt, statusWithMat);
@@ -89,7 +95,7 @@ function applyEvent(e: api.ILogEntry): ReturnType<typeof createStore> {
 }
 
 it("sets the serial", () => {
-  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
+  const mat = fakeMaterialWithId(10);
   const store = applyEvent(fakeSerial(mat, "serial12345"));
   const newStatus = store.get(cs.currentStatus);
 
@@ -98,7 +104,7 @@ it("sets the serial", () => {
 });
 
 it("sets a workorder", () => {
-  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
+  const mat = fakeMaterialWithId(20);
   const store = applyEvent(fakeWorkorderAssign(mat, "work7777"));
   const st = store.get(cs.currentStatus);
 
@@ -107,7 +113,7 @@ it("sets a workorder", () => {
 });
 
 it("sets an inspection", () => {
-  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
+  const mat = fakeMaterialWithId(20);
   const snapshot = applyEvent(fakeInspSignal(mat, "insp11"));
   const st = snapshot.get(cs.currentStatus);
 
@@ -116,7 +122,7 @@ it("sets an inspection", () => {
 });
 
 it("sets a forced inspection", () => {
-  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
+  const mat = fakeMaterialWithId(20);
   const snapshot = applyEvent(fakeInspForce(mat, "insp55"));
   const st = snapshot.get(cs.currentStatus);
 
@@ -125,7 +131,7 @@ it("sets a forced inspection", () => {
 });
 
 it("ignores other cycles", () => {
-  const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
+  const mat = fakeMaterialWithId(10);
   const snapshot = applyEvent(fakeInspComplete(mat));
   const st = snapshot.get(cs.currentStatus);
 
@@ -134,12 +140,12 @@ it("ignores other cycles", () => {
 
 function adjPos(m: api.InProcessMaterial, newPos: number, newQueue?: string): api.InProcessMaterial {
   return new api.InProcessMaterial({
-    ...m,
-    location: {
-      ...m.location,
+    ...(m as api.IInProcessMaterial),
+    location: new api.InProcessMaterialLocation({
+      ...(m.location as api.IInProcessMaterialLocation),
       currentQueue: newQueue || m.location.currentQueue,
       queuePosition: newPos,
-    },
+    }),
   } as api.IInProcessMaterial);
 }
 

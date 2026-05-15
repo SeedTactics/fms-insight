@@ -198,7 +198,7 @@ function MaterialStatus(props: MaterialStatusProps) {
     );
   } else if (props.matSummary?.completed_last_proc_machining) {
     return <span>Completed</span>;
-  } else if (props.matSummary !== null && props.matSummary.startedProcess1 === false) {
+  } else if (props.matSummary !== null && ! props.matSummary.startedProcess1) {
     return <span>Not yet started</span>;
   } else {
     return <span />;

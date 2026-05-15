@@ -57,12 +57,7 @@ import {
   displayStationName,
   PartCycleData,
 } from "../../cell-status/station-cycles.js";
-import {
-  HashMap,
-  LazySeq,
-  mkCompareByProperties,
-  ToComparableBase,
-} from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { SelectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -220,13 +215,11 @@ function extractData(
 
   const data = LazySeq.of(points.values()).flatMap((x) => x);
   const arr = currentZoom
-    ? data.filter((p) => p.endTime >= currentZoom.start && p.endTime <= currentZoom.end).toMutableArray()
-    : data.toMutableArray();
-  return arr.sort(
-    mkCompareByProperties(
-      order === "desc" ? { desc: getDataC } : { asc: getDataC },
-      order === "desc" ? { desc: (a) => a.endTime.getTime() } : { asc: (a) => a.endTime.getTime() },
-    ),
+    ? data.filter((p) => p.endTime >= currentZoom.start && p.endTime <= currentZoom.end)
+    : data;
+  return arr.toSortedArray(
+    order === "desc" ? { desc: getDataC } : { asc: getDataC },
+    order === "desc" ? { desc: (a) => a.endTime.getTime() } : { asc: (a) => a.endTime.getTime() },
   );
 }
 

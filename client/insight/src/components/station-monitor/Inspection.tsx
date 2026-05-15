@@ -218,21 +218,21 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
   );
 }
 
+function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
+  const comp = m.completedInspections;
+  if (comp === undefined) {
+    return m.signaledInspections.length === 0;
+  } else {
+    return LazySeq.of(m.signaledInspections).every((s) => s in comp);
+  }
+}
+
 function extractRecentInspections(
   mats: HashMap<number, MaterialSummaryAndCompletedData>,
   inspType: string | null,
 ): PartsForInspection {
   const uninspectedCutoff = addDays(new Date(), -7);
   const inspectedCutoff = addDays(new Date(), -1);
-
-  function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
-    const comp = m.completedInspections;
-    if (comp === undefined) {
-      return m.signaledInspections.length === 0;
-    } else {
-      return LazySeq.of(m.signaledInspections).every((s) => s in comp);
-    }
-  }
 
   const uninspected = Array.from(
     inspType === null

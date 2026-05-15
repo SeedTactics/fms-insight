@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ReactNode, memo, useState } from "react";
+import { ReactNode, memo, useMemo, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -62,11 +62,20 @@ export interface SortableRegionProps {
   readonly children?: ReactNode;
 }
 
+function isSortableMatData(value: unknown): value is SortableMatData {
+  return typeof value === "object" && value !== null && "mat" in value;
+}
+
+function numericId(id: string | number): number | null {
+  return typeof id === "number" ? id : null;
+}
+
 export const SortableRegion = memo(function SortableRegion(props: SortableRegionProps) {
   const [activeMat, setActiveMat] = useState<Readonly<IInProcessMaterial> | undefined>(undefined);
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
   const reorderQueuedMat = useSetAtom(reorderQueuedMatInCurrentStatus);
   const operator = useAtomValue(currentOperator);
+  const sortableItemIds = useMemo(() => props.matIds.slice(), [props.matIds]);
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -78,14 +87,17 @@ export const SortableRegion = memo(function SortableRegion(props: SortableRegion
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={({ active }) => setActiveMat((active.data.current as SortableMatData).mat)}
+      onDragStart={({ active }) =>
+        setActiveMat(isSortableMatData(active.data.current) ? active.data.current.mat : undefined)
+      }
       onDragCancel={() => setActiveMat(undefined)}
       onDragEnd={({ active, over }) => {
-        if (over && active.id !== over.id) {
-          const activeMatId = active.id as number;
-          const overIdx = props.matIds.indexOf(over.id as number);
+        const activeMatId = numericId(active.id);
+        const overMatId = over ? numericId(over.id) : null;
+        if (over && active.id !== over.id && activeMatId !== null && overMatId !== null) {
+          const overIdx = props.matIds.indexOf(overMatId);
           addExistingMatToQueue({
-            materialId: active.id as number,
+            materialId: activeMatId,
             queue: props.queueName,
             queuePosition: overIdx,
             operator: operator,
@@ -100,7 +112,7 @@ export const SortableRegion = memo(function SortableRegion(props: SortableRegion
       }}
     >
       <SortableContext
-        items={props.matIds as number[]}
+        items={sortableItemIds}
         strategy={props.direction === "vertical" ? verticalListSortingStrategy : rectSortingStrategy}
       >
         {props.children}

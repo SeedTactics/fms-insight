@@ -68,7 +68,7 @@ const AnimatedPath = memo(function AnimatedPath({
 
   // don't update in quick succession
   const previous = useRef(d);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // oxlint-disable-next-line react/exhaustive-deps
   const setPrevious = useCallback(
     debounce((val: string) => {
       previous.current = val;
@@ -246,7 +246,7 @@ const BufferChart = memo(function BufferChart(props: { movingAverageDistanceInHo
 });
 
 // https://github.com/mui-org/material-ui/issues/20191
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const SliderAny: ComponentType<any> = Slider;
 
 export function BufferOccupancyChart() {

@@ -153,8 +153,10 @@ const WorkorderDetails = memo(function WorkorderDetails({
     setMatToShow({
       type: "MatSummary",
       summary: {
-        ...wmat,
+        materialID: wmat.materialID,
         partName: workorder.part,
+        serial: wmat.serial,
+        workorderId: workorder.workorderId,
       },
     });
   }
@@ -470,7 +472,7 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>, 
       table += `<td>${utcDateOnlyToString(w.simulatedStart)}</td>`;
       table += `<td>${utcDateOnlyToString(w.simulatedFilled)}</td>`;
     }
-    table += `<td>${(w.material ?? []).map((w) => w.serial ?? "").join(";")}</td>`;
+    table += `<td>${(w.material ?? []).map((mat) => mat.serial ?? "").join(";")}</td>`;
     table += `<td>${LazySeq.ofObject(w.activeStationTime ?? {})
       .map(([st, t]) => `${st}: ${durationToMinutes(t)}`)
       .toRArray()
@@ -483,7 +485,7 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>, 
   }
   table += "</tbody></table>\n";
 
-  copy(table);
+  void copy(table);
 }
 
 function SortColHeader(props: {

@@ -137,15 +137,10 @@ export function buildScheduledJobs(
     }
   }
 
-  const sorted = Array.from(result.values()).sort((j1, j2) => {
-    // sort starting time high to low, then by part
-    const timeDiff = j2.routeStartTime.getTime() - j1.routeStartTime.getTime();
-    if (timeDiff == 0) {
-      return j1.partName.localeCompare(j2.partName);
-    } else {
-      return timeDiff;
-    }
-  });
+  const sorted = LazySeq.of(result.values()).toSortedArray(
+    { desc: (j) => j.routeStartTime.getTime() },
+    (j) => j.partName,
+  );
 
   let lastSchId: string | null = null;
   let curDark = true;
@@ -203,5 +198,5 @@ export function copyScheduledJobsToClipboard(
   jobs: ReadonlyArray<ScheduledJobDisplay>,
   showMaterial: boolean,
 ): void {
-  copy(buildScheduledJobsTable(jobs, showMaterial));
+  void copy(buildScheduledJobsTable(jobs, showMaterial));
 }

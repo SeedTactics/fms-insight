@@ -55,7 +55,6 @@ import { LogBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { RecentFailedInspectionsTable } from "./RecentFailedInspections.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { loadable } from "jotai/utils";
 
 function SerialLookup() {
   const demo = useIsDemo();
@@ -85,7 +84,7 @@ function SerialLookup() {
           } else if (e instanceof Error) {
             setError(e.message);
           } else {
-            setError(e.toString());
+            setError(e);
           }
         })
         .finally(() => setLoading(false));
@@ -148,9 +147,8 @@ function lastMachineTime(evts: ReadonlyArray<Readonly<ILogEntry>>): Date {
 }
 
 function DetailsStepTitle() {
-  const matL = useAtomValue(loadable(matDetails.materialInDialogInfo));
+  const mat = useAtomValue(matDetails.materialInDialogInfoUnwrapped);
   const matEvents = useAtomValue(matDetails.materialInDialogEvents);
-  const mat = matL.state === "hasData" ? matL.data : null;
   if (mat) {
     return (
       <MaterialDetailTitle
@@ -170,8 +168,7 @@ function DetailsStepTitle() {
 }
 
 function DetailsStepButtons({ setStep }: { setStep: (step: number) => void }) {
-  const matL = useAtomValue(loadable(matDetails.materialInDialogInfo));
-  const mat = matL.state === "hasData" ? matL.data : null;
+  const mat = useAtomValue(matDetails.materialInDialogInfoUnwrapped);
   const matEvents = useAtomValue(matDetails.materialInDialogEvents);
   const setSearchRange = useSetAtom(pathLookupRange);
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);

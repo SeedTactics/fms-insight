@@ -228,7 +228,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
       LazySeq.ofObject(currentSt.jobs)
         .flatMap(([, j]) => j.procsAndPaths[0].paths)
         .filter((p) => p.casting !== undefined && p.casting !== "")
-        .map((p) => ({ casting: p.casting as string, cnt: 1 }))
+        .map((p) => ({ casting: p.casting ?? "", cnt: 1 }))
         .concat(LazySeq.of(historicCastNames).map((c) => ({ casting: c, cnt: 0 })))
         .buildOrderedMap<string, number>(
           (c) => c.casting,
@@ -427,11 +427,11 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(props: Mult
     let isSubscribed = true;
     setLoading(true);
     loadRawMaterialEvents(props.material)
-      .then((events) => {
+      .then((loadedEvents) => {
         if (isSubscribed) {
-          setEvents(events);
+          setEvents(loadedEvents);
           let operator: string | undefined;
-          for (const e of events) {
+          for (const e of loadedEvents) {
             if (e.type === api.LogType.AddToQueue && e.details?.["operator"] !== undefined) {
               operator = e.details["operator"];
             }

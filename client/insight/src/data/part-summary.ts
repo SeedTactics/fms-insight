@@ -57,7 +57,7 @@ export type PartSummary = {
 function isAbnormal(m: MaterialSummaryAndCompletedData): boolean {
   if (m.closeout_completed === undefined) {
     // no closeout has been done, so fall back to checking inspections and quarantined
-    if (LazySeq.ofObject(m.completedInspections ?? {}).some(([, insp]) => insp.success === false)) {
+    if (LazySeq.ofObject(m.completedInspections ?? {}).some(([, insp]) => ! insp.success)) {
       return true;
     }
 
@@ -74,7 +74,7 @@ function isAbnormal(m: MaterialSummaryAndCompletedData): boolean {
 export const last30PartSummaryRange = chartRangeAtom("part-summary");
 
 export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
-  const mats = get(last30MaterialSummary);
+  const materialSummary = get(last30MaterialSummary);
   const cycles = get(last30StationCycles);
 
   const range = get(last30PartSummaryRange);
@@ -103,7 +103,7 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
       }),
     );
 
-  return mats.matsById
+  return materialSummary.matsById
     .valuesToLazySeq()
     .filter((m) =>
       Boolean(
@@ -114,29 +114,29 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
       ),
     )
     .toOrderedLookup((m) => m.partName)
-    .mapValues(
-      (mats, partName) =>
-        ({
-          part: partName,
-          completedQty: mats.length,
-          abnormalQty: LazySeq.of(mats).sumBy((m) => (isAbnormal(m) ? 1 : 0)),
-          mats: mats,
-          stationMins: OrderedMap.empty(),
-          workorders: LazySeq.of(mats)
-            .toOrderedSet((m) => m.workorderId ?? "")
-            .delete(""),
-        }) satisfies PartSummary,
+      .mapValues(
+        (partMats, partName) =>
+          ({
+            part: partName,
+            completedQty: partMats.length,
+            abnormalQty: LazySeq.of(partMats).sumBy((m) => (isAbnormal(m) ? 1 : 0)),
+            mats: partMats,
+            stationMins: OrderedMap.empty(),
+            workorders: LazySeq.of(partMats)
+              .toOrderedSet((m) => m.workorderId ?? "")
+              .delete(""),
+          }) satisfies PartSummary,
     )
-    .adjust(stationTimes, (summary, stationTimes, partName) => {
+    .adjust(stationTimes, (summary, partStationTimes, partName) => {
       if (summary) {
-        return { ...summary, stationMins: stationTimes };
+        return { ...summary, stationMins: partStationTimes };
       } else {
         return {
           part: partName,
           completedQty: 0,
           abnormalQty: 0,
           mats: [],
-          stationMins: stationTimes,
+          stationMins: partStationTimes,
           workorders: OrderedSet.empty(),
         };
       }

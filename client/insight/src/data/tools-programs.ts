@@ -303,11 +303,10 @@ export const toolReportRefreshTime = atom<Date | null, [Date], Promise<void>>(
 export const machinesWithTools = atom<ReadonlyArray<string>>((get) => {
   const toolsInMach = get(toolsInMachine);
   if (toolsInMach === null) return [];
-  const names = new Set<string>();
-  for (const t of toolsInMach.tools) {
-    names.add(stat_name_and_num(t.machineGroupName, t.machineNum));
-  }
-  return Array.from(names).sort((a, b) => a.localeCompare(b));
+  return LazySeq.of(toolsInMach.tools)
+    .toOrderedSet((n) => stat_name_and_num(n.machineGroupName, n.machineNum))
+    .toAscLazySeq()
+    .toRArray();
 });
 
 export const currentToolReport = atom<ReadonlyArray<ToolReport> | null>((get) => {
@@ -387,7 +386,7 @@ export function useCopyToolReportToClipboard(): () => void {
   return useCallback(() => {
     const tools = store.get(currentToolReport);
     if (!tools) return;
-    copy(buildToolReportHTML(tools));
+    void copy(buildToolReportHTML(tools));
   }, [store]);
 }
 

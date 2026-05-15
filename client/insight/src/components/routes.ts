@@ -259,6 +259,7 @@ function urlToRoute(url: URL): RouteState {
             custom: groups?.["custom"]?.split("/")?.map((s: string) => decodeURIComponent(s)) ?? [],
           };
         default:
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the switch handles all routes with additional payload.
           return { route } as RouteState;
       }
     }

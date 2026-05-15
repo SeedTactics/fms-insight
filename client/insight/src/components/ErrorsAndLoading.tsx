@@ -38,6 +38,16 @@ import { CardContent } from "@mui/material";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { ApiException } from "../network/api.js";
 
+function displayUnknownError(error: unknown): string {
+  if (typeof error === "string") {
+    return error;
+  }
+  if (typeof error === "number" || typeof error === "boolean" || typeof error === "bigint") {
+    return error.toString();
+  }
+  return JSON.stringify(error) ?? "";
+}
+
 export function Loading() {
   return (
     <div style={{ textAlign: "center", marginTop: "4em" }}>
@@ -69,8 +79,7 @@ export function DisplayError({ error }: FallbackProps) {
       <Card>
         <CardContent>
           <h3>Unknown Error</h3>
-          {/*eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-          <p>{String(error)}</p>
+          <p>{displayUnknownError(error)}</p>
         </CardContent>
       </Card>
     );

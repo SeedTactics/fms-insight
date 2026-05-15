@@ -123,7 +123,7 @@ export const SelectInspTypeDialog = memo(function SelectInspTypeDialog() {
   const [dialogOpen, setDialogOpen] = useAtom(selectInspTypeDialogOpen);
 
   let body: ReactNode | undefined;
-  if (dialogOpen === false) {
+  if (!dialogOpen) {
     body = <p>None</p>;
   } else {
     body = (
