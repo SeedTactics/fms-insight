@@ -122,13 +122,13 @@ function InvalidateSelect(props: InvalidateCycleProps) {
           ? [<ListSubheader key={"procheader"}>Invalidate Selected Process</ListSubheader>]
           : [],
         lastMat
-          ? [
-              ...LazySeq.ofRange(1, lastMat.process + 1).map((p) => (
+          ? LazySeq.ofRange(1, lastMat.process + 1)
+              .map((p) => (
                 <MenuItem key={p} value={"proc" + p.toString()}>
                   Invalidate Process {p}
                 </MenuItem>
-              )),
-            ]
+              ))
+              .toRArray()
           : [],
         hasProc && hasChangeMat ? [<ListSubheader key="matheader">Change Material Type</ListSubheader>] : [],
         hasChangeMat

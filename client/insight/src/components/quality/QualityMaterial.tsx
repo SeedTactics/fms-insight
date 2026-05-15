@@ -84,7 +84,7 @@ function SerialLookup() {
           } else if (e instanceof Error) {
             setError(e.message);
           } else {
-            setError(e.toString());
+            setError(e);
           }
         })
         .finally(() => setLoading(false));

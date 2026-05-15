@@ -171,10 +171,10 @@ function sortMaterial(
       break;
     case "InspectFailed":
       sortCol = (j) =>
-        LazySeq.ofObject(j.completedInspections ?? {}).some(([, insp]) => insp.success === false) ? -1 : 0;
+        LazySeq.ofObject(j.completedInspections ?? {}).some(([, insp]) => ! insp.success) ? -1 : 0;
       break;
     case "CloseOut":
-      sortCol = (j) => (j.closeout_failed === undefined ? 1 : j.closeout_failed === true ? -1 : 0);
+      sortCol = (j) => (j.closeout_failed === undefined ? 1 :  j.closeout_failed ? -1 : 0);
       break;
   }
   const sorted = [...material];
@@ -292,7 +292,7 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
                 {s.currently_quarantined ? <SavedSearch fontSize="inherit" /> : ""}
               </TableCell>
               <TableCell sx={{ textAlign: "center" }} padding="checkbox">
-                {LazySeq.ofObject(s.completedInspections ?? {}).some(([, insp]) => insp.success === false) ? (
+                {LazySeq.ofObject(s.completedInspections ?? {}).some(([, insp]) => ! insp.success) ? (
                   <ErrorOutlined fontSize="inherit" />
                 ) : (
                   ""
@@ -756,5 +756,5 @@ function copyPartsToClipboard(parts: ReadonlyArray<PartSummary>) {
   }
   table += "</tbody></table>\n";
 
-  copy(table, { format: "text/html" });
+  void copy(table, { format: "text/html" });
 }

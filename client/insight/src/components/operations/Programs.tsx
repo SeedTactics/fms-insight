@@ -480,10 +480,12 @@ function ProgramContentCode() {
 
   useEffect(() => {
     let set = (h: string) => setHighlighted(h);
-    worker.onmessage = (e) => set(e.data as string);
+    const handleMessage = (event: MessageEvent<string>) => set(event.data);
+    worker.addEventListener("message", handleMessage);
     return () => {
       // cleanup
       set = () => null;
+      worker.removeEventListener("message", handleMessage);
       worker.terminate();
       setHighlighted(null);
     };
@@ -491,7 +493,7 @@ function ProgramContentCode() {
 
   useEffect(() => {
     if (ct && ct !== "") {
-      worker.postMessage(ct);
+      worker.postMessage(ct, []);
     }
   }, [ct, worker]);
 
@@ -818,7 +820,7 @@ function ProgNavHeader() {
           <Select
             autoWidth
             value={filter}
-            onChange={(e) => setFilter(e.target.value as "AllPrograms" | "ActivePrograms")}
+            onChange={(e) => setFilter(e.target.value)}
           >
             <MenuItem key="AllPrograms" value="AllPrograms">
               All Programs

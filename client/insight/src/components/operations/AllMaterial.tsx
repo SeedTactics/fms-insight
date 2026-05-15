@@ -64,7 +64,6 @@ import {
   InProcMaterial,
   MaterialDialog,
   SortableInProcMaterial,
-  SortableMatData,
 } from "../station-monitor/Material.js";
 import { IInProcessMaterial } from "../../network/api.js";
 import {
@@ -496,12 +495,21 @@ export function AllMaterial(props: AllMaterialProps) {
         droppable: { strategy: MeasuringStrategy.Always },
       }}
       onDragStart={({ active }) => {
-        if (typeof active.id === "string") {
-          setActiveDrag({ type: "column", bin: (active.data.current as SortableColumnData).bin });
-        } else {
+        if (
+          typeof active.id === "string" &&
+          typeof active.data.current === "object" &&
+          active.data.current !== null &&
+          "bin" in active.data.current
+        ) {
+          setActiveDrag({ type: "column", bin: active.data.current.bin });
+        } else if (
+          typeof active.data.current === "object" &&
+          active.data.current !== null &&
+          "mat" in active.data.current
+        ) {
           setActiveDrag({
             type: "material",
-            mat: (active.data.current as SortableMatData).mat,
+            mat: active.data.current.mat,
             curOverBinId: null,
             initialIdx: 0,
           });

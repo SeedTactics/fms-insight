@@ -141,8 +141,8 @@ const SankeyDisplay = memo(function InspectionSankeyDiagram({
   readonly setTooltip: ShowTooltipFunc;
 }) {
   const { nodes, links } = useMemo(() => {
-    const { nodes, links } = inspectionDataToSankey(data);
-    if (nodes.length === 0) {
+    const sankeyData = inspectionDataToSankey(data);
+    if (sankeyData.nodes.length === 0) {
       return { nodes: [], links: [] };
     }
     const generator = sankey<SankeyNode, SankeyLink>()
@@ -153,8 +153,15 @@ const SankeyDisplay = memo(function InspectionSankeyDiagram({
         [marginLeft, marginTop],
         [parentWidth - marginRight, parentHeight - marginBottom - marginTop],
       ]);
-    generator({ nodes, links });
-    return { nodes: nodes as NodeWithData[], links: links as unknown as LinkWithData[] };
+    const layout = generator({ nodes: sankeyData.nodes, links: sankeyData.links });
+    return {
+      nodes: layout.nodes,
+      links: layout.links.flatMap((link) =>
+        typeof link.source === "object" && typeof link.target === "object" && link.width !== undefined
+          ? [{ ...link, source: link.source, target: link.target, width: link.width }]
+          : [],
+      ),
+    };
   }, [data, parentWidth, parentHeight]);
 
   const path = sankeyLinkHorizontal();

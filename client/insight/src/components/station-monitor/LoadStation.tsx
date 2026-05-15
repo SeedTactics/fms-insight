@@ -375,8 +375,10 @@ function selectLoadStationAndQueueProps(
     }
   }
 
-  queueMat.forEach((m) => m.mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
-  basketMat.forEach((m) => m.mats.sort(mkCompareByProperties((m) => m.location.basketSubPosition ?? 0)));
+  queueMat.forEach((queue) => queue.mats.sort(mkCompareByProperties((mat) => mat.location.queuePosition ?? 0)));
+  basketMat.forEach((basket) =>
+    basket.mats.sort(mkCompareByProperties((mat) => mat.location.basketSubPosition ?? 0)),
+  );
 
   const matCount = freeLoading.length + palFaces.valuesToAscLazySeq().sumBy((x) => x.length);
 
@@ -1005,7 +1007,7 @@ function AddMatButton({
     return (
       <Button
         color="primary"
-        disabled={toQueue === null || addingExistingMat === true}
+        disabled={toQueue === null ||  addingExistingMat}
         onClick={() => {
           addExistingMat({
             materialId: existingMat.materialID,

@@ -251,9 +251,11 @@ function SelectDateRange(props: { readonly zoom: DataTableActionZoomIntoRange })
     setOpen(false);
   }
 
-  // @types/react-calendar has the wrong type for onChange
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-  const matchingOnChange: (d: Date | ReadonlyArray<Date | null> | null) => void = onChange as any;
+  const matchingOnChange = (value: Date | ReadonlyArray<Date | null> | null) => {
+    if (Array.isArray(value) && value[0] instanceof Date && value[1] instanceof Date) {
+      onChange([value[0], value[1]]);
+    }
+  };
 
   return (
     <>
@@ -604,5 +606,5 @@ export function copyTableToClipboard<Id, Row>(
   columns: ReadonlyArray<Column<Id, Row>>,
   rows: Iterable<Row>,
 ): void {
-  copy(buildClipboardTableAsString(columns, rows));
+  void copy(buildClipboardTableAsString(columns, rows));
 }

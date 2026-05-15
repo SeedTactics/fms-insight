@@ -9,7 +9,7 @@ import { HashSet, HashMap, OrderedMap, LazySeq, OrderedSet } from "@seedtactics/
 export function toRawJs(val: any): any {
   if (val instanceof Date) {
     return val;
-  } else if (val instanceof Array) {
+  } else if (Array.isArray(val)) {
     return val.map(toRawJs);
   } else if (val instanceof Map) {
     return new Map([...val].map(([k, v]) => [k, toRawJs(v)]));

@@ -140,7 +140,7 @@ export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContain
   whiteBackground?: boolean;
 }) {
   const container = useRef<HTMLDivElement | null>(null);
-  const [nodes, setNodes] = useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement | null>>>(
+  const [registeredNodes, setNodes] = useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement | null>>>(
     HashMap.empty(),
   );
 
@@ -154,7 +154,7 @@ export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContain
         if (kind && ref) {
           setNodes((ns) => ns.set(id, { ...kind, elem: ref }));
         } else {
-          setNodes((nodes) => nodes.delete(id));
+          setNodes((currentNodes) => currentNodes.delete(id));
         }
       },
     };
@@ -187,7 +187,7 @@ export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContain
             <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.15)" />
           </marker>
         </defs>
-        {!hideArrows ? <MoveMaterialArrows container={container} arrowsWithRefs={nodes} /> : undefined}
+        {!hideArrows ? <MoveMaterialArrows container={container} arrowsWithRefs={registeredNodes} /> : undefined}
       </svg>
       <div ref={container}>
         <MoveMaterialArrowCtx.Provider value={ctx}>{children}</MoveMaterialArrowCtx.Provider>

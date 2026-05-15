@@ -241,8 +241,8 @@ function SelectJob({
               in={curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.jobUnique}
               timeout="auto"
             >
-              {j.machinedProcs.map((p, idx) => (
-                <div key={idx}>
+              {j.machinedProcs.map((p, procIdx) => (
+                <div key={procIdx}>
                   <ListItem sx={(theme) => ({ pl: theme.spacing(indent ? 8 : 4) })}>
                     <ListItemButton
                       selected={
@@ -578,9 +578,12 @@ export function AddToQueueButton({
             color="primary"
             disabled={
               toQueue === null ||
-              addingExistingMat === true ||
-              addingNewMat === true ||
-              addingNewCasting === true ||
+              
+              addingExistingMat ||
+              
+              addingNewMat ||
+              
+              addingNewCasting ||
               (existingMat === null && newMaterialTy === null) ||
               (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
                 (enteredOperator === null || enteredOperator === ""))

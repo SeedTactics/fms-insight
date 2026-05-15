@@ -125,7 +125,7 @@ export function binCyclesByDayAndPart(
         .filter(([_, unloadTime]) => unloadTime >= start && unloadTime <= end)
         .map(([proc, unloadTime]) => ({
           day: startOfDay(unloadTime),
-          part: details.partName + "-" + proc.toString(),
+          part: details.partName + "-" + proc,
           value: {
             count: 1,
             activeMachineMins: activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))) ?? 0,
@@ -237,5 +237,5 @@ export function buildCompletedPartsHeatmapTable(
 export function copyCompletedPartsHeatmapToClipboard(
   points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>,
 ): void {
-  copy(buildCompletedPartsHeatmapTable(points));
+  void copy(buildCompletedPartsHeatmapTable(points));
 }

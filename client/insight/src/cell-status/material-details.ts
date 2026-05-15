@@ -585,8 +585,7 @@ export interface AddNewMaterialToQueueData {
   readonly operator: string | null;
   readonly workorder: string | null;
   readonly onNewMaterial?: (mat: Readonly<IInProcessMaterial>) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readonly onError?: (reason: any) => void;
+  readonly onError?: (reason: unknown) => void;
 }
 
 export function useAddNewMaterialToQueue(): [(d: AddNewMaterialToQueueData) => void, boolean] {
@@ -625,8 +624,7 @@ export interface AddNewCastingToQueueData {
   readonly workorder: string | null;
   readonly operator: string | null;
   readonly onNewMaterial?: (mats: ReadonlyArray<Readonly<IInProcessMaterial>>) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readonly onError?: (reason: any) => void;
+  readonly onError?: (reason: unknown) => void;
 }
 
 export function useAddNewCastingToQueue(): [(d: AddNewCastingToQueueData) => void, boolean] {

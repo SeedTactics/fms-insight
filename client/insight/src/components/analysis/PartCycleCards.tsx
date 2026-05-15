@@ -85,6 +85,14 @@ const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   minute: "2-digit",
 });
 
+function isPartCycleChartData(point: CycleChartPoint): point is PartCycleChartData {
+  return "material" in point && Array.isArray(point.material);
+}
+
+function hasLoadCycleOperations(point: CycleChartPoint): point is LoadCycleData {
+  return "operations" in point && (point.operations === undefined || Array.isArray(point.operations));
+}
+
 function DisplayDateRange({ range }: { range: { start: Date; end: Date } | [Date, Date] | undefined }) {
   const period = useAtomValue(selectedAnalysisPeriod);
 
@@ -141,9 +149,11 @@ export function PartMachineCycleChart() {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const extraStationCycleTooltip = useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-      const partC = point as PartCycleChartData;
+      if (!isPartCycleChartData(point)) {
+        return [];
+      }
       const ret = [];
-      for (const mat of partC.material) {
+      for (const mat of point.material) {
         ret.push({
           title: mat.serial ? mat.serial : "Material",
           value: "Open Card",
@@ -272,7 +282,7 @@ export function PartMachineCycleChart() {
             style={{ marginLeft: "1em" }}
             onChange={(e) => {
               setSelectedPart(
-                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number],
+                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value],
               );
               setSelectedOperation(undefined);
             }}
@@ -306,9 +316,13 @@ export function PartMachineCycleChart() {
             style={{ marginLeft: "1em" }}
             onChange={(e) => {
               if (selectedPart) {
-                setSelectedOperation(points.allMachineOperations[e.target.value as number]);
-              } else {
-                setSelectedMachine(e.target.value as string);
+                const selectedIdx =
+                  typeof e.target.value === "number" ? e.target.value : Number.parseInt(e.target.value, 10);
+                if (!Number.isNaN(selectedIdx)) {
+                  setSelectedOperation(selectedIdx === -1 ? undefined : points.allMachineOperations[selectedIdx]);
+                }
+              } else if (typeof e.target.value === "string") {
+                setSelectedMachine(e.target.value);
               }
             }}
           >
@@ -456,10 +470,12 @@ export function PartLoadStationCycleChart() {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const extraLoadCycleTooltip = useCallback(
     function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-      const partC = point as LoadCycleData;
+      if (!hasLoadCycleOperations(point)) {
+        return [];
+      }
       const ret = [];
-      if (partC.operations) {
-        for (const mat of partC.operations) {
+      if (point.operations) {
+        for (const mat of point.operations) {
           ret.push({
             title: (mat.mat.serial ? mat.mat.serial : "Material") + " " + mat.operation,
             value: "Open Card",
@@ -492,12 +508,12 @@ export function PartLoadStationCycleChart() {
   const curOperation = useMemo(
     () =>
       selectedPart && selectedOperation === "LoadOp"
-        ? new PartAndStationOperation(selectedPart.part, "L/U", "LOAD" + "-" + selectedPart.proc.toString())
+        ? new PartAndStationOperation(selectedPart.part, "L/U", `LOAD-${selectedPart.proc}`)
         : selectedPart && selectedOperation === "UnloadOp"
           ? new PartAndStationOperation(
               selectedPart.part,
               "L/U",
-              "UNLOAD" + "-" + selectedPart.proc.toString(),
+              `UNLOAD-${selectedPart.proc}`,
             )
           : null,
     [selectedPart, selectedOperation],
@@ -612,7 +628,7 @@ export function PartLoadStationCycleChart() {
                 setSelectedOperation("LULOccupancy");
               } else {
                 setSelectedPart(
-                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number],
+                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value],
                 );
               }
             }}

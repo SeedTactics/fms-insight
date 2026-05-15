@@ -124,7 +124,7 @@ export const SelectWorkorderDialog = memo(function SelectWorkorderDialog() {
   const [workDialogOpen, setWorkDialogOpen] = useAtom(selectWorkorderDialogOpen);
 
   let body: ReactNode | undefined;
-  if (workDialogOpen === false) {
+  if (!workDialogOpen) {
     body = <p>None</p>;
   } else {
     body = (

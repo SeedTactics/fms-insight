@@ -80,9 +80,9 @@ function loadMissed(lastCntr: number, schIds: HashSet<string> | undefined, set: 
 }
 
 class ReconnectingWebsocket {
-  public onopen?: () => void;
-  public onmessage?: (evt: MessageEvent<string>) => void;
-  public onreconnecting?: () => void;
+  public handleOpen?: () => void;
+  public handleMessage?: (evt: MessageEvent<string>) => void;
+  public handleReconnecting?: () => void;
 
   private readonly url: string;
   private ws?: WebSocket;
@@ -109,30 +109,30 @@ class ReconnectingWebsocket {
       localWs.close();
     }, 2000);
 
-    localWs.onopen = () => {
+    localWs.addEventListener("open", () => {
       clearTimeout(connectTimeout);
       this.reconnectAttempts = 0;
-      this.onopen?.();
-    };
+      this.handleOpen?.();
+    });
 
-    localWs.onclose = () => {
+    localWs.addEventListener("close", () => {
       clearTimeout(connectTimeout);
       this.ws = undefined;
       if (this.userCalledClose) {
         return;
       }
 
-      this.onreconnecting?.();
+      this.handleReconnecting?.();
       const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 30000);
       setTimeout(() => {
         this.reconnectAttempts++;
         this.connect();
       }, delay);
-    };
+    });
 
-    localWs.onmessage = (evt: MessageEvent<string>) => {
-      this.onmessage?.(evt);
-    };
+    localWs.addEventListener("message", (evt: MessageEvent<string>) => {
+      this.handleMessage?.(evt);
+    });
 
     // Browsers expose websocket failures as opaque events with no useful detail.
     // Reconnect handling is driven by close/open, so avoid polluting stderr by
@@ -187,9 +187,9 @@ export function WebsocketConnection(): null {
     }
 
     const websocket = new ReconnectingWebsocket(uri);
-    websocket.onopen = onOpen;
-    websocket.onreconnecting = onReconnecting;
-    websocket.onmessage = onMessage;
+    websocket.handleOpen = onOpen;
+    websocket.handleReconnecting = onReconnecting;
+    websocket.handleMessage = onMessage;
     websocketRef.current = websocket;
 
     return () => {

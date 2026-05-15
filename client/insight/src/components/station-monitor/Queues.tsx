@@ -809,10 +809,10 @@ export const Queues = (props: QueueProps) => {
                   />
                 ))}
                 {region.groupedRawMat && region.groupedRawMat.length > 0
-                  ? region.groupedRawMat.map((matGroup, idx) =>
+                  ? region.groupedRawMat.map((matGroup, groupIdx) =>
                       matGroup.material.length === 1 ? (
                         <InProcMaterial
-                          key={idx}
+                          key={groupIdx}
                           mat={matGroup.material[0]}
                           hideEmptySerial
                           fsize="normal"

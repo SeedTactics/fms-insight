@@ -186,11 +186,11 @@ export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI, machine: 
 export function setUserToken(u: User): void {
   const token = u.access_token;
   function fetch(url: RequestInfo, init?: RequestInit) {
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", "Bearer " + token);
     return window.fetch(
       url,
-      init
-        ? { ...init, headers: { ...init.headers, Authorization: "Bearer " + token } }
-        : { headers: { Authorization: "Bearer " + token } },
+      init ? { ...init, headers } : { headers },
     );
   }
   FmsServerBackend = new api.FmsClient(undefined, { fetch });

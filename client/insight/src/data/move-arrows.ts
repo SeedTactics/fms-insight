@@ -192,8 +192,8 @@ export function computeArrows(
   let lastFreeUsed = 0;
 
   for (const [rect, mat] of LazySeq.of(byKind.material).sortBy(
-    ([rect]) => rect.left,
-    ([rect]) => rect.top,
+    ([box]) => box.left,
+    ([box]) => box.top,
   )) {
     switch (mat.action.type) {
       case api.ActionType.UnloadToCompletedMaterial:

@@ -50,8 +50,8 @@ const unschRebookings = unwrap(
     if (typeof JobsBackend === "undefined") {
       return OrderedMap.empty<string, Readonly<IRebooking>>();
     }
-    const b = await JobsBackend.unscheduledRebookings(signal);
-    return OrderedMap.build(b, (b) => b.bookingId);
+    const bookings = await JobsBackend.unscheduledRebookings(signal);
+    return OrderedMap.build(bookings, (booking) => booking.bookingId);
   }),
   (prev) => prev ?? OrderedMap.empty<string, Readonly<IRebooking>>(),
 );
@@ -110,15 +110,15 @@ export const setLast30Rebookings = atom(null, (get, set, log: ReadonlyArray<Read
 function updateJobs(set: Setter, jobs: LazySeq<Readonly<IJob>>, expire?: Date) {
   set(scheduledRW, (old) => {
     if (expire) {
-      old = old.filter((b) => b.scheduledTime >= expire);
+      old = old.filter((booking) => booking.scheduledTime >= expire);
     }
     return old.union(
       jobs
         .flatMap((j) =>
           (j.bookings ?? []).map(
-            (b) =>
+            (booking) =>
               [
-                b,
+                booking,
                 {
                   scheduledTime: j.routeStartUTC,
                   jobUnique: j.unique,
@@ -134,7 +134,7 @@ function updateJobs(set: Setter, jobs: LazySeq<Readonly<IJob>>, expire?: Date) {
 export const setLast30RebookingJobs = atom(null, (_, set, historic: Readonly<IRecentHistoricData>) => {
   updateJobs(
     set,
-    LazySeq.ofObject(historic.jobs).map(([_, j]) => j),
+    LazySeq.ofObject(historic.jobs).map(([, j]) => j),
   );
 });
 

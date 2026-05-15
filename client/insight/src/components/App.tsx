@@ -263,6 +263,35 @@ export function NavTabs({ children }: { children?: ReactNode }) {
     "separator" in r ? false : r.route.route === route.route,
   );
 
+  function isRouteLocation(value: unknown): value is routes.RouteLocation {
+    return typeof value === "string" && Object.values<string>(routes.RouteLocation).includes(value);
+  }
+
+  type SimpleRouteLocation = Exclude<
+    routes.RouteLocation,
+    | routes.RouteLocation.Client_Custom
+    | routes.RouteLocation.Operations_CurrentWorkorders
+    | routes.RouteLocation.Station_InspectionMonitorWithType
+    | routes.RouteLocation.Station_LoadMonitor
+    | routes.RouteLocation.Station_Queues
+  >;
+
+  function isSimpleRouteLocation(value: unknown): value is SimpleRouteLocation {
+    return (
+      isRouteLocation(value) &&
+      value !== routes.RouteLocation.Client_Custom &&
+      value !== routes.RouteLocation.Operations_CurrentWorkorders &&
+      value !== routes.RouteLocation.Station_InspectionMonitorWithType &&
+      value !== routes.RouteLocation.Station_LoadMonitor &&
+      value !== routes.RouteLocation.Station_Queues
+    );
+  }
+
+  function toRouteState(simpleRoute: SimpleRouteLocation): routes.RouteState {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- these routes do not carry extra payload.
+    return { route: simpleRoute } as routes.RouteState;
+  }
+
   return (
     <Tabs
       variant={full && (!Array.isArray(children) || children.length < 5) ? "fullWidth" : "scrollable"}
@@ -271,8 +300,8 @@ export function NavTabs({ children }: { children?: ReactNode }) {
         startTransition(() => {
           if (v === OperationsReportsTab) {
             setRoute({ route: routes.RouteLocation.Operations_MachineCycles });
-          } else {
-            setRoute({ route: v as routes.RouteLocation } as routes.RouteState);
+          } else if (isSimpleRouteLocation(v)) {
+            setRoute(toRouteState(v));
           }
         })
       }

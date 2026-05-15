@@ -517,7 +517,7 @@ export function fakeCycle({
   if (!noInspections) {
     time = addMinutes(time, 5);
     counter += 1;
-    if (faker.datatype.boolean() === true) {
+    if (faker.datatype.boolean()) {
       es.push(fakeInspForce(material[0], "Insp1", time, counter));
       time = addSeconds(time, 5);
       counter += 1;

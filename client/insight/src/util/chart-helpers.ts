@@ -1,11 +1,10 @@
 import { MouseEvent, TouchEvent } from "react";
 
-export function localPoint(evt: MouseEvent<Element> | TouchEvent<Element>): DOMPoint | null {
-  const node = evt.target as Element;
-  if (!node) return null;
-  if (!(node instanceof SVGElement)) return null;
+export function localPoint(evt: MouseEvent | TouchEvent): DOMPoint | null {
+  const { target } = evt;
+  if (!(target instanceof SVGElement)) return null;
 
-  const svg = node instanceof SVGSVGElement ? node : node.ownerSVGElement;
+  const svg = target instanceof SVGSVGElement ? target : target.ownerSVGElement;
   if (!svg) return null;
 
   const screenCTM = svg.getScreenCTM();
@@ -27,8 +26,11 @@ const measureTextId = "__bms_measure_text_element";
 
 export function measureSvgString(str: string, fontSize?: number) {
   try {
-    let txtElem = document.getElementById(measureTextId) as SVGTextElement | null;
-    if (!txtElem) {
+    const existingElem = document.getElementById(measureTextId);
+    let txtElem: SVGTextElement;
+    if (existingElem instanceof SVGTextElement) {
+      txtElem = existingElem;
+    } else {
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("aria-hidden", "true");
       svg.style.position = "absolute";
@@ -37,7 +39,11 @@ export function measureSvgString(str: string, fontSize?: number) {
       svg.style.width = "0";
       svg.style.height = "0";
       svg.style.opacity = "0";
-      txtElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      if (!(textElem instanceof SVGTextElement)) {
+        return null;
+      }
+      txtElem = textElem;
       txtElem.setAttribute("id", measureTextId);
       if (fontSize) {
         txtElem.style.fontSize = fontSize.toString();

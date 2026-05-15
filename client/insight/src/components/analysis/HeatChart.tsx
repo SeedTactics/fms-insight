@@ -59,6 +59,10 @@ export interface HeatChartProps {
   readonly label_title: string;
 }
 
+function isSelectableOption<T extends string>(options: ReadonlyArray<T>, value: string): value is T {
+  return options.some((option) => option === value);
+}
+
 interface HeatChartDimensions {
   readonly height: number;
   readonly width: number;
@@ -122,31 +126,35 @@ function useScales({
     return scaleBand<Date>().domain(xValues).range([0, xMax]).align(0).padding(0.05);
   }, [dateRangeStart, dateRangeEnd, xMax]);
 
-  const { yScale, height, colorScale } = useMemo(() => {
+  const {
+    yScale: bandScale,
+    height: chartHeight,
+    colorScale: fillScale,
+  } = useMemo(() => {
     const yValues = new Set<string>();
-    for (const pt of points) {
-      yValues.add(pt.y);
+    for (const point of points) {
+      yValues.add(point.y);
     }
 
     const yMax = 60 * yValues.size;
-    const height = yMax + marginTop + marginBottom;
-    const yScale = scaleBand()
-      .domain(Array.from(yValues).sort((a, b) => a.localeCompare(b)))
+    const nextChartHeight = yMax + marginTop + marginBottom;
+    const nextBandScale = scaleBand()
+      .domain(LazySeq.of(yValues).toSortedArray((x) => x))
       .range([0, yMax])
       .align(0)
       .padding(0.05);
-    let colorScale: ScaleLinear<string, string>;
+    let nextFillScale: ScaleLinear<string, string>;
     if (yType === "Station") {
-      colorScale = scaleLinear<string, string>().domain([0, 1]).range([color1, color2]);
+      nextFillScale = scaleLinear<string, string>().domain([0, 1]).range([color1, color2]);
     } else {
       const maxCnt = LazySeq.of(points).maxBy((pt) => pt.color)?.color ?? 1;
-      colorScale = scaleLinear<string, string>().domain([0, maxCnt]).range([color1, color2]);
+      nextFillScale = scaleLinear<string, string>().domain([0, maxCnt]).range([color1, color2]);
     }
 
-    return { yScale, height, colorScale };
+    return { yScale: nextBandScale, height: nextChartHeight, colorScale: nextFillScale };
   }, [points, yType]);
 
-  return { height, width, xScale, yScale, colorScale, marginLeft };
+  return { height: chartHeight, width, xScale, yScale: bandScale, colorScale: fillScale, marginLeft };
 }
 
 const HeatAxis = memo(function HeatAxis({ xScale, yScale }: HeatChartScales) {
@@ -189,7 +197,7 @@ const HeatSeries = memo(function HeatSeries({
         clearTimeout(hideRef.current);
         hideRef.current = null;
       }
-      const idxS = (e.target as SVGRectElement).dataset.idx;
+      const idxS = e.currentTarget.dataset.idx;
       if (idxS === undefined) return;
       const heatPoint = points[parseInt(idxS)];
       setTooltip({ left: pt.x, top: pt.y, data: heatPoint });
@@ -318,7 +326,11 @@ function ChartToolbar<T extends string>(props: SelectableHeatCardProps<T>) {
             autoWidth
             displayEmpty
             value={props.cur_selected}
-            onChange={(e) => setSelected(e.target.value as T)}
+            onChange={(e) => {
+              if (isSelectableOption(props.options, e.target.value)) {
+                setSelected(e.target.value);
+              }
+            }}
           >
             {props.options.map((v, idx) => (
               <MenuItem key={idx} value={v}>

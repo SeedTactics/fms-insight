@@ -58,9 +58,9 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
   const today = startOfToday();
   const allCycles = useAtomValue(last30StationCycles);
   const points = useMemo(() => {
-    const today = startOfToday();
-    const start = addDays(today, -4);
-    const end = addDays(today, 1);
+    const todayStart = startOfToday();
+    const start = addDays(todayStart, -4);
+    const end = addDays(todayStart, 1);
     return {
       seriesLabel: "Part",
       data: allCycles

@@ -532,9 +532,9 @@ export function copyCyclesToClipboard(
   ).catch(console.error);
 }
 
-export function buildPalletCycleTable(points: PalletCyclesByPallet, carrierLabel = "Pallet"): string {
+export function buildPalletCycleTable(points: PalletCyclesByPallet, carrierColumnLabel = "Pallet"): string {
   let table = "<table>\n<thead><tr>";
-  table += `<th>${carrierLabel}</th><th>Date</th><th>Elapsed (min)</th>`;
+  table += `<th>${carrierColumnLabel}</th><th>Date</th><th>Elapsed (min)</th>`;
   table += "</tr></thead>\n<tbody>\n";
 
   const pals = points.keysToLazySeq().toSortedArray((x) => x);
@@ -561,8 +561,8 @@ export function buildPalletCycleTable(points: PalletCyclesByPallet, carrierLabel
   return table;
 }
 
-export function copyPalletCyclesToClipboard(points: PalletCyclesByPallet, carrierLabel = "Pallet"): void {
-  copy(buildPalletCycleTable(points, carrierLabel)).catch(console.error);
+export function copyPalletCyclesToClipboard(points: PalletCyclesByPallet, carrierColumnLabel = "Pallet"): void {
+  copy(buildPalletCycleTable(points, carrierColumnLabel)).catch(console.error);
 }
 
 function stat_name(e: Readonly<api.ILogEntry>): string {

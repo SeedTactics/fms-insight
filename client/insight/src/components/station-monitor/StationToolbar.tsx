@@ -72,6 +72,10 @@ enum StationMonitorType {
   AllMaterial = "AllMaterial",
 }
 
+function multiSelectValue(value: string | ReadonlyArray<string>): ReadonlyArray<string> {
+  return typeof value === "string" ? value.split(",") : value;
+}
+
 function HideNonLoadingCheckbox() {
   const [hide, setHide] = useAtom(hideNonLoadingMaterialOnLoadStation);
   return (
@@ -86,7 +90,7 @@ function HideNonLoadingCheckbox() {
 export function StationToolbar(): ReactNode {
   const [route, setRoute] = useAtom(currentRoute);
   const inspTypes = useAtomValue(last30InspectionTypes);
-  const queueNames = Object.keys(useAtomValue(currentStatus).queues).sort((a, b) => a.localeCompare(b));
+  const queueNames = LazySeq.of(Object.keys(useAtomValue(currentStatus).queues)).toSortedArray((x) => x);
   const fmsInfo = useAtomValue(fmsInformation);
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
@@ -239,7 +243,7 @@ export function StationToolbar(): ReactNode {
             value={currentQueues}
             inputProps={{ id: "queueselect" }}
             style={{ minWidth: "10em", marginTop: "0" }}
-            onChange={(e) => setLoadQueues(e.target.value as ReadonlyArray<string>)}
+            onChange={(e) => setLoadQueues(multiSelectValue(e.target.value))}
           >
             {queueNames.map((q, idx) => (
               <MenuItem key={idx} value={q}>
@@ -276,7 +280,7 @@ export function StationToolbar(): ReactNode {
             value={currentQueues}
             inputProps={{ id: "queueselect" }}
             style={{ marginTop: "0" }}
-            onChange={(e) => setStandaloneQueues(e.target.value as ReadonlyArray<string>)}
+            onChange={(e) => setStandaloneQueues(multiSelectValue(e.target.value))}
           >
             {queueNames.map((q, idx) => (
               <MenuItem key={idx} value={q}>

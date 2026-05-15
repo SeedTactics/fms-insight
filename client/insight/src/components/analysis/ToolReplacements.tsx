@@ -93,17 +93,19 @@ type ToolReplacementSummary = {
 function tool_replacements_with_station_and_date(
   zoom: TableZoom | undefined,
   allReplacements: ToolReplacementsByStation,
-  station: StationGroupAndNum | null | undefined,
+  selectedStation: StationGroupAndNum | null | undefined,
 ): LazySeq<ToolReplacementAndStationDate> {
   const zoomRange = zoom?.zoomRange;
-  if (station) {
-    const rsForStat = allReplacements.get(station) ?? OrderedMap.empty();
+  if (selectedStation) {
+    const rsForStat = allReplacements.get(selectedStation) ?? OrderedMap.empty();
     return rsForStat
       .valuesToAscLazySeq()
       .transform((x) =>
         zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x,
       )
-      .flatMap((rs) => rs.replacements.map((r) => ({ ...r, station, time: rs.time })));
+      .flatMap((rs) =>
+        rs.replacements.map((replacement) => ({ ...replacement, station: selectedStation, time: rs.time })),
+      );
   } else {
     return allReplacements.toAscLazySeq().flatMap(([station, rsByStat]) =>
       rsByStat
@@ -519,14 +521,14 @@ const AllReplacementTable = memo(function ReplacementTable(props: ReplacementTab
 
 function copyToClipboard(replacements: ToolReplacementsByStation, displayType: "summary" | "details"): void {
   if (displayType === "summary") {
-    const r = tool_summary(undefined, replacements, undefined, (r) => r.tool);
-    copyTableToClipboard(summaryColumns, r);
+    const summaryRows = tool_summary(undefined, replacements, undefined, (replacement) => replacement.tool);
+    copyTableToClipboard(summaryColumns, summaryRows);
   } else {
-    const r = tool_replacements_with_station_and_date(undefined, replacements, undefined).toSortedArray(
-      (r) => r.tool,
-      (r) => r.time,
+    const detailRows = tool_replacements_with_station_and_date(undefined, replacements, undefined).toSortedArray(
+      (replacement) => replacement.tool,
+      (replacement) => replacement.time,
     );
-    copyTableToClipboard(allReplacementsColumns, r);
+    copyTableToClipboard(allReplacementsColumns, detailRows);
   }
 }
 

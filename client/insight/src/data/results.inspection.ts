@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "../network/api.js";
 import { InspectionLogEntry, InspectionLogResultType } from "../cell-status/inspections.js";
-import { LazySeq, mkCompareByProperties, ToComparable } from "@seedtactics/immutable-collections";
+import { LazySeq, ToComparable } from "@seedtactics/immutable-collections";
 import copy from "copy-to-clipboard";
 
 export interface TriggeredInspectionEntry {
@@ -50,7 +50,7 @@ export function buildPathString(procs: ReadonlyArray<Readonly<api.IMaterialProce
   const pathStrs = [];
   for (const proc of procs) {
     for (const stop of proc.stops) {
-      pathStrs.push("P" + proc.pallet.toString() + "," + "M" + stop.stationNum.toString());
+      pathStrs.push(`P${proc.pallet},M${stop.stationNum}`);
     }
   }
   return pathStrs.join(" -> ");
@@ -106,7 +106,7 @@ export function groupInspectionsByPath(
       },
     )
     .mapValues((mats) => ({
-      material: mats.sort(mkCompareByProperties(sortOn, (e) => e.time.getTime())),
+      material: LazySeq.of(mats).toSortedArray(sortOn, (e) => e.time.getTime()),
       failedCnt: mats.reduce((acc, e) => acc + (e.failed ? 1 : 0), 0),
     }));
 }
@@ -155,12 +155,15 @@ export function extractPath(
 ): ReadonlyArray<Readonly<api.IMaterialProcessActualPath>> {
   for (const e of evts) {
     if (e.type === api.LogType.Inspection) {
-      const pathsJson: ReadonlyArray<object> = JSON.parse(
-        (e.details || {}).ActualPath || "[]",
-      ) as ReadonlyArray<object>;
+      const pathsJson = JSON.parse((e.details || {}).ActualPath || "[]");
+      if (!Array.isArray(pathsJson)) {
+        continue;
+      }
       const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
       for (const pathJson of pathsJson) {
-        paths.push(api.MaterialProcessActualPath.fromJS(pathJson));
+        if (typeof pathJson === "object" && pathJson !== null) {
+          paths.push(api.MaterialProcessActualPath.fromJS(pathJson));
+        }
       }
       if (paths.length > 0) {
         return paths;
@@ -223,7 +226,7 @@ export function copyInspectionEntriesToClipboard(
   inspType: string,
   entries: Iterable<InspectionLogEntry>,
 ): void {
-  copy(buildInspectionTable(part, inspType, entries));
+  void copy(buildInspectionTable(part, inspType, entries));
 }
 
 export function buildFailedInspTable(entries: Iterable<FailedInspectionEntry>): string {
@@ -246,5 +249,5 @@ export function buildFailedInspTable(entries: Iterable<FailedInspectionEntry>): 
 }
 
 export function copyFailedInspectionsToClipboard(entries: Iterable<FailedInspectionEntry>) {
-  copy(buildFailedInspTable(entries));
+  void copy(buildFailedInspTable(entries));
 }

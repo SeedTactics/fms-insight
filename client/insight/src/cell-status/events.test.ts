@@ -41,7 +41,7 @@ import { last30MaterialSummary, specificMonthMaterialSummary } from "./material-
 import { last30PalletCycles, specificMonthPalletCycles } from "./pallet-cycles.js";
 import { last30StationCycles, specificMonthStationCycles } from "./station-cycles.js";
 import { last30ToolUse } from "./tool-usage.js";
-import { LogEntry, LogMaterial } from "../network/api.js";
+import { ILogMaterial, LogEntry, LogMaterial } from "../network/api.js";
 import { it, expect } from "vitest";
 
 import { toRawJs } from "../../test/to-raw-js.js";
@@ -234,7 +234,13 @@ it("doesn't split load elapsed times if they are the same", () => {
   // the need to split even when the elapsed times are equal.
 
   const mats1 = [fakeMaterial("part444", 1), fakeMaterial("part444", 1)];
-  const mats2 = mats1.map((m) => new LogMaterial({ ...m, proc: 2 }));
+  const mats2 = mats1.map(
+    (m) =>
+      new LogMaterial({
+        ...(m as ILogMaterial),
+        proc: 2,
+      }),
+  );
 
   const evts = [
     // load and unload cycles with same time and elapsed time but in a pallet cycle event

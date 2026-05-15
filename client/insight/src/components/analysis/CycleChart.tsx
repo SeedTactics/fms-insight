@@ -339,10 +339,10 @@ const SingleSeries = memo(function SingleSeries({
   readonly showTooltip: ShowTooltipFunc;
 }) {
   const show = useCallback(
-    (e: MouseEvent) => {
+    (e: MouseEvent<SVGCircleElement>) => {
       const p = localPoint(e);
       if (p === null) return;
-      const idxS = (e.target as SVGCircleElement).dataset.idx;
+      const idxS = e.currentTarget.dataset.idx;
       if (idxS === undefined) return;
       showTooltip({
         left: p.x,

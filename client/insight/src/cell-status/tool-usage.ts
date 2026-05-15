@@ -120,7 +120,7 @@ function process_tools(
 export const setLast30ToolUse = atom(null, (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
   const estimated = get(last30EstimatedCycleTimes);
   set(last30ToolUseRW, (oldUsage) =>
-    log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage),
+    log.reduce((usage, entry) => process_tools(entry, estimated, usage), oldUsage),
   );
 });
 
