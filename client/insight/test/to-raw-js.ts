@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* oxlint-disable typescript/no-unsafe-argument */
+/* oxlint-disable typescript/no-unsafe-call */
+/* oxlint-disable typescript/no-unsafe-member-access */
+/* oxlint-disable typescript/no-explicit-any */
+/* oxlint-disable typescript/no-unsafe-return */
 
 import { HashSet, HashMap, OrderedMap, LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 

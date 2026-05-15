@@ -187,7 +187,9 @@ export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContain
             <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.15)" />
           </marker>
         </defs>
-        {!hideArrows ? <MoveMaterialArrows container={container} arrowsWithRefs={registeredNodes} /> : undefined}
+        {!hideArrows ? (
+          <MoveMaterialArrows container={container} arrowsWithRefs={registeredNodes} />
+        ) : undefined}
       </svg>
       <div ref={container}>
         <MoveMaterialArrowCtx.Provider value={ctx}>{children}</MoveMaterialArrowCtx.Provider>
@@ -208,7 +210,7 @@ export function useMoveMaterialArrowRef(kind: MoveMaterialNodeKind): RefObject<H
     return () => {
       ctx.registerNode(id, null, null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [ctx, ...memoPropsForNodeKind(kind)]);
   return ref;
 }
