@@ -255,7 +255,7 @@ export function selectQueueData(
     const isRawMat = rawMatQueues.has(queueName);
 
     if (isRawMat) {
-      const materialByPos = OrderedMap.empty<number, api.IInProcessMaterial>();
+      let materialByPos = OrderedMap.empty<number, api.IInProcessMaterial>();
       const matByPartThenUniq = new Map<string, Map<string | null, Readonly<api.IInProcessMaterial>[]>>();
 
       for (const m of curSt.material) {
@@ -265,7 +265,7 @@ export function selectQueueData(
           m.location.queuePosition !== undefined
         ) {
           if ((m.serial && m.serial !== "") || m.action.type !== api.ActionType.Waiting) {
-            materialByPos.set(m.location.queuePosition, m);
+            materialByPos = materialByPos.set(m.location.queuePosition, m);
           } else {
             let matsForPart = matByPartThenUniq.get(m.partName);
             if (!matsForPart) {
