@@ -163,7 +163,7 @@ function asyncAtomState<T>(source: Atom<Promise<T>>): Atom<AsyncAtomState<T>> {
         (error): AsyncAtomState<T> => ({ state: "hasError", error }),
       ),
     ),
-    (prev): AsyncAtomState<T> => prev ?? { state: "loading" },
+    (): AsyncAtomState<T> => ({ state: "loading" }),
   );
 }
 
