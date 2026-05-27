@@ -812,9 +812,48 @@ export const MaterialDetailTitle = memo(function MaterialDetailTitle({
 });
 
 function MaterialDialogTitle({ notes }: { notes?: boolean }) {
-  const mat = useAtomValue(matDetails.materialInDialogInfoUnwrapped);
-  const serial = useAtomValue(matDetails.serialInMaterialDialogUnwrapped);
-  return <MaterialDetailTitle notes={notes} partName={mat?.partName ?? ""} serial={mat?.serial ?? serial} />;
+  const toShow = useAtomValue(matDetails.materialDialogOpen);
+  const mat = useAtomValue(matDetails.materialInDialogInfoState);
+  const serial = useAtomValue(matDetails.serialInMaterialDialogState);
+
+  let partName = "";
+  let titleSerial: string | null | undefined = null;
+
+  switch (toShow?.type) {
+    case "InProcMat":
+      partName = toShow.inproc.partName;
+      titleSerial = toShow.inproc.serial;
+      break;
+    case "MatSummary":
+      partName = toShow.summary.partName;
+      titleSerial = toShow.summary.serial;
+      break;
+    case "MatDetails":
+      partName = toShow.details.partName;
+      titleSerial = toShow.details.serial;
+      break;
+    case "LogMat":
+      partName = toShow.logMat.part;
+      titleSerial = toShow.logMat.serial;
+      break;
+    case "Barcode":
+      titleSerial = toShow.barcode;
+      break;
+    case "ManuallyEnteredSerial":
+    case "AddMatWithEnteredSerial":
+      titleSerial = toShow.serial;
+      break;
+  }
+
+  if (mat.state === "hasData" && mat.data !== null) {
+    partName = mat.data.partName;
+    titleSerial = mat.data.serial ?? titleSerial;
+  }
+  if (serial.state === "hasData" && serial.data) {
+    titleSerial = serial.data;
+  }
+
+  return <MaterialDetailTitle notes={notes} partName={partName} serial={titleSerial} />;
 }
 
 function MaterialInspections() {
