@@ -48,7 +48,7 @@ import {
 } from "../network/api.js";
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
-import { atom, useSetAtom } from "jotai";
+import { atom, useSetAtom, type Atom } from "jotai";
 import { unwrap } from "jotai/utils";
 import { isLogEntryInvalidated } from "../components/LogEntry.js";
 import { currentRoute, RouteLocation } from "../components/routes.js";
@@ -59,6 +59,11 @@ export type MaterialToShowInfo = {
   readonly serial?: string;
   readonly workorderId?: string;
 };
+
+export type AsyncAtomState<T> =
+  | { readonly state: "loading" }
+  | { readonly state: "hasData"; readonly data: T }
+  | { readonly state: "hasError"; readonly error: unknown };
 
 export type MaterialToShow =
   | { readonly type: "InProcMat"; readonly inproc: Readonly<IInProcessMaterial> }
@@ -150,6 +155,20 @@ export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(asy
 
 export const materialInDialogInfoUnwrapped = unwrap(materialInDialogInfo, (prev) => prev ?? null);
 
+function asyncAtomState<T>(source: Atom<Promise<T>>): Atom<AsyncAtomState<T>> {
+  return unwrap(
+    atom((get) =>
+      get(source).then(
+        (data): AsyncAtomState<T> => ({ state: "hasData", data }),
+        (error): AsyncAtomState<T> => ({ state: "hasError", error }),
+      ),
+    ),
+    (prev): AsyncAtomState<T> => prev ?? { state: "loading" },
+  );
+}
+
+export const materialInDialogInfoState = asyncAtomState(materialInDialogInfo);
+
 export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>>(async (get) => {
   const status = get(currentStatus);
   const toShow = get(matToShow);
@@ -189,6 +208,7 @@ export const serialInMaterialDialogUnwrapped = unwrap(
   serialInMaterialDialog,
   (prev) => prev ?? null,
 );
+export const serialInMaterialDialogState = asyncAtomState(serialInMaterialDialog);
 
 export const workorderInMaterialDialog = atom<Promise<string | null>>(async (get) => {
   const toShow = get(matToShow);
