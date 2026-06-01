@@ -131,6 +131,25 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       return row;
     }
 
+    private MazakScheduleRow AddSplitSchedule(
+      TestMazakData read,
+      int schId,
+      string unique,
+      string part,
+      int pri,
+      int jobProc,
+      int complete,
+      int plan,
+      int partIdx
+    )
+    {
+      var row = AddSchedule(read, schId, unique, part, pri, numProc: 1, complete, plan, partIdx);
+      var idx = read.Schedules.FindIndex(s => s.Id == schId);
+      row = row with { Comment = $"{unique}-{jobProc}-1-InsightS" };
+      read.Schedules[idx] = row;
+      return row;
+    }
+
     private void AddScheduleProcess(MazakScheduleRow schRow, int proc, int matQty, int exeQty, int fixQty = 1)
     {
       schRow.Processes.Add(
@@ -267,6 +286,304 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(syncProc1 ? 2 : 0); // set the 2 material
       trans.Schedules[0].Processes[1].ProcessNumber.ShouldBe(2);
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(1); // set the 1 material
+    }
+
+    [Test]
+    public void SplitScheduleUsesJobProcessQueue()
+    {
+      using var _logDB = _repoCfg.OpenConnection();
+      var read = new TestMazakData();
+
+      var schRow = AddSplitSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        pri: 10,
+        jobProc: 2,
+        plan: 50,
+        complete: 40,
+        partIdx: 2
+      );
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 0);
+
+      var job = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" }),
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
+          }
+        ),
+      };
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(job), ScheduleId = "splitQueueSync" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "thequeue");
+
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false, syncProc1: true)
+      );
+
+      trans.Schedules.Count.ShouldBe(1);
+      trans.Schedules[0].Id.ShouldBe(10);
+      trans.Schedules[0].Processes.Count.ShouldBe(1);
+      trans.Schedules[0].Processes[0].ProcessNumber.ShouldBe(1);
+      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(1);
+    }
+
+    [Test]
+    public void SplitScheduleIgnoresLoadActionForDifferentProcessOfSameJob()
+    {
+      using var _logDB = _repoCfg.OpenConnection();
+      var read = new TestMazakData();
+
+      var schRow = AddSplitSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        pri: 10,
+        jobProc: 2,
+        plan: 50,
+        complete: 40,
+        partIdx: 2
+      );
+      AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 0);
+
+      var job = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" }),
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
+          }
+        ),
+      };
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(job), ScheduleId = "splitQueueOtherProc" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "thequeue");
+
+      read.LoadActions.Add(
+        new LoadAction()
+        {
+          LoadEvent = true,
+          LoadStation = 1,
+          Part = "pppp",
+          Comment = "uuuu-1-1-InsightS",
+          Process = 1,
+          Qty = 1,
+        }
+      );
+
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false, syncProc1: true)
+      );
+
+      trans.Schedules.Count.ShouldBe(1);
+      trans.Schedules[0].Id.ShouldBe(10);
+      trans.Schedules[0].Processes.Count.ShouldBe(1);
+      trans.Schedules[0].Processes[0].ProcessNumber.ShouldBe(1);
+      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(1);
+    }
+
+    [Test]
+    public void BasketSplitProc2ScheduleDoesNotHaveProcessMaterialZeroed()
+    {
+      // For basket split jobs (no inter-process input queue on proc-2), the
+      // CheckAssignedMaterial raw-material block must not zero out ProcessMaterialQuantity
+      // on a proc-2 split schedule.  Before the fix the predicate lacked `s.JobProcess <= 1`
+      // so the proc-2 schedule with an empty InputQueue would be found, and its
+      // ProcessMaterialQuantity would be set to 0 (telling Mazak no pieces await proc-2).
+      using var _logDB = _repoCfg.OpenConnection();
+      var read = new TestMazakData();
+
+      // proc-1 split schedule: plan=5, 5 complete → plan qty reached
+      var proc1Row = AddSplitSchedule(
+        read,
+        schId: 30,
+        unique: "bsplit",
+        part: "bpart",
+        pri: 5,
+        jobProc: 1,
+        complete: 5,
+        plan: 5,
+        partIdx: 1
+      );
+      AddScheduleProcess(proc1Row, proc: 1, matQty: 0, exeQty: 0, fixQty: 1);
+
+      // proc-2 split schedule: plan=5, 2 complete, 3 pieces waiting on fixtures (matQty=3)
+      var proc2Row = AddSplitSchedule(
+        read,
+        schId: 31,
+        unique: "bsplit",
+        part: "bpart",
+        pri: 5,
+        jobProc: 2,
+        complete: 2,
+        plan: 5,
+        partIdx: 2
+      );
+      AddScheduleProcess(proc2Row, proc: 1, matQty: 3, exeQty: 0, fixQty: 1);
+
+      var job = new Job()
+      {
+        UniqueStr = "bsplit",
+        PartName = "bpart",
+        Cycles = 5,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes = ImmutableList.Create(
+          // basket job: no inter-process queue
+          new ProcessInfo()
+          {
+            BasketLoadStations = [1],
+            BasketUnloadStations = [1],
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath),
+          },
+          new ProcessInfo()
+          {
+            BasketLoadStations = [1],
+            BasketUnloadStations = [1],
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath),
+          }
+        ),
+      };
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(job), ScheduleId = "basketSplitNoZero" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false, syncProc1: true)
+      );
+
+      // No schedule changes: proc-2's ProcessMaterialQuantity=3 must be preserved.
+      // CalculateScheduleChanges returns null only when no schedules are loaded at all;
+      // when schedules exist but need no changes it returns a MazakWriteData with an
+      // empty Schedules list.  Assert that no schedule row is written (especially not
+      // the proc-2 row which would zero out the 3 waiting pieces).
+      trans?.Schedules.ShouldBeEmpty();
+    }
+
+    [Test]
+    public void SplitScheduleProc1GetscastingAssignment()
+    {
+      // Verifies that:
+      // - a proc-1 split schedule with castings in its input queue has them assigned
+      // - a proc-2 split schedule for the same job is excluded from casting assignment
+      using var _logDB = _repoCfg.OpenConnection();
+      var read = new TestMazakData();
+
+      // proc-1 split schedule: plan=10, 2 complete, 0 in-process → 8 remaining
+      var proc1Row = AddSplitSchedule(
+        read,
+        schId: 20,
+        unique: "splitjob",
+        part: "spart",
+        pri: 5,
+        jobProc: 1,
+        complete: 2,
+        plan: 10,
+        partIdx: 1
+      );
+      AddScheduleProcess(proc1Row, proc: 1, matQty: 0, exeQty: 0, fixQty: 1);
+
+      // proc-2 split schedule: same job, plan=10, 1 complete
+      var proc2Row = AddSplitSchedule(
+        read,
+        schId: 21,
+        unique: "splitjob",
+        part: "spart",
+        pri: 5,
+        jobProc: 2,
+        complete: 1,
+        plan: 10,
+        partIdx: 2
+      );
+      AddScheduleProcess(proc2Row, proc: 1, matQty: 0, exeQty: 0, fixQty: 1);
+
+      var job = new Job()
+      {
+        UniqueStr = "splitjob",
+        PartName = "spart",
+        Cycles = 10,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "castqueue",
+                OutputQueue = "midqueue",
+              }
+            ),
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "midqueue" }),
+          }
+        ),
+      };
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(job), ScheduleId = "splitCastTest" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      // Add one casting to the proc-1 input queue
+      AddCasting("spart", "castqueue");
+
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false, syncProc1: true)
+      );
+
+      // proc-1 schedule should have 1 casting assigned; proc-2 should have no change
+      trans.ShouldNotBeNull();
+      trans.Schedules.Count.ShouldBe(1);
+      trans.Schedules[0].Id.ShouldBe(20); // only proc-1 schedule is updated
+      trans.Schedules[0].Processes.Count.ShouldBe(1);
+      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(1);
     }
 
     [Test]

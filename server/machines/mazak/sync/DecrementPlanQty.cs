@@ -84,6 +84,7 @@ namespace MazakMachineInterface
       public HistoricJob Job { get; set; }
       public int Proc1Path { get; set; }
       public int NewPlanQty { get; set; }
+      public bool IsSplitProc1 { get; set; }
     }
 
     private static List<DecrSchedule> JobsToDecrement(IRepository jobDB, MazakCurrentStatus schedules)
@@ -108,6 +109,9 @@ namespace MazakMachineInterface
         if (job.ManuallyCreated)
           continue;
 
+        var isSplit = MazakPart.IsSplitComment(sch.Comment);
+        var fmsProc = MazakPart.ProcessFromComment(sch.Comment);
+
         // if already decremented, ignore
         if (jobDB.LoadDecrementsForJob(unique).Any())
           continue;
@@ -122,8 +126,11 @@ namespace MazakMachineInterface
             if (
               !string.IsNullOrEmpty(action.Comment)
               && MazakPart.UniqueFromComment(action.Comment) == job.UniqueStr
-              && action.Process == 1
               && action.LoadEvent
+              && (
+                !isSplit && action.Process == 1
+                || isSplit && MazakPart.ProcessFromComment(action.Comment) == 1
+              )
             )
             {
               loadingQty += action.Qty;
@@ -136,15 +143,34 @@ namespace MazakMachineInterface
           }
         }
 
-        jobs.Add(
-          new DecrSchedule()
-          {
-            Schedule = sch,
-            Job = job,
-            Proc1Path = 1,
-            NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty,
-          }
-        );
+        var decr = new DecrSchedule()
+        {
+          Schedule = sch,
+          Job = job,
+          Proc1Path = 1,
+          IsSplitProc1 = isSplit && fmsProc == 1,
+          NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty,
+        };
+        jobs.Add(decr);
+      }
+
+      foreach (
+        var splitGroup in jobs.Where(j => MazakPart.IsSplitComment(j.Schedule.Comment))
+          .GroupBy(j => j.Job.UniqueStr)
+      )
+      {
+        var proc1 = splitGroup.FirstOrDefault(s => s.IsSplitProc1);
+        var newPlanQty =
+          proc1 != null
+            ? proc1.NewPlanQty
+            // If proc-1 has already been removed from Mazak, preserve the remaining split plan quantity.
+            // This handles crash recovery after ReducePlannedQuantity but before RecordDecrement.
+            : splitGroup.Max(s => s.Schedule.PlanQuantity);
+
+        foreach (var sch in splitGroup)
+        {
+          sch.NewPlanQty = newPlanQty;
+        }
       }
 
       return jobs;
@@ -186,7 +212,8 @@ namespace MazakMachineInterface
       {
         var job = decrsForJob.First().Job;
         var planned = job.Cycles;
-        var newPlanQty = decrsForJob.Sum(d => d.NewPlanQty);
+        var hasSplit = decrsForJob.Any(d => MazakPart.IsSplitComment(d.Schedule.Comment));
+        var newPlanQty = hasSplit ? decrsForJob.Max(d => d.NewPlanQty) : decrsForJob.Sum(d => d.NewPlanQty);
         if (planned > newPlanQty)
         {
           decrAmt.Add(
@@ -226,10 +253,12 @@ namespace MazakMachineInterface
     public static int CountCompletedOrMachiningStarted(MazakScheduleRow sch)
     {
       var cnt = sch.CompleteQuantity;
+      var isSplit = MazakPart.IsSplitComment(sch.Comment);
+      var fmsProc = MazakPart.ProcessFromComment(sch.Comment);
       foreach (var schProcRow in sch.Processes)
       {
         cnt += schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity;
-        if (schProcRow.ProcessNumber > 1)
+        if ((isSplit ? fmsProc : schProcRow.ProcessNumber) > 1)
           cnt += schProcRow.ProcessMaterialQuantity;
       }
       return cnt;

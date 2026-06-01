@@ -91,7 +91,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           new MazakScheduleRow()
           {
             Id = 15,
-            Comment = "uuuu-Path1-1", // old previous versions of Insight added path information into the comment, use here to test backwards compatbility
+            Comment = "uuuu-Insight",
             PartName = "pppp:1",
             PlanQuantity = 50,
             CompleteQuantity = 30,
@@ -160,6 +160,177 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               DecrementId = 0,
               TimeUTC = now,
               Quantity = 50 - 35,
+            },
+          }
+        );
+    }
+
+    [Test]
+    public void SplitSchedulesDecrementAsSingleJob()
+    {
+      using var _jobDB = _repoCfg.OpenConnection();
+      var st = new MazakCurrentStatus()
+      {
+        Schedules = new[]
+        {
+          new MazakScheduleRow()
+          {
+            Id = 15,
+            Comment = "uuuu-1-1-InsightS",
+            PartName = "pppp:1",
+            PlanQuantity = 50,
+            CompleteQuantity = 3,
+            Processes = new List<MazakScheduleProcessRow>
+            {
+              new MazakScheduleProcessRow()
+              {
+                MazakScheduleRowId = 15,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 0,
+                ProcessExecuteQuantity = 0,
+              },
+            },
+          },
+          new MazakScheduleRow()
+          {
+            Id = 16,
+            Comment = "uuuu-2-1-InsightS",
+            PartName = "pppp:2",
+            PlanQuantity = 50,
+            CompleteQuantity = 2,
+            Processes = new List<MazakScheduleProcessRow>
+            {
+              new MazakScheduleProcessRow()
+              {
+                MazakScheduleRowId = 16,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 1,
+                ProcessExecuteQuantity = 0,
+              },
+            },
+          },
+        },
+        LoadActions = new[]
+        {
+          new LoadAction()
+          {
+            Comment = "uuuu-2-1-InsightS",
+            LoadEvent = true,
+            LoadStation = 1,
+            Part = "pppp",
+            Process = 1,
+            Qty = 4,
+          },
+        },
+      };
+
+      var job = new Job
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 50,
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+      };
+      _jobDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create(job), ScheduleId = "splitDecrement" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      var now = DateTime.UtcNow;
+      DecrementPlanQty.Decrement(_write, _jobDB, st, now);
+
+      var schRows = GetSchRows();
+      schRows.Count.ShouldBe(2);
+      schRows.Select(s => (s.Id, s.PlanQuantity)).OrderBy(s => s.Id).ShouldBe([(15, 3), (16, 3)]);
+
+      _jobDB
+        .LoadDecrementsForJob("uuuu")
+        .ShouldBe(
+          new[]
+          {
+            new DecrementQuantity()
+            {
+              DecrementId = 0,
+              TimeUTC = now,
+              Quantity = 47,
+            },
+          }
+        );
+    }
+
+    [Test]
+    public void SplitSchedulesUseExistingPlanQtyWhenProc1ScheduleMissing()
+    {
+      using var _jobDB = _repoCfg.OpenConnection();
+      var st = new MazakCurrentStatus()
+      {
+        Schedules = new[]
+        {
+          new MazakScheduleRow()
+          {
+            Id = 16,
+            Comment = "uuuu-2-1-InsightS",
+            PartName = "pppp:2",
+            PlanQuantity = 30,
+            CompleteQuantity = 10,
+            Processes = new List<MazakScheduleProcessRow>
+            {
+              new MazakScheduleProcessRow()
+              {
+                MazakScheduleRowId = 16,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 1,
+                ProcessExecuteQuantity = 0,
+              },
+            },
+          },
+        },
+      };
+
+      var job = new Job
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 50,
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+      };
+      _jobDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create(job), ScheduleId = "splitDecrementMissingProc1" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      var now = DateTime.UtcNow;
+      DecrementPlanQty.Decrement(_write, _jobDB, st, now);
+
+      GetSchRows().ShouldBeNull();
+
+      _jobDB
+        .LoadDecrementsForJob("uuuu")
+        .ShouldBe(
+          new[]
+          {
+            new DecrementQuantity()
+            {
+              DecrementId = 0,
+              TimeUTC = now,
+              Quantity = 20,
             },
           }
         );

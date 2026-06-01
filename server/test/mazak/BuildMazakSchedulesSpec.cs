@@ -353,7 +353,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         {
           new MazakPartRow() { PartName = "part1:6:1", Comment = "uniq1-Insight" },
           new MazakPartRow() { PartName = "part1:6:2", Comment = "uniq2-Insight" },
-          new MazakPartRow() { PartName = "part2:6:1", Comment = "uniq3-Path1-1" }, // old versions of Insight included -Path, check for backwards compatibility
+          new MazakPartRow() { PartName = "part2:6:1", Comment = "uniq3-Insight" },
           new MazakPartRow() { PartName = "part2:6:2", Comment = "uniq4-Insight" },
           new MazakPartRow() { PartName = "part3:6:1", Comment = "uniq5-Insight" },
         },
@@ -440,7 +440,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               Command = MazakWriteCommand.Add,
               Id = 4,
               PartName = "part2:6:1",
-              Comment = "uniq3-Path1-1",
+              Comment = "uniq3-Insight",
               PlanQuantity = 12,
               Priority = 18 + 2, // conflicts with 2 earlier
               DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),
@@ -766,6 +766,281 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .Schedules[0]
         .Processes[0]
         .ProcessMaterialQuantity.ShouldBe(hasInputQueue && shouldSyncProc1 ? 0 : 30);
+    }
+
+    [Test]
+    public void InitializesHoldModeFromJobHoldState()
+    {
+      var fix = new Fixture();
+      fix.Customizations.Add(new ImmutableSpecimenBuilder());
+
+      static BlackMaple.MachineFramework.HoldPattern Hold() =>
+        new()
+        {
+          UserHold = true,
+          ReasonForUserHold = "test",
+          HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
+          HoldUnholdPatternStartUTC = DateTime.MinValue,
+          HoldUnholdPatternRepeats = false,
+        };
+
+      var fullHoldJob = fix.Build<Job>()
+        .With(j => j.UniqueStr, "full-hold")
+        .With(j => j.PartName, "full-hold-part")
+        .With(j => j.HoldJob, Hold())
+        .With(j => j.Cycles, 30)
+        .With(
+          j => j.Processes,
+          [new ProcessInfo() { Paths = [fix.Build<ProcPathInfo>().With(p => p.InputQueue, "").Create()] }]
+        )
+        .Create();
+
+      var machiningHoldJob = fullHoldJob with
+      {
+        UniqueStr = "machining-hold",
+        PartName = "machining-hold-part",
+        HoldJob = null,
+        Processes =
+        [
+          fullHoldJob.Processes[0] with
+          {
+            Paths = [fullHoldJob.Processes[0].Paths[0] with { HoldMachining = Hold() }],
+          },
+        ],
+      };
+
+      var actions = BuildMazakSchedules.AddSchedules(
+        new MazakAllData()
+        {
+          Schedules = [],
+          Parts =
+          [
+            new MazakPartRow() { PartName = "full-hold-part:1", Comment = "full-hold-Insight" },
+            new MazakPartRow() { PartName = "machining-hold-part:1", Comment = "machining-hold-Insight" },
+          ],
+        },
+        [fullHoldJob, machiningHoldJob],
+        new MazakConfig() { DBType = MazakDbType.MazakSmooth }
+      );
+
+      actions
+        .Schedules.Single(s => s.Comment == "full-hold-Insight")
+        .HoldMode.ShouldBe((int)MazakMachineInterface.HoldPattern.HoldMode.FullHold);
+      actions
+        .Schedules.Single(s => s.Comment == "machining-hold-Insight")
+        .HoldMode.ShouldBe((int)MazakMachineInterface.HoldPattern.HoldMode.Preparation);
+    }
+
+    [Test]
+    public void AddsSplitAndCombinedSchedulesTogether()
+    {
+      var splitBase = new HistoricJob()
+      {
+        UniqueStr = "split-uniq",
+        PartName = "split-part",
+        RouteStartUTC = new DateTime(2020, 04, 14, 13, 43, 00, DateTimeKind.Local).ToUniversalTime(),
+        Cycles = 12,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        CopiedToSystem = true,
+        Processes = new[]
+        {
+          new ProcessInfo()
+          {
+            BasketLoadStations = [11],
+            BasketUnloadStations = [12],
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                Fixture = "fixA",
+                Face = 1,
+                PalletNums = [1],
+              },
+            }.ToImmutableList(),
+          },
+          new ProcessInfo()
+          {
+            BasketLoadStations = [13],
+            BasketUnloadStations = [14],
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                Fixture = "fixB",
+                Face = 1,
+                PalletNums = [2],
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
+      };
+
+      var combinedJob = new HistoricJob()
+      {
+        UniqueStr = "combined-uniq",
+        PartName = "combined-part",
+        RouteStartUTC = splitBase.RouteStartUTC,
+        Cycles = 8,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        CopiedToSystem = true,
+        Processes = new[]
+        {
+          new ProcessInfo()
+          {
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                Fixture = "fixC",
+                Face = 1,
+                PalletNums = [3],
+              },
+            }.ToImmutableList(),
+          },
+          new ProcessInfo()
+          {
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                Fixture = "fixC",
+                Face = 2,
+                PalletNums = [3],
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
+      };
+
+      var actions = BuildMazakSchedules.AddSchedules(
+        new MazakAllData()
+        {
+          Schedules = Array.Empty<MazakScheduleRow>(),
+          Parts = new MazakPartRow[]
+          {
+            new MazakPartRow() { PartName = "split-part:1:1:1", Comment = "split-uniq-1-1-InsightS" },
+            new MazakPartRow() { PartName = "split-part:1:2:2", Comment = "split-uniq-2-1-InsightS" },
+            new MazakPartRow() { PartName = "combined-part:1:3", Comment = "combined-uniq-Insight" },
+          },
+        },
+        new HistoricJob[] { splitBase, combinedJob },
+        new MazakConfig() { DBType = MazakDbType.MazakSmooth }
+      );
+
+      actions.Schedules.Count.ShouldBe(3);
+
+      actions
+        .Schedules.OrderBy(s => s.Comment)
+        .Select(s => new
+        {
+          s.Comment,
+          s.PartName,
+          ProcCount = s.Processes.Count,
+          MatQty = s.Processes.Select(p => p.ProcessMaterialQuantity).ToList(),
+        })
+        .ToList()
+        .ShouldBeEquivalentTo(
+          new[]
+          {
+            new
+            {
+              Comment = "combined-uniq-Insight",
+              PartName = "combined-part:1:3",
+              ProcCount = 2,
+              MatQty = new[] { 8, 0 }.ToList(),
+            },
+            new
+            {
+              Comment = "split-uniq-1-1-InsightS",
+              PartName = "split-part:1:1:1",
+              ProcCount = 1,
+              MatQty = new[] { 0 }.ToList(),
+            },
+            new
+            {
+              Comment = "split-uniq-2-1-InsightS",
+              PartName = "split-part:1:2:2",
+              ProcCount = 1,
+              MatQty = new[] { 0 }.ToList(),
+            },
+          }.ToList()
+        );
+    }
+
+    [Test]
+    public void AddsOnlyMissingSplitScheduleDuringRecovery()
+    {
+      var splitJob = new HistoricJob()
+      {
+        UniqueStr = "split-uniq",
+        PartName = "split-part",
+        RouteStartUTC = new DateTime(2020, 04, 14, 13, 43, 00, DateTimeKind.Local).ToUniversalTime(),
+        Cycles = 12,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        CopiedToSystem = true,
+        Processes = new[]
+        {
+          new ProcessInfo()
+          {
+            BasketLoadStations = [11],
+            BasketUnloadStations = [12],
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                Fixture = "fixA",
+                Face = 1,
+                PalletNums = [1],
+              },
+            }.ToImmutableList(),
+          },
+          new ProcessInfo()
+          {
+            BasketLoadStations = [13],
+            BasketUnloadStations = [14],
+            Paths = new[]
+            {
+              JobLogTest.EmptyPath with
+              {
+                Fixture = "fixB",
+                Face = 1,
+                PalletNums = [2],
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
+      };
+
+      var actions = BuildMazakSchedules.AddSchedules(
+        new MazakAllData()
+        {
+          Parts = new MazakPartRow[]
+          {
+            new MazakPartRow() { PartName = "split-part:1:1:1", Comment = "split-uniq-1-1-InsightS" },
+            new MazakPartRow() { PartName = "split-part:1:2:2", Comment = "split-uniq-2-1-InsightS" },
+          },
+          Schedules = new MazakScheduleRow[]
+          {
+            new MazakScheduleRow()
+            {
+              Id = 10,
+              PartName = "split-part:1:1:1",
+              Comment = "split-uniq-1-1-InsightS",
+            },
+          },
+        },
+        new HistoricJob[] { splitJob },
+        new MazakConfig() { DBType = MazakDbType.MazakSmooth }
+      );
+
+      actions.Schedules.Count.ShouldBe(1);
+      actions.Schedules[0].PartName.ShouldBe("split-part:1:2:2");
+      actions.Schedules[0].Comment.ShouldBe("split-uniq-2-1-InsightS");
+      actions.Schedules[0].Processes.Count.ShouldBe(1);
+      actions.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(0);
     }
   }
 }

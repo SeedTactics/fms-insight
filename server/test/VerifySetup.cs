@@ -1,15 +1,21 @@
-using System.Runtime.CompilerServices;
-using DiffEngine;
 using VerifyTests;
+using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Tests;
 
 public static class VerifySetup
 {
-  [ModuleInitializer]
+  [Before(Assembly)]
   public static void InitVerify()
   {
-    DiffTools.UseOrder(DiffTool.VisualStudioCode);
-    VerifyDiffPlex.Initialize();
+    if (System.Environment.GetEnvironmentVariable("CI") == "true")
+    {
+      VerifyDiffPlex.Initialize();
+    }
+    else
+    {
+      DiffEngine.DiffTools.UseOrder(DiffEngine.DiffTool.VisualStudioCode);
+      VerifierSettings.OmitContentFromException();
+    }
   }
 }

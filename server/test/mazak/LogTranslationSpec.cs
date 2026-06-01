@@ -2515,6 +2515,371 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public void SplitScheduleLoadsFromJobProcessQueue()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      var job = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                OutputQueue = "thequeue",
+                ExpectedLoadTime = TimeSpan.FromMinutes(1),
+              }
+            ),
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                ExpectedLoadTime = TimeSpan.FromMinutes(7),
+              }
+            ),
+          }
+        ),
+      };
+      jobLog.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create(job), ScheduleId = "splitQueueSch" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      var queuedProc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      AddMaterialToQueue(queuedProc1, proc: 1, queue: "thequeue", offset: 0, allocate: AllocateTy.Assigned);
+
+      var splitProc1Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
+      var splitProc2Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
+      var schedules = (List<MazakScheduleRow>)mazakData.Schedules;
+      schedules[schedules.FindIndex(s => s.Id == splitProc1Id)] = schedules.First(s =>
+        s.Id == splitProc1Id
+      ) with
+      {
+        Comment = "uuuu-1-1-InsightS",
+      };
+      schedules[schedules.FindIndex(s => s.Id == splitProc2Id)] = schedules.First(s =>
+        s.Id == splitProc2Id
+      ) with
+      {
+        Comment = "uuuu-2-1-InsightS",
+      };
+
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = t.AddMinutes(28),
+          Code = LogCode.LoadBegin,
+          ForeignID = "",
+          StationNumber = 1,
+          Pallet = 9,
+          FullPartName = "pppp:4:2",
+          JobPartName = "pppp",
+          Process = 1,
+          FixedQuantity = 1,
+          Program = "",
+          TargetPosition = "",
+          FromPosition = "",
+        }
+      );
+
+      var loadStart = jobLog
+        .CurrentPalletLog(9)
+        .Single(l => l.LogType == LogType.LoadUnloadCycle && l.Pallet == 9 && l.StartOfCycle == true);
+
+      loadStart
+        .Material.ShouldHaveSingleItem()
+        .ShouldSatisfyAllConditions(mat => mat.Process.ShouldBe(2), mat => mat.Face.ShouldBe(0));
+
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = t.AddMinutes(29),
+          Code = LogCode.LoadEnd,
+          ForeignID = "",
+          StationNumber = 1,
+          Pallet = 9,
+          FullPartName = "pppp:4:2",
+          JobPartName = "pppp",
+          Process = 1,
+          FixedQuantity = 1,
+          Program = "",
+          TargetPosition = "",
+          FromPosition = "",
+        },
+        expectedFinalLulEvt: true
+      );
+      MovePallet(t, offset: 30, pal: 9, load: 1);
+
+      jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
+
+      var loadEnd = jobLog
+        .CurrentPalletLog(9)
+        .Single(l => l.LogType == LogType.LoadUnloadCycle && l.Pallet == 9 && l.StartOfCycle == false);
+
+      loadEnd
+        .Material.ShouldHaveSingleItem()
+        .ShouldSatisfyAllConditions(
+          mat => mat.MaterialID.ShouldBe(1),
+          mat => mat.Process.ShouldBe(2),
+          mat => mat.Path.ShouldBe(1)
+        );
+      loadEnd.ActiveOperationTime.ShouldBe(TimeSpan.FromMinutes(7));
+
+      var details = jobLog.GetMaterialDetails(1);
+      details.Paths.ShouldNotBeNull();
+      details.Paths[2].ShouldBe(1);
+    }
+
+    [Test]
+    public void SplitScheduleUnloadUsesJobProcessAndPreservesMaterialId()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      settings.Queues["proc2out"] = new QueueInfo() { MaxSizeBeforeStopUnloading = -1 };
+
+      var job = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" }),
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                OutputQueue = "proc2out",
+              }
+            ),
+          }
+        ),
+      };
+      jobLog.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create(job), ScheduleId = "splitQueueSch" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      var queuedProc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      AddMaterialToQueue(queuedProc1, proc: 1, queue: "thequeue", offset: 0, allocate: AllocateTy.Assigned);
+
+      var splitProc1Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
+      var splitProc2Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
+      var schedules = (List<MazakScheduleRow>)mazakData.Schedules;
+      schedules[schedules.FindIndex(s => s.Id == splitProc1Id)] = schedules.First(s =>
+        s.Id == splitProc1Id
+      ) with
+      {
+        Comment = "uuuu-1-1-InsightS",
+      };
+      schedules[schedules.FindIndex(s => s.Id == splitProc2Id)] = schedules.First(s =>
+        s.Id == splitProc2Id
+      ) with
+      {
+        Comment = "uuuu-2-1-InsightS",
+      };
+
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = t.AddMinutes(28),
+          Code = LogCode.LoadBegin,
+          ForeignID = "",
+          StationNumber = 1,
+          Pallet = 9,
+          FullPartName = "pppp:4:2",
+          JobPartName = "pppp",
+          Process = 1,
+          FixedQuantity = 1,
+          Program = "",
+          TargetPosition = "",
+          FromPosition = "",
+        }
+      );
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = t.AddMinutes(29),
+          Code = LogCode.LoadEnd,
+          ForeignID = "",
+          StationNumber = 1,
+          Pallet = 9,
+          FullPartName = "pppp:4:2",
+          JobPartName = "pppp",
+          Process = 1,
+          FixedQuantity = 1,
+          Program = "",
+          TargetPosition = "",
+          FromPosition = "",
+        },
+        expectedFinalLulEvt: true
+      );
+      MovePallet(t, offset: 30, pal: 9, load: 1);
+
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = t.AddMinutes(40),
+          Code = LogCode.UnloadBegin,
+          ForeignID = "",
+          StationNumber = 1,
+          Pallet = 9,
+          FullPartName = "pppp:4:2",
+          JobPartName = "pppp",
+          Process = 1,
+          FixedQuantity = 1,
+          Program = "",
+          TargetPosition = "",
+          FromPosition = "",
+        }
+      );
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = t.AddMinutes(41),
+          Code = LogCode.UnloadEnd,
+          ForeignID = "",
+          StationNumber = 1,
+          Pallet = 9,
+          FullPartName = "pppp:4:2",
+          JobPartName = "pppp",
+          Process = 1,
+          FixedQuantity = 1,
+          Program = "",
+          TargetPosition = "",
+          FromPosition = "",
+        },
+        expectedFinalLulEvt: true
+      );
+      MovePallet(t, offset: 42, pal: 9, load: 1);
+
+      var queued = jobLog.GetMaterialInAllQueues().ShouldHaveSingleItem();
+      queued.Queue.ShouldBe("proc2out");
+      queued.MaterialID.ShouldBe(1);
+      queued.Unique.ShouldBe("uuuu");
+      queued.NextProcess.ShouldBe(3);
+
+      var unloadEnd = jobLog
+        .GetLogForMaterial(1)
+        .Last(l => l.LogType == LogType.LoadUnloadCycle && !l.StartOfCycle && l.Result == "UNLOAD");
+
+      unloadEnd
+        .Material.ShouldHaveSingleItem()
+        .ShouldSatisfyAllConditions(mat => mat.Process.ShouldBe(2), mat => mat.Path.ShouldBe(1));
+    }
+
+    [Test]
+    public void SplitSchedulePalletStatusUsesJobProcessFromComment()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      var job = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" }),
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
+          }
+        ),
+      };
+      jobLog.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create(job), ScheduleId = "splitPalStatusSch" },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      var queuedProc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      AddMaterialToQueue(queuedProc1, proc: 1, queue: "thequeue", offset: 0, allocate: AllocateTy.Assigned);
+
+      var splitProc1Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
+      var splitProc2Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
+      var schedules = (List<MazakScheduleRow>)mazakData.Schedules;
+      schedules[schedules.FindIndex(s => s.Id == splitProc1Id)] = schedules.First(s =>
+        s.Id == splitProc1Id
+      ) with
+      {
+        Comment = "uuuu-1-1-InsightS",
+      };
+      schedules[schedules.FindIndex(s => s.Id == splitProc2Id)] = schedules.First(s =>
+        s.Id == splitProc2Id
+      ) with
+      {
+        Comment = "uuuu-2-1-InsightS",
+      };
+
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = t.AddMinutes(28),
+          Code = LogCode.LoadBegin,
+          ForeignID = "",
+          StationNumber = 1,
+          Pallet = 9,
+          FullPartName = "pppp:4:2",
+          JobPartName = "pppp",
+          Process = 1,
+          FixedQuantity = 1,
+          Program = "",
+          TargetPosition = "",
+          FromPosition = "",
+        }
+      );
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = t.AddMinutes(29),
+          Code = LogCode.LoadEnd,
+          ForeignID = "",
+          StationNumber = 1,
+          Pallet = 9,
+          FullPartName = "pppp:4:2",
+          JobPartName = "pppp",
+          Process = 1,
+          FixedQuantity = 1,
+          Program = "",
+          TargetPosition = "",
+          FromPosition = "",
+        },
+        expectedFinalLulEvt: true
+      );
+      MovePallet(t, offset: 30, pal: 9, load: 1);
+
+      SetPallet(pal: 9, atLoadStation: false);
+      SetPalletFace(pal: 9, schId: splitProc2Id, proc: 1, fixQty: 1);
+
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.ShouldBeFalse();
+      jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
+    }
+
+    [Test]
     public async Task QueuesFirstInFirstOut()
     {
       // run multiple process 1s on multiple paths.  Also have multiple parts on a face.

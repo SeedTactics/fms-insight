@@ -42,9 +42,44 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakPart>();
 
+    public readonly record struct MazakCommentInfo(string Unique, bool IsSplit, int FmsProcess)
+    {
+      public bool HasUnique => !string.IsNullOrEmpty(Unique);
+
+      public int JobProcessForMazakProcess(int mazakProcess)
+      {
+        return IsSplit ? FmsProcess : mazakProcess;
+      }
+
+      public int TotalProcesses(IRepository jobDB, int fallbackNumProcesses)
+      {
+        return IsSplit
+          ? jobDB.LoadJob(Unique)?.Processes.Count ?? fallbackNumProcesses
+          : fallbackNumProcesses;
+      }
+    }
+
+    /*
+      Mazak parts and schedules use two different comment formats to identify the unique:
+
+      - Combined schedules (all processes on a single schedule) use `{uniqueStr}-Insight`
+
+      - Split-schedule jobs use `{uniqueStr}-{proc}-{path}-InsightS`.
+
+      We use an `S` suffix for "split" to allow parsing logic to distinguish split vs
+      non-split.This guarantees that if an `InsightS` suffix is present, the entries
+      for `-{proc}-{path}-` are always present and will not be confused as part of the
+      unique string.
+    */
+
+    private const string CombinedInsightSuffix = "-Insight";
+    private const string SplitInsightSuffix = "-InsightS";
+
     public readonly Job Job;
     public readonly int DownloadID;
     public readonly List<MazakProcess> Processes;
+    public readonly int? SplitJobProcess;
+    public readonly int? SplitPath;
 
     public MazakPart(Job j, int downID, int partIdx)
     {
@@ -52,6 +87,23 @@ namespace MazakMachineInterface
       DownloadID = downID;
       Processes = new List<MazakProcess>();
       PartName = Job.PartName + ":" + DownloadID.ToString() + ":" + partIdx.ToString();
+    }
+
+    public MazakPart(Job j, int downID, int partIdx, int splitJobProcess, int splitPath)
+    {
+      Job = j;
+      DownloadID = downID;
+      Processes = new List<MazakProcess>();
+      SplitJobProcess = splitJobProcess;
+      SplitPath = splitPath;
+      PartName =
+        Job.PartName
+        + ":"
+        + DownloadID.ToString()
+        + ":"
+        + partIdx.ToString()
+        + ":"
+        + splitJobProcess.ToString();
     }
 
     public MazakPartRow ToDatabaseRow()
@@ -70,13 +122,34 @@ namespace MazakMachineInterface
 
     public string PartName { get; }
 
-    public string Comment => Job.UniqueStr + "-Insight";
+    public bool IsSplitPart => SplitJobProcess.HasValue;
+
+    public string Comment =>
+      IsSplitPart
+        ? Job.UniqueStr
+          + "-"
+          + SplitJobProcess.Value.ToString()
+          + "-"
+          + SplitPath.GetValueOrDefault(1).ToString()
+          + SplitInsightSuffix
+        : Job.UniqueStr + CombinedInsightSuffix;
+
+    public static bool IsSplitComment(string comment)
+    {
+      return !string.IsNullOrEmpty(comment) && comment.EndsWith(SplitInsightSuffix, StringComparison.Ordinal);
+    }
 
     public static bool IsSailPart(string partName, string comment)
     {
       if (partName == null || comment == null)
         return false;
-      if (!(comment.Contains("-Path") || comment.EndsWith("-Insight")))
+      if (
+        !(
+          comment.EndsWith(CombinedInsightSuffix, StringComparison.Ordinal)
+          || IsSplitComment(comment)
+          || IsLegacyPathComment(comment)
+        )
+      )
         return false;
 
       //sail parts are those with a colon and a positive integer after the colon
@@ -91,6 +164,16 @@ namespace MazakMachineInterface
       }
 
       return false;
+    }
+
+    private static bool IsLegacyPathComment(string comment)
+    {
+      var pathIdx = comment.LastIndexOf("-Path", StringComparison.Ordinal);
+      if (pathIdx < 0)
+        return false;
+
+      var pieces = comment.Substring(pathIdx + 5).Split('-');
+      return pieces.Length == 3 && pieces.All(p => int.TryParse(p, out _));
     }
 
     public static string ExtractPartNameFromMazakPartName(string mazakPartName)
@@ -117,9 +200,23 @@ namespace MazakMachineInterface
 
     public static string UniqueFromComment(string comment)
     {
-      if (comment.EndsWith("-Insight"))
+      if (comment.EndsWith(CombinedInsightSuffix, StringComparison.Ordinal))
       {
-        return comment.Substring(0, comment.Length - 8);
+        return comment.Substring(0, comment.Length - CombinedInsightSuffix.Length);
+      }
+
+      if (IsSplitComment(comment))
+      {
+        var suffixStart = comment.Length - SplitInsightSuffix.Length;
+        var pathSep = comment.LastIndexOf('-', suffixStart - 1);
+        if (pathSep < 0)
+          return comment;
+
+        var procSep = comment.LastIndexOf('-', pathSep - 1);
+        if (procSep < 0)
+          return comment;
+
+        return comment.Substring(0, procSep);
       }
 
       // Old FMS Insights had a -Path, strip it off for backwards compatibility
@@ -134,14 +231,36 @@ namespace MazakMachineInterface
         return comment.Substring(0, idx);
       }
     }
-  }
 
-  //There are two kinds of MazakProcesses
-  //  - Processes which are copied from template rows (this is the old way, from
-  //    2005 until early 2012)
-  //  - Once path groups were added (2012), the processes can be created from the job.  All installs
-  //    should use this from now on, but we support the old method for now until all the existing installs
-  //    are converted over.
+    public static int ProcessFromComment(string comment)
+    {
+      if (!IsSplitComment(comment))
+        return 1;
+
+      var suffixStart = comment.Length - SplitInsightSuffix.Length;
+      var pathSep = comment.LastIndexOf('-', suffixStart - 1);
+      if (pathSep < 0)
+        return 1;
+
+      var procSep = comment.LastIndexOf('-', pathSep - 1);
+      if (procSep < 0)
+        return 1;
+
+      return int.TryParse(comment.Substring(procSep + 1, pathSep - procSep - 1), out var proc) ? proc : 1;
+    }
+
+    public static MazakCommentInfo ParseCommentInfo(string comment)
+    {
+      if (string.IsNullOrEmpty(comment))
+        return new MazakCommentInfo(Unique: "", IsSplit: false, FmsProcess: 1);
+      var isSplit = IsSplitComment(comment);
+      return new MazakCommentInfo(
+        Unique: UniqueFromComment(comment),
+        IsSplit: isSplit,
+        FmsProcess: isSplit ? ProcessFromComment(comment) : 1
+      );
+    }
+  }
 
   public abstract class MazakProcess
   {
@@ -178,6 +297,7 @@ namespace MazakMachineInterface
 
     public readonly MazakPart Part;
     public readonly int ProcessNumber;
+    public readonly int JobProcessNumber;
     public readonly int Path;
 
     public Job Job
@@ -187,13 +307,14 @@ namespace MazakMachineInterface
 
     public ProcPathInfo PathInfo
     {
-      get { return Part.Job.Processes[ProcessNumber - 1].Paths[Path - 1]; }
+      get { return Part.Job.Processes[JobProcessNumber - 1].Paths[Path - 1]; }
     }
 
-    protected MazakProcess(MazakPart parent, int proc, int path)
+    protected MazakProcess(MazakPart parent, int proc, int jobProc, int path)
     {
       Part = parent;
       ProcessNumber = proc;
+      JobProcessNumber = jobProc;
       Path = path;
     }
 
@@ -221,8 +342,14 @@ namespace MazakMachineInterface
   {
     public override ProgramRevision PartProgram { get; set; }
 
-    public MazakProcessFromJob(MazakPart parent, int process, int pth, ProgramRevision prog)
-      : base(parent, process, pth)
+    public MazakProcessFromJob(
+      MazakPart parent,
+      int process,
+      int pth,
+      ProgramRevision prog,
+      int? jobProcess = null
+    )
+      : base(parent, process, jobProcess ?? parent.SplitJobProcess ?? process, pth)
     {
       PartProgram = prog;
     }
@@ -291,93 +418,9 @@ namespace MazakMachineInterface
       return "CopyFromJob "
         + base.Job.PartName
         + "-"
-        + base.ProcessNumber.ToString()
+        + base.JobProcessNumber.ToString()
         + " path "
         + Path.ToString();
-    }
-  }
-
-  public class MazakProcessFromTemplate : MazakProcess
-  {
-    public override ProgramRevision PartProgram { get; set; }
-
-    //Here, jobs have only one process.  The number of processes are copied from the template.
-    public readonly MazakPartProcessRow TemplateProcessRow;
-
-    public MazakProcessFromTemplate(MazakPart parent, MazakPartProcessRow template, int path)
-      : base(parent, template.ProcessNumber, path)
-    {
-      TemplateProcessRow = template;
-      PartProgram = new ProgramRevision()
-      {
-        ProgramName = "",
-        CellControllerProgramName = template.MainProgram,
-        Revision = 0,
-      };
-    }
-
-    public override IEnumerable<int> Pallets()
-    {
-      return PathInfo.PalletNums;
-    }
-
-    public override (string fixture, int? face) FixtureFace() => (null, null);
-
-    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakConfig cfg)
-    {
-      char[] FixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
-      char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
-      char[] Cut = { '0', '0', '0', '0', '0', '0', '0', '0' };
-
-      foreach (var routeEntry in PathInfo.Stops)
-      {
-        foreach (int statNum in routeEntry.Stations)
-        {
-          int stat = cfg.MachineNumbers == null ? statNum : cfg.MachineNumbers.IndexOf(statNum) + 1;
-          Cut[stat - 1] = stat.ToString()[0];
-        }
-      }
-
-      foreach (int statNum in PathInfo.Load)
-      {
-        FixLDS[statNum - 1] = statNum.ToString()[0];
-      }
-
-      foreach (int statNum in PathInfo.Unload)
-      {
-        UnfixLDS[statNum - 1] = statNum.ToString()[0];
-      }
-
-      var newPartProcRow = TemplateProcessRow with
-      {
-        PartName = Part.PartName,
-        Fixture = fixture,
-        ProcessNumber = ProcessNumber,
-        FixLDS =
-          cfg.DBType != MazakDbType.MazakVersionE
-            ? ConvertStatStrV1ToV2(new string(FixLDS)).ToString()
-            : new string(FixLDS),
-        RemoveLDS =
-          cfg.DBType != MazakDbType.MazakVersionE
-            ? ConvertStatStrV1ToV2(new string(UnfixLDS)).ToString()
-            : new string(UnfixLDS),
-        CutMc =
-          cfg.DBType != MazakDbType.MazakVersionE
-            ? ConvertStatStrV1ToV2(new string(Cut)).ToString()
-            : new string(Cut),
-      };
-
-      newPart.Processes.Add(newPartProcRow);
-    }
-
-    public override string ToString()
-    {
-      return "CopyFromTemplate "
-        + base.Job.PartName
-        + "-"
-        + base.ProcessNumber.ToString()
-        + " path "
-        + base.Path.ToString();
     }
   }
 
@@ -727,6 +770,14 @@ namespace MazakMachineInterface
       };
     }
 
+    public static bool IsSplitScheduleJob(Job job)
+    {
+      if (job == null)
+        return false;
+
+      return AllProcessesHaveBasketStations(job) || AllConsecutiveQueuesDiffer(job);
+    }
+
     #region Validate
     private static void Validate(
       IEnumerable<Job> jobs,
@@ -737,6 +788,8 @@ namespace MazakMachineInterface
       //only allow numeric pallets and check queues
       foreach (Job part in jobs)
       {
+        ValidateSplitScheduleRequirements(part, errs);
+
         for (int proc = 1; proc <= part.Processes.Count; proc++)
         {
           for (int path = 1; path <= part.Processes[proc - 1].Paths.Count; path++)
@@ -791,6 +844,98 @@ namespace MazakMachineInterface
       }
     }
 
+    private static void ValidateSplitScheduleRequirements(Job part, IList<string> errs)
+    {
+      var missingBasketProcesses = Enumerable
+        .Range(1, part.Processes.Count)
+        .Where(proc => !ProcessHasBasketStations(part.Processes[proc - 1]))
+        .ToList();
+      var hasAnyBasketStations = part.Processes.Any(ProcessHasAnyBasketStations);
+      var hasAllBasketStations = missingBasketProcesses.Count == 0;
+
+      if (hasAnyBasketStations && !hasAllBasketStations)
+      {
+        errs.Add(
+          "Job "
+            + part.UniqueStr
+            + " must specify BasketLoadStations and BasketUnloadStations for every process or none. Missing basket stations on processes "
+            + string.Join(", ", missingBasketProcesses)
+            + "."
+        );
+      }
+
+      var differingQueuePairs = Enumerable
+        .Range(1, Math.Max(0, part.Processes.Count - 1))
+        .Where(proc => ConsecutiveQueuesDiffer(part, proc))
+        .ToList();
+      if (differingQueuePairs.Count > 0 && differingQueuePairs.Count != part.Processes.Count - 1)
+      {
+        errs.Add(
+          "Job "
+            + part.UniqueStr
+            + " must use differing output and input queues for every consecutive process pair or none when enabling split Mazak schedules. Differing pairs start at processes "
+            + string.Join(", ", differingQueuePairs)
+            + "."
+        );
+      }
+
+      if (IsSplitScheduleJob(part))
+      {
+        var multiPathProcesses = Enumerable
+          .Range(1, part.Processes.Count)
+          .Where(proc => part.Processes[proc - 1].Paths.Count > 1)
+          .ToList();
+        if (multiPathProcesses.Count > 0)
+        {
+          errs.Add(
+            "Job "
+              + part.UniqueStr
+              + " uses split Mazak schedules and must have exactly one path per process. Multiple paths found on processes "
+              + string.Join(", ", multiPathProcesses)
+              + "."
+          );
+        }
+      }
+    }
+
+    private static bool AllProcessesHaveBasketStations(Job job)
+    {
+      return job.Processes.Count > 0 && job.Processes.All(ProcessHasBasketStations);
+    }
+
+    private static bool ProcessHasBasketStations(ProcessInfo process)
+    {
+      return HasStations(process.BasketLoadStations) && HasStations(process.BasketUnloadStations);
+    }
+
+    private static bool ProcessHasAnyBasketStations(ProcessInfo process)
+    {
+      return HasStations(process.BasketLoadStations) || HasStations(process.BasketUnloadStations);
+    }
+
+    private static bool HasStations(System.Collections.Generic.IReadOnlyCollection<int> stations)
+    {
+      return stations != null && stations.Count > 0;
+    }
+
+    private static bool AllConsecutiveQueuesDiffer(Job job)
+    {
+      return job.Processes.Count > 1
+        && Enumerable.Range(1, job.Processes.Count - 1).All(proc => ConsecutiveQueuesDiffer(job, proc));
+    }
+
+    private static bool ConsecutiveQueuesDiffer(Job job, int process)
+    {
+      if (process <= 0 || process >= job.Processes.Count)
+        return false;
+      if (job.Processes[process - 1].Paths.Count == 0 || job.Processes[process].Paths.Count == 0)
+        return false;
+
+      var outputQueue = job.Processes[process - 1].Paths[0].OutputQueue ?? "";
+      var inputQueue = job.Processes[process].Paths[0].InputQueue ?? "";
+      return !string.Equals(outputQueue, inputQueue, StringComparison.Ordinal);
+    }
+
     private static void CheckReusedFixture(MazakAllData mazakData, IList<string> errors)
     {
       foreach (var part in mazakData.Parts)
@@ -827,9 +972,9 @@ namespace MazakMachineInterface
 
       foreach (var job in jobs)
       {
-        if (job.Processes.Count == 1)
+        for (int proc = 1; proc <= job.Processes.Count; proc++)
         {
-          if (job.Processes[0].Paths.Count != 1)
+          if (job.Processes[proc - 1].Paths.Count != 1)
           {
             log.Add(
               "Part "
@@ -838,32 +983,32 @@ namespace MazakMachineInterface
             );
             goto skipPart;
           }
-          var mazakPart = new MazakPart(job, downloadID, partIdx);
-          partIdx += 1;
-
-          string error;
-          BuildProcFromJobWithOneProc(job, mazakPart, mazakCfg, mazakData, lookupProgram, out error);
-          if (error == null || error == "")
-            ret.Add(mazakPart);
-          else
-            log.Add(error);
         }
-        else
+
+        if (IsSplitScheduleJob(job))
         {
           for (int proc = 1; proc <= job.Processes.Count; proc++)
           {
-            if (job.Processes[proc - 1].Paths.Count != 1)
-            {
-              log.Add(
-                "Part "
-                  + job.PartName
-                  + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller"
-              );
-              goto skipPart;
-            }
-          }
+            var mazakPart = new MazakPart(job, downloadID, partIdx, proc, 1);
+            partIdx += 1;
+            BuildProcFromJob(
+              job,
+              mazakPart,
+              out string error,
+              mazakCfg,
+              mazakData,
+              lookupProgram,
+              onlyProcess: proc
+            );
 
-          //label the part by the path number on process 1.
+            if (string.IsNullOrEmpty(error))
+              ret.Add(mazakPart);
+            else
+              log.Add(error);
+          }
+        }
+        else
+        {
           var mazakPart = new MazakPart(job, downloadID, partIdx);
           partIdx += 1;
           BuildProcFromJob(job, mazakPart, out string error, mazakCfg, mazakData, lookupProgram);
@@ -890,12 +1035,17 @@ namespace MazakMachineInterface
       out string ErrorDuringCreate,
       MazakConfig mazakCfg,
       MazakAllData mazakData,
-      Func<string, long?, ProgramRevision> lookupProgram
+      Func<string, long?, ProgramRevision> lookupProgram,
+      int? onlyProcess = null
     )
     {
       ErrorDuringCreate = null;
 
-      for (int proc = 1; proc <= job.Processes.Count; proc++)
+      var processes = onlyProcess.HasValue
+        ? new[] { onlyProcess.Value }
+        : Enumerable.Range(1, job.Processes.Count);
+
+      foreach (var proc in processes)
       {
         // checked above that only a single path
         var info = job.Processes[proc - 1].Paths[0];
@@ -983,58 +1133,15 @@ namespace MazakMachineInterface
           return;
         }
 
+        var mazakProc = onlyProcess.HasValue ? 1 : proc;
         if (mazakCfg.ProcessFromJob != null)
         {
-          mazak.Processes.Add(mazakCfg.ProcessFromJob(mazak, proc, 1, prog));
+          mazak.Processes.Add(mazakCfg.ProcessFromJob(mazak, mazakProc, 1, prog));
         }
         else
         {
-          mazak.Processes.Add(new MazakProcessFromJob(mazak, proc, 1, prog));
+          mazak.Processes.Add(new MazakProcessFromJob(mazak, mazakProc, 1, prog, jobProcess: proc));
         }
-      }
-    }
-
-    private static void BuildProcFromJobWithOneProc(
-      Job job,
-      MazakPart mazak,
-      MazakConfig mazakCfg,
-      MazakAllData mazakData,
-      Func<string, long?, ProgramRevision> lookupProgram,
-      out string ErrorDuringCreate
-    )
-    {
-      ErrorDuringCreate = null;
-
-      // first try building from the job
-      string FromJobError;
-      BuildProcFromJob(job, mazak, out FromJobError, mazakCfg, mazakData, lookupProgram); // proc will always equal 1.
-
-      if (FromJobError == null || FromJobError == "")
-        return; //Success
-
-      mazak.Processes.Clear();
-
-      // No programs, so check for a template row
-      MazakPartRow TemplateRow = null;
-
-      foreach (var pRow in mazakData.Parts)
-      {
-        if (pRow.PartName == job.PartName)
-        {
-          TemplateRow = pRow;
-          break;
-        }
-      }
-
-      if (TemplateRow == null)
-      {
-        ErrorDuringCreate = FromJobError + "  Also, no template row for " + job.PartName + " was found.";
-        return;
-      }
-
-      foreach (var pRow in TemplateRow.Processes)
-      {
-        mazak.Processes.Add(new MazakProcessFromTemplate(mazak, pRow, path: 1));
       }
     }
 

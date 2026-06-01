@@ -76,40 +76,34 @@ namespace MazakMachineInterface
 
       // check if a previous download was interrupted during the middle of schedule downloads
       var alreadyDownloadedSchs = mazakData
-        .Schedules.Select(s =>
-        {
-          if (MazakPart.IsSailPart(s.PartName, s.Comment))
-          {
-            return MazakPart.UniqueFromComment(s.Comment);
-          }
-          else
-          {
-            return null;
-          }
-        })
-        .Where(u => u != null)
-        .ToHashSet();
+        .Schedules.Where(s => MazakPart.IsSailPart(s.PartName, s.Comment) && !string.IsNullOrEmpty(s.Comment))
+        .GroupBy(s => MazakPart.UniqueFromComment(s.Comment))
+        .ToDictionary(g => g.Key, g => g.Count());
 
       bool existsPrev = false;
+      var jobsToSchedule = new List<Job>();
       foreach (var j in jobs)
       {
-        if (alreadyDownloadedSchs.Contains(j.UniqueStr))
+        var expectedSchedules = ConvertJobsToMazakParts.IsSplitScheduleJob(j) ? j.Processes.Count : 1;
+        alreadyDownloadedSchs.TryGetValue(j.UniqueStr, out var existingSchedules);
+
+        if (existingSchedules >= expectedSchedules)
         {
           existsPrev = true;
           db.MarkJobCopiedToSystem(j.UniqueStr);
+        }
+        else
+        {
+          if (existingSchedules > 0)
+            existsPrev = true;
+          jobsToSchedule.Add(j);
         }
       }
 
       // if there are schedules that were already downloaded, resume the download
       if (existsPrev)
       {
-        AddSchedules(
-          mazakData,
-          db,
-          jobs.Where(j => !alreadyDownloadedSchs.Contains(j.UniqueStr)).ToImmutableList(),
-          mazakDb,
-          mazakCfg
-        );
+        AddSchedules(mazakData, db, jobsToSchedule.ToImmutableList(), mazakDb, mazakCfg);
       }
       else
       {
@@ -237,10 +231,28 @@ namespace MazakMachineInterface
       if (transSet.Schedules.Any())
       {
         writeDb.Save(transSet);
-        foreach (var s in transSet.Schedules)
+
+        var existingScheduleCounts = mazakData
+          .Schedules.Where(s =>
+            MazakPart.IsSailPart(s.PartName, s.Comment) && !string.IsNullOrEmpty(s.Comment)
+          )
+          .GroupBy(s => MazakPart.UniqueFromComment(s.Comment))
+          .ToDictionary(g => g.Key, g => g.Count());
+
+        var addedScheduleCounts = transSet
+          .Schedules.GroupBy(s => MazakPart.UniqueFromComment(s.Comment))
+          .ToDictionary(g => g.Key, g => g.Count());
+
+        foreach (var job in jobs)
         {
-          var uniq = MazakPart.UniqueFromComment(s.Comment);
-          jobDB.MarkJobCopiedToSystem(uniq);
+          var expectedSchedules = ConvertJobsToMazakParts.IsSplitScheduleJob(job) ? job.Processes.Count : 1;
+          existingScheduleCounts.TryGetValue(job.UniqueStr, out var existingSchedules);
+          addedScheduleCounts.TryGetValue(job.UniqueStr, out var addedSchedules);
+
+          if (existingSchedules + addedSchedules >= expectedSchedules)
+          {
+            jobDB.MarkJobCopiedToSystem(job.UniqueStr);
+          }
         }
       }
     }
