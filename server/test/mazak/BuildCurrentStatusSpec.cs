@@ -168,7 +168,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         repository = RepositoryConfig
           .InitializeEventDatabase(
             new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-            _tempLogFile
+            _tempLogFile,
+            pooling: false
           )
           .OpenConnection();
       }
@@ -223,7 +224,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       finally
       {
         repository.Dispose();
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         File.Delete(_tempLogFile);
       }
 
@@ -301,7 +301,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       repository = RepositoryConfig
         .InitializeEventDatabase(
           new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-          _tempLogFile
+          _tempLogFile,
+          pooling: false
         )
         .OpenConnection();
       close = true;
@@ -352,7 +353,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       {
         if (close)
           repository.Dispose();
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         File.Delete(_tempLogFile);
       }
 
@@ -379,7 +379,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var repository = RepositoryConfig
         .InitializeEventDatabase(
           new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-          tempLogFile
+          tempLogFile,
+          pooling: false
         )
         .OpenConnection();
 
@@ -430,7 +431,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       finally
       {
         repository.Dispose();
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         File.Delete(tempLogFile);
       }
     }
@@ -592,7 +592,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       finally
       {
         repo.Dispose();
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
       }
 
       var loadingMat = status.Material.Where(m =>

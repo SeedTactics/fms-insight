@@ -74,10 +74,15 @@ namespace BlackMaple.MachineFramework
       SerialSettings? st,
       string filename,
       string? oldInspDbFile = null,
-      string? oldJobDbFile = null
+      string? oldJobDbFile = null,
+      bool pooling = true
     )
     {
-      var connStr = "Data Source=" + filename;
+      var connStr = new SqliteConnectionStringBuilder()
+      {
+        DataSource = filename,
+        Pooling = pooling,
+      }.ToString();
       if (System.IO.File.Exists(filename))
       {
         using var conn = new SqliteConnection(connStr);
