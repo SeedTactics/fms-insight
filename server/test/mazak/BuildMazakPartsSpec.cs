@@ -668,6 +668,333 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public void ErrorsOnPartialBasketSplitConfiguration()
+    {
+      var baseJob = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { 4 }, new[] { 10 } }
+      );
+      var job1 = baseJob with
+      {
+        Processes =
+        [
+          baseJob.Processes[0] with
+          {
+            BasketLoadStations = [11],
+            BasketUnloadStations = [12],
+          },
+          baseJob.Processes[1],
+        ],
+      };
+
+      var log = new List<string>();
+      var dset = CreateReadSet();
+      CreateProgram(dset, "1234");
+
+      ConvertJobsToMazakParts.JobsToMazak(
+        new Job[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        defaultMazakCfg,
+        fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
+        errors: log
+      );
+
+      log.ShouldContain(
+        "Job Job1 must specify BasketLoadStations and BasketUnloadStations for every process or none. Missing basket stations on processes 2."
+      );
+    }
+
+    [Test]
+    public void ErrorsOnPartialQueueSplitConfiguration()
+    {
+      var baseJob = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 3,
+        pals: new[] { new[] { 4 }, new[] { 10 }, new[] { 12 } }
+      );
+      var job1 = baseJob with
+      {
+        Processes =
+        [
+          baseJob.Processes[0] with
+          {
+            Paths = [baseJob.Processes[0].Paths[0] with { OutputQueue = "q1" }],
+          },
+          baseJob.Processes[1] with
+          {
+            Paths = [baseJob.Processes[1].Paths[0] with { InputQueue = "q2", OutputQueue = "shared" }],
+          },
+          baseJob.Processes[2] with
+          {
+            Paths = [baseJob.Processes[2].Paths[0] with { InputQueue = "shared" }],
+          },
+        ],
+      };
+
+      var log = new List<string>();
+      var dset = CreateReadSet();
+      CreateProgram(dset, "1234");
+      var settings = new FMSSettings();
+      settings.Queues.Add("q1", new QueueInfo() { Role = QueueRole.RawMaterial });
+      settings.Queues.Add("q2", new QueueInfo() { Role = QueueRole.RawMaterial });
+      settings.Queues.Add("shared", new QueueInfo() { Role = QueueRole.RawMaterial });
+
+      ConvertJobsToMazakParts.JobsToMazak(
+        new Job[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        defaultMazakCfg,
+        fmsSettings: settings,
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
+        errors: log
+      );
+
+      log.ShouldContain(
+        "Job Job1 must use differing output and input queues for every consecutive process pair or none when enabling split Mazak schedules. Differing pairs start at processes 1."
+      );
+    }
+
+    [Test]
+    public void ErrorsOnMultiPathSplitConfiguration()
+    {
+      var baseJob = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { 4 }, new[] { 10 } }
+      );
+      var extraPath = baseJob.Processes[0].Paths[0] with { PalletNums = [20] };
+      var job1 = baseJob with
+      {
+        Processes =
+        [
+          baseJob.Processes[0] with
+          {
+            BasketLoadStations = [11],
+            BasketUnloadStations = [12],
+            Paths = [baseJob.Processes[0].Paths[0], extraPath],
+          },
+          baseJob.Processes[1] with
+          {
+            BasketLoadStations = [13],
+            BasketUnloadStations = [14],
+          },
+        ],
+      };
+
+      var log = new List<string>();
+      var dset = CreateReadSet();
+      CreateProgram(dset, "1234");
+
+      ConvertJobsToMazakParts.JobsToMazak(
+        new Job[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        defaultMazakCfg,
+        fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
+        errors: log
+      );
+
+      log.ShouldContain(
+        "Job Job1 uses split Mazak schedules and must have exactly one path per process. Multiple paths found on processes 1."
+      );
+    }
+
+    [Test]
+    public void CreatesSplitPartsForBasketConfiguredJob()
+    {
+      var baseJob = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { 4 }, new[] { 10 } }
+      );
+      var job1 = baseJob with
+      {
+        Processes =
+        [
+          baseJob.Processes[0] with
+          {
+            BasketLoadStations = [11],
+            BasketUnloadStations = [12],
+          },
+          baseJob.Processes[1] with
+          {
+            BasketLoadStations = [13],
+            BasketUnloadStations = [14],
+          },
+        ],
+      };
+
+      var log = new List<string>();
+      var dset = CreateReadSet();
+      CreateProgram(dset, "1234");
+
+      var pMap = ConvertJobsToMazakParts.JobsToMazak(
+        new Job[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        defaultMazakCfg,
+        fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
+        errors: log
+      );
+      log.ShouldBeEmpty();
+
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
+      trans.Parts.Count.ShouldBe(2);
+
+      trans
+        .Parts.OrderBy(p => p.Comment)
+        .Select(p => new
+        {
+          p.Comment,
+          p.PartName,
+          ProcNums = p.Processes.Select(proc => proc.ProcessNumber).ToList(),
+        })
+        .ToList()
+        .ShouldBeEquivalentTo(
+          new[]
+          {
+            new
+            {
+              Comment = "Job1-1-1-InsightS",
+              PartName = "Part1:3:1:1",
+              ProcNums = new[] { 1 }.ToList(),
+            },
+            new
+            {
+              Comment = "Job1-2-1-InsightS",
+              PartName = "Part1:3:2:2",
+              ProcNums = new[] { 1 }.ToList(),
+            },
+          }.ToList()
+        );
+    }
+
+    [Test]
+    public void SplitPartsCreatedByProcessDelegateUseOriginalJobProcess()
+    {
+      var baseJob = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { 4 }, new[] { 10 } }
+      );
+      var job1 = baseJob with
+      {
+        Processes =
+        [
+          baseJob.Processes[0] with
+          {
+            BasketLoadStations = [11],
+            BasketUnloadStations = [12],
+          },
+          baseJob.Processes[1] with
+          {
+            BasketLoadStations = [13],
+            BasketUnloadStations = [14],
+          },
+        ],
+      };
+
+      var log = new List<string>();
+      var dset = CreateReadSet();
+      CreateProgram(dset, "1234");
+
+      var pMap = ConvertJobsToMazakParts.JobsToMazak(
+        new Job[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        defaultMazakCfg with
+        {
+          ProcessFromJob = (parent, process, path, prog) =>
+            new MazakProcessFromJob(parent, process, path, prog),
+        },
+        fmsSettings: new FMSSettings(),
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
+        errors: log
+      );
+      log.ShouldBeEmpty();
+
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
+
+      CheckPartProcessFromJob(trans, "Part1:3:1:1", 1, "F:3:1:1");
+      CheckPart(trans, "Part1:3:1:1", "Job1-1-1-InsightS");
+      CheckPartProcessFromJob(trans, "Part1:3:2:2", 1, "F:3:2:1");
+      CheckPart(trans, "Part1:3:2:2", "Job1-2-1-InsightS");
+    }
+
+    [Test]
+    public void CreatesSplitQueueSeparatedAndCombinedPartsTogether()
+    {
+      var splitBase = CreateBasicStopsWithProg(
+        uniq: "SplitJob",
+        part: "SplitPart",
+        numProc: 2,
+        pals: new[] { new[] { 4 }, new[] { 10 } }
+      );
+      var splitJob = splitBase with
+      {
+        Processes =
+        [
+          splitBase.Processes[0] with
+          {
+            Paths = [splitBase.Processes[0].Paths[0] with { OutputQueue = "q1" }],
+          },
+          splitBase.Processes[1] with
+          {
+            Paths = [splitBase.Processes[1].Paths[0] with { InputQueue = "q2" }],
+          },
+        ],
+      };
+      var combinedJob = CreateBasicStopsWithProg(
+        uniq: "CombinedJob",
+        part: "CombinedPart",
+        numProc: 1,
+        pals: new[] { new[] { 20 } }
+      );
+
+      var log = new List<string>();
+      var dset = CreateReadSet();
+      CreateProgram(dset, "1234");
+
+      var settings = new FMSSettings();
+      settings.Queues.Add("q1", new QueueInfo() { Role = QueueRole.RawMaterial });
+      settings.Queues.Add("q2", new QueueInfo() { Role = QueueRole.RawMaterial });
+
+      var pMap = ConvertJobsToMazakParts.JobsToMazak(
+        new Job[] { splitJob, combinedJob },
+        3,
+        dset,
+        new HashSet<string>(),
+        defaultMazakCfg,
+        fmsSettings: settings,
+        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
+        errors: log
+      );
+      log.ShouldBeEmpty();
+
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
+      trans.Parts.Count.ShouldBe(3);
+      trans
+        .Parts.Select(p => p.Comment)
+        .OrderBy(c => c)
+        .ShouldBe(["CombinedJob-Insight", "SplitJob-1-1-InsightS", "SplitJob-2-1-InsightS"]);
+    }
+
+    [Test]
     public void CreatesPrograms()
     {
       var job1 = CreateBasicStopsWithProg(

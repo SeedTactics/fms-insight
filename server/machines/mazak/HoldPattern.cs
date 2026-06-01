@@ -30,37 +30,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-using System;
-using System.Collections.Generic;
-
 namespace MazakMachineInterface
 {
-  public interface IHoldManagement
+  public static class HoldPattern
   {
-    TimeSpan CheckForTransition(MazakCurrentStatus schedules, BlackMaple.MachineFramework.IRepository jobDB);
-  }
-
-  public class HoldPattern : IHoldManagement
-  {
-    #region Public API
-    //Each schedule can be in one of four states: Shift1, Shift2, Preperation, or FullHold.
-    //Then the mazak cell controller has two settings which can be changed on the main screen:
-    // - Machining:  "Shift1", "Shift2", or "Shift1&2"
-    // - LoadUnload: "Shift1", "Shift2", or "Shift1&2"
-    //These settings determine which schedules to run.  Preperation means only load events happen.
-    //
-    //If we want to hold machining we will put the schedule in the Preperation state.  Once the hold
-    //passes, we use a thread to switch the schedule to the Shift1 state so that it starts running.
-    //Note that we do not currently support holding load unload.  If we wanted, we could use the Shift2
-    //to hold LoadUnload.  For example, put Machining in "Shift1&2" and LUL in Shift1.  Then
-    //schedules in the Shift2 state would not be loaded.
-
     public enum HoldMode
     {
-      Shift1 = 0,
+      NoHold = 0,
       FullHold = 1,
-      Preperation = 2,
+      Preparation = 2,
       Shift2 = 3,
+      Shift1 = NoHold,
+      Preperation = Preparation,
     }
 
     public static HoldMode CalculateHoldMode(bool entireHold, bool machineHold)
@@ -68,167 +49,9 @@ namespace MazakMachineInterface
       if (entireHold)
         return HoldMode.FullHold;
       else if (machineHold)
-        return HoldMode.Preperation;
+        return HoldMode.Preparation;
       else
-        return HoldMode.Shift1;
+        return HoldMode.NoHold;
     }
-
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<HoldPattern>();
-    private IMazakDB database;
-
-    public HoldPattern(IMazakDB d)
-    {
-      database = d;
-    }
-
-    #endregion
-
-    #region Mazak Schedules
-
-    private class MazakSchedule
-    {
-      public int SchId
-      {
-        get { return _schRow.Id; }
-      }
-
-      public string UniqueStr
-      {
-        get { return MazakPart.UniqueFromComment(_schRow.Comment); }
-      }
-
-      public HoldMode Hold
-      {
-        get { return (HoldMode)_schRow.HoldMode; }
-      }
-
-      public BlackMaple.MachineFramework.HoldPattern HoldEntireJob { get; }
-      public BlackMaple.MachineFramework.HoldPattern HoldMachining { get; }
-
-      public void ChangeHoldMode(HoldMode newHold)
-      {
-        var transSet = new MazakWriteData()
-        {
-          Prefix = "Hold Mode",
-          Schedules = new[]
-          {
-            _schRow with
-            {
-              Command = MazakWriteCommand.ScheduleSafeEdit,
-              HoldMode = (int)newHold,
-            },
-          },
-        };
-
-        _parent.database.Save(transSet);
-      }
-
-      public MazakSchedule(
-        BlackMaple.MachineFramework.IRepository jdb,
-        HoldPattern parent,
-        MazakScheduleRow s
-      )
-      {
-        _parent = parent;
-        _schRow = s;
-
-        if (MazakPart.IsSailPart(_schRow.PartName, _schRow.Comment))
-        {
-          var unique = MazakPart.UniqueFromComment(_schRow.Comment);
-          var job = jdb.LoadJob(unique);
-          if (job != null)
-          {
-            HoldEntireJob = job.HoldJob;
-            HoldMachining = job.Processes[0].Paths[0].HoldMachining;
-          }
-        }
-      }
-
-      private HoldPattern _parent;
-      private MazakScheduleRow _schRow;
-    }
-
-    private IDictionary<int, MazakSchedule> LoadMazakSchedules(
-      BlackMaple.MachineFramework.IRepository jdb,
-      IEnumerable<MazakScheduleRow> schedules
-    )
-    {
-      var ret = new Dictionary<int, MazakSchedule>();
-
-      foreach (var schRow in schedules)
-      {
-        ret.Add(schRow.Id, new MazakSchedule(jdb, this, schRow));
-      }
-
-      return ret;
-    }
-
-    public TimeSpan CheckForTransition(
-      MazakCurrentStatus schedules,
-      BlackMaple.MachineFramework.IRepository jobDB
-    )
-    {
-      try
-      {
-        //Store the current time, this is the time we use to calculate the hold pattern.
-        //It is important that this time be fixed for all schedule calculations, otherwise
-        //we might miss a transition if it occurs while we are running this function.
-        var nowUTC = DateTime.UtcNow;
-
-        IDictionary<int, MazakSchedule> mazakSch;
-        mazakSch = LoadMazakSchedules(jobDB, schedules.Schedules);
-
-        var nextTimeUTC = DateTime.MaxValue;
-
-        foreach (var pair in mazakSch)
-        {
-          bool allHold = false;
-          DateTime allNext = DateTime.MaxValue;
-          bool machHold = false;
-          DateTime machNext = DateTime.MaxValue;
-
-          if (pair.Value.HoldEntireJob != null)
-            BlackMaple.MachineFramework.HoldCalculations.HoldInformation(
-              pair.Value.HoldEntireJob,
-              nowUTC,
-              out allHold,
-              out allNext
-            );
-          if (pair.Value.HoldMachining != null)
-            BlackMaple.MachineFramework.HoldCalculations.HoldInformation(
-              pair.Value.HoldMachining,
-              nowUTC,
-              out allHold,
-              out allNext
-            );
-
-          HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
-
-          if (currentHoldMode != pair.Value.Hold)
-          {
-            pair.Value.ChangeHoldMode(currentHoldMode);
-          }
-
-          if (allNext < nextTimeUTC)
-            nextTimeUTC = allNext;
-          if (machNext < nextTimeUTC)
-            nextTimeUTC = machNext;
-        }
-
-        if (nextTimeUTC == DateTime.MaxValue)
-          return TimeSpan.MaxValue;
-        else
-          return nextTimeUTC.Subtract(DateTime.UtcNow);
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Unhanlded error checking for hold transition");
-
-        //Try again in three minutes.
-        return TimeSpan.FromMinutes(3);
-      }
-    }
-
-    #endregion
   }
 }

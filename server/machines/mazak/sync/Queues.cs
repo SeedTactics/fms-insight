@@ -72,10 +72,42 @@ namespace MazakMachineInterface
       public MazakScheduleRow SchRow { get; set; }
       public string Unique { get; set; }
       public Job Job { get; set; }
+      public int JobProcess { get; set; }
       public bool LowerPriorityScheduleMatchingCastingSkipped { get; set; }
       public Dictionary<int, ScheduleWithQueuesProcess> Procs { get; set; }
       public DateTime? NewDueDate { get; set; }
       public int? NewPriority { get; set; }
+    }
+
+    private static int ResolveJobProcess(ScheduleWithQueues sch, int scheduleProc)
+    {
+      return sch.JobProcess > 0 ? sch.JobProcess : scheduleProc;
+    }
+
+    private static bool TryGetScheduleProcess(
+      ScheduleWithQueues sch,
+      int jobProc,
+      out ScheduleWithQueuesProcess schProc
+    )
+    {
+      if (sch.JobProcess > 0 && sch.JobProcess != jobProc)
+      {
+        schProc = null;
+        return false;
+      }
+
+      var scheduleProc = sch.JobProcess > 0 ? 1 : jobProc;
+      return sch.Procs.TryGetValue(scheduleProc, out schProc);
+    }
+
+    private static bool ShouldSynchronizeScheduleProcess(ScheduleWithQueues sch, int jobProc, MazakConfig cfg)
+    {
+      if (sch.JobProcess > 0 && sch.JobProcess != jobProc)
+      {
+        return false;
+      }
+
+      return ShouldSyncronizeJobProcess(sch.Job, sch.JobProcess > 0 ? sch.JobProcess : jobProc, cfg);
     }
 
     private static IReadOnlyList<ScheduleWithQueues> LoadSchedules(
@@ -98,6 +130,9 @@ namespace MazakMachineInterface
         if (job == null)
           continue;
 
+        var isSplit = MazakPart.IsSplitComment(schRow.Comment);
+        var fmsProcess = isSplit ? MazakPart.ProcessFromComment(schRow.Comment) : 0;
+
         var casting = job.Processes[0].Paths[0].Casting;
         if (string.IsNullOrEmpty(casting))
         {
@@ -111,6 +146,7 @@ namespace MazakMachineInterface
           if (
             !string.IsNullOrEmpty(action.Comment)
             && MazakPart.UniqueFromComment(action.Comment) == job.UniqueStr
+            && (!isSplit || MazakPart.ProcessFromComment(action.Comment) == fmsProcess)
           )
           {
             foundJobAtLoad = true;
@@ -127,6 +163,7 @@ namespace MazakMachineInterface
           SchRow = schRow,
           Unique = unique,
           Job = job,
+          JobProcess = fmsProcess,
           // when we are waiting for all castings to assign, we can assume that any running schedule
           // has all of its material so no need to prevent assignment.
           LowerPriorityScheduleMatchingCastingSkipped =
@@ -135,43 +172,71 @@ namespace MazakMachineInterface
           NewDueDate = null,
           NewPriority = null,
         };
-        bool missingProc = false;
-        for (int proc = 1; proc <= job.Processes.Count; proc++)
+        if (isSplit)
         {
-          MazakScheduleProcessRow schProcRow = null;
-          foreach (var row in schRow.Processes)
-          {
-            if (row.ProcessNumber == proc)
-            {
-              schProcRow = row;
-              break;
-            }
-          }
+          var schProcRow = schRow.Processes.FirstOrDefault();
           if (schProcRow == null)
           {
             log.Error(
               "Unable to find process {proc} for job {uniq} and schedule {schid}",
-              proc,
+              fmsProcess,
               job.UniqueStr,
               schRow.Id
             );
-            missingProc = true;
-            break;
+            continue;
           }
           sch.Procs.Add(
-            proc,
+            1,
             new ScheduleWithQueuesProcess()
             {
               SchProcRow = schProcRow,
               Path = 1,
-              InputQueue = job.Processes[proc - 1].Paths[0].InputQueue,
-              Casting = proc == 1 ? casting : null,
+              InputQueue = job.Processes[fmsProcess - 1].Paths[0].InputQueue,
+              Casting = fmsProcess == 1 ? casting : null,
             }
           );
-        }
-        if (!missingProc)
-        {
           schs.Add(sch);
+        }
+        else
+        {
+          bool missingProc = false;
+          for (int proc = 1; proc <= job.Processes.Count; proc++)
+          {
+            MazakScheduleProcessRow schProcRow = null;
+            foreach (var row in schRow.Processes)
+            {
+              if (row.ProcessNumber == proc)
+              {
+                schProcRow = row;
+                break;
+              }
+            }
+            if (schProcRow == null)
+            {
+              log.Error(
+                "Unable to find process {proc} for job {uniq} and schedule {schid}",
+                proc,
+                job.UniqueStr,
+                schRow.Id
+              );
+              missingProc = true;
+              break;
+            }
+            sch.Procs.Add(
+              proc,
+              new ScheduleWithQueuesProcess()
+              {
+                SchProcRow = schProcRow,
+                Path = 1,
+                InputQueue = job.Processes[proc - 1].Paths[0].InputQueue,
+                Casting = proc == 1 ? casting : null,
+              }
+            );
+          }
+          if (!missingProc)
+          {
+            schs.Add(sch);
+          }
         }
       }
       return schs;
@@ -209,8 +274,9 @@ namespace MazakMachineInterface
 
       foreach (var sch in schsForJob)
       {
-        var schProc = sch.Procs[proc];
-        if (!ShouldSyncronizeJobProcess(sch.Job, proc: proc, cfg))
+        if (!TryGetScheduleProcess(sch, proc, out var schProc))
+          continue;
+        if (!ShouldSynchronizeScheduleProcess(sch, proc, cfg))
           continue;
 
         var matInQueue = QueuedMaterialForLoading(
@@ -300,7 +366,7 @@ namespace MazakMachineInterface
       {
         // now deal with the non-input-queue raw material. They could have larger material than planned quantity
         // if the schedule has been decremented
-        foreach (var sch in schsForJob.Where(s => string.IsNullOrEmpty(s.Procs[1].InputQueue)))
+        foreach (var sch in schsForJob.Where(s => s.JobProcess <= 1 && string.IsNullOrEmpty(s.Procs[1].InputQueue)))
         {
           if (
             sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch)
@@ -321,7 +387,8 @@ namespace MazakMachineInterface
     {
       var schsToAssign = allSchs
         .Where(s =>
-          !s.LowerPriorityScheduleMatchingCastingSkipped && ShouldSyncronizeJobProcess(s.Job, proc: 1, cfg)
+          !s.LowerPriorityScheduleMatchingCastingSkipped
+          && ShouldSynchronizeScheduleProcess(s, jobProc: 1, cfg)
         )
         .OrderBy(s => s.SchRow.DueDate)
         .ThenBy(s => s.SchRow.Priority);
@@ -470,10 +537,11 @@ namespace MazakMachineInterface
     {
       // the logic here should match the calculation of RemainingToRun when creating the CurrentStatus ActiveJobs
       var cnt = sch.SchRow.CompleteQuantity;
-      foreach (var schProcRow in sch.Procs.Values)
+      foreach (var schProc in sch.Procs)
       {
+        var schProcRow = schProc.Value;
         cnt += schProcRow.SchProcRow.ProcessBadQuantity + schProcRow.SchProcRow.ProcessExecuteQuantity;
-        if (schProcRow.SchProcRow.ProcessNumber > 1)
+        if (ResolveJobProcess(sch, schProc.Key) > 1)
           cnt += schProcRow.TargetMaterialCount ?? schProcRow.SchProcRow.ProcessMaterialQuantity;
       }
       return cnt;
@@ -488,7 +556,9 @@ namespace MazakMachineInterface
       var usedPallets = new HashSet<int>();
       foreach (var proc in currentSch.Procs)
       {
-        var plannedInfo = currentSch.Job.Processes[proc.Key - 1].Paths[proc.Value.Path - 1];
+        var plannedInfo = currentSch.Job.Processes[ResolveJobProcess(currentSch, proc.Key) - 1].Paths[
+          proc.Value.Path - 1
+        ];
         if (string.IsNullOrEmpty(plannedInfo.Fixture))
         {
           foreach (var p in plannedInfo.PalletNums)
@@ -513,7 +583,7 @@ namespace MazakMachineInterface
           && s.Procs.Any(p => p.Value.SchProcRow.ProcessExecuteQuantity > 0)
           && s.Procs.Any(p =>
           {
-            var info = s.Job.Processes[p.Key - 1].Paths[p.Value.Path - 1];
+            var info = s.Job.Processes[ResolveJobProcess(s, p.Key) - 1].Paths[p.Value.Path - 1];
             return usedFixtureFaces.Contains((fixture: info.Fixture, face: info.Face ?? 1))
               || info.PalletNums.Any(usedPallets.Contains);
           })

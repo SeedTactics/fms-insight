@@ -316,9 +316,9 @@ public record FMSSettings
       {
         Directory.CreateDirectory(dataDir);
       }
-      catch (UnauthorizedAccessException)
+      catch (Exception e) when (e is UnauthorizedAccessException || e is IOException)
       {
-        // don't have permissions in CommonApplicationData, fall back to LocalApplicationData
+        // don't have permissions in CommonApplicationData (or read-only fs), fall back to LocalApplicationData
         dataDir = Path.Combine(
           Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
           "SeedTactics",

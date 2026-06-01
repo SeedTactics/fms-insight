@@ -93,25 +93,16 @@ namespace MazakMachineInterface
         if (part.Cycles <= 0)
           continue;
 
-        //check if part exists downloaded
-        int downloadUid = -1;
-        string mazakPartName = "";
-        string mazakComment = "";
-        foreach (var partRow in mazakData.Parts)
-        {
-          if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
-          {
-            var u = MazakPart.UniqueFromComment(partRow.Comment);
-            if (u == part.UniqueStr)
-            {
-              downloadUid = MazakPart.ParseUID(partRow.PartName);
-              mazakPartName = partRow.PartName;
-              mazakComment = partRow.Comment;
-              break;
-            }
-          }
-        }
-        if (downloadUid < 0)
+        var matchingParts = mazakData
+          .Parts.Where(partRow =>
+            MazakPart.IsSailPart(partRow.PartName, partRow.Comment)
+            && MazakPart.UniqueFromComment(partRow.Comment) == part.UniqueStr
+          )
+          .OrderBy(partRow => MazakPart.ProcessFromComment(partRow.Comment))
+          .ThenBy(partRow => partRow.PartName)
+          .ToList();
+
+        if (matchingParts.Count == 0)
         {
           Log.Error(
             "Attempting to create schedule for {uniq} but a part does not exist, with {@allData}",
@@ -121,16 +112,19 @@ namespace MazakMachineInterface
           continue;
         }
 
-        if (!scheduledParts.Contains(mazakPartName))
+        foreach (var matchingPart in matchingParts)
         {
+          if (scheduledParts.Contains(matchingPart.PartName))
+            continue;
+
           int schid = FindNextScheduleId(usedScheduleIDs);
           int earlierConflicts = CountEarlierConflicts(part, jobs);
           schs.Add(
             SchedulePart(
               SchID: schid,
-              mazakPartName: mazakPartName,
-              mazakComment: mazakComment,
-              numProcess: part.Processes.Count,
+              mazakPartName: matchingPart.PartName,
+              mazakComment: matchingPart.Comment,
+              numProcess: MazakPart.IsSplitComment(matchingPart.Comment) ? 1 : part.Processes.Count,
               part: part,
               earlierConflicts: earlierConflicts,
               startingPriority: maxPriMatchingDate + 1,
@@ -138,6 +132,7 @@ namespace MazakMachineInterface
               cfg
             )
           );
+          scheduledParts.Add(matchingPart.PartName);
         }
       }
 
@@ -201,7 +196,10 @@ namespace MazakMachineInterface
         }
       }
 
-      int matQty = MazakQueues.ShouldSyncronizeJobProcess(part, proc: 1, cfg) ? 0 : newSchRow.PlanQuantity;
+      int matQty =
+        MazakPart.IsSplitComment(mazakComment) ? 0
+        : MazakQueues.ShouldSyncronizeJobProcess(part, proc: 1, cfg) ? 0
+        : newSchRow.PlanQuantity;
 
       //need to add all the ScheduleProcess rows
       for (int i = 1; i <= numProcess; i++)

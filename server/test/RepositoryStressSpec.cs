@@ -20,7 +20,7 @@ public sealed class RepositoryStressSpec : IDisposable
   public RepositoryStressSpec()
   {
     _tempDbFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
-    _repo = RepositoryConfig.InitializeEventDatabase(null, _tempDbFile);
+    _repo = RepositoryConfig.InitializeEventDatabase(null, _tempDbFile, pooling: false);
     _fixture = new Fixture();
     _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
     _fixture.Customizations.Add(new InjectNullValuesForNullableTypesSpecimenBuilder());

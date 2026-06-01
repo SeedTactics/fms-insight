@@ -285,6 +285,8 @@ namespace MazakMachineInterface
       switch (e.Code)
       {
         case LogCode.LoadBegin:
+        {
+          FindSchedule(e.FullPartName, e.Process, out _, out _, out var loadJobProc);
 
           repo.RecordLoadStart(
             mats:
@@ -292,7 +294,7 @@ namespace MazakMachineInterface
               new EventLogMaterial()
               {
                 MaterialID = -1,
-                Process = e.Process,
+                Process = loadJobProc,
                 Face = 0,
               },
             ],
@@ -303,6 +305,7 @@ namespace MazakMachineInterface
           );
 
           break;
+        }
 
         case LogCode.UnloadBegin:
 
@@ -557,13 +560,14 @@ namespace MazakMachineInterface
 
     private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, IList<MWI.LogEntry> oldEvents)
     {
+      FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc, out int jobProc);
+
       var byMatId = ParseMaterialFromPreviousEvents(
         jobPartName: e.JobPartName,
-        proc: e.Process,
+        proc: jobProc,
         isUnloadEnd: e.Code == LogCode.UnloadEnd,
         oldEvents: oldEvents
       );
-      FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc);
 
       if (GetJob(unique) == null)
       {
@@ -601,7 +605,7 @@ namespace MazakMachineInterface
                   e.TimeUTC,
                   out var _
                 ),
-                Process = e.Process,
+                Process = jobProc,
                 Face = e.Process,
               },
               PartName = e.JobPartName,
@@ -684,11 +688,15 @@ namespace MazakMachineInterface
         if (e.Code != LogCode.LoadEnd)
           continue;
 
-        int proc = e.Process;
         int fixQty = e.FixedQuantity;
-        FindSchedule(e.FullPartName, proc, out string unique, out int numProc);
+        FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc, out int jobProc);
 
-        Log.Debug("Found job {unique} with number of procs {numProc}", unique, numProc);
+        Log.Debug(
+          "Found job {unique} with number of procs {numProc} and job proc {jobProc}",
+          unique,
+          numProc,
+          jobProc
+        );
 
         Job job = string.IsNullOrEmpty(unique) ? null : GetJob(unique);
         if (job == null)
@@ -698,16 +706,16 @@ namespace MazakMachineInterface
         }
 
         var mats = ImmutableList.CreateBuilder<long>();
-        if (job != null && !string.IsNullOrEmpty(job.Processes[proc - 1].Paths[0].InputQueue))
+        if (job != null && !string.IsNullOrEmpty(job.Processes[jobProc - 1].Paths[0].InputQueue))
         {
-          var info = job.Processes[proc - 1].Paths[0];
+          var info = job.Processes[jobProc - 1].Paths[0];
           // search input queue for material
-          Log.Debug("Searching queue {queue} for {unique}-{proc} to load", info.InputQueue, unique, proc);
+          Log.Debug("Searching queue {queue} for {unique}-{proc} to load", info.InputQueue, unique, jobProc);
 
           var qs = MazakQueues.QueuedMaterialForLoading(
             job.UniqueStr,
             repo.GetMaterialInQueueByUnique(info.InputQueue, job.UniqueStr),
-            proc
+            jobProc
           );
 
           if (fixQty <= qs.Count)
@@ -721,7 +729,7 @@ namespace MazakMachineInterface
             mats.AddRange(qs.Select(qmat => qmat.MaterialID));
 
             // first, try assigning any castings
-            if (proc == 1)
+            if (jobProc == 1)
             {
               mats.AddRange(
                 repo.AllocateCastingsInQueue(
@@ -743,7 +751,7 @@ namespace MazakMachineInterface
                 "Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
                 info.InputQueue,
                 e.FullPartName,
-                proc,
+                e.Process,
                 e
               );
               for (int i = mats.Count + 1; i <= fixQty; i++)
@@ -761,7 +769,7 @@ namespace MazakMachineInterface
             }
           }
         }
-        else if (proc == 1)
+        else if (jobProc == 1)
         {
           // no input queue so just create new material
           Log.Debug("Creating new material for unique {unique} process 1", unique);
@@ -796,12 +804,12 @@ namespace MazakMachineInterface
           Log.Debug(
             "Searching on pallet for unique {unique} process {proc} to load into process {proc}",
             unique,
-            proc - 1,
-            proc
+            jobProc - 1,
+            jobProc
           );
           var byMatId = ParseMaterialFromPreviousEvents(
             jobPartName: e.JobPartName,
-            proc: proc - 1,
+            proc: jobProc - 1,
             isUnloadEnd: false,
             oldEvents: oldPalEvents
           );
@@ -822,7 +830,7 @@ namespace MazakMachineInterface
 
               Log.Warning(
                 "Could not find material for previous process {proc}, creating new material for {@event}",
-                proc - 1,
+                jobProc - 1,
                 e
               );
             }
@@ -833,10 +841,10 @@ namespace MazakMachineInterface
           new MaterialToLoadOntoFace()
           {
             MaterialIDs = mats.ToImmutable(),
-            Process = proc,
-            FaceNum = proc,
+            Process = jobProc,
+            FaceNum = e.Process,
             Path = 1,
-            ActiveOperationTime = CalculateActiveLoadTime(e, job),
+            ActiveOperationTime = CalculateActiveLoadTime(job, jobProc, e.FixedQuantity),
             ForeignID = e.ForeignID,
           }
         );
@@ -858,6 +866,7 @@ namespace MazakMachineInterface
           continue;
 
         var mats = GetMaterialOnPallet(e, oldEvents);
+        var unloadProcess = mats.Count > 0 ? mats[0].Mat.Process : e.Process;
 
         var matToQueue = ImmutableDictionary.CreateBuilder<long, UnloadDestination>();
 
@@ -904,7 +913,7 @@ namespace MazakMachineInterface
           new MaterialToUnloadFromFace()
           {
             MaterialIDToDestination = matToQueue.ToImmutable(),
-            Process = e.Process,
+            Process = unloadProcess,
             FaceNum = e.Process,
             ActiveOperationTime = CalculateActiveUnloadTime(mats),
             ForeignID = e.ForeignID,
@@ -915,18 +924,42 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    public void FindSchedule(string mazakPartName, int proc, out string unique, out int numProc)
+    public void FindSchedule(
+      string mazakPartName,
+      int proc,
+      out string unique,
+      out int numProc,
+      out int jobProc
+    )
     {
       unique = "";
       numProc = proc;
+      jobProc = proc;
       foreach (var schRow in mazakData.Schedules)
       {
         if (schRow.PartName == mazakPartName && !string.IsNullOrEmpty(schRow.Comment))
         {
-          unique = MazakPart.UniqueFromComment(schRow.Comment);
-          numProc = schRow.Processes.Count;
-          if (numProc < proc)
-            numProc = proc;
+          var scheduleComment = MazakPart.ParseCommentInfo(schRow.Comment);
+          unique = scheduleComment.Unique;
+          if (scheduleComment.IsSplit)
+          {
+            jobProc = scheduleComment.FmsProcess;
+            var jobForCount = repo.LoadJob(scheduleComment.Unique);
+            if (jobForCount == null)
+            {
+              Log.Warning(
+                "Split schedule job {unique} not found in database; process count is unreliable and defaults to 1",
+                scheduleComment.Unique
+              );
+            }
+            numProc = jobForCount?.Processes.Count ?? 1;
+          }
+          else
+          {
+            numProc = schRow.Processes.Count;
+            if (numProc < proc)
+              numProc = proc;
+          }
           return;
         }
       }
@@ -953,13 +986,13 @@ namespace MazakMachineInterface
           var sch = mazakData.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
           if (sch == null)
             continue;
-          var unique = MazakPart.UniqueFromComment(sch.Comment);
-          if (string.IsNullOrEmpty(unique))
+          var scheduleComment = MazakPart.ParseCommentInfo(sch.Comment);
+          if (!scheduleComment.HasUnique)
             continue;
+          var unique = scheduleComment.Unique;
+          var fmsProc = scheduleComment.JobProcessForMazakProcess(st.PartProcessNumber);
 
-          var matchingMats = matsOnPal
-            .Where(m => m.JobUniqueStr == unique && m.Process == st.PartProcessNumber)
-            .ToList();
+          var matchingMats = matsOnPal.Where(m => m.JobUniqueStr == unique && m.Process == fmsProc).ToList();
 
           if (matchingMats.Count < st.FixQuantity)
           {
@@ -1063,13 +1096,11 @@ namespace MazakMachineInterface
       return total;
     }
 
-    private static TimeSpan CalculateActiveLoadTime(LogEntry e, Job job)
+    private static TimeSpan CalculateActiveLoadTime(Job job, int jobProc, int fixedQuantity)
     {
       if (job == null)
         return TimeSpan.Zero;
-      return TimeSpan.FromTicks(
-        job.Processes[e.Process - 1].Paths[0].ExpectedLoadTime.Ticks * e.FixedQuantity
-      );
+      return TimeSpan.FromTicks(job.Processes[jobProc - 1].Paths[0].ExpectedLoadTime.Ticks * fixedQuantity);
     }
 
     private TimeSpan CalculateActiveUnloadTime(IEnumerable<LogMaterialAndPath> mats)

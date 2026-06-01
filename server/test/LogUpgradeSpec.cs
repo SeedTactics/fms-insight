@@ -135,14 +135,13 @@ namespace BlackMaple.FMSInsight.Tests
       _tempJobFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("job.v16.db", _tempJobFile, overwrite: true);
       _log = RepositoryConfig
-        .InitializeEventDatabase(null, _tempLogFile, null, _tempJobFile)
+        .InitializeEventDatabase(null, _tempLogFile, null, _tempJobFile, pooling: false)
         .OpenConnection();
     }
 
     public void Dispose()
     {
       _log.Dispose();
-      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
       if (!string.IsNullOrEmpty(_tempLogFile) && System.IO.File.Exists(_tempLogFile))
         System.IO.File.Delete(_tempLogFile);
       if (!string.IsNullOrEmpty(_tempJobFile) && System.IO.File.Exists(_tempJobFile))
@@ -873,13 +872,14 @@ namespace BlackMaple.FMSInsight.Tests
     {
       _tempFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("database-ver25.db", _tempFile, overwrite: true);
-      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, null, null).OpenConnection();
+      _repo = RepositoryConfig
+        .InitializeEventDatabase(null, _tempFile, null, null, pooling: false)
+        .OpenConnection();
     }
 
     public void Dispose()
     {
       _repo.Dispose();
-      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
       if (!string.IsNullOrEmpty(_tempFile) && System.IO.File.Exists(_tempFile))
         System.IO.File.Delete(_tempFile);
     }
@@ -912,13 +912,12 @@ namespace BlackMaple.FMSInsight.Tests
     {
       _tempFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("repo.v32.db", _tempFile, overwrite: true);
-      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile);
+      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
     }
 
     public void Dispose()
     {
       _repo.Dispose();
-      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
       if (!string.IsNullOrEmpty(_tempFile) && System.IO.File.Exists(_tempFile))
         System.IO.File.Delete(_tempFile);
     }
