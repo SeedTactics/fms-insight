@@ -2990,6 +2990,7 @@ export class Job implements IJob {
     allocationAlgorithm?: string | undefined;
     bookings?: string[] | undefined;
     provisionalWorkorderId?: string | undefined;
+    artifactRunDate?: Date | undefined;
     manuallyCreated?: boolean;
     holdEntireJob?: HoldPattern | undefined;
     cycles!: number;
@@ -3022,6 +3023,7 @@ export class Job implements IJob {
                     this.bookings!.push(item);
             }
             this.provisionalWorkorderId = _data["ProvisionalWorkorderId"];
+            this.artifactRunDate = _data["ArtifactRunDate"] ? new Date(_data["ArtifactRunDate"].toString()) : undefined as any;
             this.manuallyCreated = _data["ManuallyCreated"];
             this.holdEntireJob = _data["HoldEntireJob"] ? HoldPattern.fromJS(_data["HoldEntireJob"]) : undefined as any;
             this.cycles = _data["Cycles"];
@@ -3055,6 +3057,7 @@ export class Job implements IJob {
                 data["Bookings"].push(item);
         }
         data["ProvisionalWorkorderId"] = this.provisionalWorkorderId;
+        data["ArtifactRunDate"] = this.artifactRunDate ? formatDate(this.artifactRunDate) : undefined as any;
         data["ManuallyCreated"] = this.manuallyCreated;
         data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : undefined as any;
         data["Cycles"] = this.cycles;
@@ -3077,6 +3080,7 @@ export interface IJob {
     allocationAlgorithm?: string | undefined;
     bookings?: string[] | undefined;
     provisionalWorkorderId?: string | undefined;
+    artifactRunDate?: Date | undefined;
     manuallyCreated?: boolean;
     holdEntireJob?: HoldPattern | undefined;
     cycles: number;
@@ -5481,6 +5485,7 @@ export class MostRecentSchedule implements IMostRecentSchedule {
     latestScheduleId!: string;
     jobs!: HistoricJob[];
     extraParts!: { [key: string]: number; };
+    recentArtifactRuns?: ScheduledArtifactRun[] | undefined;
     unscheduledRebookings?: Rebooking[] | undefined;
 
     constructor(data?: IMostRecentSchedule) {
@@ -5510,6 +5515,11 @@ export class MostRecentSchedule implements IMostRecentSchedule {
                     if (_data["ExtraParts"].hasOwnProperty(key))
                         (this.extraParts as any)![key] = _data["ExtraParts"][key];
                 }
+            }
+            if (Array.isArray(_data["RecentArtifactRuns"])) {
+                this.recentArtifactRuns = [] as any;
+                for (let item of _data["RecentArtifactRuns"])
+                    this.recentArtifactRuns!.push(ScheduledArtifactRun.fromJS(item));
             }
             if (Array.isArray(_data["UnscheduledRebookings"])) {
                 this.unscheduledRebookings = [] as any;
@@ -5541,6 +5551,11 @@ export class MostRecentSchedule implements IMostRecentSchedule {
                     (data["ExtraParts"] as any)[key] = (this.extraParts as any)[key];
             }
         }
+        if (Array.isArray(this.recentArtifactRuns)) {
+            data["RecentArtifactRuns"] = [];
+            for (let item of this.recentArtifactRuns)
+                data["RecentArtifactRuns"].push(item ? item.toJSON() : undefined as any);
+        }
         if (Array.isArray(this.unscheduledRebookings)) {
             data["UnscheduledRebookings"] = [];
             for (let item of this.unscheduledRebookings)
@@ -5554,7 +5569,52 @@ export interface IMostRecentSchedule {
     latestScheduleId: string;
     jobs: HistoricJob[];
     extraParts: { [key: string]: number; };
+    recentArtifactRuns?: ScheduledArtifactRun[] | undefined;
     unscheduledRebookings?: Rebooking[] | undefined;
+}
+
+export class ScheduledArtifactRun implements IScheduledArtifactRun {
+    jobUnique!: string;
+    partName!: string;
+    artifactRunDate!: Date;
+
+    constructor(data?: IScheduledArtifactRun) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (this as any)[property] = (data as any)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.jobUnique = _data["JobUnique"];
+            this.partName = _data["PartName"];
+            this.artifactRunDate = _data["ArtifactRunDate"] ? new Date(_data["ArtifactRunDate"].toString()) : undefined as any;
+        }
+    }
+
+    static fromJS(data: any): ScheduledArtifactRun {
+        data = typeof data === 'object' ? data : {};
+        let result = new ScheduledArtifactRun();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["JobUnique"] = this.jobUnique;
+        data["PartName"] = this.partName;
+        data["ArtifactRunDate"] = this.artifactRunDate ? formatDate(this.artifactRunDate) : undefined as any;
+        return data;
+    }
+}
+
+export interface IScheduledArtifactRun {
+    jobUnique: string;
+    partName: string;
+    artifactRunDate: Date;
 }
 
 export class Rebooking implements IRebooking {

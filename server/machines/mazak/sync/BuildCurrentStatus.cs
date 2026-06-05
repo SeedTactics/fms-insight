@@ -472,6 +472,7 @@ namespace MazakMachineInterface
           Comment = job.DbJob?.Comment,
           ScheduleId = job.DbJob?.ScheduleId,
           BookingIds = job.DbJob?.BookingIds,
+          ArtifactRunDate = job.DbJob?.ArtifactRunDate,
           ManuallyCreated = job.DbJob?.ManuallyCreated ?? false,
           HoldJob = job.UserHold
             ? new BlackMaple.MachineFramework.HoldPattern()

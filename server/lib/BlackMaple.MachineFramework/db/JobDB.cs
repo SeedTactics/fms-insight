@@ -146,6 +146,9 @@ namespace BlackMaple.MachineFramework
         ImmutableList.CreateBuilder<SimulatedStationPart>();
     }
 
+    private const string JobProjection =
+      "UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId, ArtifactRunDate";
+
     private JobDetails LoadJobData(string uniq, IDbTransaction trans)
     {
       using (var cmd = _connection.CreateCommand())
@@ -605,6 +608,7 @@ namespace BlackMaple.MachineFramework
               Processes = details.Procs,
               BookingIds = details.Bookings,
               ProvisionalWorkorderId = reader.IsDBNull(11) ? null : reader.GetString(11),
+              ArtifactRunDate = reader.IsDBNull(12) ? null : DateOnly.FromDayNumber(reader.GetInt32(12)),
               HoldJob = details.Hold?.ToHoldPattern(),
               Decrements = LoadDecrementsForJob(trans, unique),
             }
@@ -613,6 +617,33 @@ namespace BlackMaple.MachineFramework
       }
 
       return ret.ToImmutable();
+    }
+
+    private ImmutableList<ScheduledArtifactRun> LoadRecentArtifactRuns(IDbTransaction trans)
+    {
+      using var cmd = _connection.CreateCommand();
+      ((IDbCommand)cmd).Transaction = trans;
+      cmd.CommandText =
+        "SELECT UniqueStr, Part, ArtifactRunDate FROM jobs WHERE ArtifactRunDate IS NOT NULL AND ArtifactRunDate >= $start ORDER BY ArtifactRunDate, UniqueStr";
+      cmd.Parameters.Add("start", SqliteType.Integer).Value = DateOnly
+        .FromDateTime(DateTime.UtcNow.AddHours(-48))
+        .DayNumber;
+
+      var ret = ImmutableList.CreateBuilder<ScheduledArtifactRun>();
+      using var reader = cmd.ExecuteReader();
+      while (reader.Read())
+      {
+        ret.Add(
+          new ScheduledArtifactRun()
+          {
+            JobUnique = reader.GetString(0),
+            PartName = reader.GetString(1),
+            ArtifactRunDate = DateOnly.FromDayNumber(reader.GetInt32(2)),
+          }
+        );
+      }
+
+      return ret.Count == 0 ? null : ret.ToImmutable();
     }
 
     private ImmutableDictionary<string, int> LoadExtraParts(IDbTransaction trans, string schId)
@@ -877,10 +908,7 @@ namespace BlackMaple.MachineFramework
         using var jobCmd = _connection.CreateCommand();
         jobCmd.Transaction = trans;
         jobCmd.CommandText =
-          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId"
-          + " FROM jobs WHERE ScheduleId IN ("
-          + scheduleIdSubquery
-          + ")";
+          "SELECT " + JobProjection + " FROM jobs WHERE ScheduleId IN (" + scheduleIdSubquery + ")";
         configureScheduleIdParameters(jobCmd);
 
         using var simCmd = _connection.CreateCommand();
@@ -921,8 +949,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText =
-          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId FROM jobs WHERE Archived = 0";
+        cmd.CommandText = "SELECT " + JobProjection + " FROM jobs WHERE Archived = 0";
         using (var trans = _connection.BeginTransaction())
         {
           cmd.Transaction = trans;
@@ -938,7 +965,8 @@ namespace BlackMaple.MachineFramework
     )
     {
       var cmdTxt =
-        "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId"
+        "SELECT "
+        + JobProjection
         + " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
       if (!includeDecremented)
       {
@@ -1082,9 +1110,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText =
-          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId"
-          + " FROM jobs WHERE ScheduleId = $sid";
+        cmd.CommandText = "SELECT " + JobProjection + " FROM jobs WHERE ScheduleId = $sid";
 
         using (var trans = _connection.BeginTransaction())
         {
@@ -1096,6 +1122,7 @@ namespace BlackMaple.MachineFramework
             LatestScheduleId = latestSchId,
             Jobs = LoadJobsHelper(cmd, trans),
             ExtraParts = LoadExtraParts(trans, latestSchId),
+            RecentArtifactRuns = LoadRecentArtifactRuns(trans),
             UnscheduledRebookings = LoadUnscheduledRebookings(trans),
           };
         }
@@ -1171,9 +1198,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText =
-          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId"
-          + " FROM jobs WHERE UniqueStr BETWEEN $start AND $end";
+        cmd.CommandText = "SELECT " + JobProjection + " FROM jobs WHERE UniqueStr BETWEEN $start AND $end";
 
         using (var trans = _connection.BeginTransaction())
         {
@@ -1192,7 +1217,7 @@ namespace BlackMaple.MachineFramework
       HistoricJob job = null;
 
       cmd.CommandText =
-        "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId FROM jobs WHERE UniqueStr = $uniq";
+        "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId, ArtifactRunDate FROM jobs WHERE UniqueStr = $uniq";
       cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
 
       cmd.Transaction = trans;
@@ -1223,6 +1248,7 @@ namespace BlackMaple.MachineFramework
             Processes = details.Procs,
             BookingIds = details.Bookings,
             ProvisionalWorkorderId = reader.IsDBNull(10) ? null : reader.GetString(10),
+            ArtifactRunDate = reader.IsDBNull(11) ? null : DateOnly.FromDayNumber(reader.GetInt32(11)),
             HoldJob = details.Hold?.ToHoldPattern(),
             Decrements = LoadDecrementsForJob(trans, UniqueStr),
           };
@@ -1389,8 +1415,8 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId) "
-          + "VALUES($uniq,$part,$proc,$comment,$start,$end,$archived,$copied,$sid,$manual,$alg,$prov)";
+          "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg, ProvisionalWorkorderId, ArtifactRunDate) "
+          + "VALUES($uniq,$part,$proc,$comment,$start,$end,$archived,$copied,$sid,$manual,$alg,$prov,$artifact)";
 
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("part", SqliteType.Text).Value = job.PartName;
@@ -1414,6 +1440,9 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("prov", SqliteType.Text).Value = string.IsNullOrEmpty(job.ProvisionalWorkorderId)
           ? DBNull.Value
           : job.ProvisionalWorkorderId;
+        cmd.Parameters.Add("artifact", SqliteType.Integer).Value = job.ArtifactRunDate.HasValue
+          ? job.ArtifactRunDate.Value.DayNumber
+          : DBNull.Value;
 
         cmd.ExecuteNonQuery();
 

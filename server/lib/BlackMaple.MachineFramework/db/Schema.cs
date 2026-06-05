@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 39;
+    private const int Version = 40;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -176,7 +176,7 @@ namespace BlackMaple.MachineFramework
         cmd.Transaction = transaction;
 
         cmd.CommandText =
-          "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, AllocateAlg TEXT, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT, Manual INTEGER, ProvisionalWorkorderId TEXT)";
+          "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, AllocateAlg TEXT, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT, Manual INTEGER, ProvisionalWorkorderId TEXT, ArtifactRunDate INTEGER)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX jobs_time_idx ON jobs(EndUTC, StartUTC)";
@@ -186,6 +186,10 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX jobs_schedule_id ON jobs(ScheduleId) WHERE ScheduleId IS NOT NULL";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE INDEX jobs_artifact_run_date_idx ON jobs(ArtifactRunDate) WHERE ArtifactRunDate IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -495,6 +499,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 39)
             Ver38ToVer39(trans, updateJobsTables);
+
+          if (curVersion < 40)
+            Ver39ToVer40(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1255,6 +1262,22 @@ namespace BlackMaple.MachineFramework
 
       cmd.CommandText =
         "CREATE TABLE basketloadunload(UniqueStr TEXT, Process INTEGER, StatNum INTEGER, Load INTEGER, PRIMARY KEY(UniqueStr,Process,StatNum,Load))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver39ToVer40(IDbTransaction trans, bool updateJobTables)
+    {
+      if (!updateJobTables)
+        return;
+
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText = "ALTER TABLE jobs ADD ArtifactRunDate INTEGER";
+      cmd.ExecuteNonQuery();
+
+      cmd.CommandText =
+        "CREATE INDEX jobs_artifact_run_date_idx ON jobs(ArtifactRunDate) WHERE ArtifactRunDate IS NOT NULL";
       cmd.ExecuteNonQuery();
     }
 

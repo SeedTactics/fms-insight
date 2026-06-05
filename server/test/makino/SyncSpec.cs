@@ -65,6 +65,7 @@ public sealed class SyncSpec : IDisposable
     );
     fix = new AutoFixture.Fixture();
     fix.Customizations.Add(new ImmutableSpecimenBuilder());
+    fix.Customizations.Add(new NullJobArtifactRunDateSpecimenBuilder());
     fix.Customizations.Add(new DateOnlySpecimenBuilder());
 
     sync = new MakinoSync(

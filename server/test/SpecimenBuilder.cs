@@ -135,6 +135,23 @@ namespace BlackMaple.FMSInsight.Tests
     }
   }
 
+  public class NullJobArtifactRunDateSpecimenBuilder : AutoFixture.Kernel.ISpecimenBuilder
+  {
+    public object Create(object request, AutoFixture.Kernel.ISpecimenContext context)
+    {
+      if (
+        request is System.Reflection.PropertyInfo prop
+        && prop.Name == nameof(BlackMaple.MachineFramework.Job.ArtifactRunDate)
+        && typeof(BlackMaple.MachineFramework.Job).IsAssignableFrom(prop.DeclaringType)
+      )
+      {
+        return null;
+      }
+
+      return new AutoFixture.Kernel.NoSpecimen();
+    }
+  }
+
   public class InjectNullValuesForNullableTypesSpecimenBuilder : AutoFixture.Kernel.ISpecimenBuilder
   {
     private Random random = new Random();

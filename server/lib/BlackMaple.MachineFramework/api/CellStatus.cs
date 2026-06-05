@@ -135,6 +135,15 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<SimulatedDayUsage>? MostRecentSimDayUsage { get; init; }
   }
 
+  public record ScheduledArtifactRun
+  {
+    public required string JobUnique { get; init; }
+
+    public required string PartName { get; init; }
+
+    public required DateOnly ArtifactRunDate { get; init; }
+  }
+
   public record MostRecentSchedule
   {
     public required string LatestScheduleId { get; init; }
@@ -142,6 +151,8 @@ namespace BlackMaple.MachineFramework
     public required ImmutableList<MachineFramework.HistoricJob> Jobs { get; init; }
 
     public required ImmutableDictionary<string, int> ExtraParts { get; init; }
+
+    public ImmutableList<ScheduledArtifactRun>? RecentArtifactRuns { get; init; }
 
     public ImmutableList<Rebooking>? UnscheduledRebookings { get; init; }
   }

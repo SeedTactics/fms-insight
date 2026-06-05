@@ -254,6 +254,8 @@ namespace BlackMaple.MachineFramework
 
     public string? ProvisionalWorkorderId { get; init; }
 
+    public DateOnly? ArtifactRunDate { get; init; }
+
     public bool ManuallyCreated { get; init; }
 
     [JsonPropertyName("HoldEntireJob")]
