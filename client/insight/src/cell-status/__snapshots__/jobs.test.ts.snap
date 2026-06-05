@@ -5,6 +5,7 @@ Map {
   "xxx-3offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -112,6 +113,7 @@ Map {
   "xxx-3offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -215,6 +217,7 @@ Map {
   "aaa-0offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -454,6 +457,7 @@ Map {
   "zzz-5offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -561,6 +565,7 @@ Map {
   "ccc-2offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -792,6 +797,7 @@ Map {
   "zzz-5offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -908,6 +914,7 @@ Map {
   "xxx-3offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -1016,6 +1023,7 @@ Map {
   "ccc-2offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -1239,6 +1247,7 @@ Map {
   "bbb-1offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -1536,6 +1545,7 @@ Map {
   "bbb-1offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -1776,6 +1786,7 @@ Map {
   "xxx-3offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -1874,6 +1885,7 @@ Map {
   "ccc-2offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -2097,6 +2109,7 @@ Map {
   "aaa-0offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -2336,6 +2349,7 @@ Map {
   "ccc-2offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -2568,6 +2582,7 @@ Map {
   "yyy-4offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -2675,6 +2690,7 @@ Map {
   "yyy-4offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -2790,6 +2806,7 @@ Map {
   "bbb-1offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -3071,6 +3088,7 @@ Map {
   "aaa-0offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -3349,6 +3367,7 @@ Map {
   "zzz-5offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -3458,6 +3477,7 @@ Map {
   "zzz-5offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -3570,6 +3590,7 @@ Map {
   "xxx-3offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -3669,6 +3690,7 @@ Map {
   "zzz-5offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -3777,6 +3799,7 @@ Map {
   "ccc-2offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -3991,6 +4014,7 @@ Map {
   "yyy-4offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -4099,6 +4123,7 @@ Map {
   "yyy-4offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -4207,6 +4232,7 @@ Map {
   "yyy-4offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -4317,6 +4343,7 @@ Map {
   "yyy-4offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -4424,6 +4451,7 @@ Map {
   "yyy-4offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -4530,6 +4558,7 @@ Map {
   "bbb-1offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -4812,6 +4841,7 @@ Map {
   "bbb-1offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -5102,6 +5132,7 @@ Map {
   "zzz-5offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -5210,6 +5241,7 @@ Map {
   "aaa-0offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -5473,6 +5505,7 @@ Map {
   "ccc-2offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -5703,6 +5736,7 @@ Map {
   "xxx-3offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -5802,6 +5836,7 @@ Map {
   "ccc-2offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -6017,6 +6052,7 @@ Map {
   "xxx-3offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -6129,6 +6165,7 @@ Map {
   "xxx-3offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -6236,6 +6273,7 @@ Map {
   "zzz-5offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -6348,6 +6386,7 @@ Map {
   "yyy-4offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -6458,6 +6497,7 @@ Map {
   "xxx-3offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -6580,6 +6620,7 @@ Map {
   "aaa-0offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -6842,6 +6883,7 @@ Map {
   "ccc-2offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -7072,6 +7114,7 @@ Map {
   "zzz-5offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -7181,6 +7224,7 @@ Map {
   "ccc-2offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -7397,6 +7441,7 @@ Map {
   "xxx-3offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -7543,6 +7588,7 @@ Map {
   "yyy-4offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -7650,6 +7696,7 @@ Map {
   "zzz-5offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -7761,6 +7808,7 @@ Map {
   "ccc-2offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -7984,6 +8032,7 @@ Map {
   "zzz-5offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -8075,6 +8124,7 @@ Map {
   "yyy-4offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -27029,6 +27079,7 @@ Map {
   "yyy-4offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -27140,6 +27191,7 @@ Map {
   "bbb-1offline-2018-01-24" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-14",
       "ccc-11",
@@ -27411,6 +27463,7 @@ Map {
   "yyy-4offline-2018-01-18" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-10",
       "bbb-10",
@@ -27517,6 +27570,7 @@ Map {
   "aaa-0offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -27763,6 +27817,7 @@ Map {
   "aaa-0offline-2018-01-25" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-14",
       "aaa-15",
@@ -28058,6 +28113,7 @@ Map {
   "zzz-5offline-2018-01-20" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-11",
       "ccc-9",
@@ -28166,6 +28222,7 @@ Map {
   "bbb-1offline-2018-01-28" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-17",
       "bbb-18",
@@ -28462,6 +28519,7 @@ Map {
   "zzz-5offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -28573,6 +28631,7 @@ Map {
   "zzz-5offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -28672,6 +28731,7 @@ Map {
   "xxx-3offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -28783,6 +28843,7 @@ Map {
   "xxx-3offline-2018-01-18" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-10",
       "bbb-10",
@@ -28945,6 +29006,7 @@ Map {
   "aaa-0offline-2018-01-18" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-10",
       "bbb-10",
@@ -29167,6 +29229,7 @@ Map {
   "ccc-2offline-2018-01-26" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-16",
       "bbb-16",
@@ -29452,6 +29515,7 @@ Map {
   "ccc-2offline-2018-01-23" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-13",
       "bbb-15",
@@ -29714,6 +29778,7 @@ Map {
   "ccc-2offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -29944,6 +30009,7 @@ Map {
   "aaa-0offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -30151,6 +30217,7 @@ Map {
   "ccc-2offline-2018-01-21" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-12",
       "xxx-16",
@@ -30371,6 +30438,7 @@ Map {
   "zzz-4offline-2018-01-24" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-14",
       "ccc-11",
@@ -30469,6 +30537,7 @@ Map {
   "zzz-4offline-2018-01-29" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-19",
       "ccc-21",
@@ -30574,6 +30643,7 @@ Map {
   "bbb-1offline-2018-01-22" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-12",
       "aaa-13",
@@ -30719,6 +30789,7 @@ Map {
   "ccc-2offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -30941,6 +31012,7 @@ Map {
   "xxx-3offline-2018-01-24" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-14",
       "ccc-11",
@@ -31082,6 +31154,7 @@ Map {
   "xxx-3offline-2018-01-29" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-19",
       "ccc-21",
@@ -31218,6 +31291,7 @@ Map {
   "aaa-0offline-2018-01-27" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-17",
       "ccc-17",
@@ -31399,6 +31473,7 @@ Map {
   "aaa-0offline-2018-01-30" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-19",
       "bbb-26",
@@ -31604,6 +31679,7 @@ Map {
   "zzz-5offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -31716,6 +31792,7 @@ Map {
   "ccc-2offline-2018-01-24" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-14",
       "ccc-11",
@@ -31969,6 +32046,7 @@ Map {
   "yyy-4offline-2018-01-20" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-11",
       "ccc-9",
@@ -32076,6 +32154,7 @@ Map {
   "bbb-1offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -32356,6 +32435,7 @@ Map {
   "zzz-5offline-2018-01-17" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-18",
       "aaa-9",
@@ -32448,6 +32528,7 @@ Map {
   "bbb-1offline-2018-01-18" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-10",
       "bbb-10",
@@ -32624,6 +32705,7 @@ Map {
   "ccc-2offline-2018-01-25" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-14",
       "aaa-15",
@@ -32895,6 +32977,7 @@ Map {
   "zzz-4offline-2018-01-25" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-14",
       "aaa-15",
@@ -32995,6 +33078,7 @@ Map {
   "bbb-1offline-2018-01-26" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-16",
       "bbb-16",
@@ -33218,6 +33302,7 @@ Map {
   "bbb-1offline-2018-01-23" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-13",
       "bbb-15",
@@ -33546,6 +33631,7 @@ Map {
   "xxx-3offline-2018-01-20" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-11",
       "ccc-9",
@@ -33661,6 +33747,7 @@ Map {
   "xxx-3offline-2018-01-25" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-14",
       "aaa-15",
@@ -33804,6 +33891,7 @@ Map {
   "ccc-2offline-2018-01-28" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-17",
       "bbb-18",
@@ -34074,6 +34162,7 @@ Map {
   "bbb-1offline-2018-01-21" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-12",
       "xxx-16",
@@ -34288,6 +34377,7 @@ Map {
   "ccc-2offline-2018-01-17" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-18",
       "aaa-9",
@@ -34519,6 +34609,7 @@ Map {
   "zzz-5offline-2018-01-22" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-12",
       "aaa-13",
@@ -34631,6 +34722,7 @@ Map {
   "xxx-3offline-2018-01-27" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-17",
       "ccc-17",
@@ -34732,6 +34824,7 @@ Map {
   "bbb-1offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -34964,6 +35057,7 @@ Map {
   "xxx-3offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -35114,6 +35208,7 @@ Map {
   "ccc-2offline-2018-01-30" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-19",
       "bbb-26",
@@ -35375,6 +35470,7 @@ Map {
   "yyy-4offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -35477,6 +35573,7 @@ Map {
   "zzz-4offline-2018-01-27" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-17",
       "ccc-17",
@@ -35587,6 +35684,7 @@ Map {
   "aaa-0offline-2018-01-29" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-19",
       "ccc-21",
@@ -35743,6 +35841,7 @@ Map {
   "xxx-3offline-2018-01-22" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-12",
       "aaa-13",
@@ -35862,6 +35961,7 @@ Map {
   "yyy-4offline-2018-01-22" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-12",
       "aaa-13",
@@ -35937,6 +36037,7 @@ Map {
   "ccc-2offline-2018-01-19" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-11",
       "ccc-7",
@@ -36167,6 +36268,7 @@ Map {
   "zzz-5offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -36282,6 +36384,7 @@ Map {
   "aaa-0offline-2018-01-19" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-11",
       "ccc-7",
@@ -36552,6 +36655,7 @@ Map {
   "zzz-4offline-2018-01-23" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-13",
       "bbb-15",
@@ -36647,6 +36751,7 @@ Map {
   "aaa-0offline-2018-01-17" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-18",
       "aaa-9",
@@ -36942,6 +37047,7 @@ Map {
   "zzz-4offline-2018-01-28" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-17",
       "bbb-18",
@@ -37037,6 +37143,7 @@ Map {
   "ccc-2offline-2018-01-18" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-10",
       "bbb-10",
@@ -37267,6 +37374,7 @@ Map {
   "bbb-1offline-2018-01-25" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-14",
       "aaa-15",
@@ -37428,6 +37536,7 @@ Map {
   "ccc-2offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -37651,6 +37760,7 @@ Map {
   "xxx-3offline-2018-01-23" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-13",
       "bbb-15",
@@ -37805,6 +37915,7 @@ Map {
   "xxx-3offline-2018-01-28" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-17",
       "bbb-18",
@@ -37959,6 +38070,7 @@ Map {
   "bbb-1offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -38175,6 +38287,7 @@ Map {
   "aaa-0offline-2018-01-26" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-16",
       "bbb-16",
@@ -38396,6 +38509,7 @@ Map {
   "ccc-2offline-2018-01-20" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-11",
       "ccc-9",
@@ -38619,6 +38733,7 @@ Map {
   "zzz-5offline-2018-01-18" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-10",
       "bbb-10",
@@ -38710,6 +38825,7 @@ Map {
   "bbb-1offline-2018-01-30" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-19",
       "bbb-26",
@@ -38941,6 +39057,7 @@ Map {
   "zzz-5offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -39048,6 +39165,7 @@ Map {
   "xxx-3offline-2018-01-30" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-19",
       "bbb-26",
@@ -39149,6 +39267,7 @@ Map {
   "xxx-3offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -39247,6 +39366,7 @@ Map {
   "xxx-3offline-2018-01-19" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-11",
       "ccc-7",
@@ -39397,6 +39517,7 @@ Map {
   "ccc-2offline-2018-01-27" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-17",
       "ccc-17",
@@ -39650,6 +39771,7 @@ Map {
   "yyy-4offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -39760,6 +39882,7 @@ Map {
   "yyy-4offline-2018-01-19" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-11",
       "ccc-7",
@@ -39866,6 +39989,7 @@ Map {
   "aaa-0offline-2018-01-21" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-12",
       "xxx-16",
@@ -40046,6 +40170,7 @@ Map {
   "ccc-2offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -40268,6 +40393,7 @@ Map {
   "zzz-5offline-2018-01-21" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-12",
       "xxx-16",
@@ -40357,6 +40483,7 @@ Map {
   "bbb-1offline-2018-01-29" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-19",
       "ccc-21",
@@ -40619,6 +40746,7 @@ Map {
   "ccc-2offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -40841,6 +40969,7 @@ Map {
   "yyy-4offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -40947,6 +41076,7 @@ Map {
   "aaa-0offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -41153,6 +41283,7 @@ Map {
   "aaa-0offline-2018-01-28" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-17",
       "bbb-18",
@@ -41327,6 +41458,7 @@ Map {
   "zzz-4offline-2018-01-30" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-19",
       "bbb-26",
@@ -41441,6 +41573,7 @@ Map {
   "aaa-0offline-2018-01-22" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-12",
       "aaa-13",
@@ -41736,6 +41869,7 @@ Map {
   "bbb-1offline-2018-01-20" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-11",
       "ccc-9",
@@ -42009,6 +42143,7 @@ Map {
   "bbb-1offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -42170,6 +42305,7 @@ Map {
   "zzz-5offline-2018-01-19" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-11",
       "ccc-7",
@@ -42261,6 +42397,7 @@ Map {
   "bbb-1offline-2018-01-19" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-11",
       "ccc-7",
@@ -42429,6 +42566,7 @@ Map {
   "xxx-3offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -42535,6 +42673,7 @@ Map {
   "zzz-4offline-2018-01-26" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-16",
       "bbb-16",
@@ -42641,6 +42780,7 @@ Map {
   "xxx-3offline-2018-01-26" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-16",
       "bbb-16",
@@ -42746,6 +42886,7 @@ Map {
   "ccc-2offline-2018-01-29" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-19",
       "ccc-21",
@@ -42998,6 +43139,7 @@ Map {
   "ccc-2offline-2018-01-22" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-12",
       "aaa-13",
@@ -43261,6 +43403,7 @@ Map {
   "bbb-1offline-2018-01-27" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-17",
       "ccc-17",
@@ -43524,6 +43667,7 @@ Map {
   "yyy-4offline-2018-01-17" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-18",
       "aaa-9",
@@ -43631,6 +43775,7 @@ Map {
   "xxx-3offline-2018-01-21" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-12",
       "xxx-16",
@@ -43795,6 +43940,7 @@ Map {
   "yyy-4offline-2018-01-21" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-12",
       "xxx-16",
@@ -43899,6 +44045,7 @@ Map {
   "aaa-0offline-2018-01-24" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-14",
       "ccc-11",
@@ -44064,6 +44211,7 @@ Map {
   "bbb-1offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -44216,6 +44364,7 @@ Map {
   "xxx-3offline-2018-01-17" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-18",
       "aaa-9",
@@ -44367,6 +44516,7 @@ Map {
   "yyy-4offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -44477,6 +44627,7 @@ Map {
   "xxx-3offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -84114,6 +84265,7 @@ Map {
   "yyy-4offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -84225,6 +84377,7 @@ Map {
   "aaa-0offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -84471,6 +84624,7 @@ Map {
   "xxx-3offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -84578,6 +84732,7 @@ Map {
   "xxx-3offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -84681,6 +84836,7 @@ Map {
   "aaa-0offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -84920,6 +85076,7 @@ Map {
   "zzz-5offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -85027,6 +85184,7 @@ Map {
   "zzz-5offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -85138,6 +85296,7 @@ Map {
   "ccc-2offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -85369,6 +85528,7 @@ Map {
   "zzz-5offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -85468,6 +85628,7 @@ Map {
   "xxx-3offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -85579,6 +85740,7 @@ Map {
   "ccc-2offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -85809,6 +85971,7 @@ Map {
   "aaa-0offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -86016,6 +86179,7 @@ Map {
   "ccc-2offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -86238,6 +86402,7 @@ Map {
   "zzz-5offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -86354,6 +86519,7 @@ Map {
   "xxx-3offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -86462,6 +86628,7 @@ Map {
   "ccc-2offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -86685,6 +86852,7 @@ Map {
   "zzz-5offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -86797,6 +86965,7 @@ Map {
   "bbb-1offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -87094,6 +87263,7 @@ Map {
   "bbb-1offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -87334,6 +87504,7 @@ Map {
   "xxx-3offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -87432,6 +87603,7 @@ Map {
   "ccc-2offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -87655,6 +87827,7 @@ Map {
   "aaa-0offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -87894,6 +88067,7 @@ Map {
   "bbb-1offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -88174,6 +88348,7 @@ Map {
   "ccc-2offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -88406,6 +88581,7 @@ Map {
   "yyy-4offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -88513,6 +88689,7 @@ Map {
   "yyy-4offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -88628,6 +88805,7 @@ Map {
   "bbb-1offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -88909,6 +89087,7 @@ Map {
   "aaa-0offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -89187,6 +89366,7 @@ Map {
   "zzz-5offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -89296,6 +89476,7 @@ Map {
   "zzz-5offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -89408,6 +89589,7 @@ Map {
   "xxx-3offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -89507,6 +89689,7 @@ Map {
   "zzz-5offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -89615,6 +89798,7 @@ Map {
   "ccc-2offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -89829,6 +90013,7 @@ Map {
   "bbb-1offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -90061,6 +90246,7 @@ Map {
   "xxx-3offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -90211,6 +90397,7 @@ Map {
   "yyy-4offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -90319,6 +90506,7 @@ Map {
   "yyy-4offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -90427,6 +90615,7 @@ Map {
   "yyy-4offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -90529,6 +90718,7 @@ Map {
   "yyy-4offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -90639,6 +90829,7 @@ Map {
   "zzz-5offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -90754,6 +90945,7 @@ Map {
   "yyy-4offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -90861,6 +91053,7 @@ Map {
   "yyy-4offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -90967,6 +91160,7 @@ Map {
   "bbb-1offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -91249,6 +91443,7 @@ Map {
   "bbb-1offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -91539,6 +91734,7 @@ Map {
   "ccc-2offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -91762,6 +91958,7 @@ Map {
   "zzz-5offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -91870,6 +92067,7 @@ Map {
   "bbb-1offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -92086,6 +92284,7 @@ Map {
   "aaa-0offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -92349,6 +92548,7 @@ Map {
   "ccc-2offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -92579,6 +92779,7 @@ Map {
   "xxx-3offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -92678,6 +92879,7 @@ Map {
   "ccc-2offline-2018-01-01" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-1",
       "aaa-7",
@@ -92893,6 +93095,7 @@ Map {
   "zzz-5offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -93000,6 +93203,7 @@ Map {
   "xxx-3offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -93098,6 +93302,7 @@ Map {
   "yyy-4offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -93208,6 +93413,7 @@ Map {
   "xxx-3offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -93320,6 +93526,7 @@ Map {
   "xxx-3offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -93427,6 +93634,7 @@ Map {
   "ccc-2offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -93649,6 +93857,7 @@ Map {
   "zzz-5offline-2018-01-07" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-3",
       "ccc-6",
@@ -93761,6 +93970,7 @@ Map {
   "ccc-2offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -93983,6 +94193,7 @@ Map {
   "yyy-4offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -94093,6 +94304,7 @@ Map {
   "yyy-4offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -94199,6 +94411,7 @@ Map {
   "aaa-0offline-2018-01-11" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-5",
       "ccc-29",
@@ -94405,6 +94618,7 @@ Map {
   "xxx-3offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -94527,6 +94741,7 @@ Map {
   "aaa-0offline-2018-01-06" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-2",
       "ccc-22",
@@ -94789,6 +95004,7 @@ Map {
   "ccc-2offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -95019,6 +95235,7 @@ Map {
   "zzz-5offline-2018-01-03" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-0",
       "bbb-24",
@@ -95128,6 +95345,7 @@ Map {
   "ccc-2offline-2018-01-08" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-3",
       "bbb-5",
@@ -95344,6 +95562,7 @@ Map {
   "bbb-1offline-2018-01-13" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-6",
       "bbb-7",
@@ -95505,6 +95724,7 @@ Map {
   "xxx-3offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -95651,6 +95871,7 @@ Map {
   "xxx-3offline-2018-01-15" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-8",
       "ccc-2",
@@ -95757,6 +95978,7 @@ Map {
   "yyy-4offline-2018-01-02" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-0",
       "ccc-16",
@@ -95864,6 +96086,7 @@ Map {
   "zzz-5offline-2018-01-09" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-4",
       "ccc-25",
@@ -95975,6 +96198,7 @@ Map {
   "bbb-1offline-2018-01-14" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-8",
       "ccc-1",
@@ -96127,6 +96351,7 @@ Map {
   "ccc-2offline-2018-01-04" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-1",
       "ccc-19",
@@ -96350,6 +96575,7 @@ Map {
   "zzz-5offline-2018-01-10" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "aaa-4",
       "ccc-12",
@@ -96441,6 +96667,7 @@ Map {
   "yyy-4offline-2018-01-05" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-2",
       "ccc-0",
@@ -96548,6 +96775,7 @@ Map {
   "yyy-4offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",
@@ -96658,6 +96886,7 @@ Map {
   "xxx-3offline-2018-01-12" => {
     "allocationAlgorithm": undefined,
     "archived": false,
+    "artifactRunDate": undefined,
     "bookings": [
       "bbb-6",
       "ccc-27",

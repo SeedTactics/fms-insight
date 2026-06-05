@@ -23,6 +23,7 @@ public sealed class RepositoryStressSpec : IDisposable
     _repo = RepositoryConfig.InitializeEventDatabase(null, _tempDbFile, pooling: false);
     _fixture = new Fixture();
     _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
+    _fixture.Customizations.Add(new NullJobArtifactRunDateSpecimenBuilder());
     _fixture.Customizations.Add(new InjectNullValuesForNullableTypesSpecimenBuilder());
     _fixture.Customizations.Add(new DateOnlySpecimenBuilder());
   }

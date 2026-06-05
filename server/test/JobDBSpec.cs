@@ -51,6 +51,7 @@ namespace BlackMaple.FMSInsight.Tests
       _repoCfg = RepositoryConfig.InitializeMemoryDB(null);
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
+      _fixture.Customizations.Add(new NullJobArtifactRunDateSpecimenBuilder());
       _fixture.Customizations.Add(new DateOnlySpecimenBuilder());
     }
 
@@ -412,6 +413,153 @@ namespace BlackMaple.FMSInsight.Tests
             Decrements = ImmutableList<DecrementQuantity>.Empty,
           }
         );
+    }
+
+    [Test]
+    public void PersistsArtifactRunDateAndLoadsRecentArtifactRuns()
+    {
+      using var _jobDB = _repoCfg.OpenConnection();
+      var recentDate = DateOnly.FromDateTime(DateTime.UtcNow);
+      var oldDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(-48)).AddDays(-1);
+      var olderScheduleId = "artifact-older";
+      var latestScheduleId = "zz-latest";
+      var manualScheduleId = "zzzz-manual";
+
+      var olderArtifactJob = RandJob() with
+      {
+        UniqueStr = "artifact-old-sch",
+        PartName = "artifact-part",
+        ArtifactRunDate = recentDate,
+        ManuallyCreated = false,
+      };
+      var duplicateArtifactJob = RandJob() with
+      {
+        UniqueStr = "artifact-old-sch-duplicate",
+        PartName = olderArtifactJob.PartName,
+        ArtifactRunDate = recentDate,
+        ManuallyCreated = false,
+      };
+      var oldArtifactJob = RandJob() with
+      {
+        UniqueStr = "artifact-too-old",
+        PartName = "old-artifact-part",
+        ArtifactRunDate = oldDate,
+        ManuallyCreated = false,
+      };
+
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = olderScheduleId,
+          Jobs = [olderArtifactJob, duplicateArtifactJob, oldArtifactJob],
+        },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      var latestJob = RandJob() with
+      {
+        UniqueStr = "latest-job",
+        PartName = "latest-part",
+        ArtifactRunDate = null,
+        ManuallyCreated = false,
+      };
+
+      _jobDB.AddJobs(
+        new NewJobs() { ScheduleId = latestScheduleId, Jobs = [latestJob] },
+        olderScheduleId,
+        addAsCopiedToSystem: false
+      );
+
+      var archivedArtifactJob = RandJob() with
+      {
+        UniqueStr = "artifact-archived",
+        PartName = "archived-artifact-part",
+        ArtifactRunDate = recentDate,
+        ManuallyCreated = false,
+      };
+
+      _jobDB.AddJobs(
+        new NewJobs() { ScheduleId = "artifact-archived", Jobs = [archivedArtifactJob] },
+        latestScheduleId,
+        addAsCopiedToSystem: true
+      );
+      _jobDB.ArchiveJob(archivedArtifactJob.UniqueStr);
+
+      var manualArtifactJob = RandJob() with
+      {
+        UniqueStr = "artifact-manual",
+        PartName = "manual-artifact-part",
+        ArtifactRunDate = recentDate,
+        ManuallyCreated = true,
+      };
+
+      _jobDB.AddJobs(
+        new NewJobs() { ScheduleId = manualScheduleId, Jobs = [manualArtifactJob] },
+        latestScheduleId,
+        addAsCopiedToSystem: false
+      );
+
+      var olderArtifactHistory = olderArtifactJob.CloneToDerived<HistoricJob, Job>() with
+      {
+        ScheduleId = olderScheduleId,
+        CopiedToSystem = true,
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
+      };
+      var duplicateArtifactHistory = duplicateArtifactJob.CloneToDerived<HistoricJob, Job>() with
+      {
+        ScheduleId = olderScheduleId,
+        CopiedToSystem = true,
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
+      };
+      var latestHistory = latestJob.CloneToDerived<HistoricJob, Job>() with
+      {
+        ScheduleId = latestScheduleId,
+        CopiedToSystem = false,
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
+      };
+
+      _jobDB.LoadJob(olderArtifactJob.UniqueStr).ShouldBeEquivalentTo(olderArtifactHistory);
+      _jobDB
+        .LoadJobHistory(olderArtifactJob.RouteStartUTC, olderArtifactJob.RouteEndUTC)
+        .Jobs[olderArtifactJob.UniqueStr]
+        .ShouldBeEquivalentTo(olderArtifactHistory);
+
+      _jobDB
+        .LoadJobsBetween(olderArtifactJob.UniqueStr, duplicateArtifactJob.UniqueStr)
+        .ShouldContain(j => j.UniqueStr == olderArtifactJob.UniqueStr && j.ArtifactRunDate == recentDate);
+
+      var mostRecent = _jobDB.LoadMostRecentSchedule();
+      mostRecent.Jobs.ShouldBeEquivalentTo(ImmutableList.Create(latestHistory));
+      mostRecent.RecentArtifactRuns.ShouldBeEquivalentTo(
+        ImmutableList.Create(
+          new ScheduledArtifactRun()
+          {
+            JobUnique = archivedArtifactJob.UniqueStr,
+            PartName = archivedArtifactJob.PartName,
+            ArtifactRunDate = recentDate,
+          },
+          new ScheduledArtifactRun()
+          {
+            JobUnique = manualArtifactJob.UniqueStr,
+            PartName = manualArtifactJob.PartName,
+            ArtifactRunDate = recentDate,
+          },
+          new ScheduledArtifactRun()
+          {
+            JobUnique = olderArtifactHistory.UniqueStr,
+            PartName = olderArtifactHistory.PartName,
+            ArtifactRunDate = recentDate,
+          },
+          new ScheduledArtifactRun()
+          {
+            JobUnique = duplicateArtifactHistory.UniqueStr,
+            PartName = duplicateArtifactHistory.PartName,
+            ArtifactRunDate = recentDate,
+          }
+        )
+      );
+      mostRecent.RecentArtifactRuns.ShouldNotContain(r => r.JobUnique == oldArtifactJob.UniqueStr);
     }
 
     [Test]
@@ -2669,6 +2817,7 @@ namespace BlackMaple.FMSInsight.Tests
       {
         RouteStartUTC = s,
         RouteEndUTC = s.AddHours(1),
+        ArtifactRunDate = null,
         Processes = job
           .Processes.Select(
             (proc, procIdx) =>

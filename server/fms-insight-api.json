@@ -2783,6 +2783,11 @@
             "type": "string",
             "nullable": true
           },
+          "ArtifactRunDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
           "ManuallyCreated": {
             "type": "boolean"
           },
@@ -4376,12 +4381,43 @@
               "format": "int32"
             }
           },
+          "RecentArtifactRuns": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/ScheduledArtifactRun"
+            }
+          },
           "UnscheduledRebookings": {
             "type": "array",
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/Rebooking"
             }
+          }
+        }
+      },
+      "ScheduledArtifactRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "JobUnique",
+          "PartName",
+          "ArtifactRunDate",
+          "JobUnique",
+          "PartName",
+          "ArtifactRunDate"
+        ],
+        "properties": {
+          "JobUnique": {
+            "type": "string"
+          },
+          "PartName": {
+            "type": "string"
+          },
+          "ArtifactRunDate": {
+            "type": "string",
+            "format": "date"
           }
         }
       },

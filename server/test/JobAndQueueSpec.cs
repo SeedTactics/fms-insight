@@ -66,6 +66,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     _repo = RepositoryConfig.InitializeMemoryDB(null);
     _fixture = new Fixture();
     _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
+    _fixture.Customizations.Add(new NullJobArtifactRunDateSpecimenBuilder());
+    _fixture.Customizations.Add(new DateOnlySpecimenBuilder());
 
     _settings = new FMSSettings() { };
     _settings.Queues.Add("q1", new QueueInfo());

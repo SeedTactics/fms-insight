@@ -98,6 +98,7 @@ namespace BlackMaple.FMSInsight.Tests
       _repoCfg = RepositoryConfig.InitializeMemoryDB(null);
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
+      _fixture.Customizations.Add(new NullJobArtifactRunDateSpecimenBuilder());
       _fixture.Customizations.Add(new InjectNullValuesForNullableTypesSpecimenBuilder());
       _fixture.Customizations.Add(new DateOnlySpecimenBuilder());
     }

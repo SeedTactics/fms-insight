@@ -722,6 +722,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       var fix = new Fixture();
       fix.Customizations.Add(new ImmutableSpecimenBuilder());
+      fix.Customizations.Add(new NullJobArtifactRunDateSpecimenBuilder());
+      fix.Customizations.Add(new DateOnlySpecimenBuilder());
 
       var job = fix.Build<Job>()
         .With(j => j.Cycles, 30)
@@ -773,6 +775,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     {
       var fix = new Fixture();
       fix.Customizations.Add(new ImmutableSpecimenBuilder());
+      fix.Customizations.Add(new NullJobArtifactRunDateSpecimenBuilder());
+      fix.Customizations.Add(new DateOnlySpecimenBuilder());
 
       static BlackMaple.MachineFramework.HoldPattern Hold() =>
         new()
