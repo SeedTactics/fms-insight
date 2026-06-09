@@ -2,10 +2,15 @@
   "name": "@seedtactics/insight-client",
   "version": "16.8.0",
   "license": "BSD-3-Clause",
-  "type": "module",
   "repository": {
     "url": "https://github.com/SeedTactics/fms-insight"
   },
+  "files": [
+    "dist",
+    "docs"
+  ],
+  "packageManager": "pnpm@11.3.0",
+  "type": "module",
   "exports": {
     "./cell-status/*": "./dist/cell-status/*.js",
     "./components/*": "./dist/components/*.js",
@@ -26,19 +31,14 @@
     "test:integration": "vitest run --browser.headless --project integration",
     "nswag": "./node_modules/nswag/bin/nswag.js aspnetcore2openapi /project:../../server/debug-mock /output:../../server/fms-insight-api.json && ./node_modules/nswag/bin/nswag.js openapi2tsclient /UseAbortSignal:true /input:../../server/fms-insight-api.json /output:src/network/api.ts"
   },
-  "packageManager": "pnpm@10.25.0",
-  "files": [
-    "dist",
-    "docs"
-  ],
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/roboto": "^5.2.10",
-    "@mui/icons-material": "^9.0.1",
-    "@mui/material": "^9.0.1",
+    "@mui/icons-material": "^9.1.0",
+    "@mui/material": "^9.1.0",
     "@react-spring/rafz": "^10.1.0",
     "@react-spring/web": "^10.1.0",
     "@seedtactics/immutable-collections": "^1.1.1",
@@ -70,14 +70,14 @@
     "@types/d3-sankey": "^0.12.5",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.1.8",
-    "@types/node": "^25.9.1",
-    "@types/react": "^19.2.16",
+    "@types/node": "^25.9.2",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/browser-playwright": "^4.1.8",
     "jsdom": "^29.1.1",
     "nswag": "^14.7.1",
-    "oxlint": "^1.68.0",
+    "oxlint": "^1.69.0",
     "oxlint-tsgolint": "^0.23.0",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",

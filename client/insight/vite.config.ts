@@ -34,6 +34,13 @@ export default defineConfig({
           include: ["src/**/*.{test,spec}.ts", "src/**/*.{test,spec}.tsx"],
           name: "unit",
           environment: "jsdom",
+          server: {
+            deps: {
+              // MUI imports react-transition-group's context via a directory-style subpath.
+              // Inline these so Vitest resolves it through Vite instead of Node's ESM loader.
+              inline: ["@mui/material", "react-transition-group"],
+            },
+          },
         },
       },
       {
