@@ -157,7 +157,10 @@ export default memo(function InspDataTable(props: InspectionDataTableProps) {
   return (
     <div style={{ width: "100%", marginTop: "1em" }}>
       {paths.map(([path, points]) => {
-        const page = Math.min(pages.get(path) ?? 0, Math.ceil(points.material.length / rowsPerPage));
+        const page = Math.min(
+          pages.get(path) ?? 0,
+          Math.ceil(points.material.length / rowsPerPage),
+        );
         return (
           <Accordion
             expanded={path === curPath}
@@ -199,7 +202,12 @@ export default memo(function InspDataTable(props: InspectionDataTableProps) {
                   />
                 </Table>
                 <DataTableActions
-                  tpage={{ page, rowsPerPage, setPage: (p) => setPages(pages.set(path, p)), setRowsPerPage }}
+                  tpage={{
+                    page,
+                    rowsPerPage,
+                    setPage: (p) => setPages(pages.set(path, p)),
+                    setRowsPerPage,
+                  }}
                   count={points.material.length}
                   zoom={tzoom.zoom}
                 />

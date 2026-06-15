@@ -32,7 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collections";
-import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
+import {
+  last30MaterialSummary,
+  MaterialSummaryAndCompletedData,
+} from "../cell-status/material-summary";
 import { atom } from "jotai";
 import { isLaborCycle, last30StationCycles } from "../cell-status/station-cycles";
 import { chartRangeAtom } from "./chart-times";
@@ -57,7 +60,7 @@ export type PartSummary = {
 function isAbnormal(m: MaterialSummaryAndCompletedData): boolean {
   if (m.closeout_completed === undefined) {
     // no closeout has been done, so fall back to checking inspections and quarantined
-    if (LazySeq.ofObject(m.completedInspections ?? {}).some(([, insp]) => ! insp.success)) {
+    if (LazySeq.ofObject(m.completedInspections ?? {}).some(([, insp]) => !insp.success)) {
       return true;
     }
 
@@ -114,18 +117,18 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
       ),
     )
     .toOrderedLookup((m) => m.partName)
-      .mapValues(
-        (partMats, partName) =>
-          ({
-            part: partName,
-            completedQty: partMats.length,
-            abnormalQty: LazySeq.of(partMats).sumBy((m) => (isAbnormal(m) ? 1 : 0)),
-            mats: partMats,
-            stationMins: OrderedMap.empty(),
-            workorders: LazySeq.of(partMats)
-              .toOrderedSet((m) => m.workorderId ?? "")
-              .delete(""),
-          }) satisfies PartSummary,
+    .mapValues(
+      (partMats, partName) =>
+        ({
+          part: partName,
+          completedQty: partMats.length,
+          abnormalQty: LazySeq.of(partMats).sumBy((m) => (isAbnormal(m) ? 1 : 0)),
+          mats: partMats,
+          stationMins: OrderedMap.empty(),
+          workorders: LazySeq.of(partMats)
+            .toOrderedSet((m) => m.workorderId ?? "")
+            .delete(""),
+        }) satisfies PartSummary,
     )
     .adjust(stationTimes, (summary, partStationTimes, partName) => {
       if (summary) {

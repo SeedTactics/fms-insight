@@ -42,7 +42,9 @@ namespace MazakMachineInterface
   {
     public static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MazakWriteData>();
 
-    public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(MazakCurrentStatus mazakData)
+    public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(
+      MazakCurrentStatus mazakData
+    )
     {
       //remove all completed production
       var schs = new List<MazakScheduleRow>();
@@ -63,7 +65,11 @@ namespace MazakMachineInterface
       return (transSet, savedParts);
     }
 
-    public static MazakWriteData AddSchedules(MazakAllData mazakData, IEnumerable<Job> jobs, MazakConfig cfg)
+    public static MazakWriteData AddSchedules(
+      MazakAllData mazakData,
+      IEnumerable<Job> jobs,
+      MazakConfig cfg
+    )
     {
       if (!jobs.Any())
         return new MazakWriteData() { Prefix = "Add Schedules" };
@@ -137,7 +143,11 @@ namespace MazakMachineInterface
       }
 
       if (cfg.UseStartingOffsetForDueDate)
-        return new MazakWriteData() { Prefix = "Add Schedules", Schedules = SortSchedulesByDate(schs) };
+        return new MazakWriteData()
+        {
+          Prefix = "Add Schedules",
+          Schedules = SortSchedulesByDate(schs),
+        };
       else
         return new MazakWriteData() { Prefix = "Add Schedules", Schedules = schs };
     }

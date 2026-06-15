@@ -30,7 +30,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { SetStateAction, MouseEvent, PointerEvent, useMemo, memo, useState, useCallback } from "react";
+import {
+  SetStateAction,
+  MouseEvent,
+  PointerEvent,
+  useMemo,
+  memo,
+  useState,
+  useCallback,
+} from "react";
 import {
   Dialog,
   DialogContent,
@@ -112,8 +120,10 @@ function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): Dat
 
   const median = useMemo(() => {
     if (stats) {
-      const low = (partCntPerPoint ?? 1) * (stats.medianMinutesForSingleMat - stats.MAD_belowMinutes);
-      const high = (partCntPerPoint ?? 1) * (stats.medianMinutesForSingleMat + stats.MAD_aboveMinutes);
+      const low =
+        (partCntPerPoint ?? 1) * (stats.medianMinutesForSingleMat - stats.MAD_belowMinutes);
+      const high =
+        (partCntPerPoint ?? 1) * (stats.medianMinutesForSingleMat + stats.MAD_aboveMinutes);
 
       return { low, high };
     } else {
@@ -428,7 +438,14 @@ const Legend = memo(function Legend({
   readonly adjustDisabled: (f: (s: HashSet<string>) => HashSet<string>) => void;
 }) {
   return (
-    <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-around" }}>
+    <div
+      style={{
+        marginTop: "1em",
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "space-around",
+      }}
+    >
       {series.map((s) => (
         <ToggleButton
           key={s.name}
@@ -462,7 +479,11 @@ interface ChartMouseEventProps {
   readonly setYZoom: (r: YZoomRange) => void;
   readonly setXZoom: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
   readonly setTooltip: ShowTooltipFunc;
-  readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
+  readonly highlightStart: {
+    readonly x: number;
+    readonly y: number;
+    readonly nowMS: number;
+  } | null;
   readonly setHighlightStart: (
     p: { readonly x: number; readonly y: number; readonly nowMS: number } | null,
   ) => void;
@@ -514,7 +535,9 @@ const ChartMouseEvents = memo(function ChartMouseEvents({
           setYZoom(y1 < y2 ? { y_low: y1, y_high: y2 } : { y_low: y2, y_high: y1 });
           setXZoom?.({
             zoom:
-              time1.getTime() < time2.getTime() ? { start: time1, end: time2 } : { start: time2, end: time1 },
+              time1.getTime() < time2.getTime()
+                ? { start: time1, end: time2 }
+                : { start: time2, end: time1 },
           });
         }
       }
@@ -664,7 +687,11 @@ function CycleChartSvg(
     DataToPlot & {
       readonly containerHeight: number;
       readonly containerWidth: number;
-      readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
+      readonly highlightStart: {
+        readonly x: number;
+        readonly y: number;
+        readonly nowMS: number;
+      } | null;
       readonly setHighlightStart: (
         p: { readonly x: number; readonly y: number; readonly nowMS: number } | null,
       ) => void;
@@ -743,7 +770,13 @@ export const CycleChart = memo(function CycleChart(props: CycleChartProps) {
   return (
     <div onPointerLeave={pointerLeave}>
       <ChartWithTooltip
-        sx={{ height: { xs: "calc(100vh - 320px)", md: "calc(100vh - 280px)", xl: "calc(100vh - 220px)" } }}
+        sx={{
+          height: {
+            xs: "calc(100vh - 320px)",
+            md: "calc(100vh - 280px)",
+            xl: "calc(100vh - 220px)",
+          },
+        }}
         tooltipAtom={tooltipAtom}
         TooltipContent={({ tooltip }) => (
           <CycleChartTooltip

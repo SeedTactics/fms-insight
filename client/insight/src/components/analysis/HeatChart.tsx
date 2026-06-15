@@ -32,7 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { PointerEvent, useMemo, memo, useRef, useCallback } from "react";
 import { addDays } from "date-fns";
-import { Select, MenuItem, Tooltip, IconButton, Stack, Box, Typography, FormControl } from "@mui/material";
+import {
+  Select,
+  MenuItem,
+  Tooltip,
+  IconButton,
+  Stack,
+  Box,
+  Typography,
+  FormControl,
+} from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import { ScaleBand, scaleBand, ScaleLinear, scaleLinear } from "d3-scale";
 
@@ -59,7 +68,10 @@ export interface HeatChartProps {
   readonly label_title: string;
 }
 
-function isSelectableOption<T extends string>(options: ReadonlyArray<T>, value: string): value is T {
+function isSelectableOption<T extends string>(
+  options: ReadonlyArray<T>,
+  value: string,
+): value is T {
   return options.some((option) => option === value);
 }
 
@@ -93,7 +105,9 @@ function useScales({
   readonly containerWidth: number | null | undefined;
 }): HeatChartDimensions & HeatChartScales {
   const width =
-    containerWidth === null || containerWidth === undefined || containerWidth === 0 ? 400 : containerWidth;
+    containerWidth === null || containerWidth === undefined || containerWidth === 0
+      ? 400
+      : containerWidth;
 
   const maxStatLen = useMemo(
     () =>
@@ -154,7 +168,14 @@ function useScales({
     return { yScale: nextBandScale, height: nextChartHeight, colorScale: nextFillScale };
   }, [points, yType]);
 
-  return { height: chartHeight, width, xScale, yScale: bandScale, colorScale: fillScale, marginLeft };
+  return {
+    height: chartHeight,
+    width,
+    xScale,
+    yScale: bandScale,
+    colorScale: fillScale,
+    marginLeft,
+  };
 }
 
 const HeatAxis = memo(function HeatAxis({ xScale, yScale }: HeatChartScales) {
@@ -353,7 +374,8 @@ function ChartToolbar<T extends string>(props: SelectableHeatCardProps<T>) {
   );
 }
 
-export type SelectableHeatChartProps<T extends string> = HeatChartProps & SelectableHeatCardProps<T>;
+export type SelectableHeatChartProps<T extends string> = HeatChartProps &
+  SelectableHeatCardProps<T>;
 
 export function SelectableHeatChart<T extends string>(props: SelectableHeatChartProps<T>) {
   const tooltipAtom = useMemo(() => atom<TooltipData | null>(null), []);

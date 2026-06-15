@@ -54,7 +54,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public NiigataStationNames StatNames => _niigataSettings.StationNames;
 
     private List<InProcessMaterial> _expectedLoadCastings = new List<InProcessMaterial>();
-    private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
+    private Dictionary<long, InProcessMaterial> _expectedMaterial =
+      new Dictionary<long, InProcessMaterial>(); //key is matId
     private Dictionary<
       int,
       List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>
@@ -79,8 +80,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
       };
       _settings = new FMSSettings() { QuarantineQueue = "Quarantine" };
-      _settings.Queues.Add("thequeue", new MachineFramework.QueueInfo() { Role = QueueRole.RawMaterial });
-      _settings.Queues.Add("qqq", new MachineFramework.QueueInfo() { Role = QueueRole.InProcessTransfer });
+      _settings.Queues.Add(
+        "thequeue",
+        new MachineFramework.QueueInfo() { Role = QueueRole.RawMaterial }
+      );
+      _settings.Queues.Add(
+        "qqq",
+        new MachineFramework.QueueInfo() { Role = QueueRole.InProcessTransfer }
+      );
       _settings.Queues.Add("Quarantine", new MachineFramework.QueueInfo());
 
       _logDBCfg = RepositoryConfig.InitializeMemoryDB(_serialSt);
@@ -157,7 +164,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         );
         _expectedFaces[pal] =
-          new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>();
+          new List<(
+            int face,
+            string unique,
+            int proc,
+            int path,
+            IEnumerable<ProgramsForProcess> progs
+          )>();
       }
     }
 
@@ -193,7 +206,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl MoveToMachine(int pal, int mach)
     {
-      _status.Pallets[pal - 1].CurStation = NiigataStationNum.Machine(mach, _niigataSettings.StationNames);
+      _status.Pallets[pal - 1].CurStation = NiigataStationNum.Machine(
+        mach,
+        _niigataSettings.StationNames
+      );
       return this;
     }
 
@@ -381,7 +397,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (manual)
       {
         _expectedFaces[pal] =
-          new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>();
+          new List<(
+            int face,
+            string unique,
+            int proc,
+            int path,
+            IEnumerable<ProgramsForProcess> progs
+          )>();
       }
       _status.Pallets[pal - 1].Master.Comment = manual ? "aaa Manual yyy" : "";
       return this;
@@ -443,11 +465,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var routes = new List<RouteStep>();
       routes.Add(new LoadStep() { LoadStations = luls.ToList() });
-      routes.Add(new MachiningStep() { Machines = machs.ToList(), ProgramNumsToRun = progs.ToList() });
+      routes.Add(
+        new MachiningStep() { Machines = machs.ToList(), ProgramNumsToRun = progs.ToList() }
+      );
 
       if (machs2 != null && progs2 != null)
       {
-        routes.Add(new MachiningStep() { Machines = machs2.ToList(), ProgramNumsToRun = progs2.ToList() });
+        routes.Add(
+          new MachiningStep() { Machines = machs2.ToList(), ProgramNumsToRun = progs2.ToList() }
+        );
       }
 
       routes.Add(new UnloadStep() { UnloadStations = luls.ToList() });
@@ -463,7 +489,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
       _expectedFaces[pal] =
         faces == null
-          ? new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>()
+          ? new List<(
+            int face,
+            string unique,
+            int proc,
+            int path,
+            IEnumerable<ProgramsForProcess> progs
+          )>()
           : faces.ToList();
 
       return this;
@@ -556,7 +588,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         WorkorderId = workorder,
         SignaledInspections = ImmutableList<string>.Empty,
         QuarantineAfterUnload = null,
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting,
+        },
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.InQueue,
@@ -642,7 +677,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         SignaledInspections = ImmutableList<string>.Empty,
         QuarantineAfterUnload = null,
         WorkorderId = workorder,
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting,
+        },
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.InQueue,
@@ -696,7 +734,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Serial = mat.Serial,
           WorkorderId = mat.Workorder == "" ? null : mat.Workorder,
           SignaledInspections = [],
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+          Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Waiting,
+          },
           Location = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
@@ -790,7 +831,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             ProcessAfterLoad = 1,
             PathAfterLoad = c.path,
           },
-          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free },
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.Free,
+          },
         })
         .ToList();
       return this;
@@ -897,7 +941,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return mats.Select(m => m with { Face = 0 }).ToList();
     }
 
-    public static IEnumerable<LogMaterial> SetProc(int proc, int? path, IEnumerable<LogMaterial> mats)
+    public static IEnumerable<LogMaterial> SetProc(
+      int proc,
+      int? path,
+      IEnumerable<LogMaterial> mats
+    )
     {
       return mats.Select(m => m with { Process = proc, Path = path }).ToList();
     }
@@ -1616,7 +1664,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               FixtureOnPallet = "",
               OnHold = _status.Pallets[palNum - 1].Master.Skip,
               CurrentPalletLocation = _status.Pallets[palNum - 1].CurStation.Location,
-              NumFaces = current.Material.Select(m => m.Mat.Location.Face ?? 1).DefaultIfEmpty(0).Max(),
+              NumFaces = current
+                .Material.Select(m => m.Mat.Location.Face ?? 1)
+                .DefaultIfEmpty(0)
+                .Max(),
             }
           );
       }
@@ -1642,7 +1693,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             .Select(j =>
               j.CloneToDerived<ActiveJob, HistoricJob>() with
               {
-                Cycles = j.Decrements != null ? j.Cycles - j.Decrements.Sum(d => d.Quantity) : j.Cycles,
+                Cycles =
+                  j.Decrements != null ? j.Cycles - j.Decrements.Sum(d => d.Quantity) : j.Cycles,
                 RemainingToStart =
                   j.Decrements != null && j.Decrements.Count > 0
                     ? 0
@@ -1672,7 +1724,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ShouldBeEquivalentTo(_settings.Queues.ToImmutableSortedDictionary());
 
       actualSt.CurrentStatus.Alarms.ShouldBe(
-        _expectedPalletAlarms.Values.Concat(_expectedMachineAlarms.Select(m => $"Machine {m} has an alarm")),
+        _expectedPalletAlarms.Values.Concat(
+          _expectedMachineAlarms.Select(m => $"Machine {m} has an alarm")
+        ),
         ignoreOrder: true
       );
     }
@@ -1691,7 +1745,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       try
       {
-        var cellSt = CreateCellState.BuildCellState(_settings, _niigataSettings, _machConn, _logDB, _status);
+        var cellSt = CreateCellState.BuildCellState(
+          _settings,
+          _niigataSettings,
+          _machConn,
+          _logDB,
+          _status
+        );
         cellSt.StateUpdated.ShouldBeFalse();
 
         CheckCellStMatchesExpected(cellSt);
@@ -1946,7 +2006,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Faces = faces.Select(f =>
         {
           var overrideProgs =
-            (IEnumerable<ProgramsForProcess>)progOverride?.FirstOrDefault(p => p.face == f.face).progs;
+            (IEnumerable<ProgramsForProcess>)
+              progOverride?.FirstOrDefault(p => p.face == f.face).progs;
           return (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: overrideProgs);
         }),
       };
@@ -2353,7 +2414,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public bool IccFailure { get; set; }
     }
 
-    public static ExpectedChange ExpectDeleteProgram(int progNum, string name, long rev, bool fail = false)
+    public static ExpectedChange ExpectDeleteProgram(
+      int progNum,
+      string name,
+      long rev,
+      bool fail = false
+    )
     {
       return new ExpectedDeleteProgram()
       {
@@ -2397,7 +2463,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
           // deal with new programs
           foreach (
-            var expectAdd in expectedChanges.Where(e => e is ExpectAddProgram).Cast<ExpectAddProgram>()
+            var expectAdd in expectedChanges
+              .Where(e => e is ExpectAddProgram)
+              .Cast<ExpectAddProgram>()
           )
           {
             var action = _assign.NewPalletChange(cellSt);
@@ -2416,7 +2484,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             };
 
             // reload cell state
-            cellSt = CreateCellState.BuildCellState(_settings, _niigataSettings, _machConn, _logDB, _status);
+            cellSt = CreateCellState.BuildCellState(
+              _settings,
+              _niigataSettings,
+              _machConn,
+              _logDB,
+              _status
+            );
             cellSt.StateUpdated.ShouldBe(expectedUpdates);
           }
 
@@ -2429,7 +2503,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           var expectFirstDelete = (ExpectedDeleteProgram)
             expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
           var expectHold = (ExpectPalHold)expectedChanges.FirstOrDefault(e => e is ExpectPalHold);
-          var expectNoWork = (ExpectPalNoWork)expectedChanges.FirstOrDefault(e => e is ExpectPalNoWork);
+          var expectNoWork = (ExpectPalNoWork)
+            expectedChanges.FirstOrDefault(e => e is ExpectPalNoWork);
 
           if (expectedDelRoute != null)
           {
@@ -2442,7 +2517,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _status.Pallets[pal - 1].Tracking.RouteInvalid = true;
 
             // reload
-            cellSt = CreateCellState.BuildCellState(_settings, _niigataSettings, _machConn, _logDB, _status);
+            cellSt = CreateCellState.BuildCellState(
+              _settings,
+              _niigataSettings,
+              _machConn,
+              _logDB,
+              _status
+            );
             cellSt.StateUpdated.ShouldBeFalse();
           }
 
@@ -2467,7 +2548,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   .OrderBy(f => f.Face)
                   .ToList()
               );
-            ((NewPalletRoute)action).NewMaster.ShouldBeEquivalentTo(expectedNewRoute.ExpectedMaster);
+            ((NewPalletRoute)action).NewMaster.ShouldBeEquivalentTo(
+              expectedNewRoute.ExpectedMaster
+            );
             ((NewPalletRoute)action).NewMaster.Comment = RecordFacesForPallet.Save(
               ((NewPalletRoute)action).NewMaster.PalletNum,
               _status.TimeOfStatusUTC,
@@ -2588,7 +2671,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork = expectNoWork.NoWork;
 
             // reload cell state
-            cellSt = CreateCellState.BuildCellState(_settings, _niigataSettings, _machConn, _logDB, _status);
+            cellSt = CreateCellState.BuildCellState(
+              _settings,
+              _niigataSettings,
+              _machConn,
+              _logDB,
+              _status
+            );
             cellSt.StateUpdated.ShouldBe(expectNoWork.ExpectedUpdated);
           }
           else
@@ -2722,7 +2811,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   };
                   if (load.MatAdjust != null)
                   {
-                    _expectedMaterial[m.MaterialID] = load.MatAdjust(_expectedMaterial[m.MaterialID]);
+                    _expectedMaterial[m.MaterialID] = load.MatAdjust(
+                      _expectedMaterial[m.MaterialID]
+                    );
                   }
                 }
 

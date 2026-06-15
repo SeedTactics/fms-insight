@@ -47,7 +47,10 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Loading Events
     // --------------------------------------------------------------------------------
-    IEnumerable<LogEntry> GetRecentLog(long lastSeenCounter, DateTime? expectedEndUTCofLastSeen = null);
+    IEnumerable<LogEntry> GetRecentLog(
+      long lastSeenCounter,
+      DateTime? expectedEndUTCofLastSeen = null
+    );
     IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
@@ -64,7 +67,9 @@ namespace BlackMaple.MachineFramework
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
-    ImmutableList<ActiveWorkorder> GetActiveWorkorders(IReadOnlySet<string> additionalWorkorders = null);
+    ImmutableList<ActiveWorkorder> GetActiveWorkorders(
+      IReadOnlySet<string> additionalWorkorders = null
+    );
     ImmutableSortedSet<string> GetWorkordersForUnique(string jobUnique);
     DateTime MaxLogDate();
     string MaxForeignID(); // WARNING: uses sqlite default string collate (binary), not lexicographic
@@ -307,7 +312,11 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordWorkorderForMaterialID(long materialID, int proc, string workorder);
     LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder);
-    LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder, DateTime recordUtc);
+    LogEntry RecordWorkorderForMaterialID(
+      EventLogMaterial mat,
+      string workorder,
+      DateTime recordUtc
+    );
     LogEntry RecordInspectionCompleted(
       EventLogMaterial mat,
       int inspectionLocNum,
@@ -526,7 +535,10 @@ namespace BlackMaple.MachineFramework
     void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting);
     bool IsMaterialInQueue(long matId);
     IEnumerable<QueuedMaterial> GetMaterialInQueueByUnique(string queue, string jobUnique);
-    IEnumerable<QueuedMaterial> GetUnallocatedMaterialInQueue(string queue, string partNameOrCasting);
+    IEnumerable<QueuedMaterial> GetUnallocatedMaterialInQueue(
+      string queue,
+      string partNameOrCasting
+    );
     IEnumerable<QueuedMaterial> GetMaterialInAllQueues();
     int? NextProcessForQueuedMaterial(long matId);
     BulkAddCastingResult BulkAddNewCastingsInQueue(
@@ -547,7 +559,9 @@ namespace BlackMaple.MachineFramework
     List<InspectCount> LoadInspectCounts();
     void SetInspectCounts(IEnumerable<InspectCount> counts);
     IReadOnlyList<Decision> LookupInspectionDecisions(long matID);
-    ImmutableDictionary<long, IReadOnlyList<Decision>> LookupInspectionDecisions(IEnumerable<long> matID);
+    ImmutableDictionary<long, IReadOnlyList<Decision>> LookupInspectionDecisions(
+      IEnumerable<long> matID
+    );
     IEnumerable<LogEntry> MakeInspectionDecisions(
       long matID,
       int process,
@@ -585,12 +599,20 @@ namespace BlackMaple.MachineFramework
       DateTime endUTC,
       IEnumerable<string> alreadyKnownSchIds = null
     );
-    RecentHistoricData LoadRecentJobHistory(DateTime startUTC, IEnumerable<string> alreadyKnownSchIds = null);
+    RecentHistoricData LoadRecentJobHistory(
+      DateTime startUTC,
+      IEnumerable<string> alreadyKnownSchIds = null
+    );
     MostRecentSchedule LoadMostRecentSchedule();
     IEnumerable<string> StationGroupsOnMostRecentSchedule();
-    (ImmutableHashSet<string> rawMatQ, ImmutableHashSet<string> inProcQ) QueuesOnMostRecentSchedule();
+    (
+      ImmutableHashSet<string> rawMatQ,
+      ImmutableHashSet<string> inProcQ
+    ) QueuesOnMostRecentSchedule();
     ImmutableList<Workorder> WorkordersById(string workorderId);
-    ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(IReadOnlySet<string> workorderId);
+    ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(
+      IReadOnlySet<string> workorderId
+    );
     ImmutableList<Rebooking> LoadUnscheduledRebookings();
 
     // --------------------------------------------------------------------------------
@@ -710,7 +732,10 @@ namespace BlackMaple.MachineFramework
 
   public record MaterialToUnloadFromFace
   {
-    public required ImmutableDictionary<long, UnloadDestination> MaterialIDToDestination { get; init; }
+    public required ImmutableDictionary<
+      long,
+      UnloadDestination
+    > MaterialIDToDestination { get; init; }
     public required int FaceNum { get; init; }
     public required int Process { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }

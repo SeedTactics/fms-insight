@@ -74,7 +74,10 @@ function addEntryToPoint(
     point.x.getTime() - movingAverageDistanceInMilliseconds,
     entry.endTime.getTime() - entry.elapsedSeconds * 1000,
   );
-  const endT = Math.min(point.x.getTime() + movingAverageDistanceInMilliseconds, entry.endTime.getTime());
+  const endT = Math.min(
+    point.x.getTime() + movingAverageDistanceInMilliseconds,
+    entry.endTime.getTime(),
+  );
 
   point.y += ((endT - startT) / (2 * movingAverageDistanceInMilliseconds)) * entry.numMaterial;
 }
@@ -115,7 +118,9 @@ function calcPoints(
     );
     const endIdx = Math.min(
       numPoints - 1,
-      Math.floor((e.endTime.getTime() + movingAverageDistanceInMilliseconds - start.getTime()) / gap),
+      Math.floor(
+        (e.endTime.getTime() + movingAverageDistanceInMilliseconds - start.getTime()) / gap,
+      ),
     );
     for (let i = startIdx; i <= endIdx; i++) {
       addEntryToPoint(movingAverageDistanceInMilliseconds, points[i], e);

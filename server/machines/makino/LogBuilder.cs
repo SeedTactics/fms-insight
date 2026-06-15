@@ -112,7 +112,13 @@ namespace BlackMaple.FMSInsight.Makino
       //check if the cycle already exists
       if (
         timeToSkip == m.EndDateTimeUTC
-        && logDb.CycleExists(m.EndDateTimeUTC, m.PalletID, LogType.MachineCycle, loc.StationGroup, loc.Num)
+        && logDb.CycleExists(
+          m.EndDateTimeUTC,
+          m.PalletID,
+          LogType.MachineCycle,
+          loc.StationGroup,
+          loc.Num
+        )
       )
       {
         return;
@@ -120,7 +126,9 @@ namespace BlackMaple.FMSInsight.Makino
 
       if (loc.Location != PalletLocationEnum.Machine)
       {
-        Log.Error("Creating machine cycle for device that is not a machine: " + loc.Location.ToString());
+        Log.Error(
+          "Creating machine cycle for device that is not a machine: " + loc.Location.ToString()
+        );
       }
 
       //count the number of parts
@@ -224,10 +232,21 @@ namespace BlackMaple.FMSInsight.Makino
 
     public static string MkForeignID(int pallet, int fixture, string order, DateTime loadedUTC)
     {
-      return order + "-" + pallet.ToString() + "-" + fixture.ToString() + "-" + loadedUTC.ToString("o");
+      return order
+        + "-"
+        + pallet.ToString()
+        + "-"
+        + fixture.ToString()
+        + "-"
+        + loadedUTC.ToString("o");
     }
 
-    private static bool ForeignIDMatchesPallet(int pallet, int fixture, string order, string foreignID)
+    private static bool ForeignIDMatchesPallet(
+      int pallet,
+      int fixture,
+      string order,
+      string foreignID
+    )
     {
       return foreignID.StartsWith(order + "-" + pallet.ToString() + "-" + fixture.ToString() + "-");
     }
@@ -245,7 +264,12 @@ namespace BlackMaple.FMSInsight.Makino
       );
       if (
         mostRecent == null
-        || !ForeignIDMatchesPallet(pallet, fixture, order, logDb.ForeignIDForCounter(mostRecent.Counter))
+        || !ForeignIDMatchesPallet(
+          pallet,
+          fixture,
+          order,
+          logDb.ForeignIDForCounter(mostRecent.Counter)
+        )
       )
       {
         return null;
@@ -276,7 +300,13 @@ namespace BlackMaple.FMSInsight.Makino
       //check if the cycle already exists
       if (
         timeToSkip == ws.Key.EndDateTimeUTC
-        && logDb.CycleExists(ws.Key.EndDateTimeUTC, ws.Key.PalletID, LogType.LoadUnloadCycle, "L/U", loc.Num)
+        && logDb.CycleExists(
+          ws.Key.EndDateTimeUTC,
+          ws.Key.PalletID,
+          LogType.LoadUnloadCycle,
+          "L/U",
+          loc.Num
+        )
       )
       {
         return;
@@ -284,7 +314,9 @@ namespace BlackMaple.FMSInsight.Makino
 
       if (loc.Location != PalletLocationEnum.LoadUnload)
       {
-        Log.Error("Creating machine cycle for device that is not a load: " + loc.Location.ToString());
+        Log.Error(
+          "Creating machine cycle for device that is not a load: " + loc.Location.ToString()
+        );
       }
 
       //calculate the elapsed time
@@ -337,7 +369,12 @@ namespace BlackMaple.FMSInsight.Makino
               FaceNum = w.FixtureNumber,
               Process = w.UnloadProcessNum,
               ActiveOperationTime = active * matList.Count,
-              ForeignID = MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC),
+              ForeignID = MkForeignID(
+                w.PalletID,
+                w.FixtureNumber,
+                w.UnloadOrderName,
+                w.EndDateTimeUTC
+              ),
             }
           );
         }
@@ -378,7 +415,12 @@ namespace BlackMaple.FMSInsight.Makino
             Process = w.LoadProcessNum,
             Path = null,
             ActiveOperationTime = active * matList.Count,
-            ForeignID = MkForeignID(ws.Key.PalletID, w.FixtureNumber, w.LoadOrderName, w.EndDateTimeUTC),
+            ForeignID = MkForeignID(
+              ws.Key.PalletID,
+              w.FixtureNumber,
+              w.LoadOrderName,
+              w.EndDateTimeUTC
+            ),
           }
         );
       }
@@ -400,12 +442,20 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    private List<long> AllocateMatIds(int count, string order, string part, int numProcess, DateTime endUTC)
+    private List<long> AllocateMatIds(
+      int count,
+      string order,
+      string part,
+      int numProcess,
+      DateTime endUTC
+    )
     {
       var matIds = new List<long>();
       for (int i = 0; i < count; i++)
       {
-        matIds.Add(logDb.AllocateMaterialIDAndGenerateSerial(order, part, numProcess, endUTC, out var _));
+        matIds.Add(
+          logDb.AllocateMaterialIDAndGenerateSerial(order, part, numProcess, endUTC, out var _)
+        );
       }
       return matIds;
     }

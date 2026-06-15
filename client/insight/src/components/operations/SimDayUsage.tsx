@@ -67,7 +67,10 @@ const machineGroups = atom<OrderedSet<string>>((get) => {
 const usageMonths = atom<OrderedSet<Date>>((get) => {
   const usage = get(latestSimDayUsage);
   if (usage === null) return OrderedSet.empty();
-  return OrderedSet.build(usage.usage, (u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), 1));
+  return OrderedSet.build(
+    usage.usage,
+    (u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), 1),
+  );
 });
 
 const maxUsage = atom<number>((get) => {
@@ -204,7 +207,9 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
     const u = usage?.get(group)?.get(d);
     return (
       <>
-        <div>{d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</div>
+        <div>
+          {d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+        </div>
         {maxDay && d > maxDay ? (
           <div>Not Simulated</div>
         ) : minDay && d < minDay ? (

@@ -44,7 +44,10 @@ import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summ
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
+import {
+  last30MaterialSummary,
+  specificMonthMaterialSummary,
+} from "../../cell-status/material-summary.js";
 import { LazySeq, HashMap, HashSet } from "@seedtactics/immutable-collections";
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 
@@ -143,9 +146,16 @@ function JobDisplay(props: JobDisplayProps) {
                   {path.stops.map((stop, stopIdx) => (
                     <Fragment key={stopIdx}>
                       <div>
-                        {stop.stationGroup}: {(stop.stationNums ?? []).join(",")} | Program: {stop.program}
-                        {stop.programRevision ? " rev" + stop.programRevision.toString() : undefined} |{" "}
-                        {(durationToMinutes(stop.expectedCycleTime) / path.partsPerPallet).toFixed(1)} mins
+                        {stop.stationGroup}: {(stop.stationNums ?? []).join(",")} | Program:{" "}
+                        {stop.program}
+                        {stop.programRevision
+                          ? " rev" + stop.programRevision.toString()
+                          : undefined}{" "}
+                        |{" "}
+                        {(durationToMinutes(stop.expectedCycleTime) / path.partsPerPallet).toFixed(
+                          1,
+                        )}{" "}
+                        mins
                         {path.partsPerPallet > 1 ? " per piece" : ""}
                       </div>
                     </Fragment>
@@ -166,7 +176,9 @@ function JobDisplay(props: JobDisplayProps) {
                   ) : undefined}
                   {path.outputQueue ? <div>Output Queue: {path.outputQueue}</div> : undefined}
                   {path.inspections && path.inspections.length > 0 ? (
-                    <div>Inspections: {path.inspections.map((i) => i.inspectionType).join(",")}</div>
+                    <div>
+                      Inspections: {path.inspections.map((i) => i.inspectionType).join(",")}
+                    </div>
                   ) : undefined}
                 </dd>
               </Fragment>
@@ -198,7 +210,7 @@ function MaterialStatus(props: MaterialStatusProps) {
     );
   } else if (props.matSummary?.completed_last_proc_machining) {
     return <span>Completed</span>;
-  } else if (props.matSummary !== null && ! props.matSummary.startedProcess1) {
+  } else if (props.matSummary !== null && !props.matSummary.startedProcess1) {
     return <span>Not yet started</span>;
   } else {
     return <span />;

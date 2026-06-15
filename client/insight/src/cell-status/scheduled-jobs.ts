@@ -32,7 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
 import type { ServerEventAndTime } from "./loading.js";
-import { IJob, IHistoricData, HistoricJob, IRecentHistoricData, IHistoricJob } from "../network/api.js";
+import {
+  IJob,
+  IHistoricData,
+  HistoricJob,
+  IRecentHistoricData,
+  IHistoricJob,
+} from "../network/api.js";
 import { HashMap, HashSet, LazySeq } from "@seedtactics/immutable-collections";
 import { Atom, atom } from "jotai";
 import { atomFamily } from "jotai-family";

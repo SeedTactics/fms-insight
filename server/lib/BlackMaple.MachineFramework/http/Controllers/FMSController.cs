@@ -146,7 +146,11 @@ namespace BlackMaple.MachineFramework.Controllers
         _name =
           (
             (System.Reflection.AssemblyTitleAttribute?)
-              Attribute.GetCustomAttribute(startA, typeof(System.Reflection.AssemblyTitleAttribute), false)
+              Attribute.GetCustomAttribute(
+                startA,
+                typeof(System.Reflection.AssemblyTitleAttribute),
+                false
+              )
           )?.Title
           ?? startA.GetName().Name
           ?? "FMS Insight";
@@ -163,7 +167,8 @@ namespace BlackMaple.MachineFramework.Controllers
         Name = _name,
         Version = _version,
         RequireScanAtCloseout = _cfg.RequireScanAtCloseout,
-        RequireWorkorderBeforeAllowCloseoutComplete = _cfg.RequireWorkorderBeforeAllowCloseoutComplete,
+        RequireWorkorderBeforeAllowCloseoutComplete =
+          _cfg.RequireWorkorderBeforeAllowCloseoutComplete,
         AdditionalLogServers = _cfg.AdditionalLogServers,
         OpenIDConnectAuthority = _serverSt.OpenIDConnectAuthority,
         OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,
@@ -171,7 +176,8 @@ namespace BlackMaple.MachineFramework.Controllers
         UsingLabelPrinterForSerials = _cfg.UsingLabelPrinterForSerials,
         UseClientPrinterForLabels = _printLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
-        RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
+        RequireOperatorNamePromptWhenAddingMaterial =
+          _cfg.RequireOperatorNamePromptWhenAddingMaterial,
         AddToQueueButton = _cfg.AddToQueueButton,
         AllowEditJobPlanQuantityFromQueuesPage = _cfg.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineToCancelLoad = _jobsAndQueues.AllowQuarantineToCancelLoad,
@@ -222,7 +228,14 @@ namespace BlackMaple.MachineFramework.Controllers
       {
         if (_instrPath != null)
         {
-          var path = _instrPath.InstructionPath(part, process, type, materialID, operatorName, pallet);
+          var path = _instrPath.InstructionPath(
+            part,
+            process,
+            type,
+            materialID,
+            operatorName,
+            pallet
+          );
           if (string.IsNullOrEmpty(path))
           {
             return NotFound(
@@ -242,7 +255,9 @@ namespace BlackMaple.MachineFramework.Controllers
 
       if (string.IsNullOrEmpty(_cfg.InstructionFilePath))
       {
-        return NotFound("Error: instruction directory must be configured in FMS Insight config file.");
+        return NotFound(
+          "Error: instruction directory must be configured in FMS Insight config file."
+        );
       }
       if (!Directory.Exists(_cfg.InstructionFilePath))
       {
@@ -297,7 +312,11 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (_printLabel != null)
       {
-        _printLabel.PrintLabel(materialId, process, Request.GetTypedHeaders().Referer ?? new Uri("/"));
+        _printLabel.PrintLabel(
+          materialId,
+          process,
+          Request.GetTypedHeaders().Referer ?? new Uri("/")
+        );
         return Ok();
       }
       else

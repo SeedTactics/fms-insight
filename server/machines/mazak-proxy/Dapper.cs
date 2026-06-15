@@ -40,7 +40,11 @@ using System.Linq;
 
 public static class DapperQueryExecute
 {
-  public static IEnumerable<T> Query<T>(this IDbConnection conn, string sql, IDbTransaction transaction)
+  public static IEnumerable<T> Query<T>(
+    this IDbConnection conn,
+    string sql,
+    IDbTransaction transaction
+  )
   {
     // implement Query just like dapper, but as a fallback for when dapper is not available
     var result = new List<T>();

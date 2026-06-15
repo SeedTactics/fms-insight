@@ -4,7 +4,13 @@
 /* oxlint-disable typescript/no-explicit-any */
 /* oxlint-disable typescript/no-unsafe-return */
 
-import { HashSet, HashMap, OrderedMap, LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
+import {
+  HashSet,
+  HashMap,
+  OrderedMap,
+  LazySeq,
+  OrderedSet,
+} from "@seedtactics/immutable-collections";
 
 export function toRawJs(val: any): any {
   if (val instanceof Date) {

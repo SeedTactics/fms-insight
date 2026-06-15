@@ -31,7 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { Atom, Getter, Setter, atom } from "jotai";
-import { ICurrentStatus, IHistoricData, IJob, ILogEntry, LogType, QueueRole } from "../network/api.js";
+import {
+  ICurrentStatus,
+  IHistoricData,
+  IJob,
+  ILogEntry,
+  LogType,
+  QueueRole,
+} from "../network/api.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
@@ -61,8 +68,9 @@ export const setNamesFromLast30Jobs = atom(null, (_, set, history: Readonly<IHis
   onNewJobs(set, Object.values(history.jobs));
 });
 
-export const setNamesFromLast30Evts = atom(null, (_, set, logs: ReadonlyArray<Readonly<ILogEntry>>) =>
-  onLog(set, logs),
+export const setNamesFromLast30Evts = atom(
+  null,
+  (_, set, logs: ReadonlyArray<Readonly<ILogEntry>>) => onLog(set, logs),
 );
 
 export const setNamesFromCurrentStatus = atom(null, onCurrentStatus);

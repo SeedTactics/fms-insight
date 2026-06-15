@@ -86,7 +86,12 @@ export const OperatorSelect = memo(function OperatorSelectF() {
   }
   return (
     <>
-      <Select value={operator || ""} onChange={changeOper} variant="standard" renderValue={(x) => x}>
+      <Select
+        value={operator || ""}
+        onChange={changeOper}
+        variant="standard"
+        renderValue={(x) => x}
+      >
         {LazySeq.of(allOpers)
           .sortBy((x) => x)
           .map((oper, idx) => (

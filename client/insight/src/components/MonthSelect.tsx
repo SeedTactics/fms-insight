@@ -96,18 +96,28 @@ export default memo(function MonthSelect(props: MonthSelectProps) {
           <div style={{ display: "flex", alignItems: "center" }}>
             <IconButton
               data-testid="select-month-dialog-previous-year"
-              onClick={() => setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, -1))}
+              onClick={() =>
+                setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, -1))
+              }
               size="large"
             >
               <LeftArrowIcon />
             </IconButton>
             <div style={{ flexGrow: 1 }}>
-              <Typography variant="h5" align="center" data-testid="select-month-dialog-current-year">
-                {(tempDialogCurMonth || props.curMonth).toLocaleDateString(undefined, { year: "numeric" })}
+              <Typography
+                variant="h5"
+                align="center"
+                data-testid="select-month-dialog-current-year"
+              >
+                {(tempDialogCurMonth || props.curMonth).toLocaleDateString(undefined, {
+                  year: "numeric",
+                })}
               </Typography>
             </div>
             <IconButton
-              onClick={() => setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, 1))}
+              onClick={() =>
+                setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, 1))
+              }
               size="large"
             >
               <RightArrowIcon />
@@ -123,7 +133,11 @@ export default memo(function MonthSelect(props: MonthSelectProps) {
                     style={monthIdx > 0 ? { marginLeft: "1.2em" } : undefined}
                     onClick={() => {
                       props.onSelectMonth(
-                        new Date((tempDialogCurMonth || props.curMonth).getFullYear(), month.getMonth(), 1),
+                        new Date(
+                          (tempDialogCurMonth || props.curMonth).getFullYear(),
+                          month.getMonth(),
+                          1,
+                        ),
                       );
                       setTempDialogCurMonth(undefined);
                       setDialogOpen(false);

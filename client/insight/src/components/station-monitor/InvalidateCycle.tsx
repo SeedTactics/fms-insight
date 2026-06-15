@@ -130,7 +130,9 @@ function InvalidateSelect(props: InvalidateCycleProps) {
               ))
               .toRArray()
           : [],
-        hasProc && hasChangeMat ? [<ListSubheader key="matheader">Change Material Type</ListSubheader>] : [],
+        hasProc && hasChangeMat
+          ? [<ListSubheader key="matheader">Change Material Type</ListSubheader>]
+          : [],
         hasChangeMat
           ? [
               ...castings.map((c) => (
@@ -179,8 +181,8 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
     >
       <Stack spacing={2}>
         <p style={{ maxWidth: "35em" }}>
-          An invalidated cycle remains in the event log, but is not considered when determining the next
-          process to be machined on a piece of material.
+          An invalidated cycle remains in the event log, but is not considered when determining the
+          next process to be machined on a piece of material.
         </p>
         <InvalidateSelect st={props.st} setState={props.setState} />
       </Stack>
@@ -264,7 +266,9 @@ export function InvalidateCycleDialogButton(
           onClick={invalidateCycle}
           disabled={
             props.st.updating ||
-            (props.st.process === null && props.st.changeRawMat === null && props.st.changeJobUnique === null)
+            (props.st.process === null &&
+              props.st.changeRawMat === null &&
+              props.st.changeJobUnique === null)
           }
         >
           {props.st.process !== null
@@ -341,9 +345,9 @@ export function SwapMaterialDialogContent(props: SwapMaterialProps): ReactNode {
   if (availMats.length === 0) {
     return (
       <p style={{ margin: "2em" }}>
-        No material with the same job is available for swapping. You must edit the pallet using the cell
-        controller software to remove the material from the pallet. Insight will automatically refresh once
-        the cell controller software is updated.
+        No material with the same job is available for swapping. You must edit the pallet using the
+        cell controller software to remove the material from the pallet. Insight will automatically
+        refresh once the cell controller software is updated.
       </p>
     );
   } else {
@@ -351,9 +355,9 @@ export function SwapMaterialDialogContent(props: SwapMaterialProps): ReactNode {
       <div style={{ margin: "2em" }}>
         <p>Swap serial on pallet with material from the same job.</p>
         <p>
-          If material on the pallet is from a different job, you cannot use this screen. Instead, the material
-          must first be removed from the pallet using the cell controller software. Insight will automatically
-          refresh when this occurs.
+          If material on the pallet is from a different job, you cannot use this screen. Instead,
+          the material must first be removed from the pallet using the cell controller software.
+          Insight will automatically refresh when this occurs.
         </p>
         <TextField
           value={props.st?.selectedMatToSwap?.serial ?? ""}
@@ -403,7 +407,12 @@ export function SwapMaterialButtons(
   }
 
   function swapMats() {
-    if (curMat && props.st && props.st.selectedMatToSwap && curMat.location.type === LocType.OnPallet) {
+    if (
+      curMat &&
+      props.st &&
+      props.st.selectedMatToSwap &&
+      curMat.location.type === LocType.OnPallet
+    ) {
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
       JobsBackend.swapMaterialOnPallet(curMat.materialID, operator, {
         pallet: curMat.location.palletNum ?? 0,
@@ -420,7 +429,10 @@ export function SwapMaterialButtons(
   return (
     <>
       {props.st === null ? (
-        <Button color="primary" onClick={() => props.setState({ selectedMatToSwap: null, updating: false })}>
+        <Button
+          color="primary"
+          onClick={() => props.setState({ selectedMatToSwap: null, updating: false })}
+        >
           Swap Serial
         </Button>
       ) : undefined}

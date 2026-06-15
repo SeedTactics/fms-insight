@@ -99,16 +99,26 @@ export interface FmsAPI {
 }
 
 export interface LogAPI {
-  get(startUTC: Date, endUTC: Date, signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  get(
+    startUTC: Date,
+    endUTC: Date,
+    signal?: AbortSignal,
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   recent(
     lastSeenCounter: number,
     expectedEndUTCofLastSeen: Date | null | undefined,
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  logForMaterial(materialID: number, signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForMaterial(
+    materialID: number,
+    signal?: AbortSignal,
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterials(
     materialIDs: ReadonlyArray<number> | null | undefined,
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  logForSerial(serial: string, signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForSerial(
+    serial: string,
+    signal?: AbortSignal,
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
   setInspectionDecision(
@@ -119,7 +129,11 @@ export interface LogAPI {
   ): Promise<Readonly<api.ILogEntry>>;
   recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>>;
   recordCloseoutCompleted(insp: api.NewCloseout): Promise<Readonly<api.ILogEntry>>;
-  setWorkorder(materialID: number, process: number, workorder: string): Promise<Readonly<api.ILogEntry>>;
+  setWorkorder(
+    materialID: number,
+    process: number,
+    workorder: string,
+  ): Promise<Readonly<api.ILogEntry>>;
   recordOperatorNotes(
     materialID: number,
     process: number,
@@ -188,10 +202,7 @@ export function setUserToken(u: User): void {
   function fetch(url: RequestInfo, init?: RequestInit) {
     const headers = new Headers(init?.headers);
     headers.set("Authorization", "Bearer " + token);
-    return window.fetch(
-      url,
-      init ? { ...init, headers } : { headers },
-    );
+    return window.fetch(url, init ? { ...init, headers } : { headers });
   }
   FmsServerBackend = new api.FmsClient(undefined, { fetch });
   JobsBackend = new api.JobsClient(undefined, { fetch });

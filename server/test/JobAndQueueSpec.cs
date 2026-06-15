@@ -45,7 +45,9 @@ namespace BlackMaple.FMSInsight.Tests;
 // warning that Test methods should not assign instance data
 #pragma warning disable TUnit0018
 
-public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellState>, IDisposable
+public sealed class JobAndQueueSpec
+  : ISynchronizeCellState<JobAndQueueSpec.MockCellState>,
+    IDisposable
 {
   public record MockCellState : ICellState
   {
@@ -112,7 +114,13 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
   private async Task StartSyncThread(string extraAlarm = null)
   {
     var newCellSt = CreateTaskToWaitForNewStatus();
-    _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _serverSettings, _settings, this, startThread: false);
+    _jq = new JobsAndQueuesFromDb<MockCellState>(
+      _repo,
+      _serverSettings,
+      _settings,
+      this,
+      startThread: false
+    );
     _jq.OnNewCurrentStatus += OnNewCurrentStatus;
 
     // before starting (or while starting), the current status is Starting up
@@ -150,7 +158,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     );
   }
 
-  IEnumerable<string> ISynchronizeCellState<MockCellState>.CheckNewJobs(IRepository db, NewJobs jobs)
+  IEnumerable<string> ISynchronizeCellState<MockCellState>.CheckNewJobs(
+    IRepository db,
+    NewJobs jobs
+  )
   {
     return [];
   }
@@ -228,7 +239,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
   #region Expected Status
 
-  private async Task SetCurrentState(bool stateUpdated, bool executeAction, CurrentStatus curSt = null)
+  private async Task SetCurrentState(
+    bool stateUpdated,
+    bool executeAction,
+    CurrentStatus curSt = null
+  )
   {
     curSt ??= new CurrentStatus()
     {
@@ -402,7 +417,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       Cycles = 4,
       RemainingToStart = 0,
     };
-    var toKeepActive = toKeepJob.CloneToDerived<ActiveJob, Job>() with { Cycles = 10, RemainingToStart = 5 };
+    var toKeepActive = toKeepJob.CloneToDerived<ActiveJob, Job>() with
+    {
+      Cycles = 10,
+      RemainingToStart = 5,
+    };
 
     db.AddJobs(
       new NewJobs() { ScheduleId = "old", Jobs = [completedJob, toKeepJob] },
@@ -482,7 +501,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     var j2 = RandJob() with { UniqueStr = "u2", Cycles = 22 };
     var j2Active = j2.CloneToDerived<ActiveJob, Job>() with { RemainingToStart = 0 };
 
-    db.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = [j1, j2] }, null, addAsCopiedToSystem: true);
+    db.AddJobs(
+      new NewJobs() { ScheduleId = "old", Jobs = [j1, j2] },
+      null,
+      addAsCopiedToSystem: true
+    );
 
     await SetCurrentState(
       stateUpdated: false,
@@ -573,8 +596,26 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       .ShouldBe(
         new[]
         {
-          QueuedMat(matId: 1, job: null, part: "c1", proc: 0, path: 1, serial: "aaa", queue: "q1", pos: 0),
-          QueuedMat(matId: 2, job: null, part: "c1", proc: 0, path: 1, serial: "", queue: "q1", pos: 1),
+          QueuedMat(
+            matId: 1,
+            job: null,
+            part: "c1",
+            proc: 0,
+            path: 1,
+            serial: "aaa",
+            queue: "q1",
+            pos: 0
+          ),
+          QueuedMat(
+            matId: 2,
+            job: null,
+            part: "c1",
+            proc: 0,
+            path: 1,
+            serial: "",
+            queue: "q1",
+            pos: 1
+          ),
         }
       );
     db.GetMaterialDetails(1)
@@ -680,7 +721,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var actualMat1Logs = db.GetLogForMaterial(materialID: 1).ToList();
     actualMat1Logs.ShouldAllBe(e =>
-      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4 && e.ElapsedTime < TimeSpan.FromSeconds(4)
+      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4
+      && e.ElapsedTime < TimeSpan.FromSeconds(4)
     );
     actualMat1Logs
       .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
@@ -713,7 +755,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var actualMat2Logs = db.GetLogForMaterial(materialID: 2).ToList();
     actualMat2Logs.ShouldAllBe(e =>
-      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4 && e.ElapsedTime < TimeSpan.FromSeconds(4)
+      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4
+      && e.ElapsedTime < TimeSpan.FromSeconds(4)
     );
     actualMat2Logs
       .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
@@ -746,7 +789,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     await SetCurrentMaterial([
       expectedMat2 with
       {
-        Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet },
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+        },
       },
     ]);
 
@@ -757,7 +803,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     await SetCurrentMaterial([
       expectedMat2 with
       {
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Loading,
+        },
       },
     ]);
 
@@ -790,7 +839,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       RouteEndUTC = DateTime.MinValue,
       Archived = false,
     };
-    db.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = [job] }, null, addAsCopiedToSystem: true);
+    db.AddJobs(
+      new NewJobs() { ScheduleId = "abcd", Jobs = [job] },
+      null,
+      addAsCopiedToSystem: true
+    );
 
     await SetCurrentState(stateUpdated: false, executeAction: false);
 
@@ -962,7 +1015,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var actualMat1Logs = db.GetLogForMaterial(materialID: 1).ToList();
     actualMat1Logs.ShouldAllBe(e =>
-      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4 && e.ElapsedTime < TimeSpan.FromSeconds(4)
+      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4
+      && e.ElapsedTime < TimeSpan.FromSeconds(4)
     );
     actualMat1Logs
       .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
@@ -973,7 +1027,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     await SetCurrentMaterial([
       expectedMat1 with
       {
-        Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet },
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+        },
       },
     ]);
 
@@ -984,7 +1041,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     await SetCurrentMaterial([
       expectedMat1 with
       {
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Loading,
+        },
       },
     ]);
 
@@ -1037,7 +1097,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     await SetCurrentMaterial([
       expectedMat1 with
       {
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Loading,
+        },
       },
       expectedMat2,
     ]);
@@ -1153,7 +1216,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = null,
-      Error = "Can only signal material for quarantine if the current process and path has an output queue",
+      Error =
+        "Can only signal material for quarantine if the current process and path has an output queue",
     },
     new SignalQuarantineTheoryData
     {
@@ -1233,7 +1297,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       PartName = "p1",
       Processes =
       [
-        new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { OutputQueue = data.JobTransferQeuue }] },
+        new ProcessInfo()
+        {
+          Paths = [JobLogTest.EmptyPath with { OutputQueue = data.JobTransferQeuue }],
+        },
         new ProcessInfo() { Paths = [JobLogTest.EmptyPath] },
       ],
       RouteStartUTC = DateTime.MinValue,
@@ -1243,7 +1310,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       CopiedToSystem = true,
     };
 
-    db.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = [job] }, null, addAsCopiedToSystem: true);
+    db.AddJobs(
+      new NewJobs() { ScheduleId = "abcd", Jobs = [job] },
+      null,
+      addAsCopiedToSystem: true
+    );
 
     db.AllocateMaterialID("uuu1", "p1", 2).ShouldBe(1);
     var logMat = MkLogMat.Mk(
@@ -1408,7 +1479,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var mat1Log = db.GetLogForMaterial(materialID: 1).ToList();
     mat1Log.ShouldAllBe(e =>
-      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4 && e.ElapsedTime < TimeSpan.FromSeconds(4)
+      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4
+      && e.ElapsedTime < TimeSpan.FromSeconds(4)
     );
     mat1Log
       .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
@@ -1562,7 +1634,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     {
       e = e with
       {
-        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add("note", reason),
+        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+          "note",
+          reason
+        ),
       };
     }
     return e;

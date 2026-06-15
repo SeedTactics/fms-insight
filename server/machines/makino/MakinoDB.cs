@@ -428,7 +428,8 @@ namespace BlackMaple.FMSInsight.Makino
         using var cmd = db.CreateCommand();
         if (makinoCfg.DbConnectionString?.StartsWith("sqlite:") == true)
         {
-          cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('MachineStatus') WHERE name = 'JobID'";
+          cmd.CommandText =
+            "SELECT COUNT(*) FROM pragma_table_info('MachineStatus') WHERE name = 'JobID'";
           return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
         }
         else
@@ -545,7 +546,13 @@ namespace BlackMaple.FMSInsight.Makino
 
       foreach (var m in ret)
       {
-        m.CommonValues = QueryCommonValues(_db, m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, trans);
+        m.CommonValues = QueryCommonValues(
+          _db,
+          m.StartDateTimeLocal,
+          m.EndDateTimeLocal,
+          m.DeviceID,
+          trans
+        );
       }
 
       return ret;
@@ -727,7 +734,8 @@ namespace BlackMaple.FMSInsight.Makino
       //Makino: Devices
       var devices = new Dictionary<int, PalletLocation>();
 
-      cmd.CommandText = "SELECT DeviceID, DeviceType, DeviceNumber, DeviceName FROM " + dbo + "Devices";
+      cmd.CommandText =
+        "SELECT DeviceID, DeviceType, DeviceNumber, DeviceName FROM " + dbo + "Devices";
 
       using (var reader = cmd.ExecuteReader())
       {
@@ -1079,7 +1087,11 @@ namespace BlackMaple.FMSInsight.Makino
         reader =>
         {
           ret.Add(
-            new RemainingToRun { JobUnique = reader.GetString(0), RemainingQuantity = reader.GetInt32(1) }
+            new RemainingToRun
+            {
+              JobUnique = reader.GetString(0),
+              RemainingQuantity = reader.GetInt32(1),
+            }
           );
         },
         trans

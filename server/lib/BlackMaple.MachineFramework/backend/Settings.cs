@@ -105,7 +105,9 @@ public record SerialSettings
     var fmsSection = config?.GetSection("FMS");
     var len = fmsSection?.GetValue<int?>("SerialLength", null) ?? length ?? 10;
     var startingSerial = fmsSection?.GetValue<string?>("StartingSerial", null);
-    var startingMatId = string.IsNullOrEmpty(startingSerial) ? 0 : ConvertFromBase62(startingSerial);
+    var startingMatId = string.IsNullOrEmpty(startingSerial)
+      ? 0
+      : ConvertFromBase62(startingSerial);
 
     return new SerialSettings()
     {
@@ -240,7 +242,10 @@ public record FMSSettings
         "AllowEditJobPlanQuantityFromQueuesPage",
         null
       ),
-      AllowSwapSerialAtLoadStation = fmsSection.GetValue<bool>("AllowSwapSerialAtLoadStation", false),
+      AllowSwapSerialAtLoadStation = fmsSection.GetValue<bool>(
+        "AllowSwapSerialAtLoadStation",
+        false
+      ),
       AllowInvalidateMaterialAtLoadStation = fmsSection.GetValue<bool>(
         "AllowInvalidateMaterialAtLoadStation",
         false
@@ -274,7 +279,10 @@ public record FMSSettings
       var key = q.Key[(q.Key.IndexOf(':') + 1)..];
       if (q.Key.Contains(':') && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count))
       {
-        st.Queues[key] = new QueueInfo() { MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null };
+        st.Queues[key] = new QueueInfo()
+        {
+          MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null,
+        };
       }
     }
 

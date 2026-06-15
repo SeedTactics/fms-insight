@@ -113,10 +113,14 @@ export const SortableRegion = memo(function SortableRegion(props: SortableRegion
     >
       <SortableContext
         items={sortableItemIds}
-        strategy={props.direction === "vertical" ? verticalListSortingStrategy : rectSortingStrategy}
+        strategy={
+          props.direction === "vertical" ? verticalListSortingStrategy : rectSortingStrategy
+        }
       >
         {props.children}
-        <DragOverlay>{activeMat !== undefined ? props.renderDragOverlay(activeMat) : undefined}</DragOverlay>
+        <DragOverlay>
+          {activeMat !== undefined ? props.renderDragOverlay(activeMat) : undefined}
+        </DragOverlay>
       </SortableContext>
     </DndContext>
   );

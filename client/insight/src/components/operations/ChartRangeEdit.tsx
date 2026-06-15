@@ -71,7 +71,12 @@ function isStartType(value: string): value is Last30ChartStart | "CustomDate" {
 }
 
 function isEndType(value: string): value is Last30ChartEnd | "CustomDate" {
-  return value === "CustomDate" || value === "Now" || value === "EndOfYesterday" || value === "EndOfLastWeek";
+  return (
+    value === "CustomDate" ||
+    value === "Now" ||
+    value === "EndOfYesterday" ||
+    value === "EndOfLastWeek"
+  );
 }
 
 function parseWeekdayStart(value: string): 0 | 1 | 2 | 3 | 4 | 5 | 6 | null {
@@ -120,7 +125,9 @@ function CustomDateLabel({
     <TextField
       type="datetime-local"
       value={
-        date ? new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""
+        date
+          ? new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+          : ""
       }
       onChange={(event) => setDate(new Date(event.target.value))}
       disabled={!enabled}
@@ -128,7 +135,9 @@ function CustomDateLabel({
       slotProps={{
         inputLabel: { shrink: true },
         htmlInput: {
-          min: new Date(last30.getTime() - last30.getTimezoneOffset() * 60000).toISOString().slice(0, 16),
+          min: new Date(last30.getTime() - last30.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16),
         },
       }}
     />
@@ -139,7 +148,9 @@ function RangeStart({ chartAtom }: { chartAtom: Last30ChartRangeAtom }) {
   const [chartRange, setChartRange] = useAtom(chartAtom);
   const dayStart = useAtomValue(last30WeekdayStartMinuteOffset);
   const [customDate, setCustomDate] = useState<Date | null>(
-    chartRange.startType instanceof Date ? chartRange.startType : addMinutes(startOfToday(), dayStart),
+    chartRange.startType instanceof Date
+      ? chartRange.startType
+      : addMinutes(startOfToday(), dayStart),
   );
 
   function setTy(type: Last30ChartStart | "CustomDate") {
@@ -346,12 +357,18 @@ function RangeDialog({
   setOpen: (open: boolean) => void;
 }) {
   const [weekdayStart, setWeekdayStart] = useAtom(last30WeekdayStartIdx);
-  const [weekdayStartMinuteOffset, setWeekdayStartMinuteOffset] = useAtom(last30WeekdayStartMinuteOffset);
+  const [weekdayStartMinuteOffset, setWeekdayStartMinuteOffset] = useAtom(
+    last30WeekdayStartMinuteOffset,
+  );
 
   return (
     <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md">
       <DialogContent>
-        <Stack direction="column" spacing={2} divider={<Divider orientation="horizontal" flexItem />}>
+        <Stack
+          direction="column"
+          spacing={2}
+          divider={<Divider orientation="horizontal" flexItem />}
+        >
           <Stack direction="row" spacing={2} divider={<Divider orientation="vertical" flexItem />}>
             <RangeStart chartAtom={chartAtom} />
             <RangeEnd chartAtom={chartAtom} />

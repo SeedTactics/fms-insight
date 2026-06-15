@@ -269,7 +269,9 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (_connStr == null)
       {
-        Log.Error("Unable to load Niigata status because the PostgreSQL connection string is not defined");
+        Log.Error(
+          "Unable to load Niigata status because the PostgreSQL connection string is not defined"
+        );
         return new NiigataStatus()
         {
           Pallets = new List<PalletStatus>(),
@@ -340,7 +342,10 @@ namespace BlackMaple.FMSInsight.Niigata
                 {
                   Master = master,
                   Tracking = tracking,
-                  CurStation = new NiigataStationNum(curStat.StationNum ?? 1, _settings.StationNames),
+                  CurStation = new NiigataStationNum(
+                    curStat.StationNum ?? 1,
+                    _settings.StationNames
+                  ),
                 },
               splitOn: $"{nameof(TrackingInfo.RouteInvalid)},{nameof(CurrentStationNum.StationNum)}",
               transaction: trans
@@ -412,7 +417,11 @@ namespace BlackMaple.FMSInsight.Niigata
                 var progs = routePrograms.Contains(palAndStep)
                   ? routePrograms[palAndStep]
                   : Enumerable.Empty<int>();
-                route = new MachiningStep() { Machines = stats.ToList(), ProgramNumsToRun = progs.ToList() };
+                route = new MachiningStep()
+                {
+                  Machines = stats.ToList(),
+                  ProgramNumsToRun = progs.ToList(),
+                };
                 break;
 
               case StatusRouteStep.RouteTypeE.Wash:
@@ -472,7 +481,9 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (_connStr == null)
       {
-        Log.Error("Unable to load Niigata programs because the PostgreSQL connection string is not defined");
+        Log.Error(
+          "Unable to load Niigata programs because the PostgreSQL connection string is not defined"
+        );
         return new Dictionary<int, ProgramEntry>();
       }
       using (var conn = new NpgsqlConnection(_connStr))
@@ -588,7 +599,9 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               Log.Error(ex, "Unable to clear Niigata ICC request tables");
             }
-            if (ret.Success.Value || (!string.IsNullOrEmpty(ignoreError) && ret.Error == ignoreError))
+            if (
+              ret.Success.Value || (!string.IsNullOrEmpty(ignoreError) && ret.Error == ignoreError)
+            )
             {
               if (!string.IsNullOrEmpty(ret.Error))
               {
@@ -648,7 +661,10 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       // now log any errors
       foreach (
-        var ret in conn.Query("SELECT * FROM proposal_pallet_route WHERE Success = False", transaction: trans)
+        var ret in conn.Query(
+          "SELECT * FROM proposal_pallet_route WHERE Success = False",
+          transaction: trans
+        )
       )
       {
         Log.Error("Niigata ICC returned error for changing pallet master: {@row}", ret);
@@ -663,7 +679,10 @@ namespace BlackMaple.FMSInsight.Niigata
         Log.Error("Niigata ICC returned error for changing pallet status: {@row}", ret);
       }
       foreach (
-        var ret in conn.Query("SELECT * FROM register_program WHERE Success = False", transaction: trans)
+        var ret in conn.Query(
+          "SELECT * FROM register_program WHERE Success = False",
+          transaction: trans
+        )
       )
       {
         Log.Error("Niigata ICC returned error for registering program: {@row}", ret);
@@ -683,7 +702,9 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (_connStr == null)
       {
-        Log.Error("Unable to set route on pallet because the PostgreSQL connection string is not defined");
+        Log.Error(
+          "Unable to set route on pallet because the PostgreSQL connection string is not defined"
+        );
         return;
       }
 
@@ -911,7 +932,9 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (_connStr == null)
       {
-        Log.Error("Unable to set route on pallet because the PostgreSQL connection string is not defined");
+        Log.Error(
+          "Unable to set route on pallet because the PostgreSQL connection string is not defined"
+        );
         return;
       }
 
@@ -986,7 +1009,9 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (_connStr == null)
       {
-        Log.Error("Unable to set route on pallet because the PostgreSQL connection string is not defined");
+        Log.Error(
+          "Unable to set route on pallet because the PostgreSQL connection string is not defined"
+        );
         return;
       }
 
@@ -1047,7 +1072,9 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (_connStr == null)
       {
-        Log.Error("Unable to set add program because the PostgreSQL connection string is not defined");
+        Log.Error(
+          "Unable to set add program because the PostgreSQL connection string is not defined"
+        );
         return;
       }
 
@@ -1063,7 +1090,10 @@ namespace BlackMaple.FMSInsight.Niigata
       // write (or overwrite) the file to disk
       var progCt = jobDB.LoadProgramContent(add.ProgramName, add.ProgramRevision);
       var filename = add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA";
-      System.IO.File.WriteAllText(System.IO.Path.Combine(_settings.ProgramDirectory, filename), progCt);
+      System.IO.File.WriteAllText(
+        System.IO.Path.Combine(_settings.ProgramDirectory, filename),
+        progCt
+      );
 
       _programRegistered.Reset();
       using (var conn = new NpgsqlConnection(_connStr))
@@ -1159,7 +1189,9 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (_connStr == null)
       {
-        Log.Error("Unable to set delete program because the PostgreSQL connection string is not defined");
+        Log.Error(
+          "Unable to set delete program because the PostgreSQL connection string is not defined"
+        );
         return;
       }
 

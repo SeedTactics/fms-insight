@@ -5,7 +5,12 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Provider, createStore } from "jotai";
 import { render as browserRender } from "vitest-browser-react";
 
-import type { ICurrentStatus, ILogEntry, IRecentHistoricData, IServerEvent } from "../../src/network/api.js";
+import type {
+  ICurrentStatus,
+  ILogEntry,
+  IRecentHistoricData,
+  IServerEvent,
+} from "../../src/network/api.js";
 import {
   onLoadCurrentSt,
   onLoadLast30Jobs,

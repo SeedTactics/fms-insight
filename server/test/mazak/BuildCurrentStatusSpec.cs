@@ -92,7 +92,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Test]
     public void TestLoadStationNumberTranslation()
     {
-      var cfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth, StartingLoadStationNumber = 1 };
+      var cfg = new MazakConfig()
+      {
+        DBType = MazakDbType.MazakSmooth,
+        StartingLoadStationNumber = 1,
+      };
       cfg.TranslateLoadStationNumber(1).ShouldBe(1);
       cfg.InverseLoadStationNumber(1).ShouldBe(1);
 
@@ -160,7 +164,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     public async Task StatusSnapshot(string scenario)
     {
       IRepository repository;
-      var existingLogPath = Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
+      var existingLogPath = Path.Combine(
+        "..",
+        "..",
+        "..",
+        "mazak",
+        "read-snapshots",
+        scenario + ".log.db"
+      );
       string _tempLogFile = System.IO.Path.GetTempFileName();
       if (File.Exists(existingLogPath))
       {
@@ -190,7 +201,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       if (scenario.Contains("basic"))
       {
         newJobs = JsonSerializer.Deserialize<NewJobs>(
-          File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+          File.ReadAllText(
+            Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")
+          ),
           jsonSettings
         );
       }
@@ -204,7 +217,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       var allData = JsonSerializer.Deserialize<MazakAllData>(
-        File.ReadAllText(Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".data.json")),
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".data.json")
+        ),
         jsonSettings
       );
 
@@ -598,7 +613,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         m.Action.Type == InProcessMaterialAction.ActionType.Loading
       );
       await Assert.That(loadingMat.Count()).IsEqualTo(2);
-      await Assert.That(loadingMat.Select(m => m.WorkorderId)).IsEquivalentTo(["provWorkCCC", "provWorkCCC"]);
+      await Assert
+        .That(loadingMat.Select(m => m.WorkorderId))
+        .IsEquivalentTo(["provWorkCCC", "provWorkCCC"]);
     }
 
     [Test]
@@ -2010,11 +2027,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         PalletStatuses = [],
         PalletPositions =
         [
-          new MazakPalletPositionRow()
-          {
-            PalletNumber = 2,
-            PalletPosition = "LS011",
-          },
+          new MazakPalletPositionRow() { PalletNumber = 2, PalletPosition = "LS011" },
         ],
         Alarms = [],
         MainPrograms = [],
@@ -2034,7 +2047,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var loadMaterial = status.Material.Where(m => m.Location.PalletNum == 2).ToList();
       await Assert.That(loadMaterial.Count).IsEqualTo(1);
       await Assert.That(loadMaterial[0].Process).IsEqualTo(2);
-      await Assert.That(loadMaterial[0].Action.Type).IsEqualTo(InProcessMaterialAction.ActionType.Loading);
+      await Assert
+        .That(loadMaterial[0].Action.Type)
+        .IsEqualTo(InProcessMaterialAction.ActionType.Loading);
       await Assert.That(loadMaterial[0].Action.ProcessAfterLoad).IsEqualTo(2);
     }
 
@@ -2327,11 +2342,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         PalletStatuses = [],
         PalletPositions =
         [
-          new MazakPalletPositionRow()
-          {
-            PalletNumber = 3,
-            PalletPosition = "LS011",
-          },
+          new MazakPalletPositionRow() { PalletNumber = 3, PalletPosition = "LS011" },
         ],
         Alarms = [],
         MainPrograms = [],
@@ -2351,7 +2362,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var loadMaterial = status.Material.Where(m => m.Location.PalletNum == 3).ToList();
       await Assert.That(loadMaterial.Count).IsEqualTo(1);
       await Assert.That(loadMaterial[0].Process).IsEqualTo(3);
-      await Assert.That(loadMaterial[0].Action.Type).IsEqualTo(InProcessMaterialAction.ActionType.Loading);
+      await Assert
+        .That(loadMaterial[0].Action.Type)
+        .IsEqualTo(InProcessMaterialAction.ActionType.Loading);
       await Assert.That(loadMaterial[0].Action.ProcessAfterLoad).IsEqualTo(3);
       await Assert.That(loadMaterial[0].Action.LoadOntoFace).IsEqualTo(3);
     }

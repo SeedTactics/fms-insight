@@ -230,7 +230,12 @@ function convertOldLogsToCycles(
 ): StationCyclesByCntr {
   return calcElapsedForCycles(log)
     .collect((c) =>
-      convertLogToCycle(estimateCycleTimes, c.cycle, c.elapsedForSingleMaterialMinutes, loadStationNames),
+      convertLogToCycle(
+        estimateCycleTimes,
+        c.cycle,
+        c.elapsedForSingleMaterialMinutes,
+        loadStationNames,
+      ),
     )
     .buildHashMap((c) => c.cntr);
 }
@@ -249,59 +254,72 @@ function process_swap(
   return partCycles;
 }
 
-export const setLast30StationCycles = atom(null, (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  const estimatedCycleTimes = get(last30EstimatedCycleTimes);
-  const loadStationNames = get(fmsInformation)?.loadStationNames;
-  set(last30StationCyclesRW, (oldCycles) =>
-    oldCycles.union(convertOldLogsToCycles(estimatedCycleTimes, log, loadStationNames)),
-  );
-});
+export const setLast30StationCycles = atom(
+  null,
+  (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    const estimatedCycleTimes = get(last30EstimatedCycleTimes);
+    const loadStationNames = get(fmsInformation)?.loadStationNames;
+    set(last30StationCyclesRW, (oldCycles) =>
+      oldCycles.union(convertOldLogsToCycles(estimatedCycleTimes, log, loadStationNames)),
+    );
+  },
+);
 
-export const updateLast30StationCycles = atom(null, (get, set, { evt, now, expire }: ServerEventAndTime) => {
-  if (evt.logEntry && evt.logEntry.type === LogType.InvalidateCycle) {
-    const cntrs = evt.logEntry.details?.["EditedCounters"];
-    const invalidatedCycles = cntrs ? new Set(cntrs.split(",").map((i) => parseInt(i))) : new Set<number>();
+export const updateLast30StationCycles = atom(
+  null,
+  (get, set, { evt, now, expire }: ServerEventAndTime) => {
+    if (evt.logEntry && evt.logEntry.type === LogType.InvalidateCycle) {
+      const cntrs = evt.logEntry.details?.["EditedCounters"];
+      const invalidatedCycles = cntrs
+        ? new Set(cntrs.split(",").map((i) => parseInt(i)))
+        : new Set<number>();
 
-    if (invalidatedCycles.size > 0) {
-      set(last30StationCyclesRW, (cycles) => {
-        for (const invalid of invalidatedCycles) {
-          const c = cycles.get(invalid);
-          if (c !== undefined) {
-            cycles = cycles.set(invalid, { ...c, activeMinutes: 0 });
+      if (invalidatedCycles.size > 0) {
+        set(last30StationCyclesRW, (cycles) => {
+          for (const invalid of invalidatedCycles) {
+            const c = cycles.get(invalid);
+            if (c !== undefined) {
+              cycles = cycles.set(invalid, { ...c, activeMinutes: 0 });
+            }
           }
+          return cycles;
+        });
+      }
+    } else if (evt.logEntry) {
+      const estimatedCycleTimes = get(last30EstimatedCycleTimes);
+
+      // new events arriving over websocket are garuanteed to use the new method of calculating elapsed time
+      // where the server already splits the elapsed time among a chunk, so no need to chunk here
+      const elapsedPerMat =
+        evt.logEntry.material.length > 0
+          ? durationToMinutes(evt.logEntry.elapsed) / evt.logEntry.material.length
+          : 0;
+
+      const loadStationNames = get(fmsInformation)?.loadStationNames;
+      const converted = convertLogToCycle(
+        estimatedCycleTimes,
+        evt.logEntry,
+        elapsedPerMat,
+        loadStationNames,
+      );
+      if (!converted) return;
+
+      set(last30StationCyclesRW, (cycles) => {
+        if (expire) {
+          const thirtyDaysAgo = addDays(now, -30);
+          cycles = cycles.filter((e) => e.endTime >= thirtyDaysAgo);
         }
+
+        cycles = cycles.set(converted.cntr, converted);
+
         return cycles;
       });
+    } else if (evt.editMaterialInLog) {
+      const edit = evt.editMaterialInLog;
+      set(last30StationCyclesRW, (oldCycles) => process_swap(edit, oldCycles));
     }
-  } else if (evt.logEntry) {
-    const estimatedCycleTimes = get(last30EstimatedCycleTimes);
-
-    // new events arriving over websocket are garuanteed to use the new method of calculating elapsed time
-    // where the server already splits the elapsed time among a chunk, so no need to chunk here
-    const elapsedPerMat =
-      evt.logEntry.material.length > 0
-        ? durationToMinutes(evt.logEntry.elapsed) / evt.logEntry.material.length
-        : 0;
-
-    const loadStationNames = get(fmsInformation)?.loadStationNames;
-    const converted = convertLogToCycle(estimatedCycleTimes, evt.logEntry, elapsedPerMat, loadStationNames);
-    if (!converted) return;
-
-    set(last30StationCyclesRW, (cycles) => {
-      if (expire) {
-        const thirtyDaysAgo = addDays(now, -30);
-        cycles = cycles.filter((e) => e.endTime >= thirtyDaysAgo);
-      }
-
-      cycles = cycles.set(converted.cntr, converted);
-
-      return cycles;
-    });
-  } else if (evt.editMaterialInLog) {
-    const edit = evt.editMaterialInLog;
-    set(last30StationCyclesRW, (oldCycles) => process_swap(edit, oldCycles));
-  }
-});
+  },
+);
 
 export const setSpecificMonthStationCycles = atom(
   null,

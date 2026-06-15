@@ -67,12 +67,20 @@ import {
   MaterialDialog,
 } from "./Material.js";
 import * as api from "../../network/api.js";
-import { selectQueueData, extractJobRawMaterial, JobRawMaterialData } from "../../data/queue-material.js";
+import {
+  selectQueueData,
+  extractJobRawMaterial,
+  JobRawMaterialData,
+} from "../../data/queue-material.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { JobDetails } from "./JobDetails.js";
 import { fmsInformation } from "../../network/server-settings.js";
-import { addWorkorderComment, currentStatus, setJobComment } from "../../cell-status/current-status.js";
+import {
+  addWorkorderComment,
+  currentStatus,
+  setJobComment,
+} from "../../cell-status/current-status.js";
 import { Collapse } from "@mui/material";
 import { inProcessQueues, rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion } from "./Whiteboard.js";
@@ -86,7 +94,11 @@ import {
 import { AddBySerialDialog, enterSerialForNewMaterialDialog } from "../ManualSerialEntry.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { PrintLabelButton } from "./PrintedLabel.js";
-import { AddMaterialState, AddToQueueButton, AddToQueueMaterialDialogCt } from "./QueuesAddMaterial.js";
+import {
+  AddMaterialState,
+  AddToQueueButton,
+  AddToQueueMaterialDialogCt,
+} from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { AddByBarcodeDialog, scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
 import {
@@ -123,7 +135,8 @@ export interface RawMaterialJobRowProps {
 }
 
 function RawMaterialJobRow(props: RawMaterialJobRowProps) {
-  const allowEditQty = (useAtomValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
+  const allowEditQty =
+    (useAtomValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
   const [open, setOpen] = useState<boolean>(false);
 
   const j = props.job;
@@ -208,7 +221,9 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
         <TableCell align="right">
           <Tooltip
             title={
-              j.remainingToStart > 0 || j.assignedRaw > 0 ? `${j.remainingToStart} - ${j.assignedRaw}` : ""
+              j.remainingToStart > 0 || j.assignedRaw > 0
+                ? `${j.remainingToStart} - ${j.assignedRaw}`
+                : ""
             }
           >
             <span>{Math.max(j.remainingToStart - j.assignedRaw, 0)}</span>
@@ -223,7 +238,10 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
           </Tooltip>
         </TableCell>
       </JobTableRow>
-      <JobTableRow $highlightedRow={highlRow} $noncompletedRow={j.remainingToStart - j.assignedRaw > 0}>
+      <JobTableRow
+        $highlightedRow={highlRow}
+        $noncompletedRow={j.remainingToStart - j.assignedRaw > 0}
+      >
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={10}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <JobDetails job={j.job} checkAnalysisMonth={false} />
@@ -321,7 +339,9 @@ const RawMaterialWorkorderRow = memo(function RawMaterialWorkorderRow({
       <TableCell>{workorder.plannedQuantity}</TableCell>
       <TableCell>{workorder.completedQuantity}</TableCell>
       <TableCell>{inProc}</TableCell>
-      <TableCell>{Math.max(0, workorder.plannedQuantity - workorder.completedQuantity - inProc)}</TableCell>
+      <TableCell>
+        {Math.max(0, workorder.plannedQuantity - workorder.completedQuantity - inProc)}
+      </TableCell>
     </TableRow>
   );
 });
@@ -445,7 +465,8 @@ interface EditJobPlanQtyProps {
 const EditJobPlanQtyDialog = memo(function EditJobPlanQtyProps(props: EditJobPlanQtyProps) {
   const [running, setRunning] = useState(false);
   const [newQty, setNewQty] = useState<number | null>(null);
-  const allowEditQtyUrl = useAtomValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null;
+  const allowEditQtyUrl =
+    useAtomValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null;
 
   function close() {
     if (running) return;
@@ -492,7 +513,8 @@ const EditJobPlanQtyDialog = memo(function EditJobPlanQtyProps(props: EditJobPla
           </DialogTitle>
           <DialogContent>
             <p>
-              {props.job.job.cycles} currently planned, {props.job.remainingToStart} remaining to start
+              {props.job.job.cycles} currently planned, {props.job.remainingToStart} remaining to
+              start
             </p>
             <TextField
               variant="outlined"
@@ -556,7 +578,9 @@ function WorkorderCommentDialog() {
               <div>
                 <PartIdenticon part={workorder.part} size={40} />
               </div>
-              <div style={{ marginLeft: "1em", flexGrow: 1 }}>Add Comment For {workorder.workorderId}</div>
+              <div style={{ marginLeft: "1em", flexGrow: 1 }}>
+                Add Comment For {workorder.workorderId}
+              </div>
             </div>
           </DialogTitle>
           <DialogContent>
@@ -639,7 +663,12 @@ const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialBu
   if (props.rawMatQueue) {
     return (
       <Tooltip title="Add Raw Material">
-        <Fab color="secondary" onClick={click} size="large" style={{ marginBottom: "-30px", zIndex: 1 }}>
+        <Fab
+          color="secondary"
+          onClick={click}
+          size="large"
+          style={{ marginBottom: "-30px", zIndex: 1 }}
+        >
           <AddIcon />
         </Fab>
       </Tooltip>
@@ -647,7 +676,12 @@ const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialBu
   } else if (props.inProcQueue) {
     return (
       <Tooltip title="Add Material">
-        <Fab color="secondary" onClick={click} size="medium" style={{ marginBottom: "-30px", zIndex: 1 }}>
+        <Fab
+          color="secondary"
+          onClick={click}
+          size="medium"
+          style={{ marginBottom: "-30px", zIndex: 1 }}
+        >
           <AssignIcon fontSize="inherit" />
         </Fab>
       </Tooltip>
@@ -704,14 +738,22 @@ const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
       extraDialogElements={
         <>
           <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
-          <AddToQueueMaterialDialogCt queueNames={queueNames} st={addMatSt} setState={setAddMatSt} />
+          <AddToQueueMaterialDialogCt
+            queueNames={queueNames}
+            st={addMatSt}
+            setState={setAddMatSt}
+          />
         </>
       }
       buttons={
         <>
           <PrintLabelButton />
           <QuarantineMatButton onClose={onClose} />
-          <InvalidateCycleDialogButton onClose={onClose} st={invalidateSt} setState={setInvalidateSt} />
+          <InvalidateCycleDialogButton
+            onClose={onClose}
+            st={invalidateSt}
+            setState={setInvalidateSt}
+          />
           <AddToQueueButton st={addMatSt} queueNames={queueNames} onClose={onClose} />
         </>
       }
@@ -751,7 +793,10 @@ export const Queues = (props: QueueProps) => {
       }}
     >
       {data.map((region, idx) => (
-        <div style={idx < data.length - 1 ? { borderBottom: "1px solid black" } : undefined} key={idx}>
+        <div
+          style={idx < data.length - 1 ? { borderBottom: "1px solid black" } : undefined}
+          key={idx}
+        >
           <SortableRegion
             matIds={region.material.map((m) => m.materialID)}
             direction="rect"

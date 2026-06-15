@@ -82,7 +82,10 @@ namespace BlackMaple.FMSInsight.Tests
 
       using (var fs = File.Open(file1 + ".gz", FileMode.Open, FileAccess.Read))
       using (
-        var gz = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)
+        var gz = new System.IO.Compression.GZipStream(
+          fs,
+          System.IO.Compression.CompressionMode.Decompress
+        )
       )
       using (var reader = new StreamReader(gz))
       {

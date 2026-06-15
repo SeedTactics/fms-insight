@@ -61,7 +61,10 @@ public sealed class SyncSpec : IDisposable
     _tempDir = Directory.CreateTempSubdirectory("makinosyncspec").FullName;
     _makinoDB = Substitute.For<IMakinoDB>();
     _repo = RepositoryConfig.InitializeMemoryDB(
-      new SerialSettings() { ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m, 10) }
+      new SerialSettings()
+      {
+        ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m, 10),
+      }
     );
     fix = new AutoFixture.Fixture();
     fix.Customizations.Add(new ImmutableSpecimenBuilder());
@@ -214,7 +217,10 @@ public sealed class SyncSpec : IDisposable
               Cycles = fix.Create<int>(),
               Processes =
               [
-                new ProcessInfo() { Paths = [fix.Create<ProcPathInfo>(), fix.Create<ProcPathInfo>()] },
+                new ProcessInfo()
+                {
+                  Paths = [fix.Create<ProcPathInfo>(), fix.Create<ProcPathInfo>()],
+                },
               ],
             },
           ],
@@ -664,7 +670,9 @@ public sealed class SyncSpec : IDisposable
 
     Should
       .Throw<Exception>(() => sync.ApplyActions(db, st))
-      .Message.ShouldBe("Unable to copy orders to Makino: check that the Makino software is running");
+      .Message.ShouldBe(
+        "Unable to copy orders to Makino: check that the Makino software is running"
+      );
 
     db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeFalse();
   }
@@ -715,7 +723,11 @@ public sealed class SyncSpec : IDisposable
       JobsNotYetCopied = [],
       StateUpdated = false,
     };
-    var remaining = new RemainingToRun() { JobUnique = job.UniqueStr, RemainingQuantity = job.Cycles - 2 };
+    var remaining = new RemainingToRun()
+    {
+      JobUnique = job.UniqueStr,
+      RemainingQuantity = job.Cycles - 2,
+    };
 
     _makinoDB.RemainingToRun().Returns([remaining]);
 

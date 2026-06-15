@@ -32,7 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { useState } from "react";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Tooltip,
+} from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
 import {
@@ -80,7 +88,8 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
     .concat(
       LazySeq.ofObject(curSt.queues)
         .filter(
-          ([, info]) => info.role === QueueRole.RawMaterial || info.role === QueueRole.InProcessTransfer,
+          ([, info]) =>
+            info.role === QueueRole.RawMaterial || info.role === QueueRole.InProcessTransfer,
         )
         .map(([qname, _]) => qname),
     )
@@ -198,7 +207,9 @@ export function QuarantineMatButton({
       btnTxt = "Remove";
       break;
     case "Scrap":
-      title = q.quarantineQueueDestination ? `Move to ${q.quarantineQueueDestination}` : "Remove from queue";
+      title = q.quarantineQueueDestination
+        ? `Move to ${q.quarantineQueueDestination}`
+        : "Remove from queue";
       btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Remove";
       break;
     case "SignalForScrap":

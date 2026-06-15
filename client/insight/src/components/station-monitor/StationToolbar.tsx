@@ -30,7 +30,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { Box, Checkbox, Divider, FormControlLabel, Select, useMediaQuery, useTheme } from "@mui/material";
+import {
+  Box,
+  Checkbox,
+  Divider,
+  FormControlLabel,
+  Select,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { Input } from "@mui/material";
 import { FormControl } from "@mui/material";
@@ -90,7 +98,9 @@ function HideNonLoadingCheckbox() {
 export function StationToolbar(): ReactNode {
   const [route, setRoute] = useAtom(currentRoute);
   const inspTypes = useAtomValue(last30InspectionTypes);
-  const queueNames = LazySeq.of(Object.keys(useAtomValue(currentStatus).queues)).toSortedArray((x) => x);
+  const queueNames = LazySeq.of(Object.keys(useAtomValue(currentStatus).queues)).toSortedArray(
+    (x) => x,
+  );
   const fmsInfo = useAtomValue(fmsInformation);
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
@@ -106,7 +116,12 @@ export function StationToolbar(): ReactNode {
           completed: route.completed,
         });
       } else {
-        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, queues: [], completed: false });
+        setRoute({
+          route: RouteLocation.Station_LoadMonitor,
+          loadNum: val,
+          queues: [],
+          completed: false,
+        });
       }
     }
   }
@@ -130,7 +145,12 @@ export function StationToolbar(): ReactNode {
         completed: completed,
       });
     } else {
-      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, queues: newQueues, completed });
+      setRoute({
+        route: RouteLocation.Station_LoadMonitor,
+        loadNum: 1,
+        queues: newQueues,
+        completed,
+      });
     }
   }
 

@@ -73,7 +73,9 @@ import { fmsInformation } from "../../network/server-settings.js";
 export type CycleType = "labor" | "machine";
 
 function hasLoadCycleOperations(point: CycleChartPoint): point is LoadCycleData {
-  return "operations" in point && (point.operations === undefined || Array.isArray(point.operations));
+  return (
+    "operations" in point && (point.operations === undefined || Array.isArray(point.operations))
+  );
 }
 
 const lulShowGraphAtom = atom<boolean>(true);
@@ -120,8 +122,12 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
     [setMatToShow],
   );
 
-  const [showGraph, setShowGraph] = useAtom(ty === "labor" ? lulShowGraphAtom : machineShowGraphAtom);
-  const [chartZoom, setChartZoom] = useAtom(ty === "labor" ? lulChartZoomAtom : machineChartZoomAtom);
+  const [showGraph, setShowGraph] = useAtom(
+    ty === "labor" ? lulShowGraphAtom : machineShowGraphAtom,
+  );
+  const [chartZoom, setChartZoom] = useAtom(
+    ty === "labor" ? lulChartZoomAtom : machineChartZoomAtom,
+  );
   const [selectedPart, setSelectedPart] = useAtom(
     ty === "labor" ? lulSelectedPartAtom : machineSelectedPartAtom,
   );
@@ -134,7 +140,10 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
   const fmsInfo = useAtomValue(fmsInformation);
   const basketName = basketDisplayName(fmsInfo.basketName);
   const hasBasketCycles = useAtomValue(last30HasBasketCycles);
-  const carrierFilter = normalizeCarrierKindFilter(selectedCarrier, ty === "labor" ? hasBasketCycles : true);
+  const carrierFilter = normalizeCarrierKindFilter(
+    selectedCarrier,
+    ty === "labor" ? hasBasketCycles : true,
+  );
 
   const estimatedCycleTimes = useAtomValue(last30EstimatedCycleTimes);
   const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];
@@ -317,7 +326,9 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
               displayEmpty
               value={selectedPallet || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+              onChange={(e) =>
+                setSelectedPallet(e.target.value === "" ? undefined : e.target.value)
+              }
             >
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
@@ -362,7 +373,9 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
             set_date_zoom_range={setChartZoom}
             yZoom={yZoom}
             setYZoom={setYZoom}
-            stats={curOperation && ty === "machine" ? estimatedCycleTimes.get(curOperation) : undefined}
+            stats={
+              curOperation && ty === "machine" ? estimatedCycleTimes.get(curOperation) : undefined
+            }
             partCntPerPoint={
               curOperation ? LazySeq.of(points.data).head()?.[1]?.[0]?.material?.length : undefined
             }

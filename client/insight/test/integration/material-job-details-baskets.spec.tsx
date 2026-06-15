@@ -26,10 +26,13 @@ describe("basket material and job details", () => {
     await expect.element(screen.getByText("Load from Tray 22 to pal 1")).toBeVisible();
     await expect.element(screen.getByText("Unload to Tray 22 position 2")).toBeVisible();
 
-    const fallback = await renderInsightPage(<InProcMaterial mat={fixture.materials.palletToTray} />, {
-      ...fixture.data,
-      fmsInfo: { loadStationNames: fixture.data.fmsInfo?.loadStationNames },
-    });
+    const fallback = await renderInsightPage(
+      <InProcMaterial mat={fixture.materials.palletToTray} />,
+      {
+        ...fixture.data,
+        fmsInfo: { loadStationNames: fixture.data.fmsInfo?.loadStationNames },
+      },
+    );
     await expect.element(fallback.getByText("Unload to basket 22 position 2")).toBeVisible();
   });
 
@@ -81,10 +84,14 @@ describe("basket material and job details", () => {
       fixture.data,
     );
 
-    await expect.element(screen.getByText("Basket Load Stations: Tray Cell | 4.0 mins")).toBeVisible();
+    await expect
+      .element(screen.getByText("Basket Load Stations: Tray Cell | 4.0 mins"))
+      .toBeVisible();
     await expect.element(screen.getByText("Load Stations: Prep Cell | 6.0 mins")).toBeVisible();
     await expect.element(screen.getByText("Unload Stations: Tray Cell | 5.0 mins")).toBeVisible();
-    await expect.element(screen.getByText("Basket Unload Stations: Tray Cell | 3.0 mins")).toBeVisible();
+    await expect
+      .element(screen.getByText("Basket Unload Stations: Tray Cell | 3.0 mins"))
+      .toBeVisible();
   });
 
   test("job details omits basket sections when a job has no basket metadata", async () => {

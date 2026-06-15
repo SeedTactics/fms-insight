@@ -167,7 +167,11 @@ export function DataTableHead<Id extends string | number, Row>(props: {
             expand={col.expanded}
             sortDirection={props.sort.orderBy === col.id ? props.sort.order : false}
           >
-            <Tooltip title="Sort" placement={col.numeric ? "bottom-end" : "bottom-start"} enterDelay={300}>
+            <Tooltip
+              title="Sort"
+              placement={col.numeric ? "bottom-end" : "bottom-start"}
+              enterDelay={300}
+            >
               <TableSortLabel
                 active={props.sort.orderBy === col.id}
                 direction={props.sort.order}
@@ -239,7 +243,9 @@ function SelectDateRange(props: { readonly zoom: DataTableActionZoomIntoRange })
     ? props.zoom.current_date_zoom.start
     : props.zoom.default_date_range[0];
   const end = addDays(
-    props.zoom.current_date_zoom ? props.zoom.current_date_zoom.end : props.zoom.default_date_range[1],
+    props.zoom.current_date_zoom
+      ? props.zoom.current_date_zoom.end
+      : props.zoom.default_date_range[1],
     -1,
   );
 
@@ -260,8 +266,8 @@ function SelectDateRange(props: { readonly zoom: DataTableActionZoomIntoRange })
   return (
     <>
       <span>
-        {dateFormat.format(props.zoom.current_date_zoom?.start ?? props.zoom.default_date_range[0])} -{" "}
-        {dateFormat.format(props.zoom.current_date_zoom?.end ?? props.zoom.default_date_range[1])}
+        {dateFormat.format(props.zoom.current_date_zoom?.start ?? props.zoom.default_date_range[0])}{" "}
+        - {dateFormat.format(props.zoom.current_date_zoom?.end ?? props.zoom.default_date_range[1])}
       </span>
       <Tooltip title="Zoom To Date Range">
         <IconButton onClick={() => setOpen(true)} size="large">
@@ -274,7 +280,9 @@ function SelectDateRange(props: { readonly zoom: DataTableActionZoomIntoRange })
         </IconButton>
       </Tooltip>
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>Select Date Range {monthFormat.format(props.zoom.default_date_range[0])}</DialogTitle>
+        <DialogTitle>
+          Select Date Range {monthFormat.format(props.zoom.default_date_range[0])}
+        </DialogTitle>
         <DialogContent>
           <StyledCalendar
             minDate={props.zoom.default_date_range[0]}
@@ -344,12 +352,18 @@ export const DataTableActions = memo(function DataTableActions({
           </Button>
         </Tooltip>
         <Tooltip title="Last 2 weeks">
-          <Button onClick={() => zoom.set_days_back(7 * 2)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+          <Button
+            onClick={() => zoom.set_days_back(7 * 2)}
+            style={{ color: "rgba(0, 0, 0, 0.54)" }}
+          >
             2w
           </Button>
         </Tooltip>
         <Tooltip title="Last 3 weeks">
-          <Button onClick={() => zoom.set_days_back(7 * 3)} style={{ color: "rgba(0, 0, 0, 0.54)" }}>
+          <Button
+            onClick={() => zoom.set_days_back(7 * 3)}
+            style={{ color: "rgba(0, 0, 0, 0.54)" }}
+          >
             3w
           </Button>
         </Tooltip>

@@ -129,14 +129,17 @@ function ProgramRow(props: ProgramRowProps) {
     <>
       <ProgramTableRow>
         <TableCell>
-          {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
+          {props.program.toolUse === null ||
+          props.program.toolUse.tools.length === 0 ? undefined : (
             <IconButton size="small" onClick={() => setOpen(!open)}>
               {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
             </IconButton>
           )}
         </TableCell>
         <TableCell>{programFilename(props.program.programName)}</TableCell>
-        {props.showCellCtrlCol ? <TableCell>{props.program.cellControllerProgramName}</TableCell> : undefined}
+        {props.showCellCtrlCol ? (
+          <TableCell>{props.program.cellControllerProgramName}</TableCell>
+        ) : undefined}
         <TableCell>
           {props.program.partName !== null ? (
             <Box
@@ -152,7 +155,9 @@ function ProgramRow(props: ProgramRowProps) {
         </TableCell>
         <TableCell>{props.program.comment ?? ""}</TableCell>
         {props.showRevCol ? (
-          <TableCell>{props.program.revision === null ? "" : props.program.revision.toFixed()}</TableCell>
+          <TableCell>
+            {props.program.revision === null ? "" : props.program.revision.toFixed()}
+          </TableCell>
         ) : undefined}
         <TableCell align="right">
           {props.program.statisticalCycleTime === null
@@ -191,7 +196,8 @@ function ProgramRow(props: ProgramRowProps) {
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={numCols}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ mr: "1em", ml: "3em" }}>
-              {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
+              {props.program.toolUse === null ||
+              props.program.toolUse.tools.length === 0 ? undefined : (
                 <Table
                   size="small"
                   sx={{
@@ -203,7 +209,9 @@ function ProgramRow(props: ProgramRowProps) {
                   <TableHead>
                     <TableRow>
                       <TableCell>Tool</TableCell>
-                      {toolsHaveTime ? <TableCell align="right">Estimated Usage (min)</TableCell> : undefined}
+                      {toolsHaveTime ? (
+                        <TableCell align="right">Estimated Usage (min)</TableCell>
+                      ) : undefined}
                       {toolsHaveCnt ? (
                         <TableCell align="right">Estimated Usage (count)</TableCell>
                       ) : undefined}
@@ -256,103 +264,105 @@ export function ProgramSummaryTable(): ReactNode {
     return <div />;
   }
 
-  const rows = LazySeq.of(report.programs).sortWith((a: CellControllerProgram, b: CellControllerProgram) => {
-    let c = 0;
-    switch (sortCol) {
-      case "ProgramName":
-        c = programFilename(a.programName).localeCompare(programFilename(b.programName));
-        break;
-      case "CellProgName":
-        c = a.cellControllerProgramName.localeCompare(b.cellControllerProgramName);
-        break;
-      case "Comment":
-        if (a.comment === null && b.comment === null) {
-          c = 0;
-        } else if (a.comment === null) {
-          c = 1;
-        } else if (b.comment === null) {
-          c = -1;
-        } else {
-          c = a.comment.localeCompare(b.comment);
-        }
-        break;
-      case "Revision":
-        if (a.revision === null && b.revision === null) {
-          c = 0;
-        } else if (a.revision === null) {
-          c = 1;
-        } else if (b.revision === null) {
-          c = -1;
-        } else {
-          c = a.revision - b.revision;
-        }
-        break;
-      case "PartName":
-        if (a.partName === null && b.partName === null) {
-          c = 0;
-        } else if (a.partName === null) {
-          c = 1;
-        } else if (b.partName === null) {
-          c = -1;
-        } else {
-          c = a.partName.localeCompare(b.partName);
-        }
-        break;
-      case "MedianTime":
-        if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
-          c = 0;
-        } else if (a.statisticalCycleTime === null) {
-          c = 1;
-        } else if (b.statisticalCycleTime === null) {
-          c = -1;
-        } else {
-          c =
-            a.statisticalCycleTime.medianMinutesForSingleMat -
-            b.statisticalCycleTime.medianMinutesForSingleMat;
-        }
-        break;
-      case "DeviationAbove":
-        if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
-          c = 0;
-        } else if (a.statisticalCycleTime === null) {
-          c = 1;
-        } else if (b.statisticalCycleTime === null) {
-          c = -1;
-        } else {
-          c = a.statisticalCycleTime.MAD_aboveMinutes - b.statisticalCycleTime.MAD_aboveMinutes;
-        }
-        break;
-      case "DeviationBelow":
-        if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
-          c = 0;
-        } else if (a.statisticalCycleTime === null) {
-          c = 1;
-        } else if (b.statisticalCycleTime === null) {
-          c = -1;
-        } else {
-          c = a.statisticalCycleTime.MAD_belowMinutes - b.statisticalCycleTime.MAD_belowMinutes;
-        }
-        break;
-      case "Planned":
-        if (a.plannedMins === null && b.plannedMins === null) {
-          c = 0;
-        } else if (a.plannedMins === null) {
-          c = 1;
-        } else if (b.plannedMins === null) {
-          c = -1;
-        } else {
-          c = a.plannedMins - b.plannedMins;
-        }
-        break;
-    }
-    if (c === 0) {
-      return 0;
-    } else if ((c < 0 && sortDir === "asc") || (c > 0 && sortDir === "desc")) {
-      return -1;
-    } else {
-      return 1;
-    }
-  });
+  const rows = LazySeq.of(report.programs).sortWith(
+    (a: CellControllerProgram, b: CellControllerProgram) => {
+      let c = 0;
+      switch (sortCol) {
+        case "ProgramName":
+          c = programFilename(a.programName).localeCompare(programFilename(b.programName));
+          break;
+        case "CellProgName":
+          c = a.cellControllerProgramName.localeCompare(b.cellControllerProgramName);
+          break;
+        case "Comment":
+          if (a.comment === null && b.comment === null) {
+            c = 0;
+          } else if (a.comment === null) {
+            c = 1;
+          } else if (b.comment === null) {
+            c = -1;
+          } else {
+            c = a.comment.localeCompare(b.comment);
+          }
+          break;
+        case "Revision":
+          if (a.revision === null && b.revision === null) {
+            c = 0;
+          } else if (a.revision === null) {
+            c = 1;
+          } else if (b.revision === null) {
+            c = -1;
+          } else {
+            c = a.revision - b.revision;
+          }
+          break;
+        case "PartName":
+          if (a.partName === null && b.partName === null) {
+            c = 0;
+          } else if (a.partName === null) {
+            c = 1;
+          } else if (b.partName === null) {
+            c = -1;
+          } else {
+            c = a.partName.localeCompare(b.partName);
+          }
+          break;
+        case "MedianTime":
+          if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
+            c = 0;
+          } else if (a.statisticalCycleTime === null) {
+            c = 1;
+          } else if (b.statisticalCycleTime === null) {
+            c = -1;
+          } else {
+            c =
+              a.statisticalCycleTime.medianMinutesForSingleMat -
+              b.statisticalCycleTime.medianMinutesForSingleMat;
+          }
+          break;
+        case "DeviationAbove":
+          if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
+            c = 0;
+          } else if (a.statisticalCycleTime === null) {
+            c = 1;
+          } else if (b.statisticalCycleTime === null) {
+            c = -1;
+          } else {
+            c = a.statisticalCycleTime.MAD_aboveMinutes - b.statisticalCycleTime.MAD_aboveMinutes;
+          }
+          break;
+        case "DeviationBelow":
+          if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
+            c = 0;
+          } else if (a.statisticalCycleTime === null) {
+            c = 1;
+          } else if (b.statisticalCycleTime === null) {
+            c = -1;
+          } else {
+            c = a.statisticalCycleTime.MAD_belowMinutes - b.statisticalCycleTime.MAD_belowMinutes;
+          }
+          break;
+        case "Planned":
+          if (a.plannedMins === null && b.plannedMins === null) {
+            c = 0;
+          } else if (a.plannedMins === null) {
+            c = 1;
+          } else if (b.plannedMins === null) {
+            c = -1;
+          } else {
+            c = a.plannedMins - b.plannedMins;
+          }
+          break;
+      }
+      if (c === 0) {
+        return 0;
+      } else if ((c < 0 && sortDir === "asc") || (c > 0 && sortDir === "desc")) {
+        return -1;
+      } else {
+        return 1;
+      }
+    },
+  );
 
   function toggleSort(s: SortColumn) {
     if (s === sortCol) {
@@ -533,7 +543,8 @@ export function ProgramContentDialog(): ReactNode {
           </div>
         ) : (
           <>
-            {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}
+            {program?.programName ?? "Program"}{" "}
+            {program?.revision ? " rev" + program.revision.toFixed() : ""}
           </>
         )}
       </DialogTitle>
@@ -631,7 +642,9 @@ export function ProgramHistoryDialog(): ReactNode {
   const [programForContent, setProgramForContent] = useAtom(programToShowContent);
 
   // TODO: switch to persistent list
-  const [revisions, setRevisions] = useState<ReadonlyArray<Readonly<IProgramRevision>> | null>(null);
+  const [revisions, setRevisions] = useState<ReadonlyArray<Readonly<IProgramRevision>> | null>(
+    null,
+  );
   const [lastLoadedPage, setLastLoadedPage] = useState<LastPage>({ page: 0, hasMore: false });
   const [page, setPage] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
@@ -663,7 +676,12 @@ export function ProgramHistoryDialog(): ReactNode {
   function advancePage() {
     if (page < lastLoadedPage.page) {
       setPage(page + 1);
-    } else if (lastLoadedPage.hasMore && program !== null && revisions !== null && revisions.length > 0) {
+    } else if (
+      lastLoadedPage.hasMore &&
+      program !== null &&
+      revisions !== null &&
+      revisions.length > 0
+    ) {
       setLoading(true);
       setError(null);
       const rev = revisions[revisions.length - 1];
@@ -721,14 +739,22 @@ export function ProgramHistoryDialog(): ReactNode {
             <>
               <Tooltip title="Latest Revisions">
                 <span>
-                  <IconButton onClick={() => setPage(0)} disabled={loading || page === 0} size="large">
+                  <IconButton
+                    onClick={() => setPage(0)}
+                    disabled={loading || page === 0}
+                    size="large"
+                  >
                     <FirstPageIcon />
                   </IconButton>
                 </span>
               </Tooltip>
               <Tooltip title="Previous Page">
                 <span>
-                  <IconButton onClick={() => setPage(page - 1)} disabled={loading || page === 0} size="large">
+                  <IconButton
+                    onClick={() => setPage(page - 1)}
+                    disabled={loading || page === 0}
+                    size="large"
+                  >
                     <KeyboardArrowLeft />
                   </IconButton>
                 </span>
@@ -817,11 +843,7 @@ function ProgNavHeader() {
         </span>
         <div style={{ flexGrow: 1 }} />
         <FormControl size="small">
-          <Select
-            autoWidth
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
+          <Select autoWidth value={filter} onChange={(e) => setFilter(e.target.value)}>
             <MenuItem key="AllPrograms" value="AllPrograms">
               All Programs
             </MenuItem>

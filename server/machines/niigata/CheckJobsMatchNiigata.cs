@@ -73,7 +73,10 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add("Part " + j.PartName + " does not have any pallets");
             }
-            if (!string.IsNullOrEmpty(pathData.InputQueue) && !fmsSt.Queues.ContainsKey(pathData.InputQueue))
+            if (
+              !string.IsNullOrEmpty(pathData.InputQueue)
+              && !fmsSt.Queues.ContainsKey(pathData.InputQueue)
+            )
             {
               errors.Add(
                 " Part "
@@ -84,7 +87,8 @@ namespace BlackMaple.FMSInsight.Niigata
               );
             }
             if (
-              !string.IsNullOrEmpty(pathData.OutputQueue) && !fmsSt.Queues.ContainsKey(pathData.OutputQueue)
+              !string.IsNullOrEmpty(pathData.OutputQueue)
+              && !fmsSt.Queues.ContainsKey(pathData.OutputQueue)
             )
             {
               errors.Add(
@@ -179,7 +183,9 @@ namespace BlackMaple.FMSInsight.Niigata
           && newPrograms.Any(p => p.ProgramName == programName && p.Revision == rev.Value);
         if (!existing && !newProg)
         {
-          errors.Add(errHdr + " program " + programName + " rev" + rev.Value.ToString() + " is not found");
+          errors.Add(
+            errHdr + " program " + programName + " rev" + rev.Value.ToString() + " is not found"
+          );
         }
       }
       else
@@ -207,7 +213,10 @@ namespace BlackMaple.FMSInsight.Niigata
           else
           {
             errors.Add(
-              errHdr + " program " + programName + " is neither included in the download nor is an integer"
+              errHdr
+                + " program "
+                + programName
+                + " is neither included in the download nor is an integer"
             );
           }
         }

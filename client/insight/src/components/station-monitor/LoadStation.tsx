@@ -90,7 +90,10 @@ type LoadStationData = {
   readonly face: OrderedMap<number, MaterialList>;
   readonly freeLoadingMaterial: MaterialList;
   readonly queues: ReadonlyMap<string, { readonly mats: MaterialList; readonly hiddenCnt: number }>;
-  readonly baskets: ReadonlyMap<number, { readonly mats: MaterialList; readonly hiddenCnt: number }>;
+  readonly baskets: ReadonlyMap<
+    number,
+    { readonly mats: MaterialList; readonly hiddenCnt: number }
+  >;
   readonly elapsedLoadingTime: string | null;
   readonly fsize: MatCardFontSize;
 };
@@ -250,12 +253,14 @@ function selectLoadStationAndQueueProps(
     }
   }
 
-  const queueMat = new Map<string, { readonly mats: Array<api.IInProcessMaterial>; hiddenCnt: number }>(
-    LazySeq.of(queuesToShow).map((q) => [q, { mats: [], hiddenCnt: 0 }]),
-  );
-  const basketMat = new Map<number, { readonly mats: Array<api.IInProcessMaterial>; hiddenCnt: number }>(
-    LazySeq.of(basketsToShow).map((b) => [b, { mats: [], hiddenCnt: 0 }]),
-  );
+  const queueMat = new Map<
+    string,
+    { readonly mats: Array<api.IInProcessMaterial>; hiddenCnt: number }
+  >(LazySeq.of(queuesToShow).map((q) => [q, { mats: [], hiddenCnt: 0 }]));
+  const basketMat = new Map<
+    number,
+    { readonly mats: Array<api.IInProcessMaterial>; hiddenCnt: number }
+  >(LazySeq.of(basketsToShow).map((b) => [b, { mats: [], hiddenCnt: 0 }]));
   const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
   let palFaces = OrderedMap.empty<number, Array<api.IInProcessMaterial>>();
   let elapsedLoadingTime: string | null = null;
@@ -272,7 +277,10 @@ function selectLoadStationAndQueueProps(
   for (const m of curSt.material) {
     if (pal) {
       // if loading onto pallet, set elapsed load time, ensure face exists, and set free loading
-      if (m.action.type === api.ActionType.Loading && m.action.loadOntoPalletNum === pal.palletNum) {
+      if (
+        m.action.type === api.ActionType.Loading &&
+        m.action.loadOntoPalletNum === pal.palletNum
+      ) {
         if (m.action.elapsedLoadUnloadTime) {
           elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
         }
@@ -310,7 +318,10 @@ function selectLoadStationAndQueueProps(
         elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
       }
 
-      if (m.location.type === api.LocType.InBasket && m.location.basketId === activeBasket.basketId) {
+      if (
+        m.location.type === api.LocType.InBasket &&
+        m.location.basketId === activeBasket.basketId
+      ) {
         if (
           (m.action.type === api.ActionType.UnloadToCompletedMaterial ||
             m.action.type === api.ActionType.UnloadToInProcess) &&
@@ -375,7 +386,9 @@ function selectLoadStationAndQueueProps(
     }
   }
 
-  queueMat.forEach((queue) => queue.mats.sort(mkCompareByProperties((mat) => mat.location.queuePosition ?? 0)));
+  queueMat.forEach((queue) =>
+    queue.mats.sort(mkCompareByProperties((mat) => mat.location.queuePosition ?? 0)),
+  );
   basketMat.forEach((basket) =>
     basket.mats.sort(mkCompareByProperties((mat) => mat.location.basketSubPosition ?? 0)),
   );
@@ -489,7 +502,8 @@ function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }
 
   if (elapsedLoadTime) {
     const elapsedSecsInCurSt = durationToSeconds(elapsedLoadTime);
-    const elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+    const elapsedSecs =
+      elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
     return <span>{formatSeconds(elapsedSecs)}</span>;
   } else {
     return null;
@@ -595,7 +609,9 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
             justifyContent: "center",
           }}
         >
-          <Typography variant="h6">{data.pallet.faceNames?.[faceNum - 1] ?? `Face ${faceNum}`}</Typography>
+          <Typography variant="h6">
+            {data.pallet.faceNames?.[faceNum - 1] ?? `Face ${faceNum}`}
+          </Typography>
         </Box>
       ) : undefined}
       <Box
@@ -604,7 +620,9 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
           mr: "4em",
         }}
       >
-        <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: faceNum }}>
+        <MoveMaterialArrowNode
+          kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: faceNum }}
+        >
           <Box
             sx={{
               display: "flex",
@@ -773,7 +791,9 @@ function MaterialColumn({
       );
     case "queue":
       return (
-        <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.QueueZone, queue: region.label }}>
+        <MoveMaterialArrowNode
+          kind={{ type: MoveMaterialNodeKindType.QueueZone, queue: region.label }}
+        >
           <SortableRegion
             matIds={region.material.mats.map((m) => m.materialID)}
             direction="vertical"
@@ -926,7 +946,10 @@ function InstructionButton({ pallet }: { pallet: number | null }) {
   if (material === null) return null;
 
   let type: string | undefined;
-  if (material.action.type === api.ActionType.Loading && material.action.loadOntoPalletNum === pallet) {
+  if (
+    material.action.type === api.ActionType.Loading &&
+    material.action.loadOntoPalletNum === pallet
+  ) {
     type = "load";
   } else if (
     (material.action.type === api.ActionType.UnloadToInProcess ||
@@ -1007,7 +1030,7 @@ function AddMatButton({
     return (
       <Button
         color="primary"
-        disabled={toQueue === null ||  addingExistingMat}
+        disabled={toQueue === null || addingExistingMat}
         onClick={() => {
           addExistingMat({
             materialId: existingMat.materialID,
@@ -1019,7 +1042,8 @@ function AddMatButton({
           onClose();
         }}
       >
-        Add To {toQueue ?? "Queue"} {lastProcMat ? ` To Run Process ${lastProcMat.process + 1}` : ""}
+        Add To {toQueue ?? "Queue"}{" "}
+        {lastProcMat ? ` To Run Process ${lastProcMat.process + 1}` : ""}
       </Button>
     );
   }

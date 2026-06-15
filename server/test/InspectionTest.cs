@@ -171,7 +171,13 @@ namespace BlackMaple.FMSInsight.Tests
       CheckDecision(4, "insp1", "counter1", true, now);
       CheckLastUTC("counter1", now);
 
-      CheckDecisions(new[] { 1L, 2, 3, 4 }, "insp1", "counter1", new[] { false, false, true, true }, now);
+      CheckDecisions(
+        new[] { 1L, 2, 3, 4 },
+        "insp1",
+        "counter1",
+        new[] { false, false, true, true },
+        now
+      );
     }
 
     [Test]
@@ -511,7 +517,15 @@ namespace BlackMaple.FMSInsight.Tests
     )
     {
       using var _insp = _repoCfg.OpenConnection();
-      CheckDecision(matID, _insp.LookupInspectionDecisions(matID), iType, counter, inspect, now, forced);
+      CheckDecision(
+        matID,
+        _insp.LookupInspectionDecisions(matID),
+        iType,
+        counter,
+        inspect,
+        now,
+        forced
+      );
     }
 
     private void CheckDecisions(
@@ -591,7 +605,11 @@ namespace BlackMaple.FMSInsight.Tests
       forceEntries.ShouldBe(forced ? 1 : 0);
     }
 
-    private void ExpectPathToBe(long matID, string iType, IEnumerable<MaterialProcessActualPath> expected)
+    private void ExpectPathToBe(
+      long matID,
+      string iType,
+      IEnumerable<MaterialProcessActualPath> expected
+    )
     {
       using var _insp = _repoCfg.OpenConnection();
       bool foundEntry = false;

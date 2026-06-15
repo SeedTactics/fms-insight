@@ -136,7 +136,8 @@ namespace MazakMachineInterface
 
     public static bool IsSplitComment(string comment)
     {
-      return !string.IsNullOrEmpty(comment) && comment.EndsWith(SplitInsightSuffix, StringComparison.Ordinal);
+      return !string.IsNullOrEmpty(comment)
+        && comment.EndsWith(SplitInsightSuffix, StringComparison.Ordinal);
     }
 
     public static bool IsSailPart(string partName, string comment)
@@ -246,7 +247,9 @@ namespace MazakMachineInterface
       if (procSep < 0)
         return 1;
 
-      return int.TryParse(comment.Substring(procSep + 1, pathSep - procSep - 1), out var proc) ? proc : 1;
+      return int.TryParse(comment.Substring(procSep + 1, pathSep - procSep - 1), out var proc)
+        ? proc
+        : 1;
     }
 
     public static MazakCommentInfo ParseCommentInfo(string comment)
@@ -274,7 +277,11 @@ namespace MazakMachineInterface
       return mainProgramComment.StartsWith("Insight:");
     }
 
-    public static bool TryParseMainProgramComment(string mainProgramComment, out string program, out long rev)
+    public static bool TryParseMainProgramComment(
+      string mainProgramComment,
+      out string program,
+      out long rev
+    )
     {
       if (mainProgramComment.StartsWith("Insight:"))
       {
@@ -364,7 +371,11 @@ namespace MazakMachineInterface
       return (PathInfo.Fixture, PathInfo.Face);
     }
 
-    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakConfig mazakCfg)
+    public override void CreateDatabaseRow(
+      MazakPartRow newPart,
+      string fixture,
+      MazakConfig mazakCfg
+    )
     {
       char[] FixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
@@ -374,7 +385,10 @@ namespace MazakMachineInterface
       {
         foreach (int statNum in routeEntry.Stations)
         {
-          int stat = mazakCfg.MachineNumbers == null ? statNum : mazakCfg.MachineNumbers.IndexOf(statNum) + 1;
+          int stat =
+            mazakCfg.MachineNumbers == null
+              ? statNum
+              : mazakCfg.MachineNumbers.IndexOf(statNum) + 1;
           Cut[stat - 1] = stat.ToString()[0];
         }
       }
@@ -616,11 +630,17 @@ namespace MazakMachineInterface
                   proc.PartProgram.ProgramName,
                   proc.PartProgram.Revision
                 ),
-                ProgramContent = getProgramContent(proc.PartProgram.ProgramName, proc.PartProgram.Revision),
+                ProgramContent = getProgramContent(
+                  proc.PartProgram.ProgramName,
+                  proc.PartProgram.Revision
+                ),
               };
               newProgs[(newProg.ProgramName, newProg.ProgramRevision)] = newProg;
             }
-            proc.PartProgram = proc.PartProgram with { CellControllerProgramName = newProg.MainProgram };
+            proc.PartProgram = proc.PartProgram with
+            {
+              CellControllerProgramName = newProg.MainProgram,
+            };
           }
         }
       }
@@ -812,7 +832,9 @@ namespace MazakMachineInterface
             var outQueue = info.OutputQueue;
             if (proc == part.Processes.Count)
             {
-              if (!string.IsNullOrEmpty(outQueue) && !fmsSettings.ExternalQueues.ContainsKey(outQueue))
+              if (
+                !string.IsNullOrEmpty(outQueue) && !fmsSettings.ExternalQueues.ContainsKey(outQueue)
+              )
               {
                 errs.Add(
                   "Output queues on the final process must be external queues."
@@ -921,7 +943,9 @@ namespace MazakMachineInterface
     private static bool AllConsecutiveQueuesDiffer(Job job)
     {
       return job.Processes.Count > 1
-        && Enumerable.Range(1, job.Processes.Count - 1).All(proc => ConsecutiveQueuesDiffer(job, proc));
+        && Enumerable
+          .Range(1, job.Processes.Count - 1)
+          .All(proc => ConsecutiveQueuesDiffer(job, proc));
     }
 
     private static bool ConsecutiveQueuesDiffer(Job job, int process)
@@ -1085,7 +1109,8 @@ namespace MazakMachineInterface
             int progNum;
             if (!int.TryParse(stop.Program, out progNum))
             {
-              ErrorDuringCreate = "Part " + job.PartName + " program " + stop.Program + " is not an integer.";
+              ErrorDuringCreate =
+                "Part " + job.PartName + " program " + stop.Program + " is not an integer.";
               return;
             }
           }
@@ -1108,14 +1133,24 @@ namespace MazakMachineInterface
                 + job.PartName
                 + " program "
                 + stop.Program
-                + (stop.ProgramRevision.HasValue ? " rev" + stop.ProgramRevision.Value.ToString() : "")
+                + (
+                  stop.ProgramRevision.HasValue
+                    ? " rev" + stop.ProgramRevision.Value.ToString()
+                    : ""
+                )
                 + " does not exist in the cell controller.";
               return;
             }
             // check if program already exists
             foreach (var mp in mazakData.MainPrograms)
             {
-              if (MazakProcess.TryParseMainProgramComment(mp.Comment, out string mpProg, out long mpRev))
+              if (
+                MazakProcess.TryParseMainProgramComment(
+                  mp.Comment,
+                  out string mpProg,
+                  out long mpRev
+                )
+              )
               {
                 if (mpProg == prog.ProgramName && mpRev == prog.Revision)
                 {
@@ -1145,7 +1180,10 @@ namespace MazakMachineInterface
       }
     }
 
-    private static ISet<string> CalculateUsedPrograms(MazakAllData oldData, IEnumerable<MazakPart> newParts)
+    private static ISet<string> CalculateUsedPrograms(
+      MazakAllData oldData,
+      IEnumerable<MazakPart> newParts
+    )
     {
       var progsToComment = oldData
         .MainPrograms.Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
@@ -1156,7 +1194,9 @@ namespace MazakMachineInterface
       {
         foreach (var proc in part.Processes)
         {
-          if (!string.IsNullOrEmpty(proc.MainProgram) && progsToComment.ContainsKey(proc.MainProgram))
+          if (
+            !string.IsNullOrEmpty(proc.MainProgram) && progsToComment.ContainsKey(proc.MainProgram)
+          )
           {
             used.Add(progsToComment[proc.MainProgram]);
           }
@@ -1169,7 +1209,10 @@ namespace MazakMachineInterface
           if (!string.IsNullOrEmpty(proc.PartProgram.ProgramName))
           {
             used.Add(
-              MazakProcess.CreateMainProgramComment(proc.PartProgram.ProgramName, proc.PartProgram.Revision)
+              MazakProcess.CreateMainProgramComment(
+                proc.PartProgram.ProgramName,
+                proc.PartProgram.Revision
+              )
             );
           }
         }
@@ -1335,7 +1378,12 @@ namespace MazakMachineInterface
           {
             // take out the fixture name
             mazakFixtureName =
-              "F:" + downloadUID.ToString() + ":" + fixture.FixtureGroup.ToString() + ":" + fixture.Face;
+              "F:"
+              + downloadUID.ToString()
+              + ":"
+              + fixture.FixtureGroup.ToString()
+              + ":"
+              + fixture.Face;
           }
           if (mazakFixtureName.Length > 20)
           {

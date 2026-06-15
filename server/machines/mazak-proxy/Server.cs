@@ -89,7 +89,10 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
 
     public void AddPostHandler<T, R>(string path, Func<T, R> handler)
     {
-      _postHandlers.Add(path, new PostHandler { BodyType = typeof(T), Handler = t => handler((T)t) });
+      _postHandlers.Add(
+        path,
+        new PostHandler { BodyType = typeof(T), Handler = t => handler((T)t) }
+      );
     }
 
     private void HandleRequest(IAsyncResult asyncResult)
@@ -138,7 +141,9 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
             resp.StatusCode = 200;
             resp.ContentType = "application/json";
             resp.ContentEncoding = System.Text.Encoding.UTF8;
-            serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(result.GetType());
+            serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(
+              result.GetType()
+            );
             serializer.WriteObject(resp.OutputStream, result);
           }
           else

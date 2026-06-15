@@ -31,11 +31,24 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { fakeCycle, fakeLoadOrUnload, fakeMaterial, fakePalletBegin } from "../../test/events.fake.js";
-import { lastEventCounter, onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading.js";
+import {
+  fakeCycle,
+  fakeLoadOrUnload,
+  fakeMaterial,
+  fakePalletBegin,
+} from "../../test/events.fake.js";
+import {
+  lastEventCounter,
+  onLoadLast30Log,
+  onLoadSpecificMonthLog,
+  onServerEvent,
+} from "./loading.js";
 import { addDays, addMinutes } from "date-fns";
 import { last30BufferEntries, specificMonthBufferEntries } from "./buffers.js";
-import { last30EstimatedCycleTimes, specificMonthEstimatedCycleTimes } from "./estimated-cycle-times.js";
+import {
+  last30EstimatedCycleTimes,
+  specificMonthEstimatedCycleTimes,
+} from "./estimated-cycle-times.js";
 import { last30Inspections, specificMonthInspections } from "./inspections.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "./material-summary.js";
 import { last30PalletCycles, specificMonthPalletCycles } from "./pallet-cycles.js";
@@ -50,7 +63,9 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 
 function checkLast30(snapshot: ReturnType<typeof createStore>, msg: string) {
   expect(toRawJs(snapshot.get(last30BufferEntries))).toMatchSnapshot(msg + " - buffers");
-  expect(toRawJs(snapshot.get(last30EstimatedCycleTimes))).toMatchSnapshot(msg + " - estimated cycle times");
+  expect(toRawJs(snapshot.get(last30EstimatedCycleTimes))).toMatchSnapshot(
+    msg + " - estimated cycle times",
+  );
   expect(toRawJs(snapshot.get(last30Inspections))).toMatchSnapshot(msg + " - inspections");
   expect(toRawJs(snapshot.get(last30MaterialSummary))).toMatchSnapshot(msg + " - material summary");
   expect(toRawJs(snapshot.get(last30PalletCycles))).toMatchSnapshot(msg + " - pallet cycles");
@@ -140,7 +155,9 @@ it("processes events in a specific month", () => {
   snapshot.set(onLoadSpecificMonthLog, [...twentySevenCycle, ...twoDaysAgoCycle, ...todayCycle]);
 
   expect(toRawJs(snapshot.get(specificMonthBufferEntries))).toMatchSnapshot("buffers");
-  expect(toRawJs(snapshot.get(specificMonthEstimatedCycleTimes))).toMatchSnapshot("estimated cycle times");
+  expect(toRawJs(snapshot.get(specificMonthEstimatedCycleTimes))).toMatchSnapshot(
+    "estimated cycle times",
+  );
   expect(toRawJs(snapshot.get(specificMonthInspections))).toMatchSnapshot("inspections");
   expect(toRawJs(snapshot.get(specificMonthMaterialSummary))).toMatchSnapshot("material summary");
   expect(toRawJs(snapshot.get(specificMonthPalletCycles))).toMatchSnapshot("pallet cycles");

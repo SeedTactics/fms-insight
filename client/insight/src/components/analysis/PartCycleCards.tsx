@@ -59,7 +59,10 @@ import {
 import { PartIdenticon } from "../station-monitor/Material.js";
 import StationDataTable from "./StationDataTable.js";
 import { useSetTitle, isDemoAtom } from "../routes.js";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
+import {
+  last30MaterialSummary,
+  specificMonthMaterialSummary,
+} from "../../cell-status/material-summary.js";
 import {
   last30EstimatedCycleTimes,
   PartAndStationOperation,
@@ -90,10 +93,16 @@ function isPartCycleChartData(point: CycleChartPoint): point is PartCycleChartDa
 }
 
 function hasLoadCycleOperations(point: CycleChartPoint): point is LoadCycleData {
-  return "operations" in point && (point.operations === undefined || Array.isArray(point.operations));
+  return (
+    "operations" in point && (point.operations === undefined || Array.isArray(point.operations))
+  );
 }
 
-function DisplayDateRange({ range }: { range: { start: Date; end: Date } | [Date, Date] | undefined }) {
+function DisplayDateRange({
+  range,
+}: {
+  range: { start: Date; end: Date } | [Date, Date] | undefined;
+}) {
   const period = useAtomValue(selectedAnalysisPeriod);
 
   if (!range) return null;
@@ -188,7 +197,9 @@ export function PartMachineCycleChart() {
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
-  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const cycles = useAtomValue(
+    period.type === "Last30" ? last30StationCycles : specificMonthStationCycles,
+  );
   const points = useMemo(() => {
     if (selectedPart) {
       if (selectedOperation) {
@@ -317,9 +328,13 @@ export function PartMachineCycleChart() {
             onChange={(e) => {
               if (selectedPart) {
                 const selectedIdx =
-                  typeof e.target.value === "number" ? e.target.value : Number.parseInt(e.target.value, 10);
+                  typeof e.target.value === "number"
+                    ? e.target.value
+                    : Number.parseInt(e.target.value, 10);
                 if (!Number.isNaN(selectedIdx)) {
-                  setSelectedOperation(selectedIdx === -1 ? undefined : points.allMachineOperations[selectedIdx]);
+                  setSelectedOperation(
+                    selectedIdx === -1 ? undefined : points.allMachineOperations[selectedIdx],
+                  );
                 }
               } else if (typeof e.target.value === "string") {
                 setSelectedMachine(e.target.value);
@@ -510,11 +525,7 @@ export function PartLoadStationCycleChart() {
       selectedPart && selectedOperation === "LoadOp"
         ? new PartAndStationOperation(selectedPart.part, "L/U", `LOAD-${selectedPart.proc}`)
         : selectedPart && selectedOperation === "UnloadOp"
-          ? new PartAndStationOperation(
-              selectedPart.part,
-              "L/U",
-              `UNLOAD-${selectedPart.proc}`,
-            )
+          ? new PartAndStationOperation(selectedPart.part, "L/U", `UNLOAD-${selectedPart.proc}`)
           : null,
     [selectedPart, selectedOperation],
   );
@@ -523,7 +534,9 @@ export function PartLoadStationCycleChart() {
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
-  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const cycles = useAtomValue(
+    period.type === "Last30" ? last30StationCycles : specificMonthStationCycles,
+  );
   const matSummary = useAtomValue(
     period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
   );
@@ -562,7 +575,15 @@ export function PartLoadStationCycleChart() {
     } else {
       return emptyStationCycles(cycles.valuesToLazySeq());
     }
-  }, [selectedPart, selectedPallet, curOperation, selectedLoadStation, cycles, showGraph, carrierFilter]);
+  }, [
+    selectedPart,
+    selectedPallet,
+    curOperation,
+    selectedLoadStation,
+    cycles,
+    showGraph,
+    carrierFilter,
+  ]);
   const plannedMinutes = useMemo(() => {
     if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
       return plannedOperationMinutes(points, true);
@@ -657,8 +678,12 @@ export function PartLoadStationCycleChart() {
             onChange={(e) => setSelectedOperation(e.target.value as LoadCycleFilter)}
           >
             <MenuItem value={"LULOccupancy"}>L/U Occupancy</MenuItem>
-            {selectedPart ? <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem> : undefined}
-            {selectedPart ? <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem> : undefined}
+            {selectedPart ? (
+              <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem>
+            ) : undefined}
+            {selectedPart ? (
+              <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem>
+            ) : undefined}
           </Select>
         </FormControl>
         <FormControl size="small">
@@ -713,7 +738,9 @@ export function PartLoadStationCycleChart() {
               displayEmpty
               value={selectedPallet || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+              onChange={(e) =>
+                setSelectedPallet(e.target.value === "" ? undefined : e.target.value)
+              }
             >
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>

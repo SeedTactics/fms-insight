@@ -90,22 +90,25 @@ function convertLogToRebooking(log: Readonly<ILogEntry>): Readonly<IRebooking> {
   };
 }
 
-export const setLast30Rebookings = atom(null, (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(rebookingEvts, (old) =>
-    old.union(
-      LazySeq.of(log)
-        .filter((e) => e.type === LogType.Rebooking)
-        .toOrderedMap((e) => [e.result, convertLogToRebooking(e)]),
-    ),
-  );
-  set(canceledRebookingsRW, (old) =>
-    old.union(
-      LazySeq.of(log)
-        .filter((e) => e.type === LogType.CancelRebooking)
-        .toOrderedMap((e) => [e.result, e.endUTC]),
-    ),
-  );
-});
+export const setLast30Rebookings = atom(
+  null,
+  (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(rebookingEvts, (old) =>
+      old.union(
+        LazySeq.of(log)
+          .filter((e) => e.type === LogType.Rebooking)
+          .toOrderedMap((e) => [e.result, convertLogToRebooking(e)]),
+      ),
+    );
+    set(canceledRebookingsRW, (old) =>
+      old.union(
+        LazySeq.of(log)
+          .filter((e) => e.type === LogType.CancelRebooking)
+          .toOrderedMap((e) => [e.result, e.endUTC]),
+      ),
+    );
+  },
+);
 
 function updateJobs(set: Setter, jobs: LazySeq<Readonly<IJob>>, expire?: Date) {
   set(scheduledRW, (old) => {
@@ -131,25 +134,31 @@ function updateJobs(set: Setter, jobs: LazySeq<Readonly<IJob>>, expire?: Date) {
   });
 }
 
-export const setLast30RebookingJobs = atom(null, (_, set, historic: Readonly<IRecentHistoricData>) => {
-  updateJobs(
-    set,
-    LazySeq.ofObject(historic.jobs).map(([, j]) => j),
-  );
-});
+export const setLast30RebookingJobs = atom(
+  null,
+  (_, set, historic: Readonly<IRecentHistoricData>) => {
+    updateJobs(
+      set,
+      LazySeq.ofObject(historic.jobs).map(([, j]) => j),
+    );
+  },
+);
 
-export const updateLast30Rebookings = atom(null, (get, set, { evt, now, expire }: ServerEventAndTime) => {
-  if (evt.newJobs) {
-    updateJobs(set, LazySeq.of(evt.newJobs.jobs), expire ? addDays(now, -30) : undefined);
-  } else if (evt.logEntry) {
-    const e = evt.logEntry;
-    if (e.type === LogType.Rebooking) {
-      set(rebookingEvts, (old) => old.set(e.result, convertLogToRebooking(e)));
-    } else if (e.type === LogType.CancelRebooking) {
-      set(canceledRebookingsRW, (old) => old.set(e.result, e.endUTC));
+export const updateLast30Rebookings = atom(
+  null,
+  (get, set, { evt, now, expire }: ServerEventAndTime) => {
+    if (evt.newJobs) {
+      updateJobs(set, LazySeq.of(evt.newJobs.jobs), expire ? addDays(now, -30) : undefined);
+    } else if (evt.logEntry) {
+      const e = evt.logEntry;
+      if (e.type === LogType.Rebooking) {
+        set(rebookingEvts, (old) => old.set(e.result, convertLogToRebooking(e)));
+      } else if (e.type === LogType.CancelRebooking) {
+        set(canceledRebookingsRW, (old) => old.set(e.result, e.endUTC));
+      }
     }
-  }
-});
+  },
+);
 
 export function useCancelRebooking(): [(bookingId: string) => Promise<void>, boolean] {
   const [loading, setLoading] = useState(false);
@@ -179,7 +188,9 @@ export function useNewRebooking(): [(n: NewRebooking) => Promise<void>, boolean]
       n.part,
       n.qty && !isNaN(n.qty) ? n.qty : 1,
       n.workorder,
-      n.priority !== undefined && n.priority !== null && !isNaN(n.priority) ? n.priority : undefined,
+      n.priority !== undefined && n.priority !== null && !isNaN(n.priority)
+        ? n.priority
+        : undefined,
       n.notes,
     )
       .then(() => {})

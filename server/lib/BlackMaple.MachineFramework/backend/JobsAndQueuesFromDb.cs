@@ -72,7 +72,9 @@ namespace BlackMaple.MachineFramework
     // - Load all decremented quantities (including the potentially new quantities)
     //   strictly after the given decrement ID.
     //Thus this function can be called multiple times to receive the same data.
-    List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId);
+    List<JobAndDecrementQuantity> DecrementJobQuantites(
+      long loadDecrementsStrictlyAfterDecrementId
+    );
     List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC);
 
     /// Add new castings.  The casting has not yet been assigned to a specific job,
@@ -104,7 +106,12 @@ namespace BlackMaple.MachineFramework
     /// The material will be inserted into the given position, bumping any later material to a
     /// larger position.  If the material is currently in another queue or a different position,
     /// it will be removed and placed in the given position.
-    void SetMaterialInQueue(long materialId, string queue, int position, string? operatorName = null);
+    void SetMaterialInQueue(
+      long materialId,
+      string queue,
+      int position,
+      string? operatorName = null
+    );
 
     // If true, material that is currently being loaded onto a pallet can be canceled by calling
     // SignalMaterialForQuarantine.  Otherwise, SignalMaterialForQuarantine will give an error
@@ -113,11 +120,20 @@ namespace BlackMaple.MachineFramework
 
     /// Mark the material for quarantine.  If the material is already in a queue, it is directly moved.
     /// If the material is still on a pallet, it will be moved after unload completes.
-    void SignalMaterialForQuarantine(long materialId, string? operatorName = null, string? reason = null);
+    void SignalMaterialForQuarantine(
+      long materialId,
+      string? operatorName = null,
+      string? reason = null
+    );
 
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName = null);
 
-    void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string? operatorName = null);
+    void SwapMaterialOnPallet(
+      int pallet,
+      long oldMatId,
+      long newMatId,
+      string? operatorName = null
+    );
     event EditMaterialInLogDelegate? OnEditMaterialInLog;
 
     MaterialDetails? InvalidatePalletCycle(
@@ -425,7 +441,10 @@ namespace BlackMaple.MachineFramework
             Alarms =
               _syncError == null
                 ? ["FMS Insight is starting up..."]
-                : [$"Error communicating with machines: {_syncError}. Will try again in a few minutes."],
+                :
+                [
+                  $"Error communicating with machines: {_syncError}. Will try again in a few minutes.",
+                ],
           };
         }
         else if (_syncError != null)
@@ -462,7 +481,11 @@ namespace BlackMaple.MachineFramework
     List<string> IJobAndQueueControl.CheckValidRoutes(IEnumerable<Job> newJobs)
     {
       using var jdb = _repo.OpenConnection();
-      var newJ = new NewJobs() { ScheduleId = "FakeSchIdForChecking", Jobs = newJobs.ToImmutableList() };
+      var newJ = new NewJobs()
+      {
+        ScheduleId = "FakeSchIdForChecking",
+        Jobs = newJobs.ToImmutableList(),
+      };
       return _syncState
         .CheckNewJobs(jdb, newJ)
         .Concat(_additionalCheckJobs.SelectMany(c => c.CheckNewJobs(jdb, newJ)))
@@ -573,7 +596,10 @@ namespace BlackMaple.MachineFramework
               CurrentQueue = queue,
               QueuePosition = log.LocationNum,
             },
-            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Waiting,
+            },
             SignaledInspections = [],
             QuarantineAfterUnload = null,
           }
@@ -680,19 +706,32 @@ namespace BlackMaple.MachineFramework
           CurrentQueue = queue,
           QueuePosition = logEvt.LastOrDefault()?.LocationNum,
         },
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting,
+        },
         SignaledInspections = [],
         QuarantineAfterUnload = null,
       };
     }
 
-    public void SetMaterialInQueue(long materialId, string queue, int position, string? operatorName)
+    public void SetMaterialInQueue(
+      long materialId,
+      string queue,
+      int position,
+      string? operatorName
+    )
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
         throw new BadRequestException("Queue " + queue + " does not exist");
       }
-      Log.Debug("Adding material {matId} to queue {queue} in position {pos}", materialId, queue, position);
+      Log.Debug(
+        "Adding material {matId} to queue {queue} in position {pos}",
+        materialId,
+        queue,
+        position
+      );
 
       string? error = null;
       bool requireStateRefresh = false;
@@ -842,7 +881,12 @@ namespace BlackMaple.MachineFramework
                     else
                     {
                       var path = job.Processes[mat.Process - 1].Paths[mat.Path - 1];
-                      if ((mat.Process != job.Processes.Count && (path == null || path.OutputQueue == null)))
+                      if (
+                        (
+                          mat.Process != job.Processes.Count
+                          && (path == null || path.OutputQueue == null)
+                        )
+                      )
                       {
                         error =
                           "Can only signal material for quarantine if the current process and path has an output queue";
@@ -870,11 +914,18 @@ namespace BlackMaple.MachineFramework
                 }
                 break;
 
-              case (InProcessMaterialLocation.LocType.Free, InProcessMaterialAction.ActionType.Waiting)
-                when !string.IsNullOrEmpty(_settings.QuarantineQueue):
-              case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
-                when !string.IsNullOrEmpty(_settings.QuarantineQueue):
-              case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
+              case (
+                InProcessMaterialLocation.LocType.Free,
+                InProcessMaterialAction.ActionType.Waiting
+              ) when !string.IsNullOrEmpty(_settings.QuarantineQueue):
+              case (
+                InProcessMaterialLocation.LocType.InQueue,
+                InProcessMaterialAction.ActionType.Waiting
+              ) when !string.IsNullOrEmpty(_settings.QuarantineQueue):
+              case (
+                InProcessMaterialLocation.LocType.InQueue,
+                InProcessMaterialAction.ActionType.Loading
+              )
                 when !string.IsNullOrEmpty(_settings.QuarantineQueue)
                   && _syncState.AllowQuarantineToCancelLoad:
                 {
@@ -901,9 +952,14 @@ namespace BlackMaple.MachineFramework
                 }
                 break;
 
-              case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
-                when string.IsNullOrEmpty(_settings.QuarantineQueue):
-              case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
+              case (
+                InProcessMaterialLocation.LocType.InQueue,
+                InProcessMaterialAction.ActionType.Waiting
+              ) when string.IsNullOrEmpty(_settings.QuarantineQueue):
+              case (
+                InProcessMaterialLocation.LocType.InQueue,
+                InProcessMaterialAction.ActionType.Loading
+              )
                 when string.IsNullOrEmpty(_settings.QuarantineQueue)
                   && _syncState.AllowQuarantineToCancelLoad:
                 {
@@ -946,7 +1002,12 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string? operatorName = null)
+    public void SwapMaterialOnPallet(
+      int pallet,
+      long oldMatId,
+      long newMatId,
+      string? operatorName = null
+    )
     {
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 

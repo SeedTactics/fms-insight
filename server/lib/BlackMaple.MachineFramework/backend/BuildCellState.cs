@@ -47,7 +47,10 @@ public static class BuildCellState
     public required Job? Job { get; init; }
   }
 
-  public static ImmutableList<MaterialInQueue> AllQueuedMaterial(IRepository db, IJobCache? jobCache)
+  public static ImmutableList<MaterialInQueue> AllQueuedMaterial(
+    IRepository db,
+    IJobCache? jobCache
+  )
   {
     var mats = ImmutableList.CreateBuilder<MaterialInQueue>();
     var queuedMats = db.GetMaterialInAllQueues();
@@ -61,14 +64,20 @@ public static class BuildCellState
         new MaterialInQueue()
         {
           QMat = mat,
-          Job = string.IsNullOrEmpty(mat.Unique) || jobCache == null ? null : jobCache.Lookup(mat.Unique),
+          Job =
+            string.IsNullOrEmpty(mat.Unique) || jobCache == null
+              ? null
+              : jobCache.Lookup(mat.Unique),
           InProc = new InProcessMaterial()
           {
             MaterialID = mat.MaterialID,
             JobUnique = mat.Unique,
             PartName = mat.PartNameOrCasting,
             Process = lastProc,
-            Path = mat.Paths != null && mat.Paths.TryGetValue(Math.Max(1, lastProc), out var path) ? path : 1,
+            Path =
+              mat.Paths != null && mat.Paths.TryGetValue(Math.Max(1, lastProc), out var path)
+                ? path
+                : 1,
             Serial = mat.Serial,
             WorkorderId = mat.Workorder,
             SignaledInspections = insps[mat.MaterialID]
@@ -83,7 +92,10 @@ public static class BuildCellState
               CurrentQueue = mat.Queue,
               QueuePosition = mat.Position,
             },
-            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Waiting,
+            },
           },
         }
       );
@@ -141,12 +153,18 @@ public static class BuildCellState
     }
   }
 
-  public static Pallet CurrentMaterialOnPallet(int pallet, IRepository db, IJobCacheWithDefaultStops jobs)
+  public static Pallet CurrentMaterialOnPallet(
+    int pallet,
+    IRepository db,
+    IJobCacheWithDefaultStops jobs
+  )
   {
     var faces = ImmutableDictionary.CreateBuilder<int, LoadedFace>();
     var log = db.CurrentPalletLog(pallet, includeLastPalletCycleEvt: true).ToImmutableList();
 
-    var lastPalletBegin = log.LastOrDefault(e => e.LogType == LogType.PalletCycle && e.StartOfCycle);
+    var lastPalletBegin = log.LastOrDefault(e =>
+      e.LogType == LogType.PalletCycle && e.StartOfCycle
+    );
 
     var loadBegin = log.LastOrDefault(e =>
       e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
@@ -201,7 +219,10 @@ public static class BuildCellState
               PalletNum = pallet,
               Face = face.Key,
             },
-            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Waiting,
+            },
           };
         })
         .ToImmutableList();
@@ -344,8 +365,10 @@ public static class BuildCellState
       public required int LoadNum { get; init; }
       public ImmutableList<InProcessMaterial>? NewMaterialToLoad { get; init; } = null;
       public ImmutableList<int> UnloadingFaces { get; init; } = [];
-      public Func<LoadedFace, ImmutableList<InProcessMaterial>>? AdjustUnloadingMaterial { get; init; } =
-        null;
+      public Func<
+        LoadedFace,
+        ImmutableList<InProcessMaterial>
+      >? AdjustUnloadingMaterial { get; init; } = null;
       public DateTime? MachiningStopTime { get; init; } = null;
     }
 
@@ -369,7 +392,12 @@ public static class BuildCellState
     switch (status)
     {
       case LoadedPalletStatus.MachineStopped machineStopped:
-        return SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
+        return SetMachineNotRunning(
+          pal: pal,
+          db: db,
+          machineControl: machineControl,
+          nowUTC: nowUTC
+        );
 
       case LoadedPalletStatus.MachineRunning machineRunning:
         return SetMachineRunning(
@@ -405,7 +433,9 @@ public static class BuildCellState
         {
           pal = pal with
           {
-            MaterialLoadingOntoPallet = pal.MaterialLoadingOntoPallet.AddRange(unloading.NewMaterialToLoad),
+            MaterialLoadingOntoPallet = pal.MaterialLoadingOntoPallet.AddRange(
+              unloading.NewMaterialToLoad
+            ),
           };
         }
         return pal;
@@ -501,7 +531,10 @@ public static class BuildCellState
         pockets: machineControl?.CurrentToolsInMachine(groupName, machineNum),
         extraData: !programRevision.HasValue
           ? null
-          : new Dictionary<string, string> { { "ProgramRevision", programRevision.Value.ToString() } }
+          : new Dictionary<string, string>
+          {
+            { "ProgramRevision", programRevision.Value.ToString() },
+          }
       );
       newEvt = true;
     }
@@ -610,7 +643,13 @@ public static class BuildCellState
             stop.face.FaceNum,
             stop.face with
             {
-              Stops = stop.face.Stops.SetItem(stop.stop.StopIdx, stop.stop with { MachineEnd = machineEnd }),
+              Stops = stop.face.Stops.SetItem(
+                stop.stop.StopIdx,
+                stop.stop with
+                {
+                  MachineEnd = machineEnd,
+                }
+              ),
               Material = stop
                 .face.Material.Select(oldMat =>
                   oldMat with
@@ -636,7 +675,8 @@ public static class BuildCellState
   {
     var matIdsOnFace = face.Material.Select(m => m.MaterialID).ToHashSet();
     var signalQuarantine = log.FirstOrDefault(e =>
-      e.LogType == LogType.SignalQuarantine && e.Material.Any(m => matIdsOnFace.Contains(m.MaterialID))
+      e.LogType == LogType.SignalQuarantine
+      && e.Material.Any(m => matIdsOnFace.Contains(m.MaterialID))
     );
     if (signalQuarantine != null)
     {
@@ -729,7 +769,10 @@ public static class BuildCellState
       {
         MaterialIDToDestination = face.Material.ToImmutableDictionary(
           m => m.MaterialID,
-          m => matIdsToLoad.Contains(m.MaterialID) ? null : new UnloadDestination() { Queue = outputQueue }
+          m =>
+            matIdsToLoad.Contains(m.MaterialID)
+              ? null
+              : new UnloadDestination() { Queue = outputQueue }
         ),
         Process = face.Process,
         FaceNum = face.FaceNum,
@@ -778,8 +821,12 @@ public static class BuildCellState
       stops = job.Processes[process - 1].Paths[path - 1].Stops;
       isFinalProcess = process == job.Processes.Count;
       outputQueue = job.Processes[process - 1].Paths[path - 1].OutputQueue;
-      expectedLoadTimeForOnePieceOfMaterial = job.Processes[process - 1].Paths[path - 1].ExpectedLoadTime;
-      expectedUnloadTimeForOnePieceOfMaterial = job.Processes[process - 1].Paths[path - 1].ExpectedUnloadTime;
+      expectedLoadTimeForOnePieceOfMaterial = job.Processes[process - 1]
+        .Paths[path - 1]
+        .ExpectedLoadTime;
+      expectedUnloadTimeForOnePieceOfMaterial = job.Processes[process - 1]
+        .Paths[path - 1]
+        .ExpectedUnloadTime;
     }
     else
     {
@@ -793,7 +840,8 @@ public static class BuildCellState
 
     return new LoadData()
     {
-      ExpectedLoadTimeForOnePieceOfMaterial = expectedLoadTimeForOnePieceOfMaterial ?? TimeSpan.Zero,
+      ExpectedLoadTimeForOnePieceOfMaterial =
+        expectedLoadTimeForOnePieceOfMaterial ?? TimeSpan.Zero,
       LoadedFace = new LoadedFace()
       {
         FaceNum = faceNum,
@@ -834,7 +882,8 @@ public static class BuildCellState
   {
     return materialToLoad
       .Where(m =>
-        m.Action.Type == InProcessMaterialAction.ActionType.Loading && m.Action.LoadOntoPalletNum == palletNum
+        m.Action.Type == InProcessMaterialAction.ActionType.Loading
+        && m.Action.LoadOntoPalletNum == palletNum
       )
       .GroupBy(m => m.Action.LoadOntoFace ?? 1)
       .Select(face =>
@@ -849,7 +898,10 @@ public static class BuildCellState
               Process = process,
               Path = path,
               LastCompletedMachiningRouteStopIndex = null,
-              Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+              Action = new InProcessMaterialAction()
+              {
+                Type = InProcessMaterialAction.ActionType.Waiting,
+              },
               Location = new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -909,7 +961,10 @@ public static class BuildCellState
       .ToImmutableList();
   }
 
-  private static bool CheckMaterialMatches(Pallet pal, IEnumerable<InProcessMaterial>? materialToLoad)
+  private static bool CheckMaterialMatches(
+    Pallet pal,
+    IEnumerable<InProcessMaterial>? materialToLoad
+  )
   {
     if (materialToLoad == null || !materialToLoad.Any())
     {
@@ -924,7 +979,9 @@ public static class BuildCellState
     }
 
     var mats = materialToLoad.ToLookup(m =>
-      m.Action.Type == InProcessMaterialAction.ActionType.Loading ? m.Action.LoadOntoFace : m.Location.Face
+      m.Action.Type == InProcessMaterialAction.ActionType.Loading
+        ? m.Action.LoadOntoFace
+        : m.Location.Face
     );
 
     if (mats.Count != pal.Faces.Count)

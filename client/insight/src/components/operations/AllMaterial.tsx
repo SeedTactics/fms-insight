@@ -425,7 +425,8 @@ function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>): CollisionDe
 
       // Intersect the material with any droppable (either another material or a column)
       const pointerIntersections = pointerWithin(args);
-      const intersections = pointerIntersections.length > 0 ? pointerIntersections : rectIntersection(args);
+      const intersections =
+        pointerIntersections.length > 0 ? pointerIntersections : rectIntersection(args);
       let overId = getFirstCollision(intersections, "id");
 
       if (overId != null) {
@@ -476,7 +477,12 @@ export function AllMaterial(props: AllMaterialProps) {
   const allBins = useMemo(() => {
     const bins = selectAllMaterialIntoBins(st, matBinOrder);
     if (activeDrag && activeDrag.type === "material" && activeDrag.curOverBinId !== null) {
-      return moveMaterialInBin(bins, activeDrag.mat, activeDrag.curOverBinId, activeDrag.initialIdx);
+      return moveMaterialInBin(
+        bins,
+        activeDrag.mat,
+        activeDrag.curOverBinId,
+        activeDrag.initialIdx,
+      );
     } else {
       return bins;
     }
@@ -540,7 +546,9 @@ export function AllMaterial(props: AllMaterialProps) {
         }
         if (activeDrag.type === "column") {
           if (typeof over.id === "number") {
-            console.log("Invalid, collision should never allow a column drag to be over a material");
+            console.log(
+              "Invalid, collision should never allow a column drag to be over a material",
+            );
           } else {
             setMatBinOrder(
               moveMaterialBin(

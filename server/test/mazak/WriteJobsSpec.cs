@@ -56,7 +56,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     private readonly FMSSettings _settings;
     private readonly MazakConfig _mazakCfg;
     private readonly MazakAllData _initialAllData;
-    private static readonly DateTime fixtureQueueTime = new(2018, 07, 19, 1, 2, 3, DateTimeKind.Utc);
+    private static readonly DateTime fixtureQueueTime = new(
+      2018,
+      07,
+      19,
+      1,
+      2,
+      3,
+      DateTimeKind.Utc
+    );
 
     private MazakWriteData FindWrite(string prefix)
     {
@@ -64,7 +72,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         _mazakDbMock
           .ReceivedCalls()
           .LastOrDefault(e =>
-            e.GetMethodInfo().Name == "Save" && ((MazakWriteData)e.GetArguments()[0]).Prefix == prefix
+            e.GetMethodInfo().Name == "Save"
+            && ((MazakWriteData)e.GetArguments()[0]).Prefix == prefix
           )
           ?.GetArguments()[0];
     }
@@ -296,7 +305,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
       WriteJobs
-        .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
+        .SyncFromDatabase(
+          _initialAllData,
+          _jobDB,
+          _mazakDbMock,
+          _settings,
+          _mazakCfg,
+          fixtureQueueTime
+        )
         .ShouldBeTrue();
 
       await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
@@ -330,7 +346,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         ]);
 
       WriteJobs
-        .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
+        .SyncFromDatabase(
+          _initialAllData,
+          _jobDB,
+          _mazakDbMock,
+          _settings,
+          _mazakCfg,
+          fixtureQueueTime
+        )
         .ShouldBeFalse();
     }
 
@@ -539,10 +562,21 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       {
         ScheduleId = "zzzzzzzzzzzzz",
       };
-      _jobDB.AddJobs(newJ2, expectedPreviousScheduleId: newJ1.ScheduleId, addAsCopiedToSystem: false);
+      _jobDB.AddJobs(
+        newJ2,
+        expectedPreviousScheduleId: newJ1.ScheduleId,
+        addAsCopiedToSystem: false
+      );
 
       WriteJobs
-        .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
+        .SyncFromDatabase(
+          _initialAllData,
+          _jobDB,
+          _mazakDbMock,
+          _settings,
+          _mazakCfg,
+          fixtureQueueTime
+        )
         .ShouldBeTrue();
 
       await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
@@ -711,7 +745,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       // Now with the parts and only the aaa schedule
       var allParts = FindWrite("Add Parts").Parts.ToList();
-      var aaaSch = FindWrite("Add Schedules").Schedules.Where(s => s.PartName.StartsWith("aaa")).ToList();
+      var aaaSch = FindWrite("Add Schedules")
+        .Schedules.Where(s => s.PartName.StartsWith("aaa"))
+        .ToList();
       var bbbAndCCCSch = FindWrite("Add Schedules")
         .Schedules.Where(s => !s.PartName.StartsWith("aaa"))
         .ToList();
@@ -784,7 +820,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
 
       var repo = Substitute.For<IRepository>();
-      repo.LoadJobsNotCopiedToSystem(Arg.Any<DateTime>(), Arg.Any<DateTime>(), includeDecremented: false)
+      repo.LoadJobsNotCopiedToSystem(
+          Arg.Any<DateTime>(),
+          Arg.Any<DateTime>(),
+          includeDecremented: false
+        )
         .Returns(ImmutableList.Create(splitJob));
 
       var mazakDb = Substitute.For<IMazakDB>();
@@ -795,8 +835,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           {
             Parts = new MazakPartRow[]
             {
-              new MazakPartRow() { PartName = "split-part:7:1:1", Comment = "split-uniq-1-1-InsightS" },
-              new MazakPartRow() { PartName = "split-part:7:2:2", Comment = "split-uniq-2-1-InsightS" },
+              new MazakPartRow()
+              {
+                PartName = "split-part:7:1:1",
+                Comment = "split-uniq-1-1-InsightS",
+              },
+              new MazakPartRow()
+              {
+                PartName = "split-part:7:2:2",
+                Comment = "split-uniq-2-1-InsightS",
+              },
             },
             Schedules = new MazakScheduleRow[]
             {
@@ -864,7 +912,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
 
       var repo = Substitute.For<IRepository>();
-      repo.LoadJobsNotCopiedToSystem(Arg.Any<DateTime>(), Arg.Any<DateTime>(), includeDecremented: false)
+      repo.LoadJobsNotCopiedToSystem(
+          Arg.Any<DateTime>(),
+          Arg.Any<DateTime>(),
+          includeDecremented: false
+        )
         .Returns(ImmutableList.Create(splitJob));
 
       var mazakDb = Substitute.For<IMazakDB>();
@@ -875,7 +927,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           {
             Parts = new MazakPartRow[]
             {
-              new MazakPartRow() { PartName = "split-part:7:1:1", Comment = "split-uniq-1-1-InsightS" },
+              new MazakPartRow()
+              {
+                PartName = "split-part:7:1:1",
+                Comment = "split-uniq-1-1-InsightS",
+              },
             },
             Schedules = new MazakScheduleRow[]
             {

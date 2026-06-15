@@ -85,7 +85,10 @@ public static class FMSInsightWebHost
         s.AddSingleton<ServerSettings>(serverSt);
         s.AddSingleton<FMSSettings>(fmsSt);
 
-        if (serverSt.ExpectedTimeZone != null && serverSt.ExpectedTimeZone.Id != TimeZoneInfo.Local.Id)
+        if (
+          serverSt.ExpectedTimeZone != null
+          && serverSt.ExpectedTimeZone.Id != TimeZoneInfo.Local.Id
+        )
         {
           Log.Error(
             "Expecting timezone {expected} but running in {actual}",
@@ -104,7 +107,10 @@ public static class FMSInsightWebHost
             .FirstOrDefault(x => x != null)
           ?? throw new Exception("Backend must implement ISynchronizeCellState");
 
-        s.AddSingleton(typeof(IJobAndQueueControl), typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType));
+        s.AddSingleton(
+          typeof(IJobAndQueueControl),
+          typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType)
+        );
 
         s.AddSingleton<Controllers.WebsocketManager>();
 
@@ -333,25 +339,33 @@ public static class FMSInsightWebHost
 
         // support for MinDataRate
         // https://github.com/dotnet/aspnetcore/issues/4765
-        var minReqRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinRequestBodyDataRate");
+        var minReqRate = cfg.GetSection("Kestrel")
+          .GetSection("Limits")
+          .GetSection("MinRequestBodyDataRate");
         if (minReqRate.Value == "")
         {
           options.Limits.MinRequestBodyDataRate = null;
         }
-        if (minReqRate.GetSection("BytesPerSecond").Exists() && minReqRate.GetSection("GracePeriod").Exists())
+        if (
+          minReqRate.GetSection("BytesPerSecond").Exists()
+          && minReqRate.GetSection("GracePeriod").Exists()
+        )
         {
           options.Limits.MinRequestBodyDataRate = new MinDataRate(
             minReqRate.GetValue<double>("BytesPerSecond"),
             minReqRate.GetValue<TimeSpan>("GracePeriod")
           );
         }
-        var minRespRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinResponseDataRate");
+        var minRespRate = cfg.GetSection("Kestrel")
+          .GetSection("Limits")
+          .GetSection("MinResponseDataRate");
         if (minRespRate.Value == "")
         {
           options.Limits.MinResponseDataRate = null;
         }
         if (
-          minRespRate.GetSection("BytesPerSecond").Exists() && minRespRate.GetSection("GracePeriod").Exists()
+          minRespRate.GetSection("BytesPerSecond").Exists()
+          && minRespRate.GetSection("GracePeriod").Exists()
         )
         {
           options.Limits.MinResponseDataRate = new MinDataRate(

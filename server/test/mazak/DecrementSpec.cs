@@ -52,8 +52,10 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     private IList<MazakScheduleRow> GetSchRows()
     {
       var wr =
-        _write.ReceivedCalls().LastOrDefault(c => c.GetMethodInfo().Name == "Save")?.GetArguments()[0]
-        as MazakWriteData;
+        _write
+          .ReceivedCalls()
+          .LastOrDefault(c => c.GetMethodInfo().Name == "Save")
+          ?.GetArguments()[0] as MazakWriteData;
 
       if (wr != null)
       {
@@ -311,7 +313,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         Archived = false,
       };
       _jobDB.AddJobs(
-        new NewJobs() { Jobs = ImmutableList.Create(job), ScheduleId = "splitDecrementMissingProc1" },
+        new NewJobs()
+        {
+          Jobs = ImmutableList.Create(job),
+          ScheduleId = "splitDecrementMissingProc1",
+        },
         null,
         addAsCopiedToSystem: true
       );

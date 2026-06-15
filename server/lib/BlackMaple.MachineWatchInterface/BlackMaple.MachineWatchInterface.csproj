@@ -16,8 +16,8 @@
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'"
+      >true</ContinuousIntegrationBuild>
   </PropertyGroup>
   <Choose>
     <When Condition="$(OS) == 'Unix'">
@@ -43,7 +43,6 @@
   </Choose>
   <PropertyGroup Condition="$(TargetFramework) == 'net35'">
     <FrameworkPathOverride Condition="'$(TargetFramework)' == 'net35' AND '$(OS)' == 'Windows_NT'"
-      >C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v3.5\Profile\Client</FrameworkPathOverride
-    >
+      >C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v3.5\Profile\Client</FrameworkPathOverride>
   </PropertyGroup>
 </Project>

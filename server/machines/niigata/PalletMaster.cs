@@ -95,7 +95,10 @@ namespace BlackMaple.FMSInsight.Niigata
         else if (StatNum >= 801 && StatNum <= 821)
         {
           var iccMc = StatNum - 800;
-          if (_statNames != null && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc))
+          if (
+            _statNames != null
+            && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc)
+          )
           {
             return new PalletLocation(PalletLocationEnum.Machine, jobMc.group, jobMc.num);
           }
@@ -107,7 +110,10 @@ namespace BlackMaple.FMSInsight.Niigata
         else if (StatNum >= 831 && StatNum <= 851)
         {
           var iccMc = StatNum - 830;
-          if (_statNames != null && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc))
+          if (
+            _statNames != null
+            && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc)
+          )
           {
             return new PalletLocation(PalletLocationEnum.MachineQueue, jobMc.group, jobMc.num);
           }
@@ -119,7 +125,10 @@ namespace BlackMaple.FMSInsight.Niigata
         else if (StatNum >= 861 && StatNum <= 881)
         {
           var iccMc = StatNum - 860;
-          if (_statNames != null && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc))
+          if (
+            _statNames != null
+            && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc)
+          )
           {
             return new PalletLocation(PalletLocationEnum.MachineQueue, jobMc.group, jobMc.num);
           }
@@ -233,7 +242,8 @@ namespace BlackMaple.FMSInsight.Niigata
     public PalletAlarmCode AlarmCode { get; set; }
 
     ///<summary>Actual station visisted at each route step in the current cycle.</summary>
-    public List<NiigataStationNum> ExecutedStationNumber { get; set; } = new List<NiigataStationNum>();
+    public List<NiigataStationNum> ExecutedStationNumber { get; set; } =
+      new List<NiigataStationNum>();
   }
 
   public enum PalletAlarmCode

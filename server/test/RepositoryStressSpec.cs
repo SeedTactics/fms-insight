@@ -96,7 +96,10 @@ public sealed class RepositoryStressSpec : IDisposable
                 cts.Token.ThrowIfCancellationRequested();
 
                 using var db = _repo.OpenConnection();
-                var recent = db.LoadRecentJobHistory(DateTime.UtcNow.AddDays(-30), alreadyKnownSchIds: []);
+                var recent = db.LoadRecentJobHistory(
+                  DateTime.UtcNow.AddDays(-30),
+                  alreadyKnownSchIds: []
+                );
                 recent.Jobs.ShouldNotBeNull();
                 db.GetRecentLog(0).ToList();
 
@@ -128,7 +131,10 @@ public sealed class RepositoryStressSpec : IDisposable
     using var db = _repo.OpenConnection();
 
     var now = DateTime.UtcNow;
-    var jobs = ImmutableList.Create(RandJob("stress-1", now), RandJob("stress-2", now.AddMinutes(1)));
+    var jobs = ImmutableList.Create(
+      RandJob("stress-1", now),
+      RandJob("stress-2", now.AddMinutes(1))
+    );
     db.AddJobs(
       new NewJobs() { ScheduleId = "stress-sch-1", Jobs = jobs },
       expectedPreviousScheduleId: null,

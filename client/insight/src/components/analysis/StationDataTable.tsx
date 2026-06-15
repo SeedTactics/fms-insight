@@ -273,7 +273,13 @@ export default memo(function StationDataTable(props: StationDataTableProps) {
   const [detailMenu, setDetailMenu] = useState<DetailMenuData | null>(null);
   const setMatToShow = useSetAtom(materialDialogOpen);
 
-  const allData = extractData(props.points, columns, props.current_date_zoom, sort.orderBy, sort.order);
+  const allData = extractData(
+    props.points,
+    columns,
+    props.current_date_zoom,
+    sort.orderBy,
+    sort.order,
+  );
   const totalDataLength = allData.length;
   const pageData: ReadonlyArray<PartCycleData> = allData.slice(
     tpage.page * tpage.rowsPerPage,

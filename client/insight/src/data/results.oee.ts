@@ -128,7 +128,9 @@ function binCycles(
     );
 }
 
-export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
+export function binActiveCyclesByDayAndStat(
+  cycles: Iterable<PartCycleData>,
+): HashMap<DayAndStation, number> {
   return binCycles(cycles, (c) => c.activeMinutes);
 }
 
@@ -164,7 +166,9 @@ function mergeSortedIntervals(
   return merged;
 }
 
-export function binDowntimeToDayAndStat(simUses: Iterable<SimStationUse>): HashMap<DayAndStation, number> {
+export function binDowntimeToDayAndStat(
+  simUses: Iterable<SimStationUse>,
+): HashMap<DayAndStation, number> {
   return LazySeq.of(simUses)
     .filter((simUse) => simUse.plannedDown)
     .toLookupOrderedMap(
@@ -174,7 +178,11 @@ export function binDowntimeToDayAndStat(simUses: Iterable<SimStationUse>): HashM
     .toAscLazySeq()
     .flatMap(([station, uses]) =>
       mergeSortedIntervals(uses.valuesToAscLazySeq()).flatMap((simUse) =>
-        splitTimeToDays(simUse.start, simUse.end, differenceInMinutes(simUse.end, simUse.start)).map((x) => ({
+        splitTimeToDays(
+          simUse.start,
+          simUse.end,
+          differenceInMinutes(simUse.end, simUse.start),
+        ).map((x) => ({
           ...x,
           station: station,
         })),
@@ -264,7 +272,11 @@ export function binSimStationUseByDayAndStat(
       }
 
       return sorted.flatMap((simUse) =>
-        splitTimeToDays(simUse.start, simUse.end, differenceInMinutes(simUse.end, simUse.start)).map((x) => ({
+        splitTimeToDays(
+          simUse.start,
+          simUse.end,
+          differenceInMinutes(simUse.end, simUse.start),
+        ).map((x) => ({
           ...x,
           station: station,
         })),
@@ -375,7 +387,10 @@ class HeatmapClipboardCell {
   }
 }
 
-export function buildOeeHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): string {
+export function buildOeeHeatmapTable(
+  yTitle: string,
+  points: ReadonlyArray<HeatmapClipboardPoint>,
+): string {
   const cells = LazySeq.of(points).toHashMap(
     (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c, // cells should be unique, but just in case take the second

@@ -217,7 +217,12 @@ namespace BlackMaple.FMSInsight.Niigata
     }
 
     [DllImport("fwlib32.dll")]
-    private static extern short pmc_rdkpm(ushort handle, uint offset, [Out] byte[] data, ushort length);
+    private static extern short pmc_rdkpm(
+      ushort handle,
+      uint offset,
+      [Out] byte[] data,
+      ushort length
+    );
 
     public class BigEndianBinaryReader
     {

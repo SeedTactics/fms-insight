@@ -25,9 +25,14 @@ it("counts basket-only labor in labor cost but not automation", () => {
     },
   ];
 
-  const cost = compute_monthly_cost_percentages(LazySeq.of(cycles), HashSet.empty(), HashMap.empty(), {
-    month: new Date(Date.UTC(2026, 0, 1, 0, 0, 0)),
-  });
+  const cost = compute_monthly_cost_percentages(
+    LazySeq.of(cycles),
+    HashSet.empty(),
+    HashMap.empty(),
+    {
+      month: new Date(Date.UTC(2026, 0, 1, 0, 0, 0)),
+    },
+  );
 
   expect(cost.parts).toHaveLength(1);
   expect(cost.parts[0].labor).toBe(1);

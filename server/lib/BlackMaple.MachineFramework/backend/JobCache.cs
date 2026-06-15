@@ -109,7 +109,8 @@ public class JobCache : IJobCache
   private readonly Func<HistoricJob, HistoricJob>? _jobAdjustment;
 
   public IEnumerable<HistoricJob> AllJobs => _jobs.Values;
-  public IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence => _precedence.Values;
+  public IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence =>
+    _precedence.Values;
 
   public JobCache(IRepository repo, Func<HistoricJob, HistoricJob>? jobAdjustment = null)
   {
@@ -121,7 +122,9 @@ public class JobCache : IJobCache
     }
     else
     {
-      _jobs = repo.LoadUnarchivedJobs().Select(jobAdjustment).ToDictionary(j => j.UniqueStr, j => j);
+      _jobs = repo.LoadUnarchivedJobs()
+        .Select(jobAdjustment)
+        .ToDictionary(j => j.UniqueStr, j => j);
     }
     _precedence = new SortedList<JobSortKey, (HistoricJob job, int proc, int path)>();
     foreach (var j in _jobs.Values)
@@ -195,7 +198,10 @@ public static class JobHelpers
   {
     var precedence = cache
       .JobsSortedByPrecedence.Select((j, idx) => new { j, idx })
-      .ToDictionary(x => (uniq: x.j.job.UniqueStr, proc: x.j.proc, path: x.j.path), x => (long)x.idx);
+      .ToDictionary(
+        x => (uniq: x.j.job.UniqueStr, proc: x.j.proc, path: x.j.path),
+        x => (long)x.idx
+      );
 
     return cache
       .AllJobs.SelectMany(j =>
@@ -259,7 +265,8 @@ public static class JobHelpers
         // take decremented quantity out of the planned cycles
         int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
         var newPlanned = j.Cycles - decrQty;
-        var remainingToStart = decrQty > 0 ? 0 : Math.Max(newPlanned - loadedMats.Count - loadingCnt, 0);
+        var remainingToStart =
+          decrQty > 0 ? 0 : Math.Max(newPlanned - loadedMats.Count - loadingCnt, 0);
 
         // archive old completed jobs
         if (

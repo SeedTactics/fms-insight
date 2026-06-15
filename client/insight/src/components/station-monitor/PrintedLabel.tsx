@@ -125,7 +125,9 @@ function SinglePage(props: SinglePageProps) {
       {props.serial1 && props.serial1 !== "" ? (
         <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
           <Barcode text={props.serial1} />
-          {props.serial2 && props.serial2 !== "" ? <Barcode text={props.serial2 || ""} /> : undefined}
+          {props.serial2 && props.serial2 !== "" ? (
+            <Barcode text={props.serial2 || ""} />
+          ) : undefined}
         </div>
       ) : undefined}
       <div style={{ marginTop: "2em", marginLeft: "4em", marginRight: "4em", marginBottom: "9em" }}>
@@ -134,7 +136,9 @@ function SinglePage(props: SinglePageProps) {
         ) : (
           <>
             <p style={{ fontSize: "x-large" }}>Assigned To</p>
-            <div style={{ marginTop: "1em", marginLeft: "2em", display: "flex", alignItems: "center" }}>
+            <div
+              style={{ marginTop: "1em", marginLeft: "2em", display: "flex", alignItems: "center" }}
+            >
               <Barcode text={props.partName} />
               <h3 style={{ marginLeft: "4em" }}>
                 assigned to {props.uniq}
@@ -215,7 +219,9 @@ function OneJobPerPage(props: PrintedLabelProps) {
               serial1={a.serial1}
               serial2={a.serial2}
             />
-            {idx < assignments.length - 1 ? <div style={{ pageBreakAfter: "always" }} /> : undefined}
+            {idx < assignments.length - 1 ? (
+              <div style={{ pageBreakAfter: "always" }} />
+            ) : undefined}
           </Fragment>
         ))}
       </div>
@@ -268,7 +274,9 @@ function CombinedToOnePage(props: PrintedLabelProps) {
       </div>
       <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
         <Barcode text={props.materialName ?? props.material[0].partName} />
-        {props.material.length >= 2 ? <Barcode text={props.material.length.toString()} /> : undefined}
+        {props.material.length >= 2 ? (
+          <Barcode text={props.material.length.toString()} />
+        ) : undefined}
       </div>
       {props.material[0].serial && props.material[0].serial !== "" ? (
         <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
@@ -289,7 +297,12 @@ function CombinedToOnePage(props: PrintedLabelProps) {
             {assignments.map(([uniq, part], idx) => (
               <div
                 key={idx}
-                style={{ marginTop: "1em", marginLeft: "2em", display: "flex", alignItems: "center" }}
+                style={{
+                  marginTop: "1em",
+                  marginLeft: "2em",
+                  display: "flex",
+                  alignItems: "center",
+                }}
               >
                 <Barcode text={part.part} />
                 <h3 style={{ marginLeft: "4em" }}>x{part.length}</h3>
@@ -312,7 +325,9 @@ function CombinedToOnePage(props: PrintedLabelProps) {
             {assignments.map(([uniq, part], idx) => (
               <h3 key={idx} style={{ marginTop: "1em", marginLeft: "2em" }}>
                 <span>{uniq}</span>
-                {part.length > 1 ? <span style={{ marginLeft: "1em" }}>x{part.length}</span> : undefined}
+                {part.length > 1 ? (
+                  <span style={{ marginLeft: "1em" }}>x{part.length}</span>
+                ) : undefined}
               </h3>
             ))}
           </>
@@ -382,7 +397,8 @@ export function PrintLabelButton() {
   const curMat = useAtomValue(inProcessMaterialInDialog);
   const [printLabel, printingLabel, printed] = usePrintLabel();
 
-  if (!fmsInfo.usingLabelPrinterForSerials || matInfo === null || matInfo.materialID < 0) return null;
+  if (!fmsInfo.usingLabelPrinterForSerials || matInfo === null || matInfo.materialID < 0)
+    return null;
 
   if (fmsInfo.useClientPrinterForLabels) {
     if (curMat === null) {

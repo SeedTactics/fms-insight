@@ -460,7 +460,10 @@ public sealed class LogBuilderSpec : IDisposable
                   {
                     MaterialID = extraPalCycleUnloadMat.StartingMatID + i,
                     JobUniqueStr = extraPalCycleUnloadMat.OrderName,
-                    Serial = SerialSettings.ConvertToBase62(extraPalCycleUnloadMat.StartingMatID + i, 10),
+                    Serial = SerialSettings.ConvertToBase62(
+                      extraPalCycleUnloadMat.StartingMatID + i,
+                      10
+                    ),
                     Workorder = "",
                     NumProcesses = 1,
                     Face = extraPalCycleUnloadMat.FixtureNum,
@@ -513,7 +516,10 @@ public sealed class LogBuilderSpec : IDisposable
                   {
                     MaterialID = extraPalCycleLoadMat.StartingMatID + i,
                     JobUniqueStr = extraPalCycleLoadMat.OrderName,
-                    Serial = SerialSettings.ConvertToBase62(extraPalCycleLoadMat.StartingMatID + i, 10),
+                    Serial = SerialSettings.ConvertToBase62(
+                      extraPalCycleLoadMat.StartingMatID + i,
+                      10
+                    ),
                     Workorder = "",
                     NumProcesses = 1,
                     Face = extraPalCycleLoadMat.FixtureNum,
@@ -560,7 +566,8 @@ public sealed class LogBuilderSpec : IDisposable
             .ToImmutableList(),
           LogType = LogType.LoadUnloadCycle,
           StartOfCycle = false,
-          EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin) + TimeSpan.FromSeconds(1),
+          EndTimeUTC =
+            start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin) + TimeSpan.FromSeconds(1),
           LocationName = "L/U",
           LocationNum = device,
           Pallet = loadMat.PalletID,
@@ -650,7 +657,14 @@ public sealed class LogBuilderSpec : IDisposable
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", activeMin: 8),
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 11,
+              device: 3,
+              mat: mat,
+              program: "prog1",
+              activeMin: 8
+            ),
           ],
         }
       );
@@ -660,7 +674,10 @@ public sealed class LogBuilderSpec : IDisposable
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
   }
 
@@ -703,7 +720,10 @@ public sealed class LogBuilderSpec : IDisposable
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
 
     db.MaxLogDate().ShouldBe(start.AddMinutes(15 + 11));
@@ -722,12 +742,17 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(start.AddMinutes(15 + 11), now).ShouldBeFalse();
+    new LogBuilder(_makinoDB, db, _settings)
+      .CheckLogs(start.AddMinutes(15 + 11), now)
+      .ShouldBeFalse();
 
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
   }
 
@@ -773,7 +798,14 @@ public sealed class LogBuilderSpec : IDisposable
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", activeMin: 18),
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 11,
+              device: 3,
+              mat: mat,
+              program: "prog1",
+              activeMin: 18
+            ),
           ],
         }
       );
@@ -783,7 +815,10 @@ public sealed class LogBuilderSpec : IDisposable
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
 
     db.MaxLogDate().ShouldBe(start.AddMinutes(30 + 5));
@@ -802,12 +837,17 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(start.AddMinutes(30 + 5), now).ShouldBeFalse();
+    new LogBuilder(_makinoDB, db, _settings)
+      .CheckLogs(start.AddMinutes(30 + 5), now)
+      .ShouldBeFalse();
 
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
   }
 
@@ -872,8 +912,22 @@ public sealed class LogBuilderSpec : IDisposable
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat1, program: "prog1", activeMin: 8),
-            Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", activeMin: 18),
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 11,
+              device: 3,
+              mat: mat1,
+              program: "prog1",
+              activeMin: 8
+            ),
+            Mach(
+              start.AddMinutes(45),
+              elapsedMin: 6,
+              device: 4,
+              mat: mat2,
+              program: "prog2",
+              activeMin: 18
+            ),
           ],
         }
       );
@@ -882,7 +936,10 @@ public sealed class LogBuilderSpec : IDisposable
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
   }
 
@@ -974,7 +1031,10 @@ public sealed class LogBuilderSpec : IDisposable
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
   }
 
@@ -1062,7 +1122,10 @@ public sealed class LogBuilderSpec : IDisposable
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
   }
 
@@ -1072,7 +1135,15 @@ public sealed class LogBuilderSpec : IDisposable
     using var db = _repo.OpenConnection();
     var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
 
-    AddJob(db, order: mat.OrderName, part: mat.PartName, loadMin: 10, unloadMin: 11, mcMin: 6, inspect: true);
+    AddJob(
+      db,
+      order: mat.OrderName,
+      part: mat.PartName,
+      loadMin: 10,
+      unloadMin: 11,
+      mcMin: 6,
+      inspect: true
+    );
 
     var now = DateTime.UtcNow;
     var start = now.AddHours(-2);
@@ -1106,7 +1177,14 @@ public sealed class LogBuilderSpec : IDisposable
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", activeMin: 6),
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 5,
+              device: 3,
+              mat: mat,
+              program: "prog1",
+              activeMin: 6
+            ),
           ],
         }
       );
@@ -1156,7 +1234,10 @@ public sealed class LogBuilderSpec : IDisposable
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
 
     db.LookupInspectionDecisions(mat.StartingMatID)
@@ -1241,8 +1322,22 @@ public sealed class LogBuilderSpec : IDisposable
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 2, device: 3, mat: mat1, program: "prog1", activeMin: 6),
-            Mach(start.AddMinutes(18), elapsedMin: 3, device: 3, mat: mat2, program: "prog3", activeMin: 26),
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 2,
+              device: 3,
+              mat: mat1,
+              program: "prog1",
+              activeMin: 6
+            ),
+            Mach(
+              start.AddMinutes(18),
+              elapsedMin: 3,
+              device: 3,
+              mat: mat2,
+              program: "prog3",
+              activeMin: 26
+            ),
           ],
         }
       );
@@ -1321,7 +1416,10 @@ public sealed class LogBuilderSpec : IDisposable
     db.GetLogEntries(start, now)
       .ToList()
       .ShouldBeEquivalentTo(
-        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
       );
   }
 }

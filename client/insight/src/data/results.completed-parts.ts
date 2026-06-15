@@ -128,7 +128,8 @@ export function binCyclesByDayAndPart(
           part: details.partName + "-" + proc,
           value: {
             count: 1,
-            activeMachineMins: activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))) ?? 0,
+            activeMachineMins:
+              activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))) ?? 0,
           },
         })),
     )

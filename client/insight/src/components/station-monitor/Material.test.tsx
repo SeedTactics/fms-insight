@@ -39,10 +39,17 @@ import { afterEach, expect, it, vi } from "vitest";
 import { MaterialDialog } from "./Material.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { ApiException } from "../../network/api.js";
-import { registerBackend, type FmsAPI, type JobAPI, type LogAPI, type MachineAPI } from "../../network/backend.js";
+import {
+  registerBackend,
+  type FmsAPI,
+  type JobAPI,
+  type LogAPI,
+  type MachineAPI,
+} from "../../network/backend.js";
 
 const barcode = "1111222|SO100100|10000";
-const barcodeError = "Serial 1111222 is assigned to sales order SO100100 line 10000 which is not currently scheduled";
+const barcodeError =
+  "Serial 1111222 is assigned to sales order SO100100 line 10000 which is not currently scheduled";
 
 function unexpectedCall(name: string): never {
   throw new Error(`Unexpected backend call in MaterialDialog test: ${name}`);

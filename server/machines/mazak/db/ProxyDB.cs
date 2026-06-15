@@ -142,7 +142,12 @@ public class MazakProxyDB : IMazakDB, IDisposable
     {
       var message = await resp.Content.ReadAsStringAsync(cancellationToken: cancel);
       var lineIdx = message.IndexOfAny(['\n', '\r']);
-      Log.Error("Failed to load {path} from proxy db: {status} {content}", path, resp.StatusCode, message);
+      Log.Error(
+        "Failed to load {path} from proxy db: {status} {content}",
+        path,
+        resp.StatusCode,
+        message
+      );
       throw new HttpRequestException(message[..(lineIdx >= 0 ? lineIdx : message.Length)]);
     }
   }
@@ -194,7 +199,12 @@ public class MazakProxyDB : IMazakDB, IDisposable
     {
       var msg = await resp.Content.ReadAsStringAsync(cancellationToken: cancel);
       var lineIdx = msg.IndexOfAny(['\n', '\r']);
-      Log.Error("Failed to post {path} to proxy db: {status} {content}", path, resp.StatusCode, msg);
+      Log.Error(
+        "Failed to post {path} to proxy db: {status} {content}",
+        path,
+        resp.StatusCode,
+        msg
+      );
       throw new HttpRequestException(msg[..(lineIdx >= 0 ? lineIdx : msg.Length)]);
     }
   }

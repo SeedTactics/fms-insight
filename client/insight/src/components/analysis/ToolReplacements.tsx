@@ -104,7 +104,11 @@ function tool_replacements_with_station_and_date(
         zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x,
       )
       .flatMap((rs) =>
-        rs.replacements.map((replacement) => ({ ...replacement, station: selectedStation, time: rs.time })),
+        rs.replacements.map((replacement) => ({
+          ...replacement,
+          station: selectedStation,
+          time: rs.time,
+        })),
       );
   } else {
     return allReplacements.toAscLazySeq().flatMap(([station, rsByStat]) =>
@@ -132,13 +136,15 @@ function tool_summary(
       let totalCnt = 0;
       let maxCnt = null;
       for (const r of replacements) {
-        const u = r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle;
+        const u =
+          r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle;
         if (u && (maxUse === null || u > maxUse)) {
           maxUse = u;
         }
         if (u) totalUse += u;
 
-        const c = r.type === "ReplaceBeforeCycleStart" ? r.cntAtReplacement : r.totalCntAtBeginningOfCycle;
+        const c =
+          r.type === "ReplaceBeforeCycleStart" ? r.cntAtReplacement : r.totalCntAtBeginningOfCycle;
         if (c && (maxCnt === null || c > maxCnt)) {
           maxCnt = c;
         }
@@ -219,15 +225,19 @@ function ReplacementTooltip({ tooltip }: { tooltip: TooltipData }) {
         <>
           {tooltip.r.totalUseAtBeginningOfCycle !== null ? (
             <div>
-              Minutes at beginning of cycle: {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
+              Minutes at beginning of cycle:{" "}
+              {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
             </div>
           ) : undefined}
           {tooltip.r.totalUseAtEndOfCycle !== null ? (
-            <div>Minutes at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtEndOfCycle)}</div>
+            <div>
+              Minutes at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtEndOfCycle)}
+            </div>
           ) : undefined}
           {tooltip.r.totalCntAtBeginningOfCycle !== null ? (
             <div>
-              Count at beginning of cycle: {decimalFormat.format(tooltip.r.totalCntAtBeginningOfCycle)}
+              Count at beginning of cycle:{" "}
+              {decimalFormat.format(tooltip.r.totalCntAtBeginningOfCycle)}
             </div>
           ) : undefined}
           {tooltip.r.totalCntAtEndOfCycle !== null ? (
@@ -268,7 +278,11 @@ function Replacements({
   );
 }
 
-const ReplacementGraph = memo(function ReplacementGraph({ row }: { readonly row: ToolReplacementSummary }) {
+const ReplacementGraph = memo(function ReplacementGraph({
+  row,
+}: {
+  readonly row: ToolReplacementSummary;
+}) {
   const zoom = useContext(CurZoomContext);
   const tooltip = useMemo(() => atom<TooltipData | null>(null), []);
   const setTooltip = useSetAtom(tooltip);
@@ -290,7 +304,14 @@ const ReplacementGraph = memo(function ReplacementGraph({ row }: { readonly row:
     <div ref={chartRef} style={{ position: "relative", width: "100%", height: "35px" }}>
       <svg height="35" width={chartWidth ?? 1000} onMouseLeave={() => setTooltip(null)}>
         {avgUse !== null ? (
-          <line x1="0" y1={avgUse} x2={chartWidth ?? 1000} y2={avgUse} stroke="red" strokeWidth={0.5} />
+          <line
+            x1="0"
+            y1={avgUse}
+            x2={chartWidth ?? 1000}
+            y2={avgUse}
+            stroke="red"
+            strokeWidth={0.5}
+          />
         ) : undefined}
         <Replacements row={row} tooltip={tooltip} timeScale={timeScale} yScale={yScale} />
       </svg>
@@ -371,7 +392,11 @@ const SummaryTable = memo(function ReplacementTable(props: ReplacementTableProps
       <CurZoomContext.Provider value={zoomRange}>
         <Table>
           <DataTableHead columns={summaryColumns} sort={sort} showDetailsCol={false} />
-          <DataTableBody columns={summaryColumns} pageData={pageData} rowsPerPage={tpage.rowsPerPage} />
+          <DataTableBody
+            columns={summaryColumns}
+            pageData={pageData}
+            rowsPerPage={tpage.rowsPerPage}
+          />
         </Table>
         <DataTableActions tpage={tpage} zoom={zoom.zoom} count={allSorted.length} />
       </CurZoomContext.Provider>
@@ -391,7 +416,9 @@ enum AllReplacementColumnId {
   CntAtEndOfCycle,
 }
 
-const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolReplacementAndStationDate>> = [
+const allReplacementsColumns: ReadonlyArray<
+  Column<AllReplacementColumnId, ToolReplacementAndStationDate>
+> = [
   {
     id: AllReplacementColumnId.Date,
     numeric: false,
@@ -431,7 +458,8 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
     numeric: true,
     label: "Use At Replacement / Start of Cycle (min)",
     getDisplay: (c) => {
-      const use = c.type === "ReplaceBeforeCycleStart" ? c.useAtReplacement : c.totalUseAtBeginningOfCycle;
+      const use =
+        c.type === "ReplaceBeforeCycleStart" ? c.useAtReplacement : c.totalUseAtBeginningOfCycle;
       if (use !== null && use !== undefined) {
         return decimalFormat.format(use);
       } else {
@@ -461,7 +489,8 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
     numeric: true,
     label: "Use At Replacement / Start of Cycle (count)",
     getDisplay: (c) => {
-      const use = c.type === "ReplaceBeforeCycleStart" ? c.cntAtReplacement : c.totalCntAtBeginningOfCycle;
+      const use =
+        c.type === "ReplaceBeforeCycleStart" ? c.cntAtReplacement : c.totalCntAtBeginningOfCycle;
       if (use !== null && use !== undefined) {
         return decimalFormat.format(use);
       } else {
@@ -519,12 +548,24 @@ const AllReplacementTable = memo(function ReplacementTable(props: ReplacementTab
   );
 });
 
-function copyToClipboard(replacements: ToolReplacementsByStation, displayType: "summary" | "details"): void {
+function copyToClipboard(
+  replacements: ToolReplacementsByStation,
+  displayType: "summary" | "details",
+): void {
   if (displayType === "summary") {
-    const summaryRows = tool_summary(undefined, replacements, undefined, (replacement) => replacement.tool);
+    const summaryRows = tool_summary(
+      undefined,
+      replacements,
+      undefined,
+      (replacement) => replacement.tool,
+    );
     copyTableToClipboard(summaryColumns, summaryRows);
   } else {
-    const detailRows = tool_replacements_with_station_and_date(undefined, replacements, undefined).toSortedArray(
+    const detailRows = tool_replacements_with_station_and_date(
+      undefined,
+      replacements,
+      undefined,
+    ).toSortedArray(
       (replacement) => replacement.tool,
       (replacement) => replacement.time,
     );
@@ -628,7 +669,11 @@ export const ToolReplacementPage = memo(function ToolReplacementCard() {
             <MenuItem value="details">Details</MenuItem>
           </Select>
         </FormControl>
-        <ChooseMachine station={selectedMachine} setSelectedStation={setSelectedMachine} displayType={type} />
+        <ChooseMachine
+          station={selectedMachine}
+          setSelectedStation={setSelectedMachine}
+          displayType={type}
+        />
       </Box>
       <main>
         {type === "summary" ? (

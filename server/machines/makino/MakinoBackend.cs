@@ -39,7 +39,10 @@ namespace BlackMaple.FMSInsight.Makino
 {
   public static class MakinoServices
   {
-    public static IServiceCollection AddMakinoBackend(this IServiceCollection s, MakinoSettings makinoSt)
+    public static IServiceCollection AddMakinoBackend(
+      this IServiceCollection s,
+      MakinoSettings makinoSt
+    )
     {
       Serilog.Log.Information("Using Makino Backend with config {@config}", makinoSt);
       s.AddSingleton(makinoSt);

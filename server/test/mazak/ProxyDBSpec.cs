@@ -161,7 +161,9 @@ public sealed class ProxyDBspec : IDisposable
         .ToArray(),
     };
 
-    _server.Given(Request.Create().WithPath("/all-data-and-logs").UsingPost()).RespondWith(JsonBody(allData));
+    _server
+      .Given(Request.Create().WithPath("/all-data-and-logs").UsingPost())
+      .RespondWith(JsonBody(allData));
 
     _db.LoadAllDataAndLogs("123").ShouldBeEquivalentTo(allData);
   }
@@ -171,7 +173,9 @@ public sealed class ProxyDBspec : IDisposable
   {
     var programs = _fixture.Create<MazakProgramRow[]>();
 
-    _server.Given(Request.Create().WithPath("/programs").UsingGet()).RespondWith(JsonBody(programs));
+    _server
+      .Given(Request.Create().WithPath("/programs").UsingGet())
+      .RespondWith(JsonBody(programs));
 
     _db.LoadPrograms().ShouldBeEquivalentTo(programs);
   }
@@ -273,7 +277,11 @@ public sealed class ProxyDBspec : IDisposable
     _server
       .Given(Request.Create().WithPath("/long-poll-events").UsingGet())
       .RespondWith(
-        Response.Create().WithStatusCode(200).WithBodyAsJson(false).WithDelay(TimeSpan.FromSeconds(1.5))
+        Response
+          .Create()
+          .WithStatusCode(200)
+          .WithBodyAsJson(false)
+          .WithDelay(TimeSpan.FromSeconds(1.5))
       );
 
     await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.Execution.CancellationToken);
@@ -288,7 +296,11 @@ public sealed class ProxyDBspec : IDisposable
     _server
       .Given(Request.Create().WithPath("/long-poll-events").UsingGet())
       .RespondWith(
-        Response.Create().WithStatusCode(200).WithBodyAsJson(true).WithDelay(TimeSpan.FromSeconds(1.5))
+        Response
+          .Create()
+          .WithStatusCode(200)
+          .WithBodyAsJson(true)
+          .WithDelay(TimeSpan.FromSeconds(1.5))
       );
 
     await Task.Delay(TimeSpan.FromSeconds(4), TestContext.Current.Execution.CancellationToken);

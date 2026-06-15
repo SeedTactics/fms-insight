@@ -35,7 +35,10 @@ import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
 
 import { fakeCycle } from "../../test/events.fake.js";
 import { ILogEntry } from "../network/api.js";
-import { binCyclesByDayAndPart, buildCompletedPartsHeatmapTable } from "./results.completed-parts.js";
+import {
+  binCyclesByDayAndPart,
+  buildCompletedPartsHeatmapTable,
+} from "./results.completed-parts.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { onLoadLast30Log } from "../cell-status/loading.js";
 import { last30StationCycles } from "../cell-status/station-cycles.js";

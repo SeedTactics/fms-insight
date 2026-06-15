@@ -57,7 +57,8 @@ public class MazakConfig
       return new MazakConfig()
       {
         Port = int.TryParse(key.GetValue("Port", "5200").ToString(), out var p) ? p : 5200,
-        DBType = (MazakDbType)Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString()),
+        DBType = (MazakDbType)
+          Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString()),
         SQLConnectionString = key.GetValue("SQLConnectionString", DefaultConnectionStr).ToString(),
         OleDbDatabasePath = key.GetValue("OleDbDatabasePath", "c:\\Mazak\\NFMS\\DB").ToString(),
         LogCSVPath = key.GetValue("LogCSVPath", "c:\\Mazak\\FMS\\Log").ToString(),

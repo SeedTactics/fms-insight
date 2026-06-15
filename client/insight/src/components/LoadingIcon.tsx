@@ -44,7 +44,10 @@ import { Error as ErrorIcon } from "@mui/icons-material";
 
 import { Tooltip } from "@mui/material";
 import { errorLoadingLast30, websocketReconnecting } from "../network/websocket.js";
-import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../network/load-specific-month.js";
+import {
+  errorLoadingSpecificMonthData,
+  loadingSpecificMonthData,
+} from "../network/load-specific-month.js";
 import { useAtomValue } from "jotai";
 
 export const LoadingIcon = memo(function LoadingIcon() {

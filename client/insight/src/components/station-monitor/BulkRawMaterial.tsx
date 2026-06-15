@@ -87,7 +87,9 @@ function WaitingForMaterialDialog() {
     ignoreGlobalStyles: true,
   });
 
-  let materialToPrint = waiting ? st.material.filter((m) => waiting.materialIds.has(m.materialID)) : null;
+  let materialToPrint = waiting
+    ? st.material.filter((m) => waiting.materialIds.has(m.materialID))
+    : null;
   if (materialToPrint?.length !== waiting?.materialIds.size) {
     materialToPrint = null;
   }
@@ -124,8 +126,8 @@ function WaitingForMaterialDialog() {
               >
                 <CircularProgress color="secondary" />
                 <div>
-                  Waiting for material assignment. This could take a while if a download is currently in
-                  progress.
+                  Waiting for material assignment. This could take a while if a download is
+                  currently in progress.
                 </div>
               </Stack>
             )
@@ -198,7 +200,9 @@ function JobsForCasting({ casting, queue }: { casting: string; queue: string }) 
             <TableCell align="right">
               {LazySeq.of(jobs).sumBy((j) => Math.max(j.remainingToStart - j.assignedRaw, 0))}
             </TableCell>
-            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.availableUnassigned)}</TableCell>
+            <TableCell align="right">
+              {LazySeq.of(jobs).sumBy((j) => j.availableUnassigned)}
+            </TableCell>
           </TableRow>
         ) : undefined}
       </TableBody>
@@ -277,7 +281,9 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
         onNewMaterial: (mats) => {
           setWaitingToPrint({
             selectedCasting: selectedCasting,
-            operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
+            operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial
+              ? enteredOperator
+              : operator,
             materialIds: new Set(mats.map((m) => m.materialID)),
           });
           close();
@@ -378,7 +384,8 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
               onClick={addAndPrint}
             >
               {adding ? <CircularProgress size={10} /> : undefined}
-              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to {queue}
+              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to{" "}
+              {queue}
             </Button>
           ) : (
             <Button
@@ -392,7 +399,8 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
               }
               onClick={add}
             >
-              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to {queue}
+              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to{" "}
+              {queue}
             </Button>
           )}
           <Button color="primary" disabled={adding && printOnAdd} onClick={close}>
@@ -411,7 +419,9 @@ export interface MultiMaterialDialogProps {
   readonly operator: string | null;
 }
 
-export const MultiMaterialDialog = memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
+export const MultiMaterialDialog = memo(function MultiMaterialDialog(
+  props: MultiMaterialDialogProps,
+) {
   const fmsInfo = useAtomValue(fmsInformation);
   const jobs = useAtomValue(currentStatus).jobs;
   const [printLabel, printingLabel] = usePrintLabel();
@@ -491,7 +501,9 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(props: Mult
             partName={mat1.partName}
             subtitle={
               props.material.length.toString() +
-              (mat1.jobUnique && mat1.jobUnique !== "" ? " assigned to " + mat1.jobUnique : " unassigned")
+              (mat1.jobUnique && mat1.jobUnique !== ""
+                ? " assigned to " + mat1.jobUnique
+                : " unassigned")
             }
           />
         ) : (
@@ -499,7 +511,11 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(props: Mult
         )}
       </DialogTitle>
       <DialogContent>
-        {loading ? <CircularProgress color="secondary" /> : <LogEntries entries={events} copyToClipboard />}
+        {loading ? (
+          <CircularProgress color="secondary" />
+        ) : (
+          <LogEntries entries={events} copyToClipboard />
+        )}
         {showRemove && props.material ? (
           <div style={{ marginTop: "1em" }}>
             <TextField
@@ -539,7 +555,11 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(props: Mult
             </Button>
           )
         ) : undefined}
-        <Button color="primary" onClick={remove} disabled={loading || (showRemove && isNaN(removeCnt))}>
+        <Button
+          color="primary"
+          onClick={remove}
+          disabled={loading || (showRemove && isNaN(removeCnt))}
+        >
           {loading && showRemove
             ? "Removing..."
             : showRemove && !isNaN(removeCnt)

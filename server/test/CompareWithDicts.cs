@@ -131,11 +131,25 @@ public static partial class ObjectGraphTestExtensions
     }
     else if (type.IsValueType)
     {
-      CompareValueTypes((ValueType)actual, (ValueType)expected, path, customMessage, shouldlyMethod);
+      CompareValueTypes(
+        (ValueType)actual,
+        (ValueType)expected,
+        path,
+        customMessage,
+        shouldlyMethod
+      );
     }
     else
     {
-      CompareReferenceTypes(actual, expected, type, path, previousComparisons, customMessage, shouldlyMethod);
+      CompareReferenceTypes(
+        actual,
+        expected,
+        type,
+        path,
+        previousComparisons,
+        customMessage,
+        shouldlyMethod
+      );
     }
   }
 
@@ -262,7 +276,15 @@ public static partial class ObjectGraphTestExtensions
     else
     {
       var fields = type.GetFields(DefaultBindingFlags);
-      CompareFields(actual, expected, fields, path, previousComparisons, customMessage, shouldlyMethod);
+      CompareFields(
+        actual,
+        expected,
+        fields,
+        path,
+        previousComparisons,
+        customMessage,
+        shouldlyMethod
+      );
 
       var properties = type.GetProperties(DefaultBindingFlags);
       CompareProperties(
@@ -331,7 +353,10 @@ public static partial class ObjectGraphTestExtensions
     try
     {
       typeof(ObjectGraphTestExtensions)
-        .GetMethod(nameof(CompareTypedIReadOnlyDictionaries), BindingFlags.NonPublic | BindingFlags.Static)!
+        .GetMethod(
+          nameof(CompareTypedIReadOnlyDictionaries),
+          BindingFlags.NonPublic | BindingFlags.Static
+        )!
         .MakeGenericMethod(keyType, valueType)
         .Invoke(null, [actual, expected, path, previousComparisons, customMessage, shouldlyMethod]);
     }
@@ -398,7 +423,16 @@ public static partial class ObjectGraphTestExtensions
     IEnumerable<string> path,
     string? customMessage,
     [CallerMemberName] string shouldlyMethod = null!
-  ) => CompareSets(nameof(CompareTypedISets), setType, actual, expected, path, customMessage, shouldlyMethod);
+  ) =>
+    CompareSets(
+      nameof(CompareTypedISets),
+      setType,
+      actual,
+      expected,
+      path,
+      customMessage,
+      shouldlyMethod
+    );
 
   private static void CompareSets(
     string methodName,
@@ -485,7 +519,8 @@ public static partial class ObjectGraphTestExtensions
     [CallerMemberName] string shouldlyMethod = null!
   )
   {
-    List<string> messages = customMessage is null || customMessage.Length == 0 ? [] : [customMessage];
+    List<string> messages =
+      customMessage is null || customMessage.Length == 0 ? [] : [customMessage];
 
     if (missingInActual.Count > 0)
       messages.Add($"{missingInActual} is expected but not found");
@@ -617,7 +652,13 @@ public static partial class ObjectGraphTestExtensions
     this Type type,
     [NotNullWhen(true)] out Type? keyType,
     [NotNullWhen(true)] out Type? valueType
-  ) => ImplementsDoubleGenericInterface(type, typeof(IReadOnlyDictionary<,>), out keyType, out valueType);
+  ) =>
+    ImplementsDoubleGenericInterface(
+      type,
+      typeof(IReadOnlyDictionary<,>),
+      out keyType,
+      out valueType
+    );
 
   private static bool IsISet(this Type type, [NotNullWhen(true)] out Type? setType) =>
     ImplementsSingleGenericInterface(type, typeof(ISet<>), out setType);

@@ -113,7 +113,9 @@ namespace MazakMachineInterface
         }
         else
         {
-          Log.Error("Load CSV Directory does not exist.  Set the directory in the config.ini file.");
+          Log.Error(
+            "Load CSV Directory does not exist.  Set the directory in the config.ini file."
+          );
         }
       }
       else
@@ -290,7 +292,9 @@ namespace MazakMachineInterface
               goto noErrors;
             }
           }
-          throw new Exception("Timeout during download: open database kit is not running or responding");
+          throw new Exception(
+            "Timeout during download: open database kit is not running or responding"
+          );
 
           noErrors:
           // wait for any new parts and schedules
@@ -315,7 +319,9 @@ namespace MazakMachineInterface
             }
 
             Log.Error("Timeout waiting for new parts and schedules to appear in database");
-            throw new Exception("Timeout waiting for new parts and schedules to appear in database");
+            throw new Exception(
+              "Timeout waiting for new parts and schedules to appear in database"
+            );
           }
 
           partsAndSchsExist:
@@ -785,7 +791,12 @@ namespace MazakMachineInterface
             else
             {
               foundUnprocesssedRow = true;
-              Log.Debug("Unprocessed row for table {table} at index {idx} with {@row}", table, idx, row);
+              Log.Debug(
+                "Unprocessed row for table {table} at index {idx} with {@row}",
+                table,
+                idx,
+                row
+              );
             }
           }
         }
@@ -908,7 +919,8 @@ namespace MazakMachineInterface
 
       if (_dbType != MazakDbType.MazakVersionE)
       {
-        _palletSelect = "SELECT PalletNumber, FixtureGroup AS FixtureGroupV2, Fixture, RecordID FROM Pallet";
+        _palletSelect =
+          "SELECT PalletNumber, FixtureGroup AS FixtureGroupV2, Fixture, RecordID FROM Pallet";
       }
       else
       {
@@ -1058,7 +1070,8 @@ namespace MazakMachineInterface
       _palStatusSelect = "SELECT PalletNumber, IsOnHold FROM PalletStatus";
       _palSubStatusSelect =
         "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";
-      _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition WHERE PalletNumber > 0";
+      _palPositionSelect =
+        "SELECT PalletNumber, PalletPosition FROM PalletPosition WHERE PalletNumber > 0";
       _mainProgSelect = "SELECT MainProgram, Comment FROM MainProgram";
       _alarmSelect = "SELECT AlarmNumber, AlarmMessage FROM Alarm";
 
@@ -1196,8 +1209,14 @@ namespace MazakMachineInterface
         Schedules = LoadSchedules(conn, trans, fixQty),
         LoadActions = _loadOper.CurrentLoadActions(),
         PalletStatuses = conn.Query<MazakPalletStatusRow>(_palStatusSelect, transaction: trans),
-        PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
-        PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
+        PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(
+          _palSubStatusSelect,
+          transaction: trans
+        ),
+        PalletPositions = conn.Query<MazakPalletPositionRow>(
+          _palPositionSelect,
+          transaction: trans
+        ),
         Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
         Parts = parts,
         Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),

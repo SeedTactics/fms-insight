@@ -39,7 +39,10 @@ import { DialogActions } from "@mui/material";
 
 import { MaterialDialog, MatSummary } from "./Material.js";
 import * as matDetails from "../../cell-status/material-details.js";
-import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary.js";
+import {
+  MaterialSummaryAndCompletedData,
+  MaterialSummary,
+} from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
@@ -98,10 +101,18 @@ function InspButtons(props: InspButtonsProps) {
         )
       ) : undefined}
       <QuarantineMatButton />
-      <Button color="primary" disabled={completeInspUpdating} onClick={() => markInspComplete(true)}>
+      <Button
+        color="primary"
+        disabled={completeInspUpdating}
+        onClick={() => markInspComplete(true)}
+      >
         Mark {props.inspection_type} Success
       </Button>
-      <Button color="primary" disabled={completeInspUpdating} onClick={() => markInspComplete(false)}>
+      <Button
+        color="primary"
+        disabled={completeInspUpdating}
+        onClick={() => markInspComplete(false)}
+      >
         Mark {props.inspection_type} Failed
       </Button>
     </>
@@ -114,7 +125,8 @@ interface InspDialogProps {
 
 function DialogBodyInspButtons({ focusInspectionType }: InspDialogProps) {
   const material = useAtomValue(matDetails.materialInDialogInspections);
-  if (material === null || focusInspectionType || material.signaledInspections.length === 1) return null;
+  if (material === null || focusInspectionType || material.signaledInspections.length === 1)
+    return null;
 
   return (
     <>
@@ -145,7 +157,9 @@ const InspMaterialDialog = memo(function InspMaterialDialog(props: InspDialogPro
   return (
     <MaterialDialog
       allowNote
-      extraDialogElements={<DialogBodyInspButtons focusInspectionType={props.focusInspectionType} />}
+      extraDialogElements={
+        <DialogBodyInspButtons focusInspectionType={props.focusInspectionType} />
+      }
       buttons={<DialogActionInspButtons focusInspectionType={props.focusInspectionType} />}
     />
   );
@@ -177,7 +191,9 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
             minHeight: forceSingleColumn ? undefined : { md: "calc(100vh - 64px)" },
             width: forceSingleColumn ? "100%" : { md: "50vw" },
             borderRight: forceSingleColumn ? undefined : { md: "1px solid black" },
-            borderBottom: forceSingleColumn ? "1px solid black" : { sm: "1px solid black", md: "none" },
+            borderBottom: forceSingleColumn
+              ? "1px solid black"
+              : { sm: "1px solid black", md: "none" },
           }}
         >
           <Typography variant="h4">Parts to Inspect</Typography>
@@ -189,7 +205,12 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
             }}
           >
             {recent_inspections.waiting_to_inspect.map((m, idx) => (
-              <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideWarningIcon />
+              <MatSummary
+                key={idx}
+                mat={m}
+                focusInspectionType={focusInspectionType}
+                hideWarningIcon
+              />
             ))}
           </Box>
         </Box>
@@ -208,7 +229,12 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
             }}
           >
             {recent_inspections.inspect_completed.map((m, idx) => (
-              <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideWarningIcon />
+              <MatSummary
+                key={idx}
+                mat={m}
+                focusInspectionType={focusInspectionType}
+                hideWarningIcon
+              />
             ))}
           </Box>
         </Box>

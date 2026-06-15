@@ -57,9 +57,14 @@ namespace BlackMaple.MachineFramework
         var bindings = typeof(T)
           .GetProperties()
           .Where(p =>
-            p.GetMethod != null && p.GetMethod.IsPublic && p.SetMethod != null && p.SetMethod.IsPublic
+            p.GetMethod != null
+            && p.GetMethod.IsPublic
+            && p.SetMethod != null
+            && p.SetMethod.IsPublic
           )
-          .Select(prop => Expression.Bind(typeof(R).GetProperty(prop.Name)!, Expression.Property(val, prop)))
+          .Select(prop =>
+            Expression.Bind(typeof(R).GetProperty(prop.Name)!, Expression.Property(val, prop))
+          )
           .ToArray();
 
         var mbrInit = Expression.MemberInit(Expression.New(ctr), bindings);

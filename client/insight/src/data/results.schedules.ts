@@ -90,7 +90,9 @@ export function buildScheduledJobs(
         casting: casting ?? "",
         scheduledQty: curJob.cycles ?? 0,
         decrementedQty: LazySeq.of(curJob.decrements || []).sumBy((d) => d.quantity),
-        completedQty: LazySeq.of(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy((c) => c),
+        completedQty: LazySeq.of(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy(
+          (c) => c,
+        ),
         inProcessQty: 0,
         remainingQty: curJob.remainingToStart ?? 0,
         darkRow: false,

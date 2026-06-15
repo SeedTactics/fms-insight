@@ -51,8 +51,11 @@ namespace BlackMaple.FMSInsight.Makino
     public TimeSpan TimeUntilNextRefresh => TimeSpan.FromMinutes(1);
   }
 
-  public sealed class MakinoSync(MakinoSettings settings, IMakinoDB makinoDb, FMSSettings fmsSettings)
-    : ISynchronizeCellState<MakinoCellState>
+  public sealed class MakinoSync(
+    MakinoSettings settings,
+    IMakinoDB makinoDb,
+    FMSSettings fmsSettings
+  ) : ISynchronizeCellState<MakinoCellState>
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSync>();
 
@@ -76,7 +79,9 @@ namespace BlackMaple.FMSInsight.Makino
         .ToList();
       string allMachineNames = string.Join(
         ',',
-        mcs.OrderBy(m => m.StationGroup).ThenBy(m => m.Num).Select(m => m.StationGroup + m.Num.ToString())
+        mcs.OrderBy(m => m.StationGroup)
+          .ThenBy(m => m.Num)
+          .Select(m => m.StationGroup + m.Num.ToString())
       );
 
       foreach (var j in jobs.Jobs)

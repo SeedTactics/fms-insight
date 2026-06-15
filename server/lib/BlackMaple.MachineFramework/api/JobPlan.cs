@@ -188,7 +188,8 @@ namespace BlackMaple.MachineFramework
     public TimeSpan? ExpectedBasketUnloadTime { get; init; }
 
     [JsonPropertyName("paths")]
-    public required ImmutableList<ProcPathInfo> Paths { get; init; } = ImmutableList<ProcPathInfo>.Empty;
+    public required ImmutableList<ProcPathInfo> Paths { get; init; } =
+      ImmutableList<ProcPathInfo>.Empty;
   }
 
   public record ProcPathInfo
@@ -300,7 +301,12 @@ namespace BlackMaple.MachineFramework
 
   public static class JobAdjustment
   {
-    public static Job AdjustPath(this Job job, int proc, int path, Func<ProcPathInfo, ProcPathInfo> f)
+    public static Job AdjustPath(
+      this Job job,
+      int proc,
+      int path,
+      Func<ProcPathInfo, ProcPathInfo> f
+    )
     {
       return job with
       {
@@ -334,7 +340,11 @@ namespace BlackMaple.MachineFramework
       {
         Processes = job
           .Processes.Select(
-            (p, i) => p with { Paths = p.Paths.Select((pa, j) => f(i + 1, j + 1, pa)).ToImmutableList() }
+            (p, i) =>
+              p with
+              {
+                Paths = p.Paths.Select((pa, j) => f(i + 1, j + 1, pa)).ToImmutableList(),
+              }
           )
           .ToImmutableList(),
       };
@@ -349,7 +359,11 @@ namespace BlackMaple.MachineFramework
       {
         Processes = job
           .Processes.Select(
-            (p, i) => p with { Paths = p.Paths.Select((pa, j) => f(i + 1, j + 1, pa)).ToImmutableList() }
+            (p, i) =>
+              p with
+              {
+                Paths = p.Paths.Select((pa, j) => f(i + 1, j + 1, pa)).ToImmutableList(),
+              }
           )
           .ToImmutableList(),
       };

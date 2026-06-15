@@ -31,7 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { PointerEvent, useMemo, useCallback, useState, useRef, useEffect, ReactNode, RefObject } from "react";
+import {
+  PointerEvent,
+  useMemo,
+  useCallback,
+  useState,
+  useRef,
+  useEffect,
+  ReactNode,
+  RefObject,
+} from "react";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
@@ -124,7 +133,9 @@ function useScales(
   containerWidth: number,
   containerHeight: number,
 ): ChartScales & { readonly marginLeft: number } {
-  const stats = OrderedSet.build(cycles, (c) => c.station).union(OrderedSet.build(current, (c) => c.station));
+  const stats = OrderedSet.build(cycles, (c) => c.station).union(
+    OrderedSet.build(current, (c) => c.station),
+  );
 
   const maxStatLen =
     stats
@@ -429,7 +440,9 @@ function RecentTooltip({ tooltip }: { tooltip: TooltipData }) {
               {differenceInMinutes(tooltip.data.cycle.expectedEnd, tooltip.data.now)}
             </div>
           )}
-          <div>Occupied Minutes: {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.start)}</div>
+          <div>
+            Occupied Minutes: {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.start)}
+          </div>
           {tooltip.data.cycle.parts.map((p, idx) => (
             <div key={idx}>
               Part: {p.part} {p.oper}
@@ -441,7 +454,11 @@ function RecentTooltip({ tooltip }: { tooltip: TooltipData }) {
   );
 }
 
-function NowLine({ now, xScale, yScale }: Pick<ChartScales, "xScale" | "yScale"> & { now: Date }): ReactNode {
+function NowLine({
+  now,
+  xScale,
+  yScale,
+}: Pick<ChartScales, "xScale" | "yScale"> & { now: Date }): ReactNode {
   const x = xScale(now);
   const fontSize = 11;
   return (
@@ -484,7 +501,13 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
     );
   });
 
-  const { xScale, yScale, actualPlannedScale, marginLeft } = useScales(cycles, current, now, width, height);
+  const { xScale, yScale, actualPlannedScale, marginLeft } = useScales(
+    cycles,
+    current,
+    now,
+    width,
+    height,
+  );
   const hideTooltipRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (height <= 0 || width <= 0) return null;
@@ -529,7 +552,12 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
           <NowLine now={now} xScale={xScale} yScale={yScale} />
         </g>
       </svg>
-      <Tooltip chartHeight={height} chartWidth={width} atom={tooltipData} TooltipContent={RecentTooltip} />
+      <Tooltip
+        chartHeight={height}
+        chartWidth={width}
+        atom={tooltipData}
+        TooltipContent={RecentTooltip}
+      />
     </div>
   );
 }

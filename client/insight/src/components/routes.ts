@@ -282,7 +282,13 @@ export const currentRoute = atom(
   },
 );
 
-export function AppLink({ to, children }: { to: RouteState; children: React.ReactNode }): React.ReactElement {
+export function AppLink({
+  to,
+  children,
+}: {
+  to: RouteState;
+  children: React.ReactNode;
+}): React.ReactElement {
   const setRoute = useSetAtom(currentRoute);
   return createElement(
     Link,

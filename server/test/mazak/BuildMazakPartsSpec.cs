@@ -512,7 +512,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       else
       {
         // creates only two groups
-        CheckNewFixtures(pMap, new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", "F:3:2:2" }, new[] { "Test" });
+        CheckNewFixtures(
+          pMap,
+          new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", "F:3:2:2" },
+          new[] { "Test" }
+        );
         part2BaseFix = "F:3:1";
         part3BaseFix = "F:3:2";
         part1BaseFix = "F:3:1";
@@ -728,7 +732,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           },
           baseJob.Processes[1] with
           {
-            Paths = [baseJob.Processes[1].Paths[0] with { InputQueue = "q2", OutputQueue = "shared" }],
+            Paths =
+            [
+              baseJob.Processes[1].Paths[0] with
+              {
+                InputQueue = "q2",
+                OutputQueue = "shared",
+              },
+            ],
           },
           baseJob.Processes[2] with
           {
@@ -1009,7 +1020,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var log = new List<string>();
       var dset = new MazakTestData();
 
-      CreatePart(dset, "OldJob", "Part:1", 1, "fix", System.IO.Path.Combine("theprogdir", "rev7", "ccc.EIA"));
+      CreatePart(
+        dset,
+        "OldJob",
+        "Part:1",
+        1,
+        "fix",
+        System.IO.Path.Combine("theprogdir", "rev7", "ccc.EIA")
+      );
 
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev7", "ccc.EIA"), "Insight:7:ccc"); // 7 is used by OldJob part
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev8", "ccc.EIA"), "Insight:8:ccc"); // 8 is not used, should be deleted
@@ -1017,7 +1035,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev7", "ddd.EIA"), "Insight:7:ddd"); // latest revision of unused program, should be kept
 
       var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
-      lookupProgram("aaa", null).Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3 });
+      lookupProgram("aaa", null)
+        .Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3 });
       lookupProgram("bbb", 7).Returns(new ProgramRevision() { ProgramName = "bbb", Revision = 7 });
       lookupProgram("ccc", 9).Returns(new ProgramRevision() { ProgramName = "ccc", Revision = 9 });
 
@@ -1157,7 +1176,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev6", "bbb.EIA"), "Insight:6:bbb");
 
       var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
-      lookupProgram("aaa", null).Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3 });
+      lookupProgram("aaa", null)
+        .Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3 });
       lookupProgram("bbb", 7).Returns((ProgramRevision)null);
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
@@ -1405,7 +1425,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
     }
 
-    private void CheckSingleProcPalletGroup(MazakWriteData dset, int groupNum, string fix, IList<int> pals)
+    private void CheckSingleProcPalletGroup(
+      MazakWriteData dset,
+      int groupNum,
+      string fix,
+      IList<int> pals
+    )
     {
       int angle = groupNum * 1000;
 
@@ -1415,7 +1440,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
     }
 
-    private void CheckPalletGroup(MazakWriteData dset, int groupNum, string fix, int numProc, IList<int> pals)
+    private void CheckPalletGroup(
+      MazakWriteData dset,
+      int groupNum,
+      string fix,
+      int numProc,
+      IList<int> pals
+    )
     {
       CheckPalletGroup(
         dset,

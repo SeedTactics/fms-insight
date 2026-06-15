@@ -66,7 +66,9 @@ namespace BlackMaple.FMSInsight.ReverseProxy
         .AddResponseCompression()
         .AddCors()
         .AddHttpClient("proxy")
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler() { AllowAutoRedirect = false });
+        .ConfigurePrimaryHttpMessageHandler(() =>
+          new HttpClientHandler() { AllowAutoRedirect = false }
+        );
 
       if (!string.IsNullOrEmpty(ProxyConfig.OpenIDConnectAuthority))
       {
@@ -75,13 +77,14 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           .AddJwtBearer(options =>
           {
             options.Authority = ProxyConfig.OpenIDConnectAuthority;
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
-            {
-              ValidateIssuer = true,
-              ValidateAudience = true,
-              ValidateLifetime = true,
-              ValidAudiences = ProxyConfig.AuthTokenAudiences,
-            };
+            options.TokenValidationParameters =
+              new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+              {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidAudiences = ProxyConfig.AuthTokenAudiences,
+              };
 #if DEBUG
             options.RequireHttpsMetadata = false;
 #endif
@@ -109,7 +112,11 @@ namespace BlackMaple.FMSInsight.ReverseProxy
       new[] { "date", "server", "transfer-encoding" }
     );
 
-    public void Configure(IApplicationBuilder app, IHttpClientFactory httpFactory, ILogger<Startup> logger)
+    public void Configure(
+      IApplicationBuilder app,
+      IHttpClientFactory httpFactory,
+      ILogger<Startup> logger
+    )
     {
       app.UseResponseCompression();
       app.UseHttpsRedirection();
@@ -245,7 +252,9 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           msg.RequestUri = uriB.Uri;
           msg.Method = new HttpMethod(context.Request.Method);
 
-          if (HttpMethods.IsPut(context.Request.Method) || HttpMethods.IsPost(context.Request.Method))
+          if (
+            HttpMethods.IsPut(context.Request.Method) || HttpMethods.IsPost(context.Request.Method)
+          )
           {
             await context.Request.Body.CopyToAsync(requestBodyMemory);
             requestBodyMemory.Seek(0, System.IO.SeekOrigin.Begin);
@@ -261,12 +270,16 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           }
           foreach (var h in context.Request.Headers)
           {
-            if (!connHeader.Contains(h.Key.ToLower()) && !IgnoreRequestHeaders.Contains(h.Key.ToLower()))
+            if (
+              !connHeader.Contains(h.Key.ToLower())
+              && !IgnoreRequestHeaders.Contains(h.Key.ToLower())
+            )
             {
               var ok = msg.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray());
               if (!ok)
               {
-                ok = msg.Content?.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray()) ?? false;
+                ok =
+                  msg.Content?.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray()) ?? false;
               }
             }
           }

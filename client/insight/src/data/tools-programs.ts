@@ -42,7 +42,11 @@ import { durationToMinutes } from "../util/parseISODuration.js";
 import { MachineBackend } from "../network/backend.js";
 import { currentStatus } from "../cell-status/current-status.js";
 import copy from "copy-to-clipboard";
-import { last30ToolUse, ProgramToolUseInSingleCycle, ToolUsage } from "../cell-status/tool-usage.js";
+import {
+  last30ToolUse,
+  ProgramToolUseInSingleCycle,
+  ToolUsage,
+} from "../cell-status/tool-usage.js";
 import {
   EstimatedCycleTimes,
   last30EstimatedCycleTimes,
@@ -66,8 +70,10 @@ function averageToolUse(
       .groupBy((t) => t.toolName)
       .map(([toolName, usageInCycles]) => ({
         toolName: toolName,
-        cycleUsageMinutes: LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageMinutes) / usageInCycles.length,
-        cycleUsageCnt: LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageCnt) / usageInCycles.length,
+        cycleUsageMinutes:
+          LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageMinutes) / usageInCycles.length,
+        cycleUsageCnt:
+          LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageCnt) / usageInCycles.length,
         toolChangedDuringMiddleOfCycle: false,
       }))
       .toMutableArray();
@@ -359,7 +365,8 @@ function buildToolReportHTML(tools: Iterable<ToolReport>): string {
         const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
         table += "<td>" + schUse.toFixed(1) + "</td>";
 
-        table += "<td>" + (mach.currentUseMinutes ? mach.currentUseMinutes.toFixed(1) : "") + "</td>";
+        table +=
+          "<td>" + (mach.currentUseMinutes ? mach.currentUseMinutes.toFixed(1) : "") + "</td>";
         table += "<td>" + (mach.lifetimeMinutes ? mach.lifetimeMinutes.toFixed(1) : "") + "</td>";
         table += "<td>" + (mach.remainingMinutes ? mach.remainingMinutes.toFixed(1) : "") + "</td>";
       }
@@ -473,7 +480,9 @@ export function calcProgramReport(
     time: new Date(),
     programs,
     hasRevisions: programs.some((p) => p.revision !== null),
-    cellNameDifferentFromProgName: programs.some((p) => p.cellControllerProgramName !== p.programName),
+    cellNameDifferentFromProgName: programs.some(
+      (p) => p.cellControllerProgramName !== p.programName,
+    ),
   };
 }
 

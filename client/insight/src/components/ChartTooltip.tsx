@@ -102,14 +102,18 @@ export function Tooltip<T>({
   return (
     <div
       style={{
-        visibility: tooltipHeight !== undefined && tooltipWidth !== undefined ? "visible" : "hidden",
+        visibility:
+          tooltipHeight !== undefined && tooltipWidth !== undefined ? "visible" : "hidden",
         position: "absolute",
         left: tLeft,
         top: tTop,
         zIndex: 10,
       }}
     >
-      <ChartTooltipContainer ref={tooltipRef} style={pos?.zIndex ? { zIndex: pos.zIndex } : undefined}>
+      <ChartTooltipContainer
+        ref={tooltipRef}
+        style={pos?.zIndex ? { zIndex: pos.zIndex } : undefined}
+      >
         <TooltipContent tooltip={pos} />
       </ChartTooltipContainer>
     </div>

@@ -30,7 +30,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { IEditMaterialInLogEvents, IInProcessMaterial, ILogEntry, LogType } from "../network/api.js";
+import {
+  IEditMaterialInLogEvents,
+  IInProcessMaterial,
+  ILogEntry,
+  LogType,
+} from "../network/api.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { addDays } from "date-fns";
 import { HashMap, LazySeq, HashSet } from "@seedtactics/immutable-collections";
@@ -256,7 +261,10 @@ function filter_old(expire: Date, { matIdsForJob, matsById }: MatSummaryState): 
   return { matIdsForJob, matsById };
 }
 
-function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummaryState): MatSummaryState {
+function process_swap(
+  swap: Readonly<IEditMaterialInLogEvents>,
+  st: MatSummaryState,
+): MatSummaryState {
   let jobs = st.matIdsForJob;
   const oldMatFromState = st.matsById.get(swap.oldMaterialID) ?? null;
   const newMatFromState = st.matsById.get(swap.newMaterialID) ?? null;
@@ -282,7 +290,11 @@ function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummarySt
     newMat = newMatFromState;
   }
 
-  if (oldMat.jobUnique && oldMat.jobUnique !== "" && (!newMat.jobUnique || newMat.jobUnique === "")) {
+  if (
+    oldMat.jobUnique &&
+    oldMat.jobUnique !== "" &&
+    (!newMat.jobUnique || newMat.jobUnique === "")
+  ) {
     // Swap newMat from raw material
     const forJob = jobs.get(oldMat.jobUnique);
     if (forJob !== undefined) {
@@ -345,29 +357,35 @@ export const setLast30MatSummary = atom(null, (_, set, log: ReadonlyArray<Readon
   set(last30MaterialSummaryRW, (st) => log.reduce(process_event, st));
 });
 
-export const updateLast30MatSummary = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
-  if (evt.logEntry) {
-    const log = evt.logEntry;
-    set(last30MaterialSummaryRW, (st) => {
-      const newSt = process_event(st, log);
-      if (newSt === st || !expire) {
-        return st;
-      } else {
-        return filter_old(addDays(now, -30), newSt);
-      }
-    });
-  } else if (evt.editMaterialInLog) {
-    const edit = evt.editMaterialInLog;
-    set(last30MaterialSummaryRW, (st) => process_swap(edit, st));
-  }
-});
+export const updateLast30MatSummary = atom(
+  null,
+  (_, set, { evt, now, expire }: ServerEventAndTime) => {
+    if (evt.logEntry) {
+      const log = evt.logEntry;
+      set(last30MaterialSummaryRW, (st) => {
+        const newSt = process_event(st, log);
+        if (newSt === st || !expire) {
+          return st;
+        } else {
+          return filter_old(addDays(now, -30), newSt);
+        }
+      });
+    } else if (evt.editMaterialInLog) {
+      const edit = evt.editMaterialInLog;
+      set(last30MaterialSummaryRW, (st) => process_swap(edit, st));
+    }
+  },
+);
 
-export const setSpecificMonthMatSummary = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(
-    specificMonthMaterialSummaryRW,
-    log.reduce<MatSummaryState>(process_event, {
-      matsById: HashMap.empty(),
-      matIdsForJob: HashMap.empty(),
-    }),
-  );
-});
+export const setSpecificMonthMatSummary = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(
+      specificMonthMaterialSummaryRW,
+      log.reduce<MatSummaryState>(process_event, {
+        matsById: HashMap.empty(),
+        matIdsForJob: HashMap.empty(),
+      }),
+    );
+  },
+);

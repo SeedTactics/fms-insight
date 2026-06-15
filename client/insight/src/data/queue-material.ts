@@ -129,7 +129,8 @@ function possibleJobs(
             .head() ?? null,
         machinedProcs: procs.map((proc) => ({
           lastProc: proc.lastCompletedProcess,
-          details: job?.procsAndPaths[proc.lastCompletedProcess].paths.map(describePath).join(" | ") ?? "",
+          details:
+            job?.procsAndPaths[proc.lastCompletedProcess].paths.map(describePath).join(" | ") ?? "",
         })),
       };
     })
@@ -256,7 +257,10 @@ export function selectQueueData(
 
     if (isRawMat) {
       let materialByPos = OrderedMap.empty<number, api.IInProcessMaterial>();
-      const matByPartThenUniq = new Map<string, Map<string | null, Readonly<api.IInProcessMaterial>[]>>();
+      const matByPartThenUniq = new Map<
+        string,
+        Map<string | null, Readonly<api.IInProcessMaterial>[]>
+      >();
 
       for (const m of curSt.material) {
         if (

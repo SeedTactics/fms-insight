@@ -84,7 +84,9 @@ public record NiigataSettings
               {
                 return null;
               }
-              var group = new string(machineName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray());
+              var group = new string(
+                machineName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray()
+              );
               if (int.TryParse(machineName.AsSpan(group.Length), out var num))
               {
                 return new
@@ -109,7 +111,11 @@ public record NiigataSettings
       ProgramDirectory = ProgramDirectory,
       StationNames = StationNames,
       MachineIPs =
-        section.GetValue<string>("Machine IP Addresses")?.Split(',').Select(s => s.Trim()).ToImmutableList()
+        section
+          .GetValue<string>("Machine IP Addresses")
+          ?.Split(',')
+          .Select(s => s.Trim())
+          .ToImmutableList()
         ?? ImmutableList<string>.Empty,
 
       SQLConnectionString = section.GetValue<string>("Connection String") ?? "",

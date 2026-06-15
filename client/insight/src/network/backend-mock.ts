@@ -168,7 +168,10 @@ async function loadEventsJson(
     .toMutableArray();
 }
 
-function findMatById(evts: ReadonlyArray<api.ILogEntry>, matId: number): api.LogMaterial | undefined {
+function findMatById(
+  evts: ReadonlyArray<api.ILogEntry>,
+  matId: number,
+): api.LogMaterial | undefined {
   return LazySeq.of(evts)
     .flatMap((e) => e.material)
     .find((m) => m.id === matId);
@@ -281,7 +284,8 @@ export function registerMockBackend(
         .filter((e) => e.type === api.LogType.PartMark)
         .flatMap((e) =>
           e.material.map(
-            (m) => [e.result, { matId: m.id, part: m.part, uniq: m.uniq, numProc: m.numproc }] as const,
+            (m) =>
+              [e.result, { matId: m.id, part: m.part, uniq: m.uniq, numProc: m.numproc }] as const,
           ),
         )
         .toRMap(
@@ -303,13 +307,19 @@ export function registerMockBackend(
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return data.then(() =>
-        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).some((m) => m.id === materialID))),
+        events.then((evts) =>
+          evts.filter((e) => LazySeq.of(e.material).some((m) => m.id === materialID)),
+        ),
       );
     },
-    logForMaterials(materialIDs: ReadonlyArray<number>): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+    logForMaterials(
+      materialIDs: ReadonlyArray<number>,
+    ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       const matIds = new Set(materialIDs);
       return data.then(() =>
-        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).some((m) => matIds.has(m.id)))),
+        events.then((evts) =>
+          evts.filter((e) => LazySeq.of(e.material).some((m) => matIds.has(m.id))),
+        ),
       );
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
@@ -322,7 +332,9 @@ export function registerMockBackend(
         }
       });
     },
-    async materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
+    async materialForSerial(
+      serial: string | null,
+    ): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
       if (!serial || serial === "") return [];
       const mat = await serialsToMatId.then((s) => s.get(serial));
       if (mat === undefined) return [];
@@ -379,7 +391,9 @@ export function registerMockBackend(
         }),
       );
     },
-    async recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>> {
+    async recordInspectionCompleted(
+      insp: api.NewInspectionCompleted,
+    ): Promise<Readonly<api.ILogEntry>> {
       const evtMat =
         findMatById(await events, insp.materialID) ??
         new api.LogMaterial({
@@ -484,7 +498,12 @@ export function registerMockBackend(
     getActiveWorkorder(): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>> {
       return Promise.resolve([]);
     },
-    recordOperatorNotes(materialID: number, process: number, operatorName: string | null, notes: string) {
+    recordOperatorNotes(
+      materialID: number,
+      process: number,
+      operatorName: string | null,
+      notes: string,
+    ) {
       const mat = new api.LogMaterial({
         id: materialID,
         uniq: "",
@@ -518,7 +537,11 @@ export function registerMockBackend(
         }),
       );
     },
-    recordWorkorderComment(workorder: string, operName: string | null | undefined, comment: string) {
+    recordWorkorderComment(
+      workorder: string,
+      operName: string | null | undefined,
+      comment: string,
+    ) {
       return Promise.resolve({
         counter: 0,
         material: [],

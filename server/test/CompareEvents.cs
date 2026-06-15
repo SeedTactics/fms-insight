@@ -9,7 +9,10 @@ namespace BlackMaple.FMSInsight.Tests;
 
 public static class CompareEvents
 {
-  public static void EventsShouldBe(this IEnumerable<LogEntry> actual, IEnumerable<LogEntry> expected)
+  public static void EventsShouldBe(
+    this IEnumerable<LogEntry> actual,
+    IEnumerable<LogEntry> expected
+  )
   {
     // We don't care about the exact ordering of events, which depends on the exact internals of
     // event processing.  The Counter is also dependent upon the order of events, so we set it to 0

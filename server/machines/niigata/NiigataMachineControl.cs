@@ -66,7 +66,9 @@ namespace BlackMaple.FMSInsight.Niigata
         return programs
           .Values.Select(p =>
           {
-            if (AssignNewRoutesOnPallets.TryParseProgramComment(p, out string progName, out long rev))
+            if (
+              AssignNewRoutesOnPallets.TryParseProgramComment(p, out string progName, out long rev)
+            )
             {
               var jobProg = jobDb.LoadProgram(progName, rev);
               return new ProgramInCellController()
@@ -137,7 +139,11 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       using (var jobDb = _jobDbCfg.OpenConnection())
       {
-        return jobDb.LoadProgramRevisionsInDescendingOrderOfRevision(programName, count, revisionToStart);
+        return jobDb.LoadProgramRevisionsInDescendingOrderOfRevision(
+          programName,
+          count,
+          revisionToStart
+        );
       }
     }
   }

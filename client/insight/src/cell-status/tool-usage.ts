@@ -59,7 +59,9 @@ export type RecentProgramToolUse = {
 
 export type ToolUsage = HashMap<PartAndStationOperation, RecentProgramToolUse>;
 
-const last30ToolUseRW = atom<ToolUsage>(HashMap.empty<PartAndStationOperation, RecentProgramToolUse>());
+const last30ToolUseRW = atom<ToolUsage>(
+  HashMap.empty<PartAndStationOperation, RecentProgramToolUse>(),
+);
 export const last30ToolUse: Atom<ToolUsage> = last30ToolUseRW;
 
 function process_tools(
@@ -67,7 +69,11 @@ function process_tools(
   estimatedCycleTimes: EstimatedCycleTimes,
   toolUsage: ToolUsage,
 ): ToolUsage {
-  if (cycle.tooluse === undefined || cycle.tooluse.length === 0 || cycle.type !== LogType.MachineCycle) {
+  if (
+    cycle.tooluse === undefined ||
+    cycle.tooluse.length === 0 ||
+    cycle.type !== LogType.MachineCycle
+  ) {
     return toolUsage;
   }
 
@@ -94,7 +100,9 @@ function process_tools(
         toolName,
         cycleUsageMinutes: useDuring,
         cycleUsageCnt: cntDuring,
-        toolChangedDuringMiddleOfCycle: LazySeq.of(uses).some((use) => use.toolChangeOccurred ?? false),
+        toolChangedDuringMiddleOfCycle: LazySeq.of(uses).some(
+          (use) => use.toolChangeOccurred ?? false,
+        ),
       };
     })
     .toRArray();
@@ -107,7 +115,10 @@ function process_tools(
     if (old) {
       const n = old.recentCycles.slice(-4);
       n.push({ tools: toolsUsedInCycle });
-      return { machines: old.machines.add(stat_name_and_num(cycle.loc, cycle.locnum)), recentCycles: n };
+      return {
+        machines: old.machines.add(stat_name_and_num(cycle.loc, cycle.locnum)),
+        recentCycles: n,
+      };
     } else {
       return {
         machines: OrderedSet.empty<string>().add(stat_name_and_num(cycle.loc, cycle.locnum)),

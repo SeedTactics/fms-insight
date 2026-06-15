@@ -43,7 +43,11 @@ import {
 } from "@mui/material";
 
 import * as matDetails from "../../cell-status/material-details.js";
-import { MaterialDetailTitle, MaterialDetailContent, MaterialLoading } from "../station-monitor/Material.js";
+import {
+  MaterialDetailTitle,
+  MaterialDetailContent,
+  MaterialLoading,
+} from "../station-monitor/Material.js";
 import { buildPathString, extractPath } from "../../data/results.inspection.js";
 import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
 import { ApiException, ILogEntry, LogType } from "../../network/api.js";
@@ -116,7 +120,12 @@ function SerialLookup() {
           />
         </div>
         <div>
-          <Button variant="contained" color="secondary" disabled={serial === "" || loading} onClick={lookup}>
+          <Button
+            variant="contained"
+            color="secondary"
+            disabled={serial === "" || loading}
+            onClick={lookup}
+          >
             {loading ? (
               <Stack direction="row" spacing={2}>
                 <CircularProgress /> Searching
@@ -235,7 +244,9 @@ function PathLookupStep(props: PathLookupProps) {
       <InspectionSankey
         inspectionlogs={logs}
         restrictToPart={mat.partName}
-        subtitle={"Paths for " + mat.partName + " around " + lastMachineTime(matEvents).toLocaleString()}
+        subtitle={
+          "Paths for " + mat.partName + " around " + lastMachineTime(matEvents).toLocaleString()
+        }
         default_date_range={searchRange ? [searchRange.curStart, searchRange.curEnd] : []}
         zoomType={searchRange ? "ExtendDays" : undefined}
         extendDateRange={extendDateRange}
@@ -283,7 +294,8 @@ export function PartLookupStepper() {
       {step === 0 ? (
         <Stack direction="column" spacing={4}>
           <Typography>
-            Enter a serial number, scan a barcode, or click on a material in the table below to see details.
+            Enter a serial number, scan a barcode, or click on a material in the table below to see
+            details.
           </Typography>
           <SerialLookup />
           <RecentFailedInspectionsTable />

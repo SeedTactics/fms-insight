@@ -51,7 +51,9 @@ export type PalletCyclesByPallet = HashMap<number, PalletCyclesByCntr>;
 const last30PalletCyclesRW = atom(HashMap.empty<number, PalletCyclesByCntr>());
 export const last30PalletCycles: Atom<PalletCyclesByPallet> = last30PalletCyclesRW;
 
-const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>(HashMap.empty<number, PalletCyclesByCntr>());
+const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>(
+  HashMap.empty<number, PalletCyclesByCntr>(),
+);
 export const specificMonthPalletCycles: Atom<PalletCyclesByPallet> = specificMonthPalletCyclesRW;
 
 function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
@@ -64,9 +66,57 @@ function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
   };
 }
 
-export const setLast30PalletCycles = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(last30PalletCyclesRW, (oldCycles) =>
-    oldCycles.union(
+export const setLast30PalletCycles = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(last30PalletCyclesRW, (oldCycles) =>
+      oldCycles.union(
+        LazySeq.of(log)
+          .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== 0)
+          .toLookupMap(
+            (c) => c.pal,
+            (c) => c.counter,
+            logToPalletCycle,
+          ),
+        (e1, e2) => e1.union(e2),
+      ),
+    );
+  },
+);
+
+export const updateLast30PalletCycles = atom(
+  null,
+  (_, set, { evt, now, expire }: ServerEventAndTime) => {
+    if (
+      evt.logEntry &&
+      !evt.logEntry.startofcycle &&
+      evt.logEntry.type === LogType.PalletCycle &&
+      evt.logEntry.pal !== 0
+    ) {
+      const log = evt.logEntry;
+
+      set(last30PalletCyclesRW, (oldCycles) => {
+        if (expire) {
+          const thirtyDaysAgo = addDays(now, -30);
+          oldCycles = oldCycles.collectValues((es) => {
+            const newEs = es.filter((e) => e.x >= thirtyDaysAgo);
+            return newEs.size > 0 ? newEs : null;
+          });
+        }
+
+        return oldCycles.modify(log.pal, (old) =>
+          (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log)),
+        );
+      });
+    }
+  },
+);
+
+export const setSpecificMonthPalletCycles = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(
+      specificMonthPalletCyclesRW,
       LazySeq.of(log)
         .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== 0)
         .toLookupMap(
@@ -74,45 +124,6 @@ export const setLast30PalletCycles = atom(null, (_, set, log: ReadonlyArray<Read
           (c) => c.counter,
           logToPalletCycle,
         ),
-      (e1, e2) => e1.union(e2),
-    ),
-  );
-});
-
-export const updateLast30PalletCycles = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
-  if (
-    evt.logEntry &&
-    !evt.logEntry.startofcycle &&
-    evt.logEntry.type === LogType.PalletCycle &&
-    evt.logEntry.pal !== 0
-  ) {
-    const log = evt.logEntry;
-
-    set(last30PalletCyclesRW, (oldCycles) => {
-      if (expire) {
-        const thirtyDaysAgo = addDays(now, -30);
-        oldCycles = oldCycles.collectValues((es) => {
-          const newEs = es.filter((e) => e.x >= thirtyDaysAgo);
-          return newEs.size > 0 ? newEs : null;
-        });
-      }
-
-      return oldCycles.modify(log.pal, (old) =>
-        (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log)),
-      );
-    });
-  }
-});
-
-export const setSpecificMonthPalletCycles = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(
-    specificMonthPalletCyclesRW,
-    LazySeq.of(log)
-      .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== 0)
-      .toLookupMap(
-        (c) => c.pal,
-        (c) => c.counter,
-        logToPalletCycle,
-      ),
-  );
-});
+    );
+  },
+);

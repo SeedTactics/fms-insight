@@ -99,7 +99,10 @@ export const addWorkorderComment = atom(
           w.workorderId === workorder
             ? new ActiveWorkorder({
                 ...(w as IActiveWorkorder),
-                comments: [...(w.comments ?? []), new WorkorderComment({ comment, timeUTC: new Date() })],
+                comments: [
+                  ...(w.comments ?? []),
+                  new WorkorderComment({ comment, timeUTC: new Date() }),
+                ],
               })
             : w,
         ),
@@ -127,7 +130,10 @@ function processEventsIntoCurrentStatus(
 ): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
   return (curSt) => {
     const mats = new Map<number, Readonly<InProcessMaterial>>();
-    function adjustMat(id: number, f: (mat: Readonly<IInProcessMaterial>) => Readonly<IInProcessMaterial>) {
+    function adjustMat(
+      id: number,
+      f: (mat: Readonly<IInProcessMaterial>) => Readonly<IInProcessMaterial>,
+    ) {
       if (mats.size === 0) {
         for (const m of curSt.material) {
           mats.set(m.materialID, m);

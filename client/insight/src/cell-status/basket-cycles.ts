@@ -42,11 +42,17 @@ export type BasketCycleData = PalletCycleData;
 export type BasketCyclesByCntr = HashMap<number, BasketCycleData>;
 export type BasketCyclesByBasket = HashMap<number, BasketCyclesByCntr>;
 
-const last30BasketCyclesRW = atom<BasketCyclesByBasket>(HashMap.empty<number, BasketCyclesByCntr>());
+const last30BasketCyclesRW = atom<BasketCyclesByBasket>(
+  HashMap.empty<number, BasketCyclesByCntr>(),
+);
 export const last30BasketCycles: Atom<BasketCyclesByBasket> = last30BasketCyclesRW;
-export const last30HasBasketCycleData: Atom<boolean> = atom((get) => get(last30BasketCyclesRW).size > 0);
+export const last30HasBasketCycleData: Atom<boolean> = atom(
+  (get) => get(last30BasketCyclesRW).size > 0,
+);
 
-const specificMonthBasketCyclesRW = atom<BasketCyclesByBasket>(HashMap.empty<number, BasketCyclesByCntr>());
+const specificMonthBasketCyclesRW = atom<BasketCyclesByBasket>(
+  HashMap.empty<number, BasketCyclesByCntr>(),
+);
 export const specificMonthBasketCycles: Atom<BasketCyclesByBasket> = specificMonthBasketCyclesRW;
 export const specificMonthHasBasketCycleData: Atom<boolean> = atom(
   (get) => get(specificMonthBasketCyclesRW).size > 0,
@@ -62,9 +68,57 @@ function logToBasketCycle(c: Readonly<ILogEntry>): BasketCycleData {
   };
 }
 
-export const setLast30BasketCycles = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(last30BasketCyclesRW, (oldCycles) =>
-    oldCycles.union(
+export const setLast30BasketCycles = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(last30BasketCyclesRW, (oldCycles) =>
+      oldCycles.union(
+        LazySeq.of(log)
+          .filter((c) => !c.startofcycle && c.type === LogType.BasketCycle && c.pal !== 0)
+          .toLookupMap(
+            (c) => c.pal,
+            (c) => c.counter,
+            logToBasketCycle,
+          ),
+        (e1, e2) => e1.union(e2),
+      ),
+    );
+  },
+);
+
+export const updateLast30BasketCycles = atom(
+  null,
+  (_, set, { evt, now, expire }: ServerEventAndTime) => {
+    if (
+      evt.logEntry &&
+      !evt.logEntry.startofcycle &&
+      evt.logEntry.type === LogType.BasketCycle &&
+      evt.logEntry.pal !== 0
+    ) {
+      const log = evt.logEntry;
+
+      set(last30BasketCyclesRW, (oldCycles) => {
+        if (expire) {
+          const thirtyDaysAgo = addDays(now, -30);
+          oldCycles = oldCycles.collectValues((es) => {
+            const newEs = es.filter((e) => e.x >= thirtyDaysAgo);
+            return newEs.size > 0 ? newEs : null;
+          });
+        }
+
+        return oldCycles.modify(log.pal, (old) =>
+          (old ?? HashMap.empty()).set(log.counter, logToBasketCycle(log)),
+        );
+      });
+    }
+  },
+);
+
+export const setSpecificMonthBasketCycles = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(
+      specificMonthBasketCyclesRW,
       LazySeq.of(log)
         .filter((c) => !c.startofcycle && c.type === LogType.BasketCycle && c.pal !== 0)
         .toLookupMap(
@@ -72,45 +126,6 @@ export const setLast30BasketCycles = atom(null, (_, set, log: ReadonlyArray<Read
           (c) => c.counter,
           logToBasketCycle,
         ),
-      (e1, e2) => e1.union(e2),
-    ),
-  );
-});
-
-export const updateLast30BasketCycles = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
-  if (
-    evt.logEntry &&
-    !evt.logEntry.startofcycle &&
-    evt.logEntry.type === LogType.BasketCycle &&
-    evt.logEntry.pal !== 0
-  ) {
-    const log = evt.logEntry;
-
-    set(last30BasketCyclesRW, (oldCycles) => {
-      if (expire) {
-        const thirtyDaysAgo = addDays(now, -30);
-        oldCycles = oldCycles.collectValues((es) => {
-          const newEs = es.filter((e) => e.x >= thirtyDaysAgo);
-          return newEs.size > 0 ? newEs : null;
-        });
-      }
-
-      return oldCycles.modify(log.pal, (old) =>
-        (old ?? HashMap.empty()).set(log.counter, logToBasketCycle(log)),
-      );
-    });
-  }
-});
-
-export const setSpecificMonthBasketCycles = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(
-    specificMonthBasketCyclesRW,
-    LazySeq.of(log)
-      .filter((c) => !c.startofcycle && c.type === LogType.BasketCycle && c.pal !== 0)
-      .toLookupMap(
-        (c) => c.pal,
-        (c) => c.counter,
-        logToBasketCycle,
-      ),
-  );
-});
+    );
+  },
+);

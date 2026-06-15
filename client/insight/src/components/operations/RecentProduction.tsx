@@ -52,10 +52,18 @@ import {
   useColSort,
 } from "../analysis/DataTable.js";
 import { ShiftStart, ShiftStartAndEnd, useShifts } from "./ShiftSettings.js";
-import { SkipPrevious as SkipPrevIcon, SkipNext as SkipNextIcon, ImportExport } from "@mui/icons-material";
+import {
+  SkipPrevious as SkipPrevIcon,
+  SkipNext as SkipNextIcon,
+  ImportExport,
+} from "@mui/icons-material";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { last30SimProduction, SimPartCompleted } from "../../cell-status/sim-production.js";
-import { isLaborCycle, last30StationCycles, StationCyclesByCntr } from "../../cell-status/station-cycles.js";
+import {
+  isLaborCycle,
+  last30StationCycles,
+  StationCyclesByCntr,
+} from "../../cell-status/station-cycles.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
@@ -139,10 +147,14 @@ function useRows(day: Date): ReadonlyArray<ProdRow> {
     const completedByDay = binCompleted(cycles, shifts);
 
     return plannedByDay
-      .mapValues<{ planned?: OrderedMap<number, number>; completed?: OrderedMap<number, number> }>((p) => ({
-        planned: p,
-      }))
-      .adjust(completedByDay, (plan, comp) => (plan ? { ...plan, completed: comp } : { completed: comp }))
+      .mapValues<{ planned?: OrderedMap<number, number>; completed?: OrderedMap<number, number> }>(
+        (p) => ({
+          planned: p,
+        }),
+      )
+      .adjust(completedByDay, (plan, comp) =>
+        plan ? { ...plan, completed: comp } : { completed: comp },
+      )
       .toAscLazySeq()
       .map(([partName, { planned: plannedCounts, completed: completedCounts }]) => ({
         part: partName,
@@ -309,12 +321,17 @@ function NavigateDay({
     >
       <Tooltip title="Previous Day">
         <div>
-          <IconButton disabled={day <= addDays(today, -28)} onClick={() => setDay((d) => addDays(d, -1))}>
+          <IconButton
+            disabled={day <= addDays(today, -28)}
+            onClick={() => setDay((d) => addDays(d, -1))}
+          >
             <SkipPrevIcon />
           </IconButton>
         </div>
       </Tooltip>
-      <Typography sx={{ minWidth: "14em", textAlign: "center" }}>{fulldayFormat.format(day)}</Typography>
+      <Typography sx={{ minWidth: "14em", textAlign: "center" }}>
+        {fulldayFormat.format(day)}
+      </Typography>
       <Tooltip title="Next Day">
         <div>
           <IconButton disabled={day >= today} onClick={() => setDay((d) => addDays(d, 1))}>

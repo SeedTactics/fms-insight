@@ -90,7 +90,10 @@ import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { WorkorderGantt } from "./WorkorderGantt.js";
-import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
+import {
+  SelectWorkorderDialog,
+  selectWorkorderDialogOpen,
+} from "../station-monitor/SelectWorkorder.js";
 import { LogBackend } from "../../network/backend.js";
 
 const currentWorkorderIdToSearch = atom<string | null, [string | null], void>(
@@ -116,7 +119,10 @@ const currentWorkorderIdToSearch = atom<string | null, [string | null], void>(
   },
 );
 
-const recentSearchedWorkorders = atomWithStorage<ReadonlyArray<string>>("recentSearchedWorkorders", []);
+const recentSearchedWorkorders = atomWithStorage<ReadonlyArray<string>>(
+  "recentSearchedWorkorders",
+  [],
+);
 
 const currentSearchedWorkorder = atom<Promise<ReadonlyArray<Readonly<IActiveWorkorder>> | null>>(
   async (get, { signal }) => {
@@ -270,7 +276,9 @@ const WorkorderDetails = memo(function WorkorderDetails({
 
 function utcDateOnlyToString(d: Date | null | undefined): string {
   if (d) {
-    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toLocaleDateString();
+    return new Date(
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+    ).toLocaleDateString();
   } else {
     return "";
   }
@@ -280,7 +288,9 @@ function isAbnormal(m: WorkorderMaterial): boolean {
   if (m.closeout === WorkorderSerialCloseout.ClosedOut) {
     return false;
   }
-  return m.quarantined || m.inspectionFailed || m.closeout === WorkorderSerialCloseout.CloseOutFailed;
+  return (
+    m.quarantined || m.inspectionFailed || m.closeout === WorkorderSerialCloseout.CloseOutFailed
+  );
 }
 
 function WorkorderRow({
@@ -321,7 +331,9 @@ function WorkorderRow({
             </div>
           </Box>
         </TableCell>
-        <TableCell>{workorder.dueDate === null ? "" : workorder.dueDate.toLocaleDateString()}</TableCell>
+        <TableCell>
+          {workorder.dueDate === null ? "" : workorder.dueDate.toLocaleDateString()}
+        </TableCell>
         <TableCell align="right">{workorder.priority}</TableCell>
         <TableCell align="right">{workorder.plannedQuantity}</TableCell>
         <TableCell align="right">{workorder.material?.length ?? 0}</TableCell>
@@ -403,7 +415,9 @@ function sortWorkorders(
       sortCol = (j) => j.simulatedFilled?.getTime() ?? null;
       break;
   }
-  return LazySeq.of(workorders).toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
+  return LazySeq.of(workorders).toSortedArray(
+    order === "asc" ? { asc: sortCol } : { desc: sortCol },
+  );
 }
 
 function WorkorderRows({
@@ -642,7 +656,11 @@ function WorkorderSearchButton() {
 
           {prevSearches.length > 0 ? (
             <>
-              <List dense sx={{ mt: "1em" }} subheader={<ListSubheader>Previous Searches</ListSubheader>}>
+              <List
+                dense
+                sx={{ mt: "1em" }}
+                subheader={<ListSubheader>Previous Searches</ListSubheader>}
+              >
                 {prevSearches.map((w) => (
                   <ListItem key={w} onClick={() => search(w)}>
                     <ListItemButton>
@@ -769,7 +787,9 @@ function WorkorderCommentDialog() {
               <div>
                 <PartIdenticon part={workorder.part} size={40} />
               </div>
-              <div style={{ marginLeft: "1em", flexGrow: 1 }}>Add Comment For {workorder.workorderId}</div>
+              <div style={{ marginLeft: "1em", flexGrow: 1 }}>
+                Add Comment For {workorder.workorderId}
+              </div>
             </div>
           </DialogTitle>
           <DialogContent>

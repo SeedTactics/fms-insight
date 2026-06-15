@@ -250,7 +250,13 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = true)]
     public readonly int InspectSingleProcess;
 
-    public JobInspectionData(string iType, string ctr, int max, TimeSpan interval, int inspSingleProc = -1)
+    public JobInspectionData(
+      string iType,
+      string ctr,
+      int max,
+      TimeSpan interval,
+      int inspSingleProc = -1
+    )
     {
       InspectionType = iType;
       Counter = ctr;
@@ -650,7 +656,9 @@ namespace BlackMaple.MachineWatchInterface
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
       {
-        _procPath[process - 1].Paths[path - 1].SimulatedProduction = new List<SimulatedProduction>(prod);
+        _procPath[process - 1].Paths[path - 1].SimulatedProduction = new List<SimulatedProduction>(
+          prod
+        );
       }
       else
       {

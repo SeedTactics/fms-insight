@@ -61,7 +61,9 @@ function ManualInspTypeEntry(): ReactNode {
   return (
     <TextField
       sx={{ mt: "5px" }}
-      label={inspType === "" || inspType === null ? "Inspection Type" : "Inspection Type (press enter)"}
+      label={
+        inspType === "" || inspType === null ? "Inspection Type" : "Inspection Type (press enter)"
+      }
       value={inspType ?? ""}
       onChange={(e) => setInspType(e.target.value)}
       onKeyPress={(e) => {

@@ -279,7 +279,8 @@ namespace MazakMachineInterface
     public int SetNumberSets { get; init; }
 
     [DataMember]
-    public IList<MazakScheduleProcessRow> Processes { get; init; } = new List<MazakScheduleProcessRow>();
+    public IList<MazakScheduleProcessRow> Processes { get; init; } =
+      new List<MazakScheduleProcessRow>();
 
     [DataMember]
     public MazakWriteCommand Command { get; init; } // only for transaction DB

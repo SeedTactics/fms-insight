@@ -163,7 +163,8 @@ namespace BlackMaple.MachineFramework
     )
     {
       return s.AddSingleton<RepositoryConfig>(
-        (_) => RepositoryConfig.InitializeEventDatabase(serial, filename, oldInspDbFile, oldJobDbFile)
+        (_) =>
+          RepositoryConfig.InitializeEventDatabase(serial, filename, oldInspDbFile, oldJobDbFile)
       );
     }
 

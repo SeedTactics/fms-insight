@@ -67,7 +67,11 @@ import {
   HelpOutlined,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
-import { LazySeq, mkCompareByProperties, ToComparableBase } from "@seedtactics/immutable-collections";
+import {
+  LazySeq,
+  mkCompareByProperties,
+  ToComparableBase,
+} from "@seedtactics/immutable-collections";
 import { AppLink, RouteLocation, useSetTitle } from "../routes.js";
 import {
   materialDialogOpen,
@@ -76,7 +80,10 @@ import {
 } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 import { Atom, useAtomValue, useSetAtom } from "jotai";
-import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
+import {
+  SelectWorkorderDialog,
+  selectWorkorderDialogOpen,
+} from "../station-monitor/SelectWorkorder.js";
 import { last30PartSummary, last30PartSummaryRange, PartSummary } from "../../data/part-summary.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
 import { Last30ChartRangeToolbar } from "./ChartRangeEdit.js";
@@ -141,7 +148,13 @@ function sortPartSummary(
   return sorted;
 }
 
-type MatSortCol = "Serial" | "CompletedDate" | "Workorder" | "Quarantined" | "InspectFailed" | "CloseOut";
+type MatSortCol =
+  | "Serial"
+  | "CompletedDate"
+  | "Workorder"
+  | "Quarantined"
+  | "InspectFailed"
+  | "CloseOut";
 
 const completedDateFormat = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -171,10 +184,10 @@ function sortMaterial(
       break;
     case "InspectFailed":
       sortCol = (j) =>
-        LazySeq.ofObject(j.completedInspections ?? {}).some(([, insp]) => ! insp.success) ? -1 : 0;
+        LazySeq.ofObject(j.completedInspections ?? {}).some(([, insp]) => !insp.success) ? -1 : 0;
       break;
     case "CloseOut":
-      sortCol = (j) => (j.closeout_failed === undefined ? 1 :  j.closeout_failed ? -1 : 0);
+      sortCol = (j) => (j.closeout_failed === undefined ? 1 : j.closeout_failed ? -1 : 0);
       break;
   }
   const sorted = [...material];
@@ -240,7 +253,10 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
   const setMatToShow = useSetAtom(materialDialogOpen);
   const [sortCol, setSortCol] = useState<MatSortCol>("Serial");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
-  const sortedMats = useMemo(() => sortMaterial(material, sortCol, order), [material, sortCol, order]);
+  const sortedMats = useMemo(
+    () => sortMaterial(material, sortCol, order),
+    [material, sortCol, order],
+  );
   const sort = {
     sortBy: sortCol,
     setSortBy: setSortCol,
@@ -292,7 +308,9 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
                 {s.currently_quarantined ? <SavedSearch fontSize="inherit" /> : ""}
               </TableCell>
               <TableCell sx={{ textAlign: "center" }} padding="checkbox">
-                {LazySeq.ofObject(s.completedInspections ?? {}).some(([, insp]) => ! insp.success) ? (
+                {LazySeq.ofObject(s.completedInspections ?? {}).some(
+                  ([, insp]) => !insp.success,
+                ) ? (
                   <ErrorOutlined fontSize="inherit" />
                 ) : (
                   ""
@@ -359,7 +377,12 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
             (page + 1) * rowsPerPage,
           )} of ${material.length}`}
         </Typography>
-        <IconButton onClick={() => setPage(0)} disabled={page === 0} aria-label="First Page" size="large">
+        <IconButton
+          onClick={() => setPage(0)}
+          disabled={page === 0}
+          aria-label="First Page"
+          size="large"
+        >
           <FirstPageIcon />
         </IconButton>
         <IconButton
@@ -597,7 +620,12 @@ const PartHeader = memo(function PartHeader({
         <SortColHeader align="right" col="CompletedQty" {...sort}>
           Completed Quantity
         </SortColHeader>
-        <SortColHeader align="right" col="AbnormalQty" {...sort} extraIcon={<AbnormalHelpTooltip />}>
+        <SortColHeader
+          align="right"
+          col="AbnormalQty"
+          {...sort}
+          extraIcon={<AbnormalHelpTooltip />}
+        >
           Abnormal Quantity
         </SortColHeader>
         <SortColHeader align="right" col="Active" {...sort} extraIcon={<TimeCuttoffHelpTooltip />}>

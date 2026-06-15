@@ -9,7 +9,6 @@
     "dist",
     "docs"
   ],
-  "packageManager": "pnpm@11.3.0",
   "type": "module",
   "exports": {
     "./cell-status/*": "./dist/cell-status/*.js",
@@ -23,7 +22,8 @@
     "./util/*": "./dist/util/*.js"
   },
   "scripts": {
-    "check": "tsc --noEmit --skipLibCheck && oxlint --type-aware",
+    "type-check": "tsc --noEmit --skipLibCheck",
+    "lint": "oxlint --type-aware",
     "build": "tsc --noEmit --skipLibCheck && vite build",
     "build:package": "tsc --project tsconfig.publish.json && cp -Tr ../../docs ./docs",
     "start": "vite",
@@ -77,12 +77,13 @@
     "@vitest/browser-playwright": "^4.1.8",
     "jsdom": "^29.1.1",
     "nswag": "^14.7.1",
+    "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
     "oxlint-tsgolint": "^0.23.0",
-    "prettier": "^3.8.3",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.8",
     "vitest-browser-react": "^2.2.0"
-  }
+  },
+  "packageManager": "pnpm@11.3.0"
 }

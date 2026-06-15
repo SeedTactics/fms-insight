@@ -81,7 +81,8 @@ export function compute_monthly_cost_percentages(
   const stationCount = new Map<string, Set<number>>();
 
   const filteredCycles = cycles.filter(
-    (c) => c.endTime >= start && c.endTime <= end && !c.material.some((m) => partsToIgnore.has(m.part)),
+    (c) =>
+      c.endTime >= start && c.endTime <= end && !c.material.some((m) => partsToIgnore.has(m.part)),
   );
 
   for (const c of filteredCycles) {
@@ -172,10 +173,13 @@ export function convert_cost_percent_to_cost_per_piece(
       part: p.part,
       parts_completed: p.parts_completed,
       machine: p.machine.mapValues((pct, statGroup) =>
-        p.parts_completed > 0 ? (pct * (stationCostForPeriod.get(statGroup) ?? 0)) / p.parts_completed : 0,
+        p.parts_completed > 0
+          ? (pct * (stationCostForPeriod.get(statGroup) ?? 0)) / p.parts_completed
+          : 0,
       ),
       labor: p.parts_completed > 0 ? (p.labor * totalLaborCostForPeriod) / p.parts_completed : 0,
-      automation: p.parts_completed > 0 ? (p.automation * automationCostForPeriod) / p.parts_completed : 0,
+      automation:
+        p.parts_completed > 0 ? (p.automation * automationCostForPeriod) / p.parts_completed : 0,
     })),
   };
 }

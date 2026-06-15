@@ -57,8 +57,11 @@ jobs:
       - name: Install client deps
         run: pnpm --dir client/insight install --frozen-lockfile
 
-      - name: Client Check And Lint
-        run: pnpm --dir client/insight run check
+      - name: Client Type Check
+        run: pnpm --dir client/insight run type-check
+
+      - name: Client Lint
+        run: pnpm --dir client/insight run lint
 
       - name: Client Unit Test Suite
         run: pnpm --dir client/insight run test:unit

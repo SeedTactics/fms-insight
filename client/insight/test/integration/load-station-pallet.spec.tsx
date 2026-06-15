@@ -102,9 +102,12 @@ describe("load station with active pallet", () => {
       ],
     });
 
-    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed={false} />, {
-      currentStatus,
-    });
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed={false} />,
+      {
+        currentStatus,
+      },
+    );
 
     const face1 = region(screen, palletFaceRegionTestId(1));
     const face2 = region(screen, palletFaceRegionTestId(2));
@@ -269,19 +272,22 @@ describe("load station with active pallet", () => {
       ],
     });
 
-    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed={false} />, {
-      currentStatus,
-      last30Log: [
-        createCompletedUnloadLog({
-          counter: 1,
-          materialId: 201,
-          partName: "Completed Hidden",
-          serial: "CH-1",
-          process: 2,
-          numProcesses: 2,
-        }),
-      ],
-    });
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed={false} />,
+      {
+        currentStatus,
+        last30Log: [
+          createCompletedUnloadLog({
+            counter: 1,
+            materialId: 201,
+            partName: "Completed Hidden",
+            serial: "CH-1",
+            process: 2,
+            numProcesses: 2,
+          }),
+        ],
+      },
+    );
 
     const completed = region(screen, completedRegionTestId);
 
@@ -305,19 +311,22 @@ describe("load station with active pallet", () => {
       ],
     });
 
-    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed={true} />, {
-      currentStatus,
-      last30Log: [
-        createCompletedUnloadLog({
-          counter: 2,
-          materialId: 202,
-          partName: "Completed Visible",
-          serial: "CV-1",
-          process: 2,
-          numProcesses: 2,
-        }),
-      ],
-    });
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed={true} />,
+      {
+        currentStatus,
+        last30Log: [
+          createCompletedUnloadLog({
+            counter: 2,
+            materialId: 202,
+            partName: "Completed Visible",
+            serial: "CV-1",
+            process: 2,
+            numProcesses: 2,
+          }),
+        ],
+      },
+    );
 
     const completed = region(screen, completedRegionTestId);
 

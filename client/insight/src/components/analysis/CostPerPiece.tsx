@@ -53,8 +53,14 @@ import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { Typography } from "@mui/material";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
-import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
+import {
+  last30MaterialSummary,
+  specificMonthMaterialSummary,
+} from "../../cell-status/material-summary.js";
+import {
+  last30StationCycles,
+  specificMonthStationCycles,
+} from "../../cell-status/station-cycles.js";
 import { useSetTitle } from "../routes.js";
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
@@ -91,7 +97,9 @@ const costPercentages = atom((get) => {
   const period = get(selectedAnalysisPeriod);
 
   const cycles = get(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const matIds = get(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
+  const matIds = get(
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
+  );
   const artifacts = get(artifactParts);
 
   const thirtyDaysAgo = addDays(startOfToday(), -30);
@@ -110,10 +118,17 @@ const computedCosts = atom((get) => {
 
   const machineCosts = get(machineCostPerYear);
   const automationCosts = get(automationCostPerYear);
-  const laborCosts = get(period.type === "Last30" ? last30LaborCost : perMonthLaborCost(period.month));
+  const laborCosts = get(
+    period.type === "Last30" ? last30LaborCost : perMonthLaborCost(period.month),
+  );
 
   const costPcts = get(costPercentages);
-  return convert_cost_percent_to_cost_per_piece(costPcts, machineCosts, automationCosts, laborCosts ?? 0);
+  return convert_cost_percent_to_cost_per_piece(
+    costPcts,
+    machineCosts,
+    automationCosts,
+    laborCosts ?? 0,
+  );
 });
 
 function AutomationCostInput() {
@@ -147,7 +162,9 @@ function LaborCost() {
   const period = useAtomValue(selectedAnalysisPeriod);
   const month = period.type === "Last30" ? null : period.month;
   const [cost, setCost] = useState<number | null>(null);
-  const [laborCost, saveCost] = useAtom(month === null ? last30LaborCost : perMonthLaborCost(month));
+  const [laborCost, saveCost] = useAtom(
+    month === null ? last30LaborCost : perMonthLaborCost(month),
+  );
 
   return (
     <TextField
@@ -214,7 +231,11 @@ function StationCostInputs() {
   return (
     <>
       {costs.machineQuantities.keysToAscLazySeq().map((s, idx) => (
-        <SingleStationCostInput key={idx} machineQuantities={costs.machineQuantities} machineGroup={s} />
+        <SingleStationCostInput
+          key={idx}
+          machineQuantities={costs.machineQuantities}
+          machineGroup={s}
+        />
       ))}
     </>
   );

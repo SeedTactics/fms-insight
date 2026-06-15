@@ -138,7 +138,11 @@ it("ignores other cycles", () => {
   expect(st).toBe(statusWithMat);
 });
 
-function adjPos(m: api.InProcessMaterial, newPos: number, newQueue?: string): api.InProcessMaterial {
+function adjPos(
+  m: api.InProcessMaterial,
+  newPos: number,
+  newQueue?: string,
+): api.InProcessMaterial {
   return new api.InProcessMaterial({
     ...(m as api.IInProcessMaterial),
     location: new api.InProcessMaterialLocation({

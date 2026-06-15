@@ -178,7 +178,10 @@ namespace BlackMaple.MachineFramework
   {
     // If selected by the user, call IJobAndQueueControl.AddUnallocatedCastingToQueue with the casting
     // Key is queue, value is the casting name
-    public ImmutableDictionary<string, ImmutableSortedSet<string>>? PossibleCastingsByQueue { get; init; }
+    public ImmutableDictionary<
+      string,
+      ImmutableSortedSet<string>
+    >? PossibleCastingsByQueue { get; init; }
 
     // If selected by the user, call IJobAndQueueControl.AddUnprocessedMaterialToQueue
     // Key is the queue, value is the job and last completed process

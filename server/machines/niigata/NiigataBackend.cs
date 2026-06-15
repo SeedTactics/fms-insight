@@ -38,7 +38,10 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public static class NiigataServices
   {
-    public static IServiceCollection AddNiigataBackend(this IServiceCollection s, NiigataSettings settings)
+    public static IServiceCollection AddNiigataBackend(
+      this IServiceCollection s,
+      NiigataSettings settings
+    )
     {
       Serilog.Log.Information("Using Niigata Backend with config {@config}", settings);
       s.AddSingleton(settings);

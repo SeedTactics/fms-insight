@@ -220,7 +220,12 @@ namespace BlackMaple.FMSInsight.Makino
         .AdjustPath(procNum, 1, p => p with { PartsPerPallet = clampQty });
     }
 
-    public void DuplicateForOrder(int orderID, string order, int partID, Func<ActiveJob, ActiveJob> extra)
+    public void DuplicateForOrder(
+      int orderID,
+      string order,
+      int partID,
+      Func<ActiveJob, ActiveJob> extra
+    )
     {
       var job = _byPartID[partID];
       var historic = db.LoadJob(order);
@@ -302,7 +307,13 @@ namespace BlackMaple.FMSInsight.Makino
       _byOrderID.Add(orderID, extra(newJob));
     }
 
-    public void AddQuantityToProcess(int orderID, int processID, int remaining, int completed, int scrap)
+    public void AddQuantityToProcess(
+      int orderID,
+      int processID,
+      int remaining,
+      int completed,
+      int scrap
+    )
     {
       var job = _byOrderID[orderID];
       var procNum = _procIDToProcNum[processID];
@@ -401,7 +412,10 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var job = _byOrderID[orderID];
 
-      var action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+      var action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Waiting,
+      };
 
       if (
         curJobID.HasValue
@@ -412,7 +426,11 @@ namespace BlackMaple.FMSInsight.Makino
         && _palletIdToPalletNum[tablePalletID.Value] == palletNum
       )
       {
-        action = action with { Type = InProcessMaterialAction.ActionType.Machining, Program = stop.Program };
+        action = action with
+        {
+          Type = InProcessMaterialAction.ActionType.Machining,
+          Program = stop.Program,
+        };
       }
 
       var mat = new InProcessMaterial()
@@ -480,7 +498,13 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    public void AddMaterialToLoad(int fixturePalletID, string unique, string partName, int procNum, int qty)
+    public void AddMaterialToLoad(
+      int fixturePalletID,
+      string unique,
+      string partName,
+      int procNum,
+      int qty
+    )
     {
       var palletNum = _fixPalIDToPalNum[fixturePalletID];
       var pal = _pallets[palletNum];
@@ -505,7 +529,10 @@ namespace BlackMaple.FMSInsight.Makino
             PartName = partName,
             Process = procNum,
             Path = 1,
-            Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free },
+            Location = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.Free,
+            },
             Action = new InProcessMaterialAction()
             {
               Type = InProcessMaterialAction.ActionType.Loading,

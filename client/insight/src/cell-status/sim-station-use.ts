@@ -44,7 +44,11 @@ export interface SimStationUse {
   readonly start: Date;
   readonly end: Date;
   readonly plannedDown: boolean;
-  readonly parts?: ReadonlyArray<{ readonly uniq: string; readonly proc: number; readonly path: number }>;
+  readonly parts?: ReadonlyArray<{
+    readonly uniq: string;
+    readonly proc: number;
+    readonly path: number;
+  }>;
 }
 
 const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>(
@@ -53,7 +57,8 @@ const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>(
 export const last30SimStationUse: Atom<ReadonlyArray<SimStationUse>> = last30SimStationUseRW;
 
 const specificMonthSimStationUseRW = atom<ReadonlyArray<SimStationUse>>([]);
-export const specificMonthSimStationUse: Atom<ReadonlyArray<SimStationUse>> = specificMonthSimStationUseRW;
+export const specificMonthSimStationUse: Atom<ReadonlyArray<SimStationUse>> =
+  specificMonthSimStationUseRW;
 
 function procSimUse(
   apiSimUse: ReadonlyArray<ISimulatedStationUtilization>,
@@ -76,28 +81,34 @@ export const setLast30SimStatUse = atom(null, (get, set, history: Readonly<IHist
   );
 });
 
-export const updateLast30SimStatUse = atom(null, (get, set, { evt, now, expire }: ServerEventAndTime) => {
-  if (evt.newJobs?.stationUse) {
-    const apiSimUse = evt.newJobs?.stationUse;
-    const loadStationNames = get(fmsInformation)?.loadStationNames;
-    set(last30SimStationUseRW, (simUse) => {
-      if (expire) {
-        const expireT = addDays(now, -30);
-        // check if nothing to expire and no new data
-        const minStat = LazySeq.of(simUse).minBy((e) => e.end.getTime());
-        if ((minStat === undefined || minStat.start >= expireT) && apiSimUse.length === 0) {
-          return simUse;
+export const updateLast30SimStatUse = atom(
+  null,
+  (get, set, { evt, now, expire }: ServerEventAndTime) => {
+    if (evt.newJobs?.stationUse) {
+      const apiSimUse = evt.newJobs?.stationUse;
+      const loadStationNames = get(fmsInformation)?.loadStationNames;
+      set(last30SimStationUseRW, (simUse) => {
+        if (expire) {
+          const expireT = addDays(now, -30);
+          // check if nothing to expire and no new data
+          const minStat = LazySeq.of(simUse).minBy((e) => e.end.getTime());
+          if ((minStat === undefined || minStat.start >= expireT) && apiSimUse.length === 0) {
+            return simUse;
+          }
+
+          simUse = simUse.filter((e) => e.start >= expireT);
         }
 
-        simUse = simUse.filter((e) => e.start >= expireT);
-      }
+        return simUse.concat(procSimUse(apiSimUse, loadStationNames));
+      });
+    }
+  },
+);
 
-      return simUse.concat(procSimUse(apiSimUse, loadStationNames));
-    });
-  }
-});
-
-export const setSpecificMonthSimStatUse = atom(null, (get, set, history: Readonly<IHistoricData>) => {
-  const loadStationNames = get(fmsInformation)?.loadStationNames;
-  set(specificMonthSimStationUseRW, procSimUse(history.stationUse, loadStationNames));
-});
+export const setSpecificMonthSimStatUse = atom(
+  null,
+  (get, set, history: Readonly<IHistoricData>) => {
+    const loadStationNames = get(fmsInformation)?.loadStationNames;
+    set(specificMonthSimStationUseRW, procSimUse(history.stationUse, loadStationNames));
+  },
+);

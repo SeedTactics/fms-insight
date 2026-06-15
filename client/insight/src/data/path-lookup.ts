@@ -102,13 +102,16 @@ const otherLogEntriesUnwrapped = unwrap(
 
 export const inspectionLogEntries = atom<PathLookupLogEntries>((get) => {
   return HashMap.union(
-    (inspsByCntr1: InspectionLogsByCntr, inspsByCntr2: InspectionLogsByCntr) => inspsByCntr1.union(inspsByCntr2),
+    (inspsByCntr1: InspectionLogsByCntr, inspsByCntr2: InspectionLogsByCntr) =>
+      inspsByCntr1.union(inspsByCntr2),
     get(localLogEntriesUnwrapped),
     get(otherLogEntriesUnwrapped),
   );
 });
 
-export function extendRange(numDays: number): (range: PathLookupRange | null) => PathLookupRange | null {
+export function extendRange(
+  numDays: number,
+): (range: PathLookupRange | null) => PathLookupRange | null {
   return (range) => {
     if (range === null) return null;
     if (numDays < 0) {

@@ -188,7 +188,9 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
           })
         }
         renderValue={() => {
-          const item = menuNavs.find((i) => ("separator" in i ? false : i.route.route === curRoute.route));
+          const item = menuNavs.find((i) =>
+            "separator" in i ? false : i.route.route === curRoute.route,
+          );
           if (!item || "separator" in item) return null;
           return (
             <Box
@@ -212,7 +214,9 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
           ) : item.hidden?.(fmsInfo) ? undefined : (
             <MenuItem key={idx} value={item.route.route}>
               <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={typeof item.name === "string" ? item.name : item.name(fmsInfo)} />
+              <ListItemText
+                primary={typeof item.name === "string" ? item.name : item.name(fmsInfo)}
+              />
             </MenuItem>
           ),
         )}

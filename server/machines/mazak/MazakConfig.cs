@@ -112,7 +112,8 @@ namespace MazakMachineInterface
       }
       else
       {
-        dbConnStr = "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";User ID=Admin;Mode=Share Deny None;";
+        dbConnStr =
+          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";User ID=Admin;Mode=Share Deny None;";
       }
 
       // log csv

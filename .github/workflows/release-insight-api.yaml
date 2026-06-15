@@ -21,4 +21,6 @@ jobs:
           dotnet pack -c Release --include-symbols /p:Version="$VER" client/csharp-api
 
       - name: Publish Insight API
-        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json client\csharp-api\bin\Release\*.nupkg
+        run:
+          dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
+          client\csharp-api\bin\Release\*.nupkg

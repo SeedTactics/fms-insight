@@ -54,7 +54,8 @@ export class PartAndStationOperation {
     return new PartAndStationOperation(
       c.material[0].part,
       c.loc,
-      (c.type === LogType.LoadUnloadCycle || c.type === LogType.BasketLoadUnload) && c.material.length > 0
+      (c.type === LogType.LoadUnloadCycle || c.type === LogType.BasketLoadUnload) &&
+        c.material.length > 0
         ? c.result + "-" + c.material[0].proc.toString()
         : c.program,
     );
@@ -94,7 +95,8 @@ export const last30EstimatedCycleTimes: Atom<EstimatedCycleTimes> = last30Estima
 const specificMonthEstimatedTimesRW = atom<EstimatedCycleTimes>(
   HashMap.empty<PartAndStationOperation, StatisticalCycleTime>(),
 );
-export const specificMonthEstimatedCycleTimes: Atom<EstimatedCycleTimes> = specificMonthEstimatedTimesRW;
+export const specificMonthEstimatedCycleTimes: Atom<EstimatedCycleTimes> =
+  specificMonthEstimatedTimesRW;
 
 // Assume: samples come from two distributions:
 //  - the program runs without interruption, giving a guassian iid around the cycle time.
@@ -329,7 +331,9 @@ export function calcElapsedForCycles(
     });
 }
 
-function estimateCycleTimesOfParts(cycles: ReadonlyArray<Readonly<ILogEntry>>): EstimatedCycleTimes {
+function estimateCycleTimesOfParts(
+  cycles: ReadonlyArray<Readonly<ILogEntry>>,
+): EstimatedCycleTimes {
   return calcElapsedForCycles(cycles)
     .toLookup(
       (c) => PartAndStationOperation.ofLogCycle(c.cycle),
@@ -338,9 +342,12 @@ function estimateCycleTimesOfParts(cycles: ReadonlyArray<Readonly<ILogEntry>>): 
     .mapValues(estimateCycleTimes);
 }
 
-export const setLast30EstimatedCycleTimes = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(last30EstimatedTimesRW, (old) => (old.size === 0 ? estimateCycleTimesOfParts(log) : old));
-});
+export const setLast30EstimatedCycleTimes = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(last30EstimatedTimesRW, (old) => (old.size === 0 ? estimateCycleTimesOfParts(log) : old));
+  },
+);
 
 export const setSpecificMonthEstimatedCycleTimes = atom(
   null,

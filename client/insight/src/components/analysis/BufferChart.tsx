@@ -34,7 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { ComponentType, ChangeEvent, memo, useState, useMemo, useRef, useCallback } from "react";
 import { addDays, startOfToday, addMonths } from "date-fns";
 import { curveCatmullRom, line } from "d3-shape";
-import { BufferChartPoint, BufferChartSeries, buildBufferChart } from "../../data/results.bufferchart.js";
+import {
+  BufferChartPoint,
+  BufferChartSeries,
+  buildBufferChart,
+} from "../../data/results.bufferchart.js";
 import { seriesColor } from "../../util/chart-colors.js";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
@@ -158,7 +162,12 @@ function BufferChartSVG({
       <g transform={`translate(${marginLeft},${marginTop})`}>
         <AxisBottom scale={xScale} top={yMax} />
         <AxisLeft scale={yScale} left={0} label="Buffer Size" />
-        <ChartGrid xScale={xScale} yScale={yScale} width={width - marginLeft - marginRight} height={yMax} />
+        <ChartGrid
+          xScale={xScale}
+          yScale={yScale}
+          width={width - marginLeft - marginRight}
+          height={yMax}
+        />
         {series.map((s, idx) =>
           disabled.has(s.label) ? undefined : (
             <AnimatedPath
@@ -181,7 +190,9 @@ const BufferChart = memo(function BufferChart(props: { movingAverageDistanceInHo
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
-  const entries = useAtomValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
+  const entries = useAtomValue(
+    period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries,
+  );
   const rawMatQueues = useAtomValue(rawMaterialQueues);
 
   const [disabledBuffers, setDisabledBuffers] = useState(HashSet.empty<string>());
@@ -197,7 +208,13 @@ const BufferChart = memo(function BufferChart(props: { movingAverageDistanceInHo
         rawMatQueues,
         entries.valuesToLazySeq(),
       ),
-    [defaultDateRangeStart, defaultDateRangeEnd, entries, props.movingAverageDistanceInHours, rawMatQueues],
+    [
+      defaultDateRangeStart,
+      defaultDateRangeEnd,
+      entries,
+      props.movingAverageDistanceInHours,
+      rawMatQueues,
+    ],
   );
 
   const {
@@ -214,15 +231,31 @@ const BufferChart = memo(function BufferChart(props: { movingAverageDistanceInHo
       <Box
         ref={chartRef}
         sx={{
-          height: { xs: "calc(100vh - 350px)", md: "calc(100vh - 285px)", xl: "calc(100vh - 220px)" },
+          height: {
+            xs: "calc(100vh - 350px)",
+            md: "calc(100vh - 285px)",
+            xl: "calc(100vh - 220px)",
+          },
           overflow: "hidden",
         }}
       >
         {width && height && width > 0 && height > 0 && (
-          <BufferChartSVG width={width} height={height} series={series} disabled={disabledBuffers} />
+          <BufferChartSVG
+            width={width}
+            height={height}
+            series={series}
+            disabled={disabledBuffers}
+          />
         )}
       </Box>
-      <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-around" }}>
+      <div
+        style={{
+          marginTop: "1em",
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-around",
+        }}
+      >
         {series.map((s, idx) => (
           <ToggleButton
             key={s.label}
@@ -234,7 +267,11 @@ const BufferChart = memo(function BufferChart(props: { movingAverageDistanceInHo
           >
             <div style={{ display: "flex", alignItems: "center" }}>
               <div
-                style={{ width: "14px", height: "14px", backgroundColor: seriesColor(idx, series.length) }}
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  backgroundColor: seriesColor(idx, series.length),
+                }}
               />
               <div style={{ marginLeft: "1em" }}>{s.label}</div>
             </div>

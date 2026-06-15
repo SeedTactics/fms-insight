@@ -89,7 +89,9 @@ function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   return true;
 }
 
-const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+const ExpandMore = styled(ExpandMoreIcon, {
+  shouldForwardProp: (prop) => prop.toString()[0] !== "$",
+})<{
   $expandedOpen?: boolean;
 }>(({ theme, $expandedOpen }) => ({
   transform: $expandedOpen ? "rotate(0deg)" : "rotate(-90deg)",
@@ -128,7 +130,9 @@ function SelectRawMaterial({
       {castings.map((casting) => (
         <ListItem key={casting.casting}>
           <ListItemButton
-            selected={newMaterialTy?.kind === "RawMat" && newMaterialTy?.rawMatName === casting.casting}
+            selected={
+              newMaterialTy?.kind === "RawMat" && newMaterialTy?.rawMatName === casting.casting
+            }
             onClick={() => setNewMaterialTy({ kind: "RawMat", rawMatName: casting.casting })}
           >
             <ListItemIcon>
@@ -198,7 +202,8 @@ function SelectJob({
                       {j.machinedProcs[0].lastProc === 0
                         ? "Raw Material"
                         : "Last machined process " + j.machinedProcs[0].lastProc.toString()}
-                      , {j.job?.routeStartUTC.toLocaleDateString() ?? ""}, {j.machinedProcs[0].details}
+                      , {j.job?.routeStartUTC.toLocaleDateString() ?? ""},{" "}
+                      {j.machinedProcs[0].details}
                     </Typography>
                   }
                 />
@@ -221,7 +226,9 @@ function SelectJob({
                 <ListItemIcon>
                   <ExpandMore
                     $expandedOpen={
-                      curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.jobUnique
+                      curCollapse !== null &&
+                      curCollapse.kind === "Job" &&
+                      curCollapse.unique === j.jobUnique
                     }
                   />
                 </ListItemIcon>
@@ -238,7 +245,11 @@ function SelectJob({
               </ListItemButton>
             </ListItem>
             <Collapse
-              in={curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.jobUnique}
+              in={
+                curCollapse !== null &&
+                curCollapse.kind === "Job" &&
+                curCollapse.unique === j.jobUnique
+              }
               timeout="auto"
             >
               {j.machinedProcs.map((p, procIdx) => (
@@ -261,7 +272,9 @@ function SelectJob({
                     >
                       <ListItemText
                         primary={
-                          p.lastProc === 0 ? "Raw Material" : "Last machined process " + p.lastProc.toString()
+                          p.lastProc === 0
+                            ? "Raw Material"
+                            : "Last machined process " + p.lastProc.toString()
                         }
                         secondary={p.details}
                       />
@@ -296,7 +309,9 @@ function SelectRawMatAndJob({
         <ListItemButton
           onClick={() => {
             if (newMaterialTy) setNewMaterialTy(null);
-            setCurCollapse(curCollapse && curCollapse.kind === "RawMat" ? null : { kind: "RawMat" });
+            setCurCollapse(
+              curCollapse && curCollapse.kind === "RawMat" ? null : { kind: "RawMat" },
+            );
           }}
         >
           <ListItemIcon>
@@ -327,7 +342,8 @@ function SelectRawMatAndJob({
           <ListItemIcon>
             <ExpandMore
               $expandedOpen={
-                curCollapse !== null && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
+                curCollapse !== null &&
+                (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
               }
             />
           </ListItemIcon>
@@ -428,7 +444,11 @@ export function PromptForQueue({
       <p>Select a queue</p>
       <List>
         {queueNames.map((q, idx) => (
-          <ListItemButton key={idx} selected={q === selectedQueue} onClick={() => setSelectedQueue(q)}>
+          <ListItemButton
+            key={idx}
+            selected={q === selectedQueue}
+            onClick={() => setSelectedQueue(q)}
+          >
             {q}
           </ListItemButton>
         ))}
@@ -578,11 +598,8 @@ export function AddToQueueButton({
             color="primary"
             disabled={
               toQueue === null ||
-              
               addingExistingMat ||
-              
               addingNewMat ||
-              
               addingNewCasting ||
               (existingMat === null && newMaterialTy === null) ||
               (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
@@ -596,7 +613,11 @@ export function AddToQueueButton({
                   queuePosition: -1,
                   operator: enteredOperator ?? operator,
                 });
-              } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.jobUnique) {
+              } else if (
+                newMaterialTy &&
+                newMaterialTy.kind === "JobAndProc" &&
+                newMaterialTy.jobUnique
+              ) {
                 addNewMat({
                   jobUnique: newMaterialTy.jobUnique,
                   lastCompletedProcess: newMaterialTy.last_proc,
@@ -606,7 +627,11 @@ export function AddToQueueButton({
                   queuePosition: -1,
                   operator: enteredOperator ?? operator,
                 });
-              } else if (newMaterialTy && newMaterialTy.kind === "RawMat" && newMaterialTy.rawMatName) {
+              } else if (
+                newMaterialTy &&
+                newMaterialTy.kind === "RawMat" &&
+                newMaterialTy.rawMatName
+              ) {
                 addNewCasting({
                   casting: newMaterialTy.rawMatName,
                   quantity: 1,

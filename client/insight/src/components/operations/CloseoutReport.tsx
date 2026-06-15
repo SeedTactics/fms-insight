@@ -49,7 +49,10 @@ import {
 import { Button } from "@mui/material";
 
 import { MaterialDialog, PartIdenticon } from "../station-monitor/Material.js";
-import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
+import {
+  SelectWorkorderDialog,
+  selectWorkorderDialogOpen,
+} from "../station-monitor/SelectWorkorder.js";
 import {
   materialDialogOpen,
   materialInDialogInfo,
@@ -128,12 +131,17 @@ function NavigateDay({
     >
       <Tooltip title="Previous Day">
         <div>
-          <IconButton disabled={day <= addDays(today, -28)} onClick={() => setDay((d) => addDays(d, -1))}>
+          <IconButton
+            disabled={day <= addDays(today, -28)}
+            onClick={() => setDay((d) => addDays(d, -1))}
+          >
             <SkipPrevious />
           </IconButton>
         </div>
       </Tooltip>
-      <Typography sx={{ minWidth: "14em", textAlign: "center" }}>{fulldayFormat.format(day)}</Typography>
+      <Typography sx={{ minWidth: "14em", textAlign: "center" }}>
+        {fulldayFormat.format(day)}
+      </Typography>
       <Tooltip title="Next Day">
         <div>
           <IconButton disabled={day >= today} onClick={() => setDay((d) => addDays(d, 1))}>
@@ -283,7 +291,9 @@ const CloseoutRow = memo(function CloseoutRow({ mat }: { mat: MaterialSummaryAnd
   const setMatToShow = useSetAtom(materialDialogOpen);
   return (
     <TableRow>
-      <TableCell>{mat.last_unload_time ? timeOnlyFormat.format(mat.last_unload_time) : ""}</TableCell>
+      <TableCell>
+        {mat.last_unload_time ? timeOnlyFormat.format(mat.last_unload_time) : ""}
+      </TableCell>
       <TableCell>{mat.serial}</TableCell>
       <TableCell>
         <Stack
@@ -307,7 +317,9 @@ const CloseoutRow = memo(function CloseoutRow({ mat }: { mat: MaterialSummaryAnd
           <Check fontSize="inherit" />
         )}
       </TableCell>
-      <TableCell>{mat.closeout_completed ? noSecondsFormat.format(mat.closeout_completed) : ""}</TableCell>
+      <TableCell>
+        {mat.closeout_completed ? noSecondsFormat.format(mat.closeout_completed) : ""}
+      </TableCell>
       <TableCell padding="checkbox">
         {mat.serial !== null && mat.serial !== "" ? (
           <IconButton
@@ -350,7 +362,10 @@ function CloseoutTable({ day }: { day: Date }): ReactNode {
   const [sortBy, setSortBy] = useState(SortColumn.CompletedTime);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const sortedMats = useMemo(() => sortMats(material, sortBy, sortOrder), [material, sortBy, sortOrder]);
+  const sortedMats = useMemo(
+    () => sortMats(material, sortBy, sortOrder),
+    [material, sortBy, sortOrder],
+  );
 
   return (
     <Table stickyHeader>

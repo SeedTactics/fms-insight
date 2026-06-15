@@ -90,15 +90,18 @@ export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   }
 });
 
-export const onLoadLast30Jobs = atom(null, (get, set, historicData: Readonly<IRecentHistoricData>) => {
-  const filtered = schJobs.filterExistingJobs(get(schJobs.last30SchIds), historicData);
-  set(simUse.setLast30SimStatUse, filtered);
-  set(simProd.setLast30JobProduction, filtered);
-  set(schJobs.setLast30Jobs, filtered);
-  set(names.setNamesFromLast30Jobs, filtered);
-  set(simDayUsage.setLatestSimDayUsage, filtered);
-  set(rebookings.setLast30RebookingJobs, filtered);
-});
+export const onLoadLast30Jobs = atom(
+  null,
+  (get, set, historicData: Readonly<IRecentHistoricData>) => {
+    const filtered = schJobs.filterExistingJobs(get(schJobs.last30SchIds), historicData);
+    set(simUse.setLast30SimStatUse, filtered);
+    set(simProd.setLast30JobProduction, filtered);
+    set(schJobs.setLast30Jobs, filtered);
+    set(names.setNamesFromLast30Jobs, filtered);
+    set(simDayUsage.setLatestSimDayUsage, filtered);
+    set(rebookings.setLast30RebookingJobs, filtered);
+  },
+);
 
 export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
   set(estimated.setLast30EstimatedCycleTimes, log);
@@ -114,7 +117,9 @@ export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<I
   set(rebookings.setLast30Rebookings, log);
 
   const newCntr = LazySeq.of(log).maxBy((x) => x.counter)?.counter ?? null;
-  set(lastEventCounterRW, (oldCntr) => (oldCntr === null ? newCntr : Math.max(oldCntr, newCntr ?? -1)));
+  set(lastEventCounterRW, (oldCntr) =>
+    oldCntr === null ? newCntr : Math.max(oldCntr, newCntr ?? -1),
+  );
 });
 
 export const onLoadCurrentSt = atom(null, (_, set, curSt: Readonly<ICurrentStatus>) => {
@@ -122,19 +127,25 @@ export const onLoadCurrentSt = atom(null, (_, set, curSt: Readonly<ICurrentStatu
   set(names.setNamesFromCurrentStatus, curSt);
 });
 
-export const onLoadSpecificMonthJobs = atom(null, (_, set, historicData: Readonly<IHistoricData>) => {
-  set(simUse.setSpecificMonthSimStatUse, historicData);
-  set(simProd.setSpecificMonthJobProduction, historicData);
-  set(schJobs.updateSpecificMonthJobs, historicData);
-});
+export const onLoadSpecificMonthJobs = atom(
+  null,
+  (_, set, historicData: Readonly<IHistoricData>) => {
+    set(simUse.setSpecificMonthSimStatUse, historicData);
+    set(simProd.setSpecificMonthJobProduction, historicData);
+    set(schJobs.updateSpecificMonthJobs, historicData);
+  },
+);
 
-export const onLoadSpecificMonthLog = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(estimated.setSpecificMonthEstimatedCycleTimes, log);
-  set(buffers.setSpecificMonthBuffer, log);
-  set(insp.setSpecificMonthInspections, log);
-  set(mats.setSpecificMonthMatSummary, log);
-  set(palCycles.setSpecificMonthPalletCycles, log);
-  set(basketCycles.setSpecificMonthBasketCycles, log);
-  set(toolReplace.setSpecificMonthToolReplacements, log);
-  set(statCycles.setSpecificMonthStationCycles, log);
-});
+export const onLoadSpecificMonthLog = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(estimated.setSpecificMonthEstimatedCycleTimes, log);
+    set(buffers.setSpecificMonthBuffer, log);
+    set(insp.setSpecificMonthInspections, log);
+    set(mats.setSpecificMonthMatSummary, log);
+    set(palCycles.setSpecificMonthPalletCycles, log);
+    set(basketCycles.setSpecificMonthBasketCycles, log);
+    set(toolReplace.setSpecificMonthToolReplacements, log);
+    set(statCycles.setSpecificMonthStationCycles, log);
+  },
+);

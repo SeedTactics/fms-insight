@@ -1,7 +1,12 @@
 import * as api from "../../src/network/api.js";
 import { addDays, startOfToday } from "date-fns";
 import type { InsightTestData } from "./framework.js";
-import { createBasket, createCurrentStatus, createMaterial, createPallet } from "./load-station-testkit.js";
+import {
+  createBasket,
+  createCurrentStatus,
+  createMaterial,
+  createPallet,
+} from "./load-station-testkit.js";
 import { fakeBasketCycle, fakeBasketLoadOrUnload, fakeLoadOrUnload } from "../events.fake.js";
 
 function createLogMaterial({

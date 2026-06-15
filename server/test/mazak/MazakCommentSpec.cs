@@ -48,11 +48,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       MazakPart
         .ParseCommentInfo("combined-uniq-Insight")
-        .ShouldBe(new MazakPart.MazakCommentInfo(Unique: "combined-uniq", IsSplit: false, FmsProcess: 1));
+        .ShouldBe(
+          new MazakPart.MazakCommentInfo(Unique: "combined-uniq", IsSplit: false, FmsProcess: 1)
+        );
 
       MazakPart
         .ParseCommentInfo("split-uniq-2-1-InsightS")
-        .ShouldBe(new MazakPart.MazakCommentInfo(Unique: "split-uniq", IsSplit: true, FmsProcess: 2));
+        .ShouldBe(
+          new MazakPart.MazakCommentInfo(Unique: "split-uniq", IsSplit: true, FmsProcess: 2)
+        );
     }
   }
 }

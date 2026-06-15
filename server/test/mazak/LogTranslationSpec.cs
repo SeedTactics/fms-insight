@@ -53,7 +53,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     protected IRepository jobLog;
     protected List<BlackMaple.MachineFramework.LogEntry> expected =
       new List<BlackMaple.MachineFramework.LogEntry>();
-    protected List<MazakMachineInterface.LogEntry> raisedByEvent = new List<MazakMachineInterface.LogEntry>();
+    protected List<MazakMachineInterface.LogEntry> raisedByEvent =
+      new List<MazakMachineInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> expectedMazakLogEntries =
       new List<MazakMachineInterface.LogEntry>();
     private List<MazakMachineInterface.LogEntry> _cachedLulEvents = [];
@@ -205,7 +206,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
       for (int i = 0; i < programs.Count; i++)
       {
-        partRow.Processes.Add(new MazakPartProcessRow() { ProcessNumber = i + 1, MainProgram = programs[i] });
+        partRow.Processes.Add(
+          new MazakPartProcessRow() { ProcessNumber = i + 1, MainProgram = programs[i] }
+        );
       }
       _mazakPartRows.Add(partRow);
     }
@@ -214,7 +217,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     {
       _palletPositions.RemoveAll(p => p.PalletNumber == pal);
       _palletPositions.Add(
-        new MazakPalletPositionRow() { PalletNumber = pal, PalletPosition = atLoadStation ? "LS01" : "MMM" }
+        new MazakPalletPositionRow()
+        {
+          PalletNumber = pal,
+          PalletPosition = atLoadStation ? "LS01" : "MMM",
+        }
       );
     }
 
@@ -379,11 +386,18 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       {
         case AllocateTy.Assigned:
         {
-          var matId = jobLog.AllocateMaterialID(material.Unique, material.JobPartName, material.NumProcess);
+          var matId = jobLog.AllocateMaterialID(
+            material.Unique,
+            material.JobPartName,
+            material.NumProcess
+          );
           if (matId != material.MaterialID)
           {
             throw new Exception(
-              "Allocating matId " + material.MaterialID.ToString() + " returned id " + matId.ToString()
+              "Allocating matId "
+                + material.MaterialID.ToString()
+                + " returned id "
+                + matId.ToString()
             );
           }
           expected.Add(
@@ -402,7 +416,10 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           if (matId != material.MaterialID)
           {
             throw new Exception(
-              "Allocating matId " + material.MaterialID.ToString() + " returned id " + matId.ToString()
+              "Allocating matId "
+                + material.MaterialID.ToString()
+                + " returned id "
+                + matId.ToString()
             );
           }
           expected.Add(
@@ -904,7 +921,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
     }
 
-    protected void ExpectPalletStart(DateTime t, int pal, int offset, IEnumerable<TestMaterial> mats)
+    protected void ExpectPalletStart(
+      DateTime t,
+      int pal,
+      int offset,
+      IEnumerable<TestMaterial> mats
+    )
     {
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
@@ -975,7 +997,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       StockerStart(new[] { mat }, offset, stocker, waitForMachine);
     }
 
-    protected void StockerStart(IEnumerable<TestMaterial> mats, int offset, int stocker, bool waitForMachine)
+    protected void StockerStart(
+      IEnumerable<TestMaterial> mats,
+      int offset,
+      int stocker,
+      bool waitForMachine
+    )
     {
       var e2 = new MazakMachineInterface.LogEntry()
       {
@@ -1005,7 +1032,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
     }
 
-    protected void StockerEnd(TestMaterial mat, int offset, int stocker, int elapMin, bool waitForMachine)
+    protected void StockerEnd(
+      TestMaterial mat,
+      int offset,
+      int stocker,
+      int elapMin,
+      bool waitForMachine
+    )
     {
       StockerEnd(new[] { mat }, offset, stocker, elapMin, waitForMachine);
     }
@@ -1088,7 +1121,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       RotateIntoWorktable(new[] { mat }, offset, mc, elapMin);
     }
 
-    protected void RotateIntoWorktable(IEnumerable<TestMaterial> mats, int offset, int mc, int elapMin)
+    protected void RotateIntoWorktable(
+      IEnumerable<TestMaterial> mats,
+      int offset,
+      int mc,
+      int elapMin
+    )
     {
       var e2 = new MazakMachineInterface.LogEntry()
       {
@@ -1124,7 +1162,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       MoveFromInboundRotaryTable(new[] { mat }, offset, mc, elapMin);
     }
 
-    protected void MoveFromInboundRotaryTable(IEnumerable<TestMaterial> mats, int offset, int mc, int elapMin)
+    protected void MoveFromInboundRotaryTable(
+      IEnumerable<TestMaterial> mats,
+      int offset,
+      int mc,
+      int elapMin
+    )
     {
       var e2 = new MazakMachineInterface.LogEntry()
       {
@@ -1177,7 +1220,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       // event should be ignored, so no expected event is added
     }
 
-    protected void ExpectAddToQueue(TestMaterial mat, int offset, string queue, int pos, string reason = null)
+    protected void ExpectAddToQueue(
+      TestMaterial mat,
+      int offset,
+      string queue,
+      int pos,
+      string reason = null
+    )
     {
       ExpectAddToQueue(new[] { mat }, offset, queue, pos, reason);
     }
@@ -1290,7 +1339,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
     }
 
-    protected void SwapMaterial(TestMaterial matOnPal, TestMaterial matToAdd, int offset, bool unassigned)
+    protected void SwapMaterial(
+      TestMaterial matOnPal,
+      TestMaterial matToAdd,
+      int offset,
+      bool unassigned
+    )
     {
       var time = matOnPal.EventStartTime.AddMinutes(offset);
       var swap = jobLog.SwapMaterialInCurrentPalletCycle(
@@ -1443,7 +1497,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
+      var p = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 1
+      );
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
@@ -1509,9 +1571,33 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
-      var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 2);
-      var p3 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 3);
+      var p1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 1
+      );
+      var p2 = BuildMaterial(
+        t,
+        pal: 6,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 2
+      );
+      var p3 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 3
+      );
 
       LoadStart(p1, offset: 0, load: 1);
       LoadStart(p2, offset: 1, load: 2);
@@ -1585,10 +1671,42 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AddTestPart(unique: "unique", part: "part1", numProc: 2);
       AddTestPart(unique: "unique", part: "part1", numProc: 2);
 
-      var p1d1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 1);
-      var p1d2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, matID: 1);
-      var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 2);
-      var p3d1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 3);
+      var p1d1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      var p1d2 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 2,
+        numProc: 2,
+        matID: 1
+      );
+      var p2 = BuildMaterial(
+        t,
+        pal: 6,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 2,
+        matID: 2
+      );
+      var p3d1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 2,
+        matID: 3
+      );
 
       LoadStart(p1d1, offset: 0, load: 1);
       LoadStart(p2, offset: 2, load: 2);
@@ -1782,7 +1900,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           }
         ),
       };
-      var newJobs = new NewJobs() { Jobs = ImmutableList.Create<Job>(j1, j2), ScheduleId = "activeTimeSch" };
+      var newJobs = new NewJobs()
+      {
+        Jobs = ImmutableList.Create<Job>(j1, j2),
+        ScheduleId = "activeTimeSch",
+      };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       LoadStart(proc1path1, offset: 0, load: 1);
@@ -1808,14 +1930,42 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       UnloadStart(proc1path2, offset: 27, load: 2);
       LoadStart(proc2path2, offset: 27, load: 2);
 
-      UnloadEnd(proc1path1, offset: 28, load: 1, elapMin: 28 - 24, activeMin: 711, totalActiveMin: 21 + 711);
-      LoadEnd(proc2path1, offset: 28, load: 1, elapMin: 28 - 24, activeMin: 21, totalActiveMin: 21 + 711);
+      UnloadEnd(
+        proc1path1,
+        offset: 28,
+        load: 1,
+        elapMin: 28 - 24,
+        activeMin: 711,
+        totalActiveMin: 21 + 711
+      );
+      LoadEnd(
+        proc2path1,
+        offset: 28,
+        load: 1,
+        elapMin: 28 - 24,
+        activeMin: 21,
+        totalActiveMin: 21 + 711
+      );
       ExpectPalletCycle(t, pal: 2, offset: 28, elapMin: 28 - 2, mats: [proc1path1]);
       ExpectPalletStart(t, pal: 2, offset: 28, mats: [proc2path1]);
       MovePallet(t, offset: 29, pal: 2, load: 1);
 
-      UnloadEnd(proc1path2, offset: 30, load: 2, elapMin: 30 - 27, activeMin: 712, totalActiveMin: 712 + 22);
-      LoadEnd(proc2path2, offset: 30, load: 2, elapMin: 30 - 27, activeMin: 22, totalActiveMin: 712 + 22);
+      UnloadEnd(
+        proc1path2,
+        offset: 30,
+        load: 2,
+        elapMin: 30 - 27,
+        activeMin: 712,
+        totalActiveMin: 712 + 22
+      );
+      LoadEnd(
+        proc2path2,
+        offset: 30,
+        load: 2,
+        elapMin: 30 - 27,
+        activeMin: 22,
+        totalActiveMin: 712 + 22
+      );
       ExpectPalletCycle(t, pal: 4, offset: 30, elapMin: 30 - 7, mats: [proc1path2]);
       ExpectPalletStart(t, pal: 4, offset: 30, mats: [proc2path2]);
       MovePallet(t, offset: 33, pal: 4, load: 2);
@@ -1970,7 +2120,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         Archived = false,
         ProvisionalWorkorderId = "provWork",
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = [j], ScheduleId = "schId" }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(
+        new NewJobs() { Jobs = [j], ScheduleId = "schId" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -2020,7 +2174,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
+      var p1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 1
+      );
 
       LoadStart(p1, offset: 0, load: 1);
       LoadEnd(p1, offset: 2, load: 1, elapMin: 2);
@@ -2084,8 +2246,24 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
-      var p2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 2);
+      var p1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 1
+      );
+      var p2 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 2
+      );
 
       LoadStart(p1, offset: 0, load: 5);
       LoadEnd(p1, offset: 2, load: 5, elapMin: 2);
@@ -2128,8 +2306,24 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
-      var proc2 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, matID: 1);
+      var proc1 = BuildMaterial(
+        t,
+        pal: 2,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      var proc2 = BuildMaterial(
+        t,
+        pal: 2,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 2,
+        numProc: 2,
+        matID: 1
+      );
 
       var j = new Job()
       {
@@ -2355,7 +2549,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       ExpectPalletStart(t, pal: 3, offset: 2, mats: [path1]);
       MovePallet(t, offset: 3, load: 1, pal: 3);
 
-      MachStart(path1, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
+      MachStart(
+        path1,
+        offset: 4,
+        mach: 2,
+        mazakProg: "the-mazak-prog",
+        logProg: "the-log-prog",
+        progRev: 15
+      );
       MachEnd(
         path1,
         offset: 20,
@@ -2428,9 +2629,21 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var t = DateTime.UtcNow.AddHours(-5);
 
       var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2);
-      AddTestPartPrograms(schId, insightPart: false, new[] { "the-log-prog", "the-log-prog-proc2" });
+      AddTestPartPrograms(
+        schId,
+        insightPart: false,
+        new[] { "the-log-prog", "the-log-prog-proc2" }
+      );
 
-      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 1);
+      var p = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
@@ -2438,7 +2651,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       MovePallet(t, offset: 3, load: 1, pal: 3);
 
       MachStart(p, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog");
-      MachEnd(p, offset: 20, mach: 2, elapMin: 16, mazakProg: "the-mazak-prog", logProg: "the-log-prog");
+      MachEnd(
+        p,
+        offset: 20,
+        mach: 2,
+        elapMin: 16,
+        mazakProg: "the-mazak-prog",
+        logProg: "the-log-prog"
+      );
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
@@ -2449,10 +2669,34 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
-      var proc1snd = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
+      var proc1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      var proc1snd = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 2
+      );
 
-      var proc2 = BuildMaterial(t, pal: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, matID: 1);
+      var proc2 = BuildMaterial(
+        t,
+        pal: 9,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 2,
+        numProc: 2,
+        matID: 1
+      );
 
       var j = new Job()
       {
@@ -2556,8 +2800,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         addAsCopiedToSystem: true
       );
 
-      var queuedProc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
-      AddMaterialToQueue(queuedProc1, proc: 1, queue: "thequeue", offset: 0, allocate: AllocateTy.Assigned);
+      var queuedProc1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      AddMaterialToQueue(
+        queuedProc1,
+        proc: 1,
+        queue: "thequeue",
+        offset: 0,
+        allocate: AllocateTy.Assigned
+      );
 
       var splitProc1Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
       var splitProc2Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
@@ -2595,7 +2853,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       var loadStart = jobLog
         .CurrentPalletLog(9)
-        .Single(l => l.LogType == LogType.LoadUnloadCycle && l.Pallet == 9 && l.StartOfCycle == true);
+        .Single(l =>
+          l.LogType == LogType.LoadUnloadCycle && l.Pallet == 9 && l.StartOfCycle == true
+        );
 
       loadStart
         .Material.ShouldHaveSingleItem()
@@ -2625,7 +2885,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       var loadEnd = jobLog
         .CurrentPalletLog(9)
-        .Single(l => l.LogType == LogType.LoadUnloadCycle && l.Pallet == 9 && l.StartOfCycle == false);
+        .Single(l =>
+          l.LogType == LogType.LoadUnloadCycle && l.Pallet == 9 && l.StartOfCycle == false
+        );
 
       loadEnd
         .Material.ShouldHaveSingleItem()
@@ -2678,8 +2940,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         addAsCopiedToSystem: true
       );
 
-      var queuedProc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
-      AddMaterialToQueue(queuedProc1, proc: 1, queue: "thequeue", offset: 0, allocate: AllocateTy.Assigned);
+      var queuedProc1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      AddMaterialToQueue(
+        queuedProc1,
+        proc: 1,
+        queue: "thequeue",
+        offset: 0,
+        allocate: AllocateTy.Assigned
+      );
 
       var splitProc1Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
       var splitProc2Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
@@ -2816,8 +3092,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         addAsCopiedToSystem: true
       );
 
-      var queuedProc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
-      AddMaterialToQueue(queuedProc1, proc: 1, queue: "thequeue", offset: 0, allocate: AllocateTy.Assigned);
+      var queuedProc1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      AddMaterialToQueue(
+        queuedProc1,
+        proc: 1,
+        queue: "thequeue",
+        offset: 0,
+        allocate: AllocateTy.Assigned
+      );
 
       var splitProc1Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
       var splitProc2Id = AddTestPart(unique: "uuuu", part: "pppp", numProc: 1);
@@ -3018,7 +3308,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           }
         ),
       };
-      var newJobs = new NewJobs() { Jobs = ImmutableList.Create<Job>(j1, j2), ScheduleId = "queueSch" };
+      var newJobs = new NewJobs()
+      {
+        Jobs = ImmutableList.Create<Job>(j1, j2),
+        ScheduleId = "queueSch",
+      };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       LoadStart(proc1path1, offset: 0, load: 10);
@@ -3076,7 +3370,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                   MaterialID = i,
                   Queue = "thequeue",
                   Position = idx,
-                  Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
+                  Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i)
+                    ? "uuuu2"
+                    : "uuuu1",
                   PartNameOrCasting = "pppp",
                   NumProcesses = 2,
                   NextProcess = 2,
@@ -3118,7 +3414,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                   MaterialID = i,
                   Queue = "thequeue",
                   Position = idx,
-                  Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
+                  Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i)
+                    ? "uuuu2"
+                    : "uuuu1",
                   PartNameOrCasting = "pppp",
                   NumProcesses = 2,
                   NextProcess = 2,
@@ -3162,7 +3460,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                   MaterialID = i,
                   Queue = "thequeue",
                   Position = idx,
-                  Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
+                  Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i)
+                    ? "uuuu2"
+                    : "uuuu1",
                   PartNameOrCasting = "pppp",
                   NumProcesses = 2,
                   NextProcess = 2,
@@ -3222,10 +3522,34 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
-      var proc1snd = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
+      var proc1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      var proc1snd = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 2
+      );
 
-      var proc2 = BuildMaterial(t, pal: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, matID: 1);
+      var proc2 = BuildMaterial(
+        t,
+        pal: 9,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 2,
+        numProc: 2,
+        matID: 1
+      );
 
       var j = new Job()
       {
@@ -3285,11 +3609,49 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var casting = BuildMaterial(t, pal: 8, unique: "", part: "xxxx", proc: 1, numProc: 1, matID: 1);
-      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
-      var mat2 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 3);
-      var mat3 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 4);
-      AddMaterialToQueue(casting, proc: 0, queue: "rawmat", offset: 0, allocate: AllocateTy.Casting);
+      var casting = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "",
+        part: "xxxx",
+        proc: 1,
+        numProc: 1,
+        matID: 1
+      );
+      var mat1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 2
+      );
+      var mat2 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 3
+      );
+      var mat3 = BuildMaterial(
+        t,
+        pal: 4,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 4
+      );
+      AddMaterialToQueue(
+        casting,
+        proc: 0,
+        queue: "rawmat",
+        offset: 0,
+        allocate: AllocateTy.Casting
+      );
       AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
       AddMaterialToQueue(mat2, proc: 0, queue: "rawmat", offset: 2, allocate: AllocateTy.Assigned);
       AddMaterialToQueue(mat3, proc: 0, queue: "rawmat", offset: 3, allocate: AllocateTy.Assigned);
@@ -3351,7 +3713,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
 
       // now a load of pallet 4, should take mat3 and create a new piece of material
-      var newMat = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 5);
+      var newMat = BuildMaterial(
+        t,
+        pal: 4,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 5
+      );
 
       LoadStart([mat3, newMat], offset: 8, load: 1);
       LoadEnd(
@@ -3384,7 +3754,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
       // one assigned, two castings
-      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      var mat1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
       var mat2 = BuildMaterial(t, pal: 8, unique: "", part: "cccc", proc: 1, numProc: 1, matID: 2);
       var mat3 = BuildMaterial(t, pal: 8, unique: "", part: "cccc", proc: 1, numProc: 1, matID: 3);
       AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
@@ -3455,8 +3833,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       CheckMatInQueue("rawmat", []);
 
-      AdjustLogMaterial(mat2, m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 });
-      AdjustLogMaterial(mat3, m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 });
+      AdjustLogMaterial(
+        mat2,
+        m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 }
+      );
+      AdjustLogMaterial(
+        mat3,
+        m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 }
+      );
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
@@ -3467,10 +3851,42 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
-      var mat2 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
-      var mat3 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 3);
-      var mat4 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 4);
+      var mat1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      var mat2 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 2
+      );
+      var mat3 = BuildMaterial(
+        t,
+        pal: 4,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 3
+      );
+      var mat4 = BuildMaterial(
+        t,
+        pal: 4,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        matID: 4
+      );
 
       var j = new Job()
       {
@@ -3639,7 +4055,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
+      var p = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 1
+      );
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
@@ -3823,7 +4247,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p = BuildMaterial(t, pal: 7, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
+      var p = BuildMaterial(
+        t,
+        pal: 7,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 1
+      );
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
@@ -3889,7 +4321,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p = BuildMaterial(t, pal: 7, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
+      var p = BuildMaterial(
+        t,
+        pal: 7,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 1,
+        matID: 1
+      );
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
@@ -3937,9 +4377,33 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2);
 
-      var m1proc1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 1);
-      var m1proc2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, matID: 1);
-      var m2proc1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 2);
+      var m1proc1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 2,
+        matID: 1
+      );
+      var m1proc2 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 2,
+        numProc: 2,
+        matID: 1
+      );
+      var m2proc1 = BuildMaterial(
+        t,
+        pal: 3,
+        unique: "unique",
+        part: "part1",
+        proc: 1,
+        numProc: 2,
+        matID: 2
+      );
 
       SetPallet(pal: 3, atLoadStation: true);
       LoadStart(m1proc1, offset: 0, load: 1);
@@ -4055,7 +4519,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       HandleEvent(e, expectedMachineEnd: true);
       raisedByEvent.ShouldBeEmpty();
-      jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow.AddHours(10)).ShouldBeEmpty();
+      jobLog
+        .GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow.AddHours(10))
+        .ShouldBeEmpty();
     }
   }
 

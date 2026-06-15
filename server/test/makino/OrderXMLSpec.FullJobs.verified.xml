@@ -52,22 +52,42 @@
   <CommonFixtures>
     <CommonFixture action="UPDATE" name="P01-aaa-1">
       <Processes>
-        <Process action="ADD" partName="aaa-0P_yYDHvCtK0w05e7" revision="Insight" processNumber="1" />
+        <Process
+          action="ADD"
+          partName="aaa-0P_yYDHvCtK0w05e7"
+          revision="Insight"
+          processNumber="1"
+        />
       </Processes>
     </CommonFixture>
     <CommonFixture action="UPDATE" name="P02-aaa-1">
       <Processes>
-        <Process action="ADD" partName="aaa-0P_yYDHvCtK0w05e7" revision="Insight" processNumber="1" />
+        <Process
+          action="ADD"
+          partName="aaa-0P_yYDHvCtK0w05e7"
+          revision="Insight"
+          processNumber="1"
+        />
       </Processes>
     </CommonFixture>
     <CommonFixture action="UPDATE" name="P03-bbb-1">
       <Processes>
-        <Process action="ADD" partName="bbb-1P_yYDHvCtK0w05e7" revision="Insight" processNumber="1" />
+        <Process
+          action="ADD"
+          partName="bbb-1P_yYDHvCtK0w05e7"
+          revision="Insight"
+          processNumber="1"
+        />
       </Processes>
     </CommonFixture>
     <CommonFixture action="UPDATE" name="P04-bbb-1">
       <Processes>
-        <Process action="ADD" partName="bbb-1P_yYDHvCtK0w05e7" revision="Insight" processNumber="1" />
+        <Process
+          action="ADD"
+          partName="bbb-1P_yYDHvCtK0w05e7"
+          revision="Insight"
+          processNumber="1"
+        />
       </Processes>
     </CommonFixture>
   </CommonFixtures>

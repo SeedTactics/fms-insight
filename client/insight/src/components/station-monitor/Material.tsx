@@ -91,7 +91,12 @@ export class PartIdenticon extends PureComponent<{
     const iconSize = this.props.size || 50;
     const icon = jdenticon.toSvg(this.props.part, iconSize);
 
-    return <div style={{ width: iconSize, height: iconSize }} dangerouslySetInnerHTML={{ __html: icon }} />;
+    return (
+      <div
+        style={{ width: iconSize, height: iconSize }}
+        dangerouslySetInnerHTML={{ __html: icon }}
+      />
+    );
   }
 }
 
@@ -115,14 +120,16 @@ function isCssAnimation(animation: Animation): animation is CSSAnimation {
 // the start time can drift due to the pause on hover, so to keep it in sync always
 // round the start time down to be a multiple of the duration (1s)
 function shakeAnimationIteration(event: AnimationEvent<HTMLDivElement>) {
-  const anim = event.currentTarget
-    .getAnimations()
-    .find((animation): animation is CSSAnimation => {
-      return isCssAnimation(animation) && animation.animationName === shakeHorizKeyframes.name;
-    });
+  const anim = event.currentTarget.getAnimations().find((animation): animation is CSSAnimation => {
+    return isCssAnimation(animation) && animation.animationName === shakeHorizKeyframes.name;
+  });
   if (anim && typeof anim.startTime === "number") {
     anim.startTime = anim.startTime - (anim.startTime % 1000);
-  } else if (anim && typeof anim.startTime === "object" && anim.startTime instanceof CSSNumericValue) {
+  } else if (
+    anim &&
+    typeof anim.startTime === "object" &&
+    anim.startTime instanceof CSSNumericValue
+  ) {
     const msecs = anim.startTime.to("ms").value;
     anim.startTime = CSS.ms(msecs - (msecs % 1000));
   }
@@ -235,7 +242,8 @@ export function MaterialAction({
         } else if (displayActionForSinglePallet === undefined) {
           return (
             <MatCardDetail fsize={fsize}>
-              Load from {basketName} {mat.action.loadFromBasketId} to pal {mat.action.loadOntoPalletNum ?? ""}
+              Load from {basketName} {mat.action.loadFromBasketId} to pal{" "}
+              {mat.action.loadOntoPalletNum ?? ""}
             </MatCardDetail>
           );
         } else if (displayActionForSinglePallet === mat.action.loadOntoPalletNum) {
@@ -245,7 +253,8 @@ export function MaterialAction({
             : null;
           return (
             <MatCardDetail fsize={fsize}>
-              Load from {basketName} {mat.action.loadFromBasketId} to {faceName ?? `face ${faceNum}`}
+              Load from {basketName} {mat.action.loadFromBasketId} to{" "}
+              {faceName ?? `face ${faceNum}`}
             </MatCardDetail>
           );
         } else {
@@ -258,7 +267,10 @@ export function MaterialAction({
             displayActionForSinglePallet === undefined ||
             displayActionForSinglePallet === mat.location.palletNum
           ) {
-            if (mat.action.loadOntoFace === undefined || mat.action.loadOntoFace === mat.location.face) {
+            if (
+              mat.action.loadOntoFace === undefined ||
+              mat.action.loadOntoFace === mat.location.face
+            ) {
               // material is not moving, just having some manual work done on it
               if (mat.action.processAfterLoad && mat.action.processAfterLoad !== mat.process) {
                 return (
@@ -274,7 +286,11 @@ export function MaterialAction({
               const faceName = mat.location.palletNum
                 ? curSt.pallets[mat.location.palletNum]?.faceNames?.[faceNum - 1]
                 : null;
-              return <MatCardDetail fsize={fsize}>Transfer to {faceName ?? `face ${faceNum}`}</MatCardDetail>;
+              return (
+                <MatCardDetail fsize={fsize}>
+                  Transfer to {faceName ?? `face ${faceNum}`}
+                </MatCardDetail>
+              );
             }
           } else {
             return null;
@@ -291,7 +307,9 @@ export function MaterialAction({
               </MatCardDetail>
             );
           } else if (displayActionForSinglePallet === mat.action.loadOntoPalletNum) {
-            return <MatCardDetail fsize={fsize}>Load to {faceName ?? `face ${faceNum}`}</MatCardDetail>;
+            return (
+              <MatCardDetail fsize={fsize}>Load to {faceName ?? `face ${faceNum}`}</MatCardDetail>
+            );
           } else {
             return null;
           }
@@ -310,14 +328,20 @@ export function MaterialAction({
           </MatCardDetail>
         );
       } else if (mat.action.unloadIntoQueue) {
-        return <MatCardDetail fsize={fsize}>Unload into queue {mat.action.unloadIntoQueue}</MatCardDetail>;
+        return (
+          <MatCardDetail fsize={fsize}>
+            Unload into queue {mat.action.unloadIntoQueue}
+          </MatCardDetail>
+        );
       } else {
         return <MatCardDetail fsize={fsize}>Unload from pallet</MatCardDetail>;
       }
 
     case api.ActionType.Waiting:
       if (mat.location.type === api.LocType.InQueue && !!mat.jobUnique && mat.jobUnique !== "") {
-        return <MatCardDetail fsize={fsize}>Waiting; next process is #{mat.process + 1}</MatCardDetail>;
+        return (
+          <MatCardDetail fsize={fsize}>Waiting; next process is #{mat.process + 1}</MatCardDetail>
+        );
       } else if (mat.location.type === api.LocType.InBasket) {
         return (
           <MatCardDetail fsize={fsize}>
@@ -334,7 +358,9 @@ export function MaterialAction({
       break;
 
     case api.ActionType.Machining:
-      return <MatCardDetail fsize={fsize}>Machining program {mat.action.program ?? ""}</MatCardDetail>;
+      return (
+        <MatCardDetail fsize={fsize}>Machining program {mat.action.program ?? ""}</MatCardDetail>
+      );
   }
   return null;
 }
@@ -362,7 +388,13 @@ function Warning({ mat }: { mat: Readonly<MaterialSummaryAndCompletedData> }) {
   }
 }
 
-function JobRawMaterial({ fsize, mat }: { mat: Readonly<api.IInProcessMaterial>; fsize?: MatCardFontSize }) {
+function JobRawMaterial({
+  fsize,
+  mat,
+}: {
+  mat: Readonly<api.IInProcessMaterial>;
+  fsize?: MatCardFontSize;
+}) {
   const job = useAtomValue(currentStatus).jobs[mat.jobUnique];
   let path = mat.path;
   if (mat.action.type === api.ActionType.Loading && mat.action.pathAfterLoad) {
@@ -388,7 +420,12 @@ function RebookingNoteElipsis({ fsize, uniq }: { fsize?: MatCardFontSize; uniq: 
       return (
         <MatCardDetail
           fsize={fsize}
-          style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: "10em" }}
+          style={{
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            maxWidth: "10em",
+          }}
         >
           {b.notes}
         </MatCardDetail>
@@ -589,7 +626,9 @@ const MatCard = forwardRef(function MatCard(
           >
             {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
               <div>
-                <Avatar style={{ width: "30px", height: "30px" }}>{props.mat.serial.slice(-1)}</Avatar>
+                <Avatar style={{ width: "30px", height: "30px" }}>
+                  {props.mat.serial.slice(-1)}
+                </Avatar>
               </div>
             ) : undefined}
             {props.hideWarningIcon ? undefined : (
@@ -748,7 +787,9 @@ export const MultiMaterial = memo(function MultiMaterial(props: MultiMaterialPro
                   : "Unassigned material"}
               </MatCardDetail>
             </Box>
-            {props.material.length > 0 && props.material[0].serial && props.material[0].serial.length >= 1 ? (
+            {props.material.length > 0 &&
+            props.material[0].serial &&
+            props.material[0].serial.length >= 1 ? (
               <div>
                 <Avatar style={{ width: "30px", height: "30px" }}>
                   {props.material[0].serial.slice(-1)}
@@ -882,7 +923,11 @@ function MaterialInspections() {
   }
 }
 
-function MaterialEvents({ highlightProcsGreaterOrEqualTo }: { highlightProcsGreaterOrEqualTo?: number }) {
+function MaterialEvents({
+  highlightProcsGreaterOrEqualTo,
+}: {
+  highlightProcsGreaterOrEqualTo?: number;
+}) {
   const events = useAtomValue(matDetails.materialInDialogEvents);
   return (
     <LogEntries
@@ -925,7 +970,9 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
 
   if (mat === null) {
     if (toShow.type === "AddMatWithEnteredSerial" || toShow.type === "ManuallyEnteredSerial") {
-      return <div style={{ marginLeft: "1em" }}>Material with serial {toShow.serial} not found.</div>;
+      return (
+        <div style={{ marginLeft: "1em" }}>Material with serial {toShow.serial} not found.</div>
+      );
     } else if (toShow.type === "Barcode") {
       if (barcodeNewMat) {
         return (
@@ -934,7 +981,9 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
           </div>
         );
       } else {
-        return <div style={{ marginLeft: "1em" }}>Material with barcode {toShow.barcode} not found.</div>;
+        return (
+          <div style={{ marginLeft: "1em" }}>Material with barcode {toShow.barcode} not found.</div>
+        );
       }
     } else {
       return <div style={{ marginLeft: "1em" }}>Material not found.</div>;
@@ -1085,7 +1134,9 @@ export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialog
         </DialogTitle>
         <DialogContent>
           <DisplayLoadingAndError fallback={<MaterialLoading />}>
-            <MaterialDetailContent highlightProcsGreaterOrEqualTo={props.highlightProcsGreaterOrEqualTo} />
+            <MaterialDetailContent
+              highlightProcsGreaterOrEqualTo={props.highlightProcsGreaterOrEqualTo}
+            />
             <DisplayLoadingAndError fallback={<CircularProgress />}>
               {props.extraDialogElements}
             </DisplayLoadingAndError>
@@ -1095,7 +1146,9 @@ export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialog
           {dialogOpen && (props.buttons || props.allowNote) ? (
             <ErrorBoundary fallback={<div />}>
               <Suspense fallback={<div />}>
-                {dialogOpen && props.allowNote ? <AddNoteButton setNotesOpen={setNotesOpen} /> : undefined}
+                {dialogOpen && props.allowNote ? (
+                  <AddNoteButton setNotesOpen={setNotesOpen} />
+                ) : undefined}
                 {props.buttons}
               </Suspense>
             </ErrorBoundary>

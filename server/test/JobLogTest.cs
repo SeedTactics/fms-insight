@@ -607,14 +607,20 @@ namespace BlackMaple.FMSInsight.Tests
         loadEndActualCycle.Where(e => e.LogType == LogType.PalletCycle && !e.StartOfCycle)
       );
       logsForMat2.Add(loadEndActualCycle.Skip(4).First());
-      logsForMat2.AddRange(loadEndActualCycle.Where(e => e.LogType == LogType.PalletCycle && e.StartOfCycle));
+      logsForMat2.AddRange(
+        loadEndActualCycle.Where(e => e.LogType == LogType.PalletCycle && e.StartOfCycle)
+      );
       _jobLog.ToolPocketSnapshotForCycle(loadEndActualCycle.First().Counter).ShouldBeEmpty();
       _jobLog
         .GetMaterialDetails(matLoc2Face1.MaterialID)
-        .Paths.ShouldBeEquivalentTo(ImmutableDictionary<int, int>.Empty.Add(matLoc2Face1.Process, 33));
+        .Paths.ShouldBeEquivalentTo(
+          ImmutableDictionary<int, int>.Empty.Add(matLoc2Face1.Process, 33)
+        );
       _jobLog
         .GetMaterialDetails(matLoc2Face2.MaterialID)
-        .Paths.ShouldBeEquivalentTo(ImmutableDictionary<int, int>.Empty.Add(matLoc2Face2.Process, 44));
+        .Paths.ShouldBeEquivalentTo(
+          ImmutableDictionary<int, int>.Empty.Add(matLoc2Face2.Process, 44)
+        );
 
       var arriveStocker = _jobLog.RecordPalletArriveStocker(
         mats: new[] { mat2 }.Select(EventLogMaterial.FromLogMat),
@@ -889,9 +895,13 @@ namespace BlackMaple.FMSInsight.Tests
 
       Should
         .Throw<ConflictRequestException>(() =>
-          _jobLog.GetRecentLog(unloadStartActualCycle.Counter, new DateTime(2000, 2, 3, 4, 5, 6)).ToList()
+          _jobLog
+            .GetRecentLog(unloadStartActualCycle.Counter, new DateTime(2000, 2, 3, 4, 5, 6))
+            .ToList()
         )
-        .Message.ShouldBe("Counter " + unloadStartActualCycle.Counter.ToString() + " has different end time");
+        .Message.ShouldBe(
+          "Counter " + unloadStartActualCycle.Counter.ToString() + " has different end time"
+        );
 
       _jobLog.GetRecentLog(unloadEndActualCycle.Last().Counter).ShouldBeEmpty();
 
@@ -902,10 +912,14 @@ namespace BlackMaple.FMSInsight.Tests
           .ShouldBeTrue("Checking " + c.EndTimeUTC.ToString());
       }
 
-      _jobLog.CycleExists(DateTime.Parse("4/6/2011"), 123, LogType.MachineCycle, "MC", 3).ShouldBeFalse();
+      _jobLog
+        .CycleExists(DateTime.Parse("4/6/2011"), 123, LogType.MachineCycle, "MC", 3)
+        .ShouldBeFalse();
 
       _jobLog.GetLogForMaterial(1).EventsShouldBe(logsForMat1);
-      _jobLog.GetLogForMaterial(new[] { 1, mat2.MaterialID }).EventsShouldBe(logsForMat1.Concat(logsForMat2));
+      _jobLog
+        .GetLogForMaterial(new[] { 1, mat2.MaterialID })
+        .EventsShouldBe(logsForMat1.Concat(logsForMat2));
       _jobLog.GetLogForMaterial(18).ShouldBeEmpty();
       _jobLog.GetLogForMaterial([18, 19]).ShouldBeEmpty();
 
@@ -928,13 +942,18 @@ namespace BlackMaple.FMSInsight.Tests
           "ser1"
         )
       );
-      logsForMat1 = logsForMat1.Select(TransformLog(mat1.MaterialID, SetSerialInMat("ser1"))).ToList();
+      logsForMat1 = logsForMat1
+        .Select(TransformLog(mat1.MaterialID, SetSerialInMat("ser1")))
+        .ToList();
       logs = logs.Select(TransformLog(mat1.MaterialID, SetSerialInMat("ser1"))).ToList();
       mat1 = SetSerialInMat("ser1")(mat1);
       _jobLog.GetLogForSerial("ser1").EventsShouldBe(logsForMat1);
       _jobLog.GetLogForSerial("ser2").ShouldBeEmpty();
 
-      var orderLog = _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat1), "work1");
+      var orderLog = _jobLog.RecordWorkorderForMaterialID(
+        EventLogMaterial.FromLogMat(mat1),
+        "work1"
+      );
       logsForMat1.Add(
         new LogEntry(
           -1,
@@ -949,7 +968,9 @@ namespace BlackMaple.FMSInsight.Tests
           "work1"
         )
       );
-      logsForMat1 = logsForMat1.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
+      logsForMat1 = logsForMat1
+        .Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1")))
+        .ToList();
       logs = logs.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       mat1 = SetWorkorderInMat("work1")(mat1);
       var finalize = _jobLog.RecordWorkorderComment("work1", "ccc", null);
@@ -1811,12 +1832,36 @@ namespace BlackMaple.FMSInsight.Tests
       );
 
       //now record serial and workorder
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat1_proc2), "serial1", t.AddHours(1));
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat2_proc1), "serial2", t.AddHours(2));
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat3), "serial3", t.AddHours(3));
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat4), "serial4", t.AddHours(4));
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat5), "serial5", t.AddHours(5));
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat6), "serial6", t.AddHours(6));
+      _jobLog.RecordSerialForMaterialID(
+        EventLogMaterial.FromLogMat(mat1_proc2),
+        "serial1",
+        t.AddHours(1)
+      );
+      _jobLog.RecordSerialForMaterialID(
+        EventLogMaterial.FromLogMat(mat2_proc1),
+        "serial2",
+        t.AddHours(2)
+      );
+      _jobLog.RecordSerialForMaterialID(
+        EventLogMaterial.FromLogMat(mat3),
+        "serial3",
+        t.AddHours(3)
+      );
+      _jobLog.RecordSerialForMaterialID(
+        EventLogMaterial.FromLogMat(mat4),
+        "serial4",
+        t.AddHours(4)
+      );
+      _jobLog.RecordSerialForMaterialID(
+        EventLogMaterial.FromLogMat(mat5),
+        "serial5",
+        t.AddHours(5)
+      );
+      _jobLog.RecordSerialForMaterialID(
+        EventLogMaterial.FromLogMat(mat6),
+        "serial6",
+        t.AddHours(6)
+      );
       _jobLog.GetMaterialDetails(mat1_proc2.MaterialID).Serial.ShouldBe("serial1");
       _jobLog
         .GetMaterialDetailsForSerial("serial1")
@@ -2028,9 +2073,15 @@ namespace BlackMaple.FMSInsight.Tests
       finalizedEntry.Result.ShouldBe("work1");
       finalizedEntry.LogType.ShouldBe(LogType.WorkorderComment);
       finalizedEntry.ProgramDetails.ShouldBeEquivalentTo(
-        ImmutableDictionary<string, string>.Empty.Add("Comment", "work1ccc").Add("Operator", "oper1")
+        ImmutableDictionary<string, string>
+          .Empty.Add("Comment", "work1ccc")
+          .Add("Operator", "oper1")
       );
-      var expectedComment1 = new WorkorderComment() { Comment = "work1ccc", TimeUTC = t.AddHours(222) };
+      var expectedComment1 = new WorkorderComment()
+      {
+        Comment = "work1ccc",
+        TimeUTC = t.AddHours(222),
+      };
 
       _jobLog
         .GetActiveWorkorders()
@@ -2049,8 +2100,17 @@ namespace BlackMaple.FMSInsight.Tests
         );
 
       // add a second comment
-      _jobLog.RecordWorkorderComment("work1", comment: "work1ddd", operName: null, timeUTC: t.AddHours(333));
-      var expectedComment2 = new WorkorderComment() { Comment = "work1ddd", TimeUTC = t.AddHours(333) };
+      _jobLog.RecordWorkorderComment(
+        "work1",
+        comment: "work1ddd",
+        operName: null,
+        timeUTC: t.AddHours(333)
+      );
+      var expectedComment2 = new WorkorderComment()
+      {
+        Comment = "work1ddd",
+        TimeUTC = t.AddHours(333),
+      };
 
       _jobLog
         .GetActiveWorkorders()
@@ -2328,8 +2388,12 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog
         .CompletedUnloadsSince(counter: -1)
         .EventsShouldBe([
-          mat1_proc2complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
-          mat2_proc1complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
+          mat1_proc2complete.First(e =>
+            e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"
+          ),
+          mat2_proc1complete.First(e =>
+            e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"
+          ),
           mat3_complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
           mat4complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
         ]);
@@ -2366,7 +2430,15 @@ namespace BlackMaple.FMSInsight.Tests
         )
         .ShouldHaveSingleItem()
         .ShouldBeEquivalentTo(
-          AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1), "theoper", "thereason")
+          AddToQueueExpectedEntry(
+            otherQueueMat,
+            1,
+            "BBBB",
+            0,
+            start.AddHours(-1),
+            "theoper",
+            "thereason"
+          )
         );
 
       _jobLog.IsMaterialInQueue(100).ShouldBeTrue();
@@ -2386,7 +2458,11 @@ namespace BlackMaple.FMSInsight.Tests
       expectedLogs.Add(RecordSerialExpectedEntry(mat1, 2, "mat1serial", start));
       _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat2), "mat2serial", start);
       expectedLogs.Add(RecordSerialExpectedEntry(mat2, 3, "mat2serial", start));
-      _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat2), "mat2workorder", start);
+      _jobLog.RecordWorkorderForMaterialID(
+        EventLogMaterial.FromLogMat(mat2),
+        "mat2workorder",
+        start
+      );
       expectedLogs.Add(RecordWorkorderExpectedEntry(mat2, 4, "mat2workorder", start));
 
       // add via LogMaterial with position -1
@@ -2501,7 +2577,15 @@ namespace BlackMaple.FMSInsight.Tests
         .ShouldBeEquivalentTo(
           new List<LogEntry>
           {
-            AddToQueueExpectedEntry(mat3, 7, "AAAA", 1, start.AddMinutes(20), "opernnnn", reason: "rrrrr"),
+            AddToQueueExpectedEntry(
+              mat3,
+              7,
+              "AAAA",
+              1,
+              start.AddMinutes(20),
+              "opernnnn",
+              reason: "rrrrr"
+            ),
           }
         );
       expectedLogs.Add(
@@ -2633,15 +2717,37 @@ namespace BlackMaple.FMSInsight.Tests
 
       //removing from queue with LogMaterial
       _jobLog
-        .RecordRemoveMaterialFromAllQueues(EventLogMaterial.FromLogMat(mat3), "operyy", start.AddMinutes(40))
+        .RecordRemoveMaterialFromAllQueues(
+          EventLogMaterial.FromLogMat(mat3),
+          "operyy",
+          start.AddMinutes(40)
+        )
         .ShouldBeEquivalentTo(
           new List<LogEntry>
           {
-            RemoveFromQueueExpectedEntry(mat3, 8, "AAAA", 1, 40 - 20, "", start.AddMinutes(40), "operyy"),
+            RemoveFromQueueExpectedEntry(
+              mat3,
+              8,
+              "AAAA",
+              1,
+              40 - 20,
+              "",
+              start.AddMinutes(40),
+              "operyy"
+            ),
           }
         );
       expectedLogs.Add(
-        RemoveFromQueueExpectedEntry(mat3, 8, "AAAA", 1, 40 - 20, "", start.AddMinutes(40), "operyy")
+        RemoveFromQueueExpectedEntry(
+          mat3,
+          8,
+          "AAAA",
+          1,
+          40 - 20,
+          "",
+          start.AddMinutes(40),
+          "operyy"
+        )
       );
 
       _jobLog
@@ -2698,7 +2804,15 @@ namespace BlackMaple.FMSInsight.Tests
 
       //add back in with matid only
       _jobLog
-        .RecordAddMaterialToQueue(mat3.MaterialID, mat3.Process, "AAAA", 2, null, null, start.AddMinutes(45))
+        .RecordAddMaterialToQueue(
+          mat3.MaterialID,
+          mat3.Process,
+          "AAAA",
+          2,
+          null,
+          null,
+          start.AddMinutes(45)
+        )
         .ShouldBeEquivalentTo(
           new List<LogEntry> { AddToQueueExpectedEntry(mat3, 9, "AAAA", 2, start.AddMinutes(45)) }
         );
@@ -2780,7 +2894,15 @@ namespace BlackMaple.FMSInsight.Tests
         .ShouldBeEquivalentTo(
           new List<LogEntry>
           {
-            RemoveFromQueueExpectedEntry(mat1, 10, "AAAA", 0, 50, "MovingInQueue", start.AddMinutes(50)),
+            RemoveFromQueueExpectedEntry(
+              mat1,
+              10,
+              "AAAA",
+              0,
+              50,
+              "MovingInQueue",
+              start.AddMinutes(50)
+            ),
             AddToQueueExpectedEntry(mat1, 11, "AAAA", 1, start.AddMinutes(50)),
           }
         );
@@ -2865,12 +2987,28 @@ namespace BlackMaple.FMSInsight.Tests
         .ShouldBeEquivalentTo(
           new List<LogEntry>
           {
-            RemoveFromQueueExpectedEntry(mat3, 12, "AAAA", 2, 55 - 45, "MovingInQueue", start.AddMinutes(55)),
+            RemoveFromQueueExpectedEntry(
+              mat3,
+              12,
+              "AAAA",
+              2,
+              55 - 45,
+              "MovingInQueue",
+              start.AddMinutes(55)
+            ),
             AddToQueueExpectedEntry(mat3, 13, "AAAA", 1, start.AddMinutes(55)),
           }
         );
       expectedLogs.Add(
-        RemoveFromQueueExpectedEntry(mat3, 12, "AAAA", 2, 55 - 45, "MovingInQueue", start.AddMinutes(55))
+        RemoveFromQueueExpectedEntry(
+          mat3,
+          12,
+          "AAAA",
+          2,
+          55 - 45,
+          "MovingInQueue",
+          start.AddMinutes(55)
+        )
       );
       expectedLogs.Add(AddToQueueExpectedEntry(mat3, 13, "AAAA", 1, start.AddMinutes(55)));
 
@@ -3037,10 +3175,26 @@ namespace BlackMaple.FMSInsight.Tests
           timeUTC: start.AddMinutes(59)
         )
         .ShouldBeEquivalentTo(
-          SignalQuarantineExpectedEntry(mat1, 15, 1, "QQQ", start.AddMinutes(59), "theoper", "a reason")
+          SignalQuarantineExpectedEntry(
+            mat1,
+            15,
+            1,
+            "QQQ",
+            start.AddMinutes(59),
+            "theoper",
+            "a reason"
+          )
         );
       expectedLogs.Add(
-        SignalQuarantineExpectedEntry(mat1, 15, 1, "QQQ", start.AddMinutes(59), "theoper", "a reason")
+        SignalQuarantineExpectedEntry(
+          mat1,
+          15,
+          1,
+          "QQQ",
+          start.AddMinutes(59),
+          "theoper",
+          "a reason"
+        )
       );
 
       // hasn't moved yet
@@ -3130,7 +3284,15 @@ namespace BlackMaple.FMSInsight.Tests
         .ShouldBeEquivalentTo(
           new List<LogEntry>
           {
-            RemoveFromQueueExpectedEntry(mat2proc8, 16, "AAAA", 0, 60 - 10, "", start.AddMinutes(60)),
+            RemoveFromQueueExpectedEntry(
+              mat2proc8,
+              16,
+              "AAAA",
+              0,
+              60 - 10,
+              "",
+              start.AddMinutes(60)
+            ),
           }
         );
       expectedLogs.Add(
@@ -3403,7 +3565,18 @@ namespace BlackMaple.FMSInsight.Tests
         {
           new LogEntry(
             8,
-            new[] { mat1, mat3 with { Process = mat1.Process }, mat4 with { Process = mat1.Process } },
+            new[]
+            {
+              mat1,
+              mat3 with
+              {
+                Process = mat1.Process,
+              },
+              mat4 with
+              {
+                Process = mat1.Process,
+              },
+            },
             5,
             LogType.LoadUnloadCycle,
             "L/U",
@@ -3431,7 +3604,18 @@ namespace BlackMaple.FMSInsight.Tests
           {
             Counter = 9,
             LogType = LogType.PalletCycle,
-            Material = [mat1, mat3 with { Process = mat1.Process }, mat4 with { Process = mat1.Process }],
+            Material =
+            [
+              mat1,
+              mat3 with
+              {
+                Process = mat1.Process,
+              },
+              mat4 with
+              {
+                Process = mat1.Process,
+              },
+            ],
             Pallet = 5,
             LocationName = "Pallet Cycle",
             LocationNum = 1,
@@ -3760,7 +3944,9 @@ namespace BlackMaple.FMSInsight.Tests
                 proc: 0,
                 part: "castingQ",
                 numProc: 1,
-                serial: useSerial ? (existingMats ? (matId == 2 ? "1" : "") : matId.ToString()) : "",
+                serial: useSerial
+                  ? (existingMats ? (matId == 2 ? "1" : "") : matId.ToString())
+                  : "",
                 workorder: existingMats && matId == 1 ? "" : workorder,
                 face: ""
               ),
@@ -4675,7 +4861,10 @@ namespace BlackMaple.FMSInsight.Tests
               PartName = "part1",
               Cycles = 10,
               Processes = ImmutableList.Create(
-                new ProcessInfo() { Paths = ImmutableList.Create(EmptyPath with { Casting = "thecasting" }) }
+                new ProcessInfo()
+                {
+                  Paths = ImmutableList.Create(EmptyPath with { Casting = "thecasting" }),
+                }
               ),
               RouteStartUTC = DateTime.MinValue,
               RouteEndUTC = DateTime.MinValue,
@@ -5028,7 +5217,19 @@ namespace BlackMaple.FMSInsight.Tests
 
       var expectedInvalidateMsg = new LogEntry(
         cntr: 0,
-        mat: [logMatProc0 with { Process = 1, Path = null }, logMatProc0 with { Process = 2, Path = null }],
+        mat:
+        [
+          logMatProc0 with
+          {
+            Process = 1,
+            Path = null,
+          },
+          logMatProc0 with
+          {
+            Process = 2,
+            Path = null,
+          },
+        ],
         pal: 0,
         ty: LogType.InvalidateCycle,
         locName: "InvalidateCycle",
@@ -5223,7 +5424,8 @@ namespace BlackMaple.FMSInsight.Tests
           }
         );
 
-      db.GetLogForMaterial(matProc1.MaterialID).EventsShouldBe(noChangingLog.Concat(logToInvalidate));
+      db.GetLogForMaterial(matProc1.MaterialID)
+        .EventsShouldBe(noChangingLog.Concat(logToInvalidate));
 
       // now invalidate
       var expectedInvalidate = new LogEntry()
@@ -5295,10 +5497,9 @@ namespace BlackMaple.FMSInsight.Tests
                 e with
                 {
                   ActiveOperationTime = TimeSpan.Zero,
-                  ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
-                    "PalletCycleInvalidated",
-                    "1"
-                  ),
+                  ProgramDetails = (
+                    e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty
+                  ).Add("PalletCycleInvalidated", "1"),
                 }
               )
             )
@@ -5336,7 +5537,12 @@ namespace BlackMaple.FMSInsight.Tests
         Face = 0,
       };
 
-      var serial = db.RecordSerialForMaterialID(matProc0.MaterialID, proc: 0, serial: "ser111", timeUTC: now);
+      var serial = db.RecordSerialForMaterialID(
+        matProc0.MaterialID,
+        proc: 0,
+        serial: "ser111",
+        timeUTC: now
+      );
 
       // just added to queue, nothing else yet
 
@@ -5560,7 +5766,8 @@ namespace BlackMaple.FMSInsight.Tests
       db.LookupRebooking(booking1).ShouldBeEquivalentTo(expectedR);
       db.LookupRebooking("notfound").ShouldBeNull();
       db.LoadUnscheduledRebookings().ShouldBeEquivalentTo(ImmutableList.Create(expectedR));
-      db.LoadMostRecentSchedule().UnscheduledRebookings.ShouldBeEquivalentTo(ImmutableList.Create(expectedR));
+      db.LoadMostRecentSchedule()
+        .UnscheduledRebookings.ShouldBeEquivalentTo(ImmutableList.Create(expectedR));
 
       // record another one, not from mat
       var booking2 = _fixture.Create<string>();
@@ -5611,7 +5818,8 @@ namespace BlackMaple.FMSInsight.Tests
         )
         .ShouldBeEquivalentTo(expectedLog2);
 
-      db.LoadUnscheduledRebookings().ShouldBeEquivalentTo(ImmutableList.Create(expectedR, expectedR2));
+      db.LoadUnscheduledRebookings()
+        .ShouldBeEquivalentTo(ImmutableList.Create(expectedR, expectedR2));
       db.LoadMostRecentSchedule()
         .UnscheduledRebookings.ShouldBeEquivalentTo(ImmutableList.Create(expectedR, expectedR2));
 
@@ -5926,7 +6134,8 @@ namespace BlackMaple.FMSInsight.Tests
           },
         ]);
 
-      db.GetMaterialDetails(mat4).Paths.ShouldBeEquivalentTo(ImmutableDictionary<int, int>.Empty.Add(1, 7));
+      db.GetMaterialDetails(mat4)
+        .Paths.ShouldBeEquivalentTo(ImmutableDictionary<int, int>.Empty.Add(1, 7));
 
       // The sends to external queues happen on a new thread so need to wait
       numWaits = 0;
@@ -5952,7 +6161,12 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     #region Helpers
-    private LogEntry RecordSerialExpectedEntry(LogMaterial mat, long cntr, string serial, DateTime timeUTC)
+    private LogEntry RecordSerialExpectedEntry(
+      LogMaterial mat,
+      long cntr,
+      string serial,
+      DateTime timeUTC
+    )
     {
       return new LogEntry(
         cntr: cntr,
@@ -6013,7 +6227,10 @@ namespace BlackMaple.FMSInsight.Tests
       );
       if (!string.IsNullOrEmpty(operName))
       {
-        e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", operName) };
+        e = e with
+        {
+          ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", operName),
+        };
       }
       return e;
     }
@@ -6079,7 +6296,10 @@ namespace BlackMaple.FMSInsight.Tests
       );
       if (!string.IsNullOrEmpty(operName))
       {
-        e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", operName) };
+        e = e with
+        {
+          ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", operName),
+        };
       }
       return e;
     }
@@ -6117,13 +6337,21 @@ namespace BlackMaple.FMSInsight.Tests
       return copy =>
         copy with
         {
-          Material = copy.Material.Select(m => m.MaterialID == matID ? transformMat(m) : m).ToImmutableList(),
+          Material = copy
+            .Material.Select(m => m.MaterialID == matID ? transformMat(m) : m)
+            .ToImmutableList(),
         };
     }
 
-    public static Func<LogEntry, LogEntry> TransformAllMat(Func<LogMaterial, LogMaterial> transformMat)
+    public static Func<LogEntry, LogEntry> TransformAllMat(
+      Func<LogMaterial, LogMaterial> transformMat
+    )
     {
-      return copy => copy with { Material = copy.Material.Select(m => transformMat(m)).ToImmutableList() };
+      return copy =>
+        copy with
+        {
+          Material = copy.Material.Select(m => transformMat(m)).ToImmutableList(),
+        };
     }
 
     private static Func<LogEntry, LogEntry> RemoveActiveTime()
@@ -6672,10 +6900,14 @@ namespace BlackMaple.FMSInsight.Tests
       // Should have created basket cycle start and load events
       loadLogs.Count().ShouldBeGreaterThan(0);
       loadLogs.Any(e => e.LogType == LogType.BasketCycle && e.StartOfCycle).ShouldBeTrue();
-      loadLogs.Any(e => e.LogType == LogType.BasketLoadUnload && e.Program == "LOAD").ShouldBeTrue();
+      loadLogs
+        .Any(e => e.LogType == LogType.BasketLoadUnload && e.Program == "LOAD")
+        .ShouldBeTrue();
 
       // Verify that basket events have path = null (not recorded for baskets)
-      var basketLoadEvent = loadLogs.First(e => e.LogType == LogType.BasketLoadUnload && e.Program == "LOAD");
+      var basketLoadEvent = loadLogs.First(e =>
+        e.LogType == LogType.BasketLoadUnload && e.Program == "LOAD"
+      );
       basketLoadEvent.Material[0].Path.ShouldBeNull();
 
       // Material should not be in queue now
@@ -6705,7 +6937,9 @@ namespace BlackMaple.FMSInsight.Tests
       // Should have created basket cycle end and unload events
       unloadLogs.Count().ShouldBeGreaterThan(0);
       unloadLogs.Any(e => e.LogType == LogType.BasketCycle && !e.StartOfCycle).ShouldBeTrue();
-      unloadLogs.Any(e => e.LogType == LogType.BasketLoadUnload && e.Program == "UNLOAD").ShouldBeTrue();
+      unloadLogs
+        .Any(e => e.LogType == LogType.BasketLoadUnload && e.Program == "UNLOAD")
+        .ShouldBeTrue();
 
       // Verify that basket events have path = null (not recorded for baskets)
       var basketUnloadEvent = unloadLogs.First(e =>
@@ -6815,10 +7049,13 @@ namespace BlackMaple.FMSInsight.Tests
       logs.Count().ShouldBeGreaterThan(0);
 
       // Should have basket cycle end for basket 5 (mat3 unloaded)
-      logs.Count(e => e.LogType == LogType.BasketCycle && e.Pallet == 5 && !e.StartOfCycle).ShouldBe(1);
+      logs.Count(e => e.LogType == LogType.BasketCycle && e.Pallet == 5 && !e.StartOfCycle)
+        .ShouldBe(1);
 
       // Should have unload event for basket 5
-      logs.Count(e => e.LogType == LogType.BasketLoadUnload && e.Pallet == 5 && e.Program == "UNLOAD")
+      logs.Count(e =>
+          e.LogType == LogType.BasketLoadUnload && e.Pallet == 5 && e.Program == "UNLOAD"
+        )
         .ShouldBe(1);
 
       // Should have basket cycle start for basket 5 (mat1, mat2 loaded; mat3 previously loaded)
@@ -6895,7 +7132,10 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).ShouldBe(2);
 
       // Get log before invalidation
-      var logBeforeInvalidate = _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false);
+      var logBeforeInvalidate = _jobLog.GetLogForMaterial(
+        mat1.MaterialID,
+        includeInvalidatedCycles: false
+      );
       var basketEventsBeforeInvalidateCount = logBeforeInvalidate.Count(e =>
         e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle
       );
@@ -6910,14 +7150,20 @@ namespace BlackMaple.FMSInsight.Tests
       invalidateResults.ShouldNotBeNull();
 
       // After invalidation, basket events should be excluded from queries that don't include invalidated cycles
-      var logAfterInvalidate = _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false);
+      var logAfterInvalidate = _jobLog.GetLogForMaterial(
+        mat1.MaterialID,
+        includeInvalidatedCycles: false
+      );
       var basketEventsAfterInvalidate = logAfterInvalidate.Count(e =>
         e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle
       );
       basketEventsAfterInvalidate.ShouldBe(0);
 
       // But should be included when we explicitly ask for invalidated cycles
-      var logWithInvalidated = _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: true);
+      var logWithInvalidated = _jobLog.GetLogForMaterial(
+        mat1.MaterialID,
+        includeInvalidatedCycles: true
+      );
       var invalidatedBasketEvents = logWithInvalidated.Count(e =>
         (e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle)
         && e.ProgramDetails.ContainsKey("PalletCycleInvalidated")
@@ -6933,7 +7179,9 @@ namespace BlackMaple.FMSInsight.Tests
       }
 
       // Should have an InvalidateCycle event
-      var invalidateEvt = logWithInvalidated.FirstOrDefault(e => e.LogType == LogType.InvalidateCycle);
+      var invalidateEvt = logWithInvalidated.FirstOrDefault(e =>
+        e.LogType == LogType.InvalidateCycle
+      );
       invalidateEvt.ShouldNotBeNull();
     }
 
@@ -7102,7 +7350,11 @@ namespace BlackMaple.FMSInsight.Tests
       // Now try to create a basket cycle END by calling RecordEmptyBasket
       // This internally calls RecordBasketCycleEnd, which should NOT emit an end
       // because the START is invalidated
-      var emptyLogs = _jobLog.RecordEmptyBasket(basketId: 55, timeUTC: start.AddMinutes(10), basketEnd: true);
+      var emptyLogs = _jobLog.RecordEmptyBasket(
+        basketId: 55,
+        timeUTC: start.AddMinutes(10),
+        basketEnd: true
+      );
 
       // Should not have created a basket cycle END
       emptyLogs.Any(e => e.LogType == LogType.BasketCycle && !e.StartOfCycle).ShouldBeFalse();

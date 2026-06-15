@@ -39,7 +39,10 @@ namespace MazakMachineInterface
 {
   public static class MazakServices
   {
-    public static IServiceCollection AddMazakBackend(this IServiceCollection s, MazakConfig mazakCfg)
+    public static IServiceCollection AddMazakBackend(
+      this IServiceCollection s,
+      MazakConfig mazakCfg
+    )
     {
       Serilog.Log.Information("Using Mazak Backend with config {@config}", mazakCfg);
       if (mazakCfg.DBType == MazakDbType.MazakVersionE)

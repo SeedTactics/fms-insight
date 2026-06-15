@@ -345,9 +345,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-24T15:44:22.2583347Z",
       "EndUTC": "2024-09-24T15:49:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -355,9 +353,7 @@
       "StationNum": 1,
       "StartUTC": "2024-09-24T15:45:42.2583347Z",
       "EndUTC": "2024-09-24T15:50:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -365,9 +361,7 @@
       "StationNum": 1,
       "StartUTC": "2024-09-24T16:26:22.2583347Z",
       "EndUTC": "2024-09-24T16:31:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -375,9 +369,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-24T16:27:42.2583347Z",
       "EndUTC": "2024-09-24T16:32:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -385,9 +377,7 @@
       "StationNum": 1,
       "StartUTC": "2024-09-24T16:36:42.2583347Z",
       "EndUTC": "2024-09-24T16:46:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -395,9 +385,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T16:23:52.2583347Z",
       "EndUTC": "2024-09-24T16:46:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -405,9 +393,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T16:25:12.2583347Z",
       "EndUTC": "2024-09-24T16:48:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -415,9 +401,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T16:34:12.2583347Z",
       "EndUTC": "2024-09-24T16:57:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -425,9 +409,7 @@
       "StationNum": 101,
       "StartUTC": "2024-09-24T16:48:12.2583347Z",
       "EndUTC": "2024-09-24T17:08:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -435,9 +417,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T16:48:22.2583347Z",
       "EndUTC": "2024-09-24T17:11:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -445,9 +425,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-24T16:35:22.2583347Z",
       "EndUTC": "2024-09-24T16:40:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -466,9 +444,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T17:14:52.2583347Z",
       "EndUTC": "2024-09-24T17:37:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -476,9 +452,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T17:38:52.2583347Z",
       "EndUTC": "2024-09-24T18:00:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -497,9 +471,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T18:00:52.2583347Z",
       "EndUTC": "2024-09-24T18:23:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -507,9 +479,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T18:05:32.2583347Z",
       "EndUTC": "2024-09-24T18:27:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -528,9 +498,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T18:27:32.2583347Z",
       "EndUTC": "2024-09-24T18:50:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -538,9 +506,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T18:29:32.2583347Z",
       "EndUTC": "2024-09-24T18:51:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -559,9 +525,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T18:51:32.2583347Z",
       "EndUTC": "2024-09-24T19:14:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -569,9 +533,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T18:56:12.2583347Z",
       "EndUTC": "2024-09-24T19:18:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -590,9 +552,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T19:18:12.2583347Z",
       "EndUTC": "2024-09-24T19:41:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -611,9 +571,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T19:25:12.2583347Z",
       "EndUTC": "2024-09-24T19:47:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -643,9 +601,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T19:47:52.2583347Z",
       "EndUTC": "2024-09-24T20:09:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -653,9 +609,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T19:47:12.2583347Z",
       "EndUTC": "2024-09-24T20:10:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -663,9 +617,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T19:51:52.2583347Z",
       "EndUTC": "2024-09-24T20:13:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -673,9 +625,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T20:09:52.2583347Z",
       "EndUTC": "2024-09-24T20:32:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -683,9 +633,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T20:13:52.2583347Z",
       "EndUTC": "2024-09-24T20:36:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -704,9 +652,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T20:33:02.2583347Z",
       "EndUTC": "2024-09-24T20:55:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -725,9 +671,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T20:42:32.2583347Z",
       "EndUTC": "2024-09-24T21:04:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -746,9 +690,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T20:56:42.2583347Z",
       "EndUTC": "2024-09-24T21:19:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -756,9 +698,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T21:05:12.2583347Z",
       "EndUTC": "2024-09-24T21:27:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -766,9 +706,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T21:04:32.2583347Z",
       "EndUTC": "2024-09-24T21:27:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -787,9 +725,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T21:27:42.2583347Z",
       "EndUTC": "2024-09-24T21:49:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -797,9 +733,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T21:27:12.2583347Z",
       "EndUTC": "2024-09-24T21:50:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -818,9 +752,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T21:45:32.2583347Z",
       "EndUTC": "2024-09-24T22:05:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -828,9 +760,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T21:49:42.2583347Z",
       "EndUTC": "2024-09-24T22:12:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -849,9 +779,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T22:02:12.2583347Z",
       "EndUTC": "2024-09-24T22:24:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -859,9 +787,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T22:05:32.2583347Z",
       "EndUTC": "2024-09-24T22:25:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -880,9 +806,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T22:24:52.2583347Z",
       "EndUTC": "2024-09-24T22:46:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -890,9 +814,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-24T22:24:12.2583347Z",
       "EndUTC": "2024-09-24T22:47:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -900,9 +822,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T22:41:12.2583347Z",
       "EndUTC": "2024-09-24T23:03:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -910,9 +830,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T22:46:52.2583347Z",
       "EndUTC": "2024-09-24T23:09:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -931,9 +849,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T23:03:12.2583347Z",
       "EndUTC": "2024-09-24T23:26:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -952,9 +868,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T23:20:32.2583347Z",
       "EndUTC": "2024-09-24T23:42:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -962,9 +876,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T23:36:52.2583347Z",
       "EndUTC": "2024-09-24T23:58:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -972,9 +884,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-24T23:42:32.2583347Z",
       "EndUTC": "2024-09-25T00:05:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -993,9 +903,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-24T23:58:52.2583347Z",
       "EndUTC": "2024-09-25T00:21:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1014,9 +922,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T00:16:12.2583347Z",
       "EndUTC": "2024-09-25T00:38:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1024,9 +930,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T00:32:32.2583347Z",
       "EndUTC": "2024-09-25T00:54:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1034,9 +938,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T00:38:12.2583347Z",
       "EndUTC": "2024-09-25T01:01:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1055,9 +957,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T00:54:32.2583347Z",
       "EndUTC": "2024-09-25T01:17:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1087,9 +987,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T01:11:52.2583347Z",
       "EndUTC": "2024-09-25T01:33:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1108,9 +1006,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T01:28:12.2583347Z",
       "EndUTC": "2024-09-25T01:50:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1118,9 +1014,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T01:34:32.2583347Z",
       "EndUTC": "2024-09-25T01:56:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1128,9 +1022,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T01:33:52.2583347Z",
       "EndUTC": "2024-09-25T01:56:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1138,9 +1030,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T01:57:02.2583347Z",
       "EndUTC": "2024-09-25T02:19:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1148,9 +1038,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T01:56:32.2583347Z",
       "EndUTC": "2024-09-25T02:19:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1169,9 +1057,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T02:19:02.2583347Z",
       "EndUTC": "2024-09-25T02:42:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1179,9 +1065,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T02:19:42.2583347Z",
       "EndUTC": "2024-09-25T02:42:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1211,9 +1095,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T02:30:12.2583347Z",
       "EndUTC": "2024-09-25T02:52:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1221,9 +1103,7 @@
       "StationNum": 101,
       "StartUTC": "2024-09-25T02:45:02.2583347Z",
       "EndUTC": "2024-09-25T03:05:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1242,9 +1122,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T02:52:52.2583347Z",
       "EndUTC": "2024-09-25T03:14:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1252,9 +1130,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T02:54:12.2583347Z",
       "EndUTC": "2024-09-25T03:17:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1262,9 +1138,7 @@
       "StationNum": 101,
       "StartUTC": "2024-09-25T03:05:02.2583347Z",
       "EndUTC": "2024-09-25T03:25:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1272,9 +1146,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T03:07:42.2583347Z",
       "EndUTC": "2024-09-25T03:29:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1282,9 +1154,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T03:14:52.2583347Z",
       "EndUTC": "2024-09-25T03:37:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1303,9 +1173,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T03:31:22.2583347Z",
       "EndUTC": "2024-09-25T03:54:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1335,9 +1203,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T03:49:52.2583347Z",
       "EndUTC": "2024-09-25T04:11:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1345,9 +1211,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T04:03:22.2583347Z",
       "EndUTC": "2024-09-25T04:25:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1355,9 +1219,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T04:12:32.2583347Z",
       "EndUTC": "2024-09-25T04:34:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1365,9 +1227,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T04:11:52.2583347Z",
       "EndUTC": "2024-09-25T04:34:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1375,9 +1235,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T04:34:32.2583347Z",
       "EndUTC": "2024-09-25T04:57:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1407,9 +1265,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T04:57:42.2583347Z",
       "EndUTC": "2024-09-25T05:20:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1417,9 +1273,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T04:59:02.2583347Z",
       "EndUTC": "2024-09-25T05:21:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1438,9 +1292,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T05:08:12.2583347Z",
       "EndUTC": "2024-09-25T05:30:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1448,9 +1300,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T05:21:02.2583347Z",
       "EndUTC": "2024-09-25T05:44:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1458,9 +1308,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T05:30:52.2583347Z",
       "EndUTC": "2024-09-25T05:52:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1479,9 +1327,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T05:44:12.2583347Z",
       "EndUTC": "2024-09-25T06:07:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1489,9 +1335,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T05:52:52.2583347Z",
       "EndUTC": "2024-09-25T06:15:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1510,9 +1354,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T05:54:42.2583347Z",
       "EndUTC": "2024-09-25T06:16:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1531,9 +1373,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T06:17:22.2583347Z",
       "EndUTC": "2024-09-25T06:39:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1541,9 +1381,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T06:16:42.2583347Z",
       "EndUTC": "2024-09-25T06:39:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1551,9 +1389,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T06:27:52.2583347Z",
       "EndUTC": "2024-09-25T06:49:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1561,9 +1397,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T06:39:22.2583347Z",
       "EndUTC": "2024-09-25T07:02:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1582,9 +1416,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T06:49:52.2583347Z",
       "EndUTC": "2024-09-25T07:12:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1603,9 +1435,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T07:13:02.2583347Z",
       "EndUTC": "2024-09-25T07:35:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1624,9 +1454,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T07:23:32.2583347Z",
       "EndUTC": "2024-09-25T07:45:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1634,9 +1462,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T07:35:02.2583347Z",
       "EndUTC": "2024-09-25T07:58:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1666,9 +1492,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T07:46:12.2583347Z",
       "EndUTC": "2024-09-25T08:08:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1676,9 +1500,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T07:45:32.2583347Z",
       "EndUTC": "2024-09-25T08:08:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1686,9 +1508,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T08:08:42.2583347Z",
       "EndUTC": "2024-09-25T08:30:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1696,9 +1516,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T08:08:12.2583347Z",
       "EndUTC": "2024-09-25T08:31:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1706,9 +1524,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T08:31:22.2583347Z",
       "EndUTC": "2024-09-25T08:53:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1716,9 +1532,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T08:30:42.2583347Z",
       "EndUTC": "2024-09-25T08:53:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1748,9 +1562,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T08:53:22.2583347Z",
       "EndUTC": "2024-09-25T09:16:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1758,9 +1570,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T09:05:42.2583347Z",
       "EndUTC": "2024-09-25T09:27:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1779,9 +1589,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T09:07:02.2583347Z",
       "EndUTC": "2024-09-25T09:29:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1800,9 +1608,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T09:29:02.2583347Z",
       "EndUTC": "2024-09-25T09:52:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1810,9 +1616,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T09:29:22.2583347Z",
       "EndUTC": "2024-09-25T09:52:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1820,9 +1624,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T09:30:42.2583347Z",
       "EndUTC": "2024-09-25T09:52:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1830,9 +1632,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T09:52:32.2583347Z",
       "EndUTC": "2024-09-25T10:14:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1840,9 +1640,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T09:52:42.2583347Z",
       "EndUTC": "2024-09-25T10:15:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1872,9 +1670,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T10:14:32.2583347Z",
       "EndUTC": "2024-09-25T10:37:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1893,9 +1689,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T10:26:02.2583347Z",
       "EndUTC": "2024-09-25T10:46:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1903,9 +1697,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T10:28:42.2583347Z",
       "EndUTC": "2024-09-25T10:50:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1924,9 +1716,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T10:46:02.2583347Z",
       "EndUTC": "2024-09-25T11:06:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1934,9 +1724,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T10:46:22.2583347Z",
       "EndUTC": "2024-09-25T11:08:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1944,9 +1732,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T10:50:42.2583347Z",
       "EndUTC": "2024-09-25T11:13:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1976,9 +1762,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T11:06:12.2583347Z",
       "EndUTC": "2024-09-25T11:28:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1986,9 +1770,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-25T11:24:12.2583347Z",
       "EndUTC": "2024-09-25T11:29:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -1996,9 +1778,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-25T11:32:22.2583347Z",
       "EndUTC": "2024-09-25T11:37:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2017,9 +1797,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T11:21:42.2583347Z",
       "EndUTC": "2024-09-25T11:43:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2027,9 +1805,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T11:23:02.2583347Z",
       "EndUTC": "2024-09-25T11:45:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2037,9 +1813,7 @@
       "StationNum": 1,
       "StartUTC": "2024-09-25T11:43:12.2583347Z",
       "EndUTC": "2024-09-25T11:53:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2047,9 +1821,7 @@
       "StationNum": 1,
       "StartUTC": "2024-09-25T11:55:52.2583347Z",
       "EndUTC": "2024-09-25T12:00:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2057,9 +1829,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T11:42:02.2583347Z",
       "EndUTC": "2024-09-25T12:04:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2067,9 +1837,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T11:43:42.2583347Z",
       "EndUTC": "2024-09-25T12:06:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2077,9 +1845,7 @@
       "StationNum": 1,
       "StartUTC": "2024-09-25T12:03:32.2583347Z",
       "EndUTC": "2024-09-25T12:13:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2087,9 +1853,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T11:54:42.2583347Z",
       "EndUTC": "2024-09-25T12:14:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2108,9 +1872,7 @@
       "StationNum": 101,
       "StartUTC": "2024-09-25T12:15:02.2583347Z",
       "EndUTC": "2024-09-25T12:35:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2140,9 +1902,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T12:31:32.2583347Z",
       "EndUTC": "2024-09-25T12:51:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2150,9 +1910,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-25T12:50:22.2583347Z",
       "EndUTC": "2024-09-25T12:55:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-0PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2160,9 +1918,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-25T12:58:02.2583347Z",
       "EndUTC": "2024-09-25T13:08:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2170,9 +1926,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T12:49:12.2583347Z",
       "EndUTC": "2024-09-25T13:11:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2180,9 +1934,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T12:51:32.2583347Z",
       "EndUTC": "2024-09-25T13:11:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2190,9 +1942,7 @@
       "StationNum": 101,
       "StartUTC": "2024-09-25T12:52:42.2583347Z",
       "EndUTC": "2024-09-25T13:12:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2200,9 +1950,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-25T13:12:42.2583347Z",
       "EndUTC": "2024-09-25T13:17:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "aaa-2PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2221,9 +1969,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T13:09:32.2583347Z",
       "EndUTC": "2024-09-25T13:29:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2231,9 +1977,7 @@
       "StationNum": 101,
       "StartUTC": "2024-09-25T13:12:42.2583347Z",
       "EndUTC": "2024-09-25T13:32:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2241,9 +1985,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T13:30:22.2583347Z",
       "EndUTC": "2024-09-25T13:50:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2273,9 +2015,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T13:50:22.2583347Z",
       "EndUTC": "2024-09-25T14:10:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 1, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2283,9 +2023,7 @@
       "StationNum": 101,
       "StartUTC": "2024-09-25T13:58:02.2583347Z",
       "EndUTC": "2024-09-25T14:18:02.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2293,9 +2031,7 @@
       "StationNum": 102,
       "StartUTC": "2024-09-25T14:01:52.2583347Z",
       "EndUTC": "2024-09-25T14:21:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2325,9 +2061,7 @@
       "StationNum": 1,
       "StartUTC": "2024-09-25T14:41:52.2583347Z",
       "EndUTC": "2024-09-25T14:56:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2335,9 +2069,7 @@
       "StationNum": 103,
       "StartUTC": "2024-09-25T14:40:42.2583347Z",
       "EndUTC": "2024-09-25T15:00:42.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2345,9 +2077,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-25T14:54:32.2583347Z",
       "EndUTC": "2024-09-25T15:09:32.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2355,9 +2085,7 @@
       "StationNum": 104,
       "StartUTC": "2024-09-25T14:53:22.2583347Z",
       "EndUTC": "2024-09-25T15:13:22.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2365,9 +2093,7 @@
       "StationNum": 1,
       "StartUTC": "2024-09-25T15:02:12.2583347Z",
       "EndUTC": "2024-09-25T15:17:12.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     },
     {
       "ScheduleId": "PkBU1Zd0PZx10C~7",
@@ -2375,9 +2101,7 @@
       "StationNum": 2,
       "StartUTC": "2024-09-25T15:14:52.2583347Z",
       "EndUTC": "2024-09-25T15:29:52.2583347Z",
-      "Parts": [
-        { "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }
-      ]
+      "Parts": [{ "JobUnique": "bbb-3PkBU1Zd0PZx10C~7", "Process": 2, "Path": 1 }]
     }
   ],
   "SimDayUsage": [

@@ -135,7 +135,9 @@ type NodeRectsGroupedByKind = {
   readonly material: ReadonlyArray<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>;
 };
 
-function groupMatByKind(allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>): NodeRectsGroupedByKind {
+function groupMatByKind(
+  allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>,
+): NodeRectsGroupedByKind {
   let freeMaterial: MoveMaterialElemRect | undefined;
   let completedMaterial: MoveMaterialElemRect | undefined;
   const faces = new Map<number, MoveMaterialElemRect>();
@@ -206,7 +208,8 @@ export function computeArrows(
             fromX: rect.left,
             fromY: rect.top + rect.height / 2,
             toX: dest !== undefined ? dest.right - 5 : container.left + 2,
-            toY: dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
+            toY:
+              dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
             curveDirection: 1,
           });
         } else if (
@@ -217,7 +220,9 @@ export function computeArrows(
             fromX: rect.right,
             fromY: rect.top + rect.height / 2,
             toY: rect.top + rect.height / 2,
-            toX: byKind.completedMaterial ? byKind.completedMaterial.left + 2 : container.right - 10,
+            toX: byKind.completedMaterial
+              ? byKind.completedMaterial.left + 2
+              : container.right - 10,
             curveDirection: 1,
           });
         } else {
@@ -236,7 +241,8 @@ export function computeArrows(
             fromX: rect.left,
             fromY: rect.top + rect.height / 2,
             toX: dest !== undefined ? dest.right - 5 : container.left + 2,
-            toY: dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
+            toY:
+              dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
             curveDirection: 1,
           });
         }
@@ -265,7 +271,8 @@ export function computeArrows(
             fromX: rect.right,
             fromY: rect.top + rect.height / 2,
             toX: dest !== undefined ? dest.left + 20 : container.right - 10,
-            toY: dest !== undefined ? dest.top + 50 + 20 * lastSlotUsed : rect.top + rect.height / 2,
+            toY:
+              dest !== undefined ? dest.top + 50 + 20 * lastSlotUsed : rect.top + rect.height / 2,
             curveDirection: -1,
           });
         } else if (mat.action.loadOntoFace) {

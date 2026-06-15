@@ -79,8 +79,11 @@ namespace BlackMaple.MachineFramework.Controllers
 
   [ApiController]
   [Route("api/v1/log")]
-  public class LogController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue, FMSSettings fmsSt)
-    : ControllerBase
+  public class LogController(
+    RepositoryConfig repo,
+    IJobAndQueueControl jobAndQueue,
+    FMSSettings fmsSt
+  ) : ControllerBase
   {
     [HttpGet("events/all")]
     public IEnumerable<LogEntry> Get(
@@ -218,7 +221,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("material-details/{materialID}/serial")]
-    public LogEntry SetSerial(long materialID, [FromBody] string serial, [FromQuery] int process = 1)
+    public LogEntry SetSerial(
+      long materialID,
+      [FromBody] string serial,
+      [FromQuery] int process = 1
+    )
     {
       LogEntry log;
       using (var db = repo.OpenConnection())
@@ -230,7 +237,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("material-details/{materialID}/workorder")]
-    public LogEntry SetWorkorder(long materialID, [FromBody] string workorder, [FromQuery] int process = 1)
+    public LogEntry SetWorkorder(
+      long materialID,
+      [FromBody] string workorder,
+      [FromQuery] int process = 1
+    )
     {
       LogEntry log;
       using (var db = repo.OpenConnection())
@@ -363,7 +374,11 @@ namespace BlackMaple.MachineFramework.Controllers
       LogEntry log;
       using (var db = repo.OpenConnection())
       {
-        log = db.RecordWorkorderComment(workorder: workorder, comment: comment, operName: operatorName);
+        log = db.RecordWorkorderComment(
+          workorder: workorder,
+          comment: comment,
+          operName: operatorName
+        );
       }
       jobAndQueue.RecalculateCellState();
       return log;

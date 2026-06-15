@@ -117,7 +117,10 @@ export type Last30ChartRangeAtom = WritableAtom<
 >;
 
 export function chartRangeAtom(chartName: string): Last30ChartRangeAtom {
-  const startA = atomWithStorage<Last30ChartStart | Date>(`charts_${chartName}_start`, "StartOfWeek");
+  const startA = atomWithStorage<Last30ChartStart | Date>(
+    `charts_${chartName}_start`,
+    "StartOfWeek",
+  );
 
   const endA = atomWithStorage<Last30ChartEnd | Date>(`charts_${chartName}_end`, "Now");
 

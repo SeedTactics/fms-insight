@@ -110,7 +110,10 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public static ImmutableList<ToolUse> Diff(IEnumerable<ToolSnapshot> start, IEnumerable<ToolSnapshot> end)
+    public static ImmutableList<ToolUse> Diff(
+      IEnumerable<ToolSnapshot> start,
+      IEnumerable<ToolSnapshot> end
+    )
     {
       if (start == null)
         start = Enumerable.Empty<ToolSnapshot>();
@@ -118,14 +121,22 @@ namespace BlackMaple.MachineFramework
         end = Enumerable.Empty<ToolSnapshot>();
 
       var startPockets = start.ToDictionary(t => (t.Pocket, t.ToolName));
-      var startSerials = start.Where(t => !string.IsNullOrEmpty(t.Serial)).ToDictionary(t => t.Serial!);
+      var startSerials = start
+        .Where(t => !string.IsNullOrEmpty(t.Serial))
+        .ToDictionary(t => t.Serial!);
       var endPockets = end.ToDictionary(t => (t.Pocket, t.ToolName));
 
       var tools = ImmutableList.CreateBuilder<ToolUse>();
 
       foreach (var endTool in end)
       {
-        FindMatchingTool(endTool, startPockets, startSerials, out var startPocket, out var startSerial);
+        FindMatchingTool(
+          endTool,
+          startPockets,
+          startSerials,
+          out var startPocket,
+          out var startSerial
+        );
 
         // calculate usage
         TimeSpan? usageTime = endTool.CurrentUse;
@@ -151,7 +162,10 @@ namespace BlackMaple.MachineFramework
             usageTime =
               (usageTime ?? TimeSpan.Zero)
               + TimeSpan.FromTicks(
-                Math.Max(0, startPocket.TotalLifeTime.Value.Ticks - startPocket.CurrentUse.Value.Ticks)
+                Math.Max(
+                  0,
+                  startPocket.TotalLifeTime.Value.Ticks - startPocket.CurrentUse.Value.Ticks
+                )
               );
           }
           if (startPocket.TotalLifeCount.HasValue && startPocket.CurrentUseCount.HasValue)
@@ -209,7 +223,10 @@ namespace BlackMaple.MachineFramework
             ToolUseDuringCycle =
               startTool.TotalLifeTime.HasValue && startTool.CurrentUse.HasValue
                 ? TimeSpan.FromTicks(
-                  Math.Max(0, startTool.TotalLifeTime.Value.Ticks - startTool.CurrentUse.Value.Ticks)
+                  Math.Max(
+                    0,
+                    startTool.TotalLifeTime.Value.Ticks - startTool.CurrentUse.Value.Ticks
+                  )
                 )
                 : null,
             TotalToolUseAtEndOfCycle = startTool.CurrentUse.HasValue ? TimeSpan.Zero : null,

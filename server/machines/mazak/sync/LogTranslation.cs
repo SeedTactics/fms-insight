@@ -322,7 +322,11 @@ namespace MazakMachineInterface
         case LogCode.MachineCycleStart:
         {
           int mcNum = e.StationNumber;
-          if (mazakConfig.MachineNumbers != null && mcNum > 0 && mcNum <= mazakConfig.MachineNumbers.Count)
+          if (
+            mazakConfig.MachineNumbers != null
+            && mcNum > 0
+            && mcNum <= mazakConfig.MachineNumbers.Count
+          )
           {
             mcNum = mazakConfig.MachineNumbers[mcNum - 1];
           }
@@ -355,7 +359,11 @@ namespace MazakMachineInterface
         case LogCode.MachineCycleEnd:
         {
           int mcNum = e.StationNumber;
-          if (mazakConfig.MachineNumbers != null && mcNum > 0 && mcNum <= mazakConfig.MachineNumbers.Count)
+          if (
+            mazakConfig.MachineNumbers != null
+            && mcNum > 0
+            && mcNum <= mazakConfig.MachineNumbers.Count
+          )
           {
             mcNum = mazakConfig.MachineNumbers[mcNum - 1];
           }
@@ -377,7 +385,10 @@ namespace MazakMachineInterface
           }
           else
           {
-            Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", e);
+            Log.Debug(
+              "Calculating elapsed time for {@entry} did not find a previous cycle event",
+              e
+            );
             elapsed = TimeSpan.Zero;
             toolsAtStart = Enumerable.Empty<ToolSnapshot>();
           }
@@ -423,7 +434,11 @@ namespace MazakMachineInterface
         case LogCode.StartRotatePalletIntoMachine:
         {
           int mcNum = e.StationNumber;
-          if (mazakConfig.MachineNumbers != null && mcNum > 0 && mcNum <= mazakConfig.MachineNumbers.Count)
+          if (
+            mazakConfig.MachineNumbers != null
+            && mcNum > 0
+            && mcNum <= mazakConfig.MachineNumbers.Count
+          )
           {
             mcNum = mazakConfig.MachineNumbers[mcNum - 1];
           }
@@ -450,7 +465,8 @@ namespace MazakMachineInterface
           )
           {
             if (
-              LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum)
+              LastEventWasRotaryDropoff(cycle)
+              && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum)
             )
             {
               if (
@@ -473,7 +489,11 @@ namespace MazakMachineInterface
               );
             }
           }
-          else if (e.FromPosition != null && e.FromPosition.StartsWith("S") && e.FromPosition != "STA")
+          else if (
+            e.FromPosition != null
+            && e.FromPosition.StartsWith("S")
+            && e.FromPosition != "STA"
+          )
           {
             if (int.TryParse(e.FromPosition.Substring(1), out var stockerNum))
             {
@@ -519,7 +539,11 @@ namespace MazakMachineInterface
               );
             }
           }
-          else if (e.TargetPosition != null && e.TargetPosition.StartsWith("S") && e.TargetPosition != "STA")
+          else if (
+            e.TargetPosition != null
+            && e.TargetPosition.StartsWith("S")
+            && e.TargetPosition != "STA"
+          )
           {
             if (int.TryParse(e.TargetPosition.Substring(1), out var stockerNum))
             {
@@ -689,7 +713,13 @@ namespace MazakMachineInterface
           continue;
 
         int fixQty = e.FixedQuantity;
-        FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc, out int jobProc);
+        FindSchedule(
+          e.FullPartName,
+          e.Process,
+          out string unique,
+          out int numProc,
+          out int jobProc
+        );
 
         Log.Debug(
           "Found job {unique} with number of procs {numProc} and job proc {jobProc}",
@@ -710,7 +740,12 @@ namespace MazakMachineInterface
         {
           var info = job.Processes[jobProc - 1].Paths[0];
           // search input queue for material
-          Log.Debug("Searching queue {queue} for {unique}-{proc} to load", info.InputQueue, unique, jobProc);
+          Log.Debug(
+            "Searching queue {queue} for {unique}-{proc} to load",
+            info.InputQueue,
+            unique,
+            jobProc
+          );
 
           var qs = MazakQueues.QueuedMaterialForLoading(
             job.UniqueStr,
@@ -825,7 +860,13 @@ namespace MazakMachineInterface
             {
               //something went wrong, must create material
               mats.Add(
-                repo.AllocateMaterialIDAndGenerateSerial(unique, e.JobPartName, numProc, e.TimeUTC, out var _)
+                repo.AllocateMaterialIDAndGenerateSerial(
+                  unique,
+                  e.JobPartName,
+                  numProc,
+                  e.TimeUTC,
+                  out var _
+                )
               );
 
               Log.Warning(
@@ -873,7 +914,8 @@ namespace MazakMachineInterface
         foreach (var mat in mats)
         {
           var signalQuarantine = oldEvents.LastOrDefault(e =>
-            e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == mat.Mat.MaterialID)
+            e.LogType == LogType.SignalQuarantine
+            && e.Material.Any(m => m.MaterialID == mat.Mat.MaterialID)
           );
 
           if (signalQuarantine != null)
@@ -980,7 +1022,9 @@ namespace MazakMachineInterface
         // start with everything on the pallet
         List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
 
-        foreach (var st in mazakData.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber))
+        foreach (
+          var st in mazakData.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber)
+        )
         {
           // remove material from matsOnPal that matches this PalletSubStatus
           var sch = mazakData.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
@@ -992,7 +1036,9 @@ namespace MazakMachineInterface
           var unique = scheduleComment.Unique;
           var fmsProc = scheduleComment.JobProcessForMazakProcess(st.PartProcessNumber);
 
-          var matchingMats = matsOnPal.Where(m => m.JobUniqueStr == unique && m.Process == fmsProc).ToList();
+          var matchingMats = matsOnPal
+            .Where(m => m.JobUniqueStr == unique && m.Process == fmsProc)
+            .ToList();
 
           if (matchingMats.Count < st.FixQuantity)
           {
@@ -1050,7 +1096,11 @@ namespace MazakMachineInterface
       return lastWasDropoff;
     }
 
-    private static MWI.LogEntry FindMachineStart(LogEntry e, IList<MWI.LogEntry> oldEvents, int statNum)
+    private static MWI.LogEntry FindMachineStart(
+      LogEntry e,
+      IList<MWI.LogEntry> oldEvents,
+      int statNum
+    )
     {
       return oldEvents.LastOrDefault(old =>
         old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum
@@ -1100,7 +1150,9 @@ namespace MazakMachineInterface
     {
       if (job == null)
         return TimeSpan.Zero;
-      return TimeSpan.FromTicks(job.Processes[jobProc - 1].Paths[0].ExpectedLoadTime.Ticks * fixedQuantity);
+      return TimeSpan.FromTicks(
+        job.Processes[jobProc - 1].Paths[0].ExpectedLoadTime.Ticks * fixedQuantity
+      );
     }
 
     private TimeSpan CalculateActiveUnloadTime(IEnumerable<LogMaterialAndPath> mats)

@@ -94,8 +94,8 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
         }}
       >
         <Typography variant="subtitle1">
-          {outlierTy === "labor" ? "Load/Unload" : "Machine"} cycles from the past 5 days statistically
-          outside expected range
+          {outlierTy === "labor" ? "Load/Unload" : "Machine"} cycles from the past 5 days
+          statistically outside expected range
         </Typography>
         <Box
           sx={{

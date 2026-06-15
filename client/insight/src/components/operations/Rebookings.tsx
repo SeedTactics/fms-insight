@@ -112,7 +112,9 @@ const columns: ReadonlyArray<Col> = [
     getDisplay: (r) => r.bookingId,
     Cell: ({ row }: { row: Row }) =>
       row.canceled ? (
-        <Typography sx={{ textDecoration: "line-through", fontSize: "inherit" }}>{row.bookingId}</Typography>
+        <Typography sx={{ textDecoration: "line-through", fontSize: "inherit" }}>
+          {row.bookingId}
+        </Typography>
       ) : (
         row.bookingId
       ),
@@ -272,7 +274,9 @@ const RebookingDialog = memo(function RebookingDialog({
       <DialogContent>
         <Stack direction="column" spacing={1}>
           {rebooking?.canceled && (
-            <Typography variant="h5">Canceled at {longDateFormat.format(rebooking.canceled)}</Typography>
+            <Typography variant="h5">
+              Canceled at {longDateFormat.format(rebooking.canceled)}
+            </Typography>
           )}
           <Stack direction="row" spacing={1}>
             <span>Part:</span>
@@ -392,7 +396,9 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
                 const filtered = options.filter((o) =>
                   o.toLowerCase().includes(params.inputValue.toLowerCase()),
                 );
-                return filtered.length === 0 && params.inputValue !== "" ? [params.inputValue] : filtered;
+                return filtered.length === 0 && params.inputValue !== ""
+                  ? [params.inputValue]
+                  : filtered;
               }}
             />
             <TextField
@@ -462,7 +468,12 @@ const FilterDialog = memo(function UnschFilterDialog() {
             label="Hide scheduled"
           />
           <FormControlLabel
-            control={<Checkbox checked={hideCanceled} onChange={(e) => setHideCanceled(e.target.checked)} />}
+            control={
+              <Checkbox
+                checked={hideCanceled}
+                onChange={(e) => setHideCanceled(e.target.checked)}
+              />
+            }
             label="Hide canceled"
           />
         </Stack>

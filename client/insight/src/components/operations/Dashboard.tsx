@@ -65,7 +65,9 @@ const CompletedParts = memo(function CompletedParts() {
     .flatMap(([, j]) => j.procsAndPaths)
     .flatMap((p) => p.paths)
     .sumBy(countExpectedAtNow());
-  const planned = LazySeq.ofObject(currentSt.jobs).sumBy(([, j]) => (j.cycles ?? 0) * j.procsAndPaths.length);
+  const planned = LazySeq.ofObject(currentSt.jobs).sumBy(
+    ([, j]) => (j.cycles ?? 0) * j.procsAndPaths.length,
+  );
 
   return (
     <Box sx={{ maxWidth: "60em", ml: "auto", mr: "auto", pt: "1em" }}>
@@ -83,7 +85,11 @@ const CompletedParts = memo(function CompletedParts() {
           </Typography>
         </Box>
         <Box sx={{ gridRow: 1, gridColumn: 2 }}>
-          <LinearProgress variant="determinate" value={(completed / planned) * 100} color="secondary" />
+          <LinearProgress
+            variant="determinate"
+            value={(completed / planned) * 100}
+            color="secondary"
+          />
         </Box>
         <Box sx={{ gridRow: 1, gridColumn: 3 }}>
           <Typography variant="body2">{pctFormat.format(completed / planned)}</Typography>
@@ -94,7 +100,11 @@ const CompletedParts = memo(function CompletedParts() {
           </Typography>
         </Box>
         <Box sx={{ gridRow: 2, gridColumn: 2 }}>
-          <LinearProgress variant="determinate" value={(simulated / planned) * 100} color="secondary" />
+          <LinearProgress
+            variant="determinate"
+            value={(simulated / planned) * 100}
+            color="secondary"
+          />
         </Box>
         <Box sx={{ gridRow: 2, gridColumn: 3 }}>
           <Typography variant="body2">{pctFormat.format(simulated / planned)}</Typography>

@@ -123,7 +123,10 @@ public class ProxyService : System.ServiceProcess.ServiceBase
       _server = new HttpServer($"http://*:{_cfg.Port}/");
 
       _server.AddLoadingHandler("/all-data", _db.LoadAllData);
-      _server.AddPostHandler<string, MazakAllDataAndLogs>("/all-data-and-logs", _db.LoadAllDataAndLogs);
+      _server.AddPostHandler<string, MazakAllDataAndLogs>(
+        "/all-data-and-logs",
+        _db.LoadAllDataAndLogs
+      );
       _server.AddLoadingHandler("/programs", _db.LoadPrograms);
       _server.AddLoadingHandler("/tools", _db.LoadTools);
       _server.AddPostHandler<string, bool>(

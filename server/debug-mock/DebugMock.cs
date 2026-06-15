@@ -62,12 +62,14 @@ namespace DebugMachineWatchApiServer
           {
             continue;
           }
-          if (prop.GetAttribute<System.Runtime.CompilerServices.RequiredMemberAttribute>(false) != null)
+          if (
+            prop.GetAttribute<System.Runtime.CompilerServices.RequiredMemberAttribute>(false)
+            != null
+          )
           {
             string name = prop.Name;
-            var jsonNameAttr = prop.GetAttribute<System.Text.Json.Serialization.JsonPropertyNameAttribute>(
-              false
-            );
+            var jsonNameAttr =
+              prop.GetAttribute<System.Text.Json.Serialization.JsonPropertyNameAttribute>(false);
             if (jsonNameAttr != null)
             {
               name = jsonNameAttr.Name;
@@ -137,7 +139,8 @@ namespace DebugMachineWatchApiServer
           s.AddOpenApiDocument(cfg =>
           {
             cfg.Title = "SeedTactic FMS Insight";
-            cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
+            cfg.Description =
+              "API for access to FMS Insight for flexible manufacturing system control";
             cfg.Version = "1.14";
             cfg.SchemaSettings.SchemaProcessors.Add(new RequiredModifierSchemaProcessor());
             cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
@@ -202,7 +205,8 @@ namespace DebugMachineWatchApiServer
   {
     public RepositoryConfig RepoConfig { get; private set; }
 
-    private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
+    private Dictionary<string, CurrentStatus> Statuses { get; } =
+      new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
     private ImmutableList<ToolInMachine> Tools { get; set; }
 
@@ -278,7 +282,11 @@ namespace DebugMachineWatchApiServer
       );
     }
 
-    public ScannedMaterial ParseBarcode(string barcode, IEnumerable<string> queuesToAddTo, Uri referer)
+    public ScannedMaterial ParseBarcode(
+      string barcode,
+      IEnumerable<string> queuesToAddTo,
+      Uri referer
+    )
     {
       Serilog.Log.Information(
         "Parsing barcode {barcode} {queues}, referer = {referer}",
@@ -301,10 +309,10 @@ namespace DebugMachineWatchApiServer
             PotentialNewMaterial = new()
             {
               Serial = barcode,
-              PossibleCastingsByQueue = ImmutableDictionary<string, ImmutableSortedSet<string>>.Empty.Add(
-                "Queue1",
-                ["part1", "part2"]
-              ),
+              PossibleCastingsByQueue = ImmutableDictionary<
+                string,
+                ImmutableSortedSet<string>
+              >.Empty.Add("Queue1", ["part1", "part2"]),
             },
           };
         }
@@ -371,7 +379,10 @@ namespace DebugMachineWatchApiServer
         {
           CurrentStatus = CurrentStatus with
           {
-            Alarms = ImmutableList.Create("Test alarm " + _curStatusLoadCount.ToString(), "Another alarm"),
+            Alarms = ImmutableList.Create(
+              "Test alarm " + _curStatusLoadCount.ToString(),
+              "Another alarm"
+            ),
           };
         }
       }
@@ -821,7 +832,9 @@ namespace DebugMachineWatchApiServer
 
     private void LoadJobs(string sampleDataPath, TimeSpan offset)
     {
-      var newJobsJson = System.IO.File.ReadAllText(System.IO.Path.Combine(sampleDataPath, "newjobs.json"));
+      var newJobsJson = System.IO.File.ReadAllText(
+        System.IO.Path.Combine(sampleDataPath, "newjobs.json")
+      );
       var allNewJobs = JsonSerializer.Deserialize<List<NewJobs>>(newJobsJson, _jsonSettings);
 
       using var LogDB = RepoConfig.OpenConnection();
@@ -843,7 +856,12 @@ namespace DebugMachineWatchApiServer
             .CurrentUnfilledWorkorders?.Select(w => w with { DueDate = w.DueDate.Add(offset) })
             .ToImmutableList(),
           SimDayUsage = newJobs
-            .SimDayUsage?.Select(su => su with { Day = su.Day.AddDays((int)Math.Round(offset.TotalDays)) })
+            .SimDayUsage?.Select(su =>
+              su with
+              {
+                Day = su.Day.AddDays((int)Math.Round(offset.TotalDays)),
+              }
+            )
             .ToImmutableList(),
         };
 
@@ -908,7 +926,12 @@ namespace DebugMachineWatchApiServer
                   {
                     SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
                     SimulatedProduction = path
-                      .SimulatedProduction.Select(prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) })
+                      .SimulatedProduction.Select(prod =>
+                        prod with
+                        {
+                          TimeUTC = prod.TimeUTC.Add(offset),
+                        }
+                      )
                       .ToImmutableSortedSet(),
                   }
                 )

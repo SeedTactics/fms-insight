@@ -367,7 +367,11 @@ namespace BlackMaple.FMSInsight.Tests
       };
 
       _log.AddJobs(
-        new NewJobs() { ScheduleId = newJob.ScheduleId + "newSch", Jobs = ImmutableList.Create<Job>(newJob) },
+        new NewJobs()
+        {
+          ScheduleId = newJob.ScheduleId + "newSch",
+          Jobs = ImmutableList.Create<Job>(newJob),
+        },
         null,
         addAsCopiedToSystem: true
       );
@@ -489,17 +493,27 @@ namespace BlackMaple.FMSInsight.Tests
                 {
                   UserHold = false,
                   ReasonForUserHold = "reason for user hold",
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/4 12:32 AM GMT").ToUniversalTime(),
+                  HoldUnholdPatternStartUTC = DateTime
+                    .Parse("2010/5/4 12:32 AM GMT")
+                    .ToUniversalTime(),
                   HoldUnholdPatternRepeats = false,
-                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(53)),
+                  HoldUnholdPattern = ImmutableList.Create(
+                    TimeSpan.FromMinutes(5),
+                    TimeSpan.FromMinutes(53)
+                  ),
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
                   UserHold = true,
                   ReasonForUserHold = "abcdef",
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2010/12/2 9:32 PM GMT").ToUniversalTime(),
+                  HoldUnholdPatternStartUTC = DateTime
+                    .Parse("2010/12/2 9:32 PM GMT")
+                    .ToUniversalTime(),
                   HoldUnholdPatternRepeats = true,
-                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(63), TimeSpan.FromMinutes(7)),
+                  HoldUnholdPattern = ImmutableList.Create(
+                    TimeSpan.FromMinutes(63),
+                    TimeSpan.FromMinutes(7)
+                  ),
                 },
               },
               new ProcPathInfo()
@@ -548,15 +562,22 @@ namespace BlackMaple.FMSInsight.Tests
                 {
                   UserHold = true,
                   ReasonForUserHold = "another reason for user hold",
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/12 11:12 PM GMT").ToUniversalTime(),
+                  HoldUnholdPatternStartUTC = DateTime
+                    .Parse("2010/5/12 11:12 PM GMT")
+                    .ToUniversalTime(),
                   HoldUnholdPatternRepeats = true,
-                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(84), TimeSpan.FromMinutes(1)),
+                  HoldUnholdPattern = ImmutableList.Create(
+                    TimeSpan.FromMinutes(84),
+                    TimeSpan.FromMinutes(1)
+                  ),
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
                   UserHold = false,
                   ReasonForUserHold = "agr",
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2010/6/1 8:12 PM GMT").ToUniversalTime(),
+                  HoldUnholdPatternStartUTC = DateTime
+                    .Parse("2010/6/1 8:12 PM GMT")
+                    .ToUniversalTime(),
                   HoldUnholdPatternRepeats = false,
                   HoldUnholdPattern = ImmutableList.Create(
                     TimeSpan.FromMinutes(174),
@@ -630,7 +651,9 @@ namespace BlackMaple.FMSInsight.Tests
                 {
                   UserHold = false,
                   ReasonForUserHold = "oh my reason for user hold",
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2010/9/1 6:30 PM GMT").ToUniversalTime(),
+                  HoldUnholdPatternStartUTC = DateTime
+                    .Parse("2010/9/1 6:30 PM GMT")
+                    .ToUniversalTime(),
                   HoldUnholdPatternRepeats = true,
                   HoldUnholdPattern = ImmutableList.Create(
                     TimeSpan.FromMinutes(532),
@@ -772,7 +795,9 @@ namespace BlackMaple.FMSInsight.Tests
                 {
                   UserHold = true,
                   ReasonForUserHold = "erhagsad",
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2010/11/5 2:30 PM GMT").ToUniversalTime(),
+                  HoldUnholdPatternStartUTC = DateTime
+                    .Parse("2010/11/5 2:30 PM GMT")
+                    .ToUniversalTime(),
                   HoldUnholdPatternRepeats = false,
                   HoldUnholdPattern = ImmutableList.Create(
                     TimeSpan.FromMinutes(32),

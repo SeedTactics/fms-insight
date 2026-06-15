@@ -31,7 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { PartAndStationOperation, StatisticalCycleTime } from "../cell-status/estimated-cycle-times.js";
+import {
+  PartAndStationOperation,
+  StatisticalCycleTime,
+} from "../cell-status/estimated-cycle-times.js";
 import { it, expect } from "vitest";
 import { HashMap } from "@seedtactics/immutable-collections";
 import { currentCycles } from "./current-cycles.js";
@@ -271,7 +274,9 @@ it("calculates current cycles", () => {
     queues: {},
   };
 
-  expect(currentCycles(curSt, HashMap.empty())).toMatchSnapshot("current cycles without jobs or expected");
+  expect(currentCycles(curSt, HashMap.empty())).toMatchSnapshot(
+    "current cycles without jobs or expected",
+  );
 
   const expected = HashMap.from<PartAndStationOperation, StatisticalCycleTime>([
     [
@@ -303,7 +308,9 @@ it("calculates current cycles", () => {
     ],
   ]);
 
-  expect(currentCycles(curSt, expected)).toMatchSnapshot("current cycles without jobs, just expected");
+  expect(currentCycles(curSt, expected)).toMatchSnapshot(
+    "current cycles without jobs, just expected",
+  );
 
   const jobs = {
     // uniq3 only has loading on proc1
@@ -408,8 +415,22 @@ it("calculates current basket load cycles", () => {
       77: fakeBasketAtLoad(77, 40),
     },
     material: [
-      fakeBasketLoad({ uniq: "uniq7", part: "tray", proc: 1, ty: "load", basket: 77, elapsedMin: 12 }),
-      fakeBasketLoad({ uniq: "uniq7", part: "tray", proc: 1, ty: "unload", basket: 77, elapsedMin: 12 }),
+      fakeBasketLoad({
+        uniq: "uniq7",
+        part: "tray",
+        proc: 1,
+        ty: "load",
+        basket: 77,
+        elapsedMin: 12,
+      }),
+      fakeBasketLoad({
+        uniq: "uniq7",
+        part: "tray",
+        proc: 1,
+        ty: "unload",
+        basket: 77,
+        elapsedMin: 12,
+      }),
     ],
     alarms: [],
     queues: {},
@@ -511,7 +532,9 @@ it("uses load station display names for current load cycles when provided", () =
     pallets: {
       1: fakePalAtLoad(1, 40),
     },
-    material: [fakeLoad({ uniq: "uniq9", part: "tray", proc: 1, pal: 1, ty: "load", elapsedMin: 3 })],
+    material: [
+      fakeLoad({ uniq: "uniq9", part: "tray", proc: 1, pal: 1, ty: "load", elapsedMin: 3 }),
+    ],
     alarms: [],
     queues: {},
   };

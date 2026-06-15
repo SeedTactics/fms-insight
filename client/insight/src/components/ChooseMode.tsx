@@ -183,10 +183,15 @@ export function ChooseMode(p: ChooseModeProps): ReactNode {
           </Typography>
           <Typography
             variant="caption"
-            style={{ marginBottom: "2em", maxWidth: "30em", marginLeft: "auto", marginRight: "auto" }}
+            style={{
+              marginBottom: "2em",
+              maxWidth: "30em",
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}
           >
-            We recommend that after selecting one of the following modes, you bookmark the page and visit it
-            directly.
+            We recommend that after selecting one of the following modes, you bookmark the page and
+            visit it directly.
             <a href="https://fms-insight.seedtactics.com/docs/client-dashboard.html">Learn More</a>
           </Typography>
         </div>

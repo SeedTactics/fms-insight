@@ -100,14 +100,22 @@ namespace MazakMachineInterface
       return sch.Procs.TryGetValue(scheduleProc, out schProc);
     }
 
-    private static bool ShouldSynchronizeScheduleProcess(ScheduleWithQueues sch, int jobProc, MazakConfig cfg)
+    private static bool ShouldSynchronizeScheduleProcess(
+      ScheduleWithQueues sch,
+      int jobProc,
+      MazakConfig cfg
+    )
     {
       if (sch.JobProcess > 0 && sch.JobProcess != jobProc)
       {
         return false;
       }
 
-      return ShouldSyncronizeJobProcess(sch.Job, sch.JobProcess > 0 ? sch.JobProcess : jobProc, cfg);
+      return ShouldSyncronizeJobProcess(
+        sch.Job,
+        sch.JobProcess > 0 ? sch.JobProcess : jobProc,
+        cfg
+      );
     }
 
     private static IReadOnlyList<ScheduleWithQueues> LoadSchedules(
@@ -339,7 +347,9 @@ namespace MazakMachineInterface
             if (started + numMatInQueue > sch.SchRow.PlanQuantity)
             {
               logDb.MarkCastingsAsUnallocated(
-                matInQueue.Skip(Math.Max(0, sch.SchRow.PlanQuantity - started)).Select(m => m.MaterialID),
+                matInQueue
+                  .Skip(Math.Max(0, sch.SchRow.PlanQuantity - started))
+                  .Select(m => m.MaterialID),
                 schProc.Casting
               );
               numMatInQueue = Math.Max(0, sch.SchRow.PlanQuantity - started);
@@ -366,7 +376,11 @@ namespace MazakMachineInterface
       {
         // now deal with the non-input-queue raw material. They could have larger material than planned quantity
         // if the schedule has been decremented
-        foreach (var sch in schsForJob.Where(s => s.JobProcess <= 1 && string.IsNullOrEmpty(s.Procs[1].InputQueue)))
+        foreach (
+          var sch in schsForJob.Where(s =>
+            s.JobProcess <= 1 && string.IsNullOrEmpty(s.Procs[1].InputQueue)
+          )
+        )
         {
           if (
             sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch)
@@ -399,12 +413,17 @@ namespace MazakMachineInterface
       {
         var schProc1 = sch.Procs[1];
         var started = CountCompletedOrMachiningStarted(sch);
-        var curCastings = (schProc1.TargetMaterialCount ?? schProc1.SchProcRow.ProcessMaterialQuantity);
+        var curCastings = (
+          schProc1.TargetMaterialCount ?? schProc1.SchProcRow.ProcessMaterialQuantity
+        );
 
         if (skippedCastings.Contains((casting: schProc1.Casting, queue: schProc1.InputQueue)))
           continue;
 
-        if (started + curCastings < sch.SchRow.PlanQuantity && curCastings < schProc1.SchProcRow.FixQuantity)
+        if (
+          started + curCastings < sch.SchRow.PlanQuantity
+          && curCastings < schProc1.SchProcRow.FixQuantity
+        )
         {
           // find some new castings
           var toAdd = cfg.WaitForAllCastings
@@ -540,7 +559,8 @@ namespace MazakMachineInterface
       foreach (var schProc in sch.Procs)
       {
         var schProcRow = schProc.Value;
-        cnt += schProcRow.SchProcRow.ProcessBadQuantity + schProcRow.SchProcRow.ProcessExecuteQuantity;
+        cnt +=
+          schProcRow.SchProcRow.ProcessBadQuantity + schProcRow.SchProcRow.ProcessExecuteQuantity;
         if (ResolveJobProcess(sch, schProc.Key) > 1)
           cnt += schProcRow.TargetMaterialCount ?? schProcRow.SchProcRow.ProcessMaterialQuantity;
       }
@@ -556,9 +576,10 @@ namespace MazakMachineInterface
       var usedPallets = new HashSet<int>();
       foreach (var proc in currentSch.Procs)
       {
-        var plannedInfo = currentSch.Job.Processes[ResolveJobProcess(currentSch, proc.Key) - 1].Paths[
-          proc.Value.Path - 1
-        ];
+        var plannedInfo = currentSch
+          .Job
+          .Processes[ResolveJobProcess(currentSch, proc.Key) - 1]
+          .Paths[proc.Value.Path - 1];
         if (string.IsNullOrEmpty(plannedInfo.Fixture))
         {
           foreach (var p in plannedInfo.PalletNums)
@@ -577,7 +598,8 @@ namespace MazakMachineInterface
           (
             s.SchRow.DueDate > currentSch.SchRow.DueDate
             || (
-              s.SchRow.DueDate == currentSch.SchRow.DueDate && s.SchRow.Priority > currentSch.SchRow.Priority
+              s.SchRow.DueDate == currentSch.SchRow.DueDate
+              && s.SchRow.Priority > currentSch.SchRow.Priority
             )
           )
           && s.Procs.Any(p => p.Value.SchProcRow.ProcessExecuteQuantity > 0)

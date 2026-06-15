@@ -105,8 +105,10 @@ public sealed class MazakSyncSpec : IDisposable
     _mazakDB.OnNewEvent += Raise.Event<Action>();
 
     if (
-      await Task.WhenAny(complete.Task, Task.Delay(5000, TestContext.Current.Execution.CancellationToken))
-      != complete.Task
+      await Task.WhenAny(
+        complete.Task,
+        Task.Delay(5000, TestContext.Current.Execution.CancellationToken)
+      ) != complete.Task
     )
     {
       throw new Exception("Timeout waiting for event");
@@ -284,7 +286,10 @@ public sealed class MazakSyncSpec : IDisposable
       Path.Combine(_tempDir, "111loadstart.csv"),
       ["2024,6,11,4,5,6,501,,12,,,1,6,4,prog,,,"]
     );
-    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,,12,,1,6,4,prog,,,"]);
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "222loadend.csv"),
+      ["2024,6,11,4,5,9,502,,,12,,1,6,4,prog,,,"]
+    );
     File.WriteAllLines(
       Path.Combine(_tempDir, "333leaveload.csv"),
       ["2024,6,11,4,6,10,301,,,,,,4,,,,L01,S04"]
@@ -304,7 +309,10 @@ public sealed class MazakSyncSpec : IDisposable
     _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
     var cellSt = _sync.CalculateCellState(db);
-    cellSt.CurrentStatus.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(5));
+    cellSt.CurrentStatus.TimeOfCurrentStatusUTC.ShouldBe(
+      DateTime.UtcNow,
+      tolerance: TimeSpan.FromSeconds(5)
+    );
     cellSt.ShouldBeEquivalentTo(
       new MazakState()
       {
@@ -362,7 +370,10 @@ public sealed class MazakSyncSpec : IDisposable
       Path.Combine(_tempDir, "111loadstart.csv"),
       ["2024,6,11,4,5,6,501,,12,,,1,6,1,prog,,,"]
     );
-    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,,1,6,1,prog,,,"]);
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "222loadend.csv"),
+      ["2024,6,11,4,5,9,502,,12,,,1,6,1,prog,,,"]
+    );
 
     var allData = JsonSerializer.Deserialize<MazakAllDataAndLogs>(
       File.ReadAllText(
@@ -506,7 +517,10 @@ public sealed class MazakSyncSpec : IDisposable
 
     var cellSt = _sync.CalculateCellState(db);
 
-    cellSt.CurrentStatus.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(5));
+    cellSt.CurrentStatus.TimeOfCurrentStatusUTC.ShouldBe(
+      DateTime.UtcNow,
+      tolerance: TimeSpan.FromSeconds(5)
+    );
     cellSt.ShouldBeEquivalentTo(
       new MazakState()
       {
@@ -524,7 +538,10 @@ public sealed class MazakSyncSpec : IDisposable
               PartName = "pppp",
               Path = 1,
               Process = 1,
-              Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+              Action = new InProcessMaterialAction()
+              {
+                Type = InProcessMaterialAction.ActionType.Waiting,
+              },
               SignaledInspections = [],
               Location = new InProcessMaterialLocation()
               {
@@ -595,7 +612,9 @@ public sealed class MazakSyncSpec : IDisposable
       jsonSettings
     );
     MazakWriteData writeData = null;
-    _mazakDB.WhenForAnyArgs(x => x.Save(default)).Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
+    _mazakDB
+      .WhenForAnyArgs(x => x.Save(default))
+      .Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
 
     _mazakDB
       .LoadAllData()
@@ -621,7 +640,13 @@ public sealed class MazakSyncSpec : IDisposable
       .ReceivedCalls()
       .Where(c => c.GetMethodInfo().Name == "Save")
       .Select(c => ((MazakWriteData)c.GetArguments()[0]).Prefix)
-      .ShouldBe(["Delete Pallets", "Delete Fixtures", "Add Fixtures", "Add Parts", "Add Schedules"]);
+      .ShouldBe([
+        "Delete Pallets",
+        "Delete Fixtures",
+        "Add Fixtures",
+        "Add Parts",
+        "Add Schedules",
+      ]);
     // more detailed tests are in the write data tests
 
     _mazakDB.ClearReceivedCalls();
@@ -723,7 +748,9 @@ public sealed class MazakSyncSpec : IDisposable
     _sync.ApplyActions(db, st).ShouldBeTrue();
 
     _mazakDB.ReceivedCalls().Count().ShouldBe(1);
-    _mazakDB.Received().Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Setting material from queues"));
+    _mazakDB
+      .Received()
+      .Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Setting material from queues"));
 
     var trans = _mazakDB.ReceivedCalls().Select(c => c.GetArguments()[0] as MazakWriteData).First();
     trans.Schedules.Count.ShouldBe(1);

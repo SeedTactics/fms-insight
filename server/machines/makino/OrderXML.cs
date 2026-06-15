@@ -108,8 +108,12 @@ namespace BlackMaple.FMSInsight.Makino
 
         if (Task.WaitAny([tcs.Task, Task.Delay(TimeSpan.FromSeconds(10))]) == 1)
         {
-          Serilog.Log.Error("Makino did not process new jobs, perhaps the Makino software is not running?");
-          throw new Exception("Unable to copy orders to Makino: check that the Makino software is running");
+          Serilog.Log.Error(
+            "Makino did not process new jobs, perhaps the Makino software is not running?"
+          );
+          throw new Exception(
+            "Unable to copy orders to Makino: check that the Makino software is running"
+          );
         }
       }
       finally
@@ -173,7 +177,8 @@ namespace BlackMaple.FMSInsight.Makino
                   new JobAndProc()
                   {
                     Job = j,
-                    Revision = jobUniqueToDetails.GetValueOrDefault(j.UniqueStr)?.Revision ?? "Insight",
+                    Revision =
+                      jobUniqueToDetails.GetValueOrDefault(j.UniqueStr)?.Revision ?? "Insight",
                     Proc = proc,
                   }
                 );
@@ -185,7 +190,8 @@ namespace BlackMaple.FMSInsight.Makino
                   new()
                   {
                     Job = j,
-                    Revision = jobUniqueToDetails.GetValueOrDefault(j.UniqueStr)?.Revision ?? "Insight",
+                    Revision =
+                      jobUniqueToDetails.GetValueOrDefault(j.UniqueStr)?.Revision ?? "Insight",
                     Proc = proc,
                   },
                 };

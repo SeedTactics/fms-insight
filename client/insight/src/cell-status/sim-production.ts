@@ -52,7 +52,8 @@ const last30SimProductionRW = atom<ReadonlyArray<SimPartCompleted>>(
 export const last30SimProduction: Atom<ReadonlyArray<SimPartCompleted>> = last30SimProductionRW;
 
 const specificMonthSimProductionRW = atom<ReadonlyArray<SimPartCompleted>>([]);
-export const specificMonthSimProduction: Atom<ReadonlyArray<SimPartCompleted>> = specificMonthSimProductionRW;
+export const specificMonthSimProduction: Atom<ReadonlyArray<SimPartCompleted>> =
+  specificMonthSimProductionRW;
 
 function* jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): Iterable<SimPartCompleted> {
   for (const j of jobs) {
@@ -84,29 +85,41 @@ function* jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): Iterable<SimPartCo
 }
 
 export const setLast30JobProduction = atom(null, (_, set, history: Readonly<IHistoricData>) => {
-  set(last30SimProductionRW, (oldProd) => [...oldProd, ...jobToPartCompleted(Object.values(history.jobs))]);
+  set(last30SimProductionRW, (oldProd) => [
+    ...oldProd,
+    ...jobToPartCompleted(Object.values(history.jobs)),
+  ]);
 });
 
-export const updateLast30JobProduction = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
-  if (evt.newJobs) {
-    const apiNewJobs = evt.newJobs.jobs;
-    set(last30SimProductionRW, (simProd) => {
-      if (expire) {
-        const expireDate = addDays(now, -30);
-        // check if nothing to expire and no new data
-        const minProd = LazySeq.of(simProd).minBy((e) => e.completeTime.getTime());
-        if ((minProd === undefined || minProd.completeTime >= expireDate) && apiNewJobs.length === 0) {
-          return simProd;
+export const updateLast30JobProduction = atom(
+  null,
+  (_, set, { evt, now, expire }: ServerEventAndTime) => {
+    if (evt.newJobs) {
+      const apiNewJobs = evt.newJobs.jobs;
+      set(last30SimProductionRW, (simProd) => {
+        if (expire) {
+          const expireDate = addDays(now, -30);
+          // check if nothing to expire and no new data
+          const minProd = LazySeq.of(simProd).minBy((e) => e.completeTime.getTime());
+          if (
+            (minProd === undefined || minProd.completeTime >= expireDate) &&
+            apiNewJobs.length === 0
+          ) {
+            return simProd;
+          }
+
+          simProd = simProd.filter((e) => e.completeTime >= expireDate);
         }
 
-        simProd = simProd.filter((e) => e.completeTime >= expireDate);
-      }
+        return [...simProd, ...jobToPartCompleted(apiNewJobs)];
+      });
+    }
+  },
+);
 
-      return [...simProd, ...jobToPartCompleted(apiNewJobs)];
-    });
-  }
-});
-
-export const setSpecificMonthJobProduction = atom(null, (_, set, history: Readonly<IHistoricData>) => {
-  set(specificMonthSimProductionRW, Array.from(jobToPartCompleted(Object.values(history.jobs))));
-});
+export const setSpecificMonthJobProduction = atom(
+  null,
+  (_, set, history: Readonly<IHistoricData>) => {
+    set(specificMonthSimProductionRW, Array.from(jobToPartCompleted(Object.values(history.jobs))));
+  },
+);

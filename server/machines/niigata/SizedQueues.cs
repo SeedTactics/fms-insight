@@ -69,7 +69,8 @@ namespace BlackMaple.FMSInsight.Niigata
       var sizedQueues = new HashSet<string>(
         _queueSizes
           .Where(q =>
-            q.Value.MaxSizeBeforeStopUnloading.HasValue && q.Value.MaxSizeBeforeStopUnloading.Value > 0
+            q.Value.MaxSizeBeforeStopUnloading.HasValue
+            && q.Value.MaxSizeBeforeStopUnloading.Value > 0
           )
           .Select(q => q.Key)
       );
@@ -79,7 +80,9 @@ namespace BlackMaple.FMSInsight.Niigata
           pal.Material.Count > 0
           && pal.Material.Any(m =>
             m.Mat.Process >= 1
-            && sizedQueues.Contains(m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].OutputQueue)
+            && sizedQueues.Contains(
+              m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].OutputQueue
+            )
           )
         )
         .OrderBy(pal =>
@@ -124,7 +127,10 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       // everything currently executing on the second-to-last-stop is marked as on-hold
       var curRouteIdx = pal.Status.Tracking.CurrentStepNum - 1;
-      if (curRouteIdx == pal.Status.Master.Routes.Count - 2 && pal.Status.Tracking.BeforeCurrentStep)
+      if (
+        curRouteIdx == pal.Status.Master.Routes.Count - 2
+        && pal.Status.Tracking.BeforeCurrentStep
+      )
       {
         switch (pal.Status.CurrentStep)
         {
@@ -136,7 +142,9 @@ namespace BlackMaple.FMSInsight.Niigata
             );
 
           case ReclampStep reclamp:
-            return pal.Material.All(m => m.Mat.Action.Type == InProcessMaterialAction.ActionType.Loading);
+            return pal.Material.All(m =>
+              m.Mat.Action.Type == InProcessMaterialAction.ActionType.Loading
+            );
         }
       }
 
@@ -185,7 +193,10 @@ namespace BlackMaple.FMSInsight.Niigata
       // initially the size of the queue
       foreach (var q in _queueSizes)
       {
-        if (q.Value.MaxSizeBeforeStopUnloading.HasValue && q.Value.MaxSizeBeforeStopUnloading.Value > 0)
+        if (
+          q.Value.MaxSizeBeforeStopUnloading.HasValue
+          && q.Value.MaxSizeBeforeStopUnloading.Value > 0
+        )
         {
           remain.Add(q.Key, q.Value.MaxSizeBeforeStopUnloading.Value);
         }
@@ -211,14 +222,20 @@ namespace BlackMaple.FMSInsight.Niigata
       foreach (var pal in palsToCheck.Where(p => !p.Status.Master.Skip))
       {
         var curRouteIdx = pal.Status.Tracking.CurrentStepNum - 1;
-        if (curRouteIdx == pal.Status.Master.Routes.Count - 2 && !pal.Status.Tracking.BeforeCurrentStep)
+        if (
+          curRouteIdx == pal.Status.Master.Routes.Count - 2
+          && !pal.Status.Tracking.BeforeCurrentStep
+        )
         {
           // the pallet currently not on hold and ready to move to the unload station
           foreach (var mat in pal.Material)
           {
             if (mat.Mat.Process >= 1)
             {
-              var queue = mat.Job.Processes[mat.Mat.Process - 1].Paths[mat.Mat.Path - 1].OutputQueue;
+              var queue = mat.Job
+                .Processes[mat.Mat.Process - 1]
+                .Paths[mat.Mat.Path - 1]
+                .OutputQueue;
               if (!string.IsNullOrEmpty(queue) && remain.ContainsKey(queue))
               {
                 remain[queue] -= 1;
@@ -275,7 +292,10 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             return false;
           }
-          else if (cntOnPallet == remain && !AvailablePalletForPickup(cellState, matGroup, matGroup.Key))
+          else if (
+            cntOnPallet == remain
+            && !AvailablePalletForPickup(cellState, matGroup, matGroup.Key)
+          )
           {
             // don't fill up the queue if there isn't another pallet ready to empty it
             return false;
@@ -310,7 +330,10 @@ namespace BlackMaple.FMSInsight.Niigata
         var nextJobProcInfo = mat.Job.Processes[nextProc - 1];
         foreach (var pathInfo in nextJobProcInfo.Paths)
         {
-          if (pathInfo.InputQueue == queue && pathInfo.PalletNums.Any(p => availPallets.Contains(p)))
+          if (
+            pathInfo.InputQueue == queue
+            && pathInfo.PalletNums.Any(p => availPallets.Contains(p))
+          )
           {
             return true;
           }

@@ -143,11 +143,14 @@ export const updateLast30Buffer = atom(null, (_, set, { evt, now, expire }: Serv
   });
 });
 
-export const setSpecificMonthBuffer = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(
-    specificMonthBufferEntriesRW,
-    LazySeq.of(log)
-      .collect(convertEntry)
-      .toHashMap((x) => x),
-  );
-});
+export const setSpecificMonthBuffer = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(
+      specificMonthBufferEntriesRW,
+      LazySeq.of(log)
+        .collect(convertEntry)
+        .toHashMap((x) => x),
+    );
+  },
+);

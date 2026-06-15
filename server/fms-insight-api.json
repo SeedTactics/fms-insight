@@ -9,9 +9,7 @@
   "paths": {
     "/api/v1/fms/fms-information": {
       "get": {
-        "tags": [
-          "Fms"
-        ],
+        "tags": ["Fms"],
         "operationId": "Fms_FMSInformation",
         "responses": {
           "200": {
@@ -29,9 +27,7 @@
     },
     "/api/v1/fms/find-instructions/{part}": {
       "get": {
-        "tags": [
-          "Fms"
-        ],
+        "tags": ["Fms"],
         "operationId": "Fms_FindInstructions",
         "parameters": [
           {
@@ -111,9 +107,7 @@
     },
     "/api/v1/fms/print-label/{materialId}": {
       "post": {
-        "tags": [
-          "Fms"
-        ],
+        "tags": ["Fms"],
         "operationId": "Fms_PrintLabel",
         "parameters": [
           {
@@ -156,9 +150,7 @@
     },
     "/api/v1/fms/parse-barcode": {
       "post": {
-        "tags": [
-          "Fms"
-        ],
+        "tags": ["Fms"],
         "operationId": "Fms_ParseBarcode",
         "parameters": [
           {
@@ -206,9 +198,7 @@
     },
     "/api/v1/fms/enable-verbose-logging-for-five-minutes": {
       "post": {
-        "tags": [
-          "Fms"
-        ],
+        "tags": ["Fms"],
         "operationId": "Fms_EnableVerboseLoggingForFiveMinutes",
         "responses": {
           "200": {
@@ -219,9 +209,7 @@
     },
     "/api/v1/jobs/history": {
       "get": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_History",
         "parameters": [
           {
@@ -259,9 +247,7 @@
         }
       },
       "post": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_FilteredHistory",
         "parameters": [
           {
@@ -315,9 +301,7 @@
     },
     "/api/v1/jobs/recent": {
       "post": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_Recent",
         "parameters": [
           {
@@ -361,9 +345,7 @@
     },
     "/api/v1/jobs/latest-schedule": {
       "get": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_LatestSchedule",
         "responses": {
           "200": {
@@ -381,9 +363,7 @@
     },
     "/api/v1/jobs/status": {
       "get": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_CurrentStatus",
         "responses": {
           "200": {
@@ -401,9 +381,7 @@
     },
     "/api/v1/jobs/unscheduled-rebookings": {
       "get": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_UnscheduledRebookings",
         "responses": {
           "200": {
@@ -424,9 +402,7 @@
     },
     "/api/v1/jobs/add-from-sim": {
       "post": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_AddFromSim",
         "parameters": [
           {
@@ -461,9 +437,7 @@
     },
     "/api/v1/jobs/add": {
       "post": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_Add",
         "parameters": [
           {
@@ -498,9 +472,7 @@
     },
     "/api/v1/jobs/casting/{castingName}": {
       "post": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_AddUnallocatedCastingToQueue",
         "parameters": [
           {
@@ -584,9 +556,7 @@
     },
     "/api/v1/jobs/job/{jobUnique}/plan": {
       "get": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_GetJobPlan",
         "parameters": [
           {
@@ -615,9 +585,7 @@
     },
     "/api/v1/jobs/job/{jobUnique}/unprocessed-material": {
       "post": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_AddUnprocessedMaterialToQueue",
         "parameters": [
           {
@@ -705,9 +673,7 @@
     },
     "/api/v1/jobs/job/{jobUnique}/comment": {
       "put": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_SetJobComment",
         "parameters": [
           {
@@ -741,9 +707,7 @@
     },
     "/api/v1/jobs/material/{materialId}/queue": {
       "put": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_SetMaterialInQueue",
         "parameters": [
           {
@@ -785,9 +749,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_RemoveMaterialFromAllQueues",
         "parameters": [
           {
@@ -819,9 +781,7 @@
     },
     "/api/v1/jobs/material/{materialId}/signal-quarantine": {
       "put": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_SignalMaterialForQuarantine",
         "parameters": [
           {
@@ -864,9 +824,7 @@
     },
     "/api/v1/jobs/material/{materialId}/invalidate-process": {
       "put": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_InvalidatePalletCycle",
         "parameters": [
           {
@@ -936,9 +894,7 @@
     },
     "/api/v1/jobs/material/{materialId}/swap-off-pallet": {
       "put": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_SwapMaterialOnPallet",
         "parameters": [
           {
@@ -982,9 +938,7 @@
     },
     "/api/v1/jobs/material": {
       "delete": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_BulkRemoveMaterialFromQueues",
         "parameters": [
           {
@@ -1022,9 +976,7 @@
     },
     "/api/v1/jobs/planned-cycles": {
       "delete": {
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "operationId": "Jobs_DecrementQuantities",
         "parameters": [
           {
@@ -1067,9 +1019,7 @@
     },
     "/api/v1/log/events/all": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_Get",
         "parameters": [
           {
@@ -1112,9 +1062,7 @@
     },
     "/api/v1/log/events.csv": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_GetEventCSV",
         "parameters": [
           {
@@ -1155,9 +1103,7 @@
     },
     "/api/v1/log/events/all-completed-parts": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_GetCompletedParts",
         "parameters": [
           {
@@ -1200,9 +1146,7 @@
     },
     "/api/v1/log/events/recent": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_Recent",
         "parameters": [
           {
@@ -1245,9 +1189,7 @@
     },
     "/api/v1/log/events/for-material/{materialID}": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_LogForMaterial",
         "parameters": [
           {
@@ -1280,9 +1222,7 @@
     },
     "/api/v1/log/events/for-material": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_LogForMaterials",
         "parameters": [
           {
@@ -1320,9 +1260,7 @@
     },
     "/api/v1/log/events/for-serial/{serial}": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_LogForSerial",
         "parameters": [
           {
@@ -1354,9 +1292,7 @@
     },
     "/api/v1/log/events/for-workorder/{workorder}": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_LogForWorkorder",
         "parameters": [
           {
@@ -1388,9 +1324,7 @@
     },
     "/api/v1/log/material-details/{materialID}": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_MaterialDetails",
         "parameters": [
           {
@@ -1420,9 +1354,7 @@
     },
     "/api/v1/log/material-for-job/{jobUnique}": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_MaterialDetailsForJob",
         "parameters": [
           {
@@ -1454,9 +1386,7 @@
     },
     "/api/v1/log/material-for-serial/{serial}": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_MaterialForSerial",
         "parameters": [
           {
@@ -1488,9 +1418,7 @@
     },
     "/api/v1/log/material-details/{materialID}/serial": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_SetSerial",
         "parameters": [
           {
@@ -1542,9 +1470,7 @@
     },
     "/api/v1/log/material-details/{materialID}/workorder": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_SetWorkorder",
         "parameters": [
           {
@@ -1596,9 +1522,7 @@
     },
     "/api/v1/log/material-details/{materialID}/inspections/{inspType}": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_SetInspectionDecision",
         "parameters": [
           {
@@ -1659,9 +1583,7 @@
     },
     "/api/v1/log/material-details/{materialID}/notes": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_RecordOperatorNotes",
         "parameters": [
           {
@@ -1722,9 +1644,7 @@
     },
     "/api/v1/log/events/rebooking": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_RequestRebooking",
         "parameters": [
           {
@@ -1793,9 +1713,7 @@
     },
     "/api/v1/log/events/cancel-rebooking/{bookingId}": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_CancelRebooking",
         "parameters": [
           {
@@ -1824,9 +1742,7 @@
     },
     "/api/v1/log/events/inspection-result": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_RecordInspectionCompleted",
         "requestBody": {
           "x-name": "insp",
@@ -1856,9 +1772,7 @@
     },
     "/api/v1/log/events/closeout": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_RecordCloseoutCompleted",
         "requestBody": {
           "x-name": "insp",
@@ -1888,9 +1802,7 @@
     },
     "/api/v1/log/workorder/{workorder}/comment": {
       "post": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_RecordWorkorderComment",
         "parameters": [
           {
@@ -1940,9 +1852,7 @@
     },
     "/api/v1/log/workorder/{workorder}": {
       "get": {
-        "tags": [
-          "Log"
-        ],
+        "tags": ["Log"],
         "operationId": "Log_GetActiveWorkorder",
         "parameters": [
           {
@@ -1974,9 +1884,7 @@
     },
     "/api/v1/machines/tools": {
       "get": {
-        "tags": [
-          "Machines"
-        ],
+        "tags": ["Machines"],
         "operationId": "Machines_GetToolsInMachines",
         "responses": {
           "200": {
@@ -1997,9 +1905,7 @@
     },
     "/api/v1/machines/programs-in-cell-controller": {
       "get": {
-        "tags": [
-          "Machines"
-        ],
+        "tags": ["Machines"],
         "operationId": "Machines_GetProgramsInCellController",
         "responses": {
           "200": {
@@ -2020,9 +1926,7 @@
     },
     "/api/v1/machines/program/{programName}/revisions": {
       "get": {
-        "tags": [
-          "Machines"
-        ],
+        "tags": ["Machines"],
         "operationId": "Machines_GetProgramRevisionsInDescendingOrderOfRevision",
         "parameters": [
           {
@@ -2074,9 +1978,7 @@
     },
     "/api/v1/machines/program/{programName}/revision/{revision}/content": {
       "get": {
-        "tags": [
-          "Machines"
-        ],
+        "tags": ["Machines"],
         "operationId": "Machines_GetProgramRevisionContent",
         "parameters": [
           {
@@ -2115,9 +2017,7 @@
     },
     "/api/v1/machines/program/{programName}/latest-revision/content": {
       "get": {
-        "tags": [
-          "Machines"
-        ],
+        "tags": ["Machines"],
         "operationId": "Machines_GetLatestProgramRevisionContent",
         "parameters": [
           {
@@ -2150,12 +2050,7 @@
       "FMSInfo": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Name",
-          "Version",
-          "Name",
-          "Version"
-        ],
+        "required": ["Name", "Version", "Name", "Version"],
         "properties": {
           "Name": {
             "type": "string"
@@ -2273,12 +2168,7 @@
           "LookupExistingSerial",
           "ManualBarcodeScan"
         ],
-        "enum": [
-          "DoNotShow",
-          "AddBulkUnassigned",
-          "LookupExistingSerial",
-          "ManualBarcodeScan"
-        ]
+        "enum": ["DoNotShow", "AddBulkUnassigned", "LookupExistingSerial", "ManualBarcodeScan"]
       },
       "ServerEvent": {
         "type": "object",
@@ -2521,12 +2411,7 @@
       "ToolUse": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Tool",
-          "Pocket",
-          "Tool",
-          "Pocket"
-        ],
+        "required": ["Tool", "Pocket", "Tool", "Pocket"],
         "properties": {
           "Tool": {
             "type": "string"
@@ -2628,12 +2513,7 @@
       "Stop": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "StationName",
-          "StationNum",
-          "StationName",
-          "StationNum"
-        ],
+        "required": ["StationName", "StationNum", "StationName", "StationNum"],
         "properties": {
           "StationName": {
             "type": "string"
@@ -2647,12 +2527,7 @@
       "NewJobs": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "ScheduleId",
-          "Jobs",
-          "ScheduleId",
-          "Jobs"
-        ],
+        "required": ["ScheduleId", "Jobs", "ScheduleId", "Jobs"],
         "properties": {
           "ScheduleId": {
             "type": "string"
@@ -2852,10 +2727,7 @@
       "ProcessInfo": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "paths",
-          "paths"
-        ],
+        "required": ["paths", "paths"],
         "properties": {
           "BasketLoadStations": {
             "type": "array",
@@ -3063,12 +2935,7 @@
       "SimulatedProduction": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "TimeUTC",
-          "Quantity",
-          "TimeUTC",
-          "Quantity"
-        ],
+        "required": ["TimeUTC", "Quantity", "TimeUTC", "Quantity"],
         "properties": {
           "TimeUTC": {
             "type": "string",
@@ -3176,14 +3043,7 @@
       "SimulatedStationPart": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "JobUnique",
-          "Process",
-          "Path",
-          "JobUnique",
-          "Process",
-          "Path"
-        ],
+        "required": ["JobUnique", "Process", "Path", "JobUnique", "Process", "Path"],
         "properties": {
           "JobUnique": {
             "type": "string"
@@ -3201,14 +3061,7 @@
       "SimulatedDayUsage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Day",
-          "MachineGroup",
-          "Usage",
-          "Day",
-          "MachineGroup",
-          "Usage"
-        ],
+        "required": ["Day", "MachineGroup", "Usage", "Day", "MachineGroup", "Usage"],
         "properties": {
           "Day": {
             "type": "string",
@@ -3226,12 +3079,7 @@
       "WorkorderSimFilled": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "WorkorderId",
-          "Part",
-          "WorkorderId",
-          "Part"
-        ],
+        "required": ["WorkorderId", "Part", "WorkorderId", "Part"],
         "properties": {
           "WorkorderId": {
             "type": "string"
@@ -3297,12 +3145,7 @@
       "ProgramForJobStep": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "ProcessNumber",
-          "ProgramName",
-          "ProcessNumber",
-          "ProgramName"
-        ],
+        "required": ["ProcessNumber", "ProgramName", "ProcessNumber", "ProgramName"],
         "properties": {
           "ProcessNumber": {
             "type": "integer",
@@ -3481,10 +3324,7 @@
           {
             "type": "object",
             "additionalProperties": false,
-            "required": [
-              "CopiedToSystem",
-              "CopiedToSystem"
-            ],
+            "required": ["CopiedToSystem", "CopiedToSystem"],
             "properties": {
               "ScheduleId": {
                 "type": "string",
@@ -3507,14 +3347,7 @@
       "DecrementQuantity": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "DecrementId",
-          "TimeUTC",
-          "Quantity",
-          "DecrementId",
-          "TimeUTC",
-          "Quantity"
-        ],
+        "required": ["DecrementId", "TimeUTC", "Quantity", "DecrementId", "TimeUTC", "Quantity"],
         "properties": {
           "DecrementId": {
             "type": "integer",
@@ -3592,14 +3425,7 @@
       "PalletLocation": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "loc",
-          "group",
-          "num",
-          "loc",
-          "group",
-          "num"
-        ],
+        "required": ["loc", "group", "num", "loc", "group", "num"],
         "properties": {
           "loc": {
             "$ref": "#/components/schemas/PalletLocationEnum"
@@ -3616,20 +3442,8 @@
       "PalletLocationEnum": {
         "type": "string",
         "description": "",
-        "x-enumNames": [
-          "LoadUnload",
-          "Machine",
-          "MachineQueue",
-          "Buffer",
-          "Cart"
-        ],
-        "enum": [
-          "LoadUnload",
-          "Machine",
-          "MachineQueue",
-          "Buffer",
-          "Cart"
-        ]
+        "x-enumNames": ["LoadUnload", "Machine", "MachineQueue", "Buffer", "Cart"],
+        "enum": ["LoadUnload", "Machine", "MachineQueue", "Buffer", "Cart"]
       },
       "InProcessMaterial": {
         "type": "object",
@@ -3709,10 +3523,7 @@
       "InProcessMaterialLocation": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Type",
-          "Type"
-        ],
+        "required": ["Type", "Type"],
         "properties": {
           "Type": {
             "$ref": "#/components/schemas/LocType"
@@ -3751,26 +3562,13 @@
       "LocType": {
         "type": "string",
         "description": "",
-        "x-enumNames": [
-          "Free",
-          "OnPallet",
-          "InQueue",
-          "InBasket"
-        ],
-        "enum": [
-          "Free",
-          "OnPallet",
-          "InQueue",
-          "InBasket"
-        ]
+        "x-enumNames": ["Free", "OnPallet", "InQueue", "InBasket"],
+        "enum": ["Free", "OnPallet", "InQueue", "InBasket"]
       },
       "InProcessMaterialAction": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Type",
-          "Type"
-        ],
+        "required": ["Type", "Type"],
         "properties": {
           "Type": {
             "$ref": "#/components/schemas/ActionType"
@@ -3875,18 +3673,8 @@
       "QueueRole": {
         "type": "string",
         "description": "",
-        "x-enumNames": [
-          "RawMaterial",
-          "InProcessTransfer",
-          "Quarantine",
-          "Other"
-        ],
-        "enum": [
-          "RawMaterial",
-          "InProcessTransfer",
-          "Quarantine",
-          "Other"
-        ]
+        "x-enumNames": ["RawMaterial", "InProcessTransfer", "Quarantine", "Other"],
+        "enum": ["RawMaterial", "InProcessTransfer", "Quarantine", "Other"]
       },
       "MachineLocation": {
         "type": "object",
@@ -4013,12 +3801,7 @@
       "WorkorderComment": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Comment",
-          "TimeUTC",
-          "Comment",
-          "TimeUTC"
-        ],
+        "required": ["Comment", "TimeUTC", "Comment", "TimeUTC"],
         "properties": {
           "Comment": {
             "type": "string"
@@ -4065,28 +3848,13 @@
       "WorkorderSerialCloseout": {
         "type": "string",
         "description": "",
-        "x-enumNames": [
-          "None",
-          "ClosedOut",
-          "CloseOutFailed"
-        ],
-        "enum": [
-          "None",
-          "ClosedOut",
-          "CloseOutFailed"
-        ]
+        "x-enumNames": ["None", "ClosedOut", "CloseOutFailed"],
+        "enum": ["None", "ClosedOut", "CloseOutFailed"]
       },
       "BasketStatus": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "BasketId",
-          "Location",
-          "LocationNum",
-          "BasketId",
-          "Location",
-          "LocationNum"
-        ],
+        "required": ["BasketId", "Location", "LocationNum", "BasketId", "Location", "LocationNum"],
         "properties": {
           "BasketId": {
             "type": "integer",
@@ -4113,18 +3881,8 @@
       "BasketLocationEnum": {
         "type": "string",
         "description": "",
-        "x-enumNames": [
-          "LoadUnload",
-          "LoadStationStaging",
-          "Storage",
-          "InTransit"
-        ],
-        "enum": [
-          "LoadUnload",
-          "LoadStationStaging",
-          "Storage",
-          "InTransit"
-        ]
+        "x-enumNames": ["LoadUnload", "LoadStationStaging", "Storage", "InTransit"],
+        "enum": ["LoadUnload", "LoadStationStaging", "Storage", "InTransit"]
       },
       "EditMaterialInLogEvents": {
         "type": "object",
@@ -4208,12 +3966,7 @@
       "MaterialDetails": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "MaterialID",
-          "PartName",
-          "MaterialID",
-          "PartName"
-        ],
+        "required": ["MaterialID", "PartName", "MaterialID", "PartName"],
         "properties": {
           "MaterialID": {
             "type": "integer",
@@ -4285,12 +4038,7 @@
       "PossibleJobAndProcess": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "JobUnique",
-          "LastCompletedProcess",
-          "JobUnique",
-          "LastCompletedProcess"
-        ],
+        "required": ["JobUnique", "LastCompletedProcess", "JobUnique", "LastCompletedProcess"],
         "properties": {
           "JobUnique": {
             "type": "string"
@@ -4308,12 +4056,7 @@
       "HistoricData": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Jobs",
-          "StationUse",
-          "Jobs",
-          "StationUse"
-        ],
+        "required": ["Jobs", "StationUse", "Jobs", "StationUse"],
         "properties": {
           "Jobs": {
             "type": "object",
@@ -4467,14 +4210,7 @@
       "SimulationResults": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "ScheduleId",
-          "Jobs",
-          "SimStations",
-          "ScheduleId",
-          "Jobs",
-          "SimStations"
-        ],
+        "required": ["ScheduleId", "Jobs", "SimStations", "ScheduleId", "Jobs", "SimStations"],
         "properties": {
           "ScheduleId": {
             "type": "string"
@@ -4537,12 +4273,7 @@
       "QueuePosition": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Queue",
-          "Position",
-          "Queue",
-          "Position"
-        ],
+        "required": ["Queue", "Position", "Queue", "Position"],
         "properties": {
           "Queue": {
             "type": "string"
@@ -4556,12 +4287,7 @@
       "MatToPutOnPallet": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Pallet",
-          "MaterialIDToSetOnPallet",
-          "Pallet",
-          "MaterialIDToSetOnPallet"
-        ],
+        "required": ["Pallet", "MaterialIDToSetOnPallet", "Pallet", "MaterialIDToSetOnPallet"],
         "properties": {
           "Pallet": {
             "type": "integer",
@@ -4725,12 +4451,7 @@
           {
             "type": "object",
             "additionalProperties": false,
-            "required": [
-              "MachineGroupName",
-              "MachineNum",
-              "MachineGroupName",
-              "MachineNum"
-            ],
+            "required": ["MachineGroupName", "MachineNum", "MachineGroupName", "MachineNum"],
             "properties": {
               "MachineGroupName": {
                 "type": "string"
@@ -4746,12 +4467,7 @@
       "ToolSnapshot": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "Pocket",
-          "ToolName",
-          "Pocket",
-          "ToolName"
-        ],
+        "required": ["Pocket", "ToolName", "Pocket", "ToolName"],
         "properties": {
           "Pocket": {
             "type": "integer",
@@ -4816,12 +4532,7 @@
       "ProgramRevision": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "ProgramName",
-          "Revision",
-          "ProgramName",
-          "Revision"
-        ],
+        "required": ["ProgramName", "Revision", "ProgramName", "Revision"],
         "properties": {
           "ProgramName": {
             "type": "string"

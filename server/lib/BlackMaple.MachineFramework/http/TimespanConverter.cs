@@ -7,7 +7,11 @@ namespace BlackMaple.MachineFramework;
 
 public class TimespanConverter : JsonConverter<TimeSpan>
 {
-  public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+  public override TimeSpan Read(
+    ref Utf8JsonReader reader,
+    Type typeToConvert,
+    JsonSerializerOptions options
+  )
   {
     var spanString = reader.GetString();
     if (TimeSpan.TryParse(spanString, out TimeSpan result))
@@ -109,7 +113,9 @@ public class TimespanConverter : JsonConverter<TimeSpan>
     {
       var txt = s[startIdx..idx]
         .Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator);
-      if (decimal.TryParse(txt, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out n))
+      if (
+        decimal.TryParse(txt, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out n)
+      )
       {
         return true;
       }

@@ -74,12 +74,18 @@ function loadMonth(month: Date, set: Setter): void {
 
   const startOfNextMonth = addMonths(month, 1);
 
-  const jobsProm = JobsBackend.history(month, startOfNextMonth).then((j) => set(onLoadSpecificMonthJobs, j));
-  const logProm = LogBackend.get(month, startOfNextMonth).then((log) => set(onLoadSpecificMonthLog, log));
+  const jobsProm = JobsBackend.history(month, startOfNextMonth).then((j) =>
+    set(onLoadSpecificMonthJobs, j),
+  );
+  const logProm = LogBackend.get(month, startOfNextMonth).then((log) =>
+    set(onLoadSpecificMonthLog, log),
+  );
 
   Promise.all([jobsProm, logProm])
     .then(() => set(loadedMonth, month))
-    .catch((e: Record<string, string | undefined>) => set(errorLoadingSpecificMonthRW, e.message ?? "Error"))
+    .catch((e: Record<string, string | undefined>) =>
+      set(errorLoadingSpecificMonthRW, e.message ?? "Error"),
+    )
     .finally(() => set(loadingSpecificMonthRW, false));
 }
 

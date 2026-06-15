@@ -94,7 +94,9 @@ const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toStri
   backgroundColor: $highlightedRow ? "#BDBDBD" : $noticeRow ? "#E0E0E0" : undefined,
 }));
 
-const MachineDetailTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+const MachineDetailTableRow = styled(TableRow, {
+  shouldForwardProp: (prop) => prop.toString()[0] !== "$",
+})<{
   $borderBottom?: boolean;
 }>(({ $borderBottom }) => ({
   ...($borderBottom && {
@@ -232,7 +234,8 @@ function MachineDetailTable({ machines }: { machines: ReadonlyArray<ToolInMachin
     (m) => m.pocket,
   );
 
-  const anyHasSubtotal = byMachine.size > 1 && byMachine.valuesToAscLazySeq().some((tools) => tools.size > 1);
+  const anyHasSubtotal =
+    byMachine.size > 1 && byMachine.valuesToAscLazySeq().some((tools) => tools.size > 1);
 
   return (
     <Table
@@ -331,7 +334,8 @@ function ToolSummaryHeader() {
       <TableCell align="right">
         <Tooltip
           title={
-            "Machine with the least remaining use." + (cntsWereEstimated ? " Counts are estimates." : "")
+            "Machine with the least remaining use." +
+            (cntsWereEstimated ? " Counts are estimates." : "")
           }
         >
           <span>Smallest Remaining Use</span>
@@ -357,12 +361,18 @@ function ToolSummaryRow({ tool }: { tool: ToolReport }) {
 
   const minRemainMin = machinesWithSomePart
     .groupBy((m) => m.machineName)
-    .map(([mach, tools]) => ({ mach, remainMin: LazySeq.of(tools).sumBy((m) => m.remainingMinutes ?? 0) }))
+    .map(([mach, tools]) => ({
+      mach,
+      remainMin: LazySeq.of(tools).sumBy((m) => m.remainingMinutes ?? 0),
+    }))
     .minBy(({ remainMin }) => remainMin);
 
   const minRemainCnt = machinesWithSomePart
     .groupBy((m) => m.machineName)
-    .map(([mach, tools]) => ({ mach, remainCnt: LazySeq.of(tools).sumBy((m) => m.remainingCnt ?? 0) }))
+    .map(([mach, tools]) => ({
+      mach,
+      remainCnt: LazySeq.of(tools).sumBy((m) => m.remainingCnt ?? 0),
+    }))
     .minBy(({ remainCnt }) => remainCnt);
 
   const numCols = 6;
@@ -452,7 +462,10 @@ function ToolMachineHeader({ machine }: { machine: string }) {
       </TableCell>
       <TableCell align="right">
         <Tooltip
-          title={"Current recorded usage of this tool." + (cntsWereEstimated ? " Counts are estimates." : "")}
+          title={
+            "Current recorded usage of this tool." +
+            (cntsWereEstimated ? " Counts are estimates." : "")
+          }
         >
           <span>Current Use</span>
         </Tooltip>
@@ -460,14 +473,19 @@ function ToolMachineHeader({ machine }: { machine: string }) {
       <TableCell align="right">
         <Tooltip
           title={
-            "Current configured lifetime of this tool." + (cntsWereEstimated ? " Counts are estimates." : "")
+            "Current configured lifetime of this tool." +
+            (cntsWereEstimated ? " Counts are estimates." : "")
           }
         >
           <span>Lifetime</span>
         </Tooltip>{" "}
       </TableCell>
       <TableCell align="right">
-        <Tooltip title={"Lifetime minus current use." + (cntsWereEstimated ? " Counts are estimates." : "")}>
+        <Tooltip
+          title={
+            "Lifetime minus current use." + (cntsWereEstimated ? " Counts are estimates." : "")
+          }
+        >
           <span>Remaining Use</span>
         </Tooltip>
       </TableCell>
@@ -540,7 +558,11 @@ export function ToolSummaryTable(): ReactNode {
   return (
     <Table stickyHeader>
       <TableHead>
-        {machineFilter === null ? <ToolSummaryHeader /> : <ToolMachineHeader machine={machineFilter} />}
+        {machineFilter === null ? (
+          <ToolSummaryHeader />
+        ) : (
+          <ToolMachineHeader machine={machineFilter} />
+        )}
       </TableHead>
       <TableBody>
         {tools.map((tool) =>

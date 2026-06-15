@@ -66,18 +66,24 @@ import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
 import { StyledComponent } from "@emotion/styled";
 
-export const JobTableRow: StyledComponent<{ $darkRow?: boolean; children?: ReactNode }> = styled(TableRow, {
-  shouldForwardProp: (prop) => prop.toString()[0] !== "$",
-})((props: { $darkRow?: boolean }) => ({
+export const JobTableRow: StyledComponent<{ $darkRow?: boolean; children?: ReactNode }> = styled(
+  TableRow,
+  {
+    shouldForwardProp: (prop) => prop.toString()[0] !== "$",
+  },
+)((props: { $darkRow?: boolean }) => ({
   "& > *": {
     borderBottom: "unset",
   },
   ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
 }));
 
-export const JobDetailRow: StyledComponent<{ $darkRow?: boolean; children?: ReactNode }> = styled(TableRow, {
-  shouldForwardProp: (prop) => prop.toString()[0] !== "$",
-})((props: { $darkRow?: boolean }) => ({
+export const JobDetailRow: StyledComponent<{ $darkRow?: boolean; children?: ReactNode }> = styled(
+  TableRow,
+  {
+    shouldForwardProp: (prop) => prop.toString()[0] !== "$",
+  },
+)((props: { $darkRow?: boolean }) => ({
   ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
 }));
 
@@ -157,7 +163,10 @@ function JobsRow(props: JobsRowProps) {
         </TableCell>
         <TableCell>{job.inProcJob === null ? "Archived" : "Active"}</TableCell>
         <TableCell align="right">{job.scheduledQty}</TableCell>
-        <TableCell align="right" sx={{ backgroundColor: job.decrementedQty > 0 ? "#FF8A65" : undefined }}>
+        <TableCell
+          align="right"
+          sx={{ backgroundColor: job.decrementedQty > 0 ? "#FF8A65" : undefined }}
+        >
           {job.decrementedQty}
         </TableCell>
         <TableCell align="right">{job.completedQty}</TableCell>
@@ -174,7 +183,10 @@ function JobsRow(props: JobsRowProps) {
       <JobDetailRow $darkRow={props.showDarkRow && job.darkRow}>
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={colCnt}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <JobDetails job={job.inProcJob ? job.inProcJob : job.historicJob} checkAnalysisMonth={false} />
+            <JobDetails
+              job={job.inProcJob ? job.inProcJob : job.historicJob}
+              checkAnalysisMonth={false}
+            />
           </Collapse>
         </TableCell>
       </JobDetailRow>
@@ -230,7 +242,9 @@ function sortJobs(
       sortCol = (j) => j.remainingQty;
       break;
   }
-  const toShow = showArchived ? LazySeq.of(jobs) : LazySeq.of(jobs).filter((j) => j.inProcJob !== null);
+  const toShow = showArchived
+    ? LazySeq.of(jobs)
+    : LazySeq.of(jobs).filter((j) => j.inProcJob !== null);
   return toShow.toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
 }
 
@@ -245,7 +259,10 @@ function SortColHeader(props: {
 }) {
   return (
     <Tooltip title="Sort" enterDelay={300}>
-      <TableCell align={props.align} sortDirection={props.sortBy === props.col ? props.order : false}>
+      <TableCell
+        align={props.align}
+        sortDirection={props.sortBy === props.col ? props.order : false}
+      >
         <TableSortLabel
           active={props.sortBy === props.col}
           direction={props.order}
@@ -403,7 +420,10 @@ export const RecentSchedulesCard = memo(function RecentSchedules(): ReactNode {
           ))}
         </TableBody>
       </Table>
-      <EditNoteDialog job={curEditNoteJob?.historicJob ?? null} closeDialog={() => setCurEditNoteJob(null)} />
+      <EditNoteDialog
+        job={curEditNoteJob?.historicJob ?? null}
+        closeDialog={() => setCurEditNoteJob(null)}
+      />
     </>
   );
 });

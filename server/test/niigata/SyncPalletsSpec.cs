@@ -78,7 +78,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
       var assign = new MultiPalletAssign(
-        new IAssignPallets[] { new AssignNewRoutesOnPallets(statNames), new SizedQueues(_fmsSt.Queues) }
+        new IAssignPallets[]
+        {
+          new AssignNewRoutesOnPallets(statNames),
+          new SizedQueues(_fmsSt.Queues),
+        }
       );
 
       _sim = new IccSimulator(
@@ -184,13 +188,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           case LogType.LoadUnloadCycle:
             if (e.StartOfCycle)
             {
-              output.AppendFormat("{0}-Start on {1} at L/U{2} for ", e.Result, e.Pallet, e.LocationNum);
+              output.AppendFormat(
+                "{0}-Start on {1} at L/U{2} for ",
+                e.Result,
+                e.Pallet,
+                e.LocationNum
+              );
               writeMat();
               output.AppendLine();
             }
             else
             {
-              output.AppendFormat("{0}-End on {1} at L/U{2} for ", e.Result, e.Pallet, e.LocationNum);
+              output.AppendFormat(
+                "{0}-End on {1} at L/U{2} for ",
+                e.Result,
+                e.Pallet,
+                e.LocationNum
+              );
               writeMat();
               output.AppendLine();
             }
@@ -341,7 +355,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ToList();
       matLogs.Select(e => e.EndTimeUTC).ShouldBeInOrder();
 
-      machGroups = machGroups ?? Enumerable.Range(1, numProc).Select(_ => new string[] { "MC" }).ToArray();
+      machGroups =
+        machGroups ?? Enumerable.Range(1, numProc).Select(_ => new string[] { "MC" }).ToArray();
 
       var expected = new List<Action<LogEntry>>();
       for (int procNum = 1; procNum <= numProc; procNum++)
@@ -846,7 +861,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       matIds.Count.ShouldBe(14);
 
       var byPath = matIds
-        .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
+        .Select(matId => new
+        {
+          matId,
+          logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)),
+        })
         .ToLookup(mat => (new[] { 1, 2 }).Contains(mat.logs.Skip(1).First().Pallet));
       byPath[true].Count().ShouldBeGreaterThan(0); // true is pallets 1 or 2, path 1
       byPath[false].Count().ShouldBeGreaterThan(0); // false is pallets 3 or 4, path 2
@@ -1143,7 +1162,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new[] { 12, 13, 14, 15, 16 },
             new[] { 11 },
           },
-          machGroups: new[] { new[] { "RO" }, new[] { "RO", "FC" }, new[] { "FC" }, new[] { "RO" } },
+          machGroups: new[]
+          {
+            new[] { "RO" },
+            new[] { "RO", "FC" },
+            new[] { "FC" },
+            new[] { "RO" },
+          },
           progs: new[]
           {
             new[] { (prog: "aaa1RO", rev: 1L) },
@@ -1585,7 +1610,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new[] { 12, 13, 14, 15, 16 },
             new[] { 11 },
           },
-          machGroups: new[] { new[] { "RO" }, new[] { "RO", "FC" }, new[] { "FC" }, new[] { "RO" } },
+          machGroups: new[]
+          {
+            new[] { "RO" },
+            new[] { "RO", "FC" },
+            new[] { "FC" },
+            new[] { "RO" },
+          },
           progs: m.Key % 2 == 1 // material ids start at 1, so odd is first
             ? new[]
             {

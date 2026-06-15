@@ -72,7 +72,8 @@ function arrowToPath(arr: MoveMaterialArrow): string {
   const mpy = (arr.fromY + arr.toY) / 2;
 
   // angle of perpendicular to line
-  const theta = Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) + (Math.PI * arr.curveDirection) / 2;
+  const theta =
+    Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) + (Math.PI * arr.curveDirection) / 2;
 
   // control points
   const cx = mpx + 50 * Math.cos(theta);
@@ -140,9 +141,9 @@ export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContain
   whiteBackground?: boolean;
 }) {
   const container = useRef<HTMLDivElement | null>(null);
-  const [registeredNodes, setNodes] = useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement | null>>>(
-    HashMap.empty(),
-  );
+  const [registeredNodes, setNodes] = useState<
+    AllMoveMaterialNodes<React.RefObject<HTMLDivElement | null>>
+  >(HashMap.empty());
 
   const ctx: MoveMaterialArrowContext = useMemo(() => {
     return {
@@ -198,7 +199,9 @@ export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContain
   );
 });
 
-export function useMoveMaterialArrowRef(kind: MoveMaterialNodeKind): RefObject<HTMLDivElement | null> {
+export function useMoveMaterialArrowRef(
+  kind: MoveMaterialNodeKind,
+): RefObject<HTMLDivElement | null> {
   const ctx = useContext(MoveMaterialArrowCtx);
   if (!ctx) {
     throw new Error("useMoveMaterialArrowRef must be used within a MoveMaterialArrowContainer");

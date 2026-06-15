@@ -54,7 +54,9 @@ import { PartIdenticon } from "../station-monitor/Material.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { useCallback } from "react";
 
-const selectedPalletAtom = atomWithDefault<number | undefined>((get) => (get(isDemoAtom) ? 3 : undefined));
+const selectedPalletAtom = atomWithDefault<number | undefined>((get) =>
+  get(isDemoAtom) ? 3 : undefined,
+);
 const selectedPartAtom = atom<PartAndProcess | undefined>(undefined);
 const zoomDateRangeAtom = atom<{ start: Date; end: Date } | undefined>(undefined);
 const yZoomAtom = atom<YZoomRange | null>(null);
@@ -69,7 +71,9 @@ const filteredPoints = atom((get) => {
   if (!selPal && !selPart) return new Map<string, ReadonlyArray<CycleChartPoint>>();
 
   const period = get(selectedAnalysisPeriod);
-  const palletCycles = get(period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles);
+  const palletCycles = get(
+    period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles,
+  );
 
   if (selPal) {
     // Pick out the single pallet and optionally filter it by part
@@ -79,7 +83,9 @@ const filteredPoints = atom((get) => {
         c.mats.some((m) => m.part === selPart.part && m.proc === selPart.proc),
       );
     }
-    return new Map<string, ReadonlyArray<CycleChartPoint>>([[selPal.toString(), Array.from(cyclesForPal)]]);
+    return new Map<string, ReadonlyArray<CycleChartPoint>>([
+      [selPal.toString(), Array.from(cyclesForPal)],
+    ]);
   } else if (selPart) {
     // go through all the pallets, filter each by part, and keep those that have any cycles
     return LazySeq.of(palletCycles)
@@ -102,7 +108,9 @@ const filteredPoints = atom((get) => {
 
 const allPartNames = atom((get) => {
   const period = get(selectedAnalysisPeriod);
-  const palletCycles = get(period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles);
+  const palletCycles = get(
+    period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles,
+  );
 
   return LazySeq.of(palletCycles)
     .flatMap(([, cycles]) => cycles)
@@ -177,9 +185,7 @@ export function PalletCycleChart() {
             autoWidth
             displayEmpty
             value={selectedPallet ?? -1}
-            onChange={(e) =>
-              setSelectedPallet(e.target.value === -1 ? undefined : (e.target.value))
-            }
+            onChange={(e) => setSelectedPallet(e.target.value === -1 ? undefined : e.target.value)}
           >
             <MenuItem key={0} value={-1}>
               <em>Any Pallet</em>
@@ -203,7 +209,9 @@ export function PalletCycleChart() {
               displayEmpty
               value={
                 selectedPart
-                  ? partNames.findIndex((o) => selectedPart.part === o.part && selectedPart.proc === o.proc)
+                  ? partNames.findIndex(
+                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc,
+                    )
                   : -1
               }
               style={{ marginLeft: "1em" }}

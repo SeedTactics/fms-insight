@@ -66,7 +66,9 @@ const filteredPoints = atom((get) => {
   if (!selBasket && !selPart) return new Map<string, ReadonlyArray<CycleChartPoint>>();
 
   const period = get(selectedAnalysisPeriod);
-  const basketCycles = get(period.type === "Last30" ? last30BasketCycles : specificMonthBasketCycles);
+  const basketCycles = get(
+    period.type === "Last30" ? last30BasketCycles : specificMonthBasketCycles,
+  );
 
   if (selBasket) {
     let cyclesForBasket = basketCycles.get(selBasket)?.valuesToLazySeq() ?? LazySeq.of([]);
@@ -99,7 +101,9 @@ const filteredPoints = atom((get) => {
 
 const allPartNames = atom((get) => {
   const period = get(selectedAnalysisPeriod);
-  const basketCycles = get(period.type === "Last30" ? last30BasketCycles : specificMonthBasketCycles);
+  const basketCycles = get(
+    period.type === "Last30" ? last30BasketCycles : specificMonthBasketCycles,
+  );
 
   return LazySeq.of(basketCycles)
     .flatMap(([, cycles]) => cycles)
@@ -172,9 +176,7 @@ export function BasketCycleChart() {
             autoWidth
             displayEmpty
             value={selectedBasket ?? -1}
-            onChange={(e) =>
-              setSelectedBasket(e.target.value === -1 ? undefined : (e.target.value))
-            }
+            onChange={(e) => setSelectedBasket(e.target.value === -1 ? undefined : e.target.value)}
           >
             <MenuItem key={0} value={-1}>
               <em>Any {basketName}</em>
@@ -198,7 +200,9 @@ export function BasketCycleChart() {
               displayEmpty
               value={
                 selectedPart
-                  ? partNames.findIndex((o) => selectedPart.part === o.part && selectedPart.proc === o.proc)
+                  ? partNames.findIndex(
+                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc,
+                    )
                   : -1
               }
               style={{ marginLeft: "1em" }}

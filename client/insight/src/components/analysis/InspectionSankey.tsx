@@ -110,7 +110,12 @@ function LinkDisplay({
 }
 
 function NodeDisplay({ node }: { readonly node: NodeWithData }) {
-  if (node.x1 === undefined || node.x0 === undefined || node.y1 === undefined || node.y0 === undefined)
+  if (
+    node.x1 === undefined ||
+    node.x0 === undefined ||
+    node.y1 === undefined ||
+    node.y0 === undefined
+  )
     return null;
   return (
     <g transform={`translate(${node.x0}, ${node.y0})`}>
@@ -157,7 +162,9 @@ const SankeyDisplay = memo(function InspectionSankeyDiagram({
     return {
       nodes: layout.nodes,
       links: layout.links.flatMap((link) =>
-        typeof link.source === "object" && typeof link.target === "object" && link.width !== undefined
+        typeof link.source === "object" &&
+        typeof link.target === "object" &&
+        link.width !== undefined
           ? [{ ...link, source: link.source, target: link.target, width: link.width }]
           : [],
       ),
@@ -208,11 +215,20 @@ const InspectionDiagram = memo(function InspectionDiagram({
     <div style={{ position: "relative" }}>
       <ChartWithTooltip
         sx={{
-          height: { xs: "calc(100vh - 230px)", md: "calc(100vh - 182px)", xl: "calc(100vh - 130px)" },
+          height: {
+            xs: "calc(100vh - 230px)",
+            md: "calc(100vh - 182px)",
+            xl: "calc(100vh - 130px)",
+          },
           width: "100%",
         }}
         chart={({ height, width }) => (
-          <SankeyDisplay data={data} setTooltip={setTooltip} parentHeight={height} parentWidth={width} />
+          <SankeyDisplay
+            data={data}
+            setTooltip={setTooltip}
+            parentHeight={height}
+            parentWidth={width}
+          />
         )}
         tooltipAtom={tooltipAtom}
         TooltipContent={LinkTooltip}
@@ -232,7 +248,9 @@ export interface InspectionSankeyProps {
   readonly hideOpenDetailColumn?: boolean;
 }
 
-const selectedPartAtom = atomWithDefault<string | undefined>((get) => (get(isDemoAtom) ? "aaa" : undefined));
+const selectedPartAtom = atomWithDefault<string | undefined>((get) =>
+  get(isDemoAtom) ? "aaa" : undefined,
+);
 const selectedInspTypeAtom = atomWithDefault<string | undefined>((get) =>
   get(isDemoAtom) ? "CMM" : undefined,
 );
@@ -247,8 +265,9 @@ export function InspectionSankey(props: InspectionSankeyProps) {
   const selectedPart = props.restrictToPart || curPart;
   if (selectedPart && selectedInspectType) {
     curData =
-      props.inspectionlogs.get(new PartAndInspType(selectedPart, selectedInspectType))?.valuesToLazySeq() ??
-      [];
+      props.inspectionlogs
+        .get(new PartAndInspType(selectedPart, selectedInspectType))
+        ?.valuesToLazySeq() ?? [];
   }
   const parts = props.inspectionlogs
     .keysToLazySeq()
@@ -350,7 +369,11 @@ export function InspectionSankey(props: InspectionSankeyProps) {
             <IconButton
               onClick={() =>
                 curData
-                  ? copyInspectionEntriesToClipboard(selectedPart || "", selectedInspectType || "", curData)
+                  ? copyInspectionEntriesToClipboard(
+                      selectedPart || "",
+                      selectedInspectType || "",
+                      curData,
+                    )
                   : undefined
               }
               style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}

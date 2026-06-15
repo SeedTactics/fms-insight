@@ -10,9 +10,7 @@
       "Unique": "aaa-0NovSzGF9VZGS00b_",
       "Priority": 0,
       "ScheduleId": "NovSzGF9VZGS00b_",
-      "Bookings": [
-        "booking0"
-      ],
+      "Bookings": ["booking0"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Cycles": 9,
@@ -21,29 +19,16 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["2", "3", "4"],
               "Fixture": "fix",
               "Face": 1,
-              "Load": [
-                1
-              ],
+              "Load": [1],
               "ExpectedLoadTime": "PT25M",
-              "Unload": [
-                2
-              ],
+              "Unload": [2],
               "ExpectedUnloadTime": "PT15M",
               "Stops": [
                 {
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "aaa1RO",
                   "Tools": {},
                   "StationGroup": "RO",
@@ -93,11 +78,7 @@
               "PartsPerPallet": 1,
               "OutputQueue": "Transfer",
               "Inspections": [],
-              "PalletNums": [
-                2,
-                3,
-                4
-              ]
+              "PalletNums": [2, 3, 4]
             }
           ]
         },
@@ -105,44 +86,23 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "5",
-                "6",
-                "7",
-                "8",
-                "9",
-                "10"
-              ],
+              "Pallets": ["5", "6", "7", "8", "9", "10"],
               "Fixture": "fix",
               "Face": 1,
-              "Load": [
-                2
-              ],
+              "Load": [2],
               "ExpectedLoadTime": "PT1M",
-              "Unload": [
-                2
-              ],
+              "Unload": [2],
               "ExpectedUnloadTime": "PT15M",
               "Stops": [
                 {
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "aaa2RO",
                   "Tools": {},
                   "StationGroup": "RO",
                   "ExpectedCycleTime": "PT4H3M"
                 },
                 {
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "aaa2FC",
                   "Tools": {},
                   "StationGroup": "FC",
@@ -193,14 +153,7 @@
               "InputQueue": "Transfer",
               "OutputQueue": "Transfer",
               "Inspections": [],
-              "PalletNums": [
-                5,
-                6,
-                7,
-                8,
-                9,
-                10
-              ]
+              "PalletNums": [5, 6, 7, 8, 9, 10]
             }
           ]
         },
@@ -208,31 +161,16 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "12",
-                "13",
-                "14",
-                "15",
-                "16"
-              ],
+              "Pallets": ["12", "13", "14", "15", "16"],
               "Fixture": "fix",
               "Face": 1,
-              "Load": [
-                2
-              ],
+              "Load": [2],
               "ExpectedLoadTime": "PT1M",
-              "Unload": [
-                2
-              ],
+              "Unload": [2],
               "ExpectedUnloadTime": "PT15M",
               "Stops": [
                 {
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "aaa3FC",
                   "Tools": {},
                   "StationGroup": "FC",
@@ -283,13 +221,7 @@
               "InputQueue": "Transfer",
               "OutputQueue": "Transfer",
               "Inspections": [],
-              "PalletNums": [
-                12,
-                13,
-                14,
-                15,
-                16
-              ]
+              "PalletNums": [12, 13, 14, 15, 16]
             }
           ]
         },
@@ -297,27 +229,16 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "11"
-              ],
+              "Pallets": ["11"],
               "Fixture": "1",
               "Face": 1,
-              "Load": [
-                2
-              ],
+              "Load": [2],
               "ExpectedLoadTime": "PT1M",
-              "Unload": [
-                4
-              ],
+              "Unload": [4],
               "ExpectedUnloadTime": "PT15M",
               "Stops": [
                 {
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "aaa4RO",
                   "Tools": {},
                   "StationGroup": "RO",
@@ -367,9 +288,7 @@
               "PartsPerPallet": 1,
               "InputQueue": "Transfer",
               "Inspections": [],
-              "PalletNums": [
-                11
-              ]
+              "PalletNums": [11]
             }
           ]
         }

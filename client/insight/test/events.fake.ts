@@ -65,7 +65,11 @@ export function fakeMaterial(part?: string, proc?: number): LogMaterial {
   });
 }
 
-export function fakeInProcMaterial(matId: number, queue?: string, queuePos?: number): InProcessMaterial {
+export function fakeInProcMaterial(
+  matId: number,
+  queue?: string,
+  queuePos?: number,
+): InProcessMaterial {
   return new InProcessMaterial({
     materialID: matId,
     jobUnique: "uniq" + faker.string.alphanumeric(),
@@ -145,7 +149,12 @@ export function fakeInspSignal(
   };
 }
 
-export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
+export function fakeInspForce(
+  mat?: LogMaterial,
+  inspType?: string,
+  now?: Date,
+  counter?: number,
+): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
   now = now || new Date(2017, 9, 5);

@@ -150,7 +150,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       return row;
     }
 
-    private void AddScheduleProcess(MazakScheduleRow schRow, int proc, int matQty, int exeQty, int fixQty = 1)
+    private void AddScheduleProcess(
+      MazakScheduleRow schRow,
+      int proc,
+      int matQty,
+      int exeQty,
+      int fixQty = 1
+    )
     {
       schRow.Processes.Add(
         new MazakScheduleProcessRow()
@@ -183,7 +189,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       return mat;
     }
 
-    private long AddAssigned(string uniq, string part, int numProc, int lastProc, int path, string queue)
+    private long AddAssigned(
+      string uniq,
+      string part,
+      int numProc,
+      int lastProc,
+      int path,
+      string queue
+    )
     {
       using var _logDB = _repoCfg.OpenConnection();
       // Same as RoutingInfo.AddUnprocessedMaterialToQueue
@@ -769,10 +782,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "thequeue");
 
-      _logDB.GetMaterialInQueueByUnique("thequeue", "uuuu").ShouldContain(m => m.MaterialID == matIdProc1);
+      _logDB
+        .GetMaterialInQueueByUnique("thequeue", "uuuu")
+        .ShouldContain(m => m.MaterialID == matIdProc1);
       _logDB.IsMaterialInQueue(matIdProc1).ShouldBeTrue();
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
 
       trans.Schedules.Count.ShouldBe(1);
       trans.Schedules[0].Priority.ShouldBe(10);
@@ -782,7 +801,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[1].ProcessNumber.ShouldBe(2);
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(3);
 
-      _logDB.GetMaterialInQueueByUnique("thequeue", "uuuu").ShouldNotContain(m => m.MaterialID == matIdProc1);
+      _logDB
+        .GetMaterialInQueueByUnique("thequeue", "uuuu")
+        .ShouldNotContain(m => m.MaterialID == matIdProc1);
       _logDB.IsMaterialInQueue(matIdProc1).ShouldBeFalse();
     }
 
@@ -835,7 +856,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc1Mat = Enumerable
         .Range(0, 2)
         .Select(i =>
-          AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+          AddAssigned(
+            uniq: "uuuu",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 0,
+            path: 1,
+            queue: "castingQ"
+          )
         )
         .ToList();
 
@@ -927,7 +955,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc1Mat = Enumerable
         .Range(0, 2)
         .Select(i =>
-          AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+          AddAssigned(
+            uniq: "uuuu",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 0,
+            path: 1,
+            queue: "castingQ"
+          )
         )
         .ToList();
 
@@ -948,7 +983,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         path: 1,
         queue: "castingQ"
       );
-      var xxxId2 = AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "transQ");
+      var xxxId2 = AddAssigned(
+        uniq: "xxxx",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 1,
+        path: 1,
+        queue: "transQ"
+      );
 
       var trans = MazakQueues.CalculateScheduleChanges(
         _logDB,
@@ -1028,7 +1070,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             .ToList()
         );
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
 
       // adds an extra material with id xxxId2 + 1
       var actual = _logDB.GetMaterialInAllQueues();
@@ -1085,7 +1131,10 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[1].ProcessNumber.ShouldBe(2);
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(3); // set the material back to 3
 
-      read.Schedules[0].Processes[1] = read.Schedules[0].Processes[1] with { ProcessMaterialQuantity = 3 };
+      read.Schedules[0].Processes[1] = read.Schedules[0].Processes[1] with
+      {
+        ProcessMaterialQuantity = 3,
+      };
 
       trans = MazakQueues.CalculateScheduleChanges(
         _logDB,
@@ -1456,7 +1505,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
 
       // should allocate 2 parts to uuuu since that is the remaining planned
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
 
       _logDB
         .GetMaterialInAllQueues()
@@ -1578,8 +1631,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules.ShouldBeEmpty();
 
       // put 2 assigned castings and three castings
-      var mat1 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
-      var mat2 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
+      var mat1 = AddAssigned(
+        uniq: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 0,
+        path: 1,
+        queue: "thequeue"
+      );
+      var mat2 = AddAssigned(
+        uniq: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 0,
+        path: 1,
+        queue: "thequeue"
+      );
       var mat3 = AddCasting("casting", "thequeue");
       var mat4 = AddCasting("casting", "thequeue");
       var mat5 = AddCasting("casting", "thequeue");
@@ -1995,8 +2062,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
 
       // put 2 assigned castings in queue
-      var mat1 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
-      var mat2 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
+      var mat1 = AddAssigned(
+        uniq: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 0,
+        path: 1,
+        queue: "thequeue"
+      );
+      var mat2 = AddAssigned(
+        uniq: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 0,
+        path: 1,
+        queue: "thequeue"
+      );
 
       _logDB
         .GetMaterialInAllQueues()
@@ -2224,7 +2305,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       // add 2 more to uuuu1 proc 1
       for (int i = 0; i < 2; i++)
-        AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ");
+        AddAssigned(
+          uniq: "uuuu1",
+          part: "pppp",
+          numProc: 2,
+          lastProc: 0,
+          path: 1,
+          queue: "castingQ"
+        );
 
       // add 5 more to uuuu1 proc 2
       for (int i = 0; i < 5; i++)
@@ -2232,7 +2320,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       // add 10 more to uuuu 2 proc 1
       for (int i = 0; i < 10; i++)
-        AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ");
+        AddAssigned(
+          uniq: "uuuu2",
+          part: "pppp",
+          numProc: 2,
+          lastProc: 0,
+          path: 1,
+          queue: "castingQ"
+        );
 
       // add 15 more to uuuu 2 proc 2
       for (int i = 0; i < 15; i++)
@@ -2295,13 +2390,27 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc1path1 = Enumerable
         .Range(0, 4)
         .Select(i =>
-          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+          AddAssigned(
+            uniq: "uuuu1",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 0,
+            path: 1,
+            queue: "castingQ"
+          )
         )
         .ToList();
       var proc2path1 = Enumerable
         .Range(0, 7)
         .Select(i =>
-          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+          AddAssigned(
+            uniq: "uuuu1",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 1,
+            path: 1,
+            queue: "transQ"
+          )
         )
         .ToList();
 
@@ -2327,13 +2436,27 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc1path2 = Enumerable
         .Range(0, 2)
         .Select(i =>
-          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+          AddAssigned(
+            uniq: "uuuu2",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 0,
+            path: 1,
+            queue: "castingQ"
+          )
         )
         .ToList();
       var proc2path2 = Enumerable
         .Range(0, 9)
         .Select(i =>
-          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+          AddAssigned(
+            uniq: "uuuu2",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 1,
+            path: 1,
+            queue: "transQ"
+          )
         )
         .ToList();
 
@@ -2419,7 +2542,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc2path1 = Enumerable
         .Range(0, 3)
         .Select(i =>
-          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+          AddAssigned(
+            uniq: "uuuu1",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 1,
+            path: 1,
+            queue: "transQ"
+          )
         )
         .ToList();
 
@@ -2446,7 +2576,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc2path2 = Enumerable
         .Range(0, 6)
         .Select(i =>
-          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+          AddAssigned(
+            uniq: "uuuu2",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 1,
+            path: 1,
+            queue: "transQ"
+          )
         )
         .ToList();
 
@@ -2753,7 +2890,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc2path2 = Enumerable
         .Range(0, 3)
         .Select(i =>
-          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+          AddAssigned(
+            uniq: "uuuu1",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 1,
+            path: 1,
+            queue: "transQ"
+          )
         )
         .ToList();
 
@@ -2780,7 +2924,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc2path1 = Enumerable
         .Range(0, 6)
         .Select(i =>
-          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+          AddAssigned(
+            uniq: "uuuu2",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 1,
+            path: 1,
+            queue: "transQ"
+          )
         )
         .ToList();
 
@@ -2861,14 +3012,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           }
         );
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // two more, which gives enough for path 2
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
 
       _logDB
         .GetMaterialInAllQueues()
@@ -2973,7 +3132,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Arguments(null, false, true)]
     [Arguments("mycasting", true, false)]
     [Arguments("mycasting", false, true)]
-    public void AdjustsPriorityWhenAddingCastings(string casting, bool matchPallet, bool matchFixture)
+    public void AdjustsPriorityWhenAddingCastings(
+      string casting,
+      bool matchPallet,
+      bool matchFixture
+    )
     {
       using var _logDB = _repoCfg.OpenConnection();
       var read = new TestMazakData();
@@ -3002,7 +3165,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc2path1 = Enumerable
         .Range(0, 3)
         .Select(i =>
-          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+          AddAssigned(
+            uniq: "uuuu1",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 1,
+            path: 1,
+            queue: "transQ"
+          )
         )
         .ToList();
 
@@ -3030,7 +3200,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var proc2path2 = Enumerable
         .Range(0, 6)
         .Select(i =>
-          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+          AddAssigned(
+            uniq: "uuuu2",
+            part: "pppp",
+            numProc: 2,
+            lastProc: 1,
+            path: 1,
+            queue: "transQ"
+          )
         )
         .ToList();
 

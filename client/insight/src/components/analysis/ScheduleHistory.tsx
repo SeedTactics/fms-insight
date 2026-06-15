@@ -33,7 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { useState, useMemo, ReactNode } from "react";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
+import {
+  last30MaterialSummary,
+  specificMonthMaterialSummary,
+} from "../../cell-status/material-summary.js";
 import {
   Column,
   DataTableActions,
@@ -125,7 +128,10 @@ function JobRow({ job }: { readonly job: ScheduledJobDisplay }) {
       <JobDetailRow>
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={cols.length + 1}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <JobDetails job={job.inProcJob ? job.inProcJob : job.historicJob} checkAnalysisMonth={true} />
+            <JobDetails
+              job={job.inProcJob ? job.inProcJob : job.historicJob}
+              checkAnalysisMonth={true}
+            />
           </Collapse>
         </TableCell>
       </JobDetailRow>
@@ -160,7 +166,12 @@ export function ScheduleTable() {
   return (
     <div>
       <Table stickyHeader>
-        <DataTableHead columns={cols} sort={sort} showDetailsCol={true} copyToClipboardRows={jobs} />
+        <DataTableHead
+          columns={cols}
+          sort={sort}
+          showDetailsCol={true}
+          copyToClipboardRows={jobs}
+        />
         <TableBody>
           {page.map((j, jIdx) => (
             <JobRow key={j.historicJob?.unique ?? j.inProcJob?.unique ?? jIdx} job={j} />

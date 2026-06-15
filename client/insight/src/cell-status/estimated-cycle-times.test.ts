@@ -1,5 +1,9 @@
 import { it, expect } from "vitest";
-import { fakeBasketLoadOrUnload, fakeLoadOrUnload, fakeMachineCycle } from "../../test/events.fake.js";
+import {
+  fakeBasketLoadOrUnload,
+  fakeLoadOrUnload,
+  fakeMachineCycle,
+} from "../../test/events.fake.js";
 import { LogMaterial } from "../network/api.js";
 import { createStore } from "jotai";
 import {

@@ -123,7 +123,14 @@ function InstrButton() {
 
   if (material === null || material.partName === "") return null;
 
-  const url = instructionUrl(material.partName, "closeout", material.materialID, null, maxProc, operator);
+  const url = instructionUrl(
+    material.partName,
+    "closeout",
+    material.materialID,
+    null,
+    maxProc,
+    operator,
+  );
   if (demo) {
     return <Button color="primary">Instructions</Button>;
   } else {
@@ -182,7 +189,11 @@ export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean })
     const uncompleted: Array<MaterialSummaryAndCompletedData> = [];
     const closed: Array<MaterialSummaryAndCompletedData> = [];
     for (const m of matSummary.matsById.values()) {
-      if (m.completed_last_proc_machining === true && m.last_unload_time && m.last_unload_time >= cutoff) {
+      if (
+        m.completed_last_proc_machining === true &&
+        m.last_unload_time &&
+        m.last_unload_time >= cutoff
+      ) {
         if (m.closeout_completed === undefined) {
           uncompleted.push(m);
         } else if (m.closeout_completed >= closedCutoff) {
@@ -216,7 +227,9 @@ export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean })
             minHeight: forceSingleColumn ? undefined : { md: "calc(100vh - 64px)" },
             width: forceSingleColumn ? "100%" : { md: "50vw" },
             borderRight: forceSingleColumn ? undefined : { md: "1px solid black" },
-            borderBottom: forceSingleColumn ? "1px solid black" : { sm: "1px solid black", md: "none" },
+            borderBottom: forceSingleColumn
+              ? "1px solid black"
+              : { sm: "1px solid black", md: "none" },
           }}
         >
           <Typography variant="h4">Recently Completed</Typography>

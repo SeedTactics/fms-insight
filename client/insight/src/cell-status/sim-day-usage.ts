@@ -43,23 +43,31 @@ export type LatestSimDayUsage = {
 const latestUsageRW = atom<LatestSimDayUsage | null>(null);
 export const latestSimDayUsage: Atom<LatestSimDayUsage | null> = latestUsageRW;
 
-function update(get: Getter, set: Setter, schId: string, usage: ReadonlyArray<Readonly<ISimulatedDayUsage>>) {
+function update(
+  get: Getter,
+  set: Setter,
+  schId: string,
+  usage: ReadonlyArray<Readonly<ISimulatedDayUsage>>,
+) {
   const old = get(latestSimDayUsage);
   if (old === null || old.simId < schId) {
     set(latestUsageRW, { simId: schId, usage });
   }
 }
 
-export const setLatestSimDayUsage = atom(null, (get, set, history: Readonly<IRecentHistoricData>) => {
-  if (
-    !history.mostRecentSimulationId ||
-    !history.mostRecentSimDayUsage ||
-    history.mostRecentSimDayUsage.length === 0
-  ) {
-    return;
-  }
-  update(get, set, history.mostRecentSimulationId, history.mostRecentSimDayUsage);
-});
+export const setLatestSimDayUsage = atom(
+  null,
+  (get, set, history: Readonly<IRecentHistoricData>) => {
+    if (
+      !history.mostRecentSimulationId ||
+      !history.mostRecentSimDayUsage ||
+      history.mostRecentSimDayUsage.length === 0
+    ) {
+      return;
+    }
+    update(get, set, history.mostRecentSimulationId, history.mostRecentSimDayUsage);
+  },
+);
 
 export const updateLatestSimDayUsage = atom(null, (get, set, { evt }: ServerEventAndTime) => {
   if (evt.newJobs && evt.newJobs.simDayUsage && evt.newJobs.simDayUsage.length > 0) {

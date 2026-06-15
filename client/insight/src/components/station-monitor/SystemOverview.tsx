@@ -170,7 +170,9 @@ function useCellOverview(): CellOverview {
       },
     ]);
 
-  let machines: OrderedMap<string, OrderedMap<number, MachineStatus>> = LazySeq.ofObject(currentSt.pallets)
+  let machines: OrderedMap<string, OrderedMap<number, MachineStatus>> = LazySeq.ofObject(
+    currentSt.pallets,
+  )
     .filter(
       ([, p]) =>
         p.currentPalletLocation.loc === PalletLocationEnum.Machine ||
@@ -185,9 +187,13 @@ function useCellOverview(): CellOverview {
       ([[statGroup, _statNum], _pals]) => statGroup,
       ([[_statGroup, statNum], _pals]) => statNum,
       ([[statGroup, statNum], pals]) => {
-        const worktable = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.Machine);
+        const worktable = pals.find(
+          (p) => p.currentPalletLocation.loc === PalletLocationEnum.Machine,
+        );
         const worktableMats = worktable ? (matByPal.get(worktable.palletNum) ?? []) : null;
-        const rotary = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue);
+        const rotary = pals.find(
+          (p) => p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue,
+        );
         const rotaryMats = rotary ? (matByPal.get(rotary.palletNum) ?? []) : null;
 
         let isInbound = true;
@@ -336,12 +342,12 @@ function useCellOverview(): CellOverview {
             m.lastCompletedMachiningRouteStopIndex !== undefined
           ) {
             const stop =
-              currentSt.jobs[m.jobUnique]?.procsAndPaths?.[m.process - 1]?.paths?.[m.path - 1]?.stops?.[
-                m.lastCompletedMachiningRouteStopIndex
-              ];
+              currentSt.jobs[m.jobUnique]?.procsAndPaths?.[m.process - 1]?.paths?.[m.path - 1]
+                ?.stops?.[m.lastCompletedMachiningRouteStopIndex];
             if (
               !stop ||
-              (stop.stationGroup === mach.machineGroup && stop.stationNums.includes(mach.machineNum))
+              (stop.stationGroup === mach.machineGroup &&
+                stop.stationNums.includes(mach.machineNum))
             ) {
               return "Loading";
             }
@@ -353,7 +359,9 @@ function useCellOverview(): CellOverview {
           lulNum,
           machineMoving: mach.moving,
           machineCurrentlyAtLoad:
-            lulNum === mach.currentLoadStation ? { group: mach.machineGroup, num: mach.machineNum } : null,
+            lulNum === mach.currentLoadStation
+              ? { group: mach.machineGroup, num: mach.machineNum }
+              : null,
           readyMats: allMats.get("Ready") ?? [],
           machiningMats: allMats.get("Machining") ?? [],
           loadingMats: allMats.get("Loading") ?? [],
@@ -395,7 +403,8 @@ function useCellOverview(): CellOverview {
           break;
         }
 
-        const byLoad = basket.location === BasketLocationEnum.LoadUnload ? activeBaskets : stagedBaskets;
+        const byLoad =
+          basket.location === BasketLocationEnum.LoadUnload ? activeBaskets : stagedBaskets;
         const prev = byLoad.get(loadNum) ?? [];
         prev.push(basketWithMaterial);
         byLoad.set(loadNum, prev);
@@ -411,7 +420,10 @@ function useCellOverview(): CellOverview {
   let maxNumStagingRows = 0;
   let maxNumSourceRows = 0;
   loads = loads.mapValues((load) => {
-    const sourceRows = new Map<string, { label: string; mats: Array<Readonly<IInProcessMaterial>> }>();
+    const sourceRows = new Map<
+      string,
+      { label: string; mats: Array<Readonly<IInProcessMaterial>> }
+    >();
     const sourceMats = LazySeq.of(load.pal?.mats ?? load.basket?.mats ?? [])
       .filter((mat) => mat.location.type !== LocType.OnPallet)
       .toRArray();
@@ -485,7 +497,8 @@ function useCellOverview(): CellOverview {
     loads: loads.valuesToAscLazySeq().toRArray(),
     stockerPals: stockerPals.valuesToAscLazySeq().toRArray(),
     floatingBaskets: LazySeq.of(floatingBaskets.values()).toRArray(),
-    storageBaskets: storageEmpty + storageFilled > 0 ? { empty: storageEmpty, filled: storageFilled } : null,
+    storageBaskets:
+      storageEmpty + storageFilled > 0 ? { empty: storageEmpty, filled: storageFilled } : null,
     machineAtLoad: machAtLoad.valuesToAscLazySeq().toRArray(),
     maxNumFacesOnPallet,
     maxNumStagingRows,
@@ -524,10 +537,15 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
     }
   }
 
-  function faceName(pallet: number | null | undefined, faceNum: number | null | undefined): string | null {
+  function faceName(
+    pallet: number | null | undefined,
+    faceNum: number | null | undefined,
+  ): string | null {
     if (faceNum === null || faceNum === undefined) return null;
     const name =
-      pallet != null && pallet != undefined ? curSt.pallets[pallet]?.faceNames?.[faceNum - 1] : null;
+      pallet != null && pallet != undefined
+        ? curSt.pallets[pallet]?.faceNames?.[faceNum - 1]
+        : null;
     return name ?? "Face: " + faceNum.toString();
   }
 
@@ -537,7 +555,12 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
         elevation={4}
         onPointerEnter={enter}
         onPointerLeave={leave}
-        sx={{ position: "relative", zIndex: open ? 10 : 0, width: "max-content", height: "max-content" }}
+        sx={{
+          position: "relative",
+          zIndex: open ? 10 : 0,
+          width: "max-content",
+          height: "max-content",
+        }}
       >
         <Badge badgeContent={mats.length > 1 ? mats.length : 0} color="secondary">
           <ButtonBase focusRipple onClick={click} ref={btnRef}>
@@ -647,7 +670,9 @@ function PalletFaces({
       : LazySeq.of(allMats)
           .filter((m) => noFilter || m.location.type === LocType.OnPallet)
           .orderedGroupBy((m) =>
-            m.action.type === ActionType.Loading ? (m.action.loadOntoFace ?? 1) : (m.location.face ?? 1),
+            m.action.type === ActionType.Loading
+              ? (m.action.loadOntoFace ?? 1)
+              : (m.location.face ?? 1),
           );
 
     return (
@@ -679,7 +704,9 @@ function PalletFaces({
 }
 
 function BasketContents({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
-  const byPosition = LazySeq.of(mats).orderedGroupBy((m) => (m.location.basketSubPosition ?? 0) + 1);
+  const byPosition = LazySeq.of(mats).orderedGroupBy(
+    (m) => (m.location.basketSubPosition ?? 0) + 1,
+  );
   return (
     <Box
       sx={{
@@ -765,13 +792,15 @@ function useRemainingMachineTime(
   let remainingSecs: number | null = null;
   if (remainingDurationFromCurSt) {
     const remainingSecsInCurSt = durationToSeconds(remainingDurationFromCurSt);
-    remainingSecs = remainingSecsInCurSt - (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+    remainingSecs =
+      remainingSecsInCurSt - (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
   }
 
   let elapsedSecs: number | null = null;
   if (elapsedDurationFromCurSt) {
     const elapsedSecsInCurSt = durationToSeconds(elapsedDurationFromCurSt);
-    elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+    elapsedSecs =
+      elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
   }
 
   if (remainingSecs !== null && elapsedSecs !== null) {
@@ -864,7 +893,9 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
           borderBottom: "1px solid black",
         }}
       >
-        {machine.inbound ? <PalletFaces mats={machine.inbound.mats} maxNumFaces={maxNumFaces} /> : undefined}
+        {machine.inbound ? (
+          <PalletFaces mats={machine.inbound.mats} maxNumFaces={maxNumFaces} />
+        ) : undefined}
       </Box>
       <Box
         sx={{
@@ -962,7 +993,8 @@ function useElapsedLoadTime(
   let elapsedSecs: number | null = null;
   if (elapsedDurationFromCurSt) {
     const elapsedSecsInCurSt = durationToSeconds(elapsedDurationFromCurSt);
-    elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+    elapsedSecs =
+      elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
   }
 
   if (elapsedSecs !== null) {
@@ -983,7 +1015,9 @@ function LoadStationLabel({ load }: { load: LoadStatus }) {
         alignItems: "baseline",
       }}
     >
-      <Typography variant="h5">{loadStationDisplayName(load.lulNum, fmsInfo.loadStationNames)}</Typography>
+      <Typography variant="h5">
+        {loadStationDisplayName(load.lulNum, fmsInfo.loadStationNames)}
+      </Typography>
       <Typography variant="body1">{status}</Typography>
     </Box>
   );
@@ -1011,8 +1045,14 @@ function LoadStation({
   const numSourceRows = Math.max(1, maxNumSourceRows);
   const numStagingRows = Math.max(1, maxNumStagingRows);
 
-  const sourceAreaRows = Array.from({ length: numSourceRows }, (_, i) => `"source${i} sourcemat${i}"`);
-  const stagingAreaRows = Array.from({ length: numStagingRows }, (_, i) => `"stage${i} stagemat${i}"`);
+  const sourceAreaRows = Array.from(
+    { length: numSourceRows },
+    (_, i) => `"source${i} sourcemat${i}"`,
+  );
+  const stagingAreaRows = Array.from(
+    { length: numStagingRows },
+    (_, i) => `"stage${i} stagemat${i}"`,
+  );
   const gridTemplateAreas = [
     '"lulname lulname"',
     ...sourceAreaRows,
@@ -1177,7 +1217,9 @@ function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
         </>
       ) : (
         <>
-          {status.machineMoving ? <Typography variant="subtitle2">Machine Moving</Typography> : undefined}
+          {status.machineMoving ? (
+            <Typography variant="subtitle2">Machine Moving</Typography>
+          ) : undefined}
           <Typography variant="subtitle1">Loading {lulStatus}</Typography>
         </>
       )}
@@ -1185,7 +1227,13 @@ function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
   );
 }
 
-function MachineAtLoad({ maxNumFaces, status }: { maxNumFaces: number; status: MachineAtLoadStatus }) {
+function MachineAtLoad({
+  maxNumFaces,
+  status,
+}: {
+  maxNumFaces: number;
+  status: MachineAtLoadStatus;
+}) {
   return (
     <Box
       sx={{
@@ -1198,7 +1246,9 @@ function MachineAtLoad({ maxNumFaces, status }: { maxNumFaces: number; status: M
         })`,
 
         gridTemplateColumns:
-          maxNumFaces === 1 ? "60px minmax(230px, max-content)" : gridTemplateColumns(maxNumFaces, true),
+          maxNumFaces === 1
+            ? "60px minmax(230px, max-content)"
+            : gridTemplateColumns(maxNumFaces, true),
         gridTemplateAreas: `"name name" "ready readymat" "machining machiningmat" "loadstation loadstationmat"`,
       }}
     >
@@ -1307,7 +1357,13 @@ function MachineAtLoad({ maxNumFaces, status }: { maxNumFaces: number; status: M
   );
 }
 
-function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: PalletAndMaterial }) {
+function StockerPallet({
+  maxNumFaces,
+  pallet,
+}: {
+  maxNumFaces: number;
+  pallet: PalletAndMaterial;
+}) {
   return (
     <Box
       sx={{
@@ -1390,7 +1446,11 @@ function BasketStorageSummary({ empty, filled }: { empty: number; filled: number
   );
 }
 
-export const SystemOverview = memo(function SystemOverview({ overview }: { overview: CellOverview }) {
+export const SystemOverview = memo(function SystemOverview({
+  overview,
+}: {
+  overview: CellOverview;
+}) {
   return (
     <div>
       {overview.machines.toAscLazySeq().map(([group, machines]) => (
@@ -1403,7 +1463,11 @@ export const SystemOverview = memo(function SystemOverview({ overview }: { overv
           }}
         >
           {machines.map((machine) => (
-            <Machine key={machine.name} machine={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
+            <Machine
+              key={machine.name}
+              machine={machine}
+              maxNumFaces={overview.maxNumFacesOnPallet}
+            />
           ))}
         </Box>
       ))}
@@ -1435,11 +1499,17 @@ export const SystemOverview = memo(function SystemOverview({ overview }: { overv
           }}
         >
           {overview.machineAtLoad.map((status) => (
-            <MachineAtLoad key={status.lulNum} status={status} maxNumFaces={overview.maxNumFacesOnPallet} />
+            <MachineAtLoad
+              key={status.lulNum}
+              status={status}
+              maxNumFaces={overview.maxNumFacesOnPallet}
+            />
           ))}
         </Box>
       ) : undefined}
-      {overview.stockerPals.length > 0 || overview.floatingBaskets.length > 0 || overview.storageBaskets ? (
+      {overview.stockerPals.length > 0 ||
+      overview.floatingBaskets.length > 0 ||
+      overview.storageBaskets ? (
         <Box
           sx={{
             display: "flex",
@@ -1698,7 +1768,12 @@ export const SystemOverviewDialogButton = memo(function SystemOverviewDialogButt
         {full ? (
           <AppBar sx={{ position: "relative" }}>
             <Toolbar>
-              <IconButton edge="start" color="inherit" onClick={() => setOpen(false)} aria-label="close">
+              <IconButton
+                edge="start"
+                color="inherit"
+                onClick={() => setOpen(false)}
+                aria-label="close"
+              >
                 <CloseIcon />
               </IconButton>
               <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">

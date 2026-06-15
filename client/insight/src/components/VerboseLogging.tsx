@@ -46,14 +46,16 @@ export function VerboseLoggingPage() {
 
   return (
     <main style={{ marginTop: "4em" }}>
-      <div style={{ maxWidth: "50em", marginLeft: "auto", marginRight: "auto", textAlign: "center" }}>
+      <div
+        style={{ maxWidth: "50em", marginLeft: "auto", marginRight: "auto", textAlign: "center" }}
+      >
         <p
           style={{
             marginBottom: "1em",
           }}
         >
-          Verbose logging generates a large amount of additional data in the FMS Insight Server debug log
-          file.
+          Verbose logging generates a large amount of additional data in the FMS Insight Server
+          debug log file.
         </p>
         <Button disabled={enabled} onClick={enable} variant="contained">
           {enabled ? (

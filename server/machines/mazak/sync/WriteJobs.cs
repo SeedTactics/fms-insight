@@ -76,7 +76,9 @@ namespace MazakMachineInterface
 
       // check if a previous download was interrupted during the middle of schedule downloads
       var alreadyDownloadedSchs = mazakData
-        .Schedules.Where(s => MazakPart.IsSailPart(s.PartName, s.Comment) && !string.IsNullOrEmpty(s.Comment))
+        .Schedules.Where(s =>
+          MazakPart.IsSailPart(s.PartName, s.Comment) && !string.IsNullOrEmpty(s.Comment)
+        )
         .GroupBy(s => MazakPart.UniqueFromComment(s.Comment))
         .ToDictionary(g => g.Key, g => g.Count());
 
@@ -84,7 +86,9 @@ namespace MazakMachineInterface
       var jobsToSchedule = new List<Job>();
       foreach (var j in jobs)
       {
-        var expectedSchedules = ConvertJobsToMazakParts.IsSplitScheduleJob(j) ? j.Processes.Count : 1;
+        var expectedSchedules = ConvertJobsToMazakParts.IsSplitScheduleJob(j)
+          ? j.Processes.Count
+          : 1;
         alreadyDownloadedSchs.TryGetValue(j.UniqueStr, out var existingSchedules);
 
         if (existingSchedules >= expectedSchedules)
@@ -245,7 +249,9 @@ namespace MazakMachineInterface
 
         foreach (var job in jobs)
         {
-          var expectedSchedules = ConvertJobsToMazakParts.IsSplitScheduleJob(job) ? job.Processes.Count : 1;
+          var expectedSchedules = ConvertJobsToMazakParts.IsSplitScheduleJob(job)
+            ? job.Processes.Count
+            : 1;
           existingScheduleCounts.TryGetValue(job.UniqueStr, out var existingSchedules);
           addedScheduleCounts.TryGetValue(job.UniqueStr, out var addedSchedules);
 
@@ -287,7 +293,9 @@ namespace MazakMachineInterface
 
       var unarchived = jobDB.LoadUnarchivedJobs();
 
-      var toArchive = unarchived.Where(j => !current.Contains(j.UniqueStr)).Select(j => j.UniqueStr);
+      var toArchive = unarchived
+        .Where(j => !current.Contains(j.UniqueStr))
+        .Select(j => j.UniqueStr);
 
       var newDecrs = unarchived
         .Where(j => toArchive.Contains(j.UniqueStr))

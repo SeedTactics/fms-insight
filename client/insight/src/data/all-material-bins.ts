@@ -47,7 +47,10 @@ export interface MaterialBinState {
   readonly curBinOrder: ReadonlyArray<MaterialBinId>;
 }
 
-export const currentMaterialBinOrder = atomWithStorage<ReadonlyArray<MaterialBinId>>("material-bins", []);
+export const currentMaterialBinOrder = atomWithStorage<ReadonlyArray<MaterialBinId>>(
+  "material-bins",
+  [],
+);
 
 export function moveMaterialBin(
   curBinOrder: ReadonlyArray<MaterialBinId>,
@@ -206,7 +209,8 @@ export function selectAllMaterialIntoBins(
       LazySeq.ofObject(curSt.queues)
         .filter(
           ([, info]) =>
-            info.role === api.QueueRole.RawMaterial || info.role === api.QueueRole.InProcessTransfer,
+            info.role === api.QueueRole.RawMaterial ||
+            info.role === api.QueueRole.InProcessTransfer,
         )
         .map(([qname, _]) => qname),
     )
@@ -253,7 +257,9 @@ export function selectAllMaterialIntoBins(
         byQueue: LazySeq.of(activeQueues).toRMap(
           (queueName) => {
             const mat = queues.get(queueName) ?? [];
-            mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));
+            mat.sort(
+              (m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0),
+            );
             return [queueName, mat] as const;
           },
           (ms1, ms2) => ms1.concat(ms2), // TODO: rework to use toLookup

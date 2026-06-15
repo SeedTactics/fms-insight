@@ -32,7 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
 import { ILogEntry, LogType, ToolUse } from "../network/api.js";
-import { LazySeq, HashMap, OrderedMap, HashableObj, hashValues } from "@seedtactics/immutable-collections";
+import {
+  LazySeq,
+  HashMap,
+  OrderedMap,
+  HashableObj,
+  hashValues,
+} from "@seedtactics/immutable-collections";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { atom } from "jotai";
@@ -80,7 +86,9 @@ export class StationGroupAndNum implements HashableObj {
     return hashValues(this.group, this.num);
   }
   compare(other: StationGroupAndNum): number {
-    return this.group === other.group ? this.num - other.num : this.group.localeCompare(other.group);
+    return this.group === other.group
+      ? this.num - other.num
+      : this.group.localeCompare(other.group);
   }
   toString(): string {
     return this.group + " #" + this.num.toString();
@@ -133,7 +141,9 @@ function addReplacementsFromLog(
 
       if ((useDuring || cntDuring) && useDuring === totalUseAtEnd && cntDuring === totalCntAtEnd) {
         // replace before cycle start
-        const last = old.recentUse.get(key)?.find((entry) => entry.tool === use.tool && entry.pocket === use.pocket);
+        const last = old.recentUse
+          .get(key)
+          ?.find((entry) => entry.tool === use.tool && entry.pocket === use.pocket);
         if (last) {
           const lastTotalUse = last.totalToolUseAtEndOfCycle
             ? durationToMinutes(last.totalToolUseAtEndOfCycle)
@@ -166,10 +176,14 @@ function addReplacementsFromLog(
           pocket: use.pocket,
           type: "ReplaceInCycle",
           totalUseAtBeginningOfCycle:
-            lifetime !== null && useDuring !== null ? lifetime - useDuring + (totalUseAtEnd ?? 0) : null,
+            lifetime !== null && useDuring !== null
+              ? lifetime - useDuring + (totalUseAtEnd ?? 0)
+              : null,
           totalUseAtEndOfCycle: totalUseAtEnd,
           totalCntAtBeginningOfCycle:
-            lifeCnt !== null && cntDuring !== null ? lifeCnt - cntDuring + (totalCntAtEnd ?? 0) : null,
+            lifeCnt !== null && cntDuring !== null
+              ? lifeCnt - cntDuring + (totalCntAtEnd ?? 0)
+              : null,
           totalCntAtEndOfCycle: totalCntAtEnd,
         });
       }
@@ -186,40 +200,50 @@ function addReplacementsFromLog(
   return { replacements: newReplacements, recentUse: newRecent };
 }
 
-export const setLast30ToolReplacements = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-  set(last30ToolReplacementsRW, (oldCycles) =>
-    LazySeq.of(log)
-      .filter(
-        (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0,
-      )
-      .fold(oldCycles, addReplacementsFromLog),
-  );
-});
+export const setLast30ToolReplacements = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(last30ToolReplacementsRW, (oldCycles) =>
+      LazySeq.of(log)
+        .filter(
+          (e) =>
+            e.type === LogType.MachineCycle &&
+            !e.startofcycle &&
+            !!e.tooluse &&
+            e.tooluse.length > 0,
+        )
+        .fold(oldCycles, addReplacementsFromLog),
+    );
+  },
+);
 
-export const updateLastToolReplacements = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
-  if (
-    evt.logEntry &&
-    !evt.logEntry.startofcycle &&
-    evt.logEntry.type === LogType.MachineCycle &&
-    evt.logEntry.tooluse &&
-    evt.logEntry.tooluse.length > 0
-  ) {
-    const log = evt.logEntry;
+export const updateLastToolReplacements = atom(
+  null,
+  (_, set, { evt, now, expire }: ServerEventAndTime) => {
+    if (
+      evt.logEntry &&
+      !evt.logEntry.startofcycle &&
+      evt.logEntry.type === LogType.MachineCycle &&
+      evt.logEntry.tooluse &&
+      evt.logEntry.tooluse.length > 0
+    ) {
+      const log = evt.logEntry;
 
-    set(last30ToolReplacementsRW, (oldCycles) => {
-      if (expire) {
-        const thirtyDaysAgo = addDays(now, -30);
-        const newReplace = oldCycles.replacements.collectValues((es) => {
-          const newEs = es.filter((e) => e.time >= thirtyDaysAgo);
-          return newEs.size > 0 ? newEs : null;
-        });
-        oldCycles = { replacements: newReplace, recentUse: oldCycles.recentUse };
-      }
+      set(last30ToolReplacementsRW, (oldCycles) => {
+        if (expire) {
+          const thirtyDaysAgo = addDays(now, -30);
+          const newReplace = oldCycles.replacements.collectValues((es) => {
+            const newEs = es.filter((e) => e.time >= thirtyDaysAgo);
+            return newEs.size > 0 ? newEs : null;
+          });
+          oldCycles = { replacements: newReplace, recentUse: oldCycles.recentUse };
+        }
 
-      return addReplacementsFromLog(oldCycles, log);
-    });
-  }
-});
+        return addReplacementsFromLog(oldCycles, log);
+      });
+    }
+  },
+);
 
 export const setSpecificMonthToolReplacements = atom(
   null,
@@ -228,7 +252,11 @@ export const setSpecificMonthToolReplacements = atom(
       specificMonthToolReplacementsRW,
       LazySeq.of(log)
         .filter(
-          (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0,
+          (e) =>
+            e.type === LogType.MachineCycle &&
+            !e.startofcycle &&
+            !!e.tooluse &&
+            e.tooluse.length > 0,
         )
         .fold(emptyReplacementsAndUse, addReplacementsFromLog),
     );

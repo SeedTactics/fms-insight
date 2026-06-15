@@ -122,7 +122,8 @@ namespace BlackMaple.MachineFramework.Controllers
       repo.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
       jobAndQueue.OnNewJobs += (jobs) =>
         Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
-      jobAndQueue.OnNewCurrentStatus += (status) => Send(new ServerEvent() { NewCurrentStatus = status });
+      jobAndQueue.OnNewCurrentStatus += (status) =>
+        Send(new ServerEvent() { NewCurrentStatus = status });
       jobAndQueue.OnEditMaterialInLog += (o) => Send(new ServerEvent() { EditMaterialInLog = o });
     }
 
@@ -179,7 +180,8 @@ namespace BlackMaple.MachineFramework.Controllers
           res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         }
       }
-      catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
+      catch (WebSocketException ex)
+        when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
       {
         //do nothing, just exit the loop
       }
@@ -198,7 +200,11 @@ namespace BlackMaple.MachineFramework.Controllers
 
       if (ws.CloseStatus.HasValue)
       {
-        await ws.CloseAsync(ws.CloseStatus.Value, ws.CloseStatusDescription, CancellationToken.None);
+        await ws.CloseAsync(
+          ws.CloseStatus.Value,
+          ws.CloseStatusDescription,
+          CancellationToken.None
+        );
       }
     }
 
@@ -223,7 +229,8 @@ namespace BlackMaple.MachineFramework.Controllers
           "Server is stopping",
           tokenSource.Token
         );
-        var cancelTask = Task.Delay(TimeSpan.FromSeconds(3)).ContinueWith(_ => tokenSource.Cancel());
+        var cancelTask = Task.Delay(TimeSpan.FromSeconds(3))
+          .ContinueWith(_ => tokenSource.Cancel());
         tasks.Add(Task.WhenAny(closeTask, cancelTask));
       }
 

@@ -87,7 +87,10 @@ namespace MazakMachineInterface
       public bool IsSplitProc1 { get; set; }
     }
 
-    private static List<DecrSchedule> JobsToDecrement(IRepository jobDB, MazakCurrentStatus schedules)
+    private static List<DecrSchedule> JobsToDecrement(
+      IRepository jobDB,
+      MazakCurrentStatus schedules
+    )
     {
       var jobs = new List<DecrSchedule>();
 
@@ -213,7 +216,9 @@ namespace MazakMachineInterface
         var job = decrsForJob.First().Job;
         var planned = job.Cycles;
         var hasSplit = decrsForJob.Any(d => MazakPart.IsSplitComment(d.Schedule.Comment));
-        var newPlanQty = hasSplit ? decrsForJob.Max(d => d.NewPlanQty) : decrsForJob.Sum(d => d.NewPlanQty);
+        var newPlanQty = hasSplit
+          ? decrsForJob.Max(d => d.NewPlanQty)
+          : decrsForJob.Sum(d => d.NewPlanQty);
         if (planned > newPlanQty)
         {
           decrAmt.Add(

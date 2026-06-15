@@ -48,7 +48,10 @@ import {
   binSimProductionByDayAndPart,
   copyCompletedPartsHeatmapToClipboard,
 } from "../../data/results.completed-parts.js";
-import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use.js";
+import {
+  last30SimStationUse,
+  specificMonthSimStationUse,
+} from "../../cell-status/sim-station-use.js";
 import {
   last30SimProduction,
   SimPartCompleted,
@@ -104,14 +107,24 @@ export function StationOeeHeatmap() {
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
 
-  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const statUse = useAtomValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
+  const cycles = useAtomValue(
+    period.type === "Last30" ? last30StationCycles : specificMonthStationCycles,
+  );
+  const statUse = useAtomValue(
+    period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse,
+  );
   const points = useMemo(() => {
     const downtime = binDowntimeToDayAndStat(statUse);
     if (selected === "Standard OEE") {
-      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles.valuesToLazySeq()), downtime);
+      return dayAndStatToHeatmapPoints(
+        binActiveCyclesByDayAndStat(cycles.valuesToLazySeq()),
+        downtime,
+      );
     } else if (selected === "Occupied") {
-      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq()), downtime);
+      return dayAndStatToHeatmapPoints(
+        binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq()),
+        downtime,
+      );
     } else {
       return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse), downtime);
     }
@@ -187,7 +200,9 @@ export function CompletedCountHeatmap() {
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
 
-  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const cycles = useAtomValue(
+    period.type === "Last30" ? last30StationCycles : specificMonthStationCycles,
+  );
   const productionCounts = useAtomValue(
     period.type === "Last30" ? last30SimProduction : specificMonthSimProduction,
   );

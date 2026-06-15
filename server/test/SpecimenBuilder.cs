@@ -53,7 +53,8 @@ namespace BlackMaple.FMSInsight.Tests
       var args = t.GetGenericArguments();
       if (
         args.Length == 1
-        && t.GetGenericTypeDefinition().FullName.StartsWith("System.Collections.Immutable.ImmutableList")
+        && t.GetGenericTypeDefinition()
+          .FullName.StartsWith("System.Collections.Immutable.ImmutableList")
       )
       {
         var addRange = t.GetMethods(
@@ -105,7 +106,8 @@ namespace BlackMaple.FMSInsight.Tests
       }
       else if (
         args.Length == 1
-        && t.GetGenericTypeDefinition().FullName.StartsWith("System.Collections.Immutable.ImmutableSortedSet")
+        && t.GetGenericTypeDefinition()
+          .FullName.StartsWith("System.Collections.Immutable.ImmutableSortedSet")
       )
       {
         var union = t.GetMethods(

@@ -123,7 +123,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       {
         UniqueStr = "uniq1",
         PartName = "part1",
-        RouteStartUTC = new DateTime(2020, 04, 14, 13, 43, 00, DateTimeKind.Local).ToUniversalTime(),
+        RouteStartUTC = new DateTime(
+          2020,
+          04,
+          14,
+          13,
+          43,
+          00,
+          DateTimeKind.Local
+        ).ToUniversalTime(),
         Cycles = 51,
         RouteEndUTC = DateTime.MinValue,
         Archived = false,
@@ -754,7 +762,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           Schedules = [],
           Parts =
           [
-            new MazakPartRow() { PartName = job.PartName + ":1", Comment = job.UniqueStr + "-Insight" },
+            new MazakPartRow()
+            {
+              PartName = job.PartName + ":1",
+              Comment = job.UniqueStr + "-Insight",
+            },
           ],
         },
         [job],
@@ -795,7 +807,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .With(j => j.Cycles, 30)
         .With(
           j => j.Processes,
-          [new ProcessInfo() { Paths = [fix.Build<ProcPathInfo>().With(p => p.InputQueue, "").Create()] }]
+          [
+            new ProcessInfo()
+            {
+              Paths = [fix.Build<ProcPathInfo>().With(p => p.InputQueue, "").Create()],
+            },
+          ]
         )
         .Create();
 
@@ -820,7 +837,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           Parts =
           [
             new MazakPartRow() { PartName = "full-hold-part:1", Comment = "full-hold-Insight" },
-            new MazakPartRow() { PartName = "machining-hold-part:1", Comment = "machining-hold-Insight" },
+            new MazakPartRow()
+            {
+              PartName = "machining-hold-part:1",
+              Comment = "machining-hold-Insight",
+            },
           ],
         },
         [fullHoldJob, machiningHoldJob],
@@ -842,7 +863,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       {
         UniqueStr = "split-uniq",
         PartName = "split-part",
-        RouteStartUTC = new DateTime(2020, 04, 14, 13, 43, 00, DateTimeKind.Local).ToUniversalTime(),
+        RouteStartUTC = new DateTime(
+          2020,
+          04,
+          14,
+          13,
+          43,
+          00,
+          DateTimeKind.Local
+        ).ToUniversalTime(),
         Cycles = 12,
         RouteEndUTC = DateTime.MinValue,
         Archived = false,
@@ -924,9 +953,21 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           Schedules = Array.Empty<MazakScheduleRow>(),
           Parts = new MazakPartRow[]
           {
-            new MazakPartRow() { PartName = "split-part:1:1:1", Comment = "split-uniq-1-1-InsightS" },
-            new MazakPartRow() { PartName = "split-part:1:2:2", Comment = "split-uniq-2-1-InsightS" },
-            new MazakPartRow() { PartName = "combined-part:1:3", Comment = "combined-uniq-Insight" },
+            new MazakPartRow()
+            {
+              PartName = "split-part:1:1:1",
+              Comment = "split-uniq-1-1-InsightS",
+            },
+            new MazakPartRow()
+            {
+              PartName = "split-part:1:2:2",
+              Comment = "split-uniq-2-1-InsightS",
+            },
+            new MazakPartRow()
+            {
+              PartName = "combined-part:1:3",
+              Comment = "combined-uniq-Insight",
+            },
           },
         },
         new HistoricJob[] { splitBase, combinedJob },
@@ -980,7 +1021,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       {
         UniqueStr = "split-uniq",
         PartName = "split-part",
-        RouteStartUTC = new DateTime(2020, 04, 14, 13, 43, 00, DateTimeKind.Local).ToUniversalTime(),
+        RouteStartUTC = new DateTime(
+          2020,
+          04,
+          14,
+          13,
+          43,
+          00,
+          DateTimeKind.Local
+        ).ToUniversalTime(),
         Cycles = 12,
         RouteEndUTC = DateTime.MinValue,
         Archived = false,
@@ -1023,8 +1072,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         {
           Parts = new MazakPartRow[]
           {
-            new MazakPartRow() { PartName = "split-part:1:1:1", Comment = "split-uniq-1-1-InsightS" },
-            new MazakPartRow() { PartName = "split-part:1:2:2", Comment = "split-uniq-2-1-InsightS" },
+            new MazakPartRow()
+            {
+              PartName = "split-part:1:1:1",
+              Comment = "split-uniq-1-1-InsightS",
+            },
+            new MazakPartRow()
+            {
+              PartName = "split-part:1:2:2",
+              Comment = "split-uniq-2-1-InsightS",
+            },
           },
           Schedules = new MazakScheduleRow[]
           {

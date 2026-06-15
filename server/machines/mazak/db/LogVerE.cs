@@ -43,9 +43,15 @@ public static class LogDataVerE
 {
   private const string DateTimeFormat = "yyyyMMddHHmmss";
 
-  public static List<LogEntry> LoadLog(string lastForeignID, IDbConnection conn, IDbTransaction trans)
+  public static List<LogEntry> LoadLog(
+    string lastForeignID,
+    IDbConnection conn,
+    IDbTransaction trans
+  )
   {
-    using (System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand())
+    using (
+      System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand()
+    )
     {
       ((System.Data.IDbCommand)cmd).Transaction = trans;
 
@@ -131,7 +137,10 @@ public static class LogDataVerE
               + reader.GetInt32(0).ToString()
               + "-"
               + reader.GetDateTime(1).ToString(DateTimeFormat),
-            TimeUTC = new DateTime(reader.GetDateTime(1).Ticks, DateTimeKind.Local).ToUniversalTime(),
+            TimeUTC = new DateTime(
+              reader.GetDateTime(1).Ticks,
+              DateTimeKind.Local
+            ).ToUniversalTime(),
             Code = (LogCode)reader.GetInt32(2),
             StationNumber = reader.IsDBNull(3) ? -1 : reader.GetInt32(3),
             FullPartName = fullPartName,

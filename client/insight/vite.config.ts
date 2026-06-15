@@ -55,7 +55,9 @@ export default defineConfig({
                 browser: "chromium",
                 provider: playwright({
                   launchOptions: {
-                    executablePath: existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined,
+                    executablePath: existsSync("/usr/bin/chromium")
+                      ? "/usr/bin/chromium"
+                      : undefined,
                   },
                 }),
               },

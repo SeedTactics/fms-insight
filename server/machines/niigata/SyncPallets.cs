@@ -107,7 +107,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public bool DecrementJobs(IRepository db, CellState st)
     {
-      var newDecrs = st.CurrentStatus.BuildJobsToDecrement(decrementJobFilter: _settings.DecrementJobFilter);
+      var newDecrs = st.CurrentStatus.BuildJobsToDecrement(
+        decrementJobFilter: _settings.DecrementJobFilter
+      );
 
       if (newDecrs.Count > 0)
       {

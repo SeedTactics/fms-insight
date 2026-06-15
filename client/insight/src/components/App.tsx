@@ -99,7 +99,10 @@ import { CloseoutReport } from "./operations/CloseoutReport.js";
 import { RebookingsPage } from "./operations/Rebookings.js";
 import { RecentCompletedPartsPage } from "./operations/CompletedParts.js";
 import { basketDisplayName } from "../cell-status/station-cycles.js";
-import { last30HasBasketCycleData, specificMonthHasBasketCycleData } from "../cell-status/basket-cycles.js";
+import {
+  last30HasBasketCycleData,
+  specificMonthHasBasketCycleData,
+} from "../cell-status/basket-cycles.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -194,7 +197,11 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
 function analysisReports(hasBasketCycles: boolean): ReadonlyArray<MenuNavItem> {
   return [
     { separator: "Efficiency" },
-    { name: "Buffers", route: { route: routes.RouteLocation.Analysis_Buffers }, icon: <BufferIcon /> },
+    {
+      name: "Buffers",
+      route: { route: routes.RouteLocation.Analysis_Buffers },
+      icon: <BufferIcon />,
+    },
     {
       name: "Station OEE",
       route: { route: routes.RouteLocation.Analysis_StationOEE },
@@ -228,7 +235,11 @@ function analysisReports(hasBasketCycles: boolean): ReadonlyArray<MenuNavItem> {
       hidden: () => !hasBasketCycles,
     },
     { separator: "Cell" },
-    { name: "Quality", route: { route: routes.RouteLocation.Analysis_Quality }, icon: <BuildIcon /> },
+    {
+      name: "Quality",
+      route: { route: routes.RouteLocation.Analysis_Quality },
+      icon: <BuildIcon />,
+    },
     {
       name: "Tool Replacements",
       route: { route: routes.RouteLocation.Analysis_ToolReplacements },
@@ -294,7 +305,9 @@ export function NavTabs({ children }: { children?: ReactNode }) {
 
   return (
     <Tabs
-      variant={full && (!Array.isArray(children) || children.length < 5) ? "fullWidth" : "scrollable"}
+      variant={
+        full && (!Array.isArray(children) || children.length < 5) ? "fullWidth" : "scrollable"
+      }
       value={isOperationReport ? OperationsReportsTab : route.route}
       onChange={(e, v) =>
         startTransition(() => {
@@ -380,7 +393,9 @@ const App = memo(function App(props: AppProps) {
   const hasLast30BasketCycles = useAtomValue(last30HasBasketCycleData);
   const hasSpecificMonthBasketCycles = useAtomValue(specificMonthHasBasketCycleData);
   const [route, setRoute] = useAtom(routes.currentRoute);
-  const analysisMenuNavItems = analysisReports(hasLast30BasketCycles || hasSpecificMonthBasketCycles);
+  const analysisMenuNavItems = analysisReports(
+    hasLast30BasketCycles || hasSpecificMonthBasketCycles,
+  );
 
   const showLogout = fmsInfo.user !== null && fmsInfo.user !== undefined;
 
@@ -407,7 +422,9 @@ const App = memo(function App(props: AppProps) {
   } else {
     switch (route.route) {
       case routes.RouteLocation.Station_LoadMonitor:
-        page = <LoadStation loadNum={route.loadNum} queues={route.queues} completed={route.completed} />;
+        page = (
+          <LoadStation loadNum={route.loadNum} queues={route.queues} completed={route.completed} />
+        );
         nav1 = StationToolbar;
         nav2 = StationToolbarOverviewButton;
         showOperator = true;
@@ -681,7 +698,9 @@ const App = memo(function App(props: AppProps) {
       case routes.RouteLocation.Client_Custom: {
         const customPage = props.renderCustomPage?.(route.custom);
         nav1 = customPage?.nav;
-        page = customPage?.page ?? <ChooseMode setRoute={setRoute} modes={props.chooseModes?.(fmsInfo)} />;
+        page = customPage?.page ?? (
+          <ChooseMode setRoute={setRoute} modes={props.chooseModes?.(fmsInfo)} />
+        );
         showAlarms = false;
         break;
       }

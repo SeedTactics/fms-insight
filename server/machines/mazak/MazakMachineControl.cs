@@ -38,8 +38,11 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class MazakMachineControl(RepositoryConfig jobDbCfg, IMazakDB readData, MazakConfig mazakCfg)
-    : IMachineControl
+  public class MazakMachineControl(
+    RepositoryConfig jobDbCfg,
+    IMazakDB readData,
+    MazakConfig mazakCfg
+  ) : IMachineControl
   {
     public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()
     {
@@ -61,7 +64,11 @@ namespace MazakMachineInterface
               prog = jobDb.LoadProgram(progFromComent, revFromComment);
               if (prog == null)
               {
-                prog = new ProgramRevision() { ProgramName = progFromComent, Revision = revFromComment };
+                prog = new ProgramRevision()
+                {
+                  ProgramName = progFromComent,
+                  Revision = revFromComment,
+                };
               }
             }
             return new ProgramInCellController()
@@ -144,7 +151,11 @@ namespace MazakMachineInterface
     {
       using (var jobDb = jobDbCfg.OpenConnection())
       {
-        return jobDb.LoadProgramRevisionsInDescendingOrderOfRevision(programName, count, revisionToStart);
+        return jobDb.LoadProgramRevisionsInDescendingOrderOfRevision(
+          programName,
+          count,
+          revisionToStart
+        );
       }
     }
   }

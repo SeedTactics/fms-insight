@@ -84,7 +84,12 @@ export const BarcodeListener = memo(function BarcodeListener(): null {
         startDetection();
         k.stopPropagation();
         k.preventDefault();
-      } else if (k.key === "*" && !scanActive && lastBangTime !== null && Date.now() - lastBangTime < 1000) {
+      } else if (
+        k.key === "*" &&
+        !scanActive &&
+        lastBangTime !== null &&
+        Date.now() - lastBangTime < 1000
+      ) {
         startDetection();
         k.stopPropagation();
         k.preventDefault();
@@ -192,7 +197,12 @@ export const AddByBarcodeDialog = memo(function AddByBarcodeDialog() {
   const setBarcode = useSetAtom(materialDialogOpen);
 
   function onScan(results: ReadonlyArray<IDetectedBarcode>): void {
-    if (queue !== null && results.length > 0 && results[0].rawValue !== null && results[0].rawValue !== "") {
+    if (
+      queue !== null &&
+      results.length > 0 &&
+      results[0].rawValue !== null &&
+      results[0].rawValue !== ""
+    ) {
       setBarcode({ type: "Barcode", barcode: results[0].rawValue, toQueue: queue });
       setQueue(null);
       setManual("");

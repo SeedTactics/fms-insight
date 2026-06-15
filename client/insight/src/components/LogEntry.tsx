@@ -90,9 +90,13 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
       if (entry.startofcycle) {
-        return "Start " + entry.result.charAt(0).toUpperCase() + entry.result.substring(1).toLowerCase();
+        return (
+          "Start " + entry.result.charAt(0).toUpperCase() + entry.result.substring(1).toLowerCase()
+        );
       } else {
-        return "End " + entry.result.charAt(0).toUpperCase() + entry.result.substring(1).toLowerCase();
+        return (
+          "End " + entry.result.charAt(0).toUpperCase() + entry.result.substring(1).toLowerCase()
+        );
       }
 
     case api.LogType.BasketLoadUnload:
@@ -215,7 +219,8 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
     case api.LogType.LoadUnloadCycle:
       return (
         <span>
-          {displayMat(entry.material)} on <ColoredSpan $type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
+          {displayMat(entry.material)} on{" "}
+          <ColoredSpan $type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
           <ColoredSpan $type="loadStation">
             {loadStationDisplayName(entry.locnum, fmsInfo.loadStationNames)}
           </ColoredSpan>
@@ -277,11 +282,14 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
     case api.LogType.MachineCycle:
       return (
         <span>
-          {displayMat(entry.material)} on <ColoredSpan $type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
+          {displayMat(entry.material)} on{" "}
+          <ColoredSpan $type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
           <ColoredSpan $type="machine">
             {entry.loc} {entry.locnum.toString()}
           </ColoredSpan>
-          {entry.program && entry.program !== "" ? <span> with program {entry.program}</span> : undefined}
+          {entry.program && entry.program !== "" ? (
+            <span> with program {entry.program}</span>
+          ) : undefined}
         </span>
       );
 
@@ -364,7 +372,11 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
           </ColoredSpan>
         );
       } else {
-        return <span>{entry.program && entry.program !== "" ? entry.program : "CloseOut"} Completed</span>;
+        return (
+          <span>
+            {entry.program && entry.program !== "" ? entry.program : "CloseOut"} Completed
+          </span>
+        );
       }
 
     case api.LogType.AddToQueue:
@@ -426,13 +438,15 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
       if (entry.startofcycle) {
         return (
           <span>
-            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> arrived at stocker {entry.locnum}
+            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> arrived at stocker{" "}
+            {entry.locnum}
           </span>
         );
       } else {
         return (
           <span>
-            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> departed stocker {entry.locnum}
+            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> departed stocker{" "}
+            {entry.locnum}
           </span>
         );
       }
@@ -565,7 +579,9 @@ const logTypesToHighlight = [
   api.LogType.MachineCycle,
 ];
 
-const LogEntryTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+const LogEntryTableRow = styled(TableRow, {
+  shouldForwardProp: (prop) => prop.toString()[0] !== "$",
+})<{
   $highlightProc?: boolean;
   $invalidCycle?: boolean;
 }>(({ $highlightProc, $invalidCycle }) => ({
@@ -608,10 +624,13 @@ export const LogEntry = memo(function LogEntry(props: LogEntryProps) {
             <IconButton
               style={{
                 transition: "all ease 200ms",
-                transform: props.entry.counter === props.detailLogCounter ? "rotate(90deg)" : "none",
+                transform:
+                  props.entry.counter === props.detailLogCounter ? "rotate(90deg)" : "none",
               }}
               onClick={(event) => {
-                props.setDetail(props.entry.counter === props.detailLogCounter ? null : props.entry.counter);
+                props.setDetail(
+                  props.entry.counter === props.detailLogCounter ? null : props.entry.counter,
+                );
                 event.stopPropagation();
               }}
               size="small"

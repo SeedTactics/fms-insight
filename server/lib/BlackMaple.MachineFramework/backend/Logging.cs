@@ -52,7 +52,12 @@ namespace BlackMaple.MachineFramework
           );
 
           using (
-            var sourceStream = new FileStream(origTxtFile, FileMode.Open, FileAccess.Read, FileShare.Read)
+            var sourceStream = new FileStream(
+              origTxtFile,
+              FileMode.Open,
+              FileAccess.Read,
+              FileShare.Read
+            )
           )
           using (
             var targetStream = new FileStream(
@@ -75,7 +80,10 @@ namespace BlackMaple.MachineFramework
           // delete after 30 days
           var rx = new System.Text.RegularExpressions.Regex(@"fmsinsight-debug(\d+)\.txt\.gz");
           foreach (
-            var existingGzFile in Directory.GetFiles(Path.GetDirectoryName(origTxtFile) ?? ".", "*.gz")
+            var existingGzFile in Directory.GetFiles(
+              Path.GetDirectoryName(origTxtFile) ?? ".",
+              "*.gz"
+            )
           )
           {
             var m = rx.Match(Path.GetFileName(existingGzFile));
@@ -159,7 +167,10 @@ namespace BlackMaple.MachineFramework
     }
 
     private static System.Threading.Lock _verboseLoggingLock = new();
-    private static Serilog.Events.LogEventLevel _oldLogLevel = Serilog.Events.LogEventLevel.Information;
+    private static Serilog.Events.LogEventLevel _oldLogLevel = Serilog
+      .Events
+      .LogEventLevel
+      .Information;
     private static DateTime? _timeToReenableOldLogLevel = null;
 
     public static void EnableVerboseLoggingFor(TimeSpan duration)
@@ -185,7 +196,9 @@ namespace BlackMaple.MachineFramework
           {
             while (true)
             {
-              await System.Threading.Tasks.Task.Delay(_timeToReenableOldLogLevel.Value - DateTime.UtcNow);
+              await System.Threading.Tasks.Task.Delay(
+                _timeToReenableOldLogLevel.Value - DateTime.UtcNow
+              );
 
               lock (_verboseLoggingLock)
               {

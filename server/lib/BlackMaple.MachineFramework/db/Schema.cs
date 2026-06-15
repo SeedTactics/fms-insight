@@ -117,7 +117,8 @@ namespace BlackMaple.MachineFramework
           + "Workorder TEXT "
           + ")";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
         cmd.ExecuteNonQuery();
         cmd.CommandText =
           "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
@@ -185,7 +186,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX jobs_archived_idx ON jobs(Archived) WHERE Archived = 0";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX jobs_schedule_id ON jobs(ScheduleId) WHERE ScheduleId IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX jobs_schedule_id ON jobs(ScheduleId) WHERE ScheduleId IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -274,7 +276,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX job_decrements_unique ON job_decrements(JobUnique)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
+        cmd.CommandText =
+          "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -684,7 +687,8 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
         cmd.CommandText = "ALTER TABLE materialid ADD Serial TEXT";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX materialid_serial ON materialid(Serial) WHERE Serial IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX materialid_serial ON materialid(Serial) WHERE Serial IS NOT NULL";
         cmd.ExecuteNonQuery();
       }
     }
@@ -830,7 +834,8 @@ namespace BlackMaple.MachineFramework
           + "Workorder TEXT "
           + ")";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
         cmd.ExecuteNonQuery();
         cmd.CommandText =
           "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
@@ -1128,7 +1133,8 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText = "DROP INDEX stations_foreign";
       cmd.ExecuteNonQuery();
 
-      cmd.CommandText = "CREATE INDEX stations_foreignid ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
+      cmd.CommandText =
+        "CREATE INDEX stations_foreignid ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
       cmd.ExecuteNonQuery();
     }
 
@@ -1159,7 +1165,8 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         // copy data from old unfilled_workorders table
-        cmd.CommandText = "SELECT MAX(ScheduleId) FROM unfilled_workorders WHERE ScheduleId IS NOT NULL";
+        cmd.CommandText =
+          "SELECT MAX(ScheduleId) FROM unfilled_workorders WHERE ScheduleId IS NOT NULL";
         var lastWorkSchId = cmd.ExecuteScalar() as string;
         if (!string.IsNullOrEmpty(lastWorkSchId))
         {
@@ -1527,7 +1534,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "ALTER TABLE jobs ADD ScheduleId TEXT";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX jobs_schedule_id ON jobs(ScheduleId) WHERE ScheduleId IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX jobs_schedule_id ON jobs(ScheduleId) WHERE ScheduleId IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE extra_parts";
@@ -1574,7 +1582,8 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
+        cmd.CommandText =
+          "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
         cmd.ExecuteNonQuery();
       }
     }
@@ -1759,7 +1768,8 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = transaction;
 
-        cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='job_decrements'";
+        cmd.CommandText =
+          "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='job_decrements'";
         var cnt = cmd.ExecuteScalar();
         if (cnt != null && cnt != DBNull.Value && (long)cnt > 0)
           return;
@@ -1797,7 +1807,8 @@ namespace BlackMaple.MachineFramework
           "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
+        cmd.CommandText =
+          "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =

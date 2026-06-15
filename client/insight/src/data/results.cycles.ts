@@ -162,7 +162,11 @@ export function filterStationCycles(
   const groupByPal =
     partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
   const groupByPart =
-    pallet && !operation && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+    pallet &&
+    !operation &&
+    station &&
+    station !== FilterAnyMachineKey &&
+    station !== FilterAnyLoadKey;
 
   return {
     ...extractFilterOptions(allCycles, partAndProc),
@@ -291,7 +295,8 @@ export function loadOccupancyCycles(
                   }
                   if (
                     partAndProc &&
-                    (e.part !== partAndProc.part || !e.material.some((m) => m.proc === partAndProc.proc))
+                    (e.part !== partAndProc.part ||
+                      !e.material.some((m) => m.proc === partAndProc.proc))
                   ) {
                     return false;
                   }
@@ -305,7 +310,10 @@ export function loadOccupancyCycles(
                   return {
                     ...cycle,
                     x: cycle.endTime,
-                    y: chunk.reduce((acc, e) => acc + e.elapsedMinsPerMaterial * e.material.length, 0),
+                    y: chunk.reduce(
+                      (acc, e) => acc + e.elapsedMinsPerMaterial * e.material.length,
+                      0,
+                    ),
                     operations: LazySeq.of(chunk)
                       .flatMap((e) =>
                         e.material.map((mat) => ({
@@ -327,7 +335,10 @@ export function loadOccupancyCycles(
   };
 }
 
-export function plannedOperationMinutes(s: FilteredStationCycles, forSingleMat: boolean): number | undefined {
+export function plannedOperationMinutes(
+  s: FilteredStationCycles,
+  forSingleMat: boolean,
+): number | undefined {
   let planned: { time: Date; mins: number } | null = null;
 
   for (const [, cycles] of s.data) {
@@ -361,7 +372,9 @@ export function recentCycles(allCycles: LazySeq<PartCycleData>): ReadonlyArray<R
     .flatMap(function* procChunk([station, chunks]) {
       for (const chunk of chunks) {
         // sum elapsed time for chunk and subtract from end time to get start time
-        const elapForChunkMins = LazySeq.of(chunk).sumBy((c) => c.elapsedMinsPerMaterial * c.material.length);
+        const elapForChunkMins = LazySeq.of(chunk).sumBy(
+          (c) => c.elapsedMinsPerMaterial * c.material.length,
+        );
         const startTime = addSeconds(chunk[0].endTime, -elapForChunkMins * 60);
 
         const activeMins = LazySeq.of(chunk).sumBy((c) => c.activeMinutes);
@@ -482,7 +495,10 @@ export function buildCycleTable(
         .toRArray()
         .join(":") +
       "</td>";
-    table += "<td>" + displayStationName(cycle.stationGroup, cycle.stationNumber, loadStationNames) + "</td>";
+    table +=
+      "<td>" +
+      displayStationName(cycle.stationGroup, cycle.stationNumber, loadStationNames) +
+      "</td>";
     table += "<td>" + carrierLabel(cycle, basketDisplayName(basketName)) + "</td>";
     table +=
       "<td>" +
@@ -532,7 +548,10 @@ export function copyCyclesToClipboard(
   ).catch(console.error);
 }
 
-export function buildPalletCycleTable(points: PalletCyclesByPallet, carrierColumnLabel = "Pallet"): string {
+export function buildPalletCycleTable(
+  points: PalletCyclesByPallet,
+  carrierColumnLabel = "Pallet",
+): string {
   let table = "<table>\n<thead><tr>";
   table += `<th>${carrierColumnLabel}</th><th>Date</th><th>Elapsed (min)</th>`;
   table += "</tr></thead>\n<tbody>\n";
@@ -561,7 +580,10 @@ export function buildPalletCycleTable(points: PalletCyclesByPallet, carrierColum
   return table;
 }
 
-export function copyPalletCyclesToClipboard(points: PalletCyclesByPallet, carrierColumnLabel = "Pallet"): void {
+export function copyPalletCyclesToClipboard(
+  points: PalletCyclesByPallet,
+  carrierColumnLabel = "Pallet",
+): void {
   copy(buildPalletCycleTable(points, carrierColumnLabel)).catch(console.error);
 }
 
@@ -620,7 +642,8 @@ function result(e: Readonly<api.ILogEntry>): string {
 export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
-  table += "<th>Serial</th><th>Workorder</th><th>Result</th><th>Elapsed Min</th><th>Active Min</th>";
+  table +=
+    "<th>Serial</th><th>Workorder</th><th>Result</th><th>Elapsed Min</th><th>Active Min</th>";
   table += "</tr></thead>\n<tbody>\n";
   for (const cycle of cycles) {
     if (cycle.startofcycle) {

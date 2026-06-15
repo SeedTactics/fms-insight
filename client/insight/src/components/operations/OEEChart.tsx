@@ -154,7 +154,14 @@ function BarChart({
 
 function OEELegend({ station }: { station: string }) {
   return (
-    <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-evenly" }}>
+    <div
+      style={{
+        marginTop: "1em",
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "space-evenly",
+      }}
+    >
       <div style={{ display: "flex", alignItems: "center" }}>
         <div style={{ width: "14px", height: "14px", backgroundColor: actualOeeColor }} />
         <div style={{ marginLeft: "1em" }}>{station} Actual</div>
@@ -273,7 +280,11 @@ function dataForTable(
     .toSortedArray(sortOn);
 }
 
-export const OEETable = memo(function OEETableF({ points }: { points: ReadonlyArray<OEEBarSeries> }) {
+export const OEETable = memo(function OEETableF({
+  points,
+}: {
+  points: ReadonlyArray<OEEBarSeries>;
+}) {
   const sort = useColSort(ColumnId.Date, columns);
   return (
     <Table>
@@ -318,8 +329,8 @@ export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
         }}
       >
         <Typography variant="subtitle1">
-          {ty === "labor" ? "Load/Unload" : "Machine"} OEE: comparing flexplan hours between actual and
-          simulated production
+          {ty === "labor" ? "Load/Unload" : "Machine"} OEE: comparing flexplan hours between actual
+          and simulated production
         </Typography>
         <Box
           sx={{

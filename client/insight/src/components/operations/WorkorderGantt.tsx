@@ -106,8 +106,12 @@ function WorkorderTooltip({ tooltip }: { tooltip: TooltipData }) {
       <div>Priority: {tooltip.data.priority}</div>
       <div>Planned Quantity: {tooltip.data.plannedQuantity}</div>
       <div>Completed Quantity: {tooltip.data.completedQuantity}</div>
-      <div>Projected Start: {utcDateOnlyToLocal(tooltip.data.simulatedStart)?.toLocaleDateString()}</div>
-      <div>Projected Filled: {utcDateOnlyToLocal(tooltip.data.simulatedFilled)?.toLocaleDateString()}</div>
+      <div>
+        Projected Start: {utcDateOnlyToLocal(tooltip.data.simulatedStart)?.toLocaleDateString()}
+      </div>
+      <div>
+        Projected Filled: {utcDateOnlyToLocal(tooltip.data.simulatedFilled)?.toLocaleDateString()}
+      </div>
     </Stack>
   );
 }
