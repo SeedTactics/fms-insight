@@ -4500,6 +4500,7 @@ export class CurrentStatus implements ICurrentStatus {
   machineLocations?: MachineLocation[] | undefined;
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
+  basketMoveInstructions?: BasketMoveInstruction[] | undefined;
 
   constructor(data?: ICurrentStatus) {
     if (data) {
@@ -4574,6 +4575,11 @@ export class CurrentStatus implements ICurrentStatus {
               : new BasketStatus();
         }
       }
+      if (Array.isArray(_data["BasketMoveInstructions"])) {
+        this.basketMoveInstructions = [] as any;
+        for (let item of _data["BasketMoveInstructions"])
+          this.basketMoveInstructions!.push(BasketMoveInstruction.fromJS(item));
+      }
     }
   }
 
@@ -4644,6 +4650,11 @@ export class CurrentStatus implements ICurrentStatus {
             : (undefined as any);
       }
     }
+    if (Array.isArray(this.basketMoveInstructions)) {
+      data["BasketMoveInstructions"] = [];
+      for (let item of this.basketMoveInstructions)
+        data["BasketMoveInstructions"].push(item ? item.toJSON() : (undefined as any));
+    }
     return data;
   }
 }
@@ -4658,6 +4669,7 @@ export interface ICurrentStatus {
   machineLocations?: MachineLocation[] | undefined;
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
+  basketMoveInstructions?: BasketMoveInstruction[] | undefined;
 }
 
 export class HistoricJob extends Job implements IHistoricJob {
@@ -5054,7 +5066,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
   currentQueue?: string | undefined;
   queuePosition?: number | undefined;
   basketId?: number | undefined;
-  basketSubPosition?: number | undefined;
+  basketSlot?: number | undefined;
 
   constructor(data?: IInProcessMaterialLocation) {
     if (data) {
@@ -5072,7 +5084,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
       this.currentQueue = _data["CurrentQueue"];
       this.queuePosition = _data["QueuePosition"];
       this.basketId = _data["BasketId"];
-      this.basketSubPosition = _data["BasketSubPosition"];
+      this.basketSlot = _data["BasketSlot"];
     }
   }
 
@@ -5091,7 +5103,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
     data["CurrentQueue"] = this.currentQueue;
     data["QueuePosition"] = this.queuePosition;
     data["BasketId"] = this.basketId;
-    data["BasketSubPosition"] = this.basketSubPosition;
+    data["BasketSlot"] = this.basketSlot;
     return data;
   }
 }
@@ -5103,7 +5115,7 @@ export interface IInProcessMaterialLocation {
   currentQueue?: string | undefined;
   queuePosition?: number | undefined;
   basketId?: number | undefined;
-  basketSubPosition?: number | undefined;
+  basketSlot?: number | undefined;
 }
 
 export enum LocType {
@@ -5122,7 +5134,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
   loadFromBasketId?: number | undefined;
   unloadIntoQueue?: string | undefined;
   unloadToBasketId?: number | undefined;
-  unloadToBasketSubPosition?: number | undefined;
+  unloadToBasketSlot?: number | undefined;
   elapsedLoadUnloadTime?: string | undefined;
   program?: string | undefined;
   elapsedMachiningTime?: string | undefined;
@@ -5146,7 +5158,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
       this.loadFromBasketId = _data["LoadFromBasketId"];
       this.unloadIntoQueue = _data["UnloadIntoQueue"];
       this.unloadToBasketId = _data["UnloadToBasketId"];
-      this.unloadToBasketSubPosition = _data["UnloadToBasketSubPosition"];
+      this.unloadToBasketSlot = _data["UnloadToBasketSlot"];
       this.elapsedLoadUnloadTime = _data["ElapsedLoadUnloadTime"];
       this.program = _data["Program"];
       this.elapsedMachiningTime = _data["ElapsedMachiningTime"];
@@ -5171,7 +5183,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     data["LoadFromBasketId"] = this.loadFromBasketId;
     data["UnloadIntoQueue"] = this.unloadIntoQueue;
     data["UnloadToBasketId"] = this.unloadToBasketId;
-    data["UnloadToBasketSubPosition"] = this.unloadToBasketSubPosition;
+    data["UnloadToBasketSlot"] = this.unloadToBasketSlot;
     data["ElapsedLoadUnloadTime"] = this.elapsedLoadUnloadTime;
     data["Program"] = this.program;
     data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
@@ -5189,7 +5201,7 @@ export interface IInProcessMaterialAction {
   loadFromBasketId?: number | undefined;
   unloadIntoQueue?: string | undefined;
   unloadToBasketId?: number | undefined;
-  unloadToBasketSubPosition?: number | undefined;
+  unloadToBasketSlot?: number | undefined;
   elapsedLoadUnloadTime?: string | undefined;
   program?: string | undefined;
   elapsedMachiningTime?: string | undefined;
@@ -5537,10 +5549,9 @@ export enum WorkorderSerialCloseout {
 
 export class BasketStatus implements IBasketStatus {
   basketId!: number;
-  location!: BasketLocationEnum;
-  locationNum!: number;
-  locationTitle?: string | undefined;
-  slot?: number | undefined;
+  position!: BasketPosition;
+  emptySlots?: number[];
+  unknownSlots?: number[];
 
   constructor(data?: IBasketStatus) {
     if (data) {
@@ -5548,15 +5559,25 @@ export class BasketStatus implements IBasketStatus {
         if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
       }
     }
+    if (!data) {
+      this.position = new BasketPosition();
+    }
   }
 
   init(_data?: any) {
     if (_data) {
       this.basketId = _data["BasketId"];
-      this.location = _data["Location"];
-      this.locationNum = _data["LocationNum"];
-      this.locationTitle = _data["LocationTitle"];
-      this.slot = _data["Slot"];
+      this.position = _data["Position"]
+        ? BasketPosition.fromJS(_data["Position"])
+        : new BasketPosition();
+      if (Array.isArray(_data["EmptySlots"])) {
+        this.emptySlots = [] as any;
+        for (let item of _data["EmptySlots"]) this.emptySlots!.push(item);
+      }
+      if (Array.isArray(_data["UnknownSlots"])) {
+        this.unknownSlots = [] as any;
+        for (let item of _data["UnknownSlots"]) this.unknownSlots!.push(item);
+      }
     }
   }
 
@@ -5570,20 +5591,71 @@ export class BasketStatus implements IBasketStatus {
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
     data["BasketId"] = this.basketId;
-    data["Location"] = this.location;
-    data["LocationNum"] = this.locationNum;
-    data["LocationTitle"] = this.locationTitle;
-    data["Slot"] = this.slot;
+    data["Position"] = this.position ? this.position.toJSON() : (undefined as any);
+    if (Array.isArray(this.emptySlots)) {
+      data["EmptySlots"] = [];
+      for (let item of this.emptySlots) data["EmptySlots"].push(item);
+    }
+    if (Array.isArray(this.unknownSlots)) {
+      data["UnknownSlots"] = [];
+      for (let item of this.unknownSlots) data["UnknownSlots"].push(item);
+    }
     return data;
   }
 }
 
 export interface IBasketStatus {
   basketId: number;
+  position: BasketPosition;
+  emptySlots?: number[];
+  unknownSlots?: number[];
+}
+
+export class BasketPosition implements IBasketPosition {
+  location!: BasketLocationEnum;
+  locationNum!: number;
+  locationTitle?: string | undefined;
+  zone?: number | undefined;
+
+  constructor(data?: IBasketPosition) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
+      }
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.location = _data["Location"];
+      this.locationNum = _data["LocationNum"];
+      this.locationTitle = _data["LocationTitle"];
+      this.zone = _data["Zone"];
+    }
+  }
+
+  static fromJS(data: any): BasketPosition {
+    data = typeof data === "object" ? data : {};
+    let result = new BasketPosition();
+    result.init(data);
+    return result;
+  }
+
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Location"] = this.location;
+    data["LocationNum"] = this.locationNum;
+    data["LocationTitle"] = this.locationTitle;
+    data["Zone"] = this.zone;
+    return data;
+  }
+}
+
+export interface IBasketPosition {
   location: BasketLocationEnum;
   locationNum: number;
   locationTitle?: string | undefined;
-  slot?: number | undefined;
+  zone?: number | undefined;
 }
 
 export enum BasketLocationEnum {
@@ -5591,6 +5663,82 @@ export enum BasketLocationEnum {
   LoadStationStaging = "LoadStationStaging",
   Storage = "Storage",
   InTransit = "InTransit",
+}
+
+export class BasketMoveInstruction implements IBasketMoveInstruction {
+  instructionId!: string;
+  basketId!: number;
+  source!: BasketPosition;
+  destination!: BasketPosition;
+  reason!: BasketMoveReason;
+  displayText!: string;
+  prerequisiteInstructionId?: string | undefined;
+
+  constructor(data?: IBasketMoveInstruction) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
+      }
+    }
+    if (!data) {
+      this.source = new BasketPosition();
+      this.destination = new BasketPosition();
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.instructionId = _data["InstructionId"];
+      this.basketId = _data["BasketId"];
+      this.source = _data["Source"] ? BasketPosition.fromJS(_data["Source"]) : new BasketPosition();
+      this.destination = _data["Destination"]
+        ? BasketPosition.fromJS(_data["Destination"])
+        : new BasketPosition();
+      this.reason = _data["Reason"];
+      this.displayText = _data["DisplayText"];
+      this.prerequisiteInstructionId = _data["PrerequisiteInstructionId"];
+    }
+  }
+
+  static fromJS(data: any): BasketMoveInstruction {
+    data = typeof data === "object" ? data : {};
+    let result = new BasketMoveInstruction();
+    result.init(data);
+    return result;
+  }
+
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["InstructionId"] = this.instructionId;
+    data["BasketId"] = this.basketId;
+    data["Source"] = this.source ? this.source.toJSON() : (undefined as any);
+    data["Destination"] = this.destination ? this.destination.toJSON() : (undefined as any);
+    data["Reason"] = this.reason;
+    data["DisplayText"] = this.displayText;
+    data["PrerequisiteInstructionId"] = this.prerequisiteInstructionId;
+    return data;
+  }
+}
+
+export interface IBasketMoveInstruction {
+  instructionId: string;
+  basketId: number;
+  source: BasketPosition;
+  destination: BasketPosition;
+  reason: BasketMoveReason;
+  displayText: string;
+  prerequisiteInstructionId?: string | undefined;
+}
+
+export enum BasketMoveReason {
+  LoadMaterial = "LoadMaterial",
+  UnloadMaterial = "UnloadMaterial",
+  ProcessTransfer = "ProcessTransfer",
+  SupplyMaterialToCell = "SupplyMaterialToCell",
+  SupplyEmptyBasket = "SupplyEmptyBasket",
+  ReturnToStorage = "ReturnToStorage",
+  RemoveForCorrection = "RemoveForCorrection",
+  Other = "Other",
 }
 
 export class EditMaterialInLogEvents implements IEditMaterialInLogEvents {

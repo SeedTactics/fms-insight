@@ -1451,7 +1451,7 @@
       "Action": {
         "Type": "UnloadToInProcess",
         "UnloadToBasketId": 301,
-        "UnloadToBasketSubPosition": 0,
+        "UnloadToBasketSlot": 0,
         "ElapsedLoadUnloadTime": "PT2M10S"
       }
     },
@@ -1466,7 +1466,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 302,
-        "BasketSubPosition": 0
+        "BasketSlot": 0
       },
       "Action": {
         "Type": "Loading",
@@ -1489,7 +1489,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 401,
-        "BasketSubPosition": 0
+        "BasketSlot": 0
       },
       "Action": {
         "Type": "UnloadToInProcess",
@@ -1508,7 +1508,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 402,
-        "BasketSubPosition": 0
+        "BasketSlot": 0
       },
       "Action": {
         "Type": "Waiting"
@@ -1525,7 +1525,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 502,
-        "BasketSubPosition": 0
+        "BasketSlot": 0
       },
       "Action": {
         "Type": "Waiting"
@@ -1543,7 +1543,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 504,
-        "BasketSubPosition": 0
+        "BasketSlot": 0
       },
       "Action": {
         "Type": "Waiting"
@@ -1577,7 +1577,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 505,
-        "BasketSubPosition": 0
+        "BasketSlot": 0
       },
       "Action": {
         "Type": "Waiting"
@@ -1592,59 +1592,49 @@
   "Baskets": {
     "301": {
       "BasketId": 301,
-      "Location": "LoadStationStaging",
-      "LocationTitle": "Load 3",
-      "LocationNum": 3,
-      "Slot": 1
+      "Position": {
+        "Location": "LoadStationStaging",
+        "LocationTitle": "Load 3",
+        "LocationNum": 3,
+        "Zone": 1
+      }
     },
     "302": {
       "BasketId": 302,
-      "Location": "LoadStationStaging",
-      "LocationTitle": "Load 3",
-      "LocationNum": 3,
-      "Slot": 2
+      "Position": {
+        "Location": "LoadStationStaging",
+        "LocationTitle": "Load 3",
+        "LocationNum": 3,
+        "Zone": 2
+      }
     },
     "401": {
       "BasketId": 401,
-      "Location": "LoadUnload",
-      "LocationTitle": "Load 4",
-      "LocationNum": 4
+      "Position": { "Location": "LoadUnload", "LocationTitle": "Load 4", "LocationNum": 4 }
     },
     "402": {
       "BasketId": 402,
-      "Location": "Storage",
-      "LocationTitle": "Tower B",
-      "LocationNum": 2
+      "Position": { "Location": "Storage", "LocationTitle": "Tower B", "LocationNum": 2 }
     },
     "501": {
       "BasketId": 501,
-      "Location": "Storage",
-      "LocationTitle": "Tower A",
-      "LocationNum": 1
+      "Position": { "Location": "Storage", "LocationTitle": "Tower A", "LocationNum": 1 }
     },
     "502": {
       "BasketId": 502,
-      "Location": "Storage",
-      "LocationTitle": "Tower A",
-      "LocationNum": 2
+      "Position": { "Location": "Storage", "LocationTitle": "Tower A", "LocationNum": 2 }
     },
     "503": {
       "BasketId": 503,
-      "Location": "Storage",
-      "LocationTitle": "Rack B",
-      "LocationNum": 1
+      "Position": { "Location": "Storage", "LocationTitle": "Rack B", "LocationNum": 1 }
     },
     "504": {
       "BasketId": 504,
-      "Location": "Storage",
-      "LocationTitle": "Rack B",
-      "LocationNum": 2
+      "Position": { "Location": "Storage", "LocationTitle": "Rack B", "LocationNum": 2 }
     },
     "505": {
       "BasketId": 505,
-      "Location": "InTransit",
-      "LocationTitle": "AGV",
-      "LocationNum": 6
+      "Position": { "Location": "InTransit", "LocationTitle": "AGV", "LocationNum": 6 }
     }
   },
   "Workorders": [

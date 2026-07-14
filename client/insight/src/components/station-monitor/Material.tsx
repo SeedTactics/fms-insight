@@ -322,8 +322,8 @@ export function MaterialAction({
         return (
           <MatCardDetail fsize={fsize}>
             Unload to {basketName} {mat.action.unloadToBasketId}
-            {mat.action.unloadToBasketSubPosition
-              ? ` position ${mat.action.unloadToBasketSubPosition + 1}`
+            {mat.action.unloadToBasketSlot !== undefined
+              ? ` slot ${mat.action.unloadToBasketSlot + 1}`
               : ""}
           </MatCardDetail>
         );

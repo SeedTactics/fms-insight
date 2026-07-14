@@ -64,14 +64,51 @@ namespace BlackMaple.MachineFramework
   public record BasketStatus
   {
     public required int BasketId { get; init; }
+    public required BasketPosition Position { get; init; }
+
+    // Material in the basket is reconstructed from the list of InProcessMaterial,
+    // with the Slot field indicating which slot the material is in.  Slots are numbered starting at 1.
+    // Unknown or empty slots are included below
+    public ImmutableSortedSet<int> EmptySlots { get; init; } = ImmutableSortedSet<int>.Empty;
+    public ImmutableSortedSet<int> UnknownSlots { get; init; } = ImmutableSortedSet<int>.Empty;
+  }
+
+  public record BasketPosition
+  {
     public required BasketLocationEnum Location { get; init; }
     public required int LocationNum { get; init; }
 
     // Location Title is a string which should combine both Location and LocationNum into a human readable string.
     public string? LocationTitle { get; init; }
 
-    // Slot is an optional integer within the location.
-    public int? Slot { get; init; }
+    // A numbered position within the location, such as one of several staging zones.
+    public int? Zone { get; init; }
+  }
+
+  public enum BasketMoveReason
+  {
+    LoadMaterial,
+    UnloadMaterial,
+    ProcessTransfer,
+    SupplyMaterialToCell,
+    SupplyEmptyBasket,
+    ReturnToStorage,
+    RemoveForCorrection,
+    Other,
+  }
+
+  public record BasketMoveInstruction
+  {
+    public required string InstructionId { get; init; }
+    public required int BasketId { get; init; }
+    public required BasketPosition Source { get; init; }
+    public required BasketPosition Destination { get; init; }
+    public required BasketMoveReason Reason { get; init; }
+    public required string DisplayText { get; init; }
+
+    // When set, the prerequisite move must be completed before this move.  In particular, a
+    // replacement basket cannot enter an occupied staging position until the old basket leaves.
+    public string? PrerequisiteInstructionId { get; init; }
   }
 
   public record CurrentStatus
@@ -95,6 +132,8 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<ActiveWorkorder>? Workorders { get; init; } = null;
 
     public ImmutableDictionary<int, BasketStatus>? Baskets { get; init; }
+
+    public ImmutableList<BasketMoveInstruction>? BasketMoveInstructions { get; init; }
   }
 
   public record JobAndDecrementQuantity

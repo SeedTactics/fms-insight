@@ -42,6 +42,7 @@ import {
   ActionType,
   ActiveJob,
   BasketLocationEnum,
+  BasketPosition,
   BasketStatus,
   ICurrentStatus,
   InProcessMaterial,
@@ -72,8 +73,10 @@ function fakePalAtMachine(pal: number, num: number): PalletStatus {
 function fakeBasketAtLoad(basket: number, num: number): BasketStatus {
   return new BasketStatus({
     basketId: basket,
-    location: BasketLocationEnum.LoadUnload,
-    locationNum: num,
+    position: new BasketPosition({
+      location: BasketLocationEnum.LoadUnload,
+      locationNum: num,
+    }),
   });
 }
 
@@ -118,7 +121,7 @@ function fakeBasketLoad({
         : new InProcessMaterialLocation({
             type: LocType.InBasket,
             basketId: basket,
-            basketSubPosition: 1,
+            basketSlot: 1,
           }),
   });
 }

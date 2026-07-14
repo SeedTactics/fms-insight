@@ -3266,6 +3266,13 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/BasketStatus"
             }
+          },
+          "BasketMoveInstructions": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/BasketMoveInstruction"
+            }
           }
         }
       },
@@ -3552,7 +3559,7 @@
             "format": "int32",
             "nullable": true
           },
-          "BasketSubPosition": {
+          "BasketSlot": {
             "type": "integer",
             "format": "int32",
             "nullable": true
@@ -3607,7 +3614,7 @@
             "format": "int32",
             "nullable": true
           },
-          "UnloadToBasketSubPosition": {
+          "UnloadToBasketSlot": {
             "type": "integer",
             "format": "int32",
             "nullable": true
@@ -3854,12 +3861,36 @@
       "BasketStatus": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["BasketId", "Location", "LocationNum", "BasketId", "Location", "LocationNum"],
+        "required": ["BasketId", "Position", "BasketId", "Position"],
         "properties": {
           "BasketId": {
             "type": "integer",
             "format": "int32"
           },
+          "Position": {
+            "$ref": "#/components/schemas/BasketPosition"
+          },
+          "EmptySlots": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "UnknownSlots": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "BasketPosition": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["Location", "LocationNum", "Location", "LocationNum"],
+        "properties": {
           "Location": {
             "$ref": "#/components/schemas/BasketLocationEnum"
           },
@@ -3871,7 +3902,7 @@
             "type": "string",
             "nullable": true
           },
-          "Slot": {
+          "Zone": {
             "type": "integer",
             "format": "int32",
             "nullable": true
@@ -3883,6 +3914,73 @@
         "description": "",
         "x-enumNames": ["LoadUnload", "LoadStationStaging", "Storage", "InTransit"],
         "enum": ["LoadUnload", "LoadStationStaging", "Storage", "InTransit"]
+      },
+      "BasketMoveInstruction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "InstructionId",
+          "BasketId",
+          "Source",
+          "Destination",
+          "Reason",
+          "DisplayText",
+          "InstructionId",
+          "BasketId",
+          "Source",
+          "Destination",
+          "Reason",
+          "DisplayText"
+        ],
+        "properties": {
+          "InstructionId": {
+            "type": "string"
+          },
+          "BasketId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Source": {
+            "$ref": "#/components/schemas/BasketPosition"
+          },
+          "Destination": {
+            "$ref": "#/components/schemas/BasketPosition"
+          },
+          "Reason": {
+            "$ref": "#/components/schemas/BasketMoveReason"
+          },
+          "DisplayText": {
+            "type": "string"
+          },
+          "PrerequisiteInstructionId": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "BasketMoveReason": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "LoadMaterial",
+          "UnloadMaterial",
+          "ProcessTransfer",
+          "SupplyMaterialToCell",
+          "SupplyEmptyBasket",
+          "ReturnToStorage",
+          "RemoveForCorrection",
+          "Other"
+        ],
+        "enum": [
+          "LoadMaterial",
+          "UnloadMaterial",
+          "ProcessTransfer",
+          "SupplyMaterialToCell",
+          "SupplyEmptyBasket",
+          "ReturnToStorage",
+          "RemoveForCorrection",
+          "Other"
+        ]
       },
       "EditMaterialInLogEvents": {
         "type": "object",
