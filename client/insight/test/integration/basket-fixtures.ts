@@ -249,7 +249,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 21,
-        basketSubPosition: 0,
+        basketSlot: 0,
       },
       action: {
         type: api.ActionType.UnloadToInProcess,
@@ -267,7 +267,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 22,
-        basketSubPosition: 0,
+        basketSlot: 0,
       },
       action: {
         type: api.ActionType.Waiting,
@@ -284,7 +284,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 23,
-        basketSubPosition: 0,
+        basketSlot: 0,
       },
       action: {
         type: api.ActionType.Waiting,
@@ -301,7 +301,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 25,
-        basketSubPosition: 0,
+        basketSlot: 0,
       },
       action: {
         type: api.ActionType.Waiting,
@@ -318,7 +318,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 22,
-        basketSubPosition: 1,
+        basketSlot: 1,
       },
       action: {
         type: api.ActionType.Loading,
@@ -344,7 +344,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       action: {
         type: api.ActionType.UnloadToInProcess,
         unloadToBasketId: 22,
-        unloadToBasketSubPosition: 1,
+        unloadToBasketSlot: 1,
       },
     }),
     palletWaiting: createMaterial({
@@ -405,28 +405,39 @@ export function createMixedBasketFixture(): MixedBasketFixture {
     baskets: [
       createBasket({
         basketId: 21,
-        location: api.BasketLocationEnum.LoadUnload,
-        locationNum: 2,
+        position: new api.BasketPosition({
+          location: api.BasketLocationEnum.LoadUnload,
+          locationNum: 2,
+        }),
       }),
       createBasket({
         basketId: 22,
-        location: api.BasketLocationEnum.LoadStationStaging,
-        locationNum: 2,
+        position: new api.BasketPosition({
+          location: api.BasketLocationEnum.LoadStationStaging,
+          locationNum: 2,
+          zone: 1,
+        }),
       }),
       createBasket({
         basketId: 23,
-        location: api.BasketLocationEnum.Storage,
-        locationNum: 0,
+        position: new api.BasketPosition({
+          location: api.BasketLocationEnum.Storage,
+          locationNum: 0,
+        }),
       }),
       createBasket({
         basketId: 24,
-        location: api.BasketLocationEnum.Storage,
-        locationNum: 0,
+        position: new api.BasketPosition({
+          location: api.BasketLocationEnum.Storage,
+          locationNum: 0,
+        }),
       }),
       createBasket({
         basketId: 25,
-        location: api.BasketLocationEnum.InTransit,
-        locationNum: 0,
+        position: new api.BasketPosition({
+          location: api.BasketLocationEnum.InTransit,
+          locationNum: 0,
+        }),
       }),
     ],
     material: Object.values(materials),

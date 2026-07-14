@@ -20,13 +20,18 @@ describe("load station with active basket", () => {
       baskets: [
         createBasket({
           basketId: 7,
-          location: api.BasketLocationEnum.LoadUnload,
-          locationNum: 1,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadUnload,
+            locationNum: 1,
+          }),
         }),
         createBasket({
           basketId: 8,
-          location: api.BasketLocationEnum.LoadStationStaging,
-          locationNum: 1,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 1,
+            zone: 1,
+          }),
         }),
       ],
       material: [
@@ -58,7 +63,7 @@ describe("load station with active basket", () => {
           location: {
             type: api.LocType.InBasket,
             basketId: 7,
-            basketSubPosition: 0,
+            basketSlot: 0,
           },
           action: {
             type: api.ActionType.UnloadToInProcess,
@@ -91,7 +96,7 @@ describe("load station with active basket", () => {
           location: {
             type: api.LocType.InBasket,
             basketId: 8,
-            basketSubPosition: 0,
+            basketSlot: 0,
           },
           action: {
             type: api.ActionType.Waiting,

@@ -386,7 +386,7 @@ function useCellOverview(): CellOverview {
       mats: matByBasket.get(basket.basketId) ?? [],
     };
 
-    switch (basket.location) {
+    switch (basket.position.location) {
       case BasketLocationEnum.Storage:
         if (basketWithMaterial.mats.length > 0) {
           storageFilled += 1;
@@ -397,14 +397,16 @@ function useCellOverview(): CellOverview {
 
       case BasketLocationEnum.LoadUnload:
       case BasketLocationEnum.LoadStationStaging: {
-        const loadNum = basket.locationNum;
+        const loadNum = basket.position.locationNum;
         if (loadNum === null) {
           floatingBaskets.set(basket.basketId, basketWithMaterial);
           break;
         }
 
         const byLoad =
-          basket.location === BasketLocationEnum.LoadUnload ? activeBaskets : stagedBaskets;
+          basket.position.location === BasketLocationEnum.LoadUnload
+            ? activeBaskets
+            : stagedBaskets;
         const prev = byLoad.get(loadNum) ?? [];
         prev.push(basketWithMaterial);
         byLoad.set(loadNum, prev);
@@ -463,7 +465,7 @@ function useCellOverview(): CellOverview {
     }
 
     const currentBasket = LazySeq.of(activeBaskets.get(load.lulNum) ?? [])
-      .sortBy((b) => b.basket.locationNum)
+      .sortBy((b) => b.basket.position.locationNum)
       .toRArray();
     // Extras beyond the first active basket at this station fall back to floating
     for (const extra of currentBasket.slice(1)) {
@@ -476,7 +478,7 @@ function useCellOverview(): CellOverview {
     );
     const staging = LazySeq.of(stagedBaskets.get(load.lulNum) ?? [])
       .filter((basket) => !loadingFromBasketIds.has(basket.basket.basketId))
-      .sortBy((b) => b.basket.locationNum)
+      .sortBy((b) => b.basket.position.locationNum)
       .toRArray();
     maxNumStagingRows = Math.max(maxNumStagingRows, staging.length);
     const sources = LazySeq.of(sourceRows)
@@ -704,9 +706,7 @@ function PalletFaces({
 }
 
 function BasketContents({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
-  const byPosition = LazySeq.of(mats).orderedGroupBy(
-    (m) => (m.location.basketSubPosition ?? 0) + 1,
-  );
+  const byPosition = LazySeq.of(mats).orderedGroupBy((m) => (m.location.basketSlot ?? 0) + 1);
   return (
     <Box
       sx={{

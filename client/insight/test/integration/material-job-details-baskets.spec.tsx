@@ -24,7 +24,7 @@ describe("basket material and job details", () => {
     await expect.element(screen.getByText("Load into Tray 21")).toBeVisible();
     await expect.element(screen.getByText("Unload into queue Queue Beta")).toBeVisible();
     await expect.element(screen.getByText("Load from Tray 22 to pal 1")).toBeVisible();
-    await expect.element(screen.getByText("Unload to Tray 22 position 2")).toBeVisible();
+    await expect.element(screen.getByText("Unload to Tray 22 slot 2")).toBeVisible();
 
     const fallback = await renderInsightPage(
       <InProcMaterial mat={fixture.materials.palletToTray} />,
@@ -33,7 +33,7 @@ describe("basket material and job details", () => {
         fmsInfo: { loadStationNames: fixture.data.fmsInfo?.loadStationNames },
       },
     );
-    await expect.element(fallback.getByText("Unload to basket 22 position 2")).toBeVisible();
+    await expect.element(fallback.getByText("Unload to basket 22 slot 2")).toBeVisible();
   });
 
   test("material dialog opens for basket-backed material cards", async () => {

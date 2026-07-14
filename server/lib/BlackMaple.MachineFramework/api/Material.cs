@@ -69,7 +69,7 @@ namespace BlackMaple.MachineFramework
 
     public int? UnloadToBasketId { get; init; }
 
-    public int? UnloadToBasketSubPosition { get; init; }
+    public int? UnloadToBasketSlot { get; init; }
 
     //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
     public TimeSpan? ElapsedLoadUnloadTime { get; init; }
@@ -111,7 +111,7 @@ namespace BlackMaple.MachineFramework
     //If Type == InBasket
     public int? BasketId { get; init; }
 
-    public int? BasketSubPosition { get; init; }
+    public int? BasketSlot { get; init; }
   }
 
   //Stores information about a piece of material, where it is, and what is happening to it.

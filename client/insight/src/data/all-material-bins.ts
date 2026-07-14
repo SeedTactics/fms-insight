@@ -115,14 +115,14 @@ export type MaterialBin =
 
 function basketLocation(st: Readonly<api.IBasketStatus>): string {
   let loc: string;
-  if (st.locationTitle && st.locationTitle.length > 0) {
-    loc = st.locationTitle;
+  if (st.position.locationTitle && st.position.locationTitle.length > 0) {
+    loc = st.position.locationTitle;
   } else {
-    loc = st.location + " " + st.locationNum.toString();
+    loc = st.position.location + " " + st.position.locationNum.toString();
   }
 
-  if (st.slot) {
-    loc += `-${st.slot}`;
+  if (st.position.zone) {
+    loc += `-${st.position.zone}`;
   }
   return loc;
 }

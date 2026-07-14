@@ -176,11 +176,11 @@ function selectLoadStationAndQueueProps(
     }
 
     for (const basket of Object.values(curSt.baskets ?? {})) {
-      if (basket.locationNum !== loadNum) continue;
+      if (basket.position.locationNum !== loadNum) continue;
 
-      if (basket.location === api.BasketLocationEnum.LoadUnload) {
+      if (basket.position.location === api.BasketLocationEnum.LoadUnload) {
         activeBasket = basket;
-      } else if (basket.location === api.BasketLocationEnum.LoadStationStaging) {
+      } else if (basket.position.location === api.BasketLocationEnum.LoadStationStaging) {
         basketsToShow.add(basket.basketId);
       }
     }
@@ -390,7 +390,7 @@ function selectLoadStationAndQueueProps(
     queue.mats.sort(mkCompareByProperties((mat) => mat.location.queuePosition ?? 0)),
   );
   basketMat.forEach((basket) =>
-    basket.mats.sort(mkCompareByProperties((mat) => mat.location.basketSubPosition ?? 0)),
+    basket.mats.sort(mkCompareByProperties((mat) => mat.location.basketSlot ?? 0)),
   );
 
   const matCount = freeLoading.length + palFaces.valuesToAscLazySeq().sumBy((x) => x.length);

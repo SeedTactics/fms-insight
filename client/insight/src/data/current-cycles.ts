@@ -52,10 +52,10 @@ function basketsAtLoad(currentSt: ICurrentStatus): ReadonlyMap<number, LoadLocat
   return LazySeq.ofObject(currentSt.baskets ?? {})
     .collect(([, basket]) => {
       if (
-        basket.location === BasketLocationEnum.LoadUnload ||
-        basket.location === BasketLocationEnum.LoadStationStaging
+        basket.position.location === BasketLocationEnum.LoadUnload ||
+        basket.position.location === BasketLocationEnum.LoadStationStaging
       ) {
-        return [basket.basketId, { group: "L/U", num: basket.locationNum }] as const;
+        return [basket.basketId, { group: "L/U", num: basket.position.locationNum }] as const;
       }
       return null;
     })

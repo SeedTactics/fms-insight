@@ -35,13 +35,19 @@ describe("load station with active pallet", () => {
       baskets: [
         createBasket({
           basketId: 9,
-          location: api.BasketLocationEnum.LoadStationStaging,
-          locationNum: 1,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 1,
+            zone: 1,
+          }),
         }),
         createBasket({
           basketId: 10,
-          location: api.BasketLocationEnum.LoadStationStaging,
-          locationNum: 1,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 1,
+            zone: 2,
+          }),
         }),
       ],
       material: [
@@ -55,7 +61,7 @@ describe("load station with active pallet", () => {
           location: {
             type: api.LocType.InBasket,
             basketId: 9,
-            basketSubPosition: 0,
+            basketSlot: 0,
           },
           action: {
             type: api.ActionType.Loading,
@@ -80,7 +86,7 @@ describe("load station with active pallet", () => {
           action: {
             type: api.ActionType.UnloadToInProcess,
             unloadToBasketId: 10,
-            unloadToBasketSubPosition: 1,
+            unloadToBasketSlot: 1,
           },
         }),
         createMaterial({
@@ -93,7 +99,7 @@ describe("load station with active pallet", () => {
           location: {
             type: api.LocType.InBasket,
             basketId: 10,
-            basketSubPosition: 0,
+            basketSlot: 0,
           },
           action: {
             type: api.ActionType.Waiting,
@@ -117,7 +123,7 @@ describe("load station with active pallet", () => {
 
     await expect.element(face1).not.toHaveTextContent("Basket Load");
     await expect.element(face2).toHaveTextContent("Basket Unload");
-    await expect.element(face2).toHaveTextContent("Unload to Basket 10 position 2");
+    await expect.element(face2).toHaveTextContent("Unload to Basket 10 slot 2");
     await expect.element(face2).not.toHaveTextContent("Basket Load");
 
     await expect.element(basketsColumn).toHaveTextContent("Baskets");
