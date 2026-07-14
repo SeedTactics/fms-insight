@@ -59,7 +59,7 @@ import { OperatorSelect } from "./ChooseOperator";
 import { LoadingIcon } from "./LoadingIcon";
 import { ManualSerialEntryButton } from "./ManualSerialEntry";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
-import { RouteLocation, RouteState, currentRoute, helpUrl } from "./routes";
+import { RouteState, currentRoute, helpUrl } from "./routes";
 import { fmsInformation, logout } from "../network/server-settings";
 import { useAtom, useAtomValue } from "jotai";
 import { QRScanButton } from "./BarcodeScanning";
@@ -181,7 +181,7 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
         onChange={(e) =>
           startTransition(() => {
             const item = menuNavs.find((i) =>
-              "separator" in i ? false : i.route.route === (e.target.value as RouteLocation),
+              "separator" in i ? false : i.route.route === e.target.value,
             );
             if (!item || "separator" in item) return;
             setCurrentRoute(item.route);

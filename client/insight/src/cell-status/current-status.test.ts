@@ -150,7 +150,7 @@ function adjPos(
       currentQueue: newQueue || m.location.currentQueue,
       queuePosition: newPos,
     }),
-  } as api.IInProcessMaterial);
+  });
 }
 
 function reorderStatus(st: api.ICurrentStatus, reorder: cs.QueueReordering): api.ICurrentStatus {

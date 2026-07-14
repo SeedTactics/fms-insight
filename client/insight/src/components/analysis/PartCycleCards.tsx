@@ -675,7 +675,7 @@ export function PartLoadStationCycleChart() {
             displayEmpty
             value={selectedOperation}
             style={{ marginLeft: "1em" }}
-            onChange={(e) => setSelectedOperation(e.target.value as LoadCycleFilter)}
+            onChange={(e) => setSelectedOperation(e.target.value)}
           >
             <MenuItem value={"LULOccupancy"}>L/U Occupancy</MenuItem>
             {selectedPart ? (
@@ -716,7 +716,7 @@ export function PartLoadStationCycleChart() {
               value={carrierFilter}
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                const carrier = e.target.value as CarrierKindFilter;
+                const carrier = e.target.value;
                 setSelectedCarrier(carrier);
                 if (carrier === "Basket") {
                   setSelectedPallet(undefined);

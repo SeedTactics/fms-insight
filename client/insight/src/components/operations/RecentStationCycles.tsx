@@ -303,7 +303,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
               value={carrierFilter}
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                const carrier = e.target.value as CarrierKindFilter;
+                const carrier = e.target.value;
                 setSelectedCarrier(carrier);
                 if (carrier === "Basket") {
                   setSelectedPallet(undefined);
