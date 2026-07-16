@@ -415,6 +415,9 @@ namespace BlackMaple.FMSInsight.Tests
         [
           baseJob.Processes[0] with
           {
+            ExtraFields = ImmutableDictionary<string, double>
+              .Empty.Add("ClientSpecificCount", 7)
+              .Add("ClientSpecificRatio", 1.25),
             BasketLoadStations = [41, 42],
             ExpectedBasketLoadTime = TimeSpan.FromMinutes(9),
             BasketUnloadStations = [55],

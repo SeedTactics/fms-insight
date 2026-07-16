@@ -179,6 +179,16 @@ namespace BlackMaple.MachineFramework
 
   public record ProcessInfo
   {
+    /// <summary>
+    /// Client-defined numeric process metadata which must travel with a downloaded job but has no
+    /// coherent meaning in the generic FMS model. Prefer a well-named, strongly typed property
+    /// whenever the concept can be defined consistently across systems. Adding a key here should
+    /// be a last resort after explicitly considering whether the value represents a reusable domain
+    /// concept; this dictionary must not become a convenient dumping ground for data that belongs
+    /// in the shared schema. Consumers own the meaning, validation, and compatibility of their keys.
+    /// </summary>
+    public ImmutableDictionary<string, double>? ExtraFields { get; init; }
+
     public ImmutableSortedSet<int>? BasketLoadStations { get; init; }
 
     public TimeSpan? ExpectedBasketLoadTime { get; init; }
