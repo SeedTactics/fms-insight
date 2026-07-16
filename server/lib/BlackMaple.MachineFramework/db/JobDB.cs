@@ -118,6 +118,8 @@ namespace BlackMaple.MachineFramework
         ImmutableSortedSet.CreateBuilder<int>();
       public ImmutableSortedSet<int>.Builder BasketUnloads { get; } =
         ImmutableSortedSet.CreateBuilder<int>();
+      public ImmutableDictionary<string, double>.Builder ExtraFields { get; } =
+        ImmutableDictionary.CreateBuilder<string, double>();
     }
 
     private record JobDetails
@@ -285,6 +287,22 @@ namespace BlackMaple.MachineFramework
             {
               procData.BasketUnloads.Add(reader.GetInt32(1));
             }
+          }
+        }
+
+        cmd.CommandText =
+          "SELECT Process, Name, Value FROM process_extra_fields WHERE UniqueStr = $uniq";
+        using (var reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            var proc = reader.GetInt32(0);
+            if (!procDatRows.TryGetValue(proc, out var procData))
+            {
+              procData = new ProcDataRow() { Process = proc };
+              procDatRows.Add(proc, procData);
+            }
+            procData.ExtraFields.Add(reader.GetString(1), reader.GetDouble(2));
           }
         }
 
@@ -553,7 +571,12 @@ namespace BlackMaple.MachineFramework
             .Values.GroupBy(p => p.Process)
             .Select(proc => new ProcessInfo()
             {
-              BasketLoadStations = procDatRows.TryGetValue(proc.Key, out var procData)
+              ExtraFields =
+                procDatRows.TryGetValue(proc.Key, out var procData)
+                && procData.ExtraFields.Count > 0
+                  ? procData.ExtraFields.ToImmutable()
+                  : null,
+              BasketLoadStations = procDatRows.TryGetValue(proc.Key, out procData)
                 ? (procData.BasketLoads.Count == 0 ? null : procData.BasketLoads.ToImmutable())
                 : null,
               ExpectedBasketLoadTime = procDatRows.TryGetValue(proc.Key, out procData)
@@ -1696,6 +1719,27 @@ namespace BlackMaple.MachineFramework
             ? (object)proc.ExpectedBasketUnloadTime.Value.Ticks
             : DBNull.Value;
           cmd.ExecuteNonQuery();
+        }
+
+        cmd.CommandText =
+          "INSERT INTO process_extra_fields(UniqueStr, Process, Name, Value) VALUES ($uniq,$proc,$name,$value)";
+        cmd.Parameters.Clear();
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
+        cmd.Parameters.Add("proc", SqliteType.Integer);
+        cmd.Parameters.Add("name", SqliteType.Text);
+        cmd.Parameters.Add("value", SqliteType.Real);
+        for (int i = 1; i <= job.Processes.Count; i++)
+        {
+          var extraFields = job.Processes[i - 1].ExtraFields;
+          if (extraFields == null)
+            continue;
+          cmd.Parameters[1].Value = i;
+          foreach (var (name, value) in extraFields)
+          {
+            cmd.Parameters[2].Value = name;
+            cmd.Parameters[3].Value = value;
+            cmd.ExecuteNonQuery();
+          }
         }
 
         cmd.CommandText =

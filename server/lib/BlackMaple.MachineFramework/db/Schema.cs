@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 40;
+    private const int Version = 41;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -204,6 +204,10 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE TABLE procdata(UniqueStr TEXT, Process INTEGER, BasketLoadTime INTEGER, BasketUnloadTime INTEGER, PRIMARY KEY(UniqueStr,Process))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -505,6 +509,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 40)
             Ver39ToVer40(trans, updateJobsTables);
+
+          if (curVersion < 41)
+            Ver40ToVer41(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1285,6 +1292,18 @@ namespace BlackMaple.MachineFramework
 
       cmd.CommandText =
         "CREATE INDEX jobs_artifact_run_date_idx ON jobs(ArtifactRunDate) WHERE ArtifactRunDate IS NOT NULL";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver40ToVer41(IDbTransaction trans, bool updateJobTables)
+    {
+      if (!updateJobTables)
+        return;
+
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
       cmd.ExecuteNonQuery();
     }
 
