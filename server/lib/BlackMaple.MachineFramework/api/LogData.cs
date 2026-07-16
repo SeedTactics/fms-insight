@@ -112,7 +112,44 @@ namespace BlackMaple.MachineFramework
     BasketLoadUnload = 116,
     BasketCycle = 117,
     BasketInLocation = 118,
+    ResolvedIdentity = 119,
+    BasketContentSnapshot = 120,
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
+  }
+
+  /// <summary>
+  /// The pallet or basket identity recorded on an immutable log entry. The pallet terminology is
+  /// historical; depending on <see cref="LogEntry.LogType"/>, these values can identify either a
+  /// manufacturing pallet or a basket.
+  /// </summary>
+  public abstract record PalletIdentity
+  {
+    private PalletIdentity() { }
+
+    public sealed record None : PalletIdentity;
+
+    public sealed record Numbered : PalletIdentity
+    {
+      public required int Pallet { get; init; }
+    }
+
+    public sealed record Provisional : PalletIdentity
+    {
+      public required Guid ProvisionalPallet { get; init; }
+    }
+
+    public sealed record Resolution : PalletIdentity
+    {
+      public required Guid ProvisionalPallet { get; init; }
+      public required int Pallet { get; init; }
+    }
+  }
+
+  public record ResolvedPalletIdentity
+  {
+    public required Guid ProvisionalPallet { get; init; }
+    public required int Pallet { get; init; }
+    public required long ResolutionEventCounter { get; init; }
   }
 
   [KnownType(typeof(MaterialProcessActualPath))]
@@ -141,6 +178,33 @@ namespace BlackMaple.MachineFramework
 
     [JsonPropertyName("pal")]
     public required int Pallet { get; init; }
+
+    /// <summary>
+    /// A globally unique provisional pallet or basket identity. The pallet terminology is
+    /// historical; the log type determines whether this identifies a pallet or a basket.
+    /// </summary>
+    [JsonPropertyName("provisionalPal")]
+    public Guid? ProvisionalPallet { get; init; }
+
+    [JsonIgnore]
+    public PalletIdentity Identity =>
+      (Pallet, ProvisionalPallet, LogType) switch
+      {
+        (<= 0, null, _) => new PalletIdentity.None(),
+        (> 0, null, _) => new PalletIdentity.Numbered { Pallet = Pallet },
+        (-1, Guid provisional, _) => new PalletIdentity.Provisional
+        {
+          ProvisionalPallet = provisional,
+        },
+        (> 0, Guid provisional, LogType.ResolvedIdentity) => new PalletIdentity.Resolution
+        {
+          ProvisionalPallet = provisional,
+          Pallet = Pallet,
+        },
+        _ => throw new InvalidOperationException(
+          $"Invalid pallet identity on log entry {Counter}: pallet {Pallet}, provisional pallet {ProvisionalPallet}, log type {LogType}."
+        ),
+      };
 
     [JsonPropertyName("program")]
     public required string Program { get; init; }
@@ -181,6 +245,7 @@ namespace BlackMaple.MachineFramework
       Counter = cntr;
       Material = mat.ToImmutableList();
       Pallet = pal;
+      ProvisionalPallet = null;
       LogType = ty;
       LocationName = locName;
       LocationNum = locNum;

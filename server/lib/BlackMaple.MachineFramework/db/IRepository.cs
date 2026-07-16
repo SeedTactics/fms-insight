@@ -64,6 +64,17 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
+    List<LogEntry> CurrentBasketLog(
+      PalletIdentity basketIdentity,
+      bool includeLastCycleEvt = false
+    );
+    ResolvedPalletIdentity GetResolvedPalletIdentity(Guid provisionalPallet);
+    ImmutableDictionary<Guid, ResolvedPalletIdentity> GetResolvedPalletIdentities(
+      IEnumerable<Guid> provisionalPallets
+    );
+    ImmutableList<Guid> GetUnresolvedProvisionalPallets();
+    PalletIdentity ResolvePalletIdentity(PalletIdentity recordedIdentity);
+    ImmutableDictionary<Guid, ResolvedPalletIdentity> ReconstructResolvedPalletIdentities();
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -285,6 +296,15 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
+    LogEntry RecordBasketArriveLocation(
+      IEnumerable<EventLogMaterial> mats,
+      PalletIdentity basketIdentity,
+      string locationName,
+      int locationPosition,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
     LogEntry RecordBasketDepartLocation(
       IEnumerable<EventLogMaterial> mats,
       int basketId,
@@ -292,6 +312,39 @@ namespace BlackMaple.MachineFramework
       int locationPosition,
       DateTime timeUTC,
       TimeSpan elapsed,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketDepartLocation(
+      IEnumerable<EventLogMaterial> mats,
+      PalletIdentity basketIdentity,
+      string locationName,
+      int locationPosition,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketContentSnapshot(
+      IEnumerable<EventLogMaterial> mats,
+      PalletIdentity basketIdentity,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    ImmutableList<LogEntry> RecordBasketArrivalAndContentSnapshot(
+      IEnumerable<EventLogMaterial> mats,
+      PalletIdentity basketIdentity,
+      string locationName,
+      int locationPosition,
+      DateTime timeUTC,
+      string arrivalForeignId = null,
+      string snapshotForeignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordResolvedPalletIdentity(
+      Guid provisionalPallet,
+      int pallet,
+      DateTime timeUTC,
       string foreignId = null,
       string originalMessage = null
     );

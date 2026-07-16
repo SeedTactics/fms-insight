@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 41;
+    private const int Version = 42;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet INTEGER,"
           + "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER,"
-          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT)";
+          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, ProvisionalPallet TEXT)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -98,6 +98,10 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, Result)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE INDEX stations_provisional_pal ON stations(ProvisionalPallet) WHERE ProvisionalPallet IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -133,6 +137,10 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, "
           + "PRIMARY KEY(Counter, Key))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE resolved_identities(ProvisionalPallet TEXT PRIMARY KEY, Pallet INTEGER NOT NULL, ResolutionCounter INTEGER NOT NULL)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -512,6 +520,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 41)
             Ver40ToVer41(trans, updateJobsTables);
+
+          if (curVersion < 42)
+            Ver41ToVer42(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1304,6 +1315,21 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
       cmd.CommandText =
         "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver41ToVer42(IDbTransaction trans)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText = "ALTER TABLE stations ADD ProvisionalPallet TEXT";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX stations_provisional_pal ON stations(ProvisionalPallet) WHERE ProvisionalPallet IS NOT NULL";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE resolved_identities(ProvisionalPallet TEXT PRIMARY KEY, Pallet INTEGER NOT NULL, ResolutionCounter INTEGER NOT NULL)";
       cmd.ExecuteNonQuery();
     }
 

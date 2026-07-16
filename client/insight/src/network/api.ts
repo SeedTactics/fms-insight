@@ -3018,6 +3018,7 @@ export class LogEntry implements ILogEntry {
   loc!: string;
   locnum!: number;
   pal!: number;
+  provisionalPal?: string | undefined;
   program!: string;
   result!: string;
   elapsed!: string;
@@ -3049,6 +3050,7 @@ export class LogEntry implements ILogEntry {
       this.loc = _data["loc"];
       this.locnum = _data["locnum"];
       this.pal = _data["pal"];
+      this.provisionalPal = _data["provisionalPal"];
       this.program = _data["program"];
       this.result = _data["result"];
       this.elapsed = _data["elapsed"];
@@ -3088,6 +3090,7 @@ export class LogEntry implements ILogEntry {
     data["loc"] = this.loc;
     data["locnum"] = this.locnum;
     data["pal"] = this.pal;
+    data["provisionalPal"] = this.provisionalPal;
     data["program"] = this.program;
     data["result"] = this.result;
     data["elapsed"] = this.elapsed;
@@ -3117,6 +3120,7 @@ export interface ILogEntry {
   loc: string;
   locnum: number;
   pal: number;
+  provisionalPal?: string | undefined;
   program: string;
   result: string;
   elapsed: string;
@@ -3216,6 +3220,8 @@ export enum LogType {
   BasketLoadUnload = "BasketLoadUnload",
   BasketCycle = "BasketCycle",
   BasketInLocation = "BasketInLocation",
+  ResolvedIdentity = "ResolvedIdentity",
+  BasketContentSnapshot = "BasketContentSnapshot",
 }
 
 export class ToolUse implements IToolUse {
@@ -3725,6 +3731,7 @@ export interface IHoldPattern {
 }
 
 export class ProcessInfo implements IProcessInfo {
+  extraFields?: { [key: string]: number } | undefined;
   basketLoadStations?: number[] | undefined;
   expectedBasketLoadTime?: string | undefined;
   basketUnloadStations?: number[] | undefined;
@@ -3744,6 +3751,13 @@ export class ProcessInfo implements IProcessInfo {
 
   init(_data?: any) {
     if (_data) {
+      if (_data["ExtraFields"]) {
+        this.extraFields = {} as any;
+        for (let key in _data["ExtraFields"]) {
+          if (_data["ExtraFields"].hasOwnProperty(key))
+            (this.extraFields as any)![key] = _data["ExtraFields"][key];
+        }
+      }
       if (Array.isArray(_data["BasketLoadStations"])) {
         this.basketLoadStations = [] as any;
         for (let item of _data["BasketLoadStations"]) this.basketLoadStations!.push(item);
@@ -3770,6 +3784,13 @@ export class ProcessInfo implements IProcessInfo {
 
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
+    if (this.extraFields) {
+      data["ExtraFields"] = {};
+      for (let key in this.extraFields) {
+        if (this.extraFields.hasOwnProperty(key))
+          (data["ExtraFields"] as any)[key] = (this.extraFields as any)[key];
+      }
+    }
     if (Array.isArray(this.basketLoadStations)) {
       data["BasketLoadStations"] = [];
       for (let item of this.basketLoadStations) data["BasketLoadStations"].push(item);
@@ -3789,6 +3810,7 @@ export class ProcessInfo implements IProcessInfo {
 }
 
 export interface IProcessInfo {
+  extraFields?: { [key: string]: number } | undefined;
   basketLoadStations?: number[] | undefined;
   expectedBasketLoadTime?: string | undefined;
   basketUnloadStations?: number[] | undefined;

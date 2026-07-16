@@ -241,7 +241,7 @@ namespace MazakMachineInterface
 
     private void HandleLoadEnd(IReadOnlyList<LogEntry> es)
     {
-      int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
+      int pallet = TranslatePalletOrNone(es[0].Pallet);
 
       var cycle = new List<MWI.LogEntry>();
       if (pallet >= 1)
@@ -270,7 +270,7 @@ namespace MazakMachineInterface
 
     private bool HandleNonLulEndEvent(LogEntry e)
     {
-      var translatedPallet = mazakConfig.TranslatePalletNumber(e.Pallet);
+      var translatedPallet = TranslatePalletOrNone(e.Pallet);
       var cycle = new List<MWI.LogEntry>();
       if (translatedPallet >= 1)
         cycle = repo.CurrentPalletLog(translatedPallet);
@@ -1006,6 +1006,9 @@ namespace MazakMachineInterface
         }
       }
     }
+
+    private int TranslatePalletOrNone(int pallet) =>
+      pallet > 0 ? mazakConfig.TranslatePalletNumber(pallet) : 0;
     #endregion
 
     #region Compare Status With Events

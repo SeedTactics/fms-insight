@@ -111,10 +111,16 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
 
     case api.LogType.BasketInLocation:
       if (entry.startofcycle) {
-        return "Depart";
-      } else {
         return "Arrive";
+      } else {
+        return "Depart";
       }
+
+    case api.LogType.BasketContentSnapshot:
+      return `${basketName} Contents`;
+
+    case api.LogType.ResolvedIdentity:
+      return `${basketName} Identity`;
 
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
@@ -262,21 +268,46 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
 
     case api.LogType.BasketInLocation: {
       const basketName = basketDisplayName(fmsInfo.basketName);
+      const basketIdentity = entry.provisionalPal
+        ? `unidentified ${basketName.toLowerCase()} ${entry.provisionalPal}`
+        : `${basketName} ${entry.pal}`;
       if (entry.startofcycle) {
         return (
           <span>
-            {basketName} {entry.pal} departed from {entry.loc}
+            {basketIdentity} arrived at {entry.loc}
             {entry.locnum > 0 ? ` position ${entry.locnum}` : ""}
           </span>
         );
       } else {
         return (
           <span>
-            {basketName} {entry.pal} arrived at {entry.loc}
+            {basketIdentity} departed from {entry.loc}
             {entry.locnum > 0 ? ` position ${entry.locnum}` : ""}
           </span>
         );
       }
+    }
+
+    case api.LogType.BasketContentSnapshot: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      const basketIdentity = entry.provisionalPal
+        ? `unidentified ${basketName.toLowerCase()} ${entry.provisionalPal}`
+        : `${basketName} ${entry.pal}`;
+      return (
+        <span>
+          Recorded complete contents for {basketIdentity}: {displayMat(entry.material)}
+        </span>
+      );
+    }
+
+    case api.LogType.ResolvedIdentity: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      return (
+        <span>
+          Unidentified pallet or {basketName.toLowerCase()} {entry.provisionalPal} resolved to
+          number {entry.pal}
+        </span>
+      );
     }
 
     case api.LogType.MachineCycle:

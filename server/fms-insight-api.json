@@ -2269,6 +2269,11 @@
             "type": "integer",
             "format": "int32"
           },
+          "provisionalPal": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
           "program": {
             "type": "string"
           },
@@ -2380,7 +2385,9 @@
           "CancelRebooking",
           "BasketLoadUnload",
           "BasketCycle",
-          "BasketInLocation"
+          "BasketInLocation",
+          "ResolvedIdentity",
+          "BasketContentSnapshot"
         ],
         "enum": [
           "LoadUnloadCycle",
@@ -2405,7 +2412,9 @@
           "CancelRebooking",
           "BasketLoadUnload",
           "BasketCycle",
-          "BasketInLocation"
+          "BasketInLocation",
+          "ResolvedIdentity",
+          "BasketContentSnapshot"
         ]
       },
       "ToolUse": {
@@ -2729,6 +2738,14 @@
         "additionalProperties": false,
         "required": ["paths", "paths"],
         "properties": {
+          "ExtraFields": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "number",
+              "format": "double"
+            }
+          },
           "BasketLoadStations": {
             "type": "array",
             "nullable": true,

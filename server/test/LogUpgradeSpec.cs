@@ -92,7 +92,7 @@ namespace BlackMaple.FMSInsight.Tests
         }
         if (sql2.StartsWith("CREATE TABLE stations"))
         {
-          sql1 = sql1.Replace("Pallet TEXT", "Pallet INTEGER");
+          sql1 = sql1.Replace("  Pallet TEXT,", "  Pallet INTEGER,");
         }
 
         // Face was changed text to integer
