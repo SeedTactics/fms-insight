@@ -64,6 +64,16 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
+    ImmutableList<LogEntry> CurrentBasketLog(
+      ContainerIdentity basketIdentity,
+      bool includeLastCycleEvt = false
+    );
+    ImmutableList<CurrentBasketIdentityHint> GetCurrentBasketIdentityHints(int? basketNum = null);
+    ImmutableList<Guid> GetUnresolvedOpenBasketContainerIds();
+    ImmutableDictionary<Guid, CurrentBasketIdentityHint> ReconstructBasketIdentityHints();
+    LogEntry GetFinalizedBasketCycle(long cycleCounter);
+    ImmutableList<LogEntry> GetLogForFinalizedBasketCycle(long cycleCounter);
+    ImmutableList<LogEntry> GetFinalizedBasketCycles(int basketId);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -107,9 +117,25 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
+    LogEntry RecordBasketLoadBegin(
+      IEnumerable<EventLogMaterial> mats,
+      ContainerIdentity basketIdentity,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
     LogEntry RecordBasketUnloadBegin(
       IEnumerable<EventLogMaterial> mats,
       int basketId,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketUnloadBegin(
+      IEnumerable<EventLogMaterial> mats,
+      ContainerIdentity basketIdentity,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -157,6 +183,18 @@ namespace BlackMaple.MachineFramework
       MaterialToUnloadFromBasket toUnload,
       int lulNum,
       int basketId,
+      TimeSpan totalElapsed,
+      DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues
+    );
+
+    // Records ordinary basket load/unload evidence and queue changes without implicitly opening or
+    // closing a numbered basket cycle. UUID-based integrations finalize the cycle separately.
+    IEnumerable<LogEntry> RecordBasketLoadUnload(
+      MaterialToLoadOntoBasket toLoad,
+      MaterialToUnloadFromBasket toUnload,
+      int lulNum,
+      ContainerIdentity basketIdentity,
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues
@@ -285,6 +323,15 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
+    LogEntry RecordBasketArriveLocation(
+      IEnumerable<EventLogMaterial> mats,
+      ContainerIdentity basketIdentity,
+      string locationName,
+      int locationPosition,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
     LogEntry RecordBasketDepartLocation(
       IEnumerable<EventLogMaterial> mats,
       int basketId,
@@ -292,6 +339,38 @@ namespace BlackMaple.MachineFramework
       int locationPosition,
       DateTime timeUTC,
       TimeSpan elapsed,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketDepartLocation(
+      IEnumerable<EventLogMaterial> mats,
+      ContainerIdentity basketIdentity,
+      string locationName,
+      int locationPosition,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketContentSnapshot(
+      IEnumerable<EventLogMaterial> mats,
+      ContainerIdentity basketIdentity,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketIdentityHint(
+      Guid containerId,
+      int basketNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordBasketCycleEnd(
+      int basketId,
+      IEnumerable<EventLogMaterial> mats,
+      IReadOnlySet<Guid> containerIds,
+      DateTime timeUTC,
       string foreignId = null,
       string originalMessage = null
     );

@@ -271,6 +271,9 @@ namespace MazakMachineInterface
     private bool HandleNonLulEndEvent(LogEntry e)
     {
       var translatedPallet = mazakConfig.TranslatePalletNumber(e.Pallet);
+      // Mazak uses -1 when an event has no pallet. New log events use zero for no container
+      // identity; -1 is reserved for UUID-identified containers.
+      var eventPallet = Math.Max(0, translatedPallet);
       var cycle = new List<MWI.LogEntry>();
       if (translatedPallet >= 1)
         cycle = repo.CurrentPalletLog(translatedPallet);
@@ -298,7 +301,7 @@ namespace MazakMachineInterface
                 Face = 0,
               },
             ],
-            pallet: translatedPallet,
+            pallet: eventPallet,
             lulNum: mazakConfig.TranslateLoadStationNumber(e.StationNumber),
             timeUTC: e.TimeUTC,
             foreignId: e.ForeignID
@@ -311,7 +314,7 @@ namespace MazakMachineInterface
 
           repo.RecordUnloadStart(
             mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
-            pallet: translatedPallet,
+            pallet: eventPallet,
             lulNum: mazakConfig.TranslateLoadStationNumber(e.StationNumber),
             timeUTC: e.TimeUTC,
             foreignId: e.ForeignID
@@ -341,7 +344,7 @@ namespace MazakMachineInterface
           LookupProgram(machineMats, e, out var progName, out var progRev);
           repo.RecordMachineStart(
             mats: machineMats.Select(m => m.Mat),
-            pallet: translatedPallet,
+            pallet: eventPallet,
             statName: machGroupName,
             statNum: mcNum,
             program: progName,
@@ -400,7 +403,7 @@ namespace MazakMachineInterface
             LookupProgram(machineMats, e, out var progName, out var progRev);
             var s = repo.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
-              pallet: translatedPallet,
+              pallet: eventPallet,
               statName: machGroupName,
               statNum: mcNum,
               program: progName,
@@ -444,7 +447,7 @@ namespace MazakMachineInterface
           }
           repo.RecordPalletDepartRotaryInbound(
             mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-            pallet: translatedPallet,
+            pallet: eventPallet,
             statName: machGroupName,
             statNum: mcNum,
             timeUTC: e.TimeUTC,
@@ -479,7 +482,7 @@ namespace MazakMachineInterface
               }
               repo.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: translatedPallet,
+                pallet: eventPallet,
                 statName: machGroupName,
                 statNum: mcNum,
                 rotateIntoWorktable: false,
@@ -499,7 +502,7 @@ namespace MazakMachineInterface
             {
               repo.RecordPalletDepartStocker(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: translatedPallet,
+                pallet: eventPallet,
                 stockerNum: stockerNum,
                 timeUTC: e.TimeUTC,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
@@ -531,7 +534,7 @@ namespace MazakMachineInterface
               }
               repo.RecordPalletArriveRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: translatedPallet,
+                pallet: eventPallet,
                 statName: machGroupName,
                 statNum: mcNum,
                 timeUTC: e.TimeUTC,
@@ -549,7 +552,7 @@ namespace MazakMachineInterface
             {
               repo.RecordPalletArriveStocker(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: translatedPallet,
+                pallet: eventPallet,
                 stockerNum: stockerNum,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
                 timeUTC: e.TimeUTC,

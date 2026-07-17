@@ -32,8 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { filterRemoveAddQueue } from "./log-entry-queue-filter.js";
+import { basketContainerName } from "./log-entry-container-name.js";
 import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/events.fake.js";
 import { it, expect } from "vitest";
+
+it("displays the UUID fragment when a basket identity hint also has a number", () => {
+  expect(
+    basketContainerName({ pal: 5, containerId: "12345678-1234-1234-1234-123456789abc" }, "Basket"),
+  ).toBe("Basket fragment 12345678");
+});
 
 it("doesn't filter just a single add", () => {
   const cycles = [
