@@ -47,6 +47,7 @@ import { useAtomValue } from "jotai";
 import { fmsInformation } from "../network/server-settings.js";
 import { basketDisplayName, loadStationDisplayName } from "../cell-status/station-cycles.js";
 import { filterRemoveAddQueue } from "./log-entry-queue-filter.js";
+import { basketContainerName } from "./log-entry-container-name.js";
 
 type ColoredSpanType =
   | "machine"
@@ -111,10 +112,16 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
 
     case api.LogType.BasketInLocation:
       if (entry.startofcycle) {
-        return "Depart";
-      } else {
         return "Arrive";
+      } else {
+        return "Depart";
       }
+
+    case api.LogType.BasketIdentityHint:
+      return `${basketName} Identity Hint`;
+
+    case api.LogType.BasketContentSnapshot:
+      return `${basketName} Content Snapshot`;
 
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
@@ -232,10 +239,7 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
       return (
         <span>
           {displayMat(entry.material)} {entry.program === "LOAD" ? "loaded onto" : "unloaded from"}{" "}
-          <ColoredSpan $type="pallet">
-            {basketName} {entry.pal}
-          </ColoredSpan>{" "}
-          at{" "}
+          <ColoredSpan $type="pallet">{basketContainerName(entry, basketName)}</ColoredSpan> at{" "}
           <ColoredSpan $type="loadStation">
             {loadStationDisplayName(entry.locnum, fmsInfo.loadStationNames)}
           </ColoredSpan>
@@ -255,6 +259,9 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
         return (
           <span>
             {basketName} {entry.pal} completed cycle
+            {entry.containerIds && entry.containerIds.length > 0
+              ? ` from ${entry.containerIds.length} UUID fragment${entry.containerIds.length === 1 ? "" : "s"}`
+              : ""}
           </span>
         );
       }
@@ -265,18 +272,37 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
       if (entry.startofcycle) {
         return (
           <span>
-            {basketName} {entry.pal} departed from {entry.loc}
+            {basketContainerName(entry, basketName)} arrived at {entry.loc}
             {entry.locnum > 0 ? ` position ${entry.locnum}` : ""}
           </span>
         );
       } else {
         return (
           <span>
-            {basketName} {entry.pal} arrived at {entry.loc}
+            {basketContainerName(entry, basketName)} departed from {entry.loc}
             {entry.locnum > 0 ? ` position ${entry.locnum}` : ""}
           </span>
         );
       }
+    }
+
+    case api.LogType.BasketIdentityHint: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      return (
+        <span>
+          {basketContainerName(entry, basketName)} presently associated with {basketName}{" "}
+          {entry.pal}
+        </span>
+      );
+    }
+
+    case api.LogType.BasketContentSnapshot: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      return (
+        <span>
+          {basketContainerName(entry, basketName)} contained {displayMat(entry.material)}
+        </span>
+      );
     }
 
     case api.LogType.MachineCycle:

@@ -2269,6 +2269,18 @@
             "type": "integer",
             "format": "int32"
           },
+          "containerId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "containerIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "guid"
+            }
+          },
           "program": {
             "type": "string"
           },
@@ -2380,7 +2392,9 @@
           "CancelRebooking",
           "BasketLoadUnload",
           "BasketCycle",
-          "BasketInLocation"
+          "BasketInLocation",
+          "BasketIdentityHint",
+          "BasketContentSnapshot"
         ],
         "enum": [
           "LoadUnloadCycle",
@@ -2405,7 +2419,9 @@
           "CancelRebooking",
           "BasketLoadUnload",
           "BasketCycle",
-          "BasketInLocation"
+          "BasketInLocation",
+          "BasketIdentityHint",
+          "BasketContentSnapshot"
         ]
       },
       "ToolUse": {
@@ -2729,6 +2745,14 @@
         "additionalProperties": false,
         "required": ["paths", "paths"],
         "properties": {
+          "ExtraFields": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "number",
+              "format": "double"
+            }
+          },
           "BasketLoadStations": {
             "type": "array",
             "nullable": true,

@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 41;
+    private const int Version = 42;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet INTEGER,"
           + "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER,"
-          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT)";
+          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, ContainerId TEXT)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -98,6 +98,14 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, Result)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE INDEX stations_container_id ON stations(ContainerId, StationLoc, Result, Counter) WHERE ContainerId IS NOT NULL";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE INDEX stations_basket_cycles ON stations(Pallet, Counter) WHERE StationLoc = 117 AND Result = 'BasketCycle'";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -152,6 +160,20 @@ namespace BlackMaple.MachineFramework
           "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, AddTimeUTC INTEGER, PRIMARY KEY(MaterialID, Queue))";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE current_basket_identity_hints(ContainerId TEXT PRIMARY KEY, BasketNum INTEGER NOT NULL, HintCounter INTEGER NOT NULL UNIQUE)";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText =
+          "CREATE INDEX current_basket_identity_hints_num ON current_basket_identity_hints(BasketNum, ContainerId)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE basket_cycle_container_ids(CycleCounter INTEGER NOT NULL, ContainerId TEXT PRIMARY KEY)";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText =
+          "CREATE INDEX basket_cycle_container_ids_cycle ON basket_cycle_container_ids(CycleCounter, ContainerId)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -512,6 +534,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 41)
             Ver40ToVer41(trans, updateJobsTables);
+
+          if (curVersion < 42)
+            Ver41ToVer42(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1304,6 +1329,33 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
       cmd.CommandText =
         "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver41ToVer42(IDbTransaction trans)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText = "ALTER TABLE stations ADD ContainerId TEXT";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX stations_container_id ON stations(ContainerId, StationLoc, Result, Counter) WHERE ContainerId IS NOT NULL";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX stations_basket_cycles ON stations(Pallet, Counter) WHERE StationLoc = 117 AND Result = 'BasketCycle'";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE current_basket_identity_hints(ContainerId TEXT PRIMARY KEY, BasketNum INTEGER NOT NULL, HintCounter INTEGER NOT NULL UNIQUE)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX current_basket_identity_hints_num ON current_basket_identity_hints(BasketNum, ContainerId)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE basket_cycle_container_ids(CycleCounter INTEGER NOT NULL, ContainerId TEXT PRIMARY KEY)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX basket_cycle_container_ids_cycle ON basket_cycle_container_ids(CycleCounter, ContainerId)";
       cmd.ExecuteNonQuery();
     }
 
