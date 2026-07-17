@@ -120,7 +120,7 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
       return `${basketName} Contents`;
 
     case api.LogType.ResolvedIdentity:
-      return `${basketName} Identity`;
+      return "Identity Resolution";
 
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {

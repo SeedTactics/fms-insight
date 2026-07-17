@@ -226,6 +226,76 @@ public sealed class ProvisionalIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task RejectsTwoProvisionalIdentitiesResolvedToTheSameNumber()
+  {
+    var firstProvisional = Guid.NewGuid();
+    var conflictingProvisional = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+
+    var firstResolution = repository.RecordResolvedPalletIdentity(
+      firstProvisional,
+      pallet: 4,
+      timeUTC: DateTime.UtcNow
+    );
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordResolvedPalletIdentity(
+        conflictingProvisional,
+        pallet: 4,
+        timeUTC: DateTime.UtcNow
+      )
+    );
+
+    await Assert
+      .That(repository.GetResolvedPalletIdentity(firstProvisional).ResolutionEventCounter)
+      .IsEqualTo(firstResolution.Counter);
+    await Assert.That(repository.GetResolvedPalletIdentity(conflictingProvisional)).IsNull();
+    await Assert.That(repository.GetRecentLog(0)).Count().IsEqualTo(1);
+  }
+
+  [Test]
+  public async Task CurrentBasketLogSearchesOnlyEventsAfterLatestResolvedCycle()
+  {
+    var provisional = Guid.NewGuid();
+    var start = DateTime.UtcNow.AddMinutes(-10);
+    using var repository = _repositoryConfig.OpenConnection();
+
+    var beforeCycle = repository.RecordBasketContentSnapshot(
+      mats: [],
+      basketIdentity: new PalletIdentity.Provisional { ProvisionalPallet = provisional },
+      timeUTC: start
+    );
+    repository.RecordResolvedPalletIdentity(provisional, pallet: 4, timeUTC: start.AddMinutes(1));
+    var cycle = repository.RecordEmptyBasket(4, start.AddMinutes(2)).Single();
+    var afterCycle = repository.RecordBasketContentSnapshot(
+      mats: [],
+      basketIdentity: new PalletIdentity.Provisional { ProvisionalPallet = provisional },
+      timeUTC: start.AddMinutes(3)
+    );
+
+    foreach (
+      var identity in new PalletIdentity[]
+      {
+        new PalletIdentity.Numbered { Pallet = 4 },
+        new PalletIdentity.Provisional { ProvisionalPallet = provisional },
+      }
+    )
+    {
+      await Assert
+        .That(repository.CurrentBasketLog(identity).Select(entry => entry.Counter))
+        .IsEquivalentTo([afterCycle.Counter]);
+      await Assert
+        .That(
+          repository
+            .CurrentBasketLog(identity, includeLastCycleEvt: true)
+            .Select(entry => entry.Counter)
+        )
+        .IsEquivalentTo([cycle.Counter, afterCycle.Counter]);
+    }
+
+    await Assert.That(beforeCycle.Counter).IsLessThan(cycle.Counter);
+  }
+
+  [Test]
   public async Task ProvisionalArrivalPairsWithNumberedDepartureAfterResolution()
   {
     var provisional = Guid.NewGuid();

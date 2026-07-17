@@ -101,7 +101,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE INDEX stations_provisional_pal ON stations(ProvisionalPallet) WHERE ProvisionalPallet IS NOT NULL";
+          "CREATE INDEX stations_provisional_pal ON stations(ProvisionalPallet, Result) WHERE ProvisionalPallet IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -141,6 +141,9 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE TABLE resolved_identities(ProvisionalPallet TEXT PRIMARY KEY, Pallet INTEGER NOT NULL, ResolutionCounter INTEGER NOT NULL)";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText =
+          "CREATE INDEX resolved_identities_pallet ON resolved_identities(Pallet, ProvisionalPallet)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -1326,10 +1329,13 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText = "ALTER TABLE stations ADD ProvisionalPallet TEXT";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
-        "CREATE INDEX stations_provisional_pal ON stations(ProvisionalPallet) WHERE ProvisionalPallet IS NOT NULL";
+        "CREATE INDEX stations_provisional_pal ON stations(ProvisionalPallet, Result) WHERE ProvisionalPallet IS NOT NULL";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE resolved_identities(ProvisionalPallet TEXT PRIMARY KEY, Pallet INTEGER NOT NULL, ResolutionCounter INTEGER NOT NULL)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX resolved_identities_pallet ON resolved_identities(Pallet, ProvisionalPallet)";
       cmd.ExecuteNonQuery();
     }
 

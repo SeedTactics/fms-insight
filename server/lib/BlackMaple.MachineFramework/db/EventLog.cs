@@ -731,27 +731,31 @@ namespace BlackMaple.MachineFramework
             provisionalIdentity.ProvisionalPallet.ToString("D");
         cmd.Parameters.Add("resolutionType", SqliteType.Integer).Value = (int)
           LogType.ResolvedIdentity;
+        cmd.Parameters.Add("cycleResult", SqliteType.Text).Value = "BasketCycle";
+        cmd.CommandText =
+          "SELECT MAX(s.Counter) FROM stations s WHERE "
+          + identityCondition
+          + " AND s.Result = $cycleResult";
+        var lastCycleCounter = cmd.ExecuteScalar() as long?;
+
         cmd.CommandText =
           "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ProvisionalPallet "
           + " FROM stations s WHERE "
           + identityCondition
-          + " AND s.StationLoc != $resolutionType AND "
+          + " AND s.StationLoc != $resolutionType "
+          + (
+            lastCycleCounter.HasValue
+              ? "AND s.Counter " + (includeLastCycleEvt ? ">= " : "> ") + "$lastCycleCounter "
+              : ""
+          )
+          + "AND "
           + ignoreInvalidEventCondition
           + " ORDER BY Counter ASC";
+        if (lastCycleCounter.HasValue)
+          cmd.Parameters.Add("lastCycleCounter", SqliteType.Integer).Value = lastCycleCounter.Value;
         using (var reader = cmd.ExecuteReader())
         {
-          var logs = LoadLog(reader, trans).ToList();
-          var lastCycleCounter = logs.Where(entry => entry.LogType == LogType.BasketCycle)
-            .Select(entry => (long?)entry.Counter)
-            .Max();
-          return lastCycleCounter.HasValue
-            ? logs.Where(entry =>
-                includeLastCycleEvt
-                  ? entry.Counter >= lastCycleCounter.Value
-                  : entry.Counter > lastCycleCounter.Value
-              )
-              .ToList()
-            : logs;
+          return LoadLog(reader, trans).ToList();
         }
       }
     }
@@ -1556,12 +1560,21 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
+        "SELECT ProvisionalPallet FROM resolved_identities "
+        + "WHERE Pallet = $pal AND ProvisionalPallet != $provisionalPal LIMIT 1";
+      cmd.Parameters.Add("provisionalPal", SqliteType.Text).Value = provisionalPallet.ToString("D");
+      cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
+      var conflictingProvisional = cmd.ExecuteScalar() as string;
+      if (conflictingProvisional is not null)
+        throw new ConflictRequestException(
+          $"Pallet or basket {pallet} is already resolved from provisional identity {conflictingProvisional}."
+        );
+
+      cmd.CommandText =
         "INSERT INTO resolved_identities(ProvisionalPallet, Pallet, ResolutionCounter) "
         + "VALUES($provisionalPal, $pal, $counter) "
         + "ON CONFLICT(ProvisionalPallet) DO UPDATE SET Pallet = excluded.Pallet, ResolutionCounter = excluded.ResolutionCounter "
         + "WHERE excluded.ResolutionCounter > resolved_identities.ResolutionCounter";
-      cmd.Parameters.Add("provisionalPal", SqliteType.Text).Value = provisionalPallet.ToString("D");
-      cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
       cmd.Parameters.Add("counter", SqliteType.Integer).Value = resolutionCounter;
       cmd.ExecuteNonQuery();
     }
