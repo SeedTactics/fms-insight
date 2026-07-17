@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using Microsoft.Data.Sqlite;
@@ -352,13 +353,13 @@ public sealed class ContainerIdentitySpec : IDisposable
 
     await Assert.That(cycle.Pallet).IsEqualTo(5);
     await Assert.That(retry.Counter).IsEqualTo(cycle.Counter);
-    await Assert.That(cycle.BasketCycleContainerIds).IsEquivalentTo([first, second]);
+    await Assert.That(cycle.CycleEndContainerIds).IsEquivalentTo([first, second]);
     await Assert.That(repository.GetCurrentBasketIdentityHints()).IsEmpty();
     await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEmpty();
     await Assert.That(repository.ReconstructBasketIdentityHints()).IsEmpty();
     var loadedCycle = repository.GetFinalizedBasketCycle(cycle.Counter);
     await Assert.That(loadedCycle.Counter).IsEqualTo(cycle.Counter);
-    await Assert.That(loadedCycle.BasketCycleContainerIds).IsEquivalentTo([first, second]);
+    await Assert.That(loadedCycle.CycleEndContainerIds).IsEquivalentTo([first, second]);
     await Assert
       .That(repository.GetFinalizedBasketCycles(5).Select(entry => entry.Counter))
       .IsEquivalentTo([cycle.Counter]);
@@ -536,10 +537,44 @@ public sealed class ContainerIdentitySpec : IDisposable
     repository.RecordEmptyBasket(8, DateTime.UtcNow);
     var cycleEnd = repository.RecordEmptyBasket(8, DateTime.UtcNow, basketEnd: true).Single();
 
-    await Assert.That(cycleEnd.BasketCycleContainerIds).IsEmpty();
+    await Assert.That(cycleEnd.CycleEndContainerIds).IsNull();
     await Assert
       .That(repository.GetFinalizedBasketCycle(cycleEnd.Counter).Counter)
       .IsEqualTo(cycleEnd.Counter);
+  }
+
+  [Test]
+  public async Task ContainerIdsAreOmittedUnlessTheCycleEndFinalizesFragments()
+  {
+    var id = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+    repository.RecordEmptyBasket(8, DateTime.UtcNow);
+    var legacyCycleEnd = repository.RecordEmptyBasket(8, DateTime.UtcNow, basketEnd: true).Single();
+    repository.RecordBasketContentSnapshot(
+      [],
+      new ContainerIdentity.Uuid { ContainerId = id },
+      DateTime.UtcNow
+    );
+    var finalizedCycleEnd = repository.RecordBasketCycleEnd(
+      9,
+      [],
+      ImmutableHashSet.Create(id),
+      DateTime.UtcNow
+    );
+    var jsonOptions = new JsonSerializerOptions();
+    FMSInsightWebHost.JsonSettings(jsonOptions);
+
+    var legacyJson = JsonSerializer.Serialize(legacyCycleEnd, jsonOptions);
+    using var finalizedJson = JsonDocument.Parse(
+      JsonSerializer.Serialize(finalizedCycleEnd, jsonOptions)
+    );
+
+    await Assert.That(legacyJson).DoesNotContain("\"containerIds\"");
+    await Assert
+      .That(
+        finalizedJson.RootElement.GetProperty("containerIds").EnumerateArray().Single().GetGuid()
+      )
+      .IsEqualTo(id);
   }
 
   private static async Task AssertThrows<TException>(Action action)

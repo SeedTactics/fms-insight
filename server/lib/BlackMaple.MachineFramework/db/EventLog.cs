@@ -288,7 +288,8 @@ namespace BlackMaple.MachineFramework
             Material = matLst.ToImmutable(),
             Pallet = pal,
             ContainerId = containerId,
-            BasketCycleContainerIds = cycleContainerIds.ToImmutable(),
+            CycleEndContainerIds =
+              cycleContainerIds.Count > 0 ? cycleContainerIds.ToImmutable() : null,
             LogType = ty,
             LocationName = locName,
             LocationNum = locNum,
@@ -1452,7 +1453,7 @@ namespace BlackMaple.MachineFramework
       public required int LocationNum { get; init; }
       public required int Pallet { get; init; }
       public Guid? ContainerId { get; init; }
-      public ImmutableList<Guid> BasketCycleContainerIds { get; init; } = [];
+      public ImmutableList<Guid> CycleEndContainerIds { get; init; }
       public required string Program { get; init; }
       public required string Result { get; init; }
       public TimeSpan ElapsedTime { get; init; } = TimeSpan.FromMinutes(-1); //time from cycle-start to cycle-stop
@@ -1499,7 +1500,7 @@ namespace BlackMaple.MachineFramework
           LocationNum = this.LocationNum,
           Pallet = this.Pallet,
           ContainerId = this.ContainerId,
-          BasketCycleContainerIds = this.BasketCycleContainerIds,
+          CycleEndContainerIds = this.CycleEndContainerIds,
           Program = this.Program,
           Result = this.Result,
           ElapsedTime = this.ElapsedTime,
@@ -1519,7 +1520,7 @@ namespace BlackMaple.MachineFramework
           Material = e.Material.Select(EventLogMaterial.FromLogMat),
           Pallet = e.Pallet,
           ContainerId = e.ContainerId,
-          BasketCycleContainerIds = e.BasketCycleContainerIds,
+          CycleEndContainerIds = e.CycleEndContainerIds,
           LogType = e.LogType,
           LocationName = e.LocationName,
           LocationNum = e.LocationNum,
@@ -1599,7 +1600,7 @@ namespace BlackMaple.MachineFramework
         AddToolUse(ctr, log.Tools, trans);
         AddToolSnapshots(ctr, log.ToolPockets, trans);
 
-        foreach (var containerId in log.BasketCycleContainerIds)
+        foreach (var containerId in log.CycleEndContainerIds ?? [])
         {
           cmd.CommandText =
             "INSERT INTO basket_cycle_container_ids(CycleCounter, ContainerId) VALUES($counter, $containerId)";
@@ -1652,14 +1653,14 @@ namespace BlackMaple.MachineFramework
       if (log.LogType == LogType.BasketContentSnapshot && log.Pallet == 0)
         throw new ArgumentException("BasketContentSnapshot requires a container identity.");
       if (
-        log.BasketCycleContainerIds.Count > 0
+        log.CycleEndContainerIds is { Count: > 0 } cycleEndContainerIds
         && (
           log.LogType != LogType.BasketCycle
           || log.StartOfCycle
           || log.Pallet <= 0
           || log.ContainerId.HasValue
-          || log.BasketCycleContainerIds.Any(id => id == Guid.Empty)
-          || log.BasketCycleContainerIds.Count != log.BasketCycleContainerIds.Distinct().Count()
+          || cycleEndContainerIds.Any(id => id == Guid.Empty)
+          || cycleEndContainerIds.Count != cycleEndContainerIds.Distinct().Count()
         )
       )
         throw new ArgumentException(
@@ -3037,7 +3038,7 @@ namespace BlackMaple.MachineFramework
         cycle = ExistingFinalization(foreignId, trans);
         if (cycle is not null)
         {
-          if (cycle.Pallet != basketId || !cycle.BasketCycleContainerIds.SequenceEqual(ids))
+          if (cycle.Pallet != basketId || cycle.CycleEndContainerIds?.SequenceEqual(ids) != true)
             throw new ConflictRequestException(
               $"Foreign ID {foreignId} already identifies a different basket-cycle finalization."
             );
@@ -3086,7 +3087,7 @@ namespace BlackMaple.MachineFramework
               Result = "BasketCycle",
               ElapsedTime = timeUTC >= firstEventTime ? timeUTC - firstEventTime : TimeSpan.Zero,
               ActiveOperationTime = TimeSpan.Zero,
-              BasketCycleContainerIds = ids,
+              CycleEndContainerIds = ids,
             },
             foreignId,
             originalMessage

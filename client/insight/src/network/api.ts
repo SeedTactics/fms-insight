@@ -3019,7 +3019,7 @@ export class LogEntry implements ILogEntry {
   locnum!: number;
   pal!: number;
   containerId?: string | undefined;
-  containerIds?: string[];
+  containerIds?: string[] | undefined;
   program!: string;
   result!: string;
   elapsed!: string;
@@ -3130,7 +3130,7 @@ export interface ILogEntry {
   locnum: number;
   pal: number;
   containerId?: string | undefined;
-  containerIds?: string[];
+  containerIds?: string[] | undefined;
   program: string;
   result: string;
   elapsed: string;

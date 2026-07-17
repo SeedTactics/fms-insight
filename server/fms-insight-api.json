@@ -2276,6 +2276,7 @@
           },
           "containerIds": {
             "type": "array",
+            "nullable": true,
             "items": {
               "type": "string",
               "format": "guid"

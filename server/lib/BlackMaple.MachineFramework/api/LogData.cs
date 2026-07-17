@@ -182,10 +182,10 @@ namespace BlackMaple.MachineFramework
     public Guid? ContainerId { get; init; }
 
     /// <summary>
-    /// UUID fragments authoritatively finalized by this numbered basket-cycle end event.
+    /// UUID fragments authoritatively finalized by this numbered cycle-end event.
     /// </summary>
     [JsonPropertyName("containerIds")]
-    public ImmutableList<Guid> BasketCycleContainerIds { get; init; } = [];
+    public ImmutableList<Guid>? CycleEndContainerIds { get; init; }
 
     [JsonIgnore]
     public ContainerIdentity Identity =>
@@ -243,7 +243,7 @@ namespace BlackMaple.MachineFramework
       Material = mat.ToImmutableList();
       Pallet = pal;
       ContainerId = null;
-      BasketCycleContainerIds = [];
+      CycleEndContainerIds = null;
       LogType = ty;
       LocationName = locName;
       LocationNum = locNum;
