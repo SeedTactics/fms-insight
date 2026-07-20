@@ -233,8 +233,9 @@ export function createMixedBasketFixture(): MixedBasketFixture {
         queuePosition: 0,
       },
       action: {
-        type: api.ActionType.Loading,
-        loadFromBasketId: 21,
+        type: api.ActionType.LoadingToBasket,
+        loadToBasketId: 21,
+        loadToBasketSlot: 1,
         processAfterLoad: 1,
       },
     }),

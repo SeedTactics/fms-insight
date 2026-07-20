@@ -5159,11 +5159,14 @@ export enum LocType {
 
 export class InProcessMaterialAction implements IInProcessMaterialAction {
   type!: ActionType;
+  workId?: string | undefined;
   loadOntoPalletNum?: number | undefined;
   loadOntoFace?: number | undefined;
   processAfterLoad?: number | undefined;
   pathAfterLoad?: number | undefined;
   loadFromBasketId?: number | undefined;
+  loadToBasketId?: number | undefined;
+  loadToBasketSlot?: number | undefined;
   unloadIntoQueue?: string | undefined;
   unloadToBasketId?: number | undefined;
   unloadToBasketSlot?: number | undefined;
@@ -5183,11 +5186,14 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
   init(_data?: any) {
     if (_data) {
       this.type = _data["Type"];
+      this.workId = _data["WorkId"];
       this.loadOntoPalletNum = _data["LoadOntoPalletNum"];
       this.loadOntoFace = _data["LoadOntoFace"];
       this.processAfterLoad = _data["ProcessAfterLoad"];
       this.pathAfterLoad = _data["PathAfterLoad"];
       this.loadFromBasketId = _data["LoadFromBasketId"];
+      this.loadToBasketId = _data["LoadToBasketId"];
+      this.loadToBasketSlot = _data["LoadToBasketSlot"];
       this.unloadIntoQueue = _data["UnloadIntoQueue"];
       this.unloadToBasketId = _data["UnloadToBasketId"];
       this.unloadToBasketSlot = _data["UnloadToBasketSlot"];
@@ -5208,11 +5214,14 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
     data["Type"] = this.type;
+    data["WorkId"] = this.workId;
     data["LoadOntoPalletNum"] = this.loadOntoPalletNum;
     data["LoadOntoFace"] = this.loadOntoFace;
     data["ProcessAfterLoad"] = this.processAfterLoad;
     data["PathAfterLoad"] = this.pathAfterLoad;
     data["LoadFromBasketId"] = this.loadFromBasketId;
+    data["LoadToBasketId"] = this.loadToBasketId;
+    data["LoadToBasketSlot"] = this.loadToBasketSlot;
     data["UnloadIntoQueue"] = this.unloadIntoQueue;
     data["UnloadToBasketId"] = this.unloadToBasketId;
     data["UnloadToBasketSlot"] = this.unloadToBasketSlot;
@@ -5226,11 +5235,14 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
 
 export interface IInProcessMaterialAction {
   type: ActionType;
+  workId?: string | undefined;
   loadOntoPalletNum?: number | undefined;
   loadOntoFace?: number | undefined;
   processAfterLoad?: number | undefined;
   pathAfterLoad?: number | undefined;
   loadFromBasketId?: number | undefined;
+  loadToBasketId?: number | undefined;
+  loadToBasketSlot?: number | undefined;
   unloadIntoQueue?: string | undefined;
   unloadToBasketId?: number | undefined;
   unloadToBasketSlot?: number | undefined;
@@ -5246,6 +5258,7 @@ export enum ActionType {
   UnloadToInProcess = "UnloadToInProcess",
   UnloadToCompletedMaterial = "UnloadToCompletedMaterial",
   Machining = "Machining",
+  LoadingToBasket = "LoadingToBasket",
 }
 
 export class QueueInfo implements IQueueInfo {

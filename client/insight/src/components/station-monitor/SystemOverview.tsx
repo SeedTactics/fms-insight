@@ -151,11 +151,14 @@ function useCellOverview(): CellOverview {
   const matByBasket = LazySeq.of(currentSt.material)
     .filter(
       (m) =>
-        m.location.type === LocType.InBasket &&
-        m.location.basketId !== null &&
-        m.location.basketId !== undefined,
+        (m.location.type === LocType.InBasket &&
+          m.location.basketId !== null &&
+          m.location.basketId !== undefined) ||
+        (m.action.type === ActionType.LoadingToBasket &&
+          m.action.loadToBasketId !== null &&
+          m.action.loadToBasketId !== undefined),
     )
-    .toRLookup((m) => m.location.basketId ?? 0);
+    .toRLookup((m) => m.location.basketId ?? m.action.loadToBasketId ?? 0);
 
   let loads: OrderedMap<number, LoadStatus> = LazySeq.ofObject(currentSt.pallets)
     .filter(([_, p]) => p.currentPalletLocation.loc === PalletLocationEnum.LoadUnload)

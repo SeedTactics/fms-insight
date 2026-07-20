@@ -182,6 +182,15 @@ export function selectAllMaterialIntoBins(
             addToMap(loadStations, lul, mat);
             break;
           }
+          case api.ActionType.LoadingToBasket: {
+            const basket = curSt.baskets?.[mat.action.loadToBasketId ?? 0];
+            if (basket?.position.location === api.BasketLocationEnum.LoadUnload) {
+              addToMap(loadStations, basket.position.locationNum, mat);
+            } else {
+              addToMap(queues, "Free Material", mat);
+            }
+            break;
+          }
           default:
             addToMap(queues, "Free Material", mat);
             break;

@@ -49,9 +49,16 @@ namespace BlackMaple.MachineFramework
       UnloadToInProcess, // unload, but keep the material around because more processes must be machined
       UnloadToCompletedMaterial, // unload and the material has been completed
       Machining,
+      LoadingToBasket,
     }
 
     public required ActionType Type { get; init; }
+
+    /// <summary>
+    /// An opaque identifier shared by every material action in one operator-confirmable load/unload
+    /// phase. The command handler uses it to reject confirmation of stale work.
+    /// </summary>
+    public string? WorkId { get; init; }
 
     // If Type = Loading
     public int? LoadOntoPalletNum { get; init; }
@@ -64,6 +71,12 @@ namespace BlackMaple.MachineFramework
 
     public int? LoadFromBasketId { get; init; }
 
+    // If Type = LoadingToBasket
+    public int? LoadToBasketId { get; init; }
+
+    /// <summary>The zero-based destination slot within <see cref="LoadToBasketId"/>.</summary>
+    public int? LoadToBasketSlot { get; init; }
+
     //If Type = UnloadToInProcess
     public string? UnloadIntoQueue { get; init; }
 
@@ -71,7 +84,7 @@ namespace BlackMaple.MachineFramework
 
     public int? UnloadToBasketSlot { get; init; }
 
-    //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
+    //If Type = Loading, LoadingToBasket, UnloadToInProcess, or UnloadToCompletedMaterial
     public TimeSpan? ElapsedLoadUnloadTime { get; init; }
 
     // If Type = Machining

@@ -81,12 +81,17 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { PrintLabelButton } from "./PrintedLabel.js";
 import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
+import {
+  BasketLoadStationWorkflow,
+  SubmitBasketLoadStationCommand,
+} from "./BasketLoadStationWork.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 type LoadStationData = {
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly activeBasket?: Readonly<api.IBasketStatus>;
+  readonly allMaterial: MaterialList;
   readonly face: OrderedMap<number, MaterialList>;
   readonly freeLoadingMaterial: MaterialList;
   readonly queues: ReadonlyMap<string, { readonly mats: MaterialList; readonly hiddenCnt: number }>;
@@ -148,9 +153,10 @@ function isLoadingToDisplayedTarget(
   activeBasket: Readonly<api.IBasketStatus> | undefined,
 ): boolean {
   return (
-    mat.action.type === api.ActionType.Loading &&
+    (mat.action.type === api.ActionType.Loading ||
+      mat.action.type === api.ActionType.LoadingToBasket) &&
     ((pallet !== undefined && mat.action.loadOntoPalletNum === pallet.palletNum) ||
-      (activeBasket !== undefined && mat.action.loadFromBasketId === activeBasket.basketId))
+      (activeBasket !== undefined && mat.action.loadToBasketId === activeBasket.basketId))
   );
 }
 
@@ -245,8 +251,8 @@ function selectLoadStationAndQueueProps(
       if (
         m.location.type === api.LocType.InQueue &&
         m.location.currentQueue &&
-        m.action.type === api.ActionType.Loading &&
-        m.action.loadFromBasketId === activeBasket.basketId
+        m.action.type === api.ActionType.LoadingToBasket &&
+        m.action.loadToBasketId === activeBasket.basketId
       ) {
         queuesToShow.add(m.location.currentQueue);
       }
@@ -316,6 +322,14 @@ function selectLoadStationAndQueueProps(
     } else if (activeBasket) {
       if (isLoadingToDisplayedTarget(m, pal, activeBasket) && m.action.elapsedLoadUnloadTime) {
         elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
+      }
+
+      if (
+        m.action.type === api.ActionType.LoadingToBasket &&
+        m.action.loadToBasketId === activeBasket.basketId &&
+        m.location.type === api.LocType.Free
+      ) {
+        freeLoading.push(m);
       }
 
       if (
@@ -394,10 +408,10 @@ function selectLoadStationAndQueueProps(
   );
 
   const matCount = freeLoading.length + palFaces.valuesToAscLazySeq().sumBy((x) => x.length);
-
   return {
     pallet: pal,
     activeBasket,
+    allMaterial: curSt.material,
     face: palFaces,
     freeLoadingMaterial: freeLoading,
     queues: queueMat,
@@ -510,7 +524,17 @@ function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }
   }
 }
 
-function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number }) {
+function PalletFace({
+  data,
+  faceNum,
+  loadNum,
+  submitBasketLoadStationCommand,
+}: {
+  data: LoadStationData;
+  faceNum: number;
+  loadNum: number;
+  submitBasketLoadStationCommand: SubmitBasketLoadStationCommand | undefined;
+}) {
   const face = data.face.get(faceNum);
   const fmsInfo = useAtomValue(fmsInformation);
   const basketName = basketDisplayName(fmsInfo.basketName);
@@ -538,34 +562,20 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
             </Box>
           </Box>
         ) : null}
-        <Box
-          sx={{
-            ml: "4em",
-            mr: "4em",
-          }}
-        >
+        <Box sx={{ ml: "4em", mr: "4em" }}>
           <MoveMaterialArrowNode
             kind={{
               type: MoveMaterialNodeKindType.BasketZone,
               basketId: data.activeBasket.basketId,
             }}
           >
-            <Box
-              sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "space-around",
-              }}
-            >
-              {face.map((m, idx) => (
-                <MoveMaterialArrowNode
-                  key={idx}
-                  kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
-                >
-                  <InProcMaterial mat={m} fsize={data.fsize} />
-                </MoveMaterialArrowNode>
-              ))}
-            </Box>
+            <BasketLoadStationWorkflow
+              stationNumber={loadNum}
+              basket={data.activeBasket}
+              material={data.allMaterial}
+              fsize={data.fsize}
+              submitCommand={submitBasketLoadStationCommand}
+            />
           </MoveMaterialArrowNode>
         </Box>
       </div>
@@ -1007,7 +1017,8 @@ function AddMatButton({
   if (
     !existingMat ||
     inProcMat?.location.type === api.LocType.OnPallet ||
-    inProcMat?.action.type === api.ActionType.Loading
+    inProcMat?.action.type === api.ActionType.Loading ||
+    inProcMat?.action.type === api.ActionType.LoadingToBasket
   ) {
     return null;
   }
@@ -1139,6 +1150,7 @@ interface LoadStationProps {
   readonly queues: ReadonlyArray<string>;
   readonly completed: boolean;
   readonly whiteBackground?: boolean;
+  readonly submitBasketLoadStationCommand?: SubmitBasketLoadStationCommand;
 }
 
 function useGridLayout({
@@ -1294,7 +1306,12 @@ export function LoadStation(props: LoadStationProps) {
               borderTop: data.pallet && idx !== 0 ? "1px solid black" : undefined,
             }}
           >
-            <PalletFace data={data} faceNum={faceNum} />
+            <PalletFace
+              data={data}
+              faceNum={faceNum}
+              loadNum={props.loadNum}
+              submitBasketLoadStationCommand={props.submitBasketLoadStationCommand}
+            />
           </Box>
         ))}
         <Box

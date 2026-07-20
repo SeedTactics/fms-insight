@@ -169,6 +169,7 @@ function isMatAssignedRaw(unique: string, m: Readonly<api.IInProcessMaterial>): 
     m.jobUnique === unique &&
     m.location.type === api.LocType.InQueue &&
     m.action.type !== api.ActionType.Loading &&
+    m.action.type !== api.ActionType.LoadingToBasket &&
     m.process === 0
   );
 }
@@ -178,6 +179,7 @@ function isMatUnassignedRaw(rawMatName: string, m: Readonly<api.IInProcessMateri
     m.partName === rawMatName &&
     m.location.type === api.LocType.InQueue &&
     m.action.type !== api.ActionType.Loading &&
+    m.action.type !== api.ActionType.LoadingToBasket &&
     m.process === 0 &&
     !m.jobUnique
   );

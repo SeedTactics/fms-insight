@@ -316,6 +316,16 @@ export function MaterialAction({
         }
       }
 
+    case api.ActionType.LoadingToBasket:
+      return (
+        <MatCardDetail fsize={fsize}>
+          Load into {basketName} {mat.action.loadToBasketId ?? ""}
+          {mat.action.loadToBasketSlot !== undefined
+            ? ` slot ${mat.action.loadToBasketSlot + 1}`
+            : ""}
+        </MatCardDetail>
+      );
+
     case api.ActionType.UnloadToInProcess:
     case api.ActionType.UnloadToCompletedMaterial:
       if (mat.action.unloadToBasketId) {
@@ -397,7 +407,11 @@ function JobRawMaterial({
 }) {
   const job = useAtomValue(currentStatus).jobs[mat.jobUnique];
   let path = mat.path;
-  if (mat.action.type === api.ActionType.Loading && mat.action.pathAfterLoad) {
+  if (
+    (mat.action.type === api.ActionType.Loading ||
+      mat.action.type === api.ActionType.LoadingToBasket) &&
+    mat.action.pathAfterLoad
+  ) {
     path = mat.action.pathAfterLoad;
   }
   if (!job) {

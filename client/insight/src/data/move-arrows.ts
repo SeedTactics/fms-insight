@@ -329,6 +329,21 @@ export function computeArrows(
           }
         }
         break;
+      case api.ActionType.LoadingToBasket: {
+        const basketId = mat.action.loadToBasketId;
+        if (basketId === undefined) break;
+        const dest = byKind.baskets.get(basketId);
+        const lastSlotUsed = basketDestUsed.get(basketId) ?? 0;
+        basketDestUsed.set(basketId, lastSlotUsed + 1);
+        arrows.push({
+          fromX: rect.right,
+          fromY: rect.top + rect.height / 2,
+          toX: dest !== undefined ? dest.left + 20 : container.right - 10,
+          toY: dest !== undefined ? dest.top + 50 + 20 * lastSlotUsed : rect.top + rect.height / 2,
+          curveDirection: -1,
+        });
+        break;
+      }
     }
   }
 
