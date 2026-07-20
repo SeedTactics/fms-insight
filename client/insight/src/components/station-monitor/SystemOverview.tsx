@@ -986,6 +986,7 @@ function useElapsedLoadTime(
   const mat = material?.find(
     (m) =>
       m.action.type === ActionType.Loading ||
+      m.action.type === ActionType.LoadingToBasket ||
       m.action.type === ActionType.UnloadToCompletedMaterial ||
       m.action.type === ActionType.UnloadToInProcess,
   );

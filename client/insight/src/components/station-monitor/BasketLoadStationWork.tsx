@@ -56,6 +56,7 @@ interface BasketLoadStationWorkflowProps {
 
 type SubmissionState = "idle" | "submitting" | "accepted" | "conflict" | "error";
 type WorkPhase = "unload" | "load";
+type ActionPhase = WorkPhase | "invalid";
 
 type ConfirmableWork = {
   readonly workId: string;
@@ -67,22 +68,39 @@ type WorkState =
   | { readonly type: "confirmable"; readonly work: ConfirmableWork }
   | { readonly type: "inconsistent" };
 
+function isNonNegativeInteger(value: number | undefined): value is number {
+  return Number.isInteger(value) && (value ?? -1) >= 0;
+}
+
+function isNonBlank(value: string | undefined): value is string {
+  return typeof value === "string" && value.trim() !== "";
+}
+
 function actionPhase(
   mat: Readonly<api.IInProcessMaterial>,
   basketId: number,
-): WorkPhase | undefined {
+): ActionPhase | undefined {
   if (
     mat.location.type === api.LocType.InBasket &&
     mat.location.basketId === basketId &&
     (mat.action.type === api.ActionType.UnloadToInProcess ||
       mat.action.type === api.ActionType.UnloadToCompletedMaterial)
   ) {
+    if (!isNonNegativeInteger(mat.location.basketSlot)) {
+      return "invalid";
+    }
     return "unload";
   }
-  if (
-    mat.action.type === api.ActionType.LoadingToBasket &&
-    mat.action.loadToBasketId === basketId
-  ) {
+  if (mat.action.type === api.ActionType.LoadingToBasket) {
+    if (!isNonNegativeInteger(mat.action.loadToBasketId)) return "invalid";
+    if (mat.action.loadToBasketId !== basketId) return undefined;
+    if (
+      !isNonNegativeInteger(mat.action.loadToBasketSlot) ||
+      (mat.location.type !== api.LocType.Free &&
+        (mat.location.type !== api.LocType.InQueue || !isNonBlank(mat.location.currentQueue)))
+    ) {
+      return "invalid";
+    }
     return "load";
   }
   return undefined;
@@ -92,22 +110,36 @@ function confirmableWork(
   material: ReadonlyArray<Readonly<api.IInProcessMaterial>>,
   basketId: number,
 ): WorkState {
-  const phaseActions = LazySeq.of(material)
+  const classifiedActions = LazySeq.of(material)
     .collect((mat) => {
       const phase = actionPhase(mat, basketId);
       return phase === undefined ? undefined : { phase, workId: mat.action.workId };
     })
     .toRArray();
-  const tagged = phaseActions.filter(({ workId }) => workId !== undefined && workId !== "");
-  if (tagged.length === 0) return { type: "none" };
-  const workIds = new Set(tagged.map(({ workId }) => workId));
-  const phases = new Set(tagged.map(({ phase }) => phase));
+  if (classifiedActions.some(({ phase }) => phase === "invalid")) {
+    return { type: "inconsistent" };
+  }
+  const phaseActions = classifiedActions.filter(
+    (
+      action,
+    ): action is {
+      readonly phase: WorkPhase;
+      readonly workId: string | undefined;
+    } => action.phase !== "invalid",
+  );
+  if (phaseActions.length === 0) return { type: "none" };
+  const tagged = phaseActions.filter(
+    (action): action is { readonly phase: WorkPhase; readonly workId: string } =>
+      isNonBlank(action.workId),
+  );
+  const workIds = LazySeq.of(tagged).toHashSet(({ workId }) => workId);
+  const phases = LazySeq.of(tagged).toHashSet(({ phase }) => phase);
   if (tagged.length !== phaseActions.length || workIds.size !== 1 || phases.size !== 1) {
     return { type: "inconsistent" };
   }
   return {
     type: "confirmable",
-    work: { workId: tagged[0].workId ?? "", phase: tagged[0].phase },
+    work: { workId: tagged[0].workId, phase: tagged[0].phase },
   };
 }
 
@@ -198,7 +230,8 @@ export function BasketLoadStationWorkflow({
     }
   }
 
-  const submissionDisabled = submission === "submitting" || submission === "accepted";
+  const submissionDisabled =
+    submission === "submitting" || submission === "accepted" || submission === "conflict";
   const buttonLabel = work?.phase === "unload" ? "Unload Complete" : "Load Complete";
 
   return (

@@ -676,6 +676,10 @@ function MaterialRegion({
           kind={{
             type: MoveMaterialNodeKindType.Material,
             material: m,
+            identifier:
+              m.materialID < 0
+                ? `raw-${mat.isFree ? "free" : "queue"}-${mat.label}-${matIdx}`
+                : undefined,
           }}
         >
           {mat.isFree || mat.sortable === false ? (

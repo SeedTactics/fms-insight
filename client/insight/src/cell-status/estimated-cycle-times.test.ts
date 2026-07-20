@@ -272,8 +272,8 @@ it("calculates median and MAD", () => {
         mcNum: 44,
         time: addMinutes(new Date(2024, 12, 14, 9, 4, 5), i),
         activeMin: 30,
-        // elapsed is random between 30 and 40
-        elapsedMin: Math.random() * 10 + 30,
+        // elapsed deterministically spans 30 through 39 minutes
+        elapsedMin: 30 + (i % 10),
       }),
     )
     .concat(

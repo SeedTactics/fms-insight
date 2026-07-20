@@ -48,6 +48,7 @@ export type MoveMaterialNodeKind =
   | {
       readonly type: MoveMaterialNodeKindType.Material;
       readonly material: Readonly<api.IInProcessMaterial> | null;
+      readonly identifier?: string;
     }
   | { readonly type: MoveMaterialNodeKindType.FreeMaterialZone }
   | { readonly type: MoveMaterialNodeKindType.CompletedCollapsedMaterialZone }
@@ -70,7 +71,7 @@ export type MoveMaterialIdentifier = string;
 export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIdentifier {
   switch (kind.type) {
     case MoveMaterialNodeKindType.Material:
-      return "Material-" + (kind.material?.materialID ?? -1).toString();
+      return "Material-" + (kind.identifier ?? (kind.material?.materialID ?? -1).toString());
     case MoveMaterialNodeKindType.FreeMaterialZone:
       return "FreeMaterialZone";
     case MoveMaterialNodeKindType.CompletedCollapsedMaterialZone:
@@ -89,7 +90,7 @@ export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIde
 export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<unknown> {
   switch (kind.type) {
     case MoveMaterialNodeKindType.Material:
-      return [kind.type, kind.material];
+      return [kind.type, kind.material, kind.identifier];
     case MoveMaterialNodeKindType.FreeMaterialZone:
     case MoveMaterialNodeKindType.CompletedCollapsedMaterialZone:
     case MoveMaterialNodeKindType.CompletedExpandedMaterialZone:

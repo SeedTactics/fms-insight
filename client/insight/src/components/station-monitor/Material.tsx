@@ -343,6 +343,21 @@ export function MaterialAction({
             Unload into queue {mat.action.unloadIntoQueue}
           </MatCardDetail>
         );
+      } else if (
+        mat.action.type === api.ActionType.UnloadToCompletedMaterial &&
+        mat.location.type === api.LocType.InBasket
+      ) {
+        return (
+          <MatCardDetail fsize={fsize}>
+            Unload from {basketName} {mat.location.basketId} to completed material
+          </MatCardDetail>
+        );
+      } else if (mat.location.type === api.LocType.InBasket) {
+        return (
+          <MatCardDetail fsize={fsize}>
+            Unload from {basketName} {mat.location.basketId}
+          </MatCardDetail>
+        );
       } else {
         return <MatCardDetail fsize={fsize}>Unload from pallet</MatCardDetail>;
       }

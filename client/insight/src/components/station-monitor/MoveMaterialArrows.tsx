@@ -226,5 +226,9 @@ export function MoveMaterialArrowNode({
   children?: React.ReactNode;
 }) {
   const ref = useMoveMaterialArrowRef(kind);
-  return <div ref={ref}>{children}</div>;
+  return (
+    <div ref={ref} data-move-material-identifier={uniqueIdForNodeKind(kind)}>
+      {children}
+    </div>
+  );
 }
