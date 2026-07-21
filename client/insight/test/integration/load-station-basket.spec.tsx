@@ -71,6 +71,24 @@ describe("load station with active basket", () => {
           },
         }),
         createMaterial({
+          materialID: 305,
+          jobUnique: "",
+          partName: "Legacy Queue To Basket",
+          process: 0,
+          path: 1,
+          serial: "LQB-1",
+          location: {
+            type: api.LocType.InQueue,
+            currentQueue: "Legacy Queue",
+            queuePosition: 0,
+          },
+          action: {
+            type: api.ActionType.Loading,
+            loadFromBasketId: 7,
+            processAfterLoad: 1,
+          },
+        }),
+        createMaterial({
           materialID: 303,
           jobUnique: "JOB-303",
           partName: "Queue Existing",
@@ -106,6 +124,7 @@ describe("load station with active basket", () => {
     const queueA = region(screen, queueRegionTestId("Queue A"));
     const queueB = region(screen, queueRegionTestId("Queue B"));
     const queueC = region(screen, queueRegionTestId("Queue C"));
+    const legacyQueue = region(screen, queueRegionTestId("Legacy Queue"));
     const basketsColumn = region(screen, basketsColumnTestId);
     const stagingBasket = region(screen, basketRegionTestId(8));
 
@@ -116,6 +135,8 @@ describe("load station with active basket", () => {
 
     await expect.element(queueA).toHaveTextContent("Queue To Basket");
     await expect.element(queueA).toHaveTextContent("Load into Basket 7 slot 2");
+    await expect.element(legacyQueue).toHaveTextContent("Legacy Queue To Basket");
+    await expect.element(legacyQueue).toHaveTextContent("Load into Basket 7");
     await expect.element(queueB).toHaveTextContent("Queue Existing");
     await expect.element(queueC).not.toHaveTextContent("Queue Existing");
     await expect.element(basketsColumn).toHaveTextContent("Baskets");

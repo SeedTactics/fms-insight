@@ -152,12 +152,17 @@ function isLoadingToDisplayedTarget(
   pallet: Readonly<api.IPalletStatus> | undefined,
   activeBasket: Readonly<api.IBasketStatus> | undefined,
 ): boolean {
-  return (
-    (mat.action.type === api.ActionType.Loading ||
-      mat.action.type === api.ActionType.LoadingToBasket) &&
-    ((pallet !== undefined && mat.action.loadOntoPalletNum === pallet.palletNum) ||
-      (activeBasket !== undefined && mat.action.loadToBasketId === activeBasket.basketId))
-  );
+  switch (mat.action.type) {
+    case api.ActionType.Loading:
+      return (
+        (pallet !== undefined && mat.action.loadOntoPalletNum === pallet.palletNum) ||
+        (activeBasket !== undefined && mat.action.loadFromBasketId === activeBasket.basketId)
+      );
+    case api.ActionType.LoadingToBasket:
+      return activeBasket !== undefined && mat.action.loadToBasketId === activeBasket.basketId;
+    default:
+      return false;
+  }
 }
 
 function selectLoadStationAndQueueProps(
@@ -251,8 +256,7 @@ function selectLoadStationAndQueueProps(
       if (
         m.location.type === api.LocType.InQueue &&
         m.location.currentQueue &&
-        m.action.type === api.ActionType.LoadingToBasket &&
-        m.action.loadToBasketId === activeBasket.basketId
+        isLoadingToDisplayedTarget(m, undefined, activeBasket)
       ) {
         queuesToShow.add(m.location.currentQueue);
       }
