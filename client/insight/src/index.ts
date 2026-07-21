@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { render } from "./renderer.js";
+import type { AppProps } from "./components/App.js";
 import { registerNetworkBackend } from "./network/backend.js";
 import { fmsInformation, loadInfo } from "./network/server-settings.js";
 import { ApiException } from "./network/api.js";
@@ -42,7 +43,12 @@ async function main(): Promise<void> {
   const store = createStore();
   store.set(fmsInformation, await loadInfo());
 
-  render(null, document.getElementById("root")!, store);
+  const developmentProps: AppProps | null = import.meta.env.DEV
+    ? {
+        submitBasketLoadStationCommand: async () => "accepted",
+      }
+    : null;
+  render(developmentProps, document.getElementById("root")!, store);
 }
 
 main().catch((e) => {
