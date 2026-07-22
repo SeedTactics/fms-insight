@@ -74,7 +74,7 @@ namespace BlackMaple.MachineFramework
     // If Type = LoadingToBasket
     public int? LoadToBasketId { get; init; }
 
-    /// <summary>The zero-based destination slot within <see cref="LoadToBasketId"/>.</summary>
+    /// <summary>The one-based destination slot within <see cref="LoadToBasketId"/>.</summary>
     public int? LoadToBasketSlot { get; init; }
 
     //If Type = UnloadToInProcess
@@ -82,6 +82,7 @@ namespace BlackMaple.MachineFramework
 
     public int? UnloadToBasketId { get; init; }
 
+    /// <summary>The one-based destination slot within <see cref="UnloadToBasketId"/>.</summary>
     public int? UnloadToBasketSlot { get; init; }
 
     //If Type = Loading, LoadingToBasket, UnloadToInProcess, or UnloadToCompletedMaterial
@@ -124,6 +125,7 @@ namespace BlackMaple.MachineFramework
     //If Type == InBasket
     public int? BasketId { get; init; }
 
+    /// <summary>The one-based physical slot within <see cref="BasketId"/>.</summary>
     public int? BasketSlot { get; init; }
   }
 

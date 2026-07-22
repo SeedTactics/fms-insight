@@ -326,9 +326,7 @@ export function MaterialAction({
       return (
         <MatCardDetail fsize={fsize}>
           Load into {basketName} {mat.action.loadToBasketId ?? ""}
-          {mat.action.loadToBasketSlot !== undefined
-            ? ` slot ${mat.action.loadToBasketSlot + 1}`
-            : ""}
+          {mat.action.loadToBasketSlot !== undefined ? ` slot ${mat.action.loadToBasketSlot}` : ""}
         </MatCardDetail>
       );
 
@@ -339,7 +337,7 @@ export function MaterialAction({
           <MatCardDetail fsize={fsize}>
             Unload to {basketName} {mat.action.unloadToBasketId}
             {mat.action.unloadToBasketSlot !== undefined
-              ? ` slot ${mat.action.unloadToBasketSlot + 1}`
+              ? ` slot ${mat.action.unloadToBasketSlot}`
               : ""}
           </MatCardDetail>
         );

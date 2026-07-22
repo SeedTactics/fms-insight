@@ -226,7 +226,7 @@ exports[`creates all material > all material bins 1`] = `
             "type": "UnloadToInProcess",
             "unloadIntoQueue": undefined,
             "unloadToBasketId": 301,
-            "unloadToBasketSlot": 0,
+            "unloadToBasketSlot": 1,
             "workId": undefined,
           },
           "jobUnique": "tray-offline-2018-01-01",
@@ -628,7 +628,7 @@ exports[`creates all material > all material bins 1`] = `
           "lastCompletedMachiningRouteStopIndex": undefined,
           "location": {
             "basketId": 302,
-            "basketSlot": 0,
+            "basketSlot": 1,
             "currentQueue": undefined,
             "face": undefined,
             "palletNum": undefined,
@@ -670,7 +670,7 @@ exports[`creates all material > all material bins 1`] = `
           "lastCompletedMachiningRouteStopIndex": undefined,
           "location": {
             "basketId": 401,
-            "basketSlot": 0,
+            "basketSlot": 1,
             "currentQueue": undefined,
             "face": undefined,
             "palletNum": undefined,
@@ -712,7 +712,7 @@ exports[`creates all material > all material bins 1`] = `
           "lastCompletedMachiningRouteStopIndex": undefined,
           "location": {
             "basketId": 402,
-            "basketSlot": 0,
+            "basketSlot": 1,
             "currentQueue": undefined,
             "face": undefined,
             "palletNum": undefined,
@@ -754,7 +754,7 @@ exports[`creates all material > all material bins 1`] = `
           "lastCompletedMachiningRouteStopIndex": undefined,
           "location": {
             "basketId": 502,
-            "basketSlot": 0,
+            "basketSlot": 1,
             "currentQueue": undefined,
             "face": undefined,
             "palletNum": undefined,
@@ -796,7 +796,7 @@ exports[`creates all material > all material bins 1`] = `
           "lastCompletedMachiningRouteStopIndex": undefined,
           "location": {
             "basketId": 504,
-            "basketSlot": 0,
+            "basketSlot": 1,
             "currentQueue": undefined,
             "face": undefined,
             "palletNum": undefined,
@@ -838,7 +838,7 @@ exports[`creates all material > all material bins 1`] = `
           "lastCompletedMachiningRouteStopIndex": undefined,
           "location": {
             "basketId": 505,
-            "basketSlot": 0,
+            "basketSlot": 1,
             "currentQueue": undefined,
             "face": undefined,
             "palletNum": undefined,

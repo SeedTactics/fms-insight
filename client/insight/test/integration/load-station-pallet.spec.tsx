@@ -61,7 +61,7 @@ describe("load station with active pallet", () => {
           location: {
             type: api.LocType.InBasket,
             basketId: 9,
-            basketSlot: 0,
+            basketSlot: 1,
           },
           action: {
             type: api.ActionType.Loading,
@@ -86,7 +86,7 @@ describe("load station with active pallet", () => {
           action: {
             type: api.ActionType.UnloadToInProcess,
             unloadToBasketId: 10,
-            unloadToBasketSlot: 1,
+            unloadToBasketSlot: 2,
           },
         }),
         createMaterial({
@@ -99,7 +99,7 @@ describe("load station with active pallet", () => {
           location: {
             type: api.LocType.InBasket,
             basketId: 10,
-            basketSlot: 0,
+            basketSlot: 1,
           },
           action: {
             type: api.ActionType.Waiting,

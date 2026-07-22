@@ -18,7 +18,7 @@
         "Type": "LoadingToBasket",
         "WorkId": "debug-load-902",
         "LoadToBasketId": 902,
-        "LoadToBasketSlot": 0,
+        "LoadToBasketSlot": 1,
         "ProcessAfterLoad": 1,
         "PathAfterLoad": 1,
         "ElapsedLoadUnloadTime": "PT45S"
@@ -39,7 +39,7 @@
         "Type": "LoadingToBasket",
         "WorkId": "debug-load-902",
         "LoadToBasketId": 902,
-        "LoadToBasketSlot": 1,
+        "LoadToBasketSlot": 2,
         "ProcessAfterLoad": 1,
         "PathAfterLoad": 1,
         "ElapsedLoadUnloadTime": "PT45S"
@@ -62,7 +62,7 @@
         "Type": "LoadingToBasket",
         "WorkId": "debug-load-902",
         "LoadToBasketId": 902,
-        "LoadToBasketSlot": 2,
+        "LoadToBasketSlot": 3,
         "ProcessAfterLoad": 2,
         "PathAfterLoad": 1,
         "ElapsedLoadUnloadTime": "PT45S"
@@ -83,7 +83,7 @@
         "LocationNum": 4,
         "LocationTitle": "Basket QA Station"
       },
-      "EmptySlots": [0, 1, 2, 3],
+      "EmptySlots": [1, 2, 3, 4],
       "UnknownSlots": []
     }
   }

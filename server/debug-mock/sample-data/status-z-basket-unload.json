@@ -14,7 +14,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 901,
-        "BasketSlot": 0
+        "BasketSlot": 1
       },
       "Action": {
         "Type": "UnloadToInProcess",
@@ -34,7 +34,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 901,
-        "BasketSlot": 1
+        "BasketSlot": 2
       },
       "Action": {
         "Type": "UnloadToCompletedMaterial",
@@ -57,7 +57,7 @@
         "LocationNum": 4,
         "LocationTitle": "Basket QA Station"
       },
-      "EmptySlots": [2, 3],
+      "EmptySlots": [3, 4],
       "UnknownSlots": []
     }
   }

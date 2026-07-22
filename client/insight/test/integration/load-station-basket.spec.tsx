@@ -26,7 +26,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [1],
+          emptySlots: [2],
         }),
         createBasket({
           basketId: 8,
@@ -53,7 +53,7 @@ describe("load station with active basket", () => {
           action: {
             type: api.ActionType.LoadingToBasket,
             loadToBasketId: 7,
-            loadToBasketSlot: 1,
+            loadToBasketSlot: 2,
             processAfterLoad: 1,
           },
         }),
@@ -64,7 +64,7 @@ describe("load station with active basket", () => {
           process: 1,
           path: 1,
           serial: "BQ-1",
-          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 0 },
+          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
           action: {
             type: api.ActionType.UnloadToInProcess,
             unloadIntoQueue: "Queue B",
@@ -109,7 +109,7 @@ describe("load station with active basket", () => {
           process: 1,
           path: 1,
           serial: "SB-1",
-          location: { type: api.LocType.InBasket, basketId: 8, basketSlot: 0 },
+          location: { type: api.LocType.InBasket, basketId: 8, basketSlot: 1 },
           action: { type: api.ActionType.Waiting },
         }),
       ],
@@ -153,7 +153,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [2, 3],
+          emptySlots: [3, 4],
         }),
       ],
       material: [
@@ -163,7 +163,7 @@ describe("load station with active basket", () => {
           partName: "Process 1 Part",
           process: 1,
           path: 1,
-          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 0 },
+          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
           action: {
             type: api.ActionType.UnloadToInProcess,
             workId: "unload-work",
@@ -176,7 +176,7 @@ describe("load station with active basket", () => {
           partName: "Completed Part",
           process: 2,
           path: 1,
-          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
+          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 2 },
           action: {
             type: api.ActionType.UnloadToCompletedMaterial,
             workId: "unload-work",
@@ -191,10 +191,10 @@ describe("load station with active basket", () => {
     );
 
     await expect
-      .element(region(screen, "basket-load-station-slot-0"))
+      .element(region(screen, "basket-load-station-slot-1"))
       .toHaveTextContent("Unload into queue Transfer Queue");
     await expect
-      .element(region(screen, "basket-load-station-slot-1"))
+      .element(region(screen, "basket-load-station-slot-2"))
       .toHaveTextContent("Unload from Basket 7 to completed material");
     await screen.getByRole("button", { name: "Unload Complete" }).click();
     expect(submit).toHaveBeenCalledWith(1, { workId: "unload-work" });
@@ -210,7 +210,7 @@ describe("load station with active basket", () => {
               location: api.BasketLocationEnum.LoadUnload,
               locationNum: 1,
             }),
-            emptySlots: [0, 1, 2, 3],
+            emptySlots: [1, 2, 3, 4],
           }),
         ],
         material: [
@@ -229,7 +229,7 @@ describe("load station with active basket", () => {
               type: api.ActionType.LoadingToBasket,
               workId: "load-work",
               loadToBasketId: 7,
-              loadToBasketSlot: 0,
+              loadToBasketSlot: 1,
               processAfterLoad: 2,
               pathAfterLoad: 1,
             },
@@ -245,7 +245,7 @@ describe("load station with active basket", () => {
               type: api.ActionType.LoadingToBasket,
               workId: "load-work",
               loadToBasketId: 7,
-              loadToBasketSlot: 1,
+              loadToBasketSlot: 2,
               processAfterLoad: 1,
               pathAfterLoad: 1,
             },
@@ -256,10 +256,10 @@ describe("load station with active basket", () => {
 
     await expect.element(screen.getByText(/Confirmation accepted/)).not.toBeInTheDocument();
     await expect
-      .element(region(screen, "basket-load-station-slot-0"))
+      .element(region(screen, "basket-load-station-slot-1"))
       .toHaveTextContent("Load from Transfer Queue");
     await expect
-      .element(region(screen, "basket-load-station-slot-1"))
+      .element(region(screen, "basket-load-station-slot-2"))
       .toHaveTextContent("Load from raw material");
     await expect
       .element(region(screen, "load-station-material"))
@@ -278,7 +278,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [0],
+          emptySlots: [1],
         }),
       ],
       material: [
@@ -293,7 +293,7 @@ describe("load station with active basket", () => {
             type: api.ActionType.LoadingToBasket,
             workId: "stale-work",
             loadToBasketId: 7,
-            loadToBasketSlot: 0,
+            loadToBasketSlot: 1,
             processAfterLoad: 1,
           },
         }),
@@ -323,7 +323,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [0, 1],
+          emptySlots: [1, 2],
         }),
       ],
       material: [
@@ -338,7 +338,7 @@ describe("load station with active basket", () => {
             type: api.ActionType.LoadingToBasket,
             workId: "first-work",
             loadToBasketId: 7,
-            loadToBasketSlot: 0,
+            loadToBasketSlot: 1,
             processAfterLoad: 1,
           },
         }),
@@ -353,7 +353,7 @@ describe("load station with active basket", () => {
             type: api.ActionType.LoadingToBasket,
             workId: "second-work",
             loadToBasketId: 7,
-            loadToBasketSlot: 1,
+            loadToBasketSlot: 2,
             processAfterLoad: 1,
           },
         }),
@@ -393,7 +393,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [0],
+          emptySlots: [1],
         }),
       ],
       material: [
@@ -408,7 +408,7 @@ describe("load station with active basket", () => {
             type: api.ActionType.LoadingToBasket,
             workId,
             loadToBasketId: 7,
-            loadToBasketSlot: 0,
+            loadToBasketSlot: 1,
             processAfterLoad: 1,
           },
         }),
@@ -429,7 +429,7 @@ describe("load station with active basket", () => {
 
   test.each([
     [
-      "load destination slot",
+      "load destination slot is missing",
       createMaterial({
         materialID: -1,
         jobUnique: "LOAD-JOB",
@@ -446,7 +446,7 @@ describe("load station with active basket", () => {
       }),
     ],
     [
-      "load destination basket",
+      "load destination basket is missing",
       createMaterial({
         materialID: -1,
         jobUnique: "LOAD-JOB",
@@ -457,13 +457,13 @@ describe("load station with active basket", () => {
         action: {
           type: api.ActionType.LoadingToBasket,
           workId: "load-work",
-          loadToBasketSlot: 0,
+          loadToBasketSlot: 1,
           processAfterLoad: 1,
         },
       }),
     ],
     [
-      "load source queue",
+      "load source queue is missing",
       createMaterial({
         materialID: 400,
         jobUnique: "LOAD-JOB",
@@ -475,13 +475,13 @@ describe("load station with active basket", () => {
           type: api.ActionType.LoadingToBasket,
           workId: "load-work",
           loadToBasketId: 7,
-          loadToBasketSlot: 0,
+          loadToBasketSlot: 1,
           processAfterLoad: 2,
         },
       }),
     ],
     [
-      "unload source slot",
+      "unload source slot is missing",
       createMaterial({
         materialID: 401,
         jobUnique: "UNLOAD-JOB",
@@ -495,7 +495,40 @@ describe("load station with active basket", () => {
         },
       }),
     ],
-  ])("suppresses completion when the basket %s is missing", async (_description, material) => {
+    [
+      "load destination slot is zero",
+      createMaterial({
+        materialID: -1,
+        jobUnique: "LOAD-JOB",
+        partName: "Load Part",
+        process: 0,
+        path: 1,
+        location: { type: api.LocType.Free },
+        action: {
+          type: api.ActionType.LoadingToBasket,
+          workId: "load-work",
+          loadToBasketId: 7,
+          loadToBasketSlot: 0,
+          processAfterLoad: 1,
+        },
+      }),
+    ],
+    [
+      "unload source slot is zero",
+      createMaterial({
+        materialID: 401,
+        jobUnique: "UNLOAD-JOB",
+        partName: "Unload Part",
+        process: 1,
+        path: 1,
+        location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 0 },
+        action: {
+          type: api.ActionType.UnloadToCompletedMaterial,
+          workId: "unload-work",
+        },
+      }),
+    ],
+  ])("suppresses completion when the basket %s", async (_description, material) => {
     const submit = vi.fn(async () => "accepted" as const);
     const currentStatus = createCurrentStatus({
       baskets: [
@@ -505,7 +538,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [0],
+          emptySlots: [1],
         }),
       ],
       material: [material],
@@ -531,7 +564,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [1],
+          emptySlots: [2],
         }),
       ],
       material: [
@@ -541,7 +574,7 @@ describe("load station with active basket", () => {
           partName: "Unload Part",
           process: 1,
           path: 1,
-          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 0 },
+          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
           action: {
             type: api.ActionType.UnloadToCompletedMaterial,
             workId: "mixed-work",
@@ -558,7 +591,7 @@ describe("load station with active basket", () => {
             type: api.ActionType.LoadingToBasket,
             workId: "mixed-work",
             loadToBasketId: 7,
-            loadToBasketSlot: 1,
+            loadToBasketSlot: 2,
             processAfterLoad: 1,
           },
         }),
@@ -588,7 +621,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [0],
+          emptySlots: [1],
         }),
       ],
       material: [
@@ -603,7 +636,7 @@ describe("load station with active basket", () => {
             type: api.ActionType.LoadingToBasket,
             workId: "load-work",
             loadToBasketId: 7,
-            loadToBasketSlot: 0,
+            loadToBasketSlot: 1,
             processAfterLoad: 1,
           },
         }),

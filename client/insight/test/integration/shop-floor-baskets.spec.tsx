@@ -49,7 +49,7 @@ describe("basket shop-floor screens", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [0],
+          emptySlots: [1],
         }),
       ],
       material: [
@@ -64,7 +64,7 @@ describe("basket shop-floor screens", () => {
             type: api.ActionType.LoadingToBasket,
             workId: "load-work",
             loadToBasketId: 7,
-            loadToBasketSlot: 0,
+            loadToBasketSlot: 1,
             processAfterLoad: 1,
             elapsedLoadUnloadTime: "PT5M",
           },

@@ -68,8 +68,8 @@ type WorkState =
   | { readonly type: "confirmable"; readonly work: ConfirmableWork }
   | { readonly type: "inconsistent" };
 
-function isNonNegativeInteger(value: number | undefined): value is number {
-  return Number.isInteger(value) && (value ?? -1) >= 0;
+function isPositiveInteger(value: number | undefined): value is number {
+  return Number.isInteger(value) && (value ?? 0) > 0;
 }
 
 function isNonBlank(value: string | undefined): value is string {
@@ -86,16 +86,16 @@ function actionPhase(
     (mat.action.type === api.ActionType.UnloadToInProcess ||
       mat.action.type === api.ActionType.UnloadToCompletedMaterial)
   ) {
-    if (!isNonNegativeInteger(mat.location.basketSlot)) {
+    if (!isPositiveInteger(mat.location.basketSlot)) {
       return "invalid";
     }
     return "unload";
   }
   if (mat.action.type === api.ActionType.LoadingToBasket) {
-    if (!isNonNegativeInteger(mat.action.loadToBasketId)) return "invalid";
+    if (!isPositiveInteger(mat.action.loadToBasketId)) return "invalid";
     if (mat.action.loadToBasketId !== basketId) return undefined;
     if (
-      !isNonNegativeInteger(mat.action.loadToBasketSlot) ||
+      !isPositiveInteger(mat.action.loadToBasketSlot) ||
       (mat.location.type !== api.LocType.Free &&
         (mat.location.type !== api.LocType.InQueue || !isNonBlank(mat.location.currentQueue)))
     ) {
@@ -251,7 +251,7 @@ export function BasketLoadStationWorkflow({
           return (
             <Card key={slot} data-testid={`basket-load-station-slot-${slot}`} variant="outlined">
               <CardContent>
-                <Typography variant="h6">Slot {slot + 1}</Typography>
+                <Typography variant="h6">Slot {slot}</Typography>
                 {slotMaterial.length > 0 ? (
                   <SlotMaterial material={slotMaterial} fsize={fsize} />
                 ) : (

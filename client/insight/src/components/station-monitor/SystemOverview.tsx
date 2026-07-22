@@ -709,7 +709,7 @@ function PalletFaces({
 }
 
 function BasketContents({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
-  const byPosition = LazySeq.of(mats).orderedGroupBy((m) => (m.location.basketSlot ?? 0) + 1);
+  const byPosition = LazySeq.of(mats).orderedGroupBy((m) => m.location.basketSlot ?? 0);
   return (
     <Box
       sx={{

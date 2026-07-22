@@ -235,7 +235,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       action: {
         type: api.ActionType.LoadingToBasket,
         loadToBasketId: 21,
-        loadToBasketSlot: 1,
+        loadToBasketSlot: 2,
         processAfterLoad: 1,
       },
     }),
@@ -250,7 +250,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 21,
-        basketSlot: 0,
+        basketSlot: 1,
       },
       action: {
         type: api.ActionType.UnloadToInProcess,
@@ -268,7 +268,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 22,
-        basketSlot: 0,
+        basketSlot: 1,
       },
       action: {
         type: api.ActionType.Waiting,
@@ -285,7 +285,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 23,
-        basketSlot: 0,
+        basketSlot: 1,
       },
       action: {
         type: api.ActionType.Waiting,
@@ -302,7 +302,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 25,
-        basketSlot: 0,
+        basketSlot: 1,
       },
       action: {
         type: api.ActionType.Waiting,
@@ -319,7 +319,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       location: {
         type: api.LocType.InBasket,
         basketId: 22,
-        basketSlot: 1,
+        basketSlot: 2,
       },
       action: {
         type: api.ActionType.Loading,
@@ -345,7 +345,7 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       action: {
         type: api.ActionType.UnloadToInProcess,
         unloadToBasketId: 22,
-        unloadToBasketSlot: 1,
+        unloadToBasketSlot: 2,
       },
     }),
     palletWaiting: createMaterial({

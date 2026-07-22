@@ -108,7 +108,7 @@ function fakeBasketLoad({
       type: ty === "load" ? ActionType.LoadingToBasket : ActionType.UnloadToInProcess,
       elapsedLoadUnloadTime: `PT${elapsedMin}M`,
       loadToBasketId: ty === "load" ? basket : undefined,
-      loadToBasketSlot: ty === "load" ? 0 : undefined,
+      loadToBasketSlot: ty === "load" ? 1 : undefined,
       processAfterLoad: ty === "load" ? proc : undefined,
       pathAfterLoad: ty === "load" ? (path ?? 1) : undefined,
       unloadIntoQueue: ty === "unload" ? "Queue B" : undefined,
@@ -122,7 +122,7 @@ function fakeBasketLoad({
         : new InProcessMaterialLocation({
             type: LocType.InBasket,
             basketId: basket,
-            basketSlot: 1,
+            basketSlot: 2,
           }),
   });
 }
@@ -505,7 +505,7 @@ it("calculates current cycles for queue-to-basket load", () => {
           type: ActionType.LoadingToBasket,
           elapsedLoadUnloadTime: "PT3M",
           loadToBasketId: 77,
-          loadToBasketSlot: 0,
+          loadToBasketSlot: 1,
         }),
         location: new InProcessMaterialLocation({
           type: LocType.InQueue,

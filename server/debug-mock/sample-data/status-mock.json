@@ -1451,7 +1451,7 @@
       "Action": {
         "Type": "UnloadToInProcess",
         "UnloadToBasketId": 301,
-        "UnloadToBasketSlot": 0,
+        "UnloadToBasketSlot": 1,
         "ElapsedLoadUnloadTime": "PT2M10S"
       }
     },
@@ -1466,7 +1466,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 302,
-        "BasketSlot": 0
+        "BasketSlot": 1
       },
       "Action": {
         "Type": "Loading",
@@ -1489,7 +1489,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 401,
-        "BasketSlot": 0
+        "BasketSlot": 1
       },
       "Action": {
         "Type": "UnloadToInProcess",
@@ -1508,7 +1508,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 402,
-        "BasketSlot": 0
+        "BasketSlot": 1
       },
       "Action": {
         "Type": "Waiting"
@@ -1525,7 +1525,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 502,
-        "BasketSlot": 0
+        "BasketSlot": 1
       },
       "Action": {
         "Type": "Waiting"
@@ -1543,7 +1543,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 504,
-        "BasketSlot": 0
+        "BasketSlot": 1
       },
       "Action": {
         "Type": "Waiting"
@@ -1577,7 +1577,7 @@
       "Location": {
         "Type": "InBasket",
         "BasketId": 505,
-        "BasketSlot": 0
+        "BasketSlot": 1
       },
       "Action": {
         "Type": "Waiting"
