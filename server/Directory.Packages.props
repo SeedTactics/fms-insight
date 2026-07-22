@@ -6,12 +6,12 @@
   <ItemGroup>
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
     <PackageVersion Include="Dapper" Version="2.1.79" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.10" />
     <!-- Work around Microsoft.Data.Sqlite's vulnerable SQLitePCLRaw 2.1.11 dependency until upstream updates it. https://github.com/dotnet/efcore/issues/38257 -->
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.10" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
@@ -19,16 +19,16 @@
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.EventLog" Version="4.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="System.Data.OleDb" Version="10.0.9" />
+    <PackageVersion Include="System.Data.OleDb" Version="10.0.10" />
     <!-- test projects -->
     <PackageVersion Include="AutoFixture" Version="4.18.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
     <PackageVersion Include="NSubstitute" Version="6.0.0" />
     <PackageVersion Include="NSwag.AspNetCore" Version="14.7.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="TUnit" Version="1.59.0" />
-    <PackageVersion Include="Verify.DiffPlex" Version="3.3.0" />
-    <PackageVersion Include="Verify.TUnit" Version="31.24.1" />
+    <PackageVersion Include="TUnit" Version="1.61.15" />
+    <PackageVersion Include="Verify.DiffPlex" Version="3.3.1" />
+    <PackageVersion Include="Verify.TUnit" Version="31.25.0" />
     <PackageVersion Include="WireMock.Net" Version="2.11.0" />
     <!--
       WireMock.Net.Minimal 2.11.0 depends on Scriban.Signed >= 7.2.0, and NuGet's
