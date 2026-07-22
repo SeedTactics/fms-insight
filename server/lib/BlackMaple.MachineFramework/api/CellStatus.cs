@@ -67,7 +67,7 @@ namespace BlackMaple.MachineFramework
     public required BasketPosition Position { get; init; }
 
     // Material in the basket is reconstructed from the list of InProcessMaterial,
-    // with the Slot field indicating which slot the material is in.  Slots are numbered starting at 1.
+    // with the Slot field indicating which slot the material is in.  Slots are numbered starting at 0.
     // Unknown or empty slots are included below
     public ImmutableSortedSet<int> EmptySlots { get; init; } = ImmutableSortedSet<int>.Empty;
     public ImmutableSortedSet<int> UnknownSlots { get; init; } = ImmutableSortedSet<int>.Empty;

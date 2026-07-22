@@ -3,8 +3,11 @@ import { describe, expect, test } from "vitest";
 import LoadStation from "../../src/components/station-monitor/LoadStation.js";
 import { AllMaterial } from "../../src/components/operations/AllMaterial.js";
 import { SystemOverviewPage } from "../../src/components/station-monitor/SystemOverview.js";
+import { secondsSinceEpochAtom } from "../../src/cell-status/current-status.js";
+import * as api from "../../src/network/api.js";
 import { renderInsightPage } from "./framework.js";
 import { createMixedBasketFixture, createPalletOnlyFixture } from "./basket-fixtures.js";
+import { createBasket, createCurrentStatus, createMaterial } from "./load-station-testkit.js";
 
 describe("basket shop-floor screens", () => {
   test("system overview shows tray-specific active, floating, and storage sections", async () => {
@@ -35,6 +38,49 @@ describe("basket shop-floor screens", () => {
     await expect.element(screen.locator).not.toHaveTextContent("Basket Storage");
     await expect.element(screen.locator).not.toHaveTextContent("Tray Storage");
     await expect.element(screen.locator).not.toHaveTextContent("Basket ");
+  });
+
+  test("system overview shows elapsed time for basket loading", async () => {
+    const currentStatus = createCurrentStatus({
+      baskets: [
+        createBasket({
+          basketId: 7,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadUnload,
+            locationNum: 1,
+          }),
+          emptySlots: [0],
+        }),
+      ],
+      material: [
+        createMaterial({
+          materialID: -1,
+          jobUnique: "JOB",
+          partName: "Part",
+          process: 0,
+          path: 1,
+          location: { type: api.LocType.Free },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "load-work",
+            loadToBasketId: 7,
+            loadToBasketSlot: 0,
+            processAfterLoad: 1,
+            elapsedLoadUnloadTime: "PT5M",
+          },
+        }),
+      ],
+    });
+    const statusSeconds = Math.floor(currentStatus.timeOfCurrentStatusUTC.getTime() / 1000);
+
+    const screen = await renderInsightPage(<SystemOverviewPage ignoreOperator whiteBackground />, {
+      currentStatus,
+      fmsInfo: { loadStationNames: { "1": "Basket Cell" } },
+      seedStore: (store) => store.set(secondsSinceEpochAtom, statusSeconds),
+    });
+
+    await expect.element(screen.getByText("Basket Cell")).toBeVisible();
+    await expect.element(screen.getByText("5:00")).toBeVisible();
   });
 
   test("all material renders tray bins alongside queues and pallets", async () => {

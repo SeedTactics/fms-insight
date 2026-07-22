@@ -148,9 +148,16 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
       break;
 
     case LocType.InQueue:
-      if (inProcMat.action.type === ActionType.Loading && !fmsInfo.allowQuarantineToCancelLoad) {
+      if (
+        (inProcMat.action.type === ActionType.Loading ||
+          inProcMat.action.type === ActionType.LoadingToBasket) &&
+        !fmsInfo.allowQuarantineToCancelLoad
+      ) {
         return null;
-      } else if (inProcMat.action.type === ActionType.Loading) {
+      } else if (
+        inProcMat.action.type === ActionType.Loading ||
+        inProcMat.action.type === ActionType.LoadingToBasket
+      ) {
         type = "CancelLoad";
       } else {
         type = "Scrap";

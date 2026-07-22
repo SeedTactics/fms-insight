@@ -64,26 +64,17 @@ function basketsAtLoad(currentSt: ICurrentStatus): ReadonlyMap<number, LoadLocat
 
 function locationForLoadActivity(
   material: ICurrentStatus["material"][number],
-  jobs: ICurrentStatus["jobs"],
   palToLoc: ReadonlyMap<number, PalletLocation>,
   basketToLoad: ReadonlyMap<number, LoadLocation>,
 ): LoadLocation | null {
-  if (material.action.type === ActionType.Loading) {
+  if (material.action.type === ActionType.LoadingToBasket) {
+    return basketToLoad.get(material.action.loadToBasketId ?? 0) ?? null;
+  } else if (material.action.type === ActionType.Loading) {
     if (material.action.loadOntoPalletNum) {
       return palToLoc.get(material.action.loadOntoPalletNum) ?? null;
     }
     if (material.action.loadFromBasketId) {
       return basketToLoad.get(material.action.loadFromBasketId) ?? null;
-    }
-    // queue → basket: neither pallet nor source basket set.  Find a basket at a load station
-    // that is a basket-load station for this job/process.
-    const proc = material.action.processAfterLoad ?? material.process;
-    const procInfo = jobs[material.jobUnique]?.procsAndPaths?.[proc - 1];
-    const basketLoadStations = procInfo?.basketLoadStations ?? [];
-    for (const [, loc] of basketToLoad) {
-      if (basketLoadStations.length === 0 || basketLoadStations.includes(loc.num)) {
-        return loc;
-      }
     }
     return null;
   } else {
@@ -160,11 +151,14 @@ function loadCurrentCycles(
         m.action.type === ActionType.UnloadToCompletedMaterial ||
         m.action.type === ActionType.UnloadToInProcess
       ) {
-        const loc = locationForLoadActivity(m, currentSt.jobs, palToLoc, basketToLoad);
+        const loc = locationForLoadActivity(m, palToLoc, basketToLoad);
         if (!loc) return null;
         return { mat: m, material: [m], proc: m.process, path: m.path, loc };
-      } else if (m.action.type === ActionType.Loading) {
-        const loc = locationForLoadActivity(m, currentSt.jobs, palToLoc, basketToLoad);
+      } else if (
+        m.action.type === ActionType.Loading ||
+        m.action.type === ActionType.LoadingToBasket
+      ) {
+        const loc = locationForLoadActivity(m, palToLoc, basketToLoad);
         if (!loc) return null;
         return {
           mat: m,
@@ -180,9 +174,12 @@ function loadCurrentCycles(
       const job = currentSt.jobs[m.mat.jobUnique];
       const procInfo = job?.procsAndPaths?.[m.proc - 1];
       const pathData = job?.procsAndPaths?.[m.proc - 1]?.paths?.[m.path - 1];
-      if (m.mat.action.type === ActionType.Loading) {
+      if (
+        m.mat.action.type === ActionType.Loading ||
+        m.mat.action.type === ActionType.LoadingToBasket
+      ) {
         const expected =
-          m.mat.action.loadOntoPalletNum !== null && m.mat.action.loadOntoPalletNum !== undefined
+          m.mat.action.type === ActionType.Loading
             ? pathData?.expectedLoadTime
             : (procInfo?.expectedBasketLoadTime ?? pathData?.expectedLoadTime);
         return { ...m, expectedLoadSecs: durationToSeconds(expected ?? "PT0S") };
@@ -211,7 +208,8 @@ function loadCurrentCycles(
           new PartAndStationOperation(
             m.mat.partName,
             statGroup,
-            m.mat.action.type === ActionType.Loading
+            m.mat.action.type === ActionType.Loading ||
+              m.mat.action.type === ActionType.LoadingToBasket
               ? "LOAD-" + m.proc.toString()
               : "UNLOAD-" + m.proc.toString(),
           ),
@@ -235,11 +233,19 @@ function loadCurrentCycles(
           .distinctAndSortBy(
             (m) => m.mat.partName,
             (m) => m.proc,
-            (m) => (m.mat.action.type === ActionType.Loading ? "LOAD" : "UNLOAD"),
+            (m) =>
+              m.mat.action.type === ActionType.Loading ||
+              m.mat.action.type === ActionType.LoadingToBasket
+                ? "LOAD"
+                : "UNLOAD",
           )
           .map((m) => ({
             part: m.mat.partName + "-" + m.proc.toString(),
-            oper: m.mat.action.type === ActionType.Loading ? "LOAD" : "UNLOAD",
+            oper:
+              m.mat.action.type === ActionType.Loading ||
+              m.mat.action.type === ActionType.LoadingToBasket
+                ? "LOAD"
+                : "UNLOAD",
           }))
           .toRArray(),
       };

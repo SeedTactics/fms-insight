@@ -140,11 +140,12 @@ export type MatCardFontSize = "normal" | "large" | "x-large";
 const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsize" })<{
   fsize?: MatCardFontSize;
 }>(({ fsize, theme }) => {
-  if (!fsize) return { fontSize: "1.25rem" };
+  if (!fsize) return { fontSize: "1.25rem", fontWeight: "500" };
   switch (fsize) {
     case "normal":
       return {
         fontSize: "1rem",
+        fontWeight: "500",
         [theme.breakpoints.up("md")]: {
           fontSize: "1.25rem",
         },
@@ -155,6 +156,7 @@ const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
     case "large":
       return {
         fontSize: "1.5rem",
+        fontWeight: "500",
         [theme.breakpoints.up("lg")]: {
           fontSize: "1.75rem",
         },
@@ -165,6 +167,7 @@ const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
     case "x-large":
       return {
         fontSize: "1.5rem",
+        fontWeight: "500",
         [theme.breakpoints.up("md")]: {
           fontSize: "1.75rem",
         },
@@ -181,11 +184,12 @@ const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
 const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsize" })<{
   fsize?: MatCardFontSize;
 }>(({ fsize, theme }) => {
-  if (!fsize) return { fontSize: "0.75rem" };
+  if (!fsize) return { fontSize: "0.75rem", fontWeight: "500" };
   switch (fsize) {
     case "normal":
       return {
         fontSize: "0.75rem",
+        fontWeight: "500",
         [theme.breakpoints.up("md")]: {
           fontSize: "1rem",
         },
@@ -193,6 +197,7 @@ const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
     case "large":
       return {
         fontSize: "1rem",
+        fontWeight: "500",
         [theme.breakpoints.up("lg")]: {
           fontSize: "1.5rem",
         },
@@ -203,6 +208,7 @@ const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
     case "x-large":
       return {
         fontSize: "1rem",
+        fontWeight: "500",
         [theme.breakpoints.up("md")]: {
           fontSize: "1.5rem",
         },
@@ -316,6 +322,16 @@ export function MaterialAction({
         }
       }
 
+    case api.ActionType.LoadingToBasket:
+      return (
+        <MatCardDetail fsize={fsize}>
+          Load into {basketName} {mat.action.loadToBasketId ?? ""}
+          {mat.action.loadToBasketSlot !== undefined
+            ? ` slot ${mat.action.loadToBasketSlot + 1}`
+            : ""}
+        </MatCardDetail>
+      );
+
     case api.ActionType.UnloadToInProcess:
     case api.ActionType.UnloadToCompletedMaterial:
       if (mat.action.unloadToBasketId) {
@@ -331,6 +347,21 @@ export function MaterialAction({
         return (
           <MatCardDetail fsize={fsize}>
             Unload into queue {mat.action.unloadIntoQueue}
+          </MatCardDetail>
+        );
+      } else if (
+        mat.action.type === api.ActionType.UnloadToCompletedMaterial &&
+        mat.location.type === api.LocType.InBasket
+      ) {
+        return (
+          <MatCardDetail fsize={fsize}>
+            Unload from {basketName} {mat.location.basketId} to completed material
+          </MatCardDetail>
+        );
+      } else if (mat.location.type === api.LocType.InBasket) {
+        return (
+          <MatCardDetail fsize={fsize}>
+            Unload from {basketName} {mat.location.basketId}
           </MatCardDetail>
         );
       } else {
@@ -397,7 +428,11 @@ function JobRawMaterial({
 }) {
   const job = useAtomValue(currentStatus).jobs[mat.jobUnique];
   let path = mat.path;
-  if (mat.action.type === api.ActionType.Loading && mat.action.pathAfterLoad) {
+  if (
+    (mat.action.type === api.ActionType.Loading ||
+      mat.action.type === api.ActionType.LoadingToBasket) &&
+    mat.action.pathAfterLoad
+  ) {
     path = mat.action.pathAfterLoad;
   }
   if (!job) {

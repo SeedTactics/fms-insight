@@ -90,6 +90,7 @@ import { CompletedCountHeatmap, StationOeeHeatmap } from "./analysis/EfficiencyP
 import { PartLoadStationCycleChart, PartMachineCycleChart } from "./analysis/PartCycleCards.js";
 import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
 import { BasketCycleChart } from "./analysis/BasketCycleCards.js";
+import type { SubmitBasketLoadStationCommand } from "./station-monitor/BasketLoadStationWork.js";
 import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
 import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
 import { useAtom, useAtomValue } from "jotai";
@@ -385,6 +386,7 @@ export interface AppProps {
     readonly page: ReactNode;
   };
   readonly chooseModes?: (i: serverSettings.FMSInfoAndUser) => ReadonlyArray<ChooseModeItem> | null;
+  readonly submitBasketLoadStationCommand?: SubmitBasketLoadStationCommand;
 }
 
 const App = memo(function App(props: AppProps) {
@@ -423,7 +425,12 @@ const App = memo(function App(props: AppProps) {
     switch (route.route) {
       case routes.RouteLocation.Station_LoadMonitor:
         page = (
-          <LoadStation loadNum={route.loadNum} queues={route.queues} completed={route.completed} />
+          <LoadStation
+            loadNum={route.loadNum}
+            queues={route.queues}
+            completed={route.completed}
+            submitBasketLoadStationCommand={props.submitBasketLoadStationCommand}
+          />
         );
         nav1 = StationToolbar;
         nav2 = StationToolbarOverviewButton;

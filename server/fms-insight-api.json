@@ -3605,6 +3605,10 @@
           "Type": {
             "$ref": "#/components/schemas/ActionType"
           },
+          "WorkId": {
+            "type": "string",
+            "nullable": true
+          },
           "LoadOntoPalletNum": {
             "type": "integer",
             "format": "int32",
@@ -3626,6 +3630,16 @@
             "nullable": true
           },
           "LoadFromBasketId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "LoadToBasketId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "LoadToBasketSlot": {
             "type": "integer",
             "format": "int32",
             "nullable": true
@@ -3673,14 +3687,16 @@
           "Loading",
           "UnloadToInProcess",
           "UnloadToCompletedMaterial",
-          "Machining"
+          "Machining",
+          "LoadingToBasket"
         ],
         "enum": [
           "Waiting",
           "Loading",
           "UnloadToInProcess",
           "UnloadToCompletedMaterial",
-          "Machining"
+          "Machining",
+          "LoadingToBasket"
         ]
       },
       "QueueInfo": {

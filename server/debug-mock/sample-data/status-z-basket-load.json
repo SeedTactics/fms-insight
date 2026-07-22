@@ -1,0 +1,90 @@
+{
+  "TimeOfCurrentStatusUTC": "2018-01-29T00:00:00Z",
+  "Jobs": {},
+  "Pallets": {},
+  "Material": [
+    {
+      "MaterialID": -1,
+      "JobUnique": "qa-raw-a",
+      "PartName": "QA Raw Widget A",
+      "Process": 0,
+      "Path": 1,
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "Free",
+        "QueuePosition": 0
+      },
+      "Action": {
+        "Type": "LoadingToBasket",
+        "WorkId": "debug-load-902",
+        "LoadToBasketId": 902,
+        "LoadToBasketSlot": 0,
+        "ProcessAfterLoad": 1,
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT45S"
+      }
+    },
+    {
+      "MaterialID": -1,
+      "JobUnique": "qa-raw-b",
+      "PartName": "QA Raw Widget B",
+      "Process": 0,
+      "Path": 1,
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "Free",
+        "QueuePosition": 1
+      },
+      "Action": {
+        "Type": "LoadingToBasket",
+        "WorkId": "debug-load-902",
+        "LoadToBasketId": 902,
+        "LoadToBasketSlot": 1,
+        "ProcessAfterLoad": 1,
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT45S"
+      }
+    },
+    {
+      "MaterialID": 4201,
+      "JobUnique": "qa-process-2",
+      "PartName": "QA Process 2 Widget",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "QA-P2-101",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InQueue",
+        "CurrentQueue": "InProcQueue",
+        "QueuePosition": 0
+      },
+      "Action": {
+        "Type": "LoadingToBasket",
+        "WorkId": "debug-load-902",
+        "LoadToBasketId": 902,
+        "LoadToBasketSlot": 2,
+        "ProcessAfterLoad": 2,
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT45S"
+      }
+    }
+  ],
+  "Alarms": [],
+  "Queues": {
+    "InProcQueue": {
+      "Role": "InProcessTransfer"
+    }
+  },
+  "Baskets": {
+    "902": {
+      "BasketId": 902,
+      "Position": {
+        "Location": "LoadUnload",
+        "LocationNum": 4,
+        "LocationTitle": "Basket QA Station"
+      },
+      "EmptySlots": [0, 1, 2, 3],
+      "UnknownSlots": []
+    }
+  }
+}

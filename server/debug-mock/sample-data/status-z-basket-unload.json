@@ -1,0 +1,64 @@
+{
+  "TimeOfCurrentStatusUTC": "2018-01-29T00:00:00Z",
+  "Jobs": {},
+  "Pallets": {},
+  "Material": [
+    {
+      "MaterialID": 4101,
+      "JobUnique": "qa-process-1",
+      "PartName": "QA Process 1 Widget",
+      "Process": 1,
+      "Path": 1,
+      "Serial": "QA-P1-001",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InBasket",
+        "BasketId": 901,
+        "BasketSlot": 0
+      },
+      "Action": {
+        "Type": "UnloadToInProcess",
+        "WorkId": "debug-unload-901",
+        "UnloadIntoQueue": "InProcQueue",
+        "ElapsedLoadUnloadTime": "PT1M30S"
+      }
+    },
+    {
+      "MaterialID": 4102,
+      "JobUnique": "qa-process-2",
+      "PartName": "QA Completed Widget",
+      "Process": 2,
+      "Path": 1,
+      "Serial": "QA-P2-002",
+      "SignaledInspections": [],
+      "Location": {
+        "Type": "InBasket",
+        "BasketId": 901,
+        "BasketSlot": 1
+      },
+      "Action": {
+        "Type": "UnloadToCompletedMaterial",
+        "WorkId": "debug-unload-901",
+        "ElapsedLoadUnloadTime": "PT1M30S"
+      }
+    }
+  ],
+  "Alarms": [],
+  "Queues": {
+    "InProcQueue": {
+      "Role": "InProcessTransfer"
+    }
+  },
+  "Baskets": {
+    "901": {
+      "BasketId": 901,
+      "Position": {
+        "Location": "LoadUnload",
+        "LocationNum": 4,
+        "LocationTitle": "Basket QA Station"
+      },
+      "EmptySlots": [2, 3],
+      "UnknownSlots": []
+    }
+  }
+}

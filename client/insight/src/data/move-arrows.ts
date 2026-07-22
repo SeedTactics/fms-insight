@@ -48,6 +48,7 @@ export type MoveMaterialNodeKind =
   | {
       readonly type: MoveMaterialNodeKindType.Material;
       readonly material: Readonly<api.IInProcessMaterial> | null;
+      readonly identifier?: string;
     }
   | { readonly type: MoveMaterialNodeKindType.FreeMaterialZone }
   | { readonly type: MoveMaterialNodeKindType.CompletedCollapsedMaterialZone }
@@ -70,7 +71,7 @@ export type MoveMaterialIdentifier = string;
 export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIdentifier {
   switch (kind.type) {
     case MoveMaterialNodeKindType.Material:
-      return "Material-" + (kind.material?.materialID ?? -1).toString();
+      return "Material-" + (kind.identifier ?? (kind.material?.materialID ?? -1).toString());
     case MoveMaterialNodeKindType.FreeMaterialZone:
       return "FreeMaterialZone";
     case MoveMaterialNodeKindType.CompletedCollapsedMaterialZone:
@@ -89,7 +90,7 @@ export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIde
 export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<unknown> {
   switch (kind.type) {
     case MoveMaterialNodeKindType.Material:
-      return [kind.type, kind.material];
+      return [kind.type, kind.material, kind.identifier];
     case MoveMaterialNodeKindType.FreeMaterialZone:
     case MoveMaterialNodeKindType.CompletedCollapsedMaterialZone:
     case MoveMaterialNodeKindType.CompletedExpandedMaterialZone:
@@ -329,6 +330,21 @@ export function computeArrows(
           }
         }
         break;
+      case api.ActionType.LoadingToBasket: {
+        const basketId = mat.action.loadToBasketId;
+        if (basketId === undefined) break;
+        const dest = byKind.baskets.get(basketId);
+        const lastSlotUsed = basketDestUsed.get(basketId) ?? 0;
+        basketDestUsed.set(basketId, lastSlotUsed + 1);
+        arrows.push({
+          fromX: rect.right,
+          fromY: rect.top + rect.height / 2,
+          toX: dest !== undefined ? dest.left + 20 : container.right - 10,
+          toY: dest !== undefined ? dest.top + 50 + 20 * lastSlotUsed : rect.top + rect.height / 2,
+          curveDirection: -1,
+        });
+        break;
+      }
     }
   }
 
