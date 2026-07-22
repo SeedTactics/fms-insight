@@ -69,8 +69,8 @@ const lastEventCounterRW = atom<number | null>(null);
 export const lastEventCounter: Atom<number | null> = lastEventCounterRW;
 
 export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
-  if (evt.evt.customState !== undefined) {
-    set(customSt.replaceCustomState, evt.evt.customState);
+  if (evt.evt.newCurrentStatus) {
+    set(customSt.replaceCustomState, evt.evt.newCurrentStatus.customState ?? null);
   }
   set(simProd.updateLast30JobProduction, evt);
   set(simUse.updateLast30SimStatUse, evt);
@@ -128,6 +128,7 @@ export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<I
 
 export const onLoadCurrentSt = atom(null, (_, set, curSt: Readonly<ICurrentStatus>) => {
   set(currentSt.setCurrentStatus, curSt);
+  set(customSt.replaceCustomState, curSt.customState ?? null);
   set(names.setNamesFromCurrentStatus, curSt);
 });
 

@@ -2198,9 +2198,6 @@
               }
             ]
           },
-          "CustomState": {
-            "nullable": true
-          },
           "EditMaterialInLog": {
             "nullable": true,
             "oneOf": [
@@ -3301,6 +3298,9 @@
             "items": {
               "$ref": "#/components/schemas/BasketMoveInstruction"
             }
+          },
+          "CustomState": {
+            "nullable": true
           }
         }
       },

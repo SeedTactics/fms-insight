@@ -35,13 +35,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
 using BlackMaple.MachineFramework;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Shouldly;
 
 namespace BlackMaple.FMSInsight.Tests;
@@ -53,27 +49,6 @@ public sealed class JobAndQueueSpec
   : ISynchronizeCellState<JobAndQueueSpec.MockCellState>,
     IDisposable
 {
-  private sealed record CustomSnapshot
-  {
-    public required string Phase { get; init; }
-    public long? Uniq { get; init; }
-  }
-
-  private sealed class CustomStateProjection : ICustomStateProjection<MockCellState>
-  {
-    public bool ThrowDuringProjection { get; set; }
-
-    public object CreateStartingState() => new CustomSnapshot { Phase = "Starting" };
-
-    public object CreateState(MockCellState cellState)
-    {
-      if (ThrowDuringProjection)
-        throw new InvalidOperationException("Invalid custom state");
-
-      return new CustomSnapshot { Phase = "Ready", Uniq = cellState.Uniq };
-    }
-  }
-
   public record MockCellState : ICellState
   {
     public long Uniq { get; init; }
@@ -130,8 +105,6 @@ public sealed class JobAndQueueSpec
   private string _calculateStateError = null;
   private bool _executeActions;
   private string _executeActionError = null;
-  private ManualResetEventSlim _applyActionsEntered;
-  private ManualResetEventSlim _allowApplyActions;
   public event Action NewCellState;
   private bool _expectsDecrement = false;
 
@@ -208,8 +181,6 @@ public sealed class JobAndQueueSpec
   bool ISynchronizeCellState<MockCellState>.ApplyActions(IRepository db, MockCellState st)
   {
     st.ShouldBe(_curSt);
-    _applyActionsEntered?.Set();
-    _allowApplyActions?.Wait();
     if (_executeActions)
     {
       _executeActions = false;
@@ -267,147 +238,6 @@ public sealed class JobAndQueueSpec
   #endregion
 
   #region Expected Status
-
-  [Test]
-  public async Task ProjectsOpaqueStateFromStableCellState()
-  {
-    var projection = new CustomStateProjection();
-    _executeActions = true;
-    _jq = new JobsAndQueuesFromDb<MockCellState>(
-      _repo,
-      _serverSettings,
-      _settings,
-      this,
-      customStateProjection: projection,
-      startThread: false
-    );
-
-    var starting = _jq.GetCurrentStatusAndCustomState();
-    await Assert.That(starting.CustomState.GetProperty("Phase").GetString()).IsEqualTo("Starting");
-
-    var firstUpdate = new TaskCompletionSource<CurrentStatusAndCustomState>();
-    _jq.OnNewCurrentStatusAndCustomState += snapshot => firstUpdate.TrySetResult(snapshot);
-    _jq.StartThread();
-
-    var stable = await firstUpdate.Task;
-    await Assert.That(stable.CurrentStatus).IsSameReferenceAs(_curSt.CurrentStatus);
-    await Assert.That(stable.CustomState.GetProperty("Phase").GetString()).IsEqualTo("Ready");
-    await Assert.That(stable.CustomState.GetProperty("Uniq").GetInt64()).IsEqualTo(1);
-
-    var customOnlyUpdate = new TaskCompletionSource<CurrentStatusAndCustomState>();
-    _jq.OnNewCurrentStatusAndCustomState += snapshot => customOnlyUpdate.TrySetResult(snapshot);
-    _curSt = _curSt with { Uniq = 2, StateUpdated = false };
-    NewCellState?.Invoke();
-
-    var changed = await customOnlyUpdate.Task;
-    await Assert.That(changed.CustomState.GetProperty("Uniq").GetInt64()).IsEqualTo(2);
-  }
-
-  [Test]
-  public async Task DoesNotPairInProgressCurrentStatusWithStartingCustomState()
-  {
-    using var applyActionsEntered = new ManualResetEventSlim();
-    using var allowApplyActions = new ManualResetEventSlim();
-    _applyActionsEntered = applyActionsEntered;
-    _allowApplyActions = allowApplyActions;
-    var projection = new CustomStateProjection();
-    _jq = new JobsAndQueuesFromDb<MockCellState>(
-      _repo,
-      _serverSettings,
-      _settings,
-      this,
-      customStateProjection: projection,
-      startThread: false
-    );
-    var stableUpdate = new TaskCompletionSource<CurrentStatusAndCustomState>(
-      TaskCreationOptions.RunContinuationsAsynchronously
-    );
-    _jq.OnNewCurrentStatusAndCustomState += snapshot => stableUpdate.TrySetResult(snapshot);
-    _jq.StartThread();
-
-    await Assert.That(applyActionsEntered.Wait(TimeSpan.FromSeconds(5))).IsTrue();
-    try
-    {
-      await Assert.That(_jq.GetCurrentStatus()).IsSameReferenceAs(_curSt.CurrentStatus);
-      var inProgress = _jq.GetCurrentStatusAndCustomState();
-      await Assert.That(inProgress.CurrentStatus).IsNotSameReferenceAs(_curSt.CurrentStatus);
-      await Assert.That(inProgress.CurrentStatus.Alarms).Contains("FMS Insight is starting up...");
-      await Assert
-        .That(inProgress.CustomState.GetProperty("Phase").GetString())
-        .IsEqualTo("Starting");
-    }
-    finally
-    {
-      allowApplyActions.Set();
-    }
-
-    var stable = await stableUpdate.Task.WaitAsync(TimeSpan.FromSeconds(5));
-    await Assert.That(stable.CurrentStatus).IsSameReferenceAs(_curSt.CurrentStatus);
-    await Assert.That(stable.CustomState.GetProperty("Phase").GetString()).IsEqualTo("Ready");
-  }
-
-  [Test]
-  public async Task ProjectionFailurePublishesNullWithoutLosingCurrentStatus()
-  {
-    var projection = new CustomStateProjection { ThrowDuringProjection = true };
-    _jq = new JobsAndQueuesFromDb<MockCellState>(
-      _repo,
-      _serverSettings,
-      _settings,
-      this,
-      customStateProjection: projection,
-      startThread: false
-    );
-    var update = new TaskCompletionSource<CurrentStatusAndCustomState>();
-    _jq.OnNewCurrentStatusAndCustomState += snapshot => update.TrySetResult(snapshot);
-    _jq.StartThread();
-
-    var snapshot = await update.Task;
-    await Assert.That(snapshot.CurrentStatus).IsSameReferenceAs(_curSt.CurrentStatus);
-    await Assert
-      .That(snapshot.CustomState.ValueKind)
-      .IsEqualTo(System.Text.Json.JsonValueKind.Null);
-  }
-
-  [Test]
-  public async Task RejectsMultipleCustomStateProjectionRegistrations()
-  {
-    var hostBuilder = new HostBuilder()
-      .ConfigureServices(services =>
-      {
-        services.AddSingleton<ISynchronizeCellState<MockCellState>>(this);
-        services.AddSingleton<ICustomStateProjection<MockCellState>, CustomStateProjection>();
-        services.AddSingleton<ICustomStateProjection<MockCellState>, CustomStateProjection>();
-      })
-      .AddFMSInsightWebHost(
-        new ConfigurationBuilder().Build(),
-        _serverSettings,
-        _settings,
-        hideStartupMessages: true
-      );
-
-    var exception = Assert.Throws<InvalidOperationException>(() => hostBuilder.Build());
-    await Assert.That(exception.Message).Contains("Only one ICustomStateProjection");
-  }
-
-  [Test]
-  public async Task ResolvesSingleCustomStateProjectionFromDependencyInjection()
-  {
-    var services = new ServiceCollection();
-    services.AddSingleton(_repo);
-    services.AddSingleton(_serverSettings);
-    services.AddSingleton(_settings);
-    services.AddSingleton<ISynchronizeCellState<MockCellState>>(this);
-    services.AddSingleton<ICustomStateProjection<MockCellState>, CustomStateProjection>();
-    using var provider = services.BuildServiceProvider();
-    using var jobAndQueue = ActivatorUtilities.CreateInstance<JobsAndQueuesFromDb<MockCellState>>(
-      provider,
-      false
-    );
-
-    var starting = jobAndQueue.GetCurrentStatusAndCustomState();
-    await Assert.That(starting.CustomState.GetProperty("Phase").GetString()).IsEqualTo("Starting");
-  }
 
   private async Task SetCurrentState(
     bool stateUpdated,

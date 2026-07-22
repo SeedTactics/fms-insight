@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+﻿/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -69,24 +69,6 @@ namespace BlackMaple.MachineFramework
 
     public bool AddJobsAsCopiedToSystem { get; }
     public bool AllowQuarantineToCancelLoad { get; }
-  }
-
-  /// <summary>
-  /// Projects an optional, application-specific snapshot from the same stable cell state used to
-  /// produce <see cref="CurrentStatus"/>. FMS Insight serializes and transports the returned value
-  /// opaquely; consumers are responsible for defining and validating its schema.
-  /// </summary>
-  public interface ICustomStateProjection<in St>
-    where St : ICellState
-  {
-    /// <summary>
-    /// Creates the complete custom snapshot from a stable synchronization result. Implementations
-    /// must be pure: do not query another changing source or perform hardware effects.
-    /// </summary>
-    object? CreateState(St cellState);
-
-    /// <summary>Creates the snapshot sent while the cell is starting.</summary>
-    object? CreateStartingState() => null;
   }
 
   public interface IAdditionalCheckJobs

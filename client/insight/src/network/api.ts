@@ -2958,7 +2958,6 @@ export class ServerEvent implements IServerEvent {
   logEntry?: LogEntry | undefined;
   newJobs?: NewJobs | undefined;
   newCurrentStatus?: CurrentStatus | undefined;
-  customState?: unknown | undefined;
   editMaterialInLog?: EditMaterialInLogEvents | undefined;
 
   constructor(data?: IServerEvent) {
@@ -2976,7 +2975,6 @@ export class ServerEvent implements IServerEvent {
       this.newCurrentStatus = _data["NewCurrentStatus"]
         ? CurrentStatus.fromJS(_data["NewCurrentStatus"])
         : (undefined as any);
-      this.customState = _data["CustomState"];
       this.editMaterialInLog = _data["EditMaterialInLog"]
         ? EditMaterialInLogEvents.fromJS(_data["EditMaterialInLog"])
         : (undefined as any);
@@ -2997,7 +2995,6 @@ export class ServerEvent implements IServerEvent {
     data["NewCurrentStatus"] = this.newCurrentStatus
       ? this.newCurrentStatus.toJSON()
       : (undefined as any);
-    data["CustomState"] = this.customState;
     data["EditMaterialInLog"] = this.editMaterialInLog
       ? this.editMaterialInLog.toJSON()
       : (undefined as any);
@@ -3009,7 +3006,6 @@ export interface IServerEvent {
   logEntry?: LogEntry | undefined;
   newJobs?: NewJobs | undefined;
   newCurrentStatus?: CurrentStatus | undefined;
-  customState?: unknown | undefined;
   editMaterialInLog?: EditMaterialInLogEvents | undefined;
 }
 
@@ -4537,6 +4533,7 @@ export class CurrentStatus implements ICurrentStatus {
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
   basketMoveInstructions?: BasketMoveInstruction[] | undefined;
+  customState?: unknown | undefined;
 
   constructor(data?: ICurrentStatus) {
     if (data) {
@@ -4616,6 +4613,7 @@ export class CurrentStatus implements ICurrentStatus {
         for (let item of _data["BasketMoveInstructions"])
           this.basketMoveInstructions!.push(BasketMoveInstruction.fromJS(item));
       }
+      this.customState = _data["CustomState"];
     }
   }
 
@@ -4691,6 +4689,7 @@ export class CurrentStatus implements ICurrentStatus {
       for (let item of this.basketMoveInstructions)
         data["BasketMoveInstructions"].push(item ? item.toJSON() : (undefined as any));
     }
+    data["CustomState"] = this.customState;
     return data;
   }
 }
@@ -4706,6 +4705,7 @@ export interface ICurrentStatus {
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
   basketMoveInstructions?: BasketMoveInstruction[] | undefined;
+  customState?: unknown | undefined;
 }
 
 export class HistoricJob extends Job implements IHistoricJob {

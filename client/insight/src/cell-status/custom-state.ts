@@ -33,14 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { Atom, atom } from "jotai";
 
-const customStateRW = atom<unknown | null>(null);
+const customStateRW = atom<unknown>(null);
 
 /**
  * The latest complete application-specific snapshot received from the Insight server.
  * Consumers must validate this opaque value before interpreting it.
  */
-export const customState: Atom<unknown | null> = customStateRW;
+export const customState: Atom<unknown> = customStateRW;
 
-export const replaceCustomState = atom(null, (_, set, state: unknown | null) => {
+export const replaceCustomState = atom(null, (_, set, state: unknown) => {
   set(customStateRW, state);
 });

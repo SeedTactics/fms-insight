@@ -134,6 +134,13 @@ namespace BlackMaple.MachineFramework
     public ImmutableDictionary<int, BasketStatus>? Baskets { get; init; }
 
     public ImmutableList<BasketMoveInstruction>? BasketMoveInstructions { get; init; }
+
+    /// <summary>
+    /// Optional application-specific state transported opaquely by FMS Insight. Use this only as a
+    /// last resort: most state should instead enhance the generic FMS Insight models so it can be
+    /// understood and reused by every client.
+    /// </summary>
+    public object? CustomState { get; init; }
   }
 
   public record JobAndDecrementQuantity

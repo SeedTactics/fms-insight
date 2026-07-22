@@ -49,11 +49,6 @@ namespace BlackMaple.MachineFramework.Controllers
 
     public CurrentStatus? NewCurrentStatus { get; init; }
 
-    /// <summary>
-    /// An optional application-specific snapshot. The websocket transports this JSON opaquely.
-    /// </summary>
-    public JsonElement? CustomState { get; init; }
-
     public EditMaterialInLogEvents? EditMaterialInLog { get; init; }
   }
 
@@ -110,21 +105,16 @@ namespace BlackMaple.MachineFramework.Controllers
 
     private readonly WebsocketDict _sockets = new WebsocketDict();
     private readonly JsonSerializerOptions _serSettings;
-    private readonly System.Collections.Concurrent.BlockingCollection<OutgoingEvent> _messages;
+    private readonly System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
     private readonly Thread _thread;
-    private readonly IJobAndQueueControl _jobAndQueue;
-    private readonly Lock _currentStatusOrderingLock = new();
-
-    private sealed record OutgoingEvent(ServerEvent Event, WebSocket? OnlySocket = null);
 
     // Injecting IJobAndQueueControl here ensures that logging starts as soon as FMS Insight starts
     public WebsocketManager(RepositoryConfig repo, IJobAndQueueControl jobAndQueue)
     {
-      _jobAndQueue = jobAndQueue;
       _serSettings = new JsonSerializerOptions();
       FMSInsightWebHost.JsonSettings(_serSettings);
 
-      _messages = new System.Collections.Concurrent.BlockingCollection<OutgoingEvent>(100);
+      _messages = new System.Collections.Concurrent.BlockingCollection<ServerEvent>(100);
       _thread = new System.Threading.Thread(SendThread);
       _thread.IsBackground = true;
       _thread.Start();
@@ -132,43 +122,16 @@ namespace BlackMaple.MachineFramework.Controllers
       repo.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
       jobAndQueue.OnNewJobs += (jobs) =>
         Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
-      jobAndQueue.OnNewCurrentStatusAndCustomState += SendCurrentStatus;
+      jobAndQueue.OnNewCurrentStatus += (status) =>
+        Send(new ServerEvent() { NewCurrentStatus = status });
       jobAndQueue.OnEditMaterialInLog += (o) => Send(new ServerEvent() { EditMaterialInLog = o });
     }
 
     private void Send(ServerEvent val)
     {
-      AddOutgoingEvent(new OutgoingEvent(val));
-    }
-
-    private void SendCurrentStatus(CurrentStatusAndCustomState snapshot)
-    {
-      lock (_currentStatusOrderingLock)
-      {
-        Send(ToServerEvent(snapshot));
-      }
-    }
-
-    private static ServerEvent ToServerEvent(CurrentStatusAndCustomState snapshot)
-    {
-      return new ServerEvent
-      {
-        NewCurrentStatus = snapshot.CurrentStatus,
-        CustomState =
-          snapshot.CustomState.ValueKind == JsonValueKind.Undefined ? null : snapshot.CustomState,
-      };
-    }
-
-    private void SendTo(ServerEvent val, WebSocket socket)
-    {
-      AddOutgoingEvent(new OutgoingEvent(val, socket));
-    }
-
-    private void AddOutgoingEvent(OutgoingEvent val)
-    {
       if (!_messages.TryAdd(val, TimeSpan.FromSeconds(1)))
       {
-        Log.Error("Unable to add server event {@val} to outgoing websocket messages", val.Event);
+        Log.Error("Unable to add server event {@val} to outgoing websocket messages", val);
       }
     }
 
@@ -176,7 +139,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       while (!_messages.IsCompleted)
       {
-        OutgoingEvent msg;
+        ServerEvent msg;
         try
         {
           msg = _messages.Take();
@@ -190,17 +153,17 @@ namespace BlackMaple.MachineFramework.Controllers
         ArraySegment<byte> buffer;
         try
         {
-          var data = JsonSerializer.Serialize(msg.Event, _serSettings);
+          var data = JsonSerializer.Serialize(msg, _serSettings);
           var encoded = System.Text.Encoding.UTF8.GetBytes(data);
           buffer = new ArraySegment<byte>(encoded, 0, encoded.Length);
         }
         catch (Exception ex)
         {
-          Log.Error(ex, "Unable to serialize outgoing websocket event {@val}", msg.Event);
+          Log.Error(ex, "Unable to serialize outgoing websocket event {@val}", msg);
           continue;
         }
 
-        var sockets = msg.OnlySocket == null ? _sockets.AllSockets() : [msg.OnlySocket];
+        var sockets = _sockets.AllSockets();
         foreach (var ws in sockets)
         {
           if (ws.CloseStatus.HasValue)
@@ -225,12 +188,7 @@ namespace BlackMaple.MachineFramework.Controllers
       var guid = Guid.NewGuid();
       try
       {
-        lock (_currentStatusOrderingLock)
-        {
-          _sockets.Add(guid, ws);
-          var initialSnapshot = _jobAndQueue.GetCurrentStatusAndCustomState();
-          SendTo(ToServerEvent(initialSnapshot), ws);
-        }
+        _sockets.Add(guid, ws);
 
         var res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         while (res.MessageType != WebSocketMessageType.Close)
