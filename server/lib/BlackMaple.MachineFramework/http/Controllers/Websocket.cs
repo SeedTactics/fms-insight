@@ -150,16 +150,34 @@ namespace BlackMaple.MachineFramework.Controllers
           return;
         }
 
-        var data = JsonSerializer.Serialize(msg, _serSettings);
-        var encoded = System.Text.Encoding.UTF8.GetBytes(data);
-        var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
+        ArraySegment<byte> buffer;
+        try
+        {
+          var data = JsonSerializer.Serialize(msg, _serSettings);
+          var encoded = System.Text.Encoding.UTF8.GetBytes(data);
+          buffer = new ArraySegment<byte>(encoded, 0, encoded.Length);
+        }
+        catch (Exception ex)
+        {
+          Log.Error(ex, "Unable to serialize outgoing websocket event {@val}", msg);
+          continue;
+        }
 
         var sockets = _sockets.AllSockets();
         foreach (var ws in sockets)
         {
           if (ws.CloseStatus.HasValue)
             continue;
-          ws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+          try
+          {
+            ws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None)
+              .GetAwaiter()
+              .GetResult();
+          }
+          catch (Exception ex)
+          {
+            Log.Debug(ex, "Unable to send websocket event to a disconnected client");
+          }
         }
       }
     }

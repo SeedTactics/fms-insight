@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2026, John Lenz
 
 All rights reserved.
 
@@ -31,26 +31,34 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { bootstrapInsight } from "./bootstrap.js";
+import { createStore } from "jotai";
 import type { AppProps } from "./components/App.js";
-import { ApiException } from "./network/api.js";
+import { registerNetworkBackend } from "./network/backend.js";
+import { fmsInformation, loadInfo } from "./network/server-settings.js";
+import { render } from "./renderer.js";
 
-async function main(): Promise<void> {
-  const developmentProps: AppProps = import.meta.env.DEV
-    ? {
-        submitBasketLoadStationCommand: async () => "accepted",
-      }
-    : {};
-  await bootstrapInsight(developmentProps);
-}
-
-main().catch((e) => {
-  console.log(e);
-  let msg = "Error loading Insight";
-  if (e instanceof ApiException) {
-    msg = "Error loading Insight: " + e.message + " " + e.response;
+/**
+ * Starts one complete FMS Insight application with optional statically composed custom pages.
+ */
+export async function bootstrapInsight(
+  appProps: AppProps = {},
+  rootElement?: HTMLElement,
+): Promise<void> {
+  const root = rootElement ?? document.getElementById("root");
+  if (!root) {
+    throw new Error("Unable to start FMS Insight: no root element was provided or found");
   }
-  const p = document.createElement("p");
-  p.textContent = msg;
-  (document.getElementById("loading") ?? document.body).appendChild(p);
-});
+
+  registerNetworkBackend();
+  const store = createStore();
+  store.set(fmsInformation, await loadInfo());
+  render(appProps, root, store);
+
+  if ("serviceWorker" in navigator) {
+    void navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        void registration.unregister();
+      }
+    });
+  }
+}

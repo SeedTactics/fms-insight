@@ -3298,6 +3298,9 @@
             "items": {
               "$ref": "#/components/schemas/BasketMoveInstruction"
             }
+          },
+          "CustomState": {
+            "nullable": true
           }
         }
       },

@@ -4533,6 +4533,7 @@ export class CurrentStatus implements ICurrentStatus {
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
   basketMoveInstructions?: BasketMoveInstruction[] | undefined;
+  customState?: unknown | undefined;
 
   constructor(data?: ICurrentStatus) {
     if (data) {
@@ -4612,6 +4613,7 @@ export class CurrentStatus implements ICurrentStatus {
         for (let item of _data["BasketMoveInstructions"])
           this.basketMoveInstructions!.push(BasketMoveInstruction.fromJS(item));
       }
+      this.customState = _data["CustomState"];
     }
   }
 
@@ -4687,6 +4689,7 @@ export class CurrentStatus implements ICurrentStatus {
       for (let item of this.basketMoveInstructions)
         data["BasketMoveInstructions"].push(item ? item.toJSON() : (undefined as any));
     }
+    data["CustomState"] = this.customState;
     return data;
   }
 }
@@ -4702,6 +4705,7 @@ export interface ICurrentStatus {
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
   basketMoveInstructions?: BasketMoveInstruction[] | undefined;
+  customState?: unknown | undefined;
 }
 
 export class HistoricJob extends Job implements IHistoricJob {

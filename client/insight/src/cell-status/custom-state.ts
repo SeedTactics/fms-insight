@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2026, John Lenz
 
 All rights reserved.
 
@@ -31,26 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { bootstrapInsight } from "./bootstrap.js";
-import type { AppProps } from "./components/App.js";
-import { ApiException } from "./network/api.js";
+import { Atom, atom } from "jotai";
 
-async function main(): Promise<void> {
-  const developmentProps: AppProps = import.meta.env.DEV
-    ? {
-        submitBasketLoadStationCommand: async () => "accepted",
-      }
-    : {};
-  await bootstrapInsight(developmentProps);
-}
+const customStateRW = atom<unknown>(null);
 
-main().catch((e) => {
-  console.log(e);
-  let msg = "Error loading Insight";
-  if (e instanceof ApiException) {
-    msg = "Error loading Insight: " + e.message + " " + e.response;
-  }
-  const p = document.createElement("p");
-  p.textContent = msg;
-  (document.getElementById("loading") ?? document.body).appendChild(p);
+/**
+ * The latest complete application-specific snapshot received from the Insight server.
+ * Consumers must validate this opaque value before interpreting it.
+ */
+export const customState: Atom<unknown> = customStateRW;
+
+export const replaceCustomState = atom(null, (_, set, state: unknown) => {
+  set(customStateRW, state);
 });
