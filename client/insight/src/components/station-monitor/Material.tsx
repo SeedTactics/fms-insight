@@ -140,11 +140,12 @@ export type MatCardFontSize = "normal" | "large" | "x-large";
 const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsize" })<{
   fsize?: MatCardFontSize;
 }>(({ fsize, theme }) => {
-  if (!fsize) return { fontSize: "1.25rem" };
+  if (!fsize) return { fontSize: "1.25rem", fontWeight: "500" };
   switch (fsize) {
     case "normal":
       return {
         fontSize: "1rem",
+        fontWeight: "500",
         [theme.breakpoints.up("md")]: {
           fontSize: "1.25rem",
         },
@@ -155,6 +156,7 @@ const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
     case "large":
       return {
         fontSize: "1.5rem",
+        fontWeight: "500",
         [theme.breakpoints.up("lg")]: {
           fontSize: "1.75rem",
         },
@@ -165,6 +167,7 @@ const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
     case "x-large":
       return {
         fontSize: "1.5rem",
+        fontWeight: "500",
         [theme.breakpoints.up("md")]: {
           fontSize: "1.75rem",
         },
@@ -181,11 +184,12 @@ const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
 const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsize" })<{
   fsize?: MatCardFontSize;
 }>(({ fsize, theme }) => {
-  if (!fsize) return { fontSize: "0.75rem" };
+  if (!fsize) return { fontSize: "0.75rem", fontWeight: "500" };
   switch (fsize) {
     case "normal":
       return {
         fontSize: "0.75rem",
+        fontWeight: "500",
         [theme.breakpoints.up("md")]: {
           fontSize: "1rem",
         },
@@ -193,6 +197,7 @@ const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
     case "large":
       return {
         fontSize: "1rem",
+        fontWeight: "500",
         [theme.breakpoints.up("lg")]: {
           fontSize: "1.5rem",
         },
@@ -203,6 +208,7 @@ const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
     case "x-large":
       return {
         fontSize: "1rem",
+        fontWeight: "500",
         [theme.breakpoints.up("md")]: {
           fontSize: "1.5rem",
         },
