@@ -2198,6 +2198,9 @@
               }
             ]
           },
+          "CustomState": {
+            "nullable": true
+          },
           "EditMaterialInLog": {
             "nullable": true,
             "oneOf": [

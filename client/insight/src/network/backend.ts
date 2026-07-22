@@ -177,6 +177,7 @@ export let LogBackend: LogAPI;
 export let MachineBackend: MachineAPI;
 let otherLogServers: ReadonlyArray<string> = [];
 export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
+let userAccessToken: string | undefined;
 
 export function registerNetworkBackend(): void {
   LogBackend = new api.LogClient();
@@ -198,16 +199,21 @@ export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI, machine: 
 }
 
 export function setUserToken(u: User): void {
-  const token = u.access_token;
-  function fetch(url: RequestInfo, init?: RequestInit) {
-    const headers = new Headers(init?.headers);
-    headers.set("Authorization", "Bearer " + token);
-    return window.fetch(url, init ? { ...init, headers } : { headers });
+  userAccessToken = u.access_token;
+  const http = { fetch: authenticatedFetch };
+  FmsServerBackend = new api.FmsClient(undefined, http);
+  JobsBackend = new api.JobsClient(undefined, http);
+  LogBackend = new api.LogClient(undefined, http);
+  OtherLogBackends = otherLogServers.map((s) => new api.LogClient(s, http));
+}
+
+/** Performs a request using the authenticated Insight user's bearer token, when present. */
+export function authenticatedFetch(url: RequestInfo, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  if (userAccessToken) {
+    headers.set("Authorization", "Bearer " + userAccessToken);
   }
-  FmsServerBackend = new api.FmsClient(undefined, { fetch });
-  JobsBackend = new api.JobsClient(undefined, { fetch });
-  LogBackend = new api.LogClient(undefined, { fetch });
-  OtherLogBackends = otherLogServers.map((s) => new api.LogClient(s, { fetch }));
+  return window.fetch(url, init ? { ...init, headers } : { headers });
 }
 
 export function instructionUrl(

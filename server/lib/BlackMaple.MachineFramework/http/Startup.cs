@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2024, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -106,6 +106,14 @@ public static class FMSInsightWebHost
             )
             .FirstOrDefault(x => x != null)
           ?? throw new Exception("Backend must implement ISynchronizeCellState");
+
+        var customStateProjectionType = typeof(ICustomStateProjection<>).MakeGenericType(jobStType);
+        if (s.Count(service => service.ServiceType == customStateProjectionType) > 1)
+        {
+          throw new InvalidOperationException(
+            $"Only one {customStateProjectionType.Name} can be registered."
+          );
+        }
 
         s.AddSingleton(
           typeof(IJobAndQueueControl),

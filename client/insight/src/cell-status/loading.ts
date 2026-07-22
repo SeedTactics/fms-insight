@@ -45,6 +45,7 @@ import * as simUse from "./sim-station-use.js";
 import * as schJobs from "./scheduled-jobs.js";
 import * as buffers from "./buffers.js";
 import * as currentSt from "./current-status.js";
+import * as customSt from "./custom-state.js";
 import * as insp from "./inspections.js";
 import * as mats from "./material-summary.js";
 import * as names from "./names.js";
@@ -68,6 +69,9 @@ const lastEventCounterRW = atom<number | null>(null);
 export const lastEventCounter: Atom<number | null> = lastEventCounterRW;
 
 export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
+  if (evt.evt.customState !== undefined) {
+    set(customSt.replaceCustomState, evt.evt.customState);
+  }
   set(simProd.updateLast30JobProduction, evt);
   set(simUse.updateLast30SimStatUse, evt);
   set(schJobs.updateLast30Jobs, evt);

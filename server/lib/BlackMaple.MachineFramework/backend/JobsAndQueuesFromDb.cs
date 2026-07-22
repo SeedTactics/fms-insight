@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,13 +45,37 @@ namespace BlackMaple.MachineFramework
   public delegate void NewJobsDelegate(NewJobs j);
   public delegate void EditMaterialInLogDelegate(EditMaterialInLogEvents o);
 
+  public sealed record CurrentStatusAndCustomState
+  {
+    public required CurrentStatus CurrentStatus { get; init; }
+
+    /// <summary>
+    /// An undefined element means no custom-state projection is registered. A JSON null is an
+    /// explicit custom state and is transported to clients.
+    /// </summary>
+    public JsonElement CustomState { get; init; }
+  }
+
   public interface IJobAndQueueControl
   {
-    ///loads info
+    /// <summary>Loads the latest generic current status.</summary>
     CurrentStatus GetCurrentStatus();
+
+    /// <summary>
+    /// Loads the generic current status and optional custom state from the same stable
+    /// synchronization result.
+    /// </summary>
+    CurrentStatusAndCustomState GetCurrentStatusAndCustomState();
+
     void RecalculateCellState();
     Task<bool> RecalculateCellStateAndWaitAsync(CancellationToken cancellationToken);
     event NewCurrentStatus? OnNewCurrentStatus;
+
+    /// <summary>
+    /// Raised with the generic current status and optional custom state from the same stable
+    /// synchronization result.
+    /// </summary>
+    event Action<CurrentStatusAndCustomState>? OnNewCurrentStatusAndCustomState;
 
     //checks to see if the jobs are valid.  Some machine types might not support all the different
     //pallet->part->machine->process combinations.
@@ -155,8 +180,11 @@ namespace BlackMaple.MachineFramework
     private readonly FMSSettings _settings;
     private readonly ISynchronizeCellState<St> _syncState;
     private readonly IEnumerable<IAdditionalCheckJobs> _additionalCheckJobs;
+    private readonly ICustomStateProjection<St>? _customStateProjection;
+    private JsonElement _customState;
 
     public event NewCurrentStatus? OnNewCurrentStatus;
+    public event Action<CurrentStatusAndCustomState>? OnNewCurrentStatusAndCustomState;
     public bool AllowQuarantineToCancelLoad => _syncState.AllowQuarantineToCancelLoad;
 
     public JobsAndQueuesFromDb(
@@ -165,7 +193,8 @@ namespace BlackMaple.MachineFramework
       FMSSettings settings,
       ISynchronizeCellState<St> syncSt,
       IEnumerable<IAdditionalCheckJobs>? additionalCheckJobs = null,
-      bool startThread = true
+      bool startThread = true,
+      ICustomStateProjection<St>? customStateProjection = null
     )
     {
       _repo = repo;
@@ -173,6 +202,8 @@ namespace BlackMaple.MachineFramework
       _serverSettings = serverSt;
       _syncState = syncSt;
       _additionalCheckJobs = additionalCheckJobs ?? Enumerable.Empty<IAdditionalCheckJobs>();
+      _customStateProjection = customStateProjection;
+      _customState = SerializeStartingCustomState();
       _syncState.NewCellState += NewCellState;
 
       _thread = new Thread(Thread) { IsBackground = true };
@@ -191,16 +222,20 @@ namespace BlackMaple.MachineFramework
     {
       _syncState.NewCellState -= NewCellState;
       _shutdown.Set();
-      _thread.Join(TimeSpan.FromSeconds(5));
+      if ((_thread.ThreadState & ThreadState.Unstarted) == 0)
+      {
+        _thread.Join(TimeSpan.FromSeconds(5));
+      }
     }
 
     // changeLock prevents decrement and queue changes from occuring at the same time as the thread
     // is deciding what to put onto a pallet
     private readonly Lock _changeLock = new();
 
-    // curStLock protects _lastCurrentStatus and _syncError field
+    // curStLock protects the current/stable status, custom state, and synchronization error fields
     private readonly Lock _curStLock = new();
     private St? _lastCurrentStatus = default;
+    private St? _lastStableCurrentStatus = default;
     private string? _syncError = null;
 
     // Waiting requests for RecalculateCellStateAndWaitAsync
@@ -309,6 +344,7 @@ namespace BlackMaple.MachineFramework
           bool actionPerformed = false;
           using var db = _repo.OpenConnection();
           TimeSpan timeUntilNextRefresh;
+          St stableState;
           do
           {
             _newCellState.Reset();
@@ -316,6 +352,8 @@ namespace BlackMaple.MachineFramework
             raiseNewCurStatus = raiseNewCurStatus || st.StateUpdated;
             timeUntilNextRefresh = st.TimeUntilNextRefresh;
 
+            // Preserve the most recently calculated generic status if applying effects fails. The
+            // custom snapshot remains at the last converged result until every effect succeeds.
             lock (_curStLock)
             {
               _lastCurrentStatus = st;
@@ -335,14 +373,28 @@ namespace BlackMaple.MachineFramework
             actionPerformed = _syncState.ApplyActions(db, st);
             if (actionPerformed)
               raiseNewCurStatus = true;
+            stableState = st;
           } while (actionPerformed);
 
-          _syncronizeErrorCount = 0;
-          if (_syncError != null)
+          var customState = SerializeCustomState(stableState);
+          lock (_curStLock)
           {
-            _syncError = null;
-            raiseNewCurStatus = true;
+            raiseNewCurStatus =
+              raiseNewCurStatus
+              || (
+                _customStateProjection != null && !JsonElement.DeepEquals(_customState, customState)
+              );
+            _lastCurrentStatus = stableState;
+            _lastStableCurrentStatus = stableState;
+            _customState = customState;
+            if (_syncError != null)
+            {
+              _syncError = null;
+              raiseNewCurStatus = true;
+            }
           }
+
+          _syncronizeErrorCount = 0;
 
           // signal waiting requests
           foreach (var (token, tcs) in waitingRequests)
@@ -392,6 +444,8 @@ namespace BlackMaple.MachineFramework
       {
         if (raiseNewCurStatus)
         {
+          var snapshot = GetCurrentStatusAndCustomState();
+          OnNewCurrentStatusAndCustomState?.Invoke(snapshot);
           OnNewCurrentStatus?.Invoke(GetCurrentStatus());
         }
       }
@@ -429,52 +483,102 @@ namespace BlackMaple.MachineFramework
     {
       lock (_curStLock)
       {
-        if (_lastCurrentStatus == null)
+        return GetCurrentStatusWhileLocked(_lastCurrentStatus);
+      }
+    }
+
+    public CurrentStatusAndCustomState GetCurrentStatusAndCustomState()
+    {
+      lock (_curStLock)
+      {
+        var pairedState =
+          _customStateProjection == null ? _lastCurrentStatus : _lastStableCurrentStatus;
+        return new CurrentStatusAndCustomState
         {
-          return new CurrentStatus()
-          {
-            TimeOfCurrentStatusUTC = DateTime.UtcNow,
-            Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-            Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-            Material = [],
-            Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-            Alarms =
-              _syncError == null
-                ? ["FMS Insight is starting up..."]
-                :
-                [
-                  $"Error communicating with machines: {_syncError}. Will try again in a few minutes.",
-                ],
-          };
-        }
-        else if (_syncError != null)
+          CurrentStatus = GetCurrentStatusWhileLocked(pairedState),
+          CustomState = _customState,
+        };
+      }
+    }
+
+    private CurrentStatus GetCurrentStatusWhileLocked(St? state)
+    {
+      if (state == null)
+      {
+        return new CurrentStatus()
         {
-          return _lastCurrentStatus.CurrentStatus with
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+          Material = [],
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+          Alarms =
+            _syncError == null
+              ? ["FMS Insight is starting up..."]
+              :
+              [
+                $"Error communicating with machines: {_syncError}. Will try again in a few minutes.",
+              ],
+        };
+      }
+      else if (_syncError != null)
+      {
+        return state.CurrentStatus with
+        {
+          Alarms = state.CurrentStatus.Alarms.Add(
+            $"Error communicating with machines: {_syncError}. Will try again in a few minutes."
+          ),
+        };
+      }
+      else
+      {
+        if (
+          _serverSettings.ExpectedTimeZone != null
+          && _serverSettings.ExpectedTimeZone.Id != TimeZoneInfo.Local.Id
+        )
+        {
+          return state.CurrentStatus with
           {
-            Alarms = _lastCurrentStatus.CurrentStatus.Alarms.Add(
-              $"Error communicating with machines: {_syncError}. Will try again in a few minutes."
+            Alarms = state.CurrentStatus.Alarms.Add(
+              $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be {_serverSettings.ExpectedTimeZone.Id}."
             ),
           };
         }
         else
         {
-          if (
-            _serverSettings.ExpectedTimeZone != null
-            && _serverSettings.ExpectedTimeZone.Id != TimeZoneInfo.Local.Id
-          )
-          {
-            return _lastCurrentStatus.CurrentStatus with
-            {
-              Alarms = _lastCurrentStatus.CurrentStatus.Alarms.Add(
-                $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be {_serverSettings.ExpectedTimeZone.Id}."
-              ),
-            };
-          }
-          else
-          {
-            return _lastCurrentStatus.CurrentStatus;
-          }
+          return state.CurrentStatus;
         }
+      }
+    }
+
+    private JsonElement SerializeStartingCustomState()
+    {
+      if (_customStateProjection == null)
+        return default;
+
+      return SerializeCustomStateValue(_customStateProjection.CreateStartingState);
+    }
+
+    private JsonElement SerializeCustomState(St state)
+    {
+      if (_customStateProjection == null)
+        return default;
+
+      return SerializeCustomStateValue(() => _customStateProjection.CreateState(state));
+    }
+
+    private static JsonElement SerializeCustomStateValue(Func<object?> createState)
+    {
+      try
+      {
+        var settings = new JsonSerializerOptions();
+        FMSInsightWebHost.JsonSettings(settings);
+        return JsonSerializer.SerializeToElement(createState(), settings);
+      }
+      catch (Exception ex)
+      {
+        Log.Error(ex, "Unable to serialize custom state");
+        return JsonSerializer.SerializeToElement<object?>(null);
       }
     }
 

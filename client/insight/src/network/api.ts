@@ -2958,6 +2958,7 @@ export class ServerEvent implements IServerEvent {
   logEntry?: LogEntry | undefined;
   newJobs?: NewJobs | undefined;
   newCurrentStatus?: CurrentStatus | undefined;
+  customState?: unknown | undefined;
   editMaterialInLog?: EditMaterialInLogEvents | undefined;
 
   constructor(data?: IServerEvent) {
@@ -2975,6 +2976,7 @@ export class ServerEvent implements IServerEvent {
       this.newCurrentStatus = _data["NewCurrentStatus"]
         ? CurrentStatus.fromJS(_data["NewCurrentStatus"])
         : (undefined as any);
+      this.customState = _data["CustomState"];
       this.editMaterialInLog = _data["EditMaterialInLog"]
         ? EditMaterialInLogEvents.fromJS(_data["EditMaterialInLog"])
         : (undefined as any);
@@ -2995,6 +2997,7 @@ export class ServerEvent implements IServerEvent {
     data["NewCurrentStatus"] = this.newCurrentStatus
       ? this.newCurrentStatus.toJSON()
       : (undefined as any);
+    data["CustomState"] = this.customState;
     data["EditMaterialInLog"] = this.editMaterialInLog
       ? this.editMaterialInLog.toJSON()
       : (undefined as any);
@@ -3006,6 +3009,7 @@ export interface IServerEvent {
   logEntry?: LogEntry | undefined;
   newJobs?: NewJobs | undefined;
   newCurrentStatus?: CurrentStatus | undefined;
+  customState?: unknown | undefined;
   editMaterialInLog?: EditMaterialInLogEvents | undefined;
 }
 

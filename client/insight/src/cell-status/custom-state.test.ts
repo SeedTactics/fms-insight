@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2026, John Lenz
 
 All rights reserved.
 
@@ -31,26 +31,39 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { bootstrapInsight } from "./bootstrap.js";
-import type { AppProps } from "./components/App.js";
-import { ApiException } from "./network/api.js";
+import { createStore } from "jotai";
+import { describe, expect, test } from "vitest";
+import { customState } from "./custom-state.js";
+import { onServerEvent } from "./loading.js";
 
-async function main(): Promise<void> {
-  const developmentProps: AppProps = import.meta.env.DEV
-    ? {
-        submitBasketLoadStationCommand: async () => "accepted",
-      }
-    : {};
-  await bootstrapInsight(developmentProps);
-}
+const eventTime = {
+  now: new Date("2026-07-22T12:00:00Z"),
+  expire: true,
+} as const;
 
-main().catch((e) => {
-  console.log(e);
-  let msg = "Error loading Insight";
-  if (e instanceof ApiException) {
-    msg = "Error loading Insight: " + e.message + " " + e.response;
-  }
-  const p = document.createElement("p");
-  p.textContent = msg;
-  (document.getElementById("loading") ?? document.body).appendChild(p);
+describe("opaque custom state", () => {
+  test("replaces each complete snapshot, including explicit null", () => {
+    const store = createStore();
+    const first = { schema: "custom", version: 1 };
+    const second = ["replacement"];
+
+    store.set(onServerEvent, { ...eventTime, evt: { customState: first } });
+    expect(store.get(customState)).toBe(first);
+
+    store.set(onServerEvent, { ...eventTime, evt: { customState: second } });
+    expect(store.get(customState)).toBe(second);
+
+    store.set(onServerEvent, { ...eventTime, evt: { customState: null } });
+    expect(store.get(customState)).toBeNull();
+  });
+
+  test("an event without custom state leaves the snapshot unchanged", () => {
+    const store = createStore();
+    const snapshot = { schema: "custom", version: 1 };
+
+    store.set(onServerEvent, { ...eventTime, evt: { customState: snapshot } });
+    store.set(onServerEvent, { ...eventTime, evt: {} });
+
+    expect(store.get(customState)).toBe(snapshot);
+  });
 });
