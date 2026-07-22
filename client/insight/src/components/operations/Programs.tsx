@@ -484,7 +484,7 @@ function ProgramContentCode() {
   const [highlighted, setHighlighted] = useState<string | null>(null);
 
   const worker = useMemo(
-    () => new Worker(new URL("./ProgramHighlight.ts", import.meta.url), { type: "module" }),
+    () => new Worker(new URL("./ProgramHighlight.js", import.meta.url), { type: "module" }),
     [],
   );
 
