@@ -170,7 +170,6 @@ namespace BlackMaple.FMSInsight.Tests
             LatestScheduleId = schId,
             Jobs = ImmutableList.Create(job1history),
             ExtraParts = job1ExtraParts.ToImmutableDictionary(),
-            UnscheduledRebookings = [],
           }
         );
 
@@ -368,7 +367,6 @@ namespace BlackMaple.FMSInsight.Tests
             LatestScheduleId = schId,
             Jobs = ImmutableList.Create(job1history),
             ExtraParts = job1ExtraParts.ToImmutableDictionary(),
-            UnscheduledRebookings = [],
           }
         );
 
@@ -2792,11 +2790,11 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
-    public async Task NoUnscheduledRebookingsReturnsEmptyList()
+    public async Task NoUnscheduledRebookingsReturnsNull()
     {
       using var db = _repoCfg.OpenConnection();
 
-      await Assert.That(db.LoadUnscheduledRebookings()).IsEmpty();
+      await Assert.That(db.LoadUnscheduledRebookings()).IsNull();
     }
 
     [Test]

@@ -1377,7 +1377,10 @@ namespace BlackMaple.MachineFramework
         );
       }
 
-      return ret.ToImmutable();
+      if (ret.Count > 0)
+        return ret.ToImmutable();
+      else
+        return null;
     }
 
     #endregion
