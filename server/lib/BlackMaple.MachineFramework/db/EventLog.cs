@@ -2126,6 +2126,8 @@ namespace BlackMaple.MachineFramework
 
       var transferredToBasket = ImmutableHashSet.CreateBuilder<long>();
       var transferredFromBasket = ImmutableHashSet.CreateBuilder<long>();
+      var transferredToBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
+      var transferredFromBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
       foreach (var transfer in basketCompletion.Transfers)
       {
         RecordedContainerIdentity(transfer.BasketIdentity);
@@ -2136,6 +2138,10 @@ namespace BlackMaple.MachineFramework
           );
         var target =
           transfer is BasketTransfer.LoadOntoBasket ? transferredToBasket : transferredFromBasket;
+        var targetWithProcess =
+          transfer is BasketTransfer.LoadOntoBasket
+            ? transferredToBasketWithProcess
+            : transferredFromBasketWithProcess;
         foreach (var material in transfer.Material)
         {
           if (!target.Add(material.MaterialID))
@@ -2143,6 +2149,7 @@ namespace BlackMaple.MachineFramework
               $"Material {material.MaterialID} is repeated in basket transfers.",
               nameof(basketCompletion)
             );
+          targetWithProcess.Add((material.MaterialID, material.Process));
         }
       }
 
@@ -2199,6 +2206,7 @@ namespace BlackMaple.MachineFramework
           && transfer.Material.Any(material =>
             !matchingBoundary.Material.Any(cycleMaterial =>
               cycleMaterial.MaterialID == material.MaterialID
+              && cycleMaterial.Process == material.Process
             )
           )
         )
@@ -2220,6 +2228,7 @@ namespace BlackMaple.MachineFramework
           && transfer.Material.Any(material =>
             !fragmentEnd.Material.Any(cycleMaterial =>
               cycleMaterial.MaterialID == material.MaterialID
+              && cycleMaterial.Process == material.Process
             )
           )
         )
@@ -2231,26 +2240,31 @@ namespace BlackMaple.MachineFramework
 
       if (toLoad is not null)
       {
-        var palletLoadIds = toLoad.SelectMany(load => load.MaterialIDs).ToImmutableHashSet();
-        if (transferredFromBasket.Any(id => !palletLoadIds.Contains(id)))
+        var palletLoadMaterial = toLoad
+          .SelectMany(load => load.MaterialIDs.Select(id => (MaterialID: id, load.Process)))
+          .ToImmutableHashSet();
+        if (
+          transferredFromBasketWithProcess.Any(material => !palletLoadMaterial.Contains(material))
+        )
           throw new ArgumentException(
-            "Basket-to-pallet material must be present in the pallet load.",
+            "Basket-to-pallet material and process must match the pallet load.",
             nameof(basketCompletion)
           );
       }
       if (toUnload is not null)
       {
-        var basketDestinationIds = toUnload
+        var basketDestinationMaterial = toUnload
           .SelectMany(unload =>
-            unload.MaterialIDToDestination.Where(destination =>
-              destination.Value is not null && destination.Value.Queue is null
-            )
+            unload
+              .MaterialIDToDestination.Where(destination =>
+                destination.Value is not null && destination.Value.Queue is null
+              )
+              .Select(destination => (MaterialID: destination.Key, unload.Process))
           )
-          .Select(destination => destination.Key)
           .ToImmutableHashSet();
-        if (!transferredToBasket.SetEquals(basketDestinationIds))
+        if (!transferredToBasketWithProcess.SetEquals(basketDestinationMaterial))
           throw new ArgumentException(
-            "Pallet unloads without a queue destination must exactly match pallet-to-basket transfers.",
+            "Pallet unloads without a queue destination must exactly match pallet-to-basket material and process.",
             nameof(basketCompletion)
           );
       }
@@ -3012,7 +3026,7 @@ namespace BlackMaple.MachineFramework
                 LocationName = "L/U",
                 LocationNum = lulNum,
                 Program = "UNLOAD",
-                StartOfCycle = true,
+                StartOfCycle = false,
                 EndTimeUTC = timeUTC,
                 ElapsedTime = elapsed,
                 ActiveOperationTime = unload.ActiveOperationTime,
@@ -3377,7 +3391,7 @@ namespace BlackMaple.MachineFramework
               .Single(transfer => SameEventLogMaterial(transfer.Material, material))
               .Material,
             LogType = LogType.BasketLoadUnload,
-            StartOfCycle = true,
+            StartOfCycle = false,
             Program = "UNLOAD",
             LocationNum = lulNum,
             CycleEndContainerIds = null,

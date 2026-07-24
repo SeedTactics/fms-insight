@@ -261,7 +261,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       .That(
         logs.Select(log => (log.LogType, log.Program, log.StartOfCycle))
           .SequenceEqual([
-            (LogType.BasketLoadUnload, "UNLOAD", true),
+            (LogType.BasketLoadUnload, "UNLOAD", false),
             (LogType.BasketCycle, "", false),
             (LogType.BasketLoadUnload, "LOAD", false),
             (LogType.BasketCycle, "", true),
@@ -669,8 +669,8 @@ public sealed class ContainerIdentitySpec : IDisposable
         first
           .Select(log => (log.LogType, log.Program, log.StartOfCycle))
           .SequenceEqual([
-            (LogType.BasketLoadUnload, "UNLOAD", true),
-            (LogType.BasketLoadUnload, "UNLOAD", true),
+            (LogType.BasketLoadUnload, "UNLOAD", false),
+            (LogType.BasketLoadUnload, "UNLOAD", false),
             (LogType.BasketCycle, "", false),
             (LogType.BasketLoadUnload, "LOAD", false),
             (LogType.BasketLoadUnload, "LOAD", false),
@@ -1114,7 +1114,7 @@ public sealed class ContainerIdentitySpec : IDisposable
                 new EventLogMaterial
                 {
                   MaterialID = materialId,
-                  Process = 2,
+                  Process = 1,
                   Face = 6,
                 },
               ],
@@ -1129,9 +1129,115 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert
       .That(basketLoad.Identity)
       .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = basketId });
-    await Assert.That(basketLoad.Material.Single().Process).IsEqualTo(2);
+    await Assert.That(basketLoad.Material.Single().Process).IsEqualTo(1);
     await Assert.That(basketLoad.Material.Single().Face).IsEqualTo(6);
     await Assert.That(logs).DoesNotContain(log => log.LogType == LogType.BasketCycle);
+  }
+
+  [Test]
+  public async Task PartialPalletUnloadRejectsBasketTransferForDifferentProcess()
+  {
+    var basketId = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 2);
+
+    await AssertThrows<ArgumentException>(() =>
+      repository.RecordPartialLoadUnload(
+        toLoad: null,
+        toUnload:
+        [
+          new MaterialToUnloadFromFace
+          {
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+              materialId,
+              new UnloadDestination()
+            ),
+            FaceNum = 1,
+            Process = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        lulNum: 2,
+        pallet: 4,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        basketCompletion: new BasketLoadUnloadCompletion
+        {
+          Transfers =
+          [
+            new BasketTransfer.LoadOntoBasket
+            {
+              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = materialId,
+                  Process = 2,
+                  Face = 6,
+                },
+              ],
+            },
+          ],
+          CycleBoundaries = [],
+        }
+      )
+    );
+    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
+  }
+
+  [Test]
+  public async Task BasketCycleBoundaryRequiresMatchingTransferProcess()
+  {
+    var basketId = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 2);
+    var identity = new ContainerIdentity.Uuid { ContainerId = basketId };
+
+    await AssertThrows<ArgumentException>(() =>
+      repository.RecordBasketLoadUnloadCompletion(
+        new BasketLoadUnloadCompletion
+        {
+          Transfers =
+          [
+            new BasketTransfer.LoadOntoBasket
+            {
+              BasketIdentity = identity,
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = materialId,
+                  Process = 1,
+                  Face = 1,
+                },
+              ],
+            },
+          ],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.Start
+            {
+              BasketIdentity = identity,
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = materialId,
+                  Process = 2,
+                  Face = 1,
+                },
+              ],
+            },
+          ],
+        },
+        lulNum: 2,
+        timeUTC: DateTime.UtcNow,
+        foreignId: "process-boundary-mismatch"
+      )
+    );
+    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
   }
 
   [Test]

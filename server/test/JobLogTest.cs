@@ -6715,6 +6715,14 @@ namespace BlackMaple.FMSInsight.Tests
           Face = 2,
         }
       );
+      var basket3ProcessTwoContents = basket3Contents
+        .Select(material => new EventLogMaterial
+        {
+          MaterialID = material.MaterialID,
+          Process = 2,
+          Face = material.Face,
+        })
+        .ToImmutableList();
 
       // Now unload from pallet to basket with explicit transfer and ready-cycle evidence.
       var unloadToBasket = _jobLog.RecordLoadUnloadComplete(
@@ -6820,7 +6828,7 @@ namespace BlackMaple.FMSInsight.Tests
             new BasketTransfer.UnloadFromBasket
             {
               BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
-              Material = basket3Contents,
+              Material = basket3ProcessTwoContents,
             },
           ],
           CycleBoundaries =
@@ -6828,7 +6836,7 @@ namespace BlackMaple.FMSInsight.Tests
             new BasketCycleBoundary.End
             {
               BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
-              Material = basket3Contents,
+              Material = basket3ProcessTwoContents,
               ContainerIds = [],
             },
           ],
@@ -7483,7 +7491,7 @@ namespace BlackMaple.FMSInsight.Tests
                 new EventLogMaterial
                 {
                   MaterialID = mat1.MaterialID,
-                  Process = 1,
+                  Process = 2,
                   Face = 0,
                 },
               ],
@@ -7499,7 +7507,7 @@ namespace BlackMaple.FMSInsight.Tests
                 new EventLogMaterial
                 {
                   MaterialID = mat1.MaterialID,
-                  Process = 1,
+                  Process = 2,
                   Face = 0,
                 },
               ],
