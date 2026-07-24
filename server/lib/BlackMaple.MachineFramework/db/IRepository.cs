@@ -200,8 +200,11 @@ namespace BlackMaple.MachineFramework
       IReadOnlyDictionary<string, string> externalQueues
     );
 
-    // Records ordinary basket load/unload evidence and queue changes without implicitly opening or
-    // closing a numbered basket cycle. UUID-based integrations finalize the cycle separately.
+    // Records basket-station queue changes and ordinary basket load/unload evidence. When an
+    // explicit completion is supplied, its transfers must exactly describe toLoad/toUnload and are
+    // used only for validation; the ordinary events are emitted once, followed by matching cycle
+    // boundaries in the same transaction. Each supplied transfer requires the corresponding
+    // toLoad/toUnload ForeignID so an identical retry can return the committed event group.
     IEnumerable<LogEntry> RecordBasketLoadUnload(
       MaterialToLoadOntoBasket toLoad,
       MaterialToUnloadFromBasket toUnload,
@@ -209,7 +212,18 @@ namespace BlackMaple.MachineFramework
       ContainerIdentity basketIdentity,
       TimeSpan totalElapsed,
       DateTime timeUTC,
-      IReadOnlyDictionary<string, string> externalQueues
+      IReadOnlyDictionary<string, string> externalQueues,
+      BasketLoadUnloadCompletion basketCompletion = null
+    );
+    IEnumerable<LogEntry> RecordBasketLoadUnload(
+      IReadOnlyList<MaterialToLoadOntoBasket> toLoad,
+      IReadOnlyList<MaterialToUnloadFromBasket> toUnload,
+      int lulNum,
+      ContainerIdentity basketIdentity,
+      TimeSpan totalElapsed,
+      DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues,
+      BasketLoadUnloadCompletion basketCompletion
     );
 
     // RecordBasketOnlyLoadUnload is used for basket-only load/unload operations (no pallet involved).

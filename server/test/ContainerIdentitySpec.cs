@@ -132,6 +132,573 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task BasketStationCompletionRecordsEachTransferOnceBeforeItsBoundary()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var unloadedMaterialId = repository.AllocateMaterialID("job", "part", 2);
+    var loadedMaterialId = repository.AllocateMaterialID("job", "part", 2);
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = loadedMaterialId,
+        Process = 1,
+        Face = 0,
+      },
+      "incoming",
+      -1,
+      operatorName: null,
+      reason: null,
+      DateTime.UtcNow
+    );
+    var basketIdentity = new ContainerIdentity.Numbered { ContainerNum = 5 };
+    var completion = new BasketLoadUnloadCompletion
+    {
+      Transfers =
+      [
+        new BasketTransfer.UnloadFromBasket
+        {
+          BasketIdentity = basketIdentity,
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = unloadedMaterialId,
+              Process = 1,
+              Face = 0,
+            },
+          ],
+        },
+        new BasketTransfer.LoadOntoBasket
+        {
+          BasketIdentity = basketIdentity,
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = loadedMaterialId,
+              Process = 2,
+              Face = 0,
+            },
+          ],
+        },
+      ],
+      CycleBoundaries =
+      [
+        new BasketCycleBoundary.End
+        {
+          BasketIdentity = basketIdentity,
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = unloadedMaterialId,
+              Process = 1,
+              Face = 4,
+            },
+          ],
+          ContainerIds = [],
+        },
+        new BasketCycleBoundary.Start
+        {
+          BasketIdentity = basketIdentity,
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = loadedMaterialId,
+              Process = 2,
+              Face = 7,
+            },
+          ],
+        },
+      ],
+    };
+    var toLoad = new MaterialToLoadOntoBasket
+    {
+      MaterialIDs = [loadedMaterialId],
+      Process = 2,
+      ActiveOperationTime = TimeSpan.FromMinutes(1),
+      ForeignID = "basket-station-load",
+    };
+    var toUnload = new MaterialToUnloadFromBasket
+    {
+      MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(
+        unloadedMaterialId,
+        "outgoing"
+      ),
+      Process = 1,
+      ActiveOperationTime = TimeSpan.FromMinutes(1),
+      ForeignID = "basket-station-unload",
+    };
+
+    var logs = repository
+      .RecordBasketLoadUnload(
+        toLoad,
+        toUnload,
+        lulNum: 4,
+        basketIdentity,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        basketCompletion: completion
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketLoadUnload(
+        toLoad,
+        toUnload,
+        lulNum: 4,
+        basketIdentity,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        timeUTC: DateTime.UtcNow.AddMinutes(1),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        basketCompletion: completion
+      )
+      .ToImmutableList();
+
+    await Assert.That(logs).Count().IsEqualTo(4);
+    await Assert
+      .That(
+        logs.Select(log => (log.LogType, log.Program, log.StartOfCycle))
+          .SequenceEqual([
+            (LogType.BasketLoadUnload, "UNLOAD", true),
+            (LogType.BasketCycle, "", false),
+            (LogType.BasketLoadUnload, "LOAD", false),
+            (LogType.BasketCycle, "", true),
+          ])
+      )
+      .IsTrue();
+    await Assert
+      .That(logs.Select(log => log.Identity))
+      .IsEquivalentTo(Enumerable.Repeat<ContainerIdentity>(basketIdentity, 4));
+    await Assert.That(logs.Count(log => log.LogType == LogType.BasketLoadUnload)).IsEqualTo(2);
+    await Assert.That(logs[0].Material.Single().MaterialID).IsEqualTo(unloadedMaterialId);
+    await Assert.That(logs[1].Material.Single().Face).IsEqualTo(4);
+    await Assert.That(logs[2].Material.Single().MaterialID).IsEqualTo(loadedMaterialId);
+    await Assert.That(logs[3].Material.Single().Face).IsEqualTo(7);
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .IsEquivalentTo(logs.Select(log => log.Counter));
+    var queued = repository.GetMaterialInAllQueues().ToImmutableList();
+    await Assert
+      .That(queued.Single(material => material.MaterialID == unloadedMaterialId).Queue)
+      .IsEqualTo("outgoing");
+    await Assert.That(queued).DoesNotContain(material => material.MaterialID == loadedMaterialId);
+  }
+
+  [Test]
+  public async Task BasketStationCompletionRejectsTransferIdentityAndMaterialMismatch()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    var basketIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
+    var toLoad = new MaterialToLoadOntoBasket
+    {
+      MaterialIDs = [materialId],
+      Process = 1,
+      ActiveOperationTime = TimeSpan.Zero,
+      ForeignID = "invalid-basket-station-load",
+    };
+
+    BasketLoadUnloadCompletion Completion(ContainerIdentity identity, long transferredMaterialId) =>
+      new()
+      {
+        Transfers =
+        [
+          new BasketTransfer.LoadOntoBasket
+          {
+            BasketIdentity = identity,
+            Material =
+            [
+              new EventLogMaterial
+              {
+                MaterialID = transferredMaterialId,
+                Process = 1,
+                Face = 0,
+              },
+            ],
+          },
+        ],
+        CycleBoundaries = [],
+      };
+
+    await AssertThrows<ArgumentException>(() =>
+      repository.RecordBasketLoadUnload(
+        toLoad,
+        toUnload: null,
+        lulNum: 1,
+        basketIdentity,
+        TimeSpan.Zero,
+        DateTime.UtcNow,
+        ImmutableDictionary<string, string>.Empty,
+        Completion(new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() }, materialId)
+      )
+    );
+    await AssertThrows<ArgumentException>(() =>
+      repository.RecordBasketLoadUnload(
+        toLoad,
+        toUnload: null,
+        lulNum: 1,
+        basketIdentity,
+        TimeSpan.Zero,
+        DateTime.UtcNow,
+        ImmutableDictionary<string, string>.Empty,
+        Completion(basketIdentity, materialId + 1)
+      )
+    );
+    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
+  }
+
+  [Test]
+  public async Task BasketStationCompletionRollsBackAndRetryIsIdempotent()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = materialId,
+        Process = 0,
+        Face = 0,
+      },
+      "incoming",
+      -1,
+      operatorName: null,
+      reason: null,
+      DateTime.UtcNow
+    );
+    var basketIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
+    var toLoad = new MaterialToLoadOntoBasket
+    {
+      MaterialIDs = [materialId],
+      Process = 1,
+      ActiveOperationTime = TimeSpan.Zero,
+      ForeignID = "retry-basket-station-load",
+      OriginalMessage = "robot completion",
+    };
+    var completion = new BasketLoadUnloadCompletion
+    {
+      Transfers =
+      [
+        new BasketTransfer.LoadOntoBasket
+        {
+          BasketIdentity = basketIdentity,
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = materialId,
+              Process = 1,
+              Face = 0,
+            },
+          ],
+        },
+      ],
+      CycleBoundaries =
+      [
+        new BasketCycleBoundary.Start
+        {
+          BasketIdentity = basketIdentity,
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = materialId,
+              Process = 1,
+              Face = 6,
+            },
+          ],
+        },
+      ],
+    };
+    using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
+    {
+      connection.Open();
+      using var trigger = connection.CreateCommand();
+      trigger.CommandText =
+        "CREATE TRIGGER fail_basket_station_cycle BEFORE INSERT ON stations WHEN NEW.StationLoc = "
+        + (int)LogType.BasketCycle
+        + " BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
+      trigger.ExecuteNonQuery();
+    }
+
+    await AssertThrows<SqliteException>(() =>
+      repository.RecordBasketLoadUnload(
+        toLoad,
+        toUnload: null,
+        lulNum: 2,
+        basketIdentity,
+        TimeSpan.Zero,
+        DateTime.UtcNow,
+        ImmutableDictionary<string, string>.Empty,
+        completion
+      )
+    );
+    await Assert
+      .That(repository.GetMaterialInAllQueues().Single().MaterialID)
+      .IsEqualTo(materialId);
+    await Assert
+      .That(repository.GetRecentLog(0))
+      .DoesNotContain(log => log.ContainerId == basketIdentity.ContainerId);
+
+    using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
+    {
+      connection.Open();
+      using var dropTrigger = connection.CreateCommand();
+      dropTrigger.CommandText = "DROP TRIGGER fail_basket_station_cycle";
+      dropTrigger.ExecuteNonQuery();
+    }
+    var first = repository
+      .RecordBasketLoadUnload(
+        toLoad,
+        toUnload: null,
+        lulNum: 2,
+        basketIdentity,
+        TimeSpan.Zero,
+        DateTime.UtcNow,
+        ImmutableDictionary<string, string>.Empty,
+        completion
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketLoadUnload(
+        toLoad,
+        toUnload: null,
+        lulNum: 2,
+        basketIdentity,
+        TimeSpan.Zero,
+        DateTime.UtcNow.AddMinutes(1),
+        ImmutableDictionary<string, string>.Empty,
+        completion
+      )
+      .ToImmutableList();
+
+    await Assert.That(first).Count().IsEqualTo(2);
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .IsEquivalentTo(first.Select(log => log.Counter));
+    await Assert.That(repository.GetMaterialInAllQueues()).IsEmpty();
+    await Assert
+      .That(
+        repository
+          .GetRecentLog(0)
+          .Count(log =>
+            log.ContainerId == basketIdentity.ContainerId && log.LogType == LogType.BasketLoadUnload
+          )
+      )
+      .IsEqualTo(1);
+  }
+
+  [Test]
+  public async Task MultiProcessBasketStationCompletionIsOrderedAtomicAndIdempotent()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var unloadProcessOne = repository.AllocateMaterialID("job", "part", 3);
+    var unloadProcessTwo = repository.AllocateMaterialID("job", "part", 3);
+    var loadProcessTwo = repository.AllocateMaterialID("job", "part", 3);
+    var loadProcessThree = repository.AllocateMaterialID("job", "part", 3);
+    foreach (var (materialId, process) in new[] { (loadProcessTwo, 1), (loadProcessThree, 2) })
+      repository.RecordAddMaterialToQueue(
+        new EventLogMaterial
+        {
+          MaterialID = materialId,
+          Process = process,
+          Face = 0,
+        },
+        "incoming",
+        -1,
+        operatorName: null,
+        reason: null,
+        DateTime.UtcNow
+      );
+
+    var basketIdentity = new ContainerIdentity.Numbered { ContainerNum = 8 };
+    ImmutableList<EventLogMaterial> Material(long materialId, int process, int face) =>
+      [
+        new EventLogMaterial
+        {
+          MaterialID = materialId,
+          Process = process,
+          Face = face,
+        },
+      ];
+    var toUnload = new[]
+    {
+      new MaterialToUnloadFromBasket
+      {
+        MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(
+          unloadProcessOne,
+          "outgoing-one"
+        ),
+        Process = 1,
+        ActiveOperationTime = TimeSpan.FromSeconds(10),
+        ForeignID = "multi-unload-one",
+      },
+      new MaterialToUnloadFromBasket
+      {
+        MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(
+          unloadProcessTwo,
+          "outgoing-two"
+        ),
+        Process = 2,
+        ActiveOperationTime = TimeSpan.FromSeconds(20),
+        ForeignID = "multi-unload-two",
+      },
+    };
+    var toLoad = new[]
+    {
+      new MaterialToLoadOntoBasket
+      {
+        MaterialIDs = [loadProcessTwo],
+        Process = 2,
+        ActiveOperationTime = TimeSpan.FromSeconds(30),
+        ForeignID = "multi-load-two",
+      },
+      new MaterialToLoadOntoBasket
+      {
+        MaterialIDs = [loadProcessThree],
+        Process = 3,
+        ActiveOperationTime = TimeSpan.FromSeconds(40),
+        ForeignID = "multi-load-three",
+      },
+    };
+    var completion = new BasketLoadUnloadCompletion
+    {
+      Transfers =
+      [
+        new BasketTransfer.UnloadFromBasket
+        {
+          BasketIdentity = basketIdentity,
+          Material = Material(unloadProcessOne, 1, 0),
+        },
+        new BasketTransfer.UnloadFromBasket
+        {
+          BasketIdentity = basketIdentity,
+          Material = Material(unloadProcessTwo, 2, 0),
+        },
+        new BasketTransfer.LoadOntoBasket
+        {
+          BasketIdentity = basketIdentity,
+          Material = Material(loadProcessTwo, 2, 0),
+        },
+        new BasketTransfer.LoadOntoBasket
+        {
+          BasketIdentity = basketIdentity,
+          Material = Material(loadProcessThree, 3, 0),
+        },
+      ],
+      CycleBoundaries =
+      [
+        new BasketCycleBoundary.End
+        {
+          BasketIdentity = basketIdentity,
+          Material = [.. Material(unloadProcessOne, 1, 3), .. Material(unloadProcessTwo, 2, 4)],
+          ContainerIds = [],
+        },
+        new BasketCycleBoundary.Start
+        {
+          BasketIdentity = basketIdentity,
+          Material = [.. Material(loadProcessTwo, 2, 5), .. Material(loadProcessThree, 3, 6)],
+        },
+      ],
+    };
+    using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
+    {
+      connection.Open();
+      using var trigger = connection.CreateCommand();
+      trigger.CommandText =
+        "CREATE TRIGGER fail_multi_basket_station BEFORE INSERT ON stations WHEN NEW.StationLoc = "
+        + (int)LogType.BasketCycle
+        + " BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
+      trigger.ExecuteNonQuery();
+    }
+
+    await AssertThrows<SqliteException>(() =>
+      repository.RecordBasketLoadUnload(
+        toLoad,
+        toUnload,
+        lulNum: 3,
+        basketIdentity,
+        TimeSpan.FromMinutes(2),
+        DateTime.UtcNow,
+        ImmutableDictionary<string, string>.Empty,
+        completion
+      )
+    );
+    await Assert
+      .That(repository.GetMaterialInAllQueues().Select(material => material.MaterialID))
+      .IsEquivalentTo([loadProcessTwo, loadProcessThree]);
+    await Assert
+      .That(repository.GetRecentLog(0))
+      .DoesNotContain(log => log.Identity == basketIdentity);
+
+    using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
+    {
+      connection.Open();
+      using var dropTrigger = connection.CreateCommand();
+      dropTrigger.CommandText = "DROP TRIGGER fail_multi_basket_station";
+      dropTrigger.ExecuteNonQuery();
+    }
+    var first = repository
+      .RecordBasketLoadUnload(
+        toLoad,
+        toUnload,
+        lulNum: 3,
+        basketIdentity,
+        TimeSpan.FromMinutes(2),
+        DateTime.UtcNow,
+        ImmutableDictionary<string, string>.Empty,
+        completion
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketLoadUnload(
+        toLoad,
+        toUnload,
+        lulNum: 3,
+        basketIdentity,
+        TimeSpan.FromMinutes(2),
+        DateTime.UtcNow.AddMinutes(1),
+        ImmutableDictionary<string, string>.Empty,
+        completion
+      )
+      .ToImmutableList();
+
+    await Assert
+      .That(
+        first
+          .Select(log => (log.LogType, log.Program, log.StartOfCycle))
+          .SequenceEqual([
+            (LogType.BasketLoadUnload, "UNLOAD", true),
+            (LogType.BasketLoadUnload, "UNLOAD", true),
+            (LogType.BasketCycle, "", false),
+            (LogType.BasketLoadUnload, "LOAD", false),
+            (LogType.BasketLoadUnload, "LOAD", false),
+            (LogType.BasketCycle, "", true),
+          ])
+      )
+      .IsTrue();
+    await Assert
+      .That(
+        new[] { first[0], first[1], first[3], first[4] }.Select(log =>
+          log.Material.Single().Process
+        )
+      )
+      .IsEquivalentTo([1, 2, 2, 3]);
+    await Assert.That(first[2].Material.Select(material => material.Face)).IsEquivalentTo([3, 4]);
+    await Assert.That(first[5].Material.Select(material => material.Face)).IsEquivalentTo([5, 6]);
+    await Assert
+      .That(retry.Select(log => log.Counter).SequenceEqual(first.Select(log => log.Counter)))
+      .IsTrue();
+    await Assert
+      .That(repository.GetMaterialInAllQueues().Select(material => material.MaterialID))
+      .IsEquivalentTo([unloadProcessOne, unloadProcessTwo]);
+    await Assert
+      .That(repository.GetRecentLog(0).Count(log => log.Identity == basketIdentity))
+      .IsEqualTo(6);
+  }
+
+  [Test]
   public async Task UuidBasketLoadCompletionRecordsLoadAndCompleteCycleStart()
   {
     var basketId = Guid.Parse("418a9c3e-dd45-4b8f-a2f8-064772599927");
