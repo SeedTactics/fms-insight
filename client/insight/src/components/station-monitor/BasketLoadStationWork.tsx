@@ -55,12 +55,12 @@ interface BasketLoadStationWorkflowProps {
 }
 
 type SubmissionState = "idle" | "submitting" | "accepted" | "conflict" | "error";
-type WorkPhase = "unload" | "load";
-type ActionPhase = WorkPhase | "invalid";
+type BasketAction =
+  | { readonly type: "valid"; readonly workId: string | undefined }
+  | { readonly type: "invalid" };
 
 type ConfirmableWork = {
   readonly workId: string;
-  readonly phase: WorkPhase;
 };
 
 type WorkState =
@@ -76,10 +76,10 @@ function isNonBlank(value: string | undefined): value is string {
   return typeof value === "string" && value.trim() !== "";
 }
 
-function actionPhase(
+function basketAction(
   mat: Readonly<api.IInProcessMaterial>,
   basketId: number,
-): ActionPhase | undefined {
+): BasketAction | undefined {
   if (
     mat.location.type === api.LocType.InBasket &&
     mat.location.basketId === basketId &&
@@ -87,21 +87,26 @@ function actionPhase(
       mat.action.type === api.ActionType.UnloadToCompletedMaterial)
   ) {
     if (!isPositiveInteger(mat.location.basketSlot)) {
-      return "invalid";
+      return { type: "invalid" };
     }
-    return "unload";
+    return { type: "valid", workId: mat.action.workId };
   }
   if (mat.action.type === api.ActionType.LoadingToBasket) {
-    if (!isPositiveInteger(mat.action.loadToBasketId)) return "invalid";
+    if (!isPositiveInteger(mat.action.loadToBasketId)) return { type: "invalid" };
     if (mat.action.loadToBasketId !== basketId) return undefined;
+    const reloadsSameSlot =
+      mat.location.type === api.LocType.InBasket &&
+      mat.location.basketId === basketId &&
+      mat.location.basketSlot === mat.action.loadToBasketSlot;
     if (
       !isPositiveInteger(mat.action.loadToBasketSlot) ||
-      (mat.location.type !== api.LocType.Free &&
+      (!reloadsSameSlot &&
+        mat.location.type !== api.LocType.Free &&
         (mat.location.type !== api.LocType.InQueue || !isNonBlank(mat.location.currentQueue)))
     ) {
-      return "invalid";
+      return { type: "invalid" };
     }
-    return "load";
+    return { type: "valid", workId: mat.action.workId };
   }
   return undefined;
 }
@@ -111,43 +116,42 @@ function confirmableWork(
   basketId: number,
 ): WorkState {
   const classifiedActions = LazySeq.of(material)
-    .collect((mat) => {
-      const phase = actionPhase(mat, basketId);
-      return phase === undefined ? undefined : { phase, workId: mat.action.workId };
-    })
+    .collect((mat) => basketAction(mat, basketId))
     .toRArray();
-  if (classifiedActions.some(({ phase }) => phase === "invalid")) {
+  if (classifiedActions.some((action) => action.type === "invalid")) {
     return { type: "inconsistent" };
   }
-  const phaseActions = classifiedActions.filter(
-    (
-      action,
-    ): action is {
-      readonly phase: WorkPhase;
-      readonly workId: string | undefined;
-    } => action.phase !== "invalid",
+  const validActions = classifiedActions.filter(
+    (action): action is Extract<BasketAction, { readonly type: "valid" }> =>
+      action.type === "valid",
   );
-  if (phaseActions.length === 0) return { type: "none" };
-  const tagged = phaseActions.filter(
-    (action): action is { readonly phase: WorkPhase; readonly workId: string } =>
+  if (validActions.length === 0) return { type: "none" };
+  const tagged = validActions.filter(
+    (action): action is { readonly type: "valid"; readonly workId: string } =>
       isNonBlank(action.workId),
   );
   const workIds = LazySeq.of(tagged).toHashSet(({ workId }) => workId);
-  const phases = LazySeq.of(tagged).toHashSet(({ phase }) => phase);
-  if (tagged.length !== phaseActions.length || workIds.size !== 1 || phases.size !== 1) {
+  if (tagged.length !== validActions.length || workIds.size !== 1) {
     return { type: "inconsistent" };
   }
   return {
     type: "confirmable",
-    work: { workId: tagged[0].workId, phase: tagged[0].phase },
+    work: { workId: tagged[0].workId },
   };
 }
 
-function loadingSource(mat: Readonly<api.IInProcessMaterial>): string {
-  if (mat.location.type === api.LocType.InQueue && mat.location.currentQueue) {
-    return mat.location.currentQueue;
+function loadingInstruction(mat: Readonly<api.IInProcessMaterial>): string {
+  if (
+    mat.location.type === api.LocType.InBasket &&
+    mat.location.basketId === mat.action.loadToBasketId &&
+    mat.location.basketSlot === mat.action.loadToBasketSlot
+  ) {
+    return "Unload, re-plate, and reload this slot";
   }
-  return "raw material";
+  if (mat.location.type === api.LocType.InQueue && mat.location.currentQueue) {
+    return `Load from ${mat.location.currentQueue}`;
+  }
+  return "Load from raw material";
 }
 
 function SlotMaterial({
@@ -232,7 +236,6 @@ export function BasketLoadStationWorkflow({
 
   const submissionDisabled =
     submission === "submitting" || submission === "accepted" || submission === "conflict";
-  const buttonLabel = work?.phase === "unload" ? "Unload Complete" : "Load Complete";
 
   return (
     <Stack spacing={2} sx={{ mt: 2 }}>
@@ -261,7 +264,7 @@ export function BasketLoadStationWorkflow({
                 )}
                 {loads.map((mat, index) => (
                   <Box key={`${mat.jobUnique}-${mat.process}-${index}`} sx={{ mt: 1 }}>
-                    <Typography>Load from {loadingSource(mat)}</Typography>
+                    <Typography>{loadingInstruction(mat)}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       {mat.partName} · Process {mat.action.processAfterLoad ?? mat.process}
                     </Typography>
@@ -275,7 +278,7 @@ export function BasketLoadStationWorkflow({
       {work && submitCommand ? (
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <Button variant="contained" disabled={submissionDisabled} onClick={() => void submit()}>
-            {buttonLabel}
+            Confirm
           </Button>
         </Box>
       ) : work ? (

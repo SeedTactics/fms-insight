@@ -3,7 +3,6 @@ import { describe, expect, test, vi } from "vitest";
 import LoadStation from "../../src/components/station-monitor/LoadStation.js";
 import type { SubmitBasketLoadStationCommand } from "../../src/components/station-monitor/BasketLoadStationWork.js";
 import * as api from "../../src/network/api.js";
-import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
 import { renderInsightPage } from "./framework.js";
 import {
   activeBasketRegionTestId,
@@ -143,9 +142,9 @@ describe("load station with active basket", () => {
     await expect.element(stagingBasket).toHaveTextContent("Staging Basket");
   });
 
-  test("confirms unload and load as separate whole-basket phases", async () => {
+  test("confirms all unload and load work with one button press", async () => {
     const submit = vi.fn(async () => "accepted" as const);
-    const unloadStatus = createCurrentStatus({
+    const currentStatus = createCurrentStatus({
       baskets: [
         createBasket({
           basketId: 7,
@@ -153,7 +152,7 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [3, 4],
+          emptySlots: [3],
         }),
       ],
       material: [
@@ -166,7 +165,7 @@ describe("load station with active basket", () => {
           location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
           action: {
             type: api.ActionType.UnloadToInProcess,
-            workId: "unload-work",
+            workId: "basket-work",
             unloadIntoQueue: "Transfer Queue",
           },
         }),
@@ -179,7 +178,59 @@ describe("load station with active basket", () => {
           location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 2 },
           action: {
             type: api.ActionType.UnloadToCompletedMaterial,
-            workId: "unload-work",
+            workId: "basket-work",
+          },
+        }),
+        createMaterial({
+          materialID: 403,
+          jobUnique: "JOB-3",
+          partName: "Process 2 Part",
+          process: 1,
+          path: 1,
+          location: {
+            type: api.LocType.InQueue,
+            currentQueue: "Transfer Queue",
+            queuePosition: 0,
+          },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "basket-work",
+            loadToBasketId: 7,
+            loadToBasketSlot: 1,
+            processAfterLoad: 2,
+            pathAfterLoad: 1,
+          },
+        }),
+        createMaterial({
+          materialID: -1,
+          jobUnique: "JOB-4",
+          partName: "Raw Part",
+          process: 0,
+          path: 1,
+          location: { type: api.LocType.Free },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "basket-work",
+            loadToBasketId: 7,
+            loadToBasketSlot: 3,
+            processAfterLoad: 1,
+            pathAfterLoad: 1,
+          },
+        }),
+        createMaterial({
+          materialID: 404,
+          jobUnique: "JOB-5",
+          partName: "Direct Replate Part",
+          process: 1,
+          path: 1,
+          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 4 },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "basket-work",
+            loadToBasketId: 7,
+            loadToBasketSlot: 4,
+            processAfterLoad: 2,
+            pathAfterLoad: 1,
           },
         }),
       ],
@@ -187,88 +238,36 @@ describe("load station with active basket", () => {
 
     const screen = await renderInsightPage(
       <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
-      { currentStatus: unloadStatus },
+      { currentStatus },
     );
 
     await expect
       .element(region(screen, "basket-load-station-slot-1"))
       .toHaveTextContent("Unload into queue Transfer Queue");
     await expect
-      .element(region(screen, "basket-load-station-slot-2"))
-      .toHaveTextContent("Unload from Basket 7 to completed material");
-    await screen.getByRole("button", { name: "Unload Complete" }).click();
-    expect(submit).toHaveBeenCalledWith(1, { workId: "unload-work" });
-    await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
-
-    screen.store.set(
-      onLoadCurrentSt,
-      createCurrentStatus({
-        baskets: [
-          createBasket({
-            basketId: 7,
-            position: new api.BasketPosition({
-              location: api.BasketLocationEnum.LoadUnload,
-              locationNum: 1,
-            }),
-            emptySlots: [1, 2, 3, 4],
-          }),
-        ],
-        material: [
-          createMaterial({
-            materialID: 403,
-            jobUnique: "JOB-3",
-            partName: "Process 2 Part",
-            process: 1,
-            path: 1,
-            location: {
-              type: api.LocType.InQueue,
-              currentQueue: "Transfer Queue",
-              queuePosition: 0,
-            },
-            action: {
-              type: api.ActionType.LoadingToBasket,
-              workId: "load-work",
-              loadToBasketId: 7,
-              loadToBasketSlot: 1,
-              processAfterLoad: 2,
-              pathAfterLoad: 1,
-            },
-          }),
-          createMaterial({
-            materialID: -1,
-            jobUnique: "JOB-4",
-            partName: "Raw Part",
-            process: 0,
-            path: 1,
-            location: { type: api.LocType.Free },
-            action: {
-              type: api.ActionType.LoadingToBasket,
-              workId: "load-work",
-              loadToBasketId: 7,
-              loadToBasketSlot: 2,
-              processAfterLoad: 1,
-              pathAfterLoad: 1,
-            },
-          }),
-        ],
-      }),
-    );
-
-    await expect.element(screen.getByText(/Confirmation accepted/)).not.toBeInTheDocument();
-    await expect
       .element(region(screen, "basket-load-station-slot-1"))
       .toHaveTextContent("Load from Transfer Queue");
     await expect
       .element(region(screen, "basket-load-station-slot-2"))
+      .toHaveTextContent("Unload from Basket 7 to completed material");
+    await expect
+      .element(region(screen, "basket-load-station-slot-3"))
       .toHaveTextContent("Load from raw material");
     await expect
+      .element(region(screen, "basket-load-station-slot-4"))
+      .toHaveTextContent("Unload, re-plate, and reload this slot");
+    await expect
       .element(region(screen, "load-station-material"))
-      .toHaveTextContent("Load into Basket 7 slot 2");
-    await screen.getByRole("button", { name: "Load Complete" }).click();
-    expect(submit).toHaveBeenLastCalledWith(1, { workId: "load-work" });
+      .toHaveTextContent("Load into Basket 7 slot 3");
+
+    await screen.getByRole("button", { name: "Confirm" }).click();
+
+    expect(submit).toHaveBeenCalledWith(1, { workId: "basket-work" });
+    expect(submit).toHaveBeenCalledTimes(1);
+    await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
   });
 
-  test("explains a stale phase-completion conflict", async () => {
+  test("explains a stale work confirmation conflict", async () => {
     const submit = vi.fn(async () => "conflict" as const);
     const currentStatus = createCurrentStatus({
       baskets: [
@@ -305,7 +304,7 @@ describe("load station with active basket", () => {
       { currentStatus },
     );
 
-    const complete = screen.getByRole("button", { name: "Load Complete" });
+    const complete = screen.getByRole("button", { name: "Confirm" });
     await complete.click();
     await expect.element(screen.getByText(/Basket work changed/)).toBeVisible();
     await expect.element(complete).toBeDisabled();
@@ -366,9 +365,7 @@ describe("load station with active basket", () => {
     );
 
     await expect.element(screen.getByText(/Basket work is inconsistent/)).toBeVisible();
-    await expect
-      .element(screen.getByRole("button", { name: "Load Complete" }))
-      .not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
     expect(submit).not.toHaveBeenCalled();
     await vi.waitFor(() => {
       const identifiers = Array.from(
@@ -421,9 +418,7 @@ describe("load station with active basket", () => {
     );
 
     await expect.element(screen.getByText(/Basket work is inconsistent/)).toBeVisible();
-    await expect
-      .element(screen.getByRole("button", { name: "Load Complete" }))
-      .not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
     expect(submit).not.toHaveBeenCalled();
   });
 
@@ -550,61 +545,7 @@ describe("load station with active basket", () => {
     );
 
     await expect.element(screen.getByText(/Basket work is inconsistent/)).toBeVisible();
-    await expect.element(screen.getByRole("button", { name: /Complete/ })).not.toBeInTheDocument();
-    expect(submit).not.toHaveBeenCalled();
-  });
-
-  test("suppresses completion when one work ID contains both phases", async () => {
-    const submit = vi.fn(async () => "accepted" as const);
-    const currentStatus = createCurrentStatus({
-      baskets: [
-        createBasket({
-          basketId: 7,
-          position: new api.BasketPosition({
-            location: api.BasketLocationEnum.LoadUnload,
-            locationNum: 1,
-          }),
-          emptySlots: [2],
-        }),
-      ],
-      material: [
-        createMaterial({
-          materialID: 501,
-          jobUnique: "UNLOAD-JOB",
-          partName: "Unload Part",
-          process: 1,
-          path: 1,
-          location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
-          action: {
-            type: api.ActionType.UnloadToCompletedMaterial,
-            workId: "mixed-work",
-          },
-        }),
-        createMaterial({
-          materialID: -1,
-          jobUnique: "LOAD-JOB",
-          partName: "Load Part",
-          process: 0,
-          path: 1,
-          location: { type: api.LocType.Free },
-          action: {
-            type: api.ActionType.LoadingToBasket,
-            workId: "mixed-work",
-            loadToBasketId: 7,
-            loadToBasketSlot: 2,
-            processAfterLoad: 1,
-          },
-        }),
-      ],
-    });
-
-    const screen = await renderInsightPage(
-      <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
-      { currentStatus },
-    );
-
-    await expect.element(screen.getByText(/Basket work is inconsistent/)).toBeVisible();
-    await expect.element(screen.getByRole("button", { name: /Complete/ })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
     expect(submit).not.toHaveBeenCalled();
   });
 
@@ -647,7 +588,7 @@ describe("load station with active basket", () => {
       <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
       { currentStatus },
     );
-    const complete = screen.getByRole("button", { name: "Load Complete" });
+    const complete = screen.getByRole("button", { name: "Confirm" });
 
     await complete.click();
     await expect.element(screen.getByText(/Unable to confirm basket work/)).toBeVisible();
