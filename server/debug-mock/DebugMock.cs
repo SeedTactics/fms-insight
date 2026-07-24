@@ -634,6 +634,7 @@ namespace DebugMachineWatchApiServer
         }
         else if (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Program == "UNLOAD")
         {
+          var basketId = EventDetailAsInt(e, "BasketId");
           LogDB.RecordPartialLoadUnload(
             toLoad: null,
             toUnload:
@@ -644,11 +645,10 @@ namespace DebugMachineWatchApiServer
                   m => m.MaterialID,
                   m =>
                   {
-                    var basketId = EventDetailAsInt(e, "BasketId");
                     var queue = EventDetail(e, "Queue");
                     if (basketId.HasValue)
                     {
-                      return new UnloadDestination() { BasketId = basketId.Value };
+                      return new UnloadDestination();
                     }
                     else if (!string.IsNullOrEmpty(queue))
                     {
@@ -669,7 +669,24 @@ namespace DebugMachineWatchApiServer
             lulNum: e.LocationNum,
             timeUTC: e.EndTimeUTC.Add(offset),
             totalElapsed: e.ElapsedTime,
-            externalQueues: null
+            externalQueues: null,
+            basketCompletion: basketId.HasValue
+              ? new BasketLoadUnloadCompletion
+              {
+                Transfers =
+                [
+                  new BasketTransfer.LoadOntoBasket
+                  {
+                    BasketIdentity = new ContainerIdentity.Numbered
+                    {
+                      ContainerNum = basketId.Value,
+                    },
+                    Material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+                  },
+                ],
+                CycleBoundaries = [],
+              }
+              : null
           );
         }
         else if (e.LogType == LogType.PalletCycle)

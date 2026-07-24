@@ -152,15 +152,15 @@ namespace BlackMaple.MachineFramework
       int pallet,
       TimeSpan totalElapsed,
       DateTime timeUTC,
-      IReadOnlyDictionary<string, string> externalQueues
+      IReadOnlyDictionary<string, string> externalQueues,
+      BasketLoadUnloadCompletion basketCompletion = null
     );
 
     // The main method for recording a completed pallet load/unload, which combines
     // pallet <-> queue and pallet <-> basket operations along with any previously
-    // recorded partial options in calls to `RecordPartialLoadUnload`.  This will
-    // emit a cycle event for the pallet.  The optional `completedBaskets` field
-    // contains any baskets which are now filled or empty, and this method will emit a basket
-    // cycle event for each of them.
+    // recorded partial options in calls to `RecordPartialLoadUnload`. This emits pallet cycle
+    // events. Basket transfer evidence and basket cycle boundaries are emitted only from the
+    // optional explicit basket completion.
     IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,
@@ -171,13 +171,25 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      IReadOnlyDictionary<int, IEnumerable<EventLogMaterial>> completedBaskets = null
+      BasketLoadUnloadCompletion basketCompletion = null
+    );
+
+    // Records explicit basket transfer evidence and cycle boundaries atomically without duplicating
+    // pallet events. This supports integrations which reconstruct basket state after pallet
+    // completion. foreignId is required: an identical retry returns the original event group, while
+    // reuse for different evidence throws ConflictRequestException.
+    IEnumerable<LogEntry> RecordBasketLoadUnloadCompletion(
+      BasketLoadUnloadCompletion basketCompletion,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId,
+      string originalMessage = null
     );
 
     // RecordPartialBasketOnlyLoadUnload is for partial basket-only operations.
     // Records BasketLoadUnload events but NO BasketCycle events.  Material loaded here
-    // should be later passed into either `completedBaskets` on `RecordLoadUnloadComplete`
-    // or `previouslyLoaded` in `RecordBasketOnlyLoadUnload`.
+    // should be later passed into an explicit BasketLoadUnloadCompletion or `previouslyLoaded`
+    // in `RecordBasketOnlyLoadUnload`.
     IEnumerable<LogEntry> RecordPartialBasketOnlyLoadUnload(
       MaterialToLoadOntoBasket toLoad,
       MaterialToUnloadFromBasket toUnload,
@@ -805,8 +817,48 @@ namespace BlackMaple.MachineFramework
 
   public record UnloadDestination
   {
-    public string Queue { get; init; } // should be string? but no #nullable yet
-    public int? BasketId { get; init; }
+    public string Queue { get; init; }
+  }
+
+  public abstract record BasketTransfer
+  {
+    private BasketTransfer() { }
+
+    public required ContainerIdentity BasketIdentity { get; init; }
+    public required ImmutableList<EventLogMaterial> Material { get; init; }
+
+    public sealed record LoadOntoBasket : BasketTransfer;
+
+    public sealed record UnloadFromBasket : BasketTransfer;
+  }
+
+  public abstract record BasketCycleBoundary
+  {
+    private BasketCycleBoundary() { }
+
+    public required ContainerIdentity BasketIdentity { get; init; }
+
+    /// <summary>
+    /// Complete, slot-aware material for the cycle being ended or started.
+    /// </summary>
+    public required ImmutableList<EventLogMaterial> Material { get; init; }
+
+    public sealed record End : BasketCycleBoundary
+    {
+      /// <summary>
+      /// UUID fragments finalized by this numbered basket end. Leave empty for a numbered cycle
+      /// which has no UUID fragments.
+      /// </summary>
+      public required ImmutableHashSet<Guid> ContainerIds { get; init; }
+    }
+
+    public sealed record Start : BasketCycleBoundary;
+  }
+
+  public record BasketLoadUnloadCompletion
+  {
+    public required ImmutableList<BasketTransfer> Transfers { get; init; }
+    public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
   }
 
   public record MaterialToUnloadFromFace

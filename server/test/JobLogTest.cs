@@ -6701,8 +6701,22 @@ namespace BlackMaple.FMSInsight.Tests
         externalQueues: null
       );
 
-      // Now unload from pallet to basket
-      // Pass completedBaskets to emit basket cycle events for basket 3
+      var basket3Contents = ImmutableList.Create(
+        new EventLogMaterial
+        {
+          MaterialID = mat1.MaterialID,
+          Process = 1,
+          Face = 1,
+        },
+        new EventLogMaterial
+        {
+          MaterialID = mat2.MaterialID,
+          Process = 1,
+          Face = 2,
+        }
+      );
+
+      // Now unload from pallet to basket with explicit transfer and ready-cycle evidence.
       var unloadToBasket = _jobLog.RecordLoadUnloadComplete(
         toLoad: null,
         toUnload:
@@ -6710,8 +6724,8 @@ namespace BlackMaple.FMSInsight.Tests
           new MaterialToUnloadFromFace()
           {
             MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>
-              .Empty.Add(mat1.MaterialID, new UnloadDestination() { BasketId = 3 })
-              .Add(mat2.MaterialID, new UnloadDestination() { BasketId = 3 }),
+              .Empty.Add(mat1.MaterialID, new UnloadDestination())
+              .Add(mat2.MaterialID, new UnloadDestination()),
             FaceNum = 1,
             Process = 1,
             ActiveOperationTime = TimeSpan.FromMinutes(15),
@@ -6724,23 +6738,24 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(20),
         timeUTC: start.AddMinutes(30),
         externalQueues: null,
-        completedBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
+        basketCompletion: new BasketLoadUnloadCompletion
         {
-          [3] = new[]
-          {
-            new EventLogMaterial()
+          Transfers =
+          [
+            new BasketTransfer.LoadOntoBasket
             {
-              MaterialID = mat1.MaterialID,
-              Process = 1,
-              Face = 0,
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
+              Material = basket3Contents,
             },
-            new EventLogMaterial()
+          ],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.Start
             {
-              MaterialID = mat2.MaterialID,
-              Process = 1,
-              Face = 0,
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
+              Material = basket3Contents,
             },
-          },
+          ],
         }
       );
 
@@ -6777,8 +6792,7 @@ namespace BlackMaple.FMSInsight.Tests
       basketCycleStart.Material[0].MaterialID.ShouldBe(mat1.MaterialID);
       basketCycleStart.Material[1].MaterialID.ShouldBe(mat2.MaterialID);
 
-      // Now load from basket back to pallet
-      // Pass completedBaskets with empty material to emit basket cycle end for basket 3
+      // Now load from basket back to pallet and explicitly complete the basket cycle.
       var loadFromBasket = _jobLog.RecordLoadUnloadComplete(
         toLoad:
         [
@@ -6799,9 +6813,25 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(8),
         timeUTC: start.AddMinutes(50),
         externalQueues: null,
-        completedBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
+        basketCompletion: new BasketLoadUnloadCompletion
         {
-          [3] = [], // Basket 3 is now empty
+          Transfers =
+          [
+            new BasketTransfer.UnloadFromBasket
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
+              Material = basket3Contents,
+            },
+          ],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.End
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
+              Material = basket3Contents,
+              ContainerIds = [],
+            },
+          ],
         }
       );
 
@@ -7223,7 +7253,7 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
-    public void BasketLoadEventUses1SecondDelay()
+    public void BasketLoadEventPrecedesCycleStart()
     {
       var start = new DateTime(2018, 01, 15, 17, 30, 0, DateTimeKind.Utc);
       using var _jobLog = _repoCfg.OpenConnection();
@@ -7265,7 +7295,7 @@ namespace BlackMaple.FMSInsight.Tests
           {
             MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
               mat1.MaterialID,
-              new UnloadDestination() { BasketId = 3 }
+              new UnloadDestination()
             ),
             FaceNum = 1,
             Process = 1,
@@ -7279,17 +7309,40 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(20),
         timeUTC: start.AddMinutes(30),
         externalQueues: null,
-        completedBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
+        basketCompletion: new BasketLoadUnloadCompletion
         {
-          [3] = new[]
-          {
-            new EventLogMaterial()
+          Transfers =
+          [
+            new BasketTransfer.LoadOntoBasket
             {
-              MaterialID = mat1.MaterialID,
-              Process = 1,
-              Face = 0,
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = mat1.MaterialID,
+                  Process = 1,
+                  Face = 1,
+                },
+              ],
             },
-          },
+          ],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.Start
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = mat1.MaterialID,
+                  Process = 1,
+                  Face = 1,
+                },
+              ],
+            },
+          ],
         }
       );
 
@@ -7299,8 +7352,12 @@ namespace BlackMaple.FMSInsight.Tests
       );
       basketLoad.ShouldNotBeNull();
 
-      // Basket LOAD should be 1 second after the base time
-      basketLoad.EndTimeUTC.ShouldBe(start.AddMinutes(30).AddSeconds(1));
+      // Explicit basket LOAD evidence is recorded before the ready-cycle start.
+      basketLoad.EndTimeUTC.ShouldBe(start.AddMinutes(30));
+      var basketCycleStart = loadCompleteLogs.First(e =>
+        e.LogType == LogType.BasketCycle && e.StartOfCycle
+      );
+      basketLoad.Counter.ShouldBeLessThan(basketCycleStart.Counter);
 
       // Find the Pallet LOAD event (from first toLoad)
       var palletLoad = loadCompleteLogs.FirstOrDefault(e =>
@@ -7414,9 +7471,41 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(3),
         timeUTC: start.AddMinutes(10),
         externalQueues: null,
-        completedBaskets: new Dictionary<int, IEnumerable<EventLogMaterial>>
+        basketCompletion: new BasketLoadUnloadCompletion
         {
-          [55] = [], // Basket is now empty
+          Transfers =
+          [
+            new BasketTransfer.UnloadFromBasket
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 55 },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = mat1.MaterialID,
+                  Process = 1,
+                  Face = 0,
+                },
+              ],
+            },
+          ],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.End
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 55 },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = mat1.MaterialID,
+                  Process = 1,
+                  Face = 0,
+                },
+              ],
+              ContainerIds = [],
+            },
+          ],
         }
       );
 
