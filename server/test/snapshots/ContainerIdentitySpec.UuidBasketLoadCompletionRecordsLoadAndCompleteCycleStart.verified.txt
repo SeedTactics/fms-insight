@@ -1,0 +1,35 @@
+﻿[
+  {
+    Type: BasketLoadUnload,
+    Program: LOAD,
+    StartOfCycle: false,
+    Pallet: -1,
+    ContainerId: Guid_1,
+    Material: [
+      {
+        MaterialID: 2,
+        Process: 2,
+        Slot: 7
+      }
+    ]
+  },
+  {
+    Type: BasketCycle,
+    Program: ,
+    StartOfCycle: true,
+    Pallet: -1,
+    ContainerId: Guid_1,
+    Material: [
+      {
+        MaterialID: 1,
+        Process: 2,
+        Slot: 3
+      },
+      {
+        MaterialID: 2,
+        Process: 2,
+        Slot: 7
+      }
+    ]
+  }
+]

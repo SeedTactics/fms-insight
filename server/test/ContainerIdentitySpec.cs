@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using Microsoft.Data.Sqlite;
+using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Tests;
 
@@ -128,6 +129,474 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert.That(logs.Pallet).IsEqualTo(-1);
     await Assert.That(logs.ContainerId).IsEqualTo(id);
     await Assert.That(logs.Material.Single().MaterialID).IsEqualTo(materialId);
+  }
+
+  [Test]
+  public async Task UuidBasketLoadCompletionRecordsLoadAndCompleteCycleStart()
+  {
+    var basketId = Guid.Parse("418a9c3e-dd45-4b8f-a2f8-064772599927");
+    var completionTime = new DateTime(2026, 7, 24, 14, 30, 0, DateTimeKind.Utc);
+    using var repository = _repositoryConfig.OpenConnection();
+    var existingMaterialId = repository.AllocateMaterialID("job", "part", 2);
+    var loadedMaterialId = repository.AllocateMaterialID("job", "part", 2);
+    var completeContents = ImmutableList.Create(
+      new EventLogMaterial
+      {
+        MaterialID = existingMaterialId,
+        Process = 2,
+        Face = 3,
+      },
+      new EventLogMaterial
+      {
+        MaterialID = loadedMaterialId,
+        Process = 2,
+        Face = 7,
+      }
+    );
+
+    var completion = new BasketLoadUnloadCompletion
+    {
+      Transfers =
+      [
+        new BasketTransfer.LoadOntoBasket
+        {
+          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+          Material = [completeContents[1]],
+        },
+      ],
+      CycleBoundaries =
+      [
+        new BasketCycleBoundary.Start
+        {
+          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+          Material = completeContents,
+        },
+      ],
+    };
+    var logs = repository
+      .RecordBasketLoadUnloadCompletion(
+        completion,
+        lulNum: 4,
+        timeUTC: completionTime,
+        foreignId: "uuid-load-complete",
+        originalMessage: "robot evidence"
+      )
+      .ToImmutableList();
+
+    await Assert.That(logs).Count().IsEqualTo(2);
+    var loadEnd = logs[0];
+    await Assert.That(loadEnd.LogType).IsEqualTo(LogType.BasketLoadUnload);
+    await Assert.That(loadEnd.Program).IsEqualTo("LOAD");
+    await Assert.That(loadEnd.StartOfCycle).IsFalse();
+    await Assert
+      .That(loadEnd.Identity)
+      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = basketId });
+    await Assert.That(loadEnd.Material.Single().MaterialID).IsEqualTo(loadedMaterialId);
+    await Assert.That(loadEnd.Material.Single().Process).IsEqualTo(2);
+    await Assert.That(loadEnd.Material.Single().Face).IsEqualTo(7);
+
+    var cycleStart = logs[1];
+    await Assert.That(cycleStart.LogType).IsEqualTo(LogType.BasketCycle);
+    await Assert.That(cycleStart.StartOfCycle).IsTrue();
+    await Assert
+      .That(cycleStart.Identity)
+      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = basketId });
+    await Assert
+      .That(
+        cycleStart.Material.Select(material =>
+          (material.MaterialID, material.Process, material.Face)
+        )
+      )
+      .IsEquivalentTo(new[] { (existingMaterialId, 2, 3), (loadedMaterialId, 2, 7) });
+    var retry = repository
+      .RecordBasketLoadUnloadCompletion(
+        completion,
+        lulNum: 4,
+        timeUTC: completionTime.AddMinutes(1),
+        foreignId: "uuid-load-complete",
+        originalMessage: "robot evidence"
+      )
+      .ToImmutableList();
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .IsEquivalentTo(logs.Select(log => log.Counter));
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketLoadUnloadCompletion(
+        completion,
+        lulNum: 4,
+        timeUTC: completionTime,
+        foreignId: "uuid-load-complete",
+        originalMessage: "different evidence"
+      )
+    );
+    await Assert
+      .That(repository.CurrentBasketLog(new ContainerIdentity.Uuid { ContainerId = basketId }))
+      .Count()
+      .IsEqualTo(2);
+    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEquivalentTo([basketId]);
+
+    await Verifier
+      .Verify(
+        logs.Select(log => new
+        {
+          Type = log.LogType.ToString(),
+          log.Program,
+          log.StartOfCycle,
+          log.Pallet,
+          log.ContainerId,
+          Material = log.Material.Select(material => new
+          {
+            material.MaterialID,
+            material.Process,
+            Slot = material.Face,
+          }),
+        })
+      )
+      .UseDirectory("snapshots");
+  }
+
+  [Test]
+  public async Task UuidBasketLoadCompletionIsAtomic()
+  {
+    var basketId = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
+    {
+      connection.Open();
+      using var trigger = connection.CreateCommand();
+      trigger.CommandText =
+        "CREATE TRIGGER fail_uuid_load BEFORE INSERT ON stations WHEN NEW.StationLoc = "
+        + (int)LogType.BasketCycle
+        + " BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
+      trigger.ExecuteNonQuery();
+    }
+
+    await AssertThrows<SqliteException>(() =>
+      repository.RecordBasketLoadUnloadCompletion(
+        new BasketLoadUnloadCompletion
+        {
+          Transfers =
+          [
+            new BasketTransfer.LoadOntoBasket
+            {
+              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = materialId,
+                  Process = 1,
+                  Face = 5,
+                },
+              ],
+            },
+          ],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.Start
+            {
+              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = materialId,
+                  Process = 1,
+                  Face = 5,
+                },
+              ],
+            },
+          ],
+        },
+        lulNum: 1,
+        DateTime.UtcNow,
+        foreignId: "atomic-uuid-load"
+      )
+    );
+    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
+    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEmpty();
+  }
+
+  [Test]
+  public async Task ExplicitCycleEndFinalizesSeveralUuidTransferFragments()
+  {
+    var first = Guid.NewGuid();
+    var second = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+    var firstMaterial = repository.AllocateMaterialID("job", "part", 1);
+    var secondMaterial = repository.AllocateMaterialID("job", "part", 1);
+    var firstContents = ImmutableList.Create(
+      new EventLogMaterial
+      {
+        MaterialID = firstMaterial,
+        Process = 1,
+        Face = 2,
+      }
+    );
+    var secondContents = ImmutableList.Create(
+      new EventLogMaterial
+      {
+        MaterialID = secondMaterial,
+        Process = 1,
+        Face = 8,
+      }
+    );
+    var firstEvidenceTime = new DateTime(2026, 7, 24, 10, 0, 0, DateTimeKind.Utc);
+    repository.RecordBasketContentSnapshot(
+      firstContents,
+      new ContainerIdentity.Uuid { ContainerId = first },
+      firstEvidenceTime,
+      foreignId: "first-fragment"
+    );
+    repository.RecordBasketContentSnapshot(
+      secondContents,
+      new ContainerIdentity.Uuid { ContainerId = second },
+      firstEvidenceTime.AddMinutes(1),
+      foreignId: "second-fragment"
+    );
+    var completion = new BasketLoadUnloadCompletion
+    {
+      Transfers =
+      [
+        new BasketTransfer.UnloadFromBasket
+        {
+          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = first },
+          Material = firstContents,
+        },
+        new BasketTransfer.UnloadFromBasket
+        {
+          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = second },
+          Material = secondContents,
+        },
+      ],
+      CycleBoundaries =
+      [
+        new BasketCycleBoundary.End
+        {
+          BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 9 },
+          Material = [.. firstContents, .. secondContents],
+          ContainerIds = [first, second],
+        },
+      ],
+    };
+
+    var logs = repository
+      .RecordBasketLoadUnloadCompletion(
+        completion,
+        lulNum: 3,
+        timeUTC: firstEvidenceTime.AddMinutes(10),
+        foreignId: "finalize-basket-9"
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketLoadUnloadCompletion(
+        completion,
+        lulNum: 3,
+        timeUTC: firstEvidenceTime.AddMinutes(11),
+        foreignId: "finalize-basket-9"
+      )
+      .ToImmutableList();
+
+    await Assert.That(logs.Select(log => log.Program)).IsEquivalentTo(["UNLOAD", "UNLOAD", ""]);
+    var cycleEnd = logs[2];
+    await Assert
+      .That(cycleEnd.Identity)
+      .IsEqualTo(new ContainerIdentity.Numbered { ContainerNum = 9 });
+    await Assert.That(cycleEnd.CycleEndContainerIds).IsEquivalentTo([first, second]);
+    await Assert.That(cycleEnd.Material.Select(material => material.Face)).IsEquivalentTo([2, 8]);
+    await Assert.That(cycleEnd.ElapsedTime).IsEqualTo(TimeSpan.FromMinutes(10));
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .IsEquivalentTo(logs.Select(log => log.Counter));
+    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEmpty();
+  }
+
+  [Test]
+  public async Task ExplicitCycleEndRejectsAnAlreadyFinalizedUuidFragment()
+  {
+    var fragment = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+    repository.RecordBasketContentSnapshot(
+      [],
+      new ContainerIdentity.Uuid { ContainerId = fragment },
+      DateTime.UtcNow
+    );
+    var completion = new BasketLoadUnloadCompletion
+    {
+      Transfers = [],
+      CycleBoundaries =
+      [
+        new BasketCycleBoundary.End
+        {
+          BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 9 },
+          Material = [],
+          ContainerIds = [fragment],
+        },
+      ],
+    };
+
+    repository.RecordBasketLoadUnloadCompletion(
+      completion,
+      lulNum: 3,
+      timeUTC: DateTime.UtcNow,
+      foreignId: "first-finalization"
+    );
+
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketLoadUnloadCompletion(
+        completion,
+        lulNum: 3,
+        timeUTC: DateTime.UtcNow,
+        foreignId: "duplicate-finalization"
+      )
+    );
+  }
+
+  [Test]
+  public async Task ExplicitCycleEndRejectsMaterialMissingFromFinalizedFragment()
+  {
+    var fragment = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+    var transferredMaterial = repository.AllocateMaterialID("job", "part", 1);
+    var unrelatedMaterial = repository.AllocateMaterialID("job", "part", 1);
+
+    await AssertThrows<ArgumentException>(() =>
+      repository.RecordBasketLoadUnloadCompletion(
+        new BasketLoadUnloadCompletion
+        {
+          Transfers =
+          [
+            new BasketTransfer.UnloadFromBasket
+            {
+              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = fragment },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = transferredMaterial,
+                  Process = 1,
+                  Face = 2,
+                },
+              ],
+            },
+          ],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.End
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 9 },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = unrelatedMaterial,
+                  Process = 1,
+                  Face = 2,
+                },
+              ],
+              ContainerIds = [fragment],
+            },
+          ],
+        },
+        lulNum: 3,
+        timeUTC: DateTime.UtcNow,
+        foreignId: "invalid-fragment-finalization"
+      )
+    );
+    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
+  }
+
+  [Test]
+  public async Task PartialPalletUnloadAcceptsExplicitUuidBasketTransferWithoutStartingCycle()
+  {
+    var basketId = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 2);
+
+    var logs = repository
+      .RecordPartialLoadUnload(
+        toLoad: null,
+        toUnload:
+        [
+          new MaterialToUnloadFromFace
+          {
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+              materialId,
+              new UnloadDestination()
+            ),
+            FaceNum = 1,
+            Process = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        lulNum: 2,
+        pallet: 4,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        basketCompletion: new BasketLoadUnloadCompletion
+        {
+          Transfers =
+          [
+            new BasketTransfer.LoadOntoBasket
+            {
+              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = materialId,
+                  Process = 2,
+                  Face = 6,
+                },
+              ],
+            },
+          ],
+          CycleBoundaries = [],
+        }
+      )
+      .ToImmutableList();
+
+    var basketLoad = logs.Single(log => log.LogType == LogType.BasketLoadUnload);
+    await Assert
+      .That(basketLoad.Identity)
+      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = basketId });
+    await Assert.That(basketLoad.Material.Single().Process).IsEqualTo(2);
+    await Assert.That(basketLoad.Material.Single().Face).IsEqualTo(6);
+    await Assert.That(logs).DoesNotContain(log => log.LogType == LogType.BasketCycle);
+  }
+
+  [Test]
+  public async Task PalletUnloadWithoutQueueRequiresMatchingBasketTransfer()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+
+    await AssertThrows<ArgumentException>(() =>
+      repository.RecordPartialLoadUnload(
+        toLoad: null,
+        toUnload:
+        [
+          new MaterialToUnloadFromFace
+          {
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+              materialId,
+              new UnloadDestination()
+            ),
+            FaceNum = 1,
+            Process = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        lulNum: 2,
+        pallet: 4,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      )
+    );
+    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
   }
 
   [Test]
