@@ -4505,6 +4505,14 @@ namespace BlackMaple.FMSInsight.Tests
       // ------------------------------------------------------
 
       var origLog = new List<LogEntry>();
+      origLog.Add(
+        _jobLog.RecordLoadStart(
+          [initiallyLoadedMatProc1],
+          pallet: 5,
+          lulNum: 2,
+          timeUTC: now.AddSeconds(-1)
+        )
+      );
 
       var loadEndOrigEvts = _jobLog.RecordLoadUnloadComplete(
         toLoad:

@@ -701,6 +701,30 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    private List<LogEntry> PalletEventsPrecedingCurrentCycle(
+      int pallet,
+      long palletCycleStartCounter,
+      SqliteTransaction trans
+    )
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ContainerId "
+        + " FROM stations "
+        + " WHERE Pallet = $pal AND Counter < $cycleStart "
+        + " AND Counter > COALESCE(("
+        + "   SELECT MAX(Counter) FROM stations "
+        + "   WHERE Pallet = $pal AND Result = 'PalletCycle' AND Counter < $cycleStart"
+        + " ), 0)"
+        + " ORDER BY Counter ASC";
+      cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
+      cmd.Parameters.Add("cycleStart", SqliteType.Integer).Value = palletCycleStartCounter;
+
+      using var reader = cmd.ExecuteReader();
+      return LoadLog(reader, trans).ToList();
+    }
+
     public List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false)
     {
       using (var trans = _connection.BeginTransaction())
@@ -5357,6 +5381,18 @@ namespace BlackMaple.MachineFramework
 
           // load old events
           var oldEvents = CurrentPalletLog(pallet, includeLastPalletCycleEvt: true, trans);
+          if (
+            oldEvents.FirstOrDefault(entry =>
+              entry is { LogType: LogType.PalletCycle, StartOfCycle: true }
+            ) is
+            { } palletCycleStart
+          )
+          {
+            oldEvents.InsertRange(
+              0,
+              PalletEventsPrecedingCurrentCycle(pallet, palletCycleStart.Counter, trans)
+            );
+          }
           var oldMatProcM = oldEvents
             .SelectMany(e => e.Material)
             .Where(m => m.MaterialID == oldMatId)
