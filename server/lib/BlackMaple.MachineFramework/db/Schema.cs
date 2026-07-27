@@ -187,7 +187,7 @@ namespace BlackMaple.MachineFramework
 
         if (settings != null && settings.StartingMaterialID > 0)
         {
-          if (settings.StartingMaterialID > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
+          if (settings.StartingMaterialID > MaterialId.MaxValue)
             throw new Exception("Starting Serial is too large");
           cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
           cmd.Parameters.Add("v", SqliteType.Integer).Value = settings.StartingMaterialID - 1;
@@ -592,7 +592,7 @@ namespace BlackMaple.MachineFramework
     {
       if (settings == null || settings.StartingMaterialID == 0)
         return;
-      if (settings.StartingMaterialID > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
+      if (settings.StartingMaterialID > MaterialId.MaxValue)
         throw new Exception("Starting Serial is too large");
 
       using (var cmd = conn.CreateCommand())

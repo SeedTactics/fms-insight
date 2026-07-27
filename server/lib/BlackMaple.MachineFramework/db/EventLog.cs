@@ -3411,6 +3411,10 @@ namespace BlackMaple.MachineFramework
           "A finalized UUID basket cycle requires at least one non-empty container UUID.",
           nameof(containerIds)
         );
+      var material = mats.OrderBy(item => item.MaterialID)
+        .ThenBy(item => item.Process)
+        .ThenBy(item => item.Face)
+        .ToImmutableList();
 
       LogEntry cycle;
       var added = false;
@@ -3420,7 +3424,17 @@ namespace BlackMaple.MachineFramework
         cycle = ExistingFinalization(foreignId, trans);
         if (cycle is not null)
         {
-          if (cycle.Pallet != basketId || cycle.CycleEndContainerIds?.SequenceEqual(ids) != true)
+          var existingMaterial = cycle
+            .Material.Select(EventLogMaterial.FromLogMat)
+            .OrderBy(item => item.MaterialID)
+            .ThenBy(item => item.Process)
+            .ThenBy(item => item.Face);
+          if (
+            cycle.Pallet != basketId
+            || cycle.CycleEndContainerIds?.SequenceEqual(ids) != true
+            || !existingMaterial.SequenceEqual(material)
+            || OriginalMessageForCounter(cycle.Counter, trans) != (originalMessage ?? "")
+          )
             throw new ConflictRequestException(
               $"Foreign ID {foreignId} already identifies a different basket-cycle finalization."
             );
@@ -3440,7 +3454,7 @@ namespace BlackMaple.MachineFramework
             trans,
             new NewEventLogEntry
             {
-              Material = mats,
+              Material = material,
               Pallet = basketId,
               LogType = LogType.BasketCycle,
               LocationName = "Basket Cycle",
@@ -3475,6 +3489,15 @@ namespace BlackMaple.MachineFramework
       if (added)
         _cfg.OnNewLogEntry(cycle, foreignId, this);
       return cycle;
+    }
+
+    private string OriginalMessageForCounter(long counter, IDbTransaction trans)
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = (SqliteTransaction)trans;
+      cmd.CommandText = "SELECT OriginalMessage FROM stations WHERE Counter = $counter";
+      cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
+      return cmd.ExecuteScalar() as string ?? "";
     }
 
     private LogEntry ExistingFinalization(string foreignId, SqliteTransaction trans)
@@ -5522,7 +5545,9 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText = "SELECT last_insert_rowid()";
         cmd.Parameters.Clear();
-        return (long)cmd.ExecuteScalar();
+        var materialId = (long)cmd.ExecuteScalar();
+        ValidateMaterialId(materialId);
+        return materialId;
       }
     }
 
@@ -5596,6 +5621,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText = "SELECT last_insert_rowid()";
           cmd.Parameters.Clear();
           var matID = (long)cmd.ExecuteScalar();
+          ValidateMaterialId(matID);
           trans.Commit();
           return matID;
         }
@@ -5716,6 +5742,7 @@ namespace BlackMaple.MachineFramework
 
     public void CreateMaterialID(long matID, string unique, string part, int numProc)
     {
+      ValidateMaterialId(matID);
       lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
@@ -5732,6 +5759,16 @@ namespace BlackMaple.MachineFramework
           cmd.ExecuteNonQuery();
         }
       }
+    }
+
+    private static void ValidateMaterialId(long materialId)
+    {
+      if (materialId > MaterialId.MaxValue)
+        throw new ArgumentOutOfRangeException(
+          nameof(materialId),
+          materialId,
+          $"Material IDs must not exceed {MaterialId.MaxValue} so JSON clients can represent them exactly."
+        );
     }
 
     public MaterialDetails GetMaterialDetails(long matID)

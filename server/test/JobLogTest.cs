@@ -7964,6 +7964,29 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
+    public void MaterialIdsStayWithinJavaScriptSafeIntegerRange()
+    {
+      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
+        new SerialSettings()
+        {
+          StartingMaterialID = MaterialId.MaxValue,
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m),
+        }
+      );
+      using var logDB = repoCfg.OpenConnection();
+
+      logDB.AllocateMaterialID("U1", "P1", 1).ShouldBe(MaterialId.MaxValue);
+      Should
+        .Throw<ArgumentOutOfRangeException>(() => logDB.AllocateMaterialID("U2", "P2", 1))
+        .ParamName.ShouldBe("materialId");
+      Should
+        .Throw<ArgumentOutOfRangeException>(() =>
+          logDB.CreateMaterialID(MaterialId.MaxValue + 1, "U3", "P3", 1)
+        )
+        .ParamName.ShouldBe("materialId");
+    }
+
+    [Test]
     public void AdjustsStartingSerial()
     {
       using var repoCfg = RepositoryConfig.InitializeMemoryDB(

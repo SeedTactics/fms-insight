@@ -1923,6 +1923,32 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert.That(retry.Counter).IsEqualTo(first.Counter);
     await Assert.That(repository.GetRecentLog(0).Count()).IsEqualTo(2);
     await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketCycleEnd(
+        2,
+        [
+          new EventLogMaterial
+          {
+            MaterialID = 1,
+            Process = 1,
+            Face = 1,
+          },
+        ],
+        ImmutableHashSet.Create(id),
+        DateTime.UtcNow,
+        foreignId: "finalize-2"
+      )
+    );
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketCycleEnd(
+        2,
+        [],
+        ImmutableHashSet.Create(id),
+        DateTime.UtcNow,
+        foreignId: "finalize-2",
+        originalMessage: "changed retry"
+      )
+    );
+    await AssertThrows<ConflictRequestException>(() =>
       repository.RecordBasketContentSnapshot(
         [],
         new ContainerIdentity.Uuid { ContainerId = id },

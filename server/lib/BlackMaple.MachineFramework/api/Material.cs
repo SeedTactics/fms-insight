@@ -36,6 +36,13 @@ using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
 {
+  /// <summary>Limits for material identifiers exposed through the JSON API.</summary>
+  public static class MaterialId
+  {
+    /// <summary>The largest integer represented exactly by JavaScript JSON clients.</summary>
+    public const long MaxValue = 9_007_199_254_740_991;
+  }
+
   ///Stores what is currently happening to a piece of material.
   public record InProcessMaterialAction
   {
