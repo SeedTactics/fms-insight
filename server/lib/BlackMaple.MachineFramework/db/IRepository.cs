@@ -153,7 +153,7 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      BasketLoadUnloadCompletion basketCompletion = null
+      PalletBasketLoadUnloadCompletion palletBasketCompletion = null
     );
 
     // The main method for recording a completed pallet load/unload, which combines
@@ -171,73 +171,28 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      BasketLoadUnloadCompletion basketCompletion = null
+      PalletBasketLoadUnloadCompletion palletBasketCompletion = null
     );
 
-    // Records explicit basket transfer evidence and cycle boundaries atomically without duplicating
-    // pallet events. This supports integrations which reconstruct basket state after pallet
-    // completion. foreignId is required: an identical retry returns the original event group, while
-    // reuse for different evidence throws ConflictRequestException.
-    IEnumerable<LogEntry> RecordBasketLoadUnloadCompletion(
-      BasketLoadUnloadCompletion basketCompletion,
+    // Atomically records one completed basket-station operation. Each transfer owns its basket
+    // identity so a physical turnover can unload one UUID episode and load another. Queue changes,
+    // operation timing, transfer evidence, and complete-content cycle boundaries share one
+    // idempotency key. An identical retry returns the original event group; changed durable input
+    // throws ConflictRequestException. timeUTC is intentionally excluded from retry comparison.
+    //
+    // totalElapsed is apportioned among transfers in proportion to ActiveOperationTime when every
+    // transfer has a positive expected time. Otherwise, it is apportioned by material count.
+    //
+    // Local queue changes are part of the database transaction. Delivery to a configured external
+    // queue is best-effort after commit and is not covered by the atomic retry contract.
+    IEnumerable<LogEntry> RecordBasketStationOperation(
+      BasketStationOperation operation,
       int lulNum,
+      TimeSpan totalElapsed,
       DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues,
       string foreignId,
       string originalMessage = null
-    );
-
-    // RecordPartialBasketOnlyLoadUnload is for partial basket-only operations.
-    // Records BasketLoadUnload events but NO BasketCycle events.  Material loaded here
-    // should be later passed into an explicit BasketLoadUnloadCompletion or `previouslyLoaded`
-    // in `RecordBasketOnlyLoadUnload`.
-    IEnumerable<LogEntry> RecordPartialBasketOnlyLoadUnload(
-      MaterialToLoadOntoBasket toLoad,
-      MaterialToUnloadFromBasket toUnload,
-      int lulNum,
-      int basketId,
-      TimeSpan totalElapsed,
-      DateTime timeUTC,
-      IReadOnlyDictionary<string, string> externalQueues
-    );
-
-    // Records basket-station queue changes and ordinary basket load/unload evidence. When an
-    // explicit completion is supplied, its transfers must exactly describe toLoad/toUnload and are
-    // used only for validation; the ordinary events are emitted once, followed by matching cycle
-    // boundaries in the same transaction. Each supplied transfer requires the corresponding
-    // toLoad/toUnload ForeignID so an identical retry can return the committed event group.
-    IEnumerable<LogEntry> RecordBasketLoadUnload(
-      MaterialToLoadOntoBasket toLoad,
-      MaterialToUnloadFromBasket toUnload,
-      int lulNum,
-      ContainerIdentity basketIdentity,
-      TimeSpan totalElapsed,
-      DateTime timeUTC,
-      IReadOnlyDictionary<string, string> externalQueues,
-      BasketLoadUnloadCompletion basketCompletion = null
-    );
-    IEnumerable<LogEntry> RecordBasketLoadUnload(
-      IReadOnlyList<MaterialToLoadOntoBasket> toLoad,
-      IReadOnlyList<MaterialToUnloadFromBasket> toUnload,
-      int lulNum,
-      ContainerIdentity basketIdentity,
-      TimeSpan totalElapsed,
-      DateTime timeUTC,
-      IReadOnlyDictionary<string, string> externalQueues,
-      BasketLoadUnloadCompletion basketCompletion
-    );
-
-    // RecordBasketOnlyLoadUnload is used for basket-only load/unload operations (no pallet involved).
-    // This is used for material loaded from queue onto basket, or unloaded from basket to queue.
-    // Emits BasketCycle events (end of previous cycle if any, start of new cycle with material).
-    IEnumerable<LogEntry> RecordBasketOnlyLoadUnload(
-      MaterialToLoadOntoBasket toLoad,
-      IReadOnlyList<EventLogMaterial> previouslyLoaded,
-      MaterialToUnloadFromBasket toUnload,
-      int lulNum,
-      int basketId,
-      TimeSpan totalElapsed,
-      DateTime timeUTC,
-      IReadOnlyDictionary<string, string> externalQueues
     );
 
     IEnumerable<LogEntry> RecordEmptyPallet(
@@ -834,16 +789,20 @@ namespace BlackMaple.MachineFramework
     public string Queue { get; init; }
   }
 
-  public abstract record BasketTransfer
+  /// <summary>
+  /// Basket-side evidence for material transferred during a pallet load/unload. Timing is recorded
+  /// on the corresponding pallet event.
+  /// </summary>
+  public abstract record PalletBasketTransfer
   {
-    private BasketTransfer() { }
+    private PalletBasketTransfer() { }
 
     public required ContainerIdentity BasketIdentity { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
-    public sealed record LoadOntoBasket : BasketTransfer;
+    public sealed record LoadOntoBasket : PalletBasketTransfer;
 
-    public sealed record UnloadFromBasket : BasketTransfer;
+    public sealed record UnloadFromBasket : PalletBasketTransfer;
   }
 
   public abstract record BasketCycleBoundary
@@ -860,18 +819,49 @@ namespace BlackMaple.MachineFramework
     public sealed record End : BasketCycleBoundary
     {
       /// <summary>
-      /// UUID fragments finalized by this numbered basket end. Leave empty for a numbered cycle
-      /// which has no UUID fragments.
+      /// Durable UUID basket identities reconciled into this numbered cycle. Leave empty when every
+      /// event in the cycle was already recorded with the numbered identity.
       /// </summary>
-      public required ImmutableHashSet<Guid> ContainerIds { get; init; }
+      public required ImmutableHashSet<Guid> ReconciledBasketIdentities { get; init; }
     }
 
     public sealed record Start : BasketCycleBoundary;
   }
 
-  public record BasketLoadUnloadCompletion
+  public sealed record PalletBasketLoadUnloadCompletion
   {
-    public required ImmutableList<BasketTransfer> Transfers { get; init; }
+    public required ImmutableList<PalletBasketTransfer> Transfers { get; init; }
+    public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
+  }
+
+  public abstract record BasketStationTransfer
+  {
+    private BasketStationTransfer() { }
+
+    public required ContainerIdentity BasketIdentity { get; init; }
+    public required ImmutableList<EventLogMaterial> Material { get; init; }
+
+    /// <summary>
+    /// Expected accounting time for this entire transfer, including every material in
+    /// <see cref="Material"/>.
+    /// </summary>
+    public required TimeSpan ActiveOperationTime { get; init; }
+
+    public sealed record LoadOntoBasket : BasketStationTransfer;
+
+    public sealed record UnloadFromBasket : BasketStationTransfer
+    {
+      /// <summary>
+      /// The local or configured external destination queue, or null when the material is
+      /// transferred directly without entering a queue.
+      /// </summary>
+      public string DestinationQueue { get; init; }
+    }
+  }
+
+  public sealed record BasketStationOperation
+  {
+    public required ImmutableList<BasketStationTransfer> Transfers { get; init; }
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
   }
 
@@ -882,25 +872,6 @@ namespace BlackMaple.MachineFramework
       UnloadDestination
     > MaterialIDToDestination { get; init; }
     public required int FaceNum { get; init; }
-    public required int Process { get; init; }
-    public required TimeSpan ActiveOperationTime { get; init; }
-    public string ForeignID { get; init; } = null;
-    public string OriginalMessage { get; init; } = null;
-  }
-
-  // Parameter types for basket-only load/unload operations (no pallet involved)
-  public record MaterialToLoadOntoBasket
-  {
-    public required ImmutableList<long> MaterialIDs { get; init; }
-    public required int Process { get; init; }
-    public required TimeSpan ActiveOperationTime { get; init; }
-    public string ForeignID { get; init; } = null;
-    public string OriginalMessage { get; init; } = null;
-  }
-
-  public record MaterialToUnloadFromBasket
-  {
-    public required ImmutableDictionary<long, string> MaterialIDToQueue { get; init; }
     public required int Process { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }
     public string ForeignID { get; init; } = null;

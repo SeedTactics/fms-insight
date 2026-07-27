@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 42;
+    private const int Version = 43;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -110,6 +110,10 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE INDEX stations_foreignid ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE basket_station_operations(ForeignID TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, OriginalMessage TEXT NOT NULL, FirstCounter INTEGER NOT NULL, LastCounter INTEGER NOT NULL)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
@@ -537,6 +541,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 42)
             Ver41ToVer42(trans);
+
+          if (curVersion < 43)
+            Ver42ToVer43(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1356,6 +1363,15 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE INDEX basket_cycle_container_ids_cycle ON basket_cycle_container_ids(CycleCounter, ContainerId)";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver42ToVer43(IDbTransaction trans)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "CREATE TABLE basket_station_operations(ForeignID TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, OriginalMessage TEXT NOT NULL, FirstCounter INTEGER NOT NULL, LastCounter INTEGER NOT NULL)";
       cmd.ExecuteNonQuery();
     }
 
