@@ -132,6 +132,175 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task InvalidatedUuidBasketEventsAreNotCurrentOrOpen()
+  {
+    var time = new DateTime(2026, 7, 27, 10, 0, 0, DateTimeKind.Utc);
+    var id = Guid.NewGuid();
+    var identity = new ContainerIdentity.Uuid { ContainerId = id };
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(identity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: time.AddMinutes(1),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      foreignId: "uuid-initial-load"
+    );
+
+    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(2));
+
+    await Assert.That(repository.CurrentBasketLog(identity)).IsEmpty();
+    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).DoesNotContain(id);
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketCycleEnd(
+        basketId: 7,
+        mats:
+        [
+          new EventLogMaterial
+          {
+            MaterialID = materialId,
+            Process = 1,
+            Face = 0,
+          },
+        ],
+        containerIds: ImmutableHashSet.Create(id),
+        timeUTC: time.AddMinutes(3),
+        foreignId: "invalidated-uuid-finalization"
+      )
+    );
+  }
+
+  [Test]
+  public async Task InvalidatedHintedUuidEventsDoNotLeakIntoNumberedBasket()
+  {
+    var time = new DateTime(2026, 7, 27, 10, 30, 0, DateTimeKind.Utc);
+    var id = Guid.NewGuid();
+    var uuidIdentity = new ContainerIdentity.Uuid { ContainerId = id };
+    var numberedIdentity = new ContainerIdentity.Numbered { ContainerNum = 8 };
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(uuidIdentity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: time.AddMinutes(1),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      foreignId: "hinted-uuid-load"
+    );
+    repository.RecordBasketIdentityHint(id, 8, time.AddMinutes(2));
+
+    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(3));
+
+    await Assert
+      .That(repository.CurrentBasketLog(uuidIdentity).Select(log => log.LogType))
+      .IsEquivalentTo([LogType.BasketIdentityHint]);
+    await Assert
+      .That(repository.CurrentBasketLog(numberedIdentity).Select(log => log.LogType))
+      .IsEquivalentTo([LogType.BasketIdentityHint]);
+  }
+
+  [Test]
+  public async Task ExplicitBasketEndRejectsInvalidatedStart()
+  {
+    var time = new DateTime(2026, 7, 27, 11, 0, 0, DateTimeKind.Utc);
+    var identity = new ContainerIdentity.Numbered { ContainerNum = 5 };
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(identity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: time.AddMinutes(1),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      foreignId: "numbered-initial-load"
+    );
+    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(2));
+
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketStationOperation(
+        new BasketStationOperation
+        {
+          Transfers = [],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.End
+            {
+              BasketIdentity = identity,
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = materialId,
+                  Process = 1,
+                  Face = 0,
+                },
+              ],
+              ReconciledBasketIdentities = [],
+            },
+          ],
+        },
+        lulNum: 2,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: time.AddMinutes(3),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        foreignId: "invalidated-numbered-end"
+      )
+    );
+    await Assert.That(repository.CurrentBasketLog(5, includeLastCycleEvt: true)).IsEmpty();
+  }
+
+  [Test]
+  public async Task InvalidatedBasketMaterialCanBeRescannedAndLoadedAsFreshProcess()
+  {
+    var time = new DateTime(2026, 7, 27, 12, 0, 0, DateTimeKind.Utc);
+    var identity = new ContainerIdentity.Numbered { ContainerNum = 6 };
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(identity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: time.AddMinutes(1),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      foreignId: "first-attempt"
+    );
+    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(2));
+
+    QueueMaterial(repository, materialId, "rework", time.AddMinutes(3), "operator", "Rescan");
+    var freshLogs = repository
+      .RecordBasketStationOperation(
+        LoadOntoBasketOperation(identity, materialId),
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        timeUTC: time.AddMinutes(4),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        foreignId: "second-attempt"
+      )
+      .Where(log => log.LogType is LogType.BasketLoadUnload or LogType.BasketCycle)
+      .ToImmutableList();
+
+    await Assert.That(freshLogs).Count().IsEqualTo(2);
+    await Assert
+      .That(
+        repository
+          .GetLogForMaterial(materialId, includeInvalidatedCycles: false)
+          .Where(log => log.LogType is LogType.BasketLoadUnload or LogType.BasketCycle)
+          .Select(log => log.Counter)
+      )
+      .IsEquivalentTo(freshLogs.Select(log => log.Counter));
+    await Assert.That(repository.NextProcessForQueuedMaterial(materialId)).IsEqualTo(2);
+    await Assert.That(repository.GetMaterialInAllQueues()).IsEmpty();
+    await Assert
+      .That(repository.CurrentBasketLog(identity, includeLastCycleEvt: true).Single().Counter)
+      .IsEqualTo(freshLogs.Single(log => log.LogType == LogType.BasketCycle).Counter);
+  }
+
+  [Test]
   public async Task BasketStationOperationRecordsEachTransferOnceBeforeItsBoundary()
   {
     using var repository = _repositoryConfig.OpenConnection();
@@ -1949,4 +2118,67 @@ public sealed class ContainerIdentitySpec : IDisposable
     }
     await Assert.That(exception).IsTypeOf<TException>();
   }
+
+  private static BasketStationOperation LoadOntoBasketOperation(
+    ContainerIdentity identity,
+    long materialId
+  ) =>
+    new()
+    {
+      Transfers =
+      [
+        new BasketStationTransfer.LoadOntoBasket
+        {
+          BasketIdentity = identity,
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = materialId,
+              Process = 1,
+              Face = 0,
+            },
+          ],
+          ActiveOperationTime = TimeSpan.FromMinutes(1),
+        },
+      ],
+      CycleBoundaries =
+      [
+        new BasketCycleBoundary.Start
+        {
+          BasketIdentity = identity,
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = materialId,
+              Process = 1,
+              Face = 0,
+            },
+          ],
+        },
+      ],
+    };
+
+  private static void QueueMaterial(
+    IRepository repository,
+    long materialId,
+    string queue,
+    DateTime time,
+    string operatorName = null,
+    string reason = null
+  ) =>
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = materialId,
+        Process = 0,
+        Face = 0,
+      },
+      queue,
+      -1,
+      operatorName,
+      reason,
+      time
+    );
 }

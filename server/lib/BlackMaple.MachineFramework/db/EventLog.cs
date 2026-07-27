@@ -825,7 +825,9 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ContainerId "
-        + "FROM stations WHERE ContainerId IN (SELECT ContainerId FROM current_basket_identity_hints WHERE BasketNum = $num) ORDER BY Counter";
+        + "FROM stations s WHERE ContainerId IN (SELECT ContainerId FROM current_basket_identity_hints WHERE BasketNum = $num) AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY Counter";
       cmd.Parameters.Add("num", SqliteType.Integer).Value = basketId;
       using var reader = cmd.ExecuteReader();
       logs.AddRange(LoadLog(reader, trans));
@@ -844,7 +846,9 @@ namespace BlackMaple.MachineFramework
 
       cmd.CommandText =
         "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ContainerId "
-        + "FROM stations WHERE ContainerId = $id ORDER BY Counter";
+        + "FROM stations s WHERE ContainerId = $id AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY Counter";
       using var reader = cmd.ExecuteReader();
       return LoadLog(reader, trans).ToImmutableList();
     }
@@ -883,6 +887,9 @@ namespace BlackMaple.MachineFramework
         "SELECT DISTINCT s.ContainerId FROM stations s "
         + "WHERE s.ContainerId IS NOT NULL "
         + "AND s.StationLoc IN ($loadUnloadType, $locationType, $snapshotType, $cycleType) "
+        + "AND "
+        + ignoreInvalidEventCondition
+        + " "
         + "AND NOT EXISTS(SELECT 1 FROM current_basket_identity_hints h WHERE h.ContainerId = s.ContainerId) "
         + "AND NOT EXISTS(SELECT 1 FROM basket_cycle_container_ids f WHERE f.ContainerId = s.ContainerId) "
         + "ORDER BY s.ContainerId";
@@ -2301,11 +2308,16 @@ namespace BlackMaple.MachineFramework
           if (eventTime < firstEventTime)
             firstEventTime = eventTime;
         }
-        if (
-          containerIds.Count == 0
-          && MostRecentBasketCycleStart(boundary.BasketIdentity, trans) is { } cycleStart
-        )
-          firstEventTime = cycleStart;
+        if (containerIds.Count == 0)
+        {
+          var recentCycle = MostRecentBasketCycleEvent(boundary.BasketIdentity, trans);
+          if (recentCycle is { StartOfCycle: true, Invalidated: true })
+            throw new ConflictRequestException(
+              "An explicit basket-cycle end can not close an invalidated basket-cycle start."
+            );
+          if (recentCycle is { StartOfCycle: true })
+            firstEventTime = recentCycle.TimeUTC;
+        }
 
         logs.Add(
           AddLogEntry(
@@ -2347,7 +2359,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private DateTime? MostRecentBasketCycleStart(
+    private sealed record BasketCycleEventState
+    {
+      public required DateTime TimeUTC { get; init; }
+      public required bool StartOfCycle { get; init; }
+      public required bool Invalidated { get; init; }
+    }
+
+    private BasketCycleEventState MostRecentBasketCycleEvent(
       ContainerIdentity basketIdentity,
       IDbTransaction trans
     )
@@ -2356,16 +2375,25 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT TimeUTC FROM stations WHERE Pallet = $num "
+        "SELECT TimeUTC, Start, EXISTS("
+        + "SELECT 1 FROM program_details d WHERE d.Counter = s.Counter AND d.Key = 'PalletCycleInvalidated'"
+        + ") FROM stations s WHERE Pallet = $num "
         + "AND (($id IS NULL AND ContainerId IS NULL) OR ContainerId = $id) "
-        + "AND StationLoc = $cycleType AND Start = 1 ORDER BY Counter DESC LIMIT 1";
+        + "AND StationLoc = $cycleType ORDER BY Counter DESC LIMIT 1";
       cmd.Parameters.Add("num", SqliteType.Integer).Value = containerNum;
       cmd.Parameters.Add("id", SqliteType.Text).Value = containerId is { } id
         ? id.ToString("D")
         : DBNull.Value;
       cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
-      var start = cmd.ExecuteScalar();
-      return start is null or DBNull ? null : new DateTime((long)start, DateTimeKind.Utc);
+      using var reader = cmd.ExecuteReader();
+      if (!reader.Read())
+        return null;
+      return new BasketCycleEventState
+      {
+        TimeUTC = new DateTime(reader.GetInt64(0), DateTimeKind.Utc),
+        StartOfCycle = reader.GetBoolean(1),
+        Invalidated = reader.GetBoolean(2),
+      };
     }
 
     private void RecordExplicitBasketCycleStarts(
@@ -3403,27 +3431,7 @@ namespace BlackMaple.MachineFramework
           var firstEventTime = timeUTC;
           foreach (var id in ids)
           {
-            using var validate = _connection.CreateCommand();
-            validate.Transaction = trans;
-            validate.CommandText =
-              "SELECT MIN(TimeUTC) FROM stations WHERE ContainerId = $id "
-              + "AND StationLoc IN ($loadUnloadType, $locationType, $snapshotType, $cycleType) AND "
-              + "NOT EXISTS(SELECT 1 FROM basket_cycle_container_ids f WHERE f.ContainerId = $id)";
-            validate.Parameters.Add("id", SqliteType.Text).Value = id.ToString("D");
-            validate.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
-              LogType.BasketLoadUnload;
-            validate.Parameters.Add("locationType", SqliteType.Integer).Value = (int)
-              LogType.BasketInLocation;
-            validate.Parameters.Add("snapshotType", SqliteType.Integer).Value = (int)
-              LogType.BasketContentSnapshot;
-            validate.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)
-              LogType.BasketCycle;
-            var first = validate.ExecuteScalar();
-            if (first is null || first == DBNull.Value)
-              throw new ConflictRequestException(
-                $"Container UUID {id:D} is not an open event fragment."
-              );
-            var eventTime = new DateTime((long)first, DateTimeKind.Utc);
+            var eventTime = EnsureOpenBasketFragment(id, trans);
             if (eventTime < firstEventTime)
               firstEventTime = eventTime;
           }
@@ -4215,8 +4223,11 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT MIN(TimeUTC) FROM stations WHERE ContainerId = $id "
+        "SELECT MIN(TimeUTC) FROM stations s WHERE ContainerId = $id "
         + "AND StationLoc IN ($loadUnloadType, $locationType, $snapshotType, $cycleType) "
+        + "AND "
+        + ignoreInvalidEventCondition
+        + " "
         + "AND NOT EXISTS(SELECT 1 FROM basket_cycle_container_ids f WHERE f.ContainerId = $id)";
       cmd.Parameters.Add("id", SqliteType.Text).Value = containerId.ToString("D");
       cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
