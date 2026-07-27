@@ -110,8 +110,8 @@ public sealed class ContainerIdentitySpec : IDisposable
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 1);
     var logs = repository
-      .RecordBasketLoadUnload(
-        new MaterialToLoadOntoBasket
+      .RecordTestBasketLoadUnload(
+        new TestMaterialToLoadOntoBasket
         {
           MaterialIDs = [materialId],
           Process = 1,
@@ -196,7 +196,7 @@ public sealed class ContainerIdentitySpec : IDisposable
               Face = 4,
             },
           ],
-          ContainerIds = [],
+          ReconciledBasketIdentities = [],
         },
         new BasketCycleBoundary.Start
         {
@@ -213,14 +213,14 @@ public sealed class ContainerIdentitySpec : IDisposable
         },
       ],
     };
-    var toLoad = new MaterialToLoadOntoBasket
+    var toLoad = new TestMaterialToLoadOntoBasket
     {
       MaterialIDs = [loadedMaterialId],
       Process = 2,
       ActiveOperationTime = TimeSpan.FromMinutes(1),
       ForeignID = "basket-station-load",
     };
-    var toUnload = new MaterialToUnloadFromBasket
+    var toUnload = new TestMaterialToUnloadFromBasket
     {
       MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(
         unloadedMaterialId,
@@ -232,7 +232,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     };
 
     var logs = repository
-      .RecordBasketLoadUnload(
+      .RecordTestBasketLoadUnload(
         toLoad,
         toUnload,
         lulNum: 4,
@@ -244,7 +244,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
       .ToImmutableList();
     var retry = repository
-      .RecordBasketLoadUnload(
+      .RecordTestBasketLoadUnload(
         toLoad,
         toUnload,
         lulNum: 4,
@@ -287,66 +287,194 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task BasketStationCompletionRejectsTransferIdentityAndMaterialMismatch()
+  public async Task BasketStationTurnoverSupportsDifferentIdentitiesAndCompleteRetryFingerprint()
   {
     using var repository = _repositoryConfig.OpenConnection();
-    var materialId = repository.AllocateMaterialID("job", "part", 1);
-    var basketIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
-    var toLoad = new MaterialToLoadOntoBasket
-    {
-      MaterialIDs = [materialId],
-      Process = 1,
-      ActiveOperationTime = TimeSpan.Zero,
-      ForeignID = "invalid-basket-station-load",
-    };
+    var unloadedMaterialId = repository.AllocateMaterialID("job", "part", 2);
+    var loadedMaterialId = repository.AllocateMaterialID("job", "part", 2);
+    var unloadIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
+    var loadIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
+    var time = new DateTime(2026, 7, 27, 12, 0, 0, DateTimeKind.Utc);
+    repository.RecordBasketContentSnapshot(
+      [
+        new EventLogMaterial
+        {
+          MaterialID = unloadedMaterialId,
+          Process = 1,
+          Face = 2,
+        },
+      ],
+      unloadIdentity,
+      time.AddMinutes(-10)
+    );
+    repository.RecordBasketContentSnapshot([], loadIdentity, time.AddMinutes(-1));
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = loadedMaterialId,
+        Process = 1,
+        Face = 0,
+      },
+      "incoming",
+      -1,
+      operatorName: null,
+      reason: null,
+      time.AddMinutes(-5)
+    );
 
-    BasketLoadUnloadCompletion Completion(ContainerIdentity identity, long transferredMaterialId) =>
+    BasketStationLoadUnload Operation(
+      string destinationQueue = "outgoing",
+      TimeSpan? loadActive = null
+    ) =>
       new()
       {
         Transfers =
         [
-          new BasketTransfer.LoadOntoBasket
+          new BasketStationTransfer.UnloadFromBasket
           {
-            BasketIdentity = identity,
+            BasketIdentity = unloadIdentity,
             Material =
             [
               new EventLogMaterial
               {
-                MaterialID = transferredMaterialId,
+                MaterialID = unloadedMaterialId,
                 Process = 1,
-                Face = 0,
+                Face = 2,
+              },
+            ],
+            ActiveOperationTime = TimeSpan.FromSeconds(20),
+            DestinationQueue = destinationQueue,
+          },
+          new BasketStationTransfer.LoadOntoBasket
+          {
+            BasketIdentity = loadIdentity,
+            Material =
+            [
+              new EventLogMaterial
+              {
+                MaterialID = loadedMaterialId,
+                Process = 2,
+                Face = 7,
+              },
+            ],
+            ActiveOperationTime = loadActive ?? TimeSpan.FromSeconds(30),
+            SourceQueue = "incoming",
+          },
+        ],
+        CycleBoundaries =
+        [
+          new BasketCycleBoundary.End
+          {
+            BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 5 },
+            Material =
+            [
+              new EventLogMaterial
+              {
+                MaterialID = unloadedMaterialId,
+                Process = 1,
+                Face = 2,
+              },
+            ],
+            ReconciledBasketIdentities = [unloadIdentity.ContainerId],
+          },
+          new BasketCycleBoundary.Start
+          {
+            BasketIdentity = loadIdentity,
+            Material =
+            [
+              new EventLogMaterial
+              {
+                MaterialID = loadedMaterialId,
+                Process = 2,
+                Face = 7,
               },
             ],
           },
         ],
-        CycleBoundaries = [],
       };
 
-    await AssertThrows<ArgumentException>(() =>
-      repository.RecordBasketLoadUnload(
-        toLoad,
-        toUnload: null,
-        lulNum: 1,
-        basketIdentity,
-        TimeSpan.Zero,
-        DateTime.UtcNow,
+    var first = repository
+      .RecordBasketStationLoadUnload(
+        Operation(),
+        lulNum: 4,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        time,
         ImmutableDictionary<string, string>.Empty,
-        Completion(new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() }, materialId)
+        foreignId: "different-identity-turnover",
+        originalMessage: "confirmed work"
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketStationLoadUnload(
+        Operation(),
+        lulNum: 4,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        time.AddMinutes(1),
+        ImmutableDictionary<string, string>.Empty,
+        foreignId: "different-identity-turnover",
+        originalMessage: "confirmed work"
+      )
+      .ToImmutableList();
+
+    await Assert
+      .That(first.Select(log => log.Identity))
+      .IsEquivalentTo(
+        new ContainerIdentity[]
+        {
+          unloadIdentity,
+          new ContainerIdentity.Numbered { ContainerNum = 5 },
+          loadIdentity,
+          loadIdentity,
+        }
+      );
+    await Assert.That(first.Select(log => log.EndTimeUTC).Distinct()).Count().IsEqualTo(1);
+    await Assert
+      .That(retry.Select(log => log.Counter).SequenceEqual(first.Select(log => log.Counter)))
+      .IsTrue();
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketStationLoadUnload(
+        Operation(destinationQueue: "changed"),
+        4,
+        TimeSpan.FromMinutes(2),
+        time,
+        ImmutableDictionary<string, string>.Empty,
+        "different-identity-turnover",
+        "confirmed work"
       )
     );
-    await AssertThrows<ArgumentException>(() =>
-      repository.RecordBasketLoadUnload(
-        toLoad,
-        toUnload: null,
-        lulNum: 1,
-        basketIdentity,
-        TimeSpan.Zero,
-        DateTime.UtcNow,
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketStationLoadUnload(
+        Operation(loadActive: TimeSpan.FromSeconds(31)),
+        4,
+        TimeSpan.FromMinutes(2),
+        time,
         ImmutableDictionary<string, string>.Empty,
-        Completion(basketIdentity, materialId + 1)
+        "different-identity-turnover",
+        "confirmed work"
       )
     );
-    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketStationLoadUnload(
+        Operation(),
+        4,
+        TimeSpan.FromMinutes(3),
+        time,
+        ImmutableDictionary<string, string>.Empty,
+        "different-identity-turnover",
+        "confirmed work"
+      )
+    );
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketStationLoadUnload(
+        Operation(),
+        4,
+        TimeSpan.FromMinutes(2),
+        time,
+        ImmutableDictionary<string, string>.Empty.Add("outgoing", "https://example.invalid"),
+        "different-identity-turnover",
+        "confirmed work"
+      )
+    );
   }
 
   [Test]
@@ -368,7 +496,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       DateTime.UtcNow
     );
     var basketIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
-    var toLoad = new MaterialToLoadOntoBasket
+    var toLoad = new TestMaterialToLoadOntoBasket
     {
       MaterialIDs = [materialId],
       Process = 1,
@@ -423,7 +551,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     }
 
     await AssertThrows<SqliteException>(() =>
-      repository.RecordBasketLoadUnload(
+      repository.RecordTestBasketLoadUnload(
         toLoad,
         toUnload: null,
         lulNum: 2,
@@ -449,7 +577,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       dropTrigger.ExecuteNonQuery();
     }
     var first = repository
-      .RecordBasketLoadUnload(
+      .RecordTestBasketLoadUnload(
         toLoad,
         toUnload: null,
         lulNum: 2,
@@ -461,7 +589,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
       .ToImmutableList();
     var retry = repository
-      .RecordBasketLoadUnload(
+      .RecordTestBasketLoadUnload(
         toLoad,
         toUnload: null,
         lulNum: 2,
@@ -524,7 +652,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       ];
     var toUnload = new[]
     {
-      new MaterialToUnloadFromBasket
+      new TestMaterialToUnloadFromBasket
       {
         MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(
           unloadProcessOne,
@@ -534,7 +662,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         ActiveOperationTime = TimeSpan.FromSeconds(10),
         ForeignID = "multi-unload-one",
       },
-      new MaterialToUnloadFromBasket
+      new TestMaterialToUnloadFromBasket
       {
         MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(
           unloadProcessTwo,
@@ -547,14 +675,14 @@ public sealed class ContainerIdentitySpec : IDisposable
     };
     var toLoad = new[]
     {
-      new MaterialToLoadOntoBasket
+      new TestMaterialToLoadOntoBasket
       {
         MaterialIDs = [loadProcessTwo],
         Process = 2,
         ActiveOperationTime = TimeSpan.FromSeconds(30),
         ForeignID = "multi-load-two",
       },
-      new MaterialToLoadOntoBasket
+      new TestMaterialToLoadOntoBasket
       {
         MaterialIDs = [loadProcessThree],
         Process = 3,
@@ -593,7 +721,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         {
           BasketIdentity = basketIdentity,
           Material = [.. Material(unloadProcessOne, 1, 3), .. Material(unloadProcessTwo, 2, 4)],
-          ContainerIds = [],
+          ReconciledBasketIdentities = [],
         },
         new BasketCycleBoundary.Start
         {
@@ -614,7 +742,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     }
 
     await AssertThrows<SqliteException>(() =>
-      repository.RecordBasketLoadUnload(
+      repository.RecordTestBasketLoadUnload(
         toLoad,
         toUnload,
         lulNum: 3,
@@ -640,7 +768,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       dropTrigger.ExecuteNonQuery();
     }
     var first = repository
-      .RecordBasketLoadUnload(
+      .RecordTestBasketLoadUnload(
         toLoad,
         toUnload,
         lulNum: 3,
@@ -652,7 +780,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
       .ToImmutableList();
     var retry = repository
-      .RecordBasketLoadUnload(
+      .RecordTestBasketLoadUnload(
         toLoad,
         toUnload,
         lulNum: 3,
@@ -741,7 +869,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       ],
     };
     var logs = repository
-      .RecordBasketLoadUnloadCompletion(
+      .RecordTestBasketCompletion(
         completion,
         lulNum: 4,
         timeUTC: completionTime,
@@ -776,7 +904,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
       .IsEquivalentTo(new[] { (existingMaterialId, 2, 3), (loadedMaterialId, 2, 7) });
     var retry = repository
-      .RecordBasketLoadUnloadCompletion(
+      .RecordTestBasketCompletion(
         completion,
         lulNum: 4,
         timeUTC: completionTime.AddMinutes(1),
@@ -788,7 +916,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       .That(retry.Select(log => log.Counter))
       .IsEquivalentTo(logs.Select(log => log.Counter));
     await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketLoadUnloadCompletion(
+      repository.RecordTestBasketCompletion(
         completion,
         lulNum: 4,
         timeUTC: completionTime,
@@ -840,7 +968,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     }
 
     await AssertThrows<SqliteException>(() =>
-      repository.RecordBasketLoadUnloadCompletion(
+      repository.RecordTestBasketCompletion(
         new BasketLoadUnloadCompletion
         {
           Transfers =
@@ -943,13 +1071,13 @@ public sealed class ContainerIdentitySpec : IDisposable
         {
           BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 9 },
           Material = [.. firstContents, .. secondContents],
-          ContainerIds = [first, second],
+          ReconciledBasketIdentities = [first, second],
         },
       ],
     };
 
     var logs = repository
-      .RecordBasketLoadUnloadCompletion(
+      .RecordTestBasketCompletion(
         completion,
         lulNum: 3,
         timeUTC: firstEvidenceTime.AddMinutes(10),
@@ -957,7 +1085,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
       .ToImmutableList();
     var retry = repository
-      .RecordBasketLoadUnloadCompletion(
+      .RecordTestBasketCompletion(
         completion,
         lulNum: 3,
         timeUTC: firstEvidenceTime.AddMinutes(11),
@@ -998,12 +1126,12 @@ public sealed class ContainerIdentitySpec : IDisposable
         {
           BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 9 },
           Material = [],
-          ContainerIds = [fragment],
+          ReconciledBasketIdentities = [fragment],
         },
       ],
     };
 
-    repository.RecordBasketLoadUnloadCompletion(
+    repository.RecordTestBasketCompletion(
       completion,
       lulNum: 3,
       timeUTC: DateTime.UtcNow,
@@ -1011,7 +1139,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     );
 
     await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketLoadUnloadCompletion(
+      repository.RecordTestBasketCompletion(
         completion,
         lulNum: 3,
         timeUTC: DateTime.UtcNow,
@@ -1029,7 +1157,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     var unrelatedMaterial = repository.AllocateMaterialID("job", "part", 1);
 
     await AssertThrows<ArgumentException>(() =>
-      repository.RecordBasketLoadUnloadCompletion(
+      repository.RecordTestBasketCompletion(
         new BasketLoadUnloadCompletion
         {
           Transfers =
@@ -1062,7 +1190,7 @@ public sealed class ContainerIdentitySpec : IDisposable
                   Face = 2,
                 },
               ],
-              ContainerIds = [fragment],
+              ReconciledBasketIdentities = [fragment],
             },
           ],
         },
@@ -1196,7 +1324,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     var identity = new ContainerIdentity.Uuid { ContainerId = basketId };
 
     await AssertThrows<ArgumentException>(() =>
-      repository.RecordBasketLoadUnloadCompletion(
+      repository.RecordTestBasketCompletion(
         new BasketLoadUnloadCompletion
         {
           Transfers =
