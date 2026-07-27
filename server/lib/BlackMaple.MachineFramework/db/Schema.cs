@@ -113,7 +113,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE basket_station_operations(ForeignID TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, OriginalMessage TEXT NOT NULL)";
+          "CREATE TABLE basket_station_operations(ForeignID TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, OriginalMessage TEXT NOT NULL, FirstCounter INTEGER NOT NULL, LastCounter INTEGER NOT NULL)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
@@ -1371,7 +1371,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = trans.Connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "CREATE TABLE basket_station_operations(ForeignID TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, OriginalMessage TEXT NOT NULL)";
+        "CREATE TABLE basket_station_operations(ForeignID TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, OriginalMessage TEXT NOT NULL, FirstCounter INTEGER NOT NULL, LastCounter INTEGER NOT NULL)";
       cmd.ExecuteNonQuery();
     }
 

@@ -153,7 +153,7 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      BasketLoadUnloadCompletion basketCompletion = null
+      PalletBasketLoadUnloadCompletion palletBasketCompletion = null
     );
 
     // The main method for recording a completed pallet load/unload, which combines
@@ -171,7 +171,7 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      BasketLoadUnloadCompletion basketCompletion = null
+      PalletBasketLoadUnloadCompletion palletBasketCompletion = null
     );
 
     // Atomically records one completed basket-station operation. Each transfer owns its basket
@@ -180,10 +180,13 @@ namespace BlackMaple.MachineFramework
     // idempotency key. An identical retry returns the original event group; changed durable input
     // throws ConflictRequestException. timeUTC is intentionally excluded from retry comparison.
     //
+    // totalElapsed is apportioned among transfers in proportion to ActiveOperationTime when every
+    // transfer has a positive expected time. Otherwise, it is apportioned by material count.
+    //
     // Local queue changes are part of the database transaction. Delivery to a configured external
     // queue is best-effort after commit and is not covered by the atomic retry contract.
-    IEnumerable<LogEntry> RecordBasketStationLoadUnload(
-      BasketStationLoadUnload operation,
+    IEnumerable<LogEntry> RecordBasketStationOperation(
+      BasketStationOperation operation,
       int lulNum,
       TimeSpan totalElapsed,
       DateTime timeUTC,
@@ -786,16 +789,20 @@ namespace BlackMaple.MachineFramework
     public string Queue { get; init; }
   }
 
-  public abstract record BasketTransfer
+  /// <summary>
+  /// Basket-side evidence for material transferred during a pallet load/unload. Timing is recorded
+  /// on the corresponding pallet event.
+  /// </summary>
+  public abstract record PalletBasketTransfer
   {
-    private BasketTransfer() { }
+    private PalletBasketTransfer() { }
 
     public required ContainerIdentity BasketIdentity { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
-    public sealed record LoadOntoBasket : BasketTransfer;
+    public sealed record LoadOntoBasket : PalletBasketTransfer;
 
-    public sealed record UnloadFromBasket : BasketTransfer;
+    public sealed record UnloadFromBasket : PalletBasketTransfer;
   }
 
   public abstract record BasketCycleBoundary
@@ -821,9 +828,9 @@ namespace BlackMaple.MachineFramework
     public sealed record Start : BasketCycleBoundary;
   }
 
-  public record BasketLoadUnloadCompletion
+  public sealed record PalletBasketLoadUnloadCompletion
   {
-    public required ImmutableList<BasketTransfer> Transfers { get; init; }
+    public required ImmutableList<PalletBasketTransfer> Transfers { get; init; }
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
   }
 
@@ -833,16 +840,14 @@ namespace BlackMaple.MachineFramework
 
     public required ContainerIdentity BasketIdentity { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
+
+    /// <summary>
+    /// Expected accounting time for this entire transfer, including every material in
+    /// <see cref="Material"/>.
+    /// </summary>
     public required TimeSpan ActiveOperationTime { get; init; }
 
-    public sealed record LoadOntoBasket : BasketStationTransfer
-    {
-      /// <summary>
-      /// The local queue expected to contain the material, or null when loading material which is
-      /// not queued. The material is removed from all local queues when the operation commits.
-      /// </summary>
-      public string SourceQueue { get; init; }
-    }
+    public sealed record LoadOntoBasket : BasketStationTransfer;
 
     public sealed record UnloadFromBasket : BasketStationTransfer
     {
@@ -854,7 +859,7 @@ namespace BlackMaple.MachineFramework
     }
   }
 
-  public sealed record BasketStationLoadUnload
+  public sealed record BasketStationOperation
   {
     public required ImmutableList<BasketStationTransfer> Transfers { get; init; }
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }

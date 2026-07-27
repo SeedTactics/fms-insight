@@ -35,7 +35,7 @@ internal static class BasketStationTestExtensions
     TimeSpan totalElapsed,
     DateTime timeUTC,
     IReadOnlyDictionary<string, string> externalQueues,
-    BasketLoadUnloadCompletion basketCompletion = null
+    PalletBasketLoadUnloadCompletion palletBasketCompletion = null
   ) =>
     repository.RecordTestBasketLoadUnload(
       toLoad is null ? [] : [toLoad],
@@ -45,7 +45,7 @@ internal static class BasketStationTestExtensions
       totalElapsed,
       timeUTC,
       externalQueues,
-      basketCompletion
+      palletBasketCompletion
     );
 
   public static IEnumerable<LogEntry> RecordTestBasketLoadUnload(
@@ -57,7 +57,7 @@ internal static class BasketStationTestExtensions
     TimeSpan totalElapsed,
     DateTime timeUTC,
     IReadOnlyDictionary<string, string> externalQueues,
-    BasketLoadUnloadCompletion basketCompletion
+    PalletBasketLoadUnloadCompletion palletBasketCompletion
   )
   {
     var transfers = ImmutableList.CreateBuilder<BasketStationTransfer>();
@@ -66,7 +66,7 @@ internal static class BasketStationTestExtensions
       var material = Material(
         unload.MaterialIDToQueue.Keys,
         unload.Process,
-        basketCompletion?.Transfers.OfType<BasketTransfer.UnloadFromBasket>()
+        palletBasketCompletion?.Transfers.OfType<PalletBasketTransfer.UnloadFromBasket>()
       );
       transfers.Add(
         new BasketStationTransfer.UnloadFromBasket
@@ -74,7 +74,7 @@ internal static class BasketStationTestExtensions
           BasketIdentity =
             MatchingIdentity(
               material,
-              basketCompletion?.Transfers.OfType<BasketTransfer.UnloadFromBasket>()
+              palletBasketCompletion?.Transfers.OfType<PalletBasketTransfer.UnloadFromBasket>()
             ) ?? basketIdentity,
           Material = material,
           ActiveOperationTime = unload.ActiveOperationTime,
@@ -87,7 +87,7 @@ internal static class BasketStationTestExtensions
       var material = Material(
         load.MaterialIDs,
         load.Process,
-        basketCompletion?.Transfers.OfType<BasketTransfer.LoadOntoBasket>()
+        palletBasketCompletion?.Transfers.OfType<PalletBasketTransfer.LoadOntoBasket>()
       );
       transfers.Add(
         new BasketStationTransfer.LoadOntoBasket
@@ -95,7 +95,7 @@ internal static class BasketStationTestExtensions
           BasketIdentity =
             MatchingIdentity(
               material,
-              basketCompletion?.Transfers.OfType<BasketTransfer.LoadOntoBasket>()
+              palletBasketCompletion?.Transfers.OfType<PalletBasketTransfer.LoadOntoBasket>()
             ) ?? basketIdentity,
           Material = material,
           ActiveOperationTime = load.ActiveOperationTime,
@@ -109,11 +109,11 @@ internal static class BasketStationTestExtensions
       .Where(id => !string.IsNullOrWhiteSpace(id))
       .Distinct()
       .ToImmutableList();
-    return repository.RecordBasketStationLoadUnload(
-      new BasketStationLoadUnload
+    return repository.RecordBasketStationOperation(
+      new BasketStationOperation
       {
         Transfers = transfers.ToImmutable(),
-        CycleBoundaries = basketCompletion?.CycleBoundaries ?? [],
+        CycleBoundaries = palletBasketCompletion?.CycleBoundaries ?? [],
       },
       lulNum,
       totalElapsed,
@@ -129,38 +129,39 @@ internal static class BasketStationTestExtensions
     );
   }
 
-  public static IEnumerable<LogEntry> RecordTestBasketCompletion(
+  public static IEnumerable<LogEntry> RecordTestPalletBasketCompletion(
     this IRepository repository,
-    BasketLoadUnloadCompletion basketCompletion,
+    PalletBasketLoadUnloadCompletion palletBasketCompletion,
     int lulNum,
     DateTime timeUTC,
     string foreignId,
     string originalMessage = null
   ) =>
-    repository.RecordBasketStationLoadUnload(
-      new BasketStationLoadUnload
+    repository.RecordBasketStationOperation(
+      new BasketStationOperation
       {
-        Transfers = basketCompletion
-          .Transfers.Select<BasketTransfer, BasketStationTransfer>(transfer =>
+        Transfers = palletBasketCompletion
+          .Transfers.Select<PalletBasketTransfer, BasketStationTransfer>(transfer =>
             transfer switch
             {
-              BasketTransfer.LoadOntoBasket load => new BasketStationTransfer.LoadOntoBasket
+              PalletBasketTransfer.LoadOntoBasket load => new BasketStationTransfer.LoadOntoBasket
               {
                 BasketIdentity = load.BasketIdentity,
                 Material = load.Material,
                 ActiveOperationTime = TimeSpan.Zero,
               },
-              BasketTransfer.UnloadFromBasket unload => new BasketStationTransfer.UnloadFromBasket
-              {
-                BasketIdentity = unload.BasketIdentity,
-                Material = unload.Material,
-                ActiveOperationTime = TimeSpan.Zero,
-              },
-              _ => throw new ArgumentOutOfRangeException(nameof(basketCompletion)),
+              PalletBasketTransfer.UnloadFromBasket unload =>
+                new BasketStationTransfer.UnloadFromBasket
+                {
+                  BasketIdentity = unload.BasketIdentity,
+                  Material = unload.Material,
+                  ActiveOperationTime = TimeSpan.Zero,
+                },
+              _ => throw new ArgumentOutOfRangeException(nameof(palletBasketCompletion)),
             }
           )
           .ToImmutableList(),
-        CycleBoundaries = basketCompletion.CycleBoundaries,
+        CycleBoundaries = palletBasketCompletion.CycleBoundaries,
       },
       lulNum,
       TimeSpan.Zero,
@@ -189,7 +190,7 @@ internal static class BasketStationTestExtensions
         new BasketStationTransfer.UnloadFromBasket
         {
           BasketIdentity = identity,
-          Material = Material<BasketTransfer>(
+          Material = Material<PalletBasketTransfer>(
             toUnload.MaterialIDToQueue.Keys,
             toUnload.Process,
             null
@@ -203,7 +204,7 @@ internal static class BasketStationTestExtensions
         new BasketStationTransfer.LoadOntoBasket
         {
           BasketIdentity = identity,
-          Material = Material<BasketTransfer>(toLoad.MaterialIDs, toLoad.Process, null),
+          Material = Material<PalletBasketTransfer>(toLoad.MaterialIDs, toLoad.Process, null),
           ActiveOperationTime = toLoad.ActiveOperationTime,
         }
       );
@@ -238,8 +239,8 @@ internal static class BasketStationTestExtensions
 
     var foreignId =
       toUnload?.ForeignID ?? toLoad?.ForeignID ?? $"test-basket-only:{Guid.NewGuid():N}";
-    return repository.RecordBasketStationLoadUnload(
-      new BasketStationLoadUnload
+    return repository.RecordBasketStationOperation(
+      new BasketStationOperation
       {
         Transfers = transfers.ToImmutable(),
         CycleBoundaries = boundaries.ToImmutable(),
@@ -258,7 +259,7 @@ internal static class BasketStationTestExtensions
     int process,
     IEnumerable<TTransfer> completedTransfers
   )
-    where TTransfer : BasketTransfer
+    where TTransfer : PalletBasketTransfer
   {
     var ids = materialIds.ToImmutableHashSet();
     return completedTransfers
@@ -282,7 +283,7 @@ internal static class BasketStationTestExtensions
     ImmutableList<EventLogMaterial> material,
     IEnumerable<TTransfer> completedTransfers
   )
-    where TTransfer : BasketTransfer =>
+    where TTransfer : PalletBasketTransfer =>
     completedTransfers
       ?.SingleOrDefault(transfer =>
         transfer

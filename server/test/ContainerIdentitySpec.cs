@@ -132,7 +132,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task BasketStationCompletionRecordsEachTransferOnceBeforeItsBoundary()
+  public async Task BasketStationOperationRecordsEachTransferOnceBeforeItsBoundary()
   {
     using var repository = _repositoryConfig.OpenConnection();
     var unloadedMaterialId = repository.AllocateMaterialID("job", "part", 2);
@@ -151,11 +151,11 @@ public sealed class ContainerIdentitySpec : IDisposable
       DateTime.UtcNow
     );
     var basketIdentity = new ContainerIdentity.Numbered { ContainerNum = 5 };
-    var completion = new BasketLoadUnloadCompletion
+    var completion = new PalletBasketLoadUnloadCompletion
     {
       Transfers =
       [
-        new BasketTransfer.UnloadFromBasket
+        new PalletBasketTransfer.UnloadFromBasket
         {
           BasketIdentity = basketIdentity,
           Material =
@@ -168,7 +168,7 @@ public sealed class ContainerIdentitySpec : IDisposable
             },
           ],
         },
-        new BasketTransfer.LoadOntoBasket
+        new PalletBasketTransfer.LoadOntoBasket
         {
           BasketIdentity = basketIdentity,
           Material =
@@ -240,7 +240,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.FromMinutes(2),
         timeUTC: DateTime.UtcNow,
         externalQueues: ImmutableDictionary<string, string>.Empty,
-        basketCompletion: completion
+        palletBasketCompletion: completion
       )
       .ToImmutableList();
     var retry = repository
@@ -252,7 +252,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.FromMinutes(2),
         timeUTC: DateTime.UtcNow.AddMinutes(1),
         externalQueues: ImmutableDictionary<string, string>.Empty,
-        basketCompletion: completion
+        palletBasketCompletion: completion
       )
       .ToImmutableList();
 
@@ -322,7 +322,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       time.AddMinutes(-5)
     );
 
-    BasketStationLoadUnload Operation(
+    BasketStationOperation Operation(
       string destinationQueue = "outgoing",
       TimeSpan? loadActive = null
     ) =>
@@ -358,7 +358,6 @@ public sealed class ContainerIdentitySpec : IDisposable
               },
             ],
             ActiveOperationTime = loadActive ?? TimeSpan.FromSeconds(30),
-            SourceQueue = "incoming",
           },
         ],
         CycleBoundaries =
@@ -393,8 +392,14 @@ public sealed class ContainerIdentitySpec : IDisposable
         ],
       };
 
+    var earlierSharedId = repository.RecordGeneralMessage(
+      mats: [],
+      program: "Earlier",
+      result: "",
+      foreignId: "different-identity-turnover"
+    );
     var first = repository
-      .RecordBasketStationLoadUnload(
+      .RecordBasketStationOperation(
         Operation(),
         lulNum: 4,
         totalElapsed: TimeSpan.FromMinutes(2),
@@ -404,8 +409,14 @@ public sealed class ContainerIdentitySpec : IDisposable
         originalMessage: "confirmed work"
       )
       .ToImmutableList();
+    var laterSharedId = repository.RecordGeneralMessage(
+      mats: [],
+      program: "Later",
+      result: "",
+      foreignId: "different-identity-turnover"
+    );
     var retry = repository
-      .RecordBasketStationLoadUnload(
+      .RecordBasketStationOperation(
         Operation(),
         lulNum: 4,
         totalElapsed: TimeSpan.FromMinutes(2),
@@ -428,11 +439,21 @@ public sealed class ContainerIdentitySpec : IDisposable
         }
       );
     await Assert.That(first.Select(log => log.EndTimeUTC).Distinct()).Count().IsEqualTo(1);
+    var unload = first.Single(log => log.Program == "UNLOAD");
+    var load = first.Single(log => log.Program == "LOAD");
+    await Assert.That(unload.ActiveOperationTime).IsEqualTo(TimeSpan.FromSeconds(20));
+    await Assert.That(unload.ElapsedTime).IsEqualTo(TimeSpan.FromSeconds(48));
+    await Assert.That(load.ActiveOperationTime).IsEqualTo(TimeSpan.FromSeconds(30));
+    await Assert.That(load.ElapsedTime).IsEqualTo(TimeSpan.FromSeconds(72));
     await Assert
       .That(retry.Select(log => log.Counter).SequenceEqual(first.Select(log => log.Counter)))
       .IsTrue();
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .DoesNotContain(earlierSharedId.Counter)
+      .And.DoesNotContain(laterSharedId.Counter);
     await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketStationLoadUnload(
+      repository.RecordBasketStationOperation(
         Operation(destinationQueue: "changed"),
         4,
         TimeSpan.FromMinutes(2),
@@ -443,7 +464,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
     );
     await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketStationLoadUnload(
+      repository.RecordBasketStationOperation(
         Operation(loadActive: TimeSpan.FromSeconds(31)),
         4,
         TimeSpan.FromMinutes(2),
@@ -454,7 +475,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
     );
     await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketStationLoadUnload(
+      repository.RecordBasketStationOperation(
         Operation(),
         4,
         TimeSpan.FromMinutes(3),
@@ -465,7 +486,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
     );
     await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketStationLoadUnload(
+      repository.RecordBasketStationOperation(
         Operation(),
         4,
         TimeSpan.FromMinutes(2),
@@ -478,7 +499,74 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task BasketStationCompletionRollsBackAndRetryIsIdempotent()
+  public async Task BasketStationElapsedFallsBackToPerMaterialWeightsWhenActiveTimeIsMissing()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var firstUnload = repository.AllocateMaterialID("job", "part", 1);
+    var secondUnload = repository.AllocateMaterialID("job", "part", 1);
+    var loadMaterial = repository.AllocateMaterialID("job", "part", 1);
+
+    var logs = repository
+      .RecordBasketStationOperation(
+        new BasketStationOperation
+        {
+          Transfers =
+          [
+            new BasketStationTransfer.UnloadFromBasket
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 8 },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = firstUnload,
+                  Process = 1,
+                  Face = 0,
+                },
+                new EventLogMaterial
+                {
+                  MaterialID = secondUnload,
+                  Process = 1,
+                  Face = 0,
+                },
+              ],
+              ActiveOperationTime = TimeSpan.FromSeconds(20),
+            },
+            new BasketStationTransfer.LoadOntoBasket
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 8 },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = loadMaterial,
+                  Process = 1,
+                  Face = 0,
+                },
+              ],
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          CycleBoundaries = [],
+        },
+        lulNum: 4,
+        totalElapsed: TimeSpan.FromMinutes(2),
+        DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        foreignId: "missing-active-time"
+      )
+      .ToImmutableList();
+
+    var unload = logs.Single(log => log.Program == "UNLOAD");
+    var load = logs.Single(log => log.Program == "LOAD");
+    await Assert.That(unload.ActiveOperationTime).IsEqualTo(TimeSpan.FromSeconds(20));
+    await Assert.That(unload.ElapsedTime).IsEqualTo(TimeSpan.FromSeconds(80));
+    await Assert.That(load.ActiveOperationTime).IsEqualTo(TimeSpan.Zero);
+    await Assert.That(load.ElapsedTime).IsEqualTo(TimeSpan.FromSeconds(40));
+  }
+
+  [Test]
+  public async Task BasketStationOperationRollsBackAndRetryIsIdempotent()
   {
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 1);
@@ -504,11 +592,11 @@ public sealed class ContainerIdentitySpec : IDisposable
       ForeignID = "retry-basket-station-load",
       OriginalMessage = "robot completion",
     };
-    var completion = new BasketLoadUnloadCompletion
+    var completion = new PalletBasketLoadUnloadCompletion
     {
       Transfers =
       [
-        new BasketTransfer.LoadOntoBasket
+        new PalletBasketTransfer.LoadOntoBasket
         {
           BasketIdentity = basketIdentity,
           Material =
@@ -618,7 +706,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task MultiProcessBasketStationCompletionIsOrderedAtomicAndIdempotent()
+  public async Task MultiProcessBasketStationOperationIsOrderedAtomicAndIdempotent()
   {
     using var repository = _repositoryConfig.OpenConnection();
     var unloadProcessOne = repository.AllocateMaterialID("job", "part", 3);
@@ -690,26 +778,26 @@ public sealed class ContainerIdentitySpec : IDisposable
         ForeignID = "multi-load-three",
       },
     };
-    var completion = new BasketLoadUnloadCompletion
+    var completion = new PalletBasketLoadUnloadCompletion
     {
       Transfers =
       [
-        new BasketTransfer.UnloadFromBasket
+        new PalletBasketTransfer.UnloadFromBasket
         {
           BasketIdentity = basketIdentity,
           Material = Material(unloadProcessOne, 1, 0),
         },
-        new BasketTransfer.UnloadFromBasket
+        new PalletBasketTransfer.UnloadFromBasket
         {
           BasketIdentity = basketIdentity,
           Material = Material(unloadProcessTwo, 2, 0),
         },
-        new BasketTransfer.LoadOntoBasket
+        new PalletBasketTransfer.LoadOntoBasket
         {
           BasketIdentity = basketIdentity,
           Material = Material(loadProcessTwo, 2, 0),
         },
-        new BasketTransfer.LoadOntoBasket
+        new PalletBasketTransfer.LoadOntoBasket
         {
           BasketIdentity = basketIdentity,
           Material = Material(loadProcessThree, 3, 0),
@@ -849,11 +937,11 @@ public sealed class ContainerIdentitySpec : IDisposable
       }
     );
 
-    var completion = new BasketLoadUnloadCompletion
+    var completion = new PalletBasketLoadUnloadCompletion
     {
       Transfers =
       [
-        new BasketTransfer.LoadOntoBasket
+        new PalletBasketTransfer.LoadOntoBasket
         {
           BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
           Material = [completeContents[1]],
@@ -869,7 +957,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       ],
     };
     var logs = repository
-      .RecordTestBasketCompletion(
+      .RecordTestPalletBasketCompletion(
         completion,
         lulNum: 4,
         timeUTC: completionTime,
@@ -904,7 +992,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
       .IsEquivalentTo(new[] { (existingMaterialId, 2, 3), (loadedMaterialId, 2, 7) });
     var retry = repository
-      .RecordTestBasketCompletion(
+      .RecordTestPalletBasketCompletion(
         completion,
         lulNum: 4,
         timeUTC: completionTime.AddMinutes(1),
@@ -916,7 +1004,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       .That(retry.Select(log => log.Counter))
       .IsEquivalentTo(logs.Select(log => log.Counter));
     await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordTestBasketCompletion(
+      repository.RecordTestPalletBasketCompletion(
         completion,
         lulNum: 4,
         timeUTC: completionTime,
@@ -968,12 +1056,12 @@ public sealed class ContainerIdentitySpec : IDisposable
     }
 
     await AssertThrows<SqliteException>(() =>
-      repository.RecordTestBasketCompletion(
-        new BasketLoadUnloadCompletion
+      repository.RecordTestPalletBasketCompletion(
+        new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.LoadOntoBasket
+            new PalletBasketTransfer.LoadOntoBasket
             {
               BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
               Material =
@@ -1050,16 +1138,16 @@ public sealed class ContainerIdentitySpec : IDisposable
       firstEvidenceTime.AddMinutes(1),
       foreignId: "second-fragment"
     );
-    var completion = new BasketLoadUnloadCompletion
+    var completion = new PalletBasketLoadUnloadCompletion
     {
       Transfers =
       [
-        new BasketTransfer.UnloadFromBasket
+        new PalletBasketTransfer.UnloadFromBasket
         {
           BasketIdentity = new ContainerIdentity.Uuid { ContainerId = first },
           Material = firstContents,
         },
-        new BasketTransfer.UnloadFromBasket
+        new PalletBasketTransfer.UnloadFromBasket
         {
           BasketIdentity = new ContainerIdentity.Uuid { ContainerId = second },
           Material = secondContents,
@@ -1077,7 +1165,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     };
 
     var logs = repository
-      .RecordTestBasketCompletion(
+      .RecordTestPalletBasketCompletion(
         completion,
         lulNum: 3,
         timeUTC: firstEvidenceTime.AddMinutes(10),
@@ -1085,7 +1173,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
       .ToImmutableList();
     var retry = repository
-      .RecordTestBasketCompletion(
+      .RecordTestPalletBasketCompletion(
         completion,
         lulNum: 3,
         timeUTC: firstEvidenceTime.AddMinutes(11),
@@ -1117,7 +1205,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       new ContainerIdentity.Uuid { ContainerId = fragment },
       DateTime.UtcNow
     );
-    var completion = new BasketLoadUnloadCompletion
+    var completion = new PalletBasketLoadUnloadCompletion
     {
       Transfers = [],
       CycleBoundaries =
@@ -1131,7 +1219,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       ],
     };
 
-    repository.RecordTestBasketCompletion(
+    repository.RecordTestPalletBasketCompletion(
       completion,
       lulNum: 3,
       timeUTC: DateTime.UtcNow,
@@ -1139,7 +1227,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     );
 
     await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordTestBasketCompletion(
+      repository.RecordTestPalletBasketCompletion(
         completion,
         lulNum: 3,
         timeUTC: DateTime.UtcNow,
@@ -1157,12 +1245,12 @@ public sealed class ContainerIdentitySpec : IDisposable
     var unrelatedMaterial = repository.AllocateMaterialID("job", "part", 1);
 
     await AssertThrows<ArgumentException>(() =>
-      repository.RecordTestBasketCompletion(
-        new BasketLoadUnloadCompletion
+      repository.RecordTestPalletBasketCompletion(
+        new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.UnloadFromBasket
+            new PalletBasketTransfer.UnloadFromBasket
             {
               BasketIdentity = new ContainerIdentity.Uuid { ContainerId = fragment },
               Material =
@@ -1203,7 +1291,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task PartialPalletUnloadAcceptsExplicitUuidBasketTransferWithoutStartingCycle()
+  public async Task PartialPalletUnloadAcceptsExplicitUuidPalletBasketTransferWithoutStartingCycle()
   {
     var basketId = Guid.NewGuid();
     using var repository = _repositoryConfig.OpenConnection();
@@ -1230,11 +1318,11 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.Zero,
         timeUTC: DateTime.UtcNow,
         externalQueues: ImmutableDictionary<string, string>.Empty,
-        basketCompletion: new BasketLoadUnloadCompletion
+        palletBasketCompletion: new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.LoadOntoBasket
+            new PalletBasketTransfer.LoadOntoBasket
             {
               BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
               Material =
@@ -1263,7 +1351,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task PartialPalletUnloadRejectsBasketTransferForDifferentProcess()
+  public async Task PartialPalletUnloadRejectsPalletBasketTransferForDifferentProcess()
   {
     var basketId = Guid.NewGuid();
     using var repository = _repositoryConfig.OpenConnection();
@@ -1290,11 +1378,11 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.Zero,
         timeUTC: DateTime.UtcNow,
         externalQueues: ImmutableDictionary<string, string>.Empty,
-        basketCompletion: new BasketLoadUnloadCompletion
+        palletBasketCompletion: new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.LoadOntoBasket
+            new PalletBasketTransfer.LoadOntoBasket
             {
               BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
               Material =
@@ -1324,12 +1412,12 @@ public sealed class ContainerIdentitySpec : IDisposable
     var identity = new ContainerIdentity.Uuid { ContainerId = basketId };
 
     await AssertThrows<ArgumentException>(() =>
-      repository.RecordTestBasketCompletion(
-        new BasketLoadUnloadCompletion
+      repository.RecordTestPalletBasketCompletion(
+        new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.LoadOntoBasket
+            new PalletBasketTransfer.LoadOntoBasket
             {
               BasketIdentity = identity,
               Material =
@@ -1369,7 +1457,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task PalletUnloadWithoutQueueRequiresMatchingBasketTransfer()
+  public async Task PalletUnloadWithoutQueueRequiresMatchingPalletBasketTransfer()
   {
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 1);

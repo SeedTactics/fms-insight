@@ -6752,11 +6752,11 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(20),
         timeUTC: start.AddMinutes(30),
         externalQueues: null,
-        basketCompletion: new BasketLoadUnloadCompletion
+        palletBasketCompletion: new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.LoadOntoBasket
+            new PalletBasketTransfer.LoadOntoBasket
             {
               BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
               Material = basket3Contents,
@@ -6827,11 +6827,11 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(8),
         timeUTC: start.AddMinutes(50),
         externalQueues: null,
-        basketCompletion: new BasketLoadUnloadCompletion
+        palletBasketCompletion: new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.UnloadFromBasket
+            new PalletBasketTransfer.UnloadFromBasket
             {
               BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
               Material = basket3ProcessTwoContents,
@@ -7323,11 +7323,11 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(20),
         timeUTC: start.AddMinutes(30),
         externalQueues: null,
-        basketCompletion: new BasketLoadUnloadCompletion
+        palletBasketCompletion: new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.LoadOntoBasket
+            new PalletBasketTransfer.LoadOntoBasket
             {
               BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 3 },
               Material =
@@ -7485,11 +7485,11 @@ namespace BlackMaple.FMSInsight.Tests
         totalElapsed: TimeSpan.FromMinutes(3),
         timeUTC: start.AddMinutes(10),
         externalQueues: null,
-        basketCompletion: new BasketLoadUnloadCompletion
+        palletBasketCompletion: new PalletBasketLoadUnloadCompletion
         {
           Transfers =
           [
-            new BasketTransfer.UnloadFromBasket
+            new PalletBasketTransfer.UnloadFromBasket
             {
               BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 55 },
               Material =

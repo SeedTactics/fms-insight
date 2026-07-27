@@ -1942,10 +1942,10 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      BasketLoadUnloadCompletion basketCompletion = null
+      PalletBasketLoadUnloadCompletion palletBasketCompletion = null
     )
     {
-      ValidateBasketCompletion(basketCompletion, toLoad, toUnload);
+      ValidatePalletBasketCompletion(palletBasketCompletion, toLoad, toUnload);
       var sendToExternal = new List<MaterialToSendToExternalQueue>();
 
       var newLogs = AddEntryInTransaction(trans =>
@@ -1997,14 +1997,14 @@ namespace BlackMaple.MachineFramework
           trans: trans
         );
 
-        RecordBasketTransferEnds<BasketTransfer.UnloadFromBasket>(
-          basketCompletion,
+        RecordPalletBasketTransferEnds<PalletBasketTransfer.UnloadFromBasket>(
+          palletBasketCompletion,
           lulNum,
           timeUTC,
           trans,
           logs
         );
-        RecordExplicitBasketCycleEnds(basketCompletion, timeUTC, logs, trans);
+        RecordExplicitBasketCycleEnds(palletBasketCompletion, timeUTC, logs, trans);
 
         RecordLoadMaterialPaths(toLoad: toLoad, trans: trans);
 
@@ -2018,17 +2018,19 @@ namespace BlackMaple.MachineFramework
           timeUTC: timeUTC,
           logs: logs,
           trans: trans,
-          materialFromBaskets: BasketMaterialIds<BasketTransfer.UnloadFromBasket>(basketCompletion)
+          materialFromBaskets: PalletBasketMaterialIds<PalletBasketTransfer.UnloadFromBasket>(
+            palletBasketCompletion
+          )
         );
 
-        RecordBasketTransferEnds<BasketTransfer.LoadOntoBasket>(
-          basketCompletion,
+        RecordPalletBasketTransferEnds<PalletBasketTransfer.LoadOntoBasket>(
+          palletBasketCompletion,
           lulNum,
           timeUTC,
           trans,
           logs
         );
-        RecordExplicitBasketCycleStarts(basketCompletion, timeUTC, logs, trans);
+        RecordExplicitBasketCycleStarts(palletBasketCompletion, timeUTC, logs, trans);
 
         return logs;
       });
@@ -2041,13 +2043,13 @@ namespace BlackMaple.MachineFramework
       return newLogs;
     }
 
-    private static void ValidateBasketCompletion(
-      BasketLoadUnloadCompletion basketCompletion,
+    private static void ValidatePalletBasketCompletion(
+      PalletBasketLoadUnloadCompletion palletBasketCompletion,
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<MaterialToUnloadFromFace> toUnload
     )
     {
-      if (basketCompletion is null)
+      if (palletBasketCompletion is null)
       {
         if (
           toUnload?.Any(unload =>
@@ -2058,32 +2060,37 @@ namespace BlackMaple.MachineFramework
         )
           throw new ArgumentException(
             "Pallet unloads without a queue destination require an explicit basket completion.",
-            nameof(basketCompletion)
+            nameof(palletBasketCompletion)
           );
         return;
       }
-      if (basketCompletion.Transfers.Count == 0 && basketCompletion.CycleBoundaries.Count == 0)
+      if (
+        palletBasketCompletion.Transfers.Count == 0
+        && palletBasketCompletion.CycleBoundaries.Count == 0
+      )
         throw new ArgumentException(
           "A basket completion requires a transfer or cycle boundary.",
-          nameof(basketCompletion)
+          nameof(palletBasketCompletion)
         );
 
       var transferredToBasket = ImmutableHashSet.CreateBuilder<long>();
       var transferredFromBasket = ImmutableHashSet.CreateBuilder<long>();
       var transferredToBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
       var transferredFromBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
-      foreach (var transfer in basketCompletion.Transfers)
+      foreach (var transfer in palletBasketCompletion.Transfers)
       {
         RecordedContainerIdentity(transfer.BasketIdentity);
         if (transfer.Material.Count == 0)
           throw new ArgumentException(
             "A basket transfer requires material.",
-            nameof(basketCompletion)
+            nameof(palletBasketCompletion)
           );
         var target =
-          transfer is BasketTransfer.LoadOntoBasket ? transferredToBasket : transferredFromBasket;
+          transfer is PalletBasketTransfer.LoadOntoBasket
+            ? transferredToBasket
+            : transferredFromBasket;
         var targetWithProcess =
-          transfer is BasketTransfer.LoadOntoBasket
+          transfer is PalletBasketTransfer.LoadOntoBasket
             ? transferredToBasketWithProcess
             : transferredFromBasketWithProcess;
         foreach (var material in transfer.Material)
@@ -2091,7 +2098,7 @@ namespace BlackMaple.MachineFramework
           if (!target.Add(material.MaterialID))
             throw new ArgumentException(
               $"Material {material.MaterialID} is repeated in basket transfers.",
-              nameof(basketCompletion)
+              nameof(palletBasketCompletion)
             );
           targetWithProcess.Add((material.MaterialID, material.Process));
         }
@@ -2099,7 +2106,7 @@ namespace BlackMaple.MachineFramework
 
       var starts = new HashSet<ContainerIdentity>();
       var ends = new HashSet<ContainerIdentity>();
-      foreach (var boundary in basketCompletion.CycleBoundaries)
+      foreach (var boundary in palletBasketCompletion.CycleBoundaries)
       {
         RecordedContainerIdentity(boundary.BasketIdentity);
         if (
@@ -2108,14 +2115,14 @@ namespace BlackMaple.MachineFramework
         )
           throw new ArgumentException(
             "Basket cycle material must contain each material exactly once.",
-            nameof(basketCompletion)
+            nameof(palletBasketCompletion)
           );
         if (boundary is BasketCycleBoundary.Start)
         {
           if (boundary.Material.Count == 0 || !starts.Add(boundary.BasketIdentity))
             throw new ArgumentException(
               "Each ready basket requires one non-empty cycle start.",
-              nameof(basketCompletion)
+              nameof(palletBasketCompletion)
             );
         }
         else if (boundary is BasketCycleBoundary.End end)
@@ -2123,7 +2130,7 @@ namespace BlackMaple.MachineFramework
           if (!ends.Add(boundary.BasketIdentity))
             throw new ArgumentException(
               "Each completed basket can have only one cycle end.",
-              nameof(basketCompletion)
+              nameof(palletBasketCompletion)
             );
           if (
             boundary.BasketIdentity is not ContainerIdentity.Numbered
@@ -2131,18 +2138,24 @@ namespace BlackMaple.MachineFramework
           )
             throw new ArgumentException(
               "A basket cycle end requires a numbered basket identity and may contain only non-empty fragment UUIDs.",
-              nameof(basketCompletion)
+              nameof(palletBasketCompletion)
             );
         }
       }
 
-      foreach (var transfer in basketCompletion.Transfers)
+      foreach (var transfer in palletBasketCompletion.Transfers)
       {
-        var matchingBoundary = basketCompletion.CycleBoundaries.FirstOrDefault(boundary =>
+        var matchingBoundary = palletBasketCompletion.CycleBoundaries.FirstOrDefault(boundary =>
           boundary.BasketIdentity == transfer.BasketIdentity
           && (
-            (transfer is BasketTransfer.LoadOntoBasket && boundary is BasketCycleBoundary.Start)
-            || (transfer is BasketTransfer.UnloadFromBasket && boundary is BasketCycleBoundary.End)
+            (
+              transfer is PalletBasketTransfer.LoadOntoBasket
+              && boundary is BasketCycleBoundary.Start
+            )
+            || (
+              transfer is PalletBasketTransfer.UnloadFromBasket
+              && boundary is BasketCycleBoundary.End
+            )
           )
         );
         if (
@@ -2156,16 +2169,16 @@ namespace BlackMaple.MachineFramework
         )
           throw new ArgumentException(
             "Transferred material must be present in the corresponding complete cycle material.",
-            nameof(basketCompletion)
+            nameof(palletBasketCompletion)
           );
 
         if (
           transfer
-            is BasketTransfer.UnloadFromBasket
+            is PalletBasketTransfer.UnloadFromBasket
             {
               BasketIdentity: ContainerIdentity.Uuid { ContainerId: var containerId },
             }
-          && basketCompletion
+          && palletBasketCompletion
             .CycleBoundaries.OfType<BasketCycleBoundary.End>()
             .FirstOrDefault(end => end.ReconciledBasketIdentities.Contains(containerId))
             is { } fragmentEnd
@@ -2178,7 +2191,7 @@ namespace BlackMaple.MachineFramework
         )
           throw new ArgumentException(
             "Material unloaded from a finalized UUID fragment must be present in the complete cycle end.",
-            nameof(basketCompletion)
+            nameof(palletBasketCompletion)
           );
       }
 
@@ -2192,7 +2205,7 @@ namespace BlackMaple.MachineFramework
         )
           throw new ArgumentException(
             "Basket-to-pallet material and process must match the pallet load.",
-            nameof(basketCompletion)
+            nameof(palletBasketCompletion)
           );
       }
       if (toUnload is not null)
@@ -2209,24 +2222,24 @@ namespace BlackMaple.MachineFramework
         if (!transferredToBasketWithProcess.SetEquals(basketDestinationMaterial))
           throw new ArgumentException(
             "Pallet unloads without a queue destination must exactly match pallet-to-basket material and process.",
-            nameof(basketCompletion)
+            nameof(palletBasketCompletion)
           );
       }
     }
 
-    private static ImmutableHashSet<long> BasketMaterialIds<TTransfer>(
-      BasketLoadUnloadCompletion basketCompletion
+    private static ImmutableHashSet<long> PalletBasketMaterialIds<TTransfer>(
+      PalletBasketLoadUnloadCompletion palletBasketCompletion
     )
-      where TTransfer : BasketTransfer =>
-      basketCompletion
+      where TTransfer : PalletBasketTransfer =>
+      palletBasketCompletion
         ?.Transfers.OfType<TTransfer>()
         .SelectMany(transfer => transfer.Material)
         .Select(material => material.MaterialID)
         .ToImmutableHashSet()
       ?? [];
 
-    private void RecordBasketTransferEnds<TTransfer>(
-      BasketLoadUnloadCompletion basketCompletion,
+    private void RecordPalletBasketTransferEnds<TTransfer>(
+      PalletBasketLoadUnloadCompletion palletBasketCompletion,
       int lulNum,
       DateTime timeUTC,
       IDbTransaction trans,
@@ -2234,12 +2247,12 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     )
-      where TTransfer : BasketTransfer
+      where TTransfer : PalletBasketTransfer
     {
-      foreach (var transfer in basketCompletion?.Transfers.OfType<TTransfer>() ?? [])
+      foreach (var transfer in palletBasketCompletion?.Transfers.OfType<TTransfer>() ?? [])
       {
         var (containerNum, containerId) = RecordedContainerIdentity(transfer.BasketIdentity);
-        var loadOntoBasket = transfer is BasketTransfer.LoadOntoBasket;
+        var loadOntoBasket = transfer is PalletBasketTransfer.LoadOntoBasket;
         logs.Add(
           AddLogEntry(
             trans,
@@ -2266,7 +2279,7 @@ namespace BlackMaple.MachineFramework
     }
 
     private void RecordExplicitBasketCycleEnds(
-      BasketLoadUnloadCompletion basketCompletion,
+      PalletBasketLoadUnloadCompletion palletBasketCompletion,
       DateTime timeUTC,
       List<LogEntry> logs,
       IDbTransaction trans,
@@ -2275,7 +2288,8 @@ namespace BlackMaple.MachineFramework
     )
     {
       foreach (
-        var boundary in basketCompletion?.CycleBoundaries.OfType<BasketCycleBoundary.End>() ?? []
+        var boundary in palletBasketCompletion?.CycleBoundaries.OfType<BasketCycleBoundary.End>()
+          ?? []
       )
       {
         var (containerNum, containerId) = RecordedContainerIdentity(boundary.BasketIdentity);
@@ -2355,7 +2369,7 @@ namespace BlackMaple.MachineFramework
     }
 
     private void RecordExplicitBasketCycleStarts(
-      BasketLoadUnloadCompletion basketCompletion,
+      PalletBasketLoadUnloadCompletion palletBasketCompletion,
       DateTime timeUTC,
       List<LogEntry> logs,
       IDbTransaction trans,
@@ -2364,7 +2378,8 @@ namespace BlackMaple.MachineFramework
     )
     {
       foreach (
-        var boundary in basketCompletion?.CycleBoundaries.OfType<BasketCycleBoundary.Start>() ?? []
+        var boundary in palletBasketCompletion?.CycleBoundaries.OfType<BasketCycleBoundary.Start>()
+          ?? []
       )
       {
         var (containerNum, containerId) = RecordedContainerIdentity(boundary.BasketIdentity);
@@ -2393,8 +2408,10 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableList<LogEntry> BasketCompletionForForeignId(
+    private ImmutableList<LogEntry> BasketStationOperationForForeignId(
       string foreignId,
+      long firstCounter,
+      long lastCounter,
       IDbTransaction trans
     )
     {
@@ -2402,89 +2419,13 @@ namespace BlackMaple.MachineFramework
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
         "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ContainerId "
-        + "FROM stations WHERE ForeignID = $foreign ORDER BY Counter";
+        + "FROM stations WHERE ForeignID = $foreign "
+        + "AND Counter >= $firstCounter AND Counter <= $lastCounter ORDER BY Counter";
       cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignId;
+      cmd.Parameters.Add("firstCounter", SqliteType.Integer).Value = firstCounter;
+      cmd.Parameters.Add("lastCounter", SqliteType.Integer).Value = lastCounter;
       using var reader = cmd.ExecuteReader();
       return LoadLog(reader, trans).ToImmutableList();
-    }
-
-    private string BasketCompletionOriginalMessage(string foreignId, IDbTransaction trans)
-    {
-      using var cmd = _connection.CreateCommand();
-      ((IDbCommand)cmd).Transaction = trans;
-      cmd.CommandText =
-        "SELECT OriginalMessage FROM stations WHERE ForeignID = $foreign ORDER BY Counter LIMIT 1";
-      cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignId;
-      return cmd.ExecuteScalar() as string ?? "";
-    }
-
-    private static bool BasketCompletionMatches(
-      ImmutableList<LogEntry> logs,
-      BasketLoadUnloadCompletion basketCompletion,
-      int lulNum
-    )
-    {
-      var expected = basketCompletion
-        .Transfers.OfType<BasketTransfer.UnloadFromBasket>()
-        .Select(transfer =>
-          (Transfer: (BasketTransfer)transfer, Boundary: (BasketCycleBoundary)null)
-        )
-        .Concat(
-          basketCompletion
-            .CycleBoundaries.OfType<BasketCycleBoundary.End>()
-            .Select(boundary =>
-              (Transfer: (BasketTransfer)null, Boundary: (BasketCycleBoundary)boundary)
-            )
-        )
-        .Concat(
-          basketCompletion
-            .Transfers.OfType<BasketTransfer.LoadOntoBasket>()
-            .Select(transfer =>
-              (Transfer: (BasketTransfer)transfer, Boundary: (BasketCycleBoundary)null)
-            )
-        )
-        .Concat(
-          basketCompletion
-            .CycleBoundaries.OfType<BasketCycleBoundary.Start>()
-            .Select(boundary =>
-              (Transfer: (BasketTransfer)null, Boundary: (BasketCycleBoundary)boundary)
-            )
-        )
-        .ToImmutableList();
-      if (logs.Count != expected.Count)
-        return false;
-
-      return logs.Zip(expected)
-        .All(pair =>
-        {
-          var (log, item) = pair;
-          var identity = item.Transfer?.BasketIdentity ?? item.Boundary.BasketIdentity;
-          var material = item.Transfer?.Material ?? item.Boundary.Material;
-          var expectedType = item.Transfer is null ? LogType.BasketCycle : LogType.BasketLoadUnload;
-          var expectedStart = item.Boundary is BasketCycleBoundary.Start;
-          var expectedProgram = item.Transfer switch
-          {
-            BasketTransfer.LoadOntoBasket => "LOAD",
-            BasketTransfer.UnloadFromBasket => "UNLOAD",
-            _ => "",
-          };
-          var expectedContainerIds =
-            item.Boundary is BasketCycleBoundary.End end && end.ReconciledBasketIdentities.Count > 0
-              ? end.ReconciledBasketIdentities.OrderBy(id => id).ToImmutableList()
-              : null;
-          return log.Identity == identity
-            && log.LogType == expectedType
-            && log.StartOfCycle == expectedStart
-            && log.Program == expectedProgram
-            && (expectedType == LogType.BasketCycle || log.LocationNum == lulNum)
-            && log.Material.Select(mat => (mat.MaterialID, mat.Process, mat.Face))
-              .SequenceEqual(material.Select(mat => (mat.MaterialID, mat.Process, mat.Face)))
-            && (
-              expectedContainerIds is null
-                ? log.CycleEndContainerIds is null
-                : log.CycleEndContainerIds?.SequenceEqual(expectedContainerIds) == true
-            );
-        });
     }
 
     // RecordLoadUnloadComplete is used ONLY for load/unload operations involving a pallet.
@@ -2492,8 +2433,8 @@ namespace BlackMaple.MachineFramework
     //   - Pallet to/from queue (material loaded from queue onto pallet, or unloaded from pallet to queue)
     //   - Pallet to/from basket (material transferred between pallet face and basket)
     // Basket events are never inferred from event history. Callers that know basket state
-    // synchronously provide an explicit basketCompletion. Delayed evidence and basket-station
-    // queue work are recorded with RecordBasketStationLoadUnload.
+    // synchronously provide an explicit palletBasketCompletion. Delayed evidence and basket-station
+    // queue work are recorded with RecordBasketStationOperation.
     public IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,
@@ -2504,10 +2445,10 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      BasketLoadUnloadCompletion basketCompletion = null
+      PalletBasketLoadUnloadCompletion palletBasketCompletion = null
     )
     {
-      ValidateBasketCompletion(basketCompletion, toLoad, toUnload);
+      ValidatePalletBasketCompletion(palletBasketCompletion, toLoad, toUnload);
       var sendToExternal = new List<MaterialToSendToExternalQueue>();
 
       var newLogs = AddEntryInTransaction(trans =>
@@ -2559,8 +2500,8 @@ namespace BlackMaple.MachineFramework
           trans: trans
         );
 
-        RecordBasketTransferEnds<BasketTransfer.UnloadFromBasket>(
-          basketCompletion,
+        RecordPalletBasketTransferEnds<PalletBasketTransfer.UnloadFromBasket>(
+          palletBasketCompletion,
           lulNum,
           timeUTC,
           trans,
@@ -2588,7 +2529,7 @@ namespace BlackMaple.MachineFramework
           );
         }
 
-        RecordExplicitBasketCycleEnds(basketCompletion, timeUTC, logs, trans);
+        RecordExplicitBasketCycleEnds(palletBasketCompletion, timeUTC, logs, trans);
 
         RecordLoadMaterialPaths(toLoad: toLoad, trans: trans);
 
@@ -2624,17 +2565,19 @@ namespace BlackMaple.MachineFramework
           timeUTC: timeUTC,
           logs: logs,
           trans: trans,
-          materialFromBaskets: BasketMaterialIds<BasketTransfer.UnloadFromBasket>(basketCompletion)
+          materialFromBaskets: PalletBasketMaterialIds<PalletBasketTransfer.UnloadFromBasket>(
+            palletBasketCompletion
+          )
         );
 
-        RecordBasketTransferEnds<BasketTransfer.LoadOntoBasket>(
-          basketCompletion,
+        RecordPalletBasketTransferEnds<PalletBasketTransfer.LoadOntoBasket>(
+          palletBasketCompletion,
           lulNum,
           timeUTC,
           trans,
           logs
         );
-        RecordExplicitBasketCycleStarts(basketCompletion, timeUTC, logs, trans);
+        RecordExplicitBasketCycleStarts(palletBasketCompletion, timeUTC, logs, trans);
 
         return logs;
       });
@@ -2647,8 +2590,8 @@ namespace BlackMaple.MachineFramework
       return newLogs;
     }
 
-    public IEnumerable<LogEntry> RecordBasketStationLoadUnload(
-      BasketStationLoadUnload operation,
+    public IEnumerable<LogEntry> RecordBasketStationOperation(
+      BasketStationOperation operation,
       int lulNum,
       TimeSpan totalElapsed,
       DateTime timeUTC,
@@ -2666,8 +2609,8 @@ namespace BlackMaple.MachineFramework
       if (totalElapsed < TimeSpan.Zero)
         throw new ArgumentOutOfRangeException(nameof(totalElapsed));
 
-      var completion = BasketStationCompletion(operation);
-      ValidateBasketCompletion(completion, toLoad: null, toUnload: null);
+      var palletCompletion = ToPalletBasketLoadUnloadCompletion(operation);
+      ValidatePalletBasketCompletion(palletCompletion, toLoad: null, toUnload: null);
       foreach (var transfer in operation.Transfers)
       {
         if (transfer.ActiveOperationTime < TimeSpan.Zero)
@@ -2675,13 +2618,11 @@ namespace BlackMaple.MachineFramework
             nameof(operation),
             "Basket-station active operation time cannot be negative."
           );
-        var queue = transfer switch
-        {
-          BasketStationTransfer.LoadOntoBasket load => load.SourceQueue,
-          BasketStationTransfer.UnloadFromBasket unload => unload.DestinationQueue,
-          _ => null,
-        };
-        if (queue is not null && string.IsNullOrWhiteSpace(queue))
+        if (
+          transfer
+            is BasketStationTransfer.UnloadFromBasket { DestinationQueue: { } destinationQueue }
+          && string.IsNullOrWhiteSpace(destinationQueue)
+        )
           throw new ArgumentException(
             "A basket-station queue must be null or non-empty.",
             nameof(operation)
@@ -2698,16 +2639,21 @@ namespace BlackMaple.MachineFramework
         using var existingCommand = _connection.CreateCommand();
         existingCommand.Transaction = trans;
         existingCommand.CommandText =
-          "SELECT Fingerprint, OriginalMessage FROM basket_station_operations WHERE ForeignID = $foreign";
+          "SELECT Fingerprint, OriginalMessage, FirstCounter, LastCounter "
+          + "FROM basket_station_operations WHERE ForeignID = $foreign";
         existingCommand.Parameters.Add("foreign", SqliteType.Text).Value = foreignId;
         string existingFingerprint = null;
         string existingOriginalMessage = null;
+        long existingFirstCounter = 0;
+        long existingLastCounter = 0;
         using (var reader = existingCommand.ExecuteReader())
         {
           if (reader.Read())
           {
             existingFingerprint = reader.GetString(0);
             existingOriginalMessage = reader.GetString(1);
+            existingFirstCounter = reader.GetInt64(2);
+            existingLastCounter = reader.GetInt64(3);
           }
         }
         if (existingFingerprint is not null)
@@ -2719,19 +2665,24 @@ namespace BlackMaple.MachineFramework
             throw new ConflictRequestException(
               $"Foreign ID {foreignId} already identifies a different basket-station operation."
             );
-          logs = BasketCompletionForForeignId(foreignId, trans);
+          logs = BasketStationOperationForForeignId(
+            foreignId,
+            existingFirstCounter,
+            existingLastCounter,
+            trans
+          );
           trans.Commit();
           return logs;
         }
 
-        ValidateBasketStationSourceQueues(operation, trans);
         var newLogs = new List<LogEntry>();
         var transferMaterialCount = operation.Transfers.Sum(transfer => transfer.Material.Count);
         var activeTimes = operation
           .Transfers.Select(transfer => transfer.ActiveOperationTime)
           .ToImmutableList();
-        var allHaveActive =
-          !activeTimes.IsEmpty && activeTimes.All(active => active > TimeSpan.Zero);
+        var totalActive = activeTimes.All(active => active > TimeSpan.Zero)
+          ? TimeSpan.FromTicks(activeTimes.Sum(active => active.Ticks))
+          : (TimeSpan?)null;
 
         foreach (
           var transfer in operation.Transfers.OfType<BasketStationTransfer.UnloadFromBasket>()
@@ -2744,7 +2695,7 @@ namespace BlackMaple.MachineFramework
               transfer,
               totalElapsed,
               transferMaterialCount,
-              allHaveActive
+              totalActive
             ),
             lulNum,
             timeUTC,
@@ -2789,7 +2740,7 @@ namespace BlackMaple.MachineFramework
         }
 
         RecordExplicitBasketCycleEnds(
-          completion,
+          palletCompletion,
           timeUTC,
           newLogs,
           trans,
@@ -2808,7 +2759,7 @@ namespace BlackMaple.MachineFramework
               transfer,
               totalElapsed,
               transferMaterialCount,
-              allHaveActive
+              totalActive
             ),
             lulNum,
             timeUTC,
@@ -2820,7 +2771,7 @@ namespace BlackMaple.MachineFramework
         }
 
         RecordExplicitBasketCycleStarts(
-          completion,
+          palletCompletion,
           timeUTC,
           newLogs,
           trans,
@@ -2831,10 +2782,18 @@ namespace BlackMaple.MachineFramework
         using var recordOperation = _connection.CreateCommand();
         recordOperation.Transaction = trans;
         recordOperation.CommandText =
-          "INSERT INTO basket_station_operations(ForeignID, Fingerprint, OriginalMessage) VALUES($foreign, $fingerprint, $original)";
+          "INSERT INTO basket_station_operations"
+          + "(ForeignID, Fingerprint, OriginalMessage, FirstCounter, LastCounter) "
+          + "VALUES($foreign, $fingerprint, $original, $firstCounter, $lastCounter)";
         recordOperation.Parameters.Add("foreign", SqliteType.Text).Value = foreignId;
         recordOperation.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
         recordOperation.Parameters.Add("original", SqliteType.Text).Value = originalMessage ?? "";
+        recordOperation.Parameters.Add("firstCounter", SqliteType.Integer).Value = newLogs[
+          0
+        ].Counter;
+        recordOperation.Parameters.Add("lastCounter", SqliteType.Integer).Value = newLogs[
+          ^1
+        ].Counter;
         recordOperation.ExecuteNonQuery();
         trans.Commit();
         logs = newLogs.ToImmutableList();
@@ -2851,58 +2810,32 @@ namespace BlackMaple.MachineFramework
       return logs;
     }
 
-    private static BasketLoadUnloadCompletion BasketStationCompletion(
-      BasketStationLoadUnload operation
+    private static PalletBasketLoadUnloadCompletion ToPalletBasketLoadUnloadCompletion(
+      BasketStationOperation operation
     ) =>
       new()
       {
         Transfers = operation
-          .Transfers.Select<BasketStationTransfer, BasketTransfer>(transfer =>
+          .Transfers.Select<BasketStationTransfer, PalletBasketTransfer>(transfer =>
             transfer switch
             {
-              BasketStationTransfer.LoadOntoBasket load => new BasketTransfer.LoadOntoBasket
+              BasketStationTransfer.LoadOntoBasket load => new PalletBasketTransfer.LoadOntoBasket
               {
                 BasketIdentity = load.BasketIdentity,
                 Material = load.Material,
               },
-              BasketStationTransfer.UnloadFromBasket unload => new BasketTransfer.UnloadFromBasket
-              {
-                BasketIdentity = unload.BasketIdentity,
-                Material = unload.Material,
-              },
+              BasketStationTransfer.UnloadFromBasket unload =>
+                new PalletBasketTransfer.UnloadFromBasket
+                {
+                  BasketIdentity = unload.BasketIdentity,
+                  Material = unload.Material,
+                },
               _ => throw new ArgumentOutOfRangeException(nameof(operation)),
             }
           )
           .ToImmutableList(),
         CycleBoundaries = operation.CycleBoundaries,
       };
-
-    private void ValidateBasketStationSourceQueues(
-      BasketStationLoadUnload operation,
-      IDbTransaction trans
-    )
-    {
-      using var command = _connection.CreateCommand();
-      command.Transaction = (SqliteTransaction)trans;
-      command.CommandText = "SELECT Queue FROM queues WHERE MaterialID = $material";
-      command.Parameters.Add("material", SqliteType.Integer);
-      foreach (
-        var transfer in operation
-          .Transfers.OfType<BasketStationTransfer.LoadOntoBasket>()
-          .Where(transfer => transfer.SourceQueue is not null)
-      )
-      {
-        foreach (var material in transfer.Material)
-        {
-          command.Parameters[0].Value = material.MaterialID;
-          var actualQueue = command.ExecuteScalar() as string;
-          if (actualQueue != transfer.SourceQueue)
-            throw new ConflictRequestException(
-              $"Material {material.MaterialID} is not in expected source queue {transfer.SourceQueue}."
-            );
-        }
-      }
-    }
 
     private void RecordBasketStationTransfer(
       BasketStationTransfer transfer,
@@ -2945,18 +2878,17 @@ namespace BlackMaple.MachineFramework
       BasketStationTransfer transfer,
       TimeSpan totalElapsed,
       int transferMaterialCount,
-      bool allHaveActive
+      TimeSpan? totalActive
     )
     {
-      if (!allHaveActive || transferMaterialCount == 0)
-        return totalElapsed;
-      return TimeSpan.FromSeconds(
-        Math.Round(totalElapsed.TotalSeconds * transfer.Material.Count / transferMaterialCount, 1)
-      );
+      var weight = totalActive is { } active
+        ? (double)transfer.ActiveOperationTime.Ticks / active.Ticks
+        : (double)transfer.Material.Count / transferMaterialCount;
+      return TimeSpan.FromSeconds(Math.Round(totalElapsed.TotalSeconds * weight, 1));
     }
 
     private static string BasketStationFingerprint(
-      BasketStationLoadUnload operation,
+      BasketStationOperation operation,
       int lulNum,
       TimeSpan totalElapsed,
       IReadOnlyDictionary<string, string> externalQueues
@@ -2979,12 +2911,7 @@ namespace BlackMaple.MachineFramework
           fingerprint,
           transfer.ActiveOperationTime.Ticks.ToString(CultureInfo.InvariantCulture)
         );
-        var queue = transfer switch
-        {
-          BasketStationTransfer.LoadOntoBasket load => load.SourceQueue,
-          BasketStationTransfer.UnloadFromBasket unload => unload.DestinationQueue,
-          _ => null,
-        };
+        var queue = (transfer as BasketStationTransfer.UnloadFromBasket)?.DestinationQueue;
         AppendBasketStationFingerprint(fingerprint, queue);
         if (
           transfer is BasketStationTransfer.UnloadFromBasket
@@ -3138,7 +3065,7 @@ namespace BlackMaple.MachineFramework
     }
 
     // Records pallet unload events and queue destinations. Basket destinations are recorded only
-    // from an explicit BasketLoadUnloadCompletion.
+    // from an explicit PalletBasketLoadUnloadCompletion.
     private void RecordUnloadEnd(
       IEnumerable<MaterialToUnloadFromFace> toUnload,
       int lulNum,

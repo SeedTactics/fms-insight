@@ -670,12 +670,12 @@ namespace DebugMachineWatchApiServer
             timeUTC: e.EndTimeUTC.Add(offset),
             totalElapsed: e.ElapsedTime,
             externalQueues: null,
-            basketCompletion: basketId.HasValue
-              ? new BasketLoadUnloadCompletion
+            palletBasketCompletion: basketId.HasValue
+              ? new PalletBasketLoadUnloadCompletion
               {
                 Transfers =
                 [
-                  new BasketTransfer.LoadOntoBasket
+                  new PalletBasketTransfer.LoadOntoBasket
                   {
                     BasketIdentity = new ContainerIdentity.Numbered
                     {
@@ -776,8 +776,8 @@ namespace DebugMachineWatchApiServer
           var queue = EventDetail(e, "Queue");
           if (!string.IsNullOrEmpty(queue))
           {
-            LogDB.RecordBasketStationLoadUnload(
-              operation: new BasketStationLoadUnload
+            LogDB.RecordBasketStationOperation(
+              operation: new BasketStationOperation
               {
                 Transfers =
                 [
@@ -786,7 +786,6 @@ namespace DebugMachineWatchApiServer
                     BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = e.Pallet },
                     Material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
                     ActiveOperationTime = e.ActiveOperationTime,
-                    SourceQueue = queue,
                   },
                 ],
                 CycleBoundaries = [],
@@ -804,8 +803,8 @@ namespace DebugMachineWatchApiServer
           var queue = EventDetail(e, "Queue");
           if (!string.IsNullOrEmpty(queue))
           {
-            LogDB.RecordBasketStationLoadUnload(
-              operation: new BasketStationLoadUnload
+            LogDB.RecordBasketStationOperation(
+              operation: new BasketStationOperation
               {
                 Transfers =
                 [
