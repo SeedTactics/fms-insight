@@ -794,6 +794,7 @@ namespace DebugMachineWatchApiServer
               totalElapsed: e.ElapsedTime,
               timeUTC: e.EndTimeUTC.Add(offset),
               externalQueues: null,
+              idempotencyKey: $"debug-replay-basket:{e.Counter}",
               foreignId: $"debug-replay-basket:{e.Counter}"
             );
           }
@@ -822,6 +823,7 @@ namespace DebugMachineWatchApiServer
               totalElapsed: e.ElapsedTime,
               timeUTC: e.EndTimeUTC.Add(offset),
               externalQueues: null,
+              idempotencyKey: $"debug-replay-basket:{e.Counter}",
               foreignId: $"debug-replay-basket:{e.Counter}"
             );
           }

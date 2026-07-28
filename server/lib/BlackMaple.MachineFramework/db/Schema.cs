@@ -113,7 +113,21 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE basket_station_operations(ForeignID TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, OriginalMessage TEXT NOT NULL, FirstCounter INTEGER NOT NULL, LastCounter INTEGER NOT NULL)";
+          "CREATE TABLE basket_station_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL)";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText =
+          "CREATE TABLE basket_station_operation_events(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, Counter INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE basket_cycle_end_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE material_allocation_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL)";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText =
+          "CREATE TABLE material_allocation_material(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, MaterialID INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
@@ -1371,7 +1385,19 @@ namespace BlackMaple.MachineFramework
       using var cmd = trans.Connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "CREATE TABLE basket_station_operations(ForeignID TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, OriginalMessage TEXT NOT NULL, FirstCounter INTEGER NOT NULL, LastCounter INTEGER NOT NULL)";
+        "CREATE TABLE basket_station_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE basket_station_operation_events(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, Counter INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE basket_cycle_end_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE material_allocation_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE material_allocation_material(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, MaterialID INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
       cmd.ExecuteNonQuery();
     }
 

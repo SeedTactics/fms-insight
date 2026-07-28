@@ -104,6 +104,43 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task BasketEvidenceForeignIdsRemainCorrelationMetadata()
+  {
+    var id = Guid.NewGuid();
+    var identity = new ContainerIdentity.Uuid { ContainerId = id };
+    var time = new DateTime(2026, 7, 27, 12, 0, 0, DateTimeKind.Utc);
+    using var repository = _repositoryConfig.OpenConnection();
+
+    var first = repository.RecordBasketContentSnapshot([], identity, time, "shared-source");
+    var second = repository.RecordBasketContentSnapshot(
+      [],
+      identity,
+      time.AddMinutes(1),
+      "shared-source"
+    );
+    var arrival = repository.RecordBasketArriveLocation(
+      [],
+      identity,
+      "Robot",
+      1,
+      time.AddMinutes(2),
+      "shared-source"
+    );
+
+    await Assert
+      .That(new[] { first.Counter, second.Counter, arrival.Counter }.Distinct())
+      .Count()
+      .IsEqualTo(3);
+    await Assert
+      .That(
+        repository
+          .GetRecentLog(0)
+          .Count(entry => repository.ForeignIDForCounter(entry.Counter) == "shared-source")
+      )
+      .IsEqualTo(3);
+  }
+
+  [Test]
   public async Task BasketLoadUnloadCanUseUuidIdentity()
   {
     var id = Guid.NewGuid();
@@ -146,6 +183,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       totalElapsed: TimeSpan.FromMinutes(1),
       timeUTC: time.AddMinutes(1),
       externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "uuid-initial-load-operation",
       foreignId: "uuid-initial-load"
     );
 
@@ -188,6 +226,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       totalElapsed: TimeSpan.FromMinutes(1),
       timeUTC: time.AddMinutes(1),
       externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "hinted-uuid-load-operation",
       foreignId: "hinted-uuid-load"
     );
     repository.RecordBasketIdentityHint(id, 8, time.AddMinutes(2));
@@ -216,6 +255,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       totalElapsed: TimeSpan.FromMinutes(1),
       timeUTC: time.AddMinutes(1),
       externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "numbered-initial-load-operation",
       foreignId: "numbered-initial-load"
     );
     repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(2));
@@ -247,6 +287,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.Zero,
         timeUTC: time.AddMinutes(3),
         externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "invalidated-numbered-end-operation",
         foreignId: "invalidated-numbered-end"
       )
     );
@@ -267,6 +308,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       totalElapsed: TimeSpan.FromMinutes(1),
       timeUTC: time.AddMinutes(1),
       externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "first-attempt-operation",
       foreignId: "first-attempt"
     );
     repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(2));
@@ -279,6 +321,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.FromMinutes(2),
         timeUTC: time.AddMinutes(4),
         externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "second-attempt-operation",
         foreignId: "second-attempt"
       )
       .Where(log => log.LogType is LogType.BasketLoadUnload or LogType.BasketCycle)
@@ -574,6 +617,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.FromMinutes(2),
         time,
         ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "different-identity-turnover-operation",
         foreignId: "different-identity-turnover",
         originalMessage: "confirmed work"
       )
@@ -591,6 +635,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.FromMinutes(2),
         time.AddMinutes(1),
         ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "different-identity-turnover-operation",
         foreignId: "different-identity-turnover",
         originalMessage: "confirmed work"
       )
@@ -628,6 +673,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         TimeSpan.FromMinutes(2),
         time,
         ImmutableDictionary<string, string>.Empty,
+        "different-identity-turnover-operation",
         "different-identity-turnover",
         "confirmed work"
       )
@@ -639,6 +685,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         TimeSpan.FromMinutes(2),
         time,
         ImmutableDictionary<string, string>.Empty,
+        "different-identity-turnover-operation",
         "different-identity-turnover",
         "confirmed work"
       )
@@ -650,6 +697,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         TimeSpan.FromMinutes(3),
         time,
         ImmutableDictionary<string, string>.Empty,
+        "different-identity-turnover-operation",
         "different-identity-turnover",
         "confirmed work"
       )
@@ -661,6 +709,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         TimeSpan.FromMinutes(2),
         time,
         ImmutableDictionary<string, string>.Empty.Add("outgoing", "https://example.invalid"),
+        "different-identity-turnover-operation",
         "different-identity-turnover",
         "confirmed work"
       )
@@ -722,6 +771,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         totalElapsed: TimeSpan.FromMinutes(2),
         DateTime.UtcNow,
         externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "missing-active-time-operation",
         foreignId: "missing-active-time"
       )
       .ToImmutableList();
@@ -1868,14 +1918,16 @@ public sealed class ContainerIdentitySpec : IDisposable
       mats: [],
       containerIds: ImmutableHashSet.Create(first, second),
       timeUTC: DateTime.UtcNow,
-      foreignId: "cycle-5-1"
+      idempotencyKey: "cycle-5-1",
+      foreignId: "cycle-correlation"
     );
     var retry = repository.RecordBasketCycleEnd(
       basketId: 5,
       mats: [],
       containerIds: ImmutableHashSet.Create(second, first),
       timeUTC: DateTime.UtcNow.AddMinutes(1),
-      foreignId: "cycle-5-1"
+      idempotencyKey: "cycle-5-1",
+      foreignId: "cycle-correlation"
     );
 
     await Assert.That(cycle.Pallet).IsEqualTo(5);
@@ -1910,14 +1962,16 @@ public sealed class ContainerIdentitySpec : IDisposable
       [],
       ImmutableHashSet.Create(id),
       DateTime.UtcNow,
-      foreignId: "finalize-2"
+      idempotencyKey: "finalize-2",
+      foreignId: "finalization-correlation"
     );
     var retry = repository.RecordBasketCycleEnd(
       2,
       [],
       ImmutableHashSet.Create(id),
       DateTime.UtcNow.AddMinutes(1),
-      foreignId: "finalize-2"
+      idempotencyKey: "finalize-2",
+      foreignId: "finalization-correlation"
     );
 
     await Assert.That(retry.Counter).IsEqualTo(first.Counter);
@@ -1935,7 +1989,8 @@ public sealed class ContainerIdentitySpec : IDisposable
         ],
         ImmutableHashSet.Create(id),
         DateTime.UtcNow,
-        foreignId: "finalize-2"
+        idempotencyKey: "finalize-2",
+        foreignId: "finalization-correlation"
       )
     );
     await AssertThrows<ConflictRequestException>(() =>
@@ -1944,8 +1999,19 @@ public sealed class ContainerIdentitySpec : IDisposable
         [],
         ImmutableHashSet.Create(id),
         DateTime.UtcNow,
-        foreignId: "finalize-2",
+        idempotencyKey: "finalize-2",
+        foreignId: "finalization-correlation",
         originalMessage: "changed retry"
+      )
+    );
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketCycleEnd(
+        2,
+        [],
+        ImmutableHashSet.Create(id),
+        DateTime.UtcNow,
+        idempotencyKey: "finalize-2",
+        foreignId: "changed-correlation"
       )
     );
     await AssertThrows<ConflictRequestException>(() =>

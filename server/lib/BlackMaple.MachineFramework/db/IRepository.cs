@@ -93,6 +93,10 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Adding Events
     // --------------------------------------------------------------------------------
+    // A foreignId is optional correlation or source metadata stored on each event. It is not unique
+    // and does not make an event write idempotent. Callers may deliberately use one foreignId for
+    // several related events. Methods with an idempotencyKey instead define an atomic retry
+    // contract: identical retries return the original result and changed durable input conflicts.
     LogEntry RecordLoadStart(
       IEnumerable<EventLogMaterial> mats,
       int pallet,
@@ -176,9 +180,10 @@ namespace BlackMaple.MachineFramework
 
     // Atomically records one completed basket-station operation. Each transfer owns its basket
     // identity so a physical turnover can unload one UUID episode and load another. Queue changes,
-    // operation timing, transfer evidence, and complete-content cycle boundaries share one
-    // idempotency key. An identical retry returns the original event group; changed durable input
-    // throws ConflictRequestException. timeUTC is intentionally excluded from retry comparison.
+    // operation timing, transfer evidence, and complete-content cycle boundaries are committed
+    // under one idempotency key. An identical retry returns the original event group; changed
+    // durable input throws ConflictRequestException. timeUTC is intentionally excluded from retry
+    // comparison. foreignId remains optional event correlation metadata.
     //
     // totalElapsed is apportioned among transfers in proportion to ActiveOperationTime when every
     // transfer has a positive expected time. Otherwise, it is apportioned by material count.
@@ -191,7 +196,8 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      string foreignId,
+      string idempotencyKey,
+      string foreignId = null,
       string originalMessage = null
     );
 
@@ -347,11 +353,18 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
+
+    /// <summary>
+    /// Atomically finalizes UUID basket fragments. When <paramref name="idempotencyKey"/> is
+    /// nonempty, an identical retry returns the original cycle end and changed durable input
+    /// conflicts. <paramref name="foreignId"/> remains optional event correlation metadata.
+    /// </summary>
     LogEntry RecordBasketCycleEnd(
       int basketId,
       IEnumerable<EventLogMaterial> mats,
       IReadOnlySet<Guid> containerIds,
       DateTime timeUTC,
+      string idempotencyKey = null,
       string foreignId = null,
       string originalMessage = null
     );
@@ -551,6 +564,16 @@ namespace BlackMaple.MachineFramework
     // Material IDs
     // --------------------------------------------------------------------------------
     long AllocateMaterialID(string unique, string part, int numProc);
+
+    /// <summary>
+    /// Allocates a batch of ordinary sequential material IDs exactly once. An identical retry
+    /// returns the original allocation in request order; changed material details throw
+    /// <see cref="ConflictRequestException"/>.
+    /// </summary>
+    ImmutableList<MaterialDetails> AllocateMaterialIDs(
+      ImmutableList<MaterialToAllocate> material,
+      string idempotencyKey
+    );
     long AllocateMaterialIDAndGenerateSerial(
       string unique,
       string part,

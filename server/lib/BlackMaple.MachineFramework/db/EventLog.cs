@@ -2436,22 +2436,19 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableList<LogEntry> BasketStationOperationForForeignId(
-      string foreignId,
-      long firstCounter,
-      long lastCounter,
+    private ImmutableList<LogEntry> BasketStationOperationForIdempotencyKey(
+      string idempotencyKey,
       IDbTransaction trans
     )
     {
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ContainerId "
-        + "FROM stations WHERE ForeignID = $foreign "
-        + "AND Counter >= $firstCounter AND Counter <= $lastCounter ORDER BY Counter";
-      cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignId;
-      cmd.Parameters.Add("firstCounter", SqliteType.Integer).Value = firstCounter;
-      cmd.Parameters.Add("lastCounter", SqliteType.Integer).Value = lastCounter;
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.ContainerId "
+        + "FROM basket_station_operation_events o "
+        + "JOIN stations s ON s.Counter = o.Counter "
+        + "WHERE o.IdempotencyKey = $key ORDER BY o.Position";
+      cmd.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
       using var reader = cmd.ExecuteReader();
       return LoadLog(reader, trans).ToImmutableList();
     }
@@ -2624,18 +2621,20 @@ namespace BlackMaple.MachineFramework
       TimeSpan totalElapsed,
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues,
-      string foreignId,
+      string idempotencyKey,
+      string foreignId = null,
       string originalMessage = null
     )
     {
       ArgumentNullException.ThrowIfNull(operation);
-      if (string.IsNullOrWhiteSpace(foreignId))
+      if (string.IsNullOrWhiteSpace(idempotencyKey))
         throw new ArgumentException(
-          "A basket-station operation requires a foreign ID.",
-          nameof(foreignId)
+          "A basket-station operation requires an idempotency key.",
+          nameof(idempotencyKey)
         );
       if (totalElapsed < TimeSpan.Zero)
         throw new ArgumentOutOfRangeException(nameof(totalElapsed));
+      foreignId = string.IsNullOrEmpty(foreignId) ? null : foreignId;
 
       var palletCompletion = ToPalletBasketLoadUnloadCompletion(operation);
       ValidatePalletBasketCompletion(palletCompletion, toLoad: null, toUnload: null);
@@ -2667,38 +2666,32 @@ namespace BlackMaple.MachineFramework
         using var existingCommand = _connection.CreateCommand();
         existingCommand.Transaction = trans;
         existingCommand.CommandText =
-          "SELECT Fingerprint, OriginalMessage, FirstCounter, LastCounter "
-          + "FROM basket_station_operations WHERE ForeignID = $foreign";
-        existingCommand.Parameters.Add("foreign", SqliteType.Text).Value = foreignId;
+          "SELECT Fingerprint, ForeignID, OriginalMessage "
+          + "FROM basket_station_operations WHERE IdempotencyKey = $key";
+        existingCommand.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
         string existingFingerprint = null;
+        string existingForeignId = null;
         string existingOriginalMessage = null;
-        long existingFirstCounter = 0;
-        long existingLastCounter = 0;
         using (var reader = existingCommand.ExecuteReader())
         {
           if (reader.Read())
           {
             existingFingerprint = reader.GetString(0);
-            existingOriginalMessage = reader.GetString(1);
-            existingFirstCounter = reader.GetInt64(2);
-            existingLastCounter = reader.GetInt64(3);
+            existingForeignId = reader.IsDBNull(1) ? null : reader.GetString(1);
+            existingOriginalMessage = reader.GetString(2);
           }
         }
         if (existingFingerprint is not null)
         {
           if (
             existingFingerprint != fingerprint
+            || existingForeignId != foreignId
             || existingOriginalMessage != (originalMessage ?? "")
           )
             throw new ConflictRequestException(
-              $"Foreign ID {foreignId} already identifies a different basket-station operation."
+              $"Idempotency key {idempotencyKey} already identifies a different basket-station operation."
             );
-          logs = BasketStationOperationForForeignId(
-            foreignId,
-            existingFirstCounter,
-            existingLastCounter,
-            trans
-          );
+          logs = BasketStationOperationForIdempotencyKey(idempotencyKey, trans);
           trans.Commit();
           return logs;
         }
@@ -2811,18 +2804,30 @@ namespace BlackMaple.MachineFramework
         recordOperation.Transaction = trans;
         recordOperation.CommandText =
           "INSERT INTO basket_station_operations"
-          + "(ForeignID, Fingerprint, OriginalMessage, FirstCounter, LastCounter) "
-          + "VALUES($foreign, $fingerprint, $original, $firstCounter, $lastCounter)";
-        recordOperation.Parameters.Add("foreign", SqliteType.Text).Value = foreignId;
+          + "(IdempotencyKey, Fingerprint, ForeignID, OriginalMessage) "
+          + "VALUES($key, $fingerprint, $foreign, $original)";
+        recordOperation.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
         recordOperation.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
+        recordOperation.Parameters.Add("foreign", SqliteType.Text).Value = string.IsNullOrEmpty(
+          foreignId
+        )
+          ? DBNull.Value
+          : foreignId;
         recordOperation.Parameters.Add("original", SqliteType.Text).Value = originalMessage ?? "";
-        recordOperation.Parameters.Add("firstCounter", SqliteType.Integer).Value = newLogs[
-          0
-        ].Counter;
-        recordOperation.Parameters.Add("lastCounter", SqliteType.Integer).Value = newLogs[
-          ^1
-        ].Counter;
         recordOperation.ExecuteNonQuery();
+        recordOperation.CommandText =
+          "INSERT INTO basket_station_operation_events(IdempotencyKey, Position, Counter) "
+          + "VALUES($key, $position, $counter)";
+        recordOperation.Parameters.Clear();
+        recordOperation.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
+        recordOperation.Parameters.Add("position", SqliteType.Integer);
+        recordOperation.Parameters.Add("counter", SqliteType.Integer);
+        for (var position = 0; position < newLogs.Count; ++position)
+        {
+          recordOperation.Parameters[1].Value = position;
+          recordOperation.Parameters[2].Value = newLogs[position].Counter;
+          recordOperation.ExecuteNonQuery();
+        }
         trans.Commit();
         logs = newLogs.ToImmutableList();
         added = true;
@@ -3399,12 +3404,18 @@ namespace BlackMaple.MachineFramework
       IEnumerable<EventLogMaterial> mats,
       IReadOnlySet<Guid> containerIds,
       DateTime timeUTC,
+      string idempotencyKey = null,
       string foreignId = null,
       string originalMessage = null
     )
     {
       if (basketId <= 0)
         throw new ArgumentOutOfRangeException(nameof(basketId));
+      if (idempotencyKey is not null && string.IsNullOrWhiteSpace(idempotencyKey))
+        throw new ArgumentException(
+          "A basket-cycle finalization idempotency key cannot be empty.",
+          nameof(idempotencyKey)
+        );
       var ids = containerIds.OrderBy(id => id).ToImmutableList();
       if (ids.Count == 0 || ids.Any(id => id == Guid.Empty))
         throw new ArgumentException(
@@ -3415,28 +3426,29 @@ namespace BlackMaple.MachineFramework
         .ThenBy(item => item.Process)
         .ThenBy(item => item.Face)
         .ToImmutableList();
+      foreignId = string.IsNullOrEmpty(foreignId) ? null : foreignId;
+      var fingerprint = BasketCycleEndFingerprint(basketId, material, ids);
 
       LogEntry cycle;
       var added = false;
       lock (_cfg)
       {
         using var trans = _connection.BeginTransaction();
-        cycle = ExistingFinalization(foreignId, trans);
-        if (cycle is not null)
+        var existing = BasketCycleEndOperation(idempotencyKey, trans);
+        if (existing is not null)
         {
-          var existingMaterial = cycle
-            .Material.Select(EventLogMaterial.FromLogMat)
-            .OrderBy(item => item.MaterialID)
-            .ThenBy(item => item.Process)
-            .ThenBy(item => item.Face);
           if (
-            cycle.Pallet != basketId
-            || cycle.CycleEndContainerIds?.SequenceEqual(ids) != true
-            || !existingMaterial.SequenceEqual(material)
-            || OriginalMessageForCounter(cycle.Counter, trans) != (originalMessage ?? "")
+            existing.Fingerprint != fingerprint
+            || existing.ForeignId != foreignId
+            || existing.OriginalMessage != (originalMessage ?? "")
           )
             throw new ConflictRequestException(
-              $"Foreign ID {foreignId} already identifies a different basket-cycle finalization."
+              $"Idempotency key {idempotencyKey} already identifies a different basket-cycle finalization."
+            );
+          cycle =
+            BasketCycleEndForCounter(existing.Counter, trans)
+            ?? throw new InvalidOperationException(
+              $"Basket-cycle finalization {idempotencyKey} references missing event {existing.Counter}."
             );
           trans.Commit();
         }
@@ -3481,6 +3493,24 @@ namespace BlackMaple.MachineFramework
             removeHints.Parameters[0].Value = id.ToString("D");
             removeHints.ExecuteNonQuery();
           }
+          if (idempotencyKey is not null)
+          {
+            using var recordOperation = _connection.CreateCommand();
+            recordOperation.Transaction = trans;
+            recordOperation.CommandText =
+              "INSERT INTO basket_cycle_end_operations"
+              + "(IdempotencyKey, Fingerprint, ForeignID, OriginalMessage, Counter) "
+              + "VALUES($key, $fingerprint, $foreign, $original, $counter)";
+            recordOperation.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
+            recordOperation.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
+            recordOperation.Parameters.Add("foreign", SqliteType.Text).Value = foreignId is null
+              ? DBNull.Value
+              : foreignId;
+            recordOperation.Parameters.Add("original", SqliteType.Text).Value =
+              originalMessage ?? "";
+            recordOperation.Parameters.Add("counter", SqliteType.Integer).Value = cycle.Counter;
+            recordOperation.ExecuteNonQuery();
+          }
           trans.Commit();
           added = true;
         }
@@ -3491,35 +3521,75 @@ namespace BlackMaple.MachineFramework
       return cycle;
     }
 
-    private string OriginalMessageForCounter(long counter, IDbTransaction trans)
-    {
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = (SqliteTransaction)trans;
-      cmd.CommandText = "SELECT OriginalMessage FROM stations WHERE Counter = $counter";
-      cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
-      return cmd.ExecuteScalar() as string ?? "";
-    }
+    private sealed record BasketCycleEndOperationState(
+      string Fingerprint,
+      string ForeignId,
+      string OriginalMessage,
+      long Counter
+    );
 
-    private LogEntry ExistingFinalization(string foreignId, SqliteTransaction trans)
+    private BasketCycleEndOperationState BasketCycleEndOperation(
+      string idempotencyKey,
+      IDbTransaction trans
+    )
     {
-      if (string.IsNullOrEmpty(foreignId))
+      if (idempotencyKey is null)
         return null;
       using var cmd = _connection.CreateCommand();
-      cmd.Transaction = trans;
+      ((IDbCommand)cmd).Transaction = trans;
+      cmd.CommandText =
+        "SELECT Fingerprint, ForeignID, OriginalMessage, Counter "
+        + "FROM basket_cycle_end_operations WHERE IdempotencyKey = $key";
+      cmd.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
+      using var reader = cmd.ExecuteReader();
+      return reader.Read()
+        ? new BasketCycleEndOperationState(
+          reader.GetString(0),
+          reader.IsDBNull(1) ? null : reader.GetString(1),
+          reader.GetString(2),
+          reader.GetInt64(3)
+        )
+        : null;
+    }
+
+    private LogEntry BasketCycleEndForCounter(long counter, IDbTransaction trans)
+    {
+      using var cmd = _connection.CreateCommand();
+      ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
         "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ContainerId "
-        + "FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
-      cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignId;
+        + "FROM stations WHERE Counter = $counter";
+      cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
       using var reader = cmd.ExecuteReader();
-      var existing = LoadLog(reader, trans).SingleOrDefault();
-      if (
-        existing is not null
-        && (existing.LogType != LogType.BasketCycle || existing.StartOfCycle)
-      )
-        throw new ConflictRequestException(
-          $"Foreign ID {foreignId} already identifies a non-finalization event."
+      return LoadLog(reader, trans).SingleOrDefault();
+    }
+
+    private static string BasketCycleEndFingerprint(
+      int basketId,
+      ImmutableList<EventLogMaterial> material,
+      ImmutableList<Guid> containerIds
+    )
+    {
+      var fingerprint = new StringBuilder();
+      AppendBasketStationFingerprint(fingerprint, basketId.ToString(CultureInfo.InvariantCulture));
+      foreach (var id in containerIds)
+        AppendBasketStationFingerprint(fingerprint, id.ToString("D"));
+      foreach (var item in material)
+      {
+        AppendBasketStationFingerprint(
+          fingerprint,
+          item.MaterialID.ToString(CultureInfo.InvariantCulture)
         );
-      return existing;
+        AppendBasketStationFingerprint(
+          fingerprint,
+          item.Process.ToString(CultureInfo.InvariantCulture)
+        );
+        AppendBasketStationFingerprint(
+          fingerprint,
+          item.Face.ToString(CultureInfo.InvariantCulture)
+        );
+      }
+      return fingerprint.ToString();
     }
 
     private IReadOnlyList<EventLogMaterial> GetMaterialFromLogEvent(
@@ -5562,6 +5632,148 @@ namespace BlackMaple.MachineFramework
           return matId;
         }
       }
+    }
+
+    public ImmutableList<MaterialDetails> AllocateMaterialIDs(
+      ImmutableList<MaterialToAllocate> material,
+      string idempotencyKey
+    )
+    {
+      ArgumentNullException.ThrowIfNull(material);
+      if (material.IsEmpty)
+        throw new ArgumentException("At least one material must be allocated.", nameof(material));
+      if (string.IsNullOrWhiteSpace(idempotencyKey))
+        throw new ArgumentException(
+          "An idempotent material allocation requires an idempotency key.",
+          nameof(idempotencyKey)
+        );
+      foreach (var item in material)
+      {
+        ArgumentNullException.ThrowIfNull(item);
+        if (string.IsNullOrWhiteSpace(item.JobUnique))
+          throw new ArgumentException("A material job unique is required.", nameof(material));
+        if (string.IsNullOrWhiteSpace(item.PartName))
+          throw new ArgumentException("A material part name is required.", nameof(material));
+        if (item.NumProcesses <= 0)
+          throw new ArgumentOutOfRangeException(
+            nameof(material),
+            "The number of material processes must be positive."
+          );
+        ArgumentNullException.ThrowIfNull(item.Paths);
+        if (
+          item.Paths.Any(path => path.Key <= 0 || path.Key > item.NumProcesses || path.Value <= 0)
+        )
+          throw new ArgumentException(
+            "Material paths require a positive path for a valid process.",
+            nameof(material)
+          );
+      }
+
+      var fingerprint = MaterialAllocationFingerprint(material);
+      lock (_cfg)
+      {
+        using var trans = _connection.BeginTransaction();
+        using var existingCommand = _connection.CreateCommand();
+        existingCommand.Transaction = trans;
+        existingCommand.CommandText =
+          "SELECT Fingerprint FROM material_allocation_operations WHERE IdempotencyKey = $key";
+        existingCommand.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
+        var existingFingerprint = existingCommand.ExecuteScalar() as string;
+        if (existingFingerprint is not null)
+        {
+          if (existingFingerprint != fingerprint)
+            throw new ConflictRequestException(
+              $"Idempotency key {idempotencyKey} already identifies a different material allocation."
+            );
+          var existing = MaterialAllocationForIdempotencyKey(idempotencyKey, trans);
+          if (existing.Count != material.Count)
+            throw new InvalidOperationException(
+              $"Material allocation {idempotencyKey} has an incomplete durable result."
+            );
+          trans.Commit();
+          return existing;
+        }
+
+        var allocated = ImmutableList.CreateBuilder<MaterialDetails>();
+        for (var position = 0; position < material.Count; ++position)
+        {
+          var requested = material[position];
+          var materialId = AllocateMaterialID(
+            trans,
+            requested.JobUnique,
+            requested.PartName,
+            requested.NumProcesses
+          );
+          foreach (var path in requested.Paths)
+            RecordPathForProcess(materialId, path.Key, path.Value, trans);
+          using var recordMaterial = _connection.CreateCommand();
+          recordMaterial.Transaction = trans;
+          recordMaterial.CommandText =
+            "INSERT INTO material_allocation_material(IdempotencyKey, Position, MaterialID) "
+            + "VALUES($key, $position, $material)";
+          recordMaterial.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
+          recordMaterial.Parameters.Add("position", SqliteType.Integer).Value = position;
+          recordMaterial.Parameters.Add("material", SqliteType.Integer).Value = materialId;
+          recordMaterial.ExecuteNonQuery();
+          allocated.Add(GetMaterialDetails(materialId, trans));
+        }
+        using var recordOperation = _connection.CreateCommand();
+        recordOperation.Transaction = trans;
+        recordOperation.CommandText =
+          "INSERT INTO material_allocation_operations(IdempotencyKey, Fingerprint) "
+          + "VALUES($key, $fingerprint)";
+        recordOperation.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
+        recordOperation.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
+        recordOperation.ExecuteNonQuery();
+        trans.Commit();
+        return allocated.ToImmutable();
+      }
+    }
+
+    private ImmutableList<MaterialDetails> MaterialAllocationForIdempotencyKey(
+      string idempotencyKey,
+      IDbTransaction trans
+    )
+    {
+      using var cmd = _connection.CreateCommand();
+      ((IDbCommand)cmd).Transaction = trans;
+      cmd.CommandText =
+        "SELECT MaterialID FROM material_allocation_material "
+        + "WHERE IdempotencyKey = $key ORDER BY Position";
+      cmd.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
+      var materialIds = ImmutableList.CreateBuilder<long>();
+      using (var reader = cmd.ExecuteReader())
+      {
+        while (reader.Read())
+          materialIds.Add(reader.GetInt64(0));
+      }
+      return materialIds.Select(id => GetMaterialDetails(id, trans)).ToImmutableList();
+    }
+
+    private static string MaterialAllocationFingerprint(ImmutableList<MaterialToAllocate> material)
+    {
+      var fingerprint = new StringBuilder();
+      foreach (var item in material)
+      {
+        AppendBasketStationFingerprint(fingerprint, item.JobUnique);
+        AppendBasketStationFingerprint(fingerprint, item.PartName);
+        AppendBasketStationFingerprint(
+          fingerprint,
+          item.NumProcesses.ToString(CultureInfo.InvariantCulture)
+        );
+        foreach (var path in item.Paths.OrderBy(path => path.Key))
+        {
+          AppendBasketStationFingerprint(
+            fingerprint,
+            path.Key.ToString(CultureInfo.InvariantCulture)
+          );
+          AppendBasketStationFingerprint(
+            fingerprint,
+            path.Value.ToString(CultureInfo.InvariantCulture)
+          );
+        }
+      }
+      return fingerprint.ToString();
     }
 
     public long AllocateMaterialIDAndGenerateSerial(

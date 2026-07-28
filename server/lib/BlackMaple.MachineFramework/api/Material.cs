@@ -188,6 +188,18 @@ namespace BlackMaple.MachineFramework
     public ImmutableDictionary<int, int>? Paths { get; init; } // key is process, value is path
   }
 
+  /// <summary>Material details used by an idempotent batch allocation.</summary>
+  public sealed record MaterialToAllocate
+  {
+    public required string JobUnique { get; init; }
+
+    public required string PartName { get; init; }
+
+    public required int NumProcesses { get; init; }
+
+    public required ImmutableDictionary<int, int> Paths { get; init; }
+  }
+
   public record PossibleJobAndProcess
   {
     public required string JobUnique { get; init; }

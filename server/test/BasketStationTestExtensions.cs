@@ -122,6 +122,7 @@ internal static class BasketStationTestExtensions
       operationIds.IsEmpty
         ? $"test-basket-station:{Guid.NewGuid():N}"
         : string.Join("|", operationIds),
+      operationIds.IsEmpty ? null : string.Join("|", operationIds),
       toUnload
         .Select(unload => unload.OriginalMessage)
         .Concat(toLoad.Select(load => load.OriginalMessage))
@@ -167,6 +168,7 @@ internal static class BasketStationTestExtensions
       TimeSpan.Zero,
       timeUTC,
       ImmutableDictionary<string, string>.Empty,
+      foreignId,
       foreignId,
       originalMessage
     );
@@ -249,6 +251,7 @@ internal static class BasketStationTestExtensions
       totalElapsed,
       timeUTC,
       externalQueues,
+      foreignId,
       foreignId,
       toUnload?.OriginalMessage ?? toLoad?.OriginalMessage
     );
