@@ -2128,7 +2128,7 @@ namespace BlackMaple.MachineFramework
         {
           if (boundary.Material.Count == 0 || !starts.Add(boundary.BasketIdentity))
             throw new ArgumentException(
-              "Each ready basket requires one non-empty cycle start.",
+              "Each nonempty basket boundary requires one cycle start.",
               nameof(palletBasketCompletion)
             );
         }

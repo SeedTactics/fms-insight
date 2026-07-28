@@ -1798,6 +1798,163 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task BasketStationOperationAtomicallySealsOldCycleAndStartsDistinctNewCycle()
+  {
+    var oldId = Guid.NewGuid();
+    var newId = Guid.NewGuid();
+    var oldMaterialId = 1L;
+    var newMaterialId = 2L;
+    var oldCycleStart = new DateTime(2026, 7, 17, 10, 0, 0, DateTimeKind.Utc);
+    var turnoverTime = oldCycleStart.AddHours(2);
+    using var repository = _repositoryConfig.OpenConnection();
+    repository.RecordBasketContentSnapshot(
+      [
+        new EventLogMaterial
+        {
+          MaterialID = oldMaterialId,
+          Process = 1,
+          Face = 0,
+        },
+      ],
+      new ContainerIdentity.Uuid { ContainerId = oldId },
+      oldCycleStart
+    );
+
+    var turnover = repository
+      .RecordBasketStationOperation(
+        new BasketStationOperation
+        {
+          Transfers = [],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.End
+            {
+              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 4 },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = oldMaterialId,
+                  Process = 1,
+                  Face = 0,
+                },
+              ],
+              ReconciledBasketIdentities = [oldId],
+            },
+            new BasketCycleBoundary.Start
+            {
+              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = newId },
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = newMaterialId,
+                  Process = 2,
+                  Face = 0,
+                },
+              ],
+            },
+          ],
+        },
+        lulNum: 4,
+        totalElapsed: TimeSpan.Zero,
+        turnoverTime,
+        ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "basket-turnover",
+        foreignId: "basket-turnover",
+        originalMessage: null
+      )
+      .ToImmutableList();
+
+    await Assert.That(turnover).Count().IsEqualTo(2);
+    await Assert.That(turnover[0].StartOfCycle).IsFalse();
+    await Assert.That(turnover[0].ElapsedTime).IsEqualTo(TimeSpan.FromHours(2));
+    await Assert
+      .That(turnover[0].Identity)
+      .IsEqualTo(new ContainerIdentity.Numbered { ContainerNum = 4 });
+    await Assert.That(turnover[1].StartOfCycle).IsTrue();
+    await Assert
+      .That(turnover[1].Identity)
+      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = newId });
+
+    var newCycleEnd = repository.RecordBasketCycleEnd(
+      4,
+      [
+        new EventLogMaterial
+        {
+          MaterialID = newMaterialId,
+          Process = 2,
+          Face = 0,
+        },
+      ],
+      ImmutableHashSet.Create(newId),
+      turnoverTime.AddHours(3)
+    );
+
+    await Assert.That(newCycleEnd.ElapsedTime).IsEqualTo(TimeSpan.FromHours(3));
+  }
+
+  [Test]
+  public async Task DelayedBasketCycleStartRetainsEmptyFragmentElapsedOrigin()
+  {
+    var id = Guid.NewGuid();
+    var materialId = 1L;
+    var emptyArrival = new DateTime(2026, 7, 17, 10, 0, 0, DateTimeKind.Utc);
+    var sealingTime = emptyArrival.AddHours(2);
+    using var repository = _repositoryConfig.OpenConnection();
+    repository.RecordBasketContentSnapshot(
+      [],
+      new ContainerIdentity.Uuid { ContainerId = id },
+      emptyArrival
+    );
+    repository.RecordBasketStationOperation(
+      new BasketStationOperation
+      {
+        Transfers = [],
+        CycleBoundaries =
+        [
+          new BasketCycleBoundary.Start
+          {
+            BasketIdentity = new ContainerIdentity.Uuid { ContainerId = id },
+            Material =
+            [
+              new EventLogMaterial
+              {
+                MaterialID = materialId,
+                Process = 2,
+                Face = 1,
+              },
+            ],
+          },
+        ],
+      },
+      lulNum: 4,
+      totalElapsed: TimeSpan.Zero,
+      sealingTime,
+      ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "delayed-basket-start",
+      foreignId: "delayed-basket-start",
+      originalMessage: null
+    );
+
+    var cycleEnd = repository.RecordBasketCycleEnd(
+      4,
+      [
+        new EventLogMaterial
+        {
+          MaterialID = materialId,
+          Process = 2,
+          Face = 1,
+        },
+      ],
+      ImmutableHashSet.Create(id),
+      sealingTime.AddHours(3)
+    );
+
+    await Assert.That(cycleEnd.ElapsedTime).IsEqualTo(TimeSpan.FromHours(5));
+  }
+
+  [Test]
   public async Task HintCorrectionUsesCounterAndSurvivesRestart()
   {
     var id = Guid.NewGuid();

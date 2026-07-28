@@ -839,7 +839,9 @@ namespace BlackMaple.MachineFramework
     public required ContainerIdentity BasketIdentity { get; init; }
 
     /// <summary>
-    /// Complete, slot-aware material for the cycle being ended or started.
+    /// Slot-aware material associated with the boundary. An end declares the complete material
+    /// carried during the ending cycle. A start declares the complete basket contents at the
+    /// boundary; later basket loads may add material before that cycle ends.
     /// </summary>
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
