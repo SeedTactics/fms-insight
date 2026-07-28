@@ -355,9 +355,13 @@ namespace BlackMaple.MachineFramework
     );
 
     /// <summary>
-    /// Atomically finalizes UUID basket fragments. When <paramref name="idempotencyKey"/> is
-    /// nonempty, an identical retry returns the original cycle end and changed durable input
-    /// conflicts. <paramref name="foreignId"/> remains optional event correlation metadata.
+    /// Atomically finalizes UUID basket fragments. <paramref name="mats"/> is the caller's
+    /// authoritative declaration of the assembled cycle contents; it is not inferred from or
+    /// required to match the latest content evidence on each fragment. This permits reconciliation
+    /// of overlapping, incomplete, or corrected fragment evidence at the finalization boundary.
+    /// When <paramref name="idempotencyKey"/> is nonempty, an identical retry returns the original
+    /// cycle end and changed durable input conflicts. <paramref name="foreignId"/> remains optional
+    /// event correlation metadata.
     /// </summary>
     LogEntry RecordBasketCycleEnd(
       int basketId,
