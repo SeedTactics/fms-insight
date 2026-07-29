@@ -2866,33 +2866,30 @@ namespace BlackMaple.MachineFramework
     )
     {
       var fingerprint = new StringBuilder();
-      AppendBasketStationFingerprint(fingerprint, lulNum.ToString(CultureInfo.InvariantCulture));
-      AppendBasketStationFingerprint(
-        fingerprint,
-        totalElapsed.Ticks.ToString(CultureInfo.InvariantCulture)
-      );
+      AppendFingerprint(fingerprint, lulNum.ToString(CultureInfo.InvariantCulture));
+      AppendFingerprint(fingerprint, totalElapsed.Ticks.ToString(CultureInfo.InvariantCulture));
       foreach (var transfer in operation.Transfers)
       {
-        AppendBasketStationFingerprint(
+        AppendFingerprint(
           fingerprint,
           transfer is BasketStationTransfer.LoadOntoBasket ? "load" : "unload"
         );
-        AppendBasketStationFingerprint(fingerprint, BasketStationIdentity(transfer.BasketIdentity));
-        AppendBasketStationFingerprint(
+        AppendFingerprint(fingerprint, BasketStationIdentity(transfer.BasketIdentity));
+        AppendFingerprint(
           fingerprint,
           transfer.ActiveOperationTime.Ticks.ToString(CultureInfo.InvariantCulture)
         );
         var queue = (transfer as BasketStationTransfer.UnloadFromBasket)?.DestinationQueue;
-        AppendBasketStationFingerprint(fingerprint, queue);
+        AppendFingerprint(fingerprint, queue);
         if (
           transfer is BasketStationTransfer.UnloadFromBasket
           && queue is not null
           && externalQueues is not null
           && externalQueues.TryGetValue(queue, out var externalServer)
         )
-          AppendBasketStationFingerprint(fingerprint, externalServer);
+          AppendFingerprint(fingerprint, externalServer);
         else
-          AppendBasketStationFingerprint(fingerprint, null);
+          AppendFingerprint(fingerprint, null);
         foreach (
           var material in transfer
             .Material.OrderBy(material => material.MaterialID)
@@ -2900,28 +2897,19 @@ namespace BlackMaple.MachineFramework
             .ThenBy(material => material.Face)
         )
         {
-          AppendBasketStationFingerprint(
+          AppendFingerprint(
             fingerprint,
             material.MaterialID.ToString(CultureInfo.InvariantCulture)
           );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            material.Process.ToString(CultureInfo.InvariantCulture)
-          );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            material.Face.ToString(CultureInfo.InvariantCulture)
-          );
+          AppendFingerprint(fingerprint, material.Process.ToString(CultureInfo.InvariantCulture));
+          AppendFingerprint(fingerprint, material.Face.ToString(CultureInfo.InvariantCulture));
         }
       }
       foreach (var boundary in operation.CycleBoundaries)
       {
-        AppendBasketStationFingerprint(
-          fingerprint,
-          boundary is BasketCycleBoundary.Start ? "start" : "end"
-        );
-        AppendBasketStationFingerprint(fingerprint, BasketStationIdentity(boundary.BasketIdentity));
-        AppendBasketStationFingerprint(
+        AppendFingerprint(fingerprint, boundary is BasketCycleBoundary.Start ? "start" : "end");
+        AppendFingerprint(fingerprint, BasketStationIdentity(boundary.BasketIdentity));
+        AppendFingerprint(
           fingerprint,
           (boundary as BasketCycleBoundary.Start)?.AssociatedBasketNum?.ToString(
             CultureInfo.InvariantCulture
@@ -2934,25 +2922,19 @@ namespace BlackMaple.MachineFramework
             .ThenBy(material => material.Face)
         )
         {
-          AppendBasketStationFingerprint(
+          AppendFingerprint(
             fingerprint,
             material.MaterialID.ToString(CultureInfo.InvariantCulture)
           );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            material.Process.ToString(CultureInfo.InvariantCulture)
-          );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            material.Face.ToString(CultureInfo.InvariantCulture)
-          );
+          AppendFingerprint(fingerprint, material.Process.ToString(CultureInfo.InvariantCulture));
+          AppendFingerprint(fingerprint, material.Face.ToString(CultureInfo.InvariantCulture));
         }
         foreach (
           var containerId in (
             boundary as BasketCycleBoundary.End
           )?.ReconciledBasketIdentities.OrderBy(id => id) ?? Enumerable.Empty<Guid>()
         )
-          AppendBasketStationFingerprint(fingerprint, containerId.ToString("D"));
+          AppendFingerprint(fingerprint, containerId.ToString("D"));
       }
       return fingerprint.ToString();
     }
@@ -2965,7 +2947,7 @@ namespace BlackMaple.MachineFramework
         _ => "none",
       };
 
-    private static void AppendBasketStationFingerprint(StringBuilder fingerprint, string value)
+    private static void AppendFingerprint(StringBuilder fingerprint, string value)
     {
       value ??= "";
       fingerprint
@@ -5347,24 +5329,17 @@ namespace BlackMaple.MachineFramework
     private static string MaterialAllocationFingerprint(ImmutableList<MaterialToAllocate> material)
     {
       var fingerprint = new StringBuilder();
+      AppendFingerprint(fingerprint, material.Count.ToString(CultureInfo.InvariantCulture));
       foreach (var item in material)
       {
-        AppendBasketStationFingerprint(fingerprint, item.JobUnique);
-        AppendBasketStationFingerprint(fingerprint, item.PartName);
-        AppendBasketStationFingerprint(
-          fingerprint,
-          item.NumProcesses.ToString(CultureInfo.InvariantCulture)
-        );
+        AppendFingerprint(fingerprint, item.JobUnique);
+        AppendFingerprint(fingerprint, item.PartName);
+        AppendFingerprint(fingerprint, item.NumProcesses.ToString(CultureInfo.InvariantCulture));
+        AppendFingerprint(fingerprint, item.Paths.Count.ToString(CultureInfo.InvariantCulture));
         foreach (var path in item.Paths.OrderBy(path => path.Key))
         {
-          AppendBasketStationFingerprint(
-            fingerprint,
-            path.Key.ToString(CultureInfo.InvariantCulture)
-          );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            path.Value.ToString(CultureInfo.InvariantCulture)
-          );
+          AppendFingerprint(fingerprint, path.Key.ToString(CultureInfo.InvariantCulture));
+          AppendFingerprint(fingerprint, path.Value.ToString(CultureInfo.InvariantCulture));
         }
       }
       return fingerprint.ToString();

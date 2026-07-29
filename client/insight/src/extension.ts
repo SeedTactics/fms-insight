@@ -20,14 +20,6 @@ export async function bootstrapInsight(
   const store = createStore();
   store.set(fmsInformation, await loadInfo());
   render(appProps, root, store);
-
-  if ("serviceWorker" in navigator) {
-    void navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const registration of registrations) {
-        void registration.unregister();
-      }
-    });
-  }
 }
 
 export { customState } from "./cell-status/custom-state.js";
