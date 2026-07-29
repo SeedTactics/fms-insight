@@ -70,7 +70,6 @@ namespace BlackMaple.MachineFramework
     );
     ImmutableList<CurrentBasketIdentityHint> GetCurrentBasketIdentityHints(int? basketNum = null);
     ImmutableList<Guid> GetUnresolvedOpenBasketContainerIds();
-    ImmutableDictionary<Guid, CurrentBasketIdentityHint> ReconstructBasketIdentityHints();
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -204,13 +203,6 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       string foreignId = null,
       bool palletEnd = false
-    );
-    IEnumerable<LogEntry> RecordEmptyBasket(
-      int basketId,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      bool basketEnd = false
     );
     LogEntry RecordManualWorkAtLULStart(
       IEnumerable<EventLogMaterial> mats,
