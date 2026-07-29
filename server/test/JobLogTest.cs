@@ -7280,12 +7280,6 @@ namespace BlackMaple.FMSInsight.Tests
               [
                 new EventLogMaterial
                 {
-                  MaterialID = mat3.MaterialID,
-                  Process = 1,
-                  Face = 0,
-                },
-                new EventLogMaterial
-                {
                   MaterialID = mat1.MaterialID,
                   Process = 1,
                   Face = 0,
@@ -7320,12 +7314,14 @@ namespace BlackMaple.FMSInsight.Tests
         )
         .ShouldBe(1);
 
-      // Should have basket cycle start for basket 5 (mat1, mat2 loaded; mat3 previously loaded)
+      // Should have basket cycle start for basket 5 with its complete post-turnover contents.
       var cycleStart = logs.FirstOrDefault(e =>
         e.LogType == LogType.BasketCycle && e.Pallet == 5 && e.StartOfCycle
       );
       cycleStart.ShouldNotBeNull();
-      cycleStart.Material.Count.ShouldBe(3); // mat1, mat2, mat3 (previously loaded)
+      cycleStart
+        .Material.Select(material => material.MaterialID)
+        .ShouldBe([mat1.MaterialID, mat2.MaterialID]);
 
       // mat3 should be in QUEUE2 now
       var queuedMats = _jobLog.GetMaterialInAllQueues().ToList();
@@ -7658,7 +7654,7 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
-    public void RecordLoadEndUsesBasketCycleStartAndIgnoresInvalidated()
+    public void RecordLoadEndUsesOnlyExplicitPalletBasketCompletion()
     {
       var start = new DateTime(2018, 01, 15, 17, 30, 0, DateTimeKind.Utc);
       using var _jobLog = _repoCfg.OpenConnection();
@@ -7666,7 +7662,7 @@ namespace BlackMaple.FMSInsight.Tests
       var mat1 = MkLogMat.Mk(1, "uniq1", 1, "part1", 2, "", "", "");
       _jobLog.CreateMaterialID(1, "uniq1", "part1", 2);
 
-      // Load material onto basket to create an explicit basket cycle START.
+      // Create the basket history which accompanies the explicit pallet completion below.
       _jobLog.RecordBasketStationOperation(
         new BasketStationOperation
         {
@@ -7718,7 +7714,7 @@ namespace BlackMaple.FMSInsight.Tests
       );
       basketCycleStart.ShouldNotBeNull();
 
-      // Now load from basket to pallet - should detect material is on basket
+      // Explicitly record the basket evidence accompanying the pallet load.
       var loadLogs = _jobLog.RecordLoadUnloadComplete(
         toLoad:
         [
@@ -7784,7 +7780,7 @@ namespace BlackMaple.FMSInsight.Tests
       basketUnload.ShouldNotBeNull();
       basketUnload.Pallet.ShouldBe(55);
 
-      // Now test with invalidated basket cycle START
+      // Create separate invalidated basket history.
       var mat2 = MkLogMat.Mk(2, "uniq2", 1, "part2", 2, "", "", "");
       _jobLog.CreateMaterialID(2, "uniq2", "part2", 2);
 
@@ -7836,8 +7832,8 @@ namespace BlackMaple.FMSInsight.Tests
       // Invalidate the basket cycle
       _jobLog.InvalidatePalletCycle(mat2.MaterialID, 1, "test-operator");
 
-      // Now try to load from basket to pallet - should NOT detect material on basket
-      // because the basket cycle START is invalidated
+      // Without an explicit completion, pallet load recording must not infer basket evidence from
+      // historical cycles.
       var loadLogs2 = _jobLog.RecordLoadUnloadComplete(
         toLoad:
         [

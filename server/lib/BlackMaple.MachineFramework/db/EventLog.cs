@@ -2126,6 +2126,45 @@ namespace BlackMaple.MachineFramework
           );
       }
 
+      foreach (
+        var start in palletBasketCompletion.CycleBoundaries.OfType<BasketCycleBoundary.Start>()
+      )
+      {
+        var end = palletBasketCompletion
+          .CycleBoundaries.OfType<BasketCycleBoundary.End>()
+          .FirstOrDefault(boundary => boundary.BasketIdentity == start.BasketIdentity);
+        if (end is null)
+          continue;
+
+        var unloaded = palletBasketCompletion
+          .Transfers.OfType<PalletBasketTransfer.UnloadFromBasket>()
+          .Where(transfer => transfer.BasketIdentity == start.BasketIdentity)
+          .SelectMany(transfer =>
+            transfer.Material.Select(material => (material.MaterialID, material.Process))
+          )
+          .ToImmutableHashSet();
+        var loaded = palletBasketCompletion
+          .Transfers.OfType<PalletBasketTransfer.LoadOntoBasket>()
+          .Where(transfer => transfer.BasketIdentity == start.BasketIdentity)
+          .SelectMany(transfer =>
+            transfer.Material.Select(material => (material.MaterialID, material.Process))
+          )
+          .ToImmutableHashSet();
+        var expectedStartMaterial = end
+          .Material.Select(material => (material.MaterialID, material.Process))
+          .ToImmutableHashSet()
+          .Except(unloaded)
+          .Union(loaded);
+        var actualStartMaterial = start
+          .Material.Select(material => (material.MaterialID, material.Process))
+          .ToImmutableHashSet();
+        if (!expectedStartMaterial.SetEquals(actualStartMaterial))
+          throw new ArgumentException(
+            "A basket cycle start after turnover must equal the completed cycle material with unloads removed and loads added.",
+            nameof(palletBasketCompletion)
+          );
+      }
+
       if (toLoad is not null)
       {
         var palletLoadMaterial = toLoad

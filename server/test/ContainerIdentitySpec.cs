@@ -1966,6 +1966,54 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task BasketTurnoverRejectsUnloadedMaterialInCompleteCycleStart()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var identity = new ContainerIdentity.Numbered { ContainerNum = 4 };
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    var material = new EventLogMaterial
+    {
+      MaterialID = materialId,
+      Process = 1,
+      Face = 2,
+    };
+
+    await AssertThrows<ArgumentException>(() =>
+      repository.RecordBasketStationOperation(
+        new BasketStationOperation
+        {
+          Transfers =
+          [
+            new BasketStationTransfer.UnloadFromBasket
+            {
+              BasketIdentity = identity,
+              Material = [material],
+              ActiveOperationTime = TimeSpan.Zero,
+              DestinationQueue = "outgoing",
+            },
+          ],
+          CycleBoundaries =
+          [
+            new BasketCycleBoundary.End
+            {
+              BasketIdentity = identity,
+              Material = [material],
+              ReconciledBasketIdentities = [],
+            },
+            new BasketCycleBoundary.Start { BasketIdentity = identity, Material = [material] },
+          ],
+        },
+        lulNum: 2,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "contradictory-turnover"
+      )
+    );
+    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
+  }
+
+  [Test]
   public async Task RejectsInvalidOrdinaryIdentityShapes()
   {
     using var repository = _repositoryConfig.OpenConnection();

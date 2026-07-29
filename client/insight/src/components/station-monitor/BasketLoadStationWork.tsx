@@ -28,7 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, Box, Button, Card, CardContent, Stack, Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
@@ -55,6 +55,11 @@ interface BasketLoadStationWorkflowProps {
 }
 
 type SubmissionState = "idle" | "submitting" | "accepted" | "conflict" | "error";
+interface Submission {
+  readonly workId: string;
+  readonly state: Exclude<SubmissionState, "idle">;
+}
+
 type BasketAction =
   | { readonly type: "valid"; readonly workId: string | undefined }
   | { readonly type: "invalid" };
@@ -178,14 +183,14 @@ export function BasketLoadStationWorkflow({
   fsize,
   submitCommand,
 }: BasketLoadStationWorkflowProps) {
-  const [submission, setSubmission] = useState<SubmissionState>("idle");
+  const [submission, setSubmission] = useState<Submission | undefined>();
   const workState = useMemo(
     () => confirmableWork(material, basket.basketId),
     [basket.basketId, material],
   );
   const work = workState.type === "confirmable" ? workState.work : undefined;
-
-  useEffect(() => setSubmission("idle"), [work?.workId]);
+  const submissionState =
+    submission !== undefined && submission.workId === work?.workId ? submission.state : "idle";
 
   const materialBySlot = useMemo(
     () =>
@@ -226,16 +231,24 @@ export function BasketLoadStationWorkflow({
 
   async function submit(): Promise<void> {
     if (work === undefined || submitCommand === undefined) return;
-    setSubmission("submitting");
+    const submittedWorkId = work.workId;
+    setSubmission({ workId: submittedWorkId, state: "submitting" });
     try {
-      setSubmission(await submitCommand(stationNumber, { workId: work.workId }));
+      const state = await submitCommand(stationNumber, { workId: submittedWorkId });
+      setSubmission((current) =>
+        current?.workId === submittedWorkId ? { workId: submittedWorkId, state } : current,
+      );
     } catch {
-      setSubmission("error");
+      setSubmission((current) =>
+        current?.workId === submittedWorkId ? { workId: submittedWorkId, state: "error" } : current,
+      );
     }
   }
 
   const submissionDisabled =
-    submission === "submitting" || submission === "accepted" || submission === "conflict";
+    submissionState === "submitting" ||
+    submissionState === "accepted" ||
+    submissionState === "conflict";
 
   return (
     <Stack spacing={2} sx={{ mt: 2 }}>
@@ -288,13 +301,13 @@ export function BasketLoadStationWorkflow({
           Basket work is inconsistent. Wait for refreshed material actions before confirming.
         </Alert>
       ) : null}
-      {submission === "accepted" ? (
+      {submissionState === "accepted" ? (
         <Alert severity="success">Confirmation accepted. Waiting for refreshed work.</Alert>
-      ) : submission === "conflict" ? (
+      ) : submissionState === "conflict" ? (
         <Alert severity="warning">
           Basket work changed before confirmation. Review the refreshed slots and try again.
         </Alert>
-      ) : submission === "error" ? (
+      ) : submissionState === "error" ? (
         <Alert severity="error">Unable to confirm basket work. No work was assumed complete.</Alert>
       ) : null}
     </Stack>
