@@ -7423,6 +7423,7 @@ namespace BlackMaple.FMSInsight.Tests
       // because the START is invalidated
       var emptyLogs = _jobLog.RecordEmptyBasket(
         basketId: 55,
+        lulNum: 1,
         timeUTC: start.AddMinutes(10),
         basketEnd: true
       );

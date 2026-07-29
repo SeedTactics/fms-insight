@@ -71,9 +71,6 @@ namespace BlackMaple.MachineFramework
     ImmutableList<CurrentBasketIdentityHint> GetCurrentBasketIdentityHints(int? basketNum = null);
     ImmutableList<Guid> GetUnresolvedOpenBasketContainerIds();
     ImmutableDictionary<Guid, CurrentBasketIdentityHint> ReconstructBasketIdentityHints();
-    LogEntry GetFinalizedBasketCycle(long cycleCounter);
-    ImmutableList<LogEntry> GetLogForFinalizedBasketCycle(long cycleCounter);
-    ImmutableList<LogEntry> GetFinalizedBasketCycles(int basketId);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -183,7 +180,8 @@ namespace BlackMaple.MachineFramework
     // operation timing, transfer evidence, and complete-content cycle boundaries are committed
     // under one idempotency key. An identical retry returns the original event group; changed
     // durable input throws ConflictRequestException. timeUTC is intentionally excluded from retry
-    // comparison. foreignId remains optional event correlation metadata.
+    // comparison. Cycle-boundary events record lulNum as their location number. foreignId remains
+    // optional event correlation metadata.
     //
     // totalElapsed is apportioned among transfers in proportion to ActiveOperationTime when every
     // transfer has a positive expected time. Otherwise, it is apportioned by material count.
@@ -209,6 +207,7 @@ namespace BlackMaple.MachineFramework
     );
     IEnumerable<LogEntry> RecordEmptyBasket(
       int basketId,
+      int lulNum,
       DateTime timeUTC,
       string foreignId = null,
       bool basketEnd = false
@@ -354,24 +353,6 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     );
 
-    /// <summary>
-    /// Atomically finalizes UUID basket fragments. <paramref name="mats"/> is the caller's
-    /// authoritative declaration of the assembled cycle contents; it is not inferred from or
-    /// required to match the latest content evidence on each fragment. This permits reconciliation
-    /// of overlapping, incomplete, or corrected fragment evidence at the finalization boundary.
-    /// When <paramref name="idempotencyKey"/> is nonempty, an identical retry returns the original
-    /// cycle end and changed durable input conflicts. <paramref name="foreignId"/> remains optional
-    /// event correlation metadata.
-    /// </summary>
-    LogEntry RecordBasketCycleEnd(
-      int basketId,
-      IEnumerable<EventLogMaterial> mats,
-      IReadOnlySet<Guid> containerIds,
-      DateTime timeUTC,
-      string idempotencyKey = null,
-      string foreignId = null,
-      string originalMessage = null
-    );
     LogEntry RecordSerialForMaterialID(
       EventLogMaterial mat,
       string serial,
@@ -854,7 +835,14 @@ namespace BlackMaple.MachineFramework
       public required ImmutableHashSet<Guid> ReconciledBasketIdentities { get; init; }
     }
 
-    public sealed record Start : BasketCycleBoundary;
+    public sealed record Start : BasketCycleBoundary
+    {
+      /// <summary>
+      /// Atomically records the current numbered-basket association for a UUID cycle start. Leave
+      /// null for a numbered start or when the numbered identity is not known.
+      /// </summary>
+      public int? AssociatedBasketNum { get; init; }
+    }
   }
 
   public sealed record PalletBasketLoadUnloadCompletion
