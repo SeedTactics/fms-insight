@@ -120,10 +120,6 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE basket_cycle_end_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
           "CREATE TABLE material_allocation_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL)";
         cmd.ExecuteNonQuery();
         cmd.CommandText =
@@ -1389,9 +1385,6 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE basket_station_operation_events(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, Counter INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_cycle_end_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE)";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE material_allocation_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL)";
