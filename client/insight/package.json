@@ -1,35 +1,3 @@
-Scope: all 12 workspace projects
-Progress: resolved 1, reused 0, downloaded 0, added 0
-
-   ╭──────────────────────────────────────────╮
-   │                                          │
-   │   Update available! 11.3.0 → 11.18.0.    │
-   │   Changelog: https://pnpm.io/v/11.18.0   │
-   │     To update, run: pnpm add -g pnpm     │
-   │                                          │
-   ╰──────────────────────────────────────────╯
-
-Progress: resolved 96, reused 96, downloaded 0, added 0
-Progress: resolved 284, reused 221, downloaded 0, added 0
-Progress: resolved 947, reused 736, downloaded 0, added 0
-[WARN] 7 deprecated subdependencies found: @esbuild-kit/core-utils@3.3.2, @esbuild-kit/esm-loader@2.6.5, boolean@3.2.0, glob@7.2.3, inflight@1.0.6, lodash.isequal@4.5.0, rimraf@2.6.3
-Progress: resolved 1306, reused 1057, downloaded 0, added 0
-Packages: +2 -1
-++-
-Progress: resolved 1306, reused 1057, downloaded 0, added 2, done
-[WARN] Failed to create bin at /home/wuzzeb/projects/bms/orderlink.alpha/node_modules/.pnpm/node_modules/.bin/drizzle-kit. ENOENT: no such file or directory, chmod '/home/wuzzeb/projects/bms/orderlink.alpha/node_modules/.pnpm/node_modules/.bin/drizzle-kit'
-gui/shell/main postinstall$ electron-builder install-app-deps
-gui/shell/main postinstall:   • electron-builder  version=26.15.3
-gui/shell/main postinstall:   • loaded configuration  file=package.json ("build" field)
-gui/shell/main postinstall:   • packageManager not detected by file, falling back to environment detection  resolvedPackageManager=pnpm detected=/home/wuzzeb/projects/bms/orderlink.alpha/gui/shell/main
-gui/shell/main postinstall:   • detected workspace root for project using lock file  pm=pnpm config=undefined resolved=/home/wuzzeb/projects/bms/orderlink.alpha projectDir=/home/wuzzeb/projects/bms/orderlink.alpha/gui/shell/main
-gui/shell/main postinstall:   • executing @electron/rebuild  electronVersion=42.7.1 arch=x64 buildFromSource=false workspaceRoot=/home/wuzzeb/projects/bms/orderlink.alpha projectDir=./ appDir=./
-gui/shell/main postinstall:   • installing native dependencies  arch=x64
-gui/shell/main postinstall:   • completed installing native dependencies
-gui/shell/main postinstall: Done
-[WARN] Failed to create bin at /home/wuzzeb/projects/bms/orderlink.alpha/web/docs/node_modules/.bin/tsserver. ENOENT: no such file or directory, chmod '/home/wuzzeb/projects/bms/orderlink.alpha/web/docs/node_modules/.bin/tsserver'
-
-Done in 6.8s using pnpm v11.3.0
 {
   "name": "@seedtactics/insight-client",
   "version": "16.8.4-beta.8",
