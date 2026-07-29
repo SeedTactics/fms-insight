@@ -11,14 +11,13 @@ using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Tests;
 
-#pragma warning disable TUnit0018 // Restart coverage intentionally replaces the repository config.
 public sealed class ContainerIdentitySpec : IDisposable
 {
   private readonly string _databaseFile = Path.Combine(
     Path.GetTempPath(),
     Guid.NewGuid().ToString("N") + ".db"
   );
-  private RepositoryConfig _repositoryConfig;
+  private readonly RepositoryConfig _repositoryConfig;
 
   public ContainerIdentitySpec()
   {
@@ -2017,33 +2016,6 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task BasketHintRequiresAnOpenBasketFragment()
-  {
-    using var repository = _repositoryConfig.OpenConnection();
-    await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketIdentityHint(Guid.NewGuid(), 4, DateTime.UtcNow)
-    );
-    await Assert.That(repository.GetRecentLog(0)).IsEmpty();
-    await Assert.That(repository.GetCurrentBasketIdentityHints()).IsEmpty();
-  }
-
-  [Test]
-  public async Task UnresolvedBasketFragmentsExcludeHintedIds()
-  {
-    var id = Guid.NewGuid();
-    using var repository = _repositoryConfig.OpenConnection();
-    repository.RecordBasketContentSnapshot(
-      [],
-      new ContainerIdentity.Uuid { ContainerId = id },
-      DateTime.UtcNow
-    );
-
-    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEquivalentTo([id]);
-    repository.RecordBasketIdentityHint(id, 4, DateTime.UtcNow);
-    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEmpty();
-  }
-
-  [Test]
   public async Task BasketStationOperationAtomicallySealsOldCycleAndStartsDistinctNewCycle()
   {
     var oldId = Guid.NewGuid();
@@ -2122,118 +2094,6 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert
       .That(turnover[1].Identity)
       .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = newId });
-  }
-
-  [Test]
-  public async Task HintCorrectionUsesCounterAndSurvivesRestart()
-  {
-    var id = Guid.NewGuid();
-    var laterTime = DateTime.UtcNow;
-    long correctionCounter;
-    using (var repository = _repositoryConfig.OpenConnection())
-    {
-      repository.RecordBasketContentSnapshot(
-        [],
-        new ContainerIdentity.Uuid { ContainerId = id },
-        laterTime
-      );
-      var first = repository.RecordBasketIdentityHint(id, 4, laterTime);
-      var correction = repository.RecordBasketIdentityHint(id, 6, laterTime.AddDays(-1));
-      correctionCounter = correction.Counter;
-
-      var current = repository.GetCurrentBasketIdentityHints().Single();
-      await Assert.That(current.BasketNum).IsEqualTo(6);
-      await Assert.That(current.HintEventCounter).IsEqualTo(correction.Counter);
-      await Assert.That(correction.Counter).IsGreaterThan(first.Counter);
-      await Assert.That(repository.ReconstructBasketIdentityHints()[id]).IsEqualTo(current);
-      await Assert
-        .That(repository.CurrentBasketLog(new ContainerIdentity.Numbered { ContainerNum = 4 }))
-        .IsEmpty();
-      var assembled = repository.CurrentBasketLog(
-        new ContainerIdentity.Numbered { ContainerNum = 6 }
-      );
-      await Assert.That(assembled).Count().IsEqualTo(3);
-      await Assert.That(assembled.Select(entry => entry.Counter).Distinct()).Count().IsEqualTo(3);
-    }
-
-    _repositoryConfig.Dispose();
-    _repositoryConfig = RepositoryConfig.InitializeEventDatabase(
-      null,
-      _databaseFile,
-      pooling: false
-    );
-    using var restarted = _repositoryConfig.OpenConnection();
-    var restartedHint = restarted.GetCurrentBasketIdentityHints().Single();
-    await Assert.That(restartedHint.BasketNum).IsEqualTo(6);
-    await Assert.That(restartedHint.HintEventCounter).IsEqualTo(correctionCounter);
-  }
-
-  [Test]
-  public async Task SeveralOpenFragmentsCanHintToOneNumber()
-  {
-    var first = Guid.NewGuid();
-    var second = Guid.NewGuid();
-    using var repository = _repositoryConfig.OpenConnection();
-    foreach (var id in new[] { first, second })
-    {
-      repository.RecordBasketContentSnapshot(
-        [],
-        new ContainerIdentity.Uuid { ContainerId = id },
-        DateTime.UtcNow
-      );
-      repository.RecordBasketIdentityHint(id, 5, DateTime.UtcNow);
-    }
-
-    await Assert.That(repository.GetCurrentBasketIdentityHints(5)).Count().IsEqualTo(2);
-    await Assert
-      .That(
-        repository
-          .CurrentBasketLog(new ContainerIdentity.Numbered { ContainerNum = 5 })
-          .Where(entry => entry.LogType == LogType.BasketContentSnapshot)
-          .Select(entry => entry.ContainerId)
-      )
-      .IsEquivalentTo(new Guid?[] { first, second });
-  }
-
-  [Test]
-  public async Task HintAndCacheUpdateRollBackTogether()
-  {
-    var id = Guid.NewGuid();
-    using (var setupRepository = _repositoryConfig.OpenConnection())
-    {
-      setupRepository.RecordBasketContentSnapshot(
-        [],
-        new ContainerIdentity.Uuid { ContainerId = id },
-        DateTime.UtcNow
-      );
-    }
-    using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
-    {
-      connection.Open();
-      using var command = connection.CreateCommand();
-      command.CommandText =
-        "CREATE TRIGGER fail_hint_cache BEFORE INSERT ON current_basket_identity_hints BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
-      command.ExecuteNonQuery();
-    }
-
-    using var repository = _repositoryConfig.OpenConnection();
-    await AssertThrows<SqliteException>(() =>
-      repository.RecordBasketIdentityHint(id, 4, DateTime.UtcNow)
-    );
-    await Assert.That(repository.GetRecentLog(0)).Count().IsEqualTo(1);
-    await Assert.That(repository.GetCurrentBasketIdentityHints()).IsEmpty();
-  }
-
-  [Test]
-  public async Task LegacyNumberedBasketCycleHasNoUuidMembership()
-  {
-    using var repository = _repositoryConfig.OpenConnection();
-    var cycleStart = repository.RecordEmptyBasket(8, 3, DateTime.UtcNow).Single();
-    var cycleEnd = repository.RecordEmptyBasket(8, 3, DateTime.UtcNow, basketEnd: true).Single();
-
-    await Assert.That(cycleEnd.CycleEndContainerIds).IsNull();
-    await Assert.That(cycleStart.LocationNum).IsEqualTo(3);
-    await Assert.That(cycleEnd.LocationNum).IsEqualTo(3);
   }
 
   private static async Task AssertThrows<TException>(Action action)

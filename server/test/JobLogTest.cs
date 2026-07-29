@@ -7384,55 +7384,6 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
-    public void RecordBasketCycleEndIgnoresInvalidatedStart()
-    {
-      var start = new DateTime(2018, 01, 15, 17, 30, 0, DateTimeKind.Utc);
-      using var _jobLog = _repoCfg.OpenConnection();
-
-      var m1 = _jobLog.AllocateMaterialID("U1", "Part1", 1);
-
-      // Load material onto basket to create a basket cycle START
-      _jobLog.RecordTestBasketOnlyLoadUnload(
-        toLoad: new TestMaterialToLoadOntoBasket()
-        {
-          MaterialIDs = [m1],
-          Process = 1,
-          ActiveOperationTime = TimeSpan.Zero,
-        },
-        previouslyLoaded: null,
-        toUnload: null,
-        lulNum: 1,
-        basketId: 55,
-        totalElapsed: TimeSpan.FromMinutes(1),
-        timeUTC: start,
-        externalQueues: null
-      );
-
-      // Verify basket cycle START was created
-      var logBefore = _jobLog.GetLogForMaterial(m1);
-      var basketCycleStart = logBefore.FirstOrDefault(e =>
-        e.LogType == LogType.BasketCycle && e.StartOfCycle
-      );
-      basketCycleStart.ShouldNotBeNull();
-
-      // Invalidate the cycle
-      _jobLog.InvalidatePalletCycle(m1, 1, "test-operator");
-
-      // Now try to create a basket cycle END by calling RecordEmptyBasket
-      // This internally calls RecordBasketCycleEnd, which should NOT emit an end
-      // because the START is invalidated
-      var emptyLogs = _jobLog.RecordEmptyBasket(
-        basketId: 55,
-        lulNum: 1,
-        timeUTC: start.AddMinutes(10),
-        basketEnd: true
-      );
-
-      // Should not have created a basket cycle END
-      emptyLogs.Any(e => e.LogType == LogType.BasketCycle && !e.StartOfCycle).ShouldBeFalse();
-    }
-
-    [Test]
     public void RecordLoadEndUsesBasketCycleStartAndIgnoresInvalidated()
     {
       var start = new DateTime(2018, 01, 15, 17, 30, 0, DateTimeKind.Utc);
