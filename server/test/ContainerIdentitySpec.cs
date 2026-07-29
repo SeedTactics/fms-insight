@@ -296,7 +296,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task NumberedBasketEndRequiresExactlyOneOpenCycle()
+  public async Task NumberedBasketEndAllowsOnlyDegenerateEmptyCycleWithoutOpenCycle()
   {
     var time = new DateTime(2026, 7, 27, 11, 30, 0, DateTimeKind.Utc);
     var identity = new ContainerIdentity.Numbered { ContainerNum = 5 };
@@ -315,8 +315,8 @@ public sealed class ContainerIdentitySpec : IDisposable
       ],
     };
 
-    await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketStationOperation(
+    var firstDegenerate = repository
+      .RecordBasketStationOperation(
         end,
         lulNum: 2,
         totalElapsed: TimeSpan.Zero,
@@ -324,18 +324,59 @@ public sealed class ContainerIdentitySpec : IDisposable
         externalQueues: ImmutableDictionary<string, string>.Empty,
         idempotencyKey: "end-without-start"
       )
+      .Single();
+    var retry = repository
+      .RecordBasketStationOperation(
+        end,
+        lulNum: 2,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: time.AddMinutes(1),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "end-without-start"
+      )
+      .Single();
+    var secondDegenerate = repository
+      .RecordBasketStationOperation(
+        end,
+        lulNum: 2,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: time.AddMinutes(1),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "second-empty-end"
+      )
+      .Single();
+
+    await Assert.That(firstDegenerate.Counter).IsEqualTo(retry.Counter);
+    await Assert.That(firstDegenerate.LocationNum).IsEqualTo(2);
+    await Assert.That(firstDegenerate.ElapsedTime).IsEqualTo(TimeSpan.Zero);
+    await Assert.That(firstDegenerate.Material).IsEmpty();
+    await Assert.That(secondDegenerate.Counter).IsGreaterThan(firstDegenerate.Counter);
+    await Assert.That(secondDegenerate.ElapsedTime).IsEqualTo(TimeSpan.Zero);
+
+    var uuidEnd = end with
+    {
+      CycleBoundaries =
+      [
+        new BasketCycleBoundary.End
+        {
+          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() },
+          Material = [],
+          ReconciledBasketIdentities = [],
+        },
+      ],
+    };
+    await AssertThrows<ArgumentException>(() =>
+      repository.RecordBasketStationOperation(
+        uuidEnd,
+        lulNum: 2,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: time.AddMinutes(2),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "empty-uuid-end-without-start"
+      )
     );
 
     var materialId = repository.AllocateMaterialID("job", "part", 1);
-    QueueMaterial(repository, materialId, "raw", time);
-    repository.RecordBasketStationOperation(
-      LoadOntoBasketOperation(identity, materialId),
-      lulNum: 2,
-      totalElapsed: TimeSpan.Zero,
-      timeUTC: time.AddMinutes(1),
-      externalQueues: ImmutableDictionary<string, string>.Empty,
-      idempotencyKey: "open-numbered-cycle"
-    );
     var material = new EventLogMaterial
     {
       MaterialID = materialId,
@@ -354,11 +395,31 @@ public sealed class ContainerIdentitySpec : IDisposable
         },
       ],
     };
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketStationOperation(
+        populatedEnd,
+        lulNum: 2,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: time.AddMinutes(3),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "nonempty-end-without-start"
+      )
+    );
+
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(identity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.Zero,
+      timeUTC: time.AddMinutes(4),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "open-numbered-cycle"
+    );
     repository.RecordBasketStationOperation(
       populatedEnd,
       lulNum: 2,
       totalElapsed: TimeSpan.Zero,
-      timeUTC: time.AddMinutes(2),
+      timeUTC: time.AddMinutes(5),
       externalQueues: ImmutableDictionary<string, string>.Empty,
       idempotencyKey: "close-numbered-cycle"
     );
@@ -368,7 +429,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         populatedEnd,
         lulNum: 2,
         totalElapsed: TimeSpan.Zero,
-        timeUTC: time.AddMinutes(3),
+        timeUTC: time.AddMinutes(6),
         externalQueues: ImmutableDictionary<string, string>.Empty,
         idempotencyKey: "second-numbered-end"
       )

@@ -2263,11 +2263,16 @@ namespace BlackMaple.MachineFramework
         if (containerIds.Count == 0)
         {
           var recentCycle = MostRecentBasketCycleEvent(boundary.BasketIdentity, trans);
-          if (recentCycle is not { StartOfCycle: true, Invalidated: false })
+          if (recentCycle is { StartOfCycle: true, Invalidated: false })
+          {
+            firstEventTime = recentCycle.TimeUTC;
+          }
+          else if (!boundary.Material.IsEmpty)
+          {
             throw new ConflictRequestException(
-              "A numbered basket-cycle end requires a non-invalidated open cycle."
+              "A nonempty numbered basket-cycle end requires a non-invalidated open cycle."
             );
-          firstEventTime = recentCycle.TimeUTC;
+          }
         }
 
         var cycleEnd = new NewEventLogEntry
