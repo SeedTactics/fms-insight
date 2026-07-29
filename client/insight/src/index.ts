@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { bootstrapInsight } from "./bootstrap.js";
+import { bootstrapInsight } from "./extension.js";
 import type { AppProps } from "./components/App.js";
 import { ApiException } from "./network/api.js";
 

@@ -11,7 +11,6 @@
   ],
   "type": "module",
   "exports": {
-    "./bootstrap": "./dist/bootstrap.js",
     "./extension": "./dist/extension.js",
     "./cell-status/*": "./dist/cell-status/*.js",
     "./components/*": "./dist/components/*.js",
