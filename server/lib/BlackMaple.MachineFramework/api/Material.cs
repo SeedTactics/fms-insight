@@ -67,6 +67,12 @@ namespace BlackMaple.MachineFramework
     /// </summary>
     public string? WorkId { get; init; }
 
+    /// <summary>
+    /// Opaque token identifying the currently offered load cancellation. Every material in one
+    /// atomic cancellation unit carries the same token.
+    /// </summary>
+    public string? LoadCancellationId { get; init; }
+
     // If Type = Loading
     public int? LoadOntoPalletNum { get; init; }
 

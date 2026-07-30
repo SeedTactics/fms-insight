@@ -59,7 +59,6 @@ namespace BlackMaple.FMSInsight.Makino
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSync>();
 
-    public bool AllowQuarantineToCancelLoad => false;
     public bool AddJobsAsCopiedToSystem => false;
 
     public event Action NewCellState

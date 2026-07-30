@@ -85,7 +85,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     NewCellState?.Invoke();
   }
 
-  public bool AllowQuarantineToCancelLoad => false;
   public bool AddJobsAsCopiedToSystem => false;
 
   public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)

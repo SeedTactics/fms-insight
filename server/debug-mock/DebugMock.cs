@@ -222,7 +222,6 @@ namespace DebugMachineWatchApiServer
 
     private JsonSerializerOptions _jsonSettings;
 
-    public bool AllowQuarantineToCancelLoad { get; } = true;
     public bool AddJobsAsCopiedToSystem { get; } = true;
 
     private readonly FMSSettings _fmsSettings;

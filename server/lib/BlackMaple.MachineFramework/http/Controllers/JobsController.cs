@@ -244,6 +244,22 @@ namespace BlackMaple.MachineFramework.Controllers
       jobAndQueue.SignalMaterialForQuarantine(materialId, operatorName: operName, reason: reason);
     }
 
+    [HttpPut("material/{materialId}/cancel-load")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void CancelLoad(
+      long materialId,
+      [FromBody] CancelLoadRequest request,
+      [FromQuery] string? operName = null
+    )
+    {
+      jobAndQueue.CancelLoad(
+        materialId,
+        request.ExpectedLoadCancellationId,
+        operatorName: operName,
+        reason: request.Reason
+      );
+    }
+
     [HttpPut("material/{materialId}/invalidate-process")]
     public MaterialDetails? InvalidatePalletCycle(
       long materialId,

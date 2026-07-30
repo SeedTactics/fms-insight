@@ -550,6 +550,7 @@ export function AddToQueueButton({
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addNewMat, addingNewMat] = matDetails.useAddNewMaterialToQueue();
   const [addNewCasting, addingNewCasting] = useAddNewCastingToQueue();
+  const [addError, setAddError] = useState<string | null>(null);
 
   const allowAdd = useAllowAddToQueue(queueNames);
 
@@ -609,44 +610,55 @@ export function AddToQueueButton({
               (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
                 (enteredOperator === null || enteredOperator === ""))
             }
-            onClick={() => {
-              if (existingMat) {
-                addExistingMat({
-                  materialId: existingMat.materialID,
-                  queue: toQueue ?? "",
-                  queuePosition: -1,
-                  operator: enteredOperator ?? operator,
-                });
-              } else if (
-                newMaterialTy &&
-                newMaterialTy.kind === "JobAndProc" &&
-                newMaterialTy.jobUnique
-              ) {
-                addNewMat({
-                  jobUnique: newMaterialTy.jobUnique,
-                  lastCompletedProcess: newMaterialTy.last_proc,
-                  serial: newSerial ?? undefined,
-                  workorder: newWorkorder ?? newMaterialTy?.workorder,
-                  queue: toQueue ?? "",
-                  queuePosition: -1,
-                  operator: enteredOperator ?? operator,
-                });
-              } else if (
-                newMaterialTy &&
-                newMaterialTy.kind === "RawMat" &&
-                newMaterialTy.rawMatName
-              ) {
-                addNewCasting({
-                  casting: newMaterialTy.rawMatName,
-                  quantity: 1,
-                  queue: toQueue ?? "",
-                  serials: newSerial ? [newSerial] : undefined,
-                  workorder: newWorkorder,
-                  operator: enteredOperator ?? operator,
-                });
+            onClick={async () => {
+              setAddError(null);
+              try {
+                if (existingMat) {
+                  await addExistingMat({
+                    materialId: existingMat.materialID,
+                    queue: toQueue ?? "",
+                    queuePosition: -1,
+                    operator: enteredOperator ?? operator,
+                  });
+                } else if (
+                  newMaterialTy &&
+                  newMaterialTy.kind === "JobAndProc" &&
+                  newMaterialTy.jobUnique
+                ) {
+                  await addNewMat({
+                    jobUnique: newMaterialTy.jobUnique,
+                    lastCompletedProcess: newMaterialTy.last_proc,
+                    serial: newSerial ?? undefined,
+                    workorder: newWorkorder ?? newMaterialTy?.workorder,
+                    queue: toQueue ?? "",
+                    queuePosition: -1,
+                    operator: enteredOperator ?? operator,
+                  });
+                } else if (
+                  newMaterialTy &&
+                  newMaterialTy.kind === "RawMat" &&
+                  newMaterialTy.rawMatName
+                ) {
+                  await addNewCasting({
+                    casting: newMaterialTy.rawMatName,
+                    quantity: 1,
+                    queue: toQueue ?? "",
+                    serials: newSerial ? [newSerial] : undefined,
+                    workorder: newWorkorder,
+                    operator: enteredOperator ?? operator,
+                  });
+                }
+                setMatToShow(null);
+                onClose();
+              } catch (e) {
+                setAddError(
+                  api.ApiException.isApiException(e)
+                    ? e.response
+                    : e instanceof Error
+                      ? e.message
+                      : String(e),
+                );
               }
-              setMatToShow(null);
-              onClose();
             }}
           >
             {toQueue === null ? (
@@ -661,6 +673,7 @@ export function AddToQueueButton({
           </Button>
         </span>
       </Tooltip>
+      {addError ? <p role="alert">{addError}</p> : null}
     </>
   );
 }

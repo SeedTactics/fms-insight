@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -68,7 +68,20 @@ namespace BlackMaple.MachineFramework
     bool DecrementJobs(IRepository db, St st);
 
     public bool AddJobsAsCopiedToSystem { get; }
-    public bool AllowQuarantineToCancelLoad { get; }
+  }
+
+  public interface ILoadCancel<in St>
+    where St : ICellState
+  {
+    void CancelLoad(
+      IRepository repository,
+      St state,
+      InProcessMaterial selectedMaterial,
+      ImmutableList<InProcessMaterial> material,
+      string cancellationId,
+      string? operatorName,
+      string? reason
+    );
   }
 
   public interface IAdditionalCheckJobs

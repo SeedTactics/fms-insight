@@ -100,6 +100,7 @@ import {
   AddToQueueMaterialDialogCt,
 } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { CancelLoadButton } from "./CancelLoadButton.js";
 import { AddByBarcodeDialog, scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
 import {
   InvalidateCycleDialogButton,
@@ -749,6 +750,7 @@ const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
         <>
           <PrintLabelButton />
           <QuarantineMatButton onClose={onClose} />
+          <CancelLoadButton onClose={onClose} />
           <InvalidateCycleDialogButton
             onClose={onClose}
             st={invalidateSt}

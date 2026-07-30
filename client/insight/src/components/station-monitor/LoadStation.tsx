@@ -64,6 +64,7 @@ import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { CancelLoadButton } from "./CancelLoadButton.js";
 import { durationToSeconds } from "../../util/parseISODuration.js";
 import { formatSeconds } from "./SystemOverview.js";
 import {
@@ -1021,6 +1022,7 @@ function AddMatButton({
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const operator = useAtomValue(currentOperator);
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
+  const [addError, setAddError] = useState<string | null>(null);
 
   if (
     !existingMat ||
@@ -1047,23 +1049,37 @@ function AddMatButton({
     );
   } else {
     return (
-      <Button
-        color="primary"
-        disabled={toQueue === null || addingExistingMat}
-        onClick={() => {
-          addExistingMat({
-            materialId: existingMat.materialID,
-            queue: toQueue ?? "",
-            queuePosition: -1,
-            operator: operator,
-          });
-          setMatToShow(null);
-          onClose();
-        }}
-      >
-        Add To {toQueue ?? "Queue"}{" "}
-        {lastProcMat ? ` To Run Process ${lastProcMat.process + 1}` : ""}
-      </Button>
+      <>
+        <Button
+          color="primary"
+          disabled={toQueue === null || addingExistingMat}
+          onClick={async () => {
+            setAddError(null);
+            try {
+              await addExistingMat({
+                materialId: existingMat.materialID,
+                queue: toQueue ?? "",
+                queuePosition: -1,
+                operator: operator,
+              });
+              setMatToShow(null);
+              onClose();
+            } catch (e) {
+              setAddError(
+                api.ApiException.isApiException(e)
+                  ? e.response
+                  : e instanceof Error
+                    ? e.message
+                    : String(e),
+              );
+            }
+          }}
+        >
+          Add To {toQueue ?? "Queue"}{" "}
+          {lastProcMat ? ` To Run Process ${lastProcMat.process + 1}` : ""}
+        </Button>
+        {addError ? <Typography role="alert">{addError}</Typography> : null}
+      </>
     );
   }
 }
@@ -1131,6 +1147,7 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
           <InstructionButton pallet={props.pallet} />
           <PrintLabelButton />
           <QuarantineMatButton />
+          <CancelLoadButton onClose={onClose} />
           <SignalInspectionButton />
           <AddMatButton
             toQueue={selectedQueue}

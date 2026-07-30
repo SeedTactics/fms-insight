@@ -96,12 +96,12 @@ export const SortableRegion = memo(function SortableRegion(props: SortableRegion
         const overMatId = over ? numericId(over.id) : null;
         if (over && active.id !== over.id && activeMatId !== null && overMatId !== null) {
           const overIdx = props.matIds.indexOf(overMatId);
-          addExistingMatToQueue({
+          void addExistingMatToQueue({
             materialId: activeMatId,
             queue: props.queueName,
             queuePosition: overIdx,
             operator: operator,
-          });
+          }).catch(console.error);
           reorderQueuedMat({
             queue: props.queueName,
             matId: activeMatId,

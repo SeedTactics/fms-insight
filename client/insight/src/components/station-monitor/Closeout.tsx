@@ -53,6 +53,7 @@ import {
 } from "../../cell-status/material-summary.js";
 import { instructionUrl } from "../../network/backend.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { CancelLoadButton } from "./CancelLoadButton.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
@@ -162,6 +163,7 @@ const CloseoutMaterialDialog = memo(function CloseoutDialog() {
         <>
           <InstrButton />
           <QuarantineMatButton />
+          <CancelLoadButton />
           <AssignWorkorderButton />
           <CompleteButton />
         </>

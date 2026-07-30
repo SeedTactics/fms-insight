@@ -173,7 +173,9 @@ export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>
   const status = get(currentStatus);
   const toShow = get(matToShow);
   if (toShow === null) return null;
-  if (toShow.type === "InProcMat") return toShow.inproc;
+  if (toShow.type === "InProcMat") {
+    return status.material.find((m) => m.materialID === toShow.inproc.materialID) ?? null;
+  }
   const matId = (await get(materialInDialogInfo))?.materialID ?? null;
   return matId !== null && matId >= 0
     ? (status.material.find((m) => m.materialID === matId) ?? null)
@@ -276,6 +278,10 @@ const otherMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(
 );
 
 const otherMatEventsUnwrapped = unwrap(otherMatEvents, (prev) => prev ?? []);
+
+export const materialInDialogLocalEvents = atom<ReadonlyArray<Readonly<ILogEntry>>>((get) => {
+  return LazySeq.of(get(localMatEventsUnwrapped)).concat(get(extraLogEventsFromUpdates)).toRArray();
+});
 
 export const materialInDialogEvents = atom<ReadonlyArray<Readonly<ILogEntry>>>((get) => {
   const evtsFromUpdate = get(extraLogEventsFromUpdates);
@@ -540,28 +546,39 @@ export function usePrintLabel(): [(data: PrintLabelData) => void, boolean, boole
   return [callback, updating, printed];
 }
 
-export function useRemoveFromQueue(): [(matId: number, operator: string | null) => void, boolean] {
+export function useRemoveFromQueue(): [
+  (matId: number, operator: string | null) => Promise<void>,
+  boolean,
+] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const callback = useCallback((matId: number, operator: string | null) => {
+  const callback = useCallback(async (matId: number, operator: string | null) => {
     setUpdating(true);
-    JobsBackend.removeMaterialFromAllQueues(matId, operator ?? undefined)
-      .catch(console.log)
-      .finally(() => setUpdating(false));
+    try {
+      await JobsBackend.removeMaterialFromAllQueues(matId, operator ?? undefined);
+    } finally {
+      setUpdating(false);
+    }
   }, []);
 
   return [callback, updating];
 }
 
 export function useSignalForQuarantine(): [
-  (matId: number, operator: string | null, reason: string) => void,
+  (matId: number, operator: string | null, reason: string) => Promise<void>,
   boolean,
 ] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const callback = useCallback((matId: number, operator: string | null, reason: string) => {
+  const callback = useCallback(async (matId: number, operator: string | null, reason: string) => {
     setUpdating(true);
-    JobsBackend.signalMaterialForQuarantine(matId, operator, reason === "" ? undefined : reason)
-      .catch(console.log)
-      .finally(() => setUpdating(false));
+    try {
+      await JobsBackend.signalMaterialForQuarantine(
+        matId,
+        operator,
+        reason === "" ? undefined : reason,
+      );
+    } finally {
+      setUpdating(false);
+    }
   }, []);
 
   return [callback, updating];
@@ -575,22 +592,24 @@ export interface AddExistingMaterialToQueueData {
 }
 
 export function useAddExistingMaterialToQueue(): [
-  (d: AddExistingMaterialToQueueData) => void,
+  (d: AddExistingMaterialToQueueData) => Promise<void>,
   boolean,
 ] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const callback = useCallback((d: AddExistingMaterialToQueueData) => {
+  const callback = useCallback(async (d: AddExistingMaterialToQueueData) => {
     setUpdating(true);
-    JobsBackend.setMaterialInQueue(
-      d.materialId,
-      d.operator,
-      new QueuePosition({
-        queue: d.queue,
-        position: d.queuePosition,
-      }),
-    )
-      .catch(console.log)
-      .finally(() => setUpdating(false));
+    try {
+      await JobsBackend.setMaterialInQueue(
+        d.materialId,
+        d.operator,
+        new QueuePosition({
+          queue: d.queue,
+          position: d.queuePosition,
+        }),
+      );
+    } finally {
+      setUpdating(false);
+    }
   }, []);
 
   return [callback, updating];
@@ -608,29 +627,32 @@ export interface AddNewMaterialToQueueData {
   readonly onError?: (reason: unknown) => void;
 }
 
-export function useAddNewMaterialToQueue(): [(d: AddNewMaterialToQueueData) => void, boolean] {
+export function useAddNewMaterialToQueue(): [
+  (d: AddNewMaterialToQueueData) => Promise<Readonly<IInProcessMaterial>>,
+  boolean,
+] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const callback = useCallback((d: AddNewMaterialToQueueData) => {
+  const callback = useCallback(async (d: AddNewMaterialToQueueData) => {
     setUpdating(true);
-
-    JobsBackend.addUnprocessedMaterialToQueue(
-      d.jobUnique,
-      d.lastCompletedProcess,
-      d.queue,
-      d.queuePosition,
-      d.operator,
-      d.workorder,
-      d.serial || "",
-    )
-      .then((m) => {
-        if (d.onNewMaterial && m) {
-          d.onNewMaterial(m);
-        } else if (d.onError) {
-          d.onError("No material returned");
-        }
-      }, d.onError)
-      .catch(console.log)
-      .finally(() => setUpdating(false));
+    try {
+      const material = await JobsBackend.addUnprocessedMaterialToQueue(
+        d.jobUnique,
+        d.lastCompletedProcess,
+        d.queue,
+        d.queuePosition,
+        d.operator,
+        d.workorder,
+        d.serial || "",
+      );
+      if (material === undefined) throw new Error("No material returned");
+      d.onNewMaterial?.(material);
+      return material;
+    } catch (e) {
+      d.onError?.(e);
+      throw e;
+    } finally {
+      setUpdating(false);
+    }
   }, []);
 
   return [callback, updating];
@@ -647,24 +669,30 @@ export interface AddNewCastingToQueueData {
   readonly onError?: (reason: unknown) => void;
 }
 
-export function useAddNewCastingToQueue(): [(d: AddNewCastingToQueueData) => void, boolean] {
+export function useAddNewCastingToQueue(): [
+  (d: AddNewCastingToQueueData) => Promise<ReadonlyArray<Readonly<IInProcessMaterial>>>,
+  boolean,
+] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const callback = useCallback((d: AddNewCastingToQueueData) => {
+  const callback = useCallback(async (d: AddNewCastingToQueueData) => {
     setUpdating(true);
-
-    JobsBackend.addUnallocatedCastingToQueue(
-      d.casting,
-      d.queue,
-      d.quantity,
-      d.operator,
-      d.workorder,
-      [...(d.serials || [])],
-    )
-      .then((ms) => {
-        if (d.onNewMaterial) d.onNewMaterial(ms);
-      }, d.onError)
-      .catch(console.log)
-      .finally(() => setUpdating(false));
+    try {
+      const material = await JobsBackend.addUnallocatedCastingToQueue(
+        d.casting,
+        d.queue,
+        d.quantity,
+        d.operator,
+        d.workorder,
+        [...(d.serials || [])],
+      );
+      d.onNewMaterial?.(material);
+      return material;
+    } catch (e) {
+      d.onError?.(e);
+      throw e;
+    } finally {
+      setUpdating(false);
+    }
   }, []);
 
   return [callback, updating];

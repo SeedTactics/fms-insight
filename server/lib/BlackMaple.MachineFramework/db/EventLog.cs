@@ -4808,7 +4808,6 @@ namespace BlackMaple.MachineFramework
       long matId,
       int? process,
       string operatorName,
-      string reason,
       DateTime timeUTC,
       SqliteTransaction trans,
       List<LogEntry> newLogEntries
@@ -4822,7 +4821,7 @@ namespace BlackMaple.MachineFramework
       using var checkQueueCmd = _connection.CreateCommand();
 
       getCycles.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.Start FROM stations s WHERE "
+        "SELECT s.Counter FROM stations s WHERE "
         + " EXISTS ("
         + "   SELECT 1 FROM stations_mat m "
         + "        WHERE s.Counter = m.Counter "
@@ -4864,48 +4863,18 @@ namespace BlackMaple.MachineFramework
       addMessageCmd.Parameters.Add("cntr", SqliteType.Integer);
       addMessageCmd.Transaction = trans;
 
-      checkQueueCmd.CommandText = "SELECT Queue, Position FROM queues WHERE MaterialID = $matid";
+      checkQueueCmd.CommandText = "SELECT Queue FROM queues WHERE MaterialID = $matid";
       checkQueueCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
       checkQueueCmd.Transaction = trans;
 
-      // load old events
+      // Determine the complete affected event and material sets before changing anything.
       var invalidatedCntrs = new List<long>();
       var allMatIds = new HashSet<(long matId, int proc)>();
-      bool wasOnBasket = false; // Will be set to true if we invalidate a basket cycle START event
       using (var reader = getCycles.ExecuteReader())
       {
         while (reader.Read())
         {
-          int pallet = 0;
-          if (!reader.IsDBNull(1))
-          {
-            if (reader.GetFieldType(1) == typeof(string))
-            {
-              var palStr = reader.GetString(1);
-              if (!string.IsNullOrEmpty(palStr))
-              {
-                int.TryParse(palStr, out pallet);
-              }
-            }
-            else
-            {
-              var palNum = reader.GetInt32(1);
-              if (palNum > 0)
-              {
-                pallet = palNum;
-              }
-            }
-          }
           var cntr = reader.GetInt64(0);
-          var eventType = (LogType)reader.GetInt32(2);
-          var isStart = reader.GetBoolean(3);
-
-          // Check if this is a basket cycle START event
-          if (eventType == LogType.BasketCycle && isStart)
-          {
-            wasOnBasket = true;
-          }
-
           invalidatedCntrs.Add(cntr);
 
           getMatsCmd.Parameters[0].Value = cntr;
@@ -4916,19 +4885,37 @@ namespace BlackMaple.MachineFramework
               long removedMatId = matIdReader.GetInt64(0);
               int removedProc = matIdReader.GetInt32(1);
               allMatIds.Add((removedMatId, removedProc));
-
-              removePathDetailsCmd.Parameters[0].Value = removedMatId;
-              removePathDetailsCmd.Parameters[1].Value = removedProc;
-              removePathDetailsCmd.ExecuteNonQuery();
             }
           }
-
-          updateEvtCmd.Parameters[0].Value = cntr;
-          updateEvtCmd.ExecuteNonQuery();
-
-          addMessageCmd.Parameters[0].Value = cntr;
-          addMessageCmd.ExecuteNonQuery();
         }
+      }
+
+      foreach (var affectedMatId in allMatIds.Select(m => m.matId).Distinct())
+      {
+        checkQueueCmd.Parameters[0].Value = affectedMatId;
+        using var queueReader = checkQueueCmd.ExecuteReader();
+        if (queueReader.Read())
+        {
+          throw new ConflictRequestException(
+            $"Can not invalidate a cycle while material {affectedMatId} is in queue {queueReader.GetString(0)}."
+          );
+        }
+      }
+
+      foreach (var cntr in invalidatedCntrs)
+      {
+        updateEvtCmd.Parameters[0].Value = cntr;
+        updateEvtCmd.ExecuteNonQuery();
+
+        addMessageCmd.Parameters[0].Value = cntr;
+        addMessageCmd.ExecuteNonQuery();
+      }
+
+      foreach (var (affectedMatId, affectedProcess) in allMatIds)
+      {
+        removePathDetailsCmd.Parameters[0].Value = affectedMatId;
+        removePathDetailsCmd.Parameters[1].Value = affectedProcess;
+        removePathDetailsCmd.ExecuteNonQuery();
       }
 
       // record events
@@ -4955,53 +4942,6 @@ namespace BlackMaple.MachineFramework
         newMsg.ProgramDetails["operator"] = operatorName;
       }
       newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
-
-      // Only re-add to queue if material was in a queue, not on a basket
-      // (we can't put material back onto a basket since it may have moved)
-      // wasOnBasket is set to true during the loop if we invalidated a basket cycle START event
-      if (!wasOnBasket)
-      {
-        string queue = null;
-        int queuePos = -1;
-        using (var reader = checkQueueCmd.ExecuteReader())
-        {
-          if (reader.Read())
-          {
-            queue = reader.GetString(0);
-            queuePos = reader.GetInt32(1);
-          }
-        }
-
-        if (!string.IsNullOrEmpty(queue))
-        {
-          // We are invalidating an AddToQueue event, so need to re-add to the queue
-          var addQueueLog = new NewEventLogEntry()
-          {
-            Material =
-            [
-              new EventLogMaterial()
-              {
-                MaterialID = matId,
-                Process = (process ?? 1) - 1,
-                Face = 0,
-              },
-            ],
-            Pallet = 0,
-            LogType = LogType.AddToQueue,
-            LocationName = queue,
-            LocationNum = queuePos,
-            Program = reason,
-            StartOfCycle = false,
-            EndTimeUTC = timeUTC,
-            Result = "",
-          };
-          if (!string.IsNullOrEmpty(operatorName))
-          {
-            addQueueLog.ProgramDetails["operator"] = operatorName;
-          }
-          newLogEntries.AddRange(AddLogEntry(trans, addQueueLog, null, null));
-        }
-      }
     }
 
     public IEnumerable<LogEntry> InvalidatePalletCycle(
@@ -5021,7 +4961,6 @@ namespace BlackMaple.MachineFramework
           matId: matId,
           process: process,
           operatorName: operatorName,
-          reason: "Invalidating",
           timeUTC: timeUTC ?? DateTime.UtcNow,
           trans: trans,
           newLogEntries: newLogEntries
@@ -5051,6 +4990,15 @@ namespace BlackMaple.MachineFramework
       {
         using var trans = _connection.BeginTransaction();
 
+        InvalidatePalletCycle(
+          matId: matId,
+          process: null,
+          operatorName: operatorName,
+          timeUTC: timeUTC ?? DateTime.UtcNow,
+          trans: trans,
+          newLogEntries: newLogEntries
+        );
+
         using var updateMatDetailsCmd = _connection.CreateCommand();
         updateMatDetailsCmd.Transaction = trans;
         updateMatDetailsCmd.CommandText =
@@ -5065,16 +5013,6 @@ namespace BlackMaple.MachineFramework
           changeNumProcessesTo;
         updateMatDetailsCmd.Parameters.Add("mid", SqliteType.Integer).Value = matId;
         updateMatDetailsCmd.ExecuteNonQuery();
-
-        InvalidatePalletCycle(
-          matId: matId,
-          process: null,
-          operatorName: operatorName,
-          reason: "ChangedJob",
-          timeUTC: timeUTC ?? DateTime.UtcNow,
-          trans: trans,
-          newLogEntries: newLogEntries
-        );
 
         trans.Commit();
       }

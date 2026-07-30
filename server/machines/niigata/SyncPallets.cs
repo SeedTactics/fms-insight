@@ -43,7 +43,6 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<SyncNiigataPallets>();
 
-    public bool AllowQuarantineToCancelLoad => false;
     public bool AddJobsAsCopiedToSystem => true;
 
     private readonly FMSSettings _fmsSt;

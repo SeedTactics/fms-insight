@@ -91,6 +91,7 @@ import {
   rectIntersection,
 } from "@dnd-kit/core";
 import { QuarantineMatButton } from "../station-monitor/QuarantineButton.js";
+import { CancelLoadButton } from "../station-monitor/CancelLoadButton.js";
 import { useSetTitle } from "../routes.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -397,6 +398,7 @@ const AllMatDialog = memo(function AllMatDialog() {
       buttons={
         <>
           <QuarantineMatButton onClose={onClose} ignoreOperator />
+          <CancelLoadButton onClose={onClose} ignoreOperator />
           <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} ignoreOperator />
           <InvalidateCycleDialogButton
             st={invalidateSt}
@@ -564,12 +566,12 @@ export function AllMaterial(props: AllMaterialProps) {
               ? findQueueInQuarantineQueues(over.id, allBins)
               : findMaterialInQuarantineQueues(over.id, allBins);
           if (overCol) {
-            addExistingMatToQueue({
+            void addExistingMatToQueue({
               materialId: activeDrag.mat.materialID,
               queue: overCol.bin.queueName,
               queuePosition: overCol.idx,
               operator: null,
-            });
+            }).catch(console.error);
             reorderQueuedMat({
               queue: overCol.bin.queueName,
               matId: activeDrag.mat.materialID,
