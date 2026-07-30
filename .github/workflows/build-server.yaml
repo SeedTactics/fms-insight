@@ -97,9 +97,13 @@ jobs:
 
       - run: pnpm --dir client/insight install --frozen-lockfile
 
-      # https://github.com/mui/material-ui/issues/43938
-      # https://github.com/vitest-dev/vitest/issues/3576
-      #- run: pnpm --dir client/insight run test
+      - run: pnpm --dir client/insight run type-check
+
+      - run: pnpm --dir client/insight run lint
+
+      - run: pnpm --dir client/insight run test:unit
+
+      - run: pnpm --dir client/insight run test:integration
 
       - run: pnpm --dir client/insight run build
 

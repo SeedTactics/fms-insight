@@ -25,7 +25,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --skipLibCheck",
     "lint": "oxlint --type-aware",
-    "build": "tsc --noEmit --skipLibCheck && vite build",
+    "build": "vite build",
     "build:package": "tsc --project tsconfig.publish.json && cp -Tr ../../docs ./docs",
     "start": "vite",
     "test:unit": "vitest run --project unit",

@@ -19,7 +19,7 @@ test("authenticated fetch preserves request headers while adding the bearer toke
 
   await authenticatedFetch(request);
 
-  const [input, init] = fetch.mock.calls[0]!;
+  const [input, init] = fetch.mock.calls[0];
   const headers = new Headers(init?.headers);
   expect(input).toBe(request);
   expect(headers.get("X-Insight-Client")).toBe("extension");

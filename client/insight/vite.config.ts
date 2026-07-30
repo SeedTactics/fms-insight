@@ -33,6 +33,7 @@ export default defineConfig({
         test: {
           include: ["src/**/*.{test,spec}.ts", "src/**/*.{test,spec}.tsx"],
           name: "unit",
+          execArgv: ["--no-experimental-webstorage"],
           environment: "jsdom",
           server: {
             deps: {

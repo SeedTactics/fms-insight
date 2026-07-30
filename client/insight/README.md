@@ -15,6 +15,27 @@ just using FMS Insight and don't intend any changes to the client, you can just 
 BlackMaple.MachineFramework nuget. This npm package is needed only if you wish to modify the client
 or import portions of the client into your own pages.
 
+## Extending the Client
+
+The supported entry point for embedding a customized FMS Insight application is
+`@seedtactics/insight-client/extension`. It exports:
+
+- `bootstrapInsight` to start the application in a supplied element, or in the element with ID
+  `root`.
+- `AppProps` to add custom routes, change the mode chooser, or replace the basket load-station
+  command.
+- `customState`, a read-only Jotai atom containing the server's opaque custom state.
+- `authenticatedFetch` for extension requests which should use the current Insight user's bearer
+  token.
+- `defaultChooseModes` and `RouteLocation` for composing custom navigation.
+
+The host application must provide compatible versions of the package's React, React DOM, and Jotai
+peer dependencies. This ensures custom components and Insight use the same React runtime and Jotai
+store.
+
+Other package subpaths expose reusable Insight internals. They remain available for existing
+integrations, but `extension` is the intentionally small application-composition API.
+
 ## Code Overview
 
 The client stores data in [jotai](https://jotai.org/) stores. We use a thick-client approach: each
