@@ -65,8 +65,6 @@ namespace BlackMaple.MachineFramework.Controllers
 
     public bool? UseClientPrinterForLabels { get; init; }
 
-    public bool? AllowQuarantineToCancelLoad { get; init; }
-
     public string? QuarantineQueue { get; init; }
 
     public string? CustomStationMonitorDialogUrl { get; init; }
@@ -180,7 +178,6 @@ namespace BlackMaple.MachineFramework.Controllers
           _cfg.RequireOperatorNamePromptWhenAddingMaterial,
         AddToQueueButton = _cfg.AddToQueueButton,
         AllowEditJobPlanQuantityFromQueuesPage = _cfg.AllowEditJobPlanQuantityFromQueuesPage,
-        AllowQuarantineToCancelLoad = _jobsAndQueues.AllowQuarantineToCancelLoad,
         SupportsRebookings =
           _cfg.RebookingPrefix != null ? (_cfg.RebookingsDisplayName ?? "Rebookings") : null,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,

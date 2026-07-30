@@ -62,6 +62,7 @@ public sealed class JobAndQueueSpec
   private ServerSettings _serverSettings;
   private JobsAndQueuesFromDb<MockCellState> _jq;
   private readonly Fixture _fixture;
+  private ImmutableList<ILoadCancel<MockCellState>> _loadCancelHandlers = [];
 
   public JobAndQueueSpec()
   {
@@ -108,7 +109,6 @@ public sealed class JobAndQueueSpec
   public event Action NewCellState;
   private bool _expectsDecrement = false;
 
-  public bool AllowQuarantineToCancelLoad { get; private set; } = false;
   public bool AddJobsAsCopiedToSystem => true;
 
   private async Task StartSyncThread(string extraAlarm = null)
@@ -119,6 +119,7 @@ public sealed class JobAndQueueSpec
       _serverSettings,
       _settings,
       this,
+      loadCancelHandlers: _loadCancelHandlers,
       startThread: false
     );
     _jq.OnNewCurrentStatus += OnNewCurrentStatus;
@@ -278,6 +279,229 @@ public sealed class JobAndQueueSpec
         Material = material,
       }
     );
+  }
+
+  private sealed class RecordingLoadCancel : ILoadCancel<MockCellState>
+  {
+    public ImmutableList<long> MaterialIds { get; private set; } = [];
+    public string Reason { get; private set; }
+    public int Calls { get; private set; }
+    public Action OnCancel { get; init; }
+    public Exception Failure { get; init; }
+
+    public void CancelLoad(
+      IRepository repository,
+      MockCellState state,
+      InProcessMaterial selectedMaterial,
+      ImmutableList<InProcessMaterial> material,
+      string cancellationId,
+      string operatorName,
+      string reason
+    )
+    {
+      Calls++;
+      OnCancel?.Invoke();
+      if (Failure != null)
+      {
+        throw Failure;
+      }
+      MaterialIds = material.Select(m => m.MaterialID).ToImmutableList();
+      Reason = reason;
+    }
+  }
+
+  [Test]
+  public async Task CancelsExactlyTheMaterialWithTheDisplayedCancellationId()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandlers = [handler];
+    await StartSyncThread();
+
+    var first = QueuedMat(1, null, "part", 0, 1, "first", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "cancel-1",
+      },
+    };
+    var second = QueuedMat(2, null, "part", 0, 1, "second", "q1", 1) with { Action = first.Action };
+    var unrelated = QueuedMat(3, null, "part", 0, 1, "third", "q1", 2) with
+    {
+      Action = first.Action with { LoadCancellationId = "cancel-2" },
+    };
+    await SetCurrentMaterial([first, second, unrelated]);
+
+    _jq.CancelLoad(first.MaterialID, "cancel-1", "operator", "reason");
+
+    handler.MaterialIds.ShouldBe([first.MaterialID, second.MaterialID]);
+    handler.Reason.ShouldBe("reason");
+  }
+
+  [Test]
+  public async Task CancelLoadRejectsStaleCancellationIdBeforeCallingTheHandler()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandlers = [handler];
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "current",
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.CancelLoad(material.MaterialID, "stale", null, null)
+      )
+      .Message.ShouldContain("no longer current");
+
+    handler.Calls.ShouldBe(0);
+  }
+
+  [Test]
+  public async Task CancelLoadPassesASingletonCancellationGroupToTheHandler()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandlers = [handler];
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.LoadingToBasket,
+        LoadCancellationId = "single",
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    _jq.CancelLoad(material.MaterialID, "single", null, null);
+
+    handler.MaterialIds.ShouldBe([material.MaterialID]);
+  }
+
+  [Test]
+  public async Task CancelLoadRecalculatesStateAfterSuccessfulHandlerAndMakesPriorTokenStale()
+  {
+    var handler = new RecordingLoadCancel()
+    {
+      OnCancel = () =>
+        _curSt = _curSt with
+        {
+          Uniq = _curSt.Uniq + 1,
+          CurrentStatus = _curSt.CurrentStatus with { Material = [] },
+        },
+    };
+    _loadCancelHandlers = [handler];
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "current",
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    var newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.CancelLoad(material.MaterialID, "current", null, null);
+
+    (await newStatusTask).Material.ShouldBeEmpty();
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.CancelLoad(material.MaterialID, "current", null, null)
+      )
+      .Message.ShouldContain("Material not found");
+  }
+
+  [Test]
+  public async Task CancelLoadRejectsAConsumedTokenBeforeTheCurrentStateIsReconstructed()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandlers = [handler];
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "current",
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    // Stop reconstruction so both requests observe the same current status.  This models a
+    // second request acquiring the change lock before asynchronous recalculation has run.
+    _jq.Dispose();
+
+    _jq.CancelLoad(material.MaterialID, "current", null, null);
+
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.CancelLoad(material.MaterialID, "current", null, null)
+      )
+      .Message.ShouldContain("no longer current");
+    handler.Calls.ShouldBe(1);
+  }
+
+  [Test]
+  public async Task CancelLoadHandlerFailureDoesNotPublishRecalculatedState()
+  {
+    var handler = new RecordingLoadCancel()
+    {
+      OnCancel = () => _curSt = _curSt with { Uniq = _curSt.Uniq + 1 },
+      Failure = new Exception("cancellation failed"),
+    };
+    _loadCancelHandlers = [handler];
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "current",
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    var noStatusTask = CreateTaskToWaitForNewStatus();
+    Should
+      .Throw<Exception>(() => _jq.CancelLoad(material.MaterialID, "current", null, null))
+      .Message.ShouldBe("cancellation failed");
+
+    (await Task.WhenAny(noStatusTask, Task.Delay(100))).ShouldNotBe(noStatusTask);
+  }
+
+  [Test]
+  public async Task CancelLoadRejectsAdvertisedCancellationWithoutAHandler()
+  {
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "current",
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    Should
+      .Throw<InvalidOperationException>(() =>
+        _jq.CancelLoad(material.MaterialID, "current", null, null)
+      )
+      .Message.ShouldContain("does not have exactly one load cancellation handler");
   }
 
   #endregion
@@ -1136,7 +1360,6 @@ public sealed class JobAndQueueSpec
     public QuarantineType? QuarantineAction { get; set; } = null;
     public int Process { get; set; } = 0;
     public string JobTransferQeuue { get; set; } = "q1";
-    public bool AllowQuarantineToCancelLoad { get; set; } = false;
   }
 
   public readonly ImmutableList<SignalQuarantineTheoryData> SignalTheoryData =
@@ -1190,16 +1413,6 @@ public sealed class JobAndQueueSpec
       JobTransferQeuue = "q1",
       Error = "Material on pallet can not be quarantined while loading",
     },
-    new SignalQuarantineTheoryData
-    {
-      ActionType = InProcessMaterialAction.ActionType.Loading,
-      LocType = InProcessMaterialLocation.LocType.OnPallet,
-      QuarantineQueue = "quarqqq",
-      Process = 1,
-      JobTransferQeuue = "q1",
-      AllowQuarantineToCancelLoad = true,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
-    },
     new SignalQuarantineTheoryData()
     {
       ActionType = InProcessMaterialAction.ActionType.Waiting,
@@ -1224,16 +1437,6 @@ public sealed class JobAndQueueSpec
       ActionType = InProcessMaterialAction.ActionType.Machining,
       LocType = InProcessMaterialLocation.LocType.OnPallet,
       QuarantineQueue = "quarqqq",
-      Process = 1,
-      JobTransferQeuue = null,
-      AllowQuarantineToCancelLoad = true,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
-    },
-    new SignalQuarantineTheoryData
-    {
-      ActionType = InProcessMaterialAction.ActionType.Machining,
-      LocType = InProcessMaterialLocation.LocType.OnPallet,
-      QuarantineQueue = "quarqqq",
       Process = 2,
       JobTransferQeuue = null,
       QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
@@ -1250,24 +1453,8 @@ public sealed class JobAndQueueSpec
     {
       ActionType = InProcessMaterialAction.ActionType.Loading,
       LocType = InProcessMaterialLocation.LocType.InQueue,
-      QuarantineQueue = "quarqqq",
-      AllowQuarantineToCancelLoad = true,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add,
-    },
-    new SignalQuarantineTheoryData()
-    {
-      ActionType = InProcessMaterialAction.ActionType.Loading,
-      LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = null,
       Error = "Invalid material state for quarantine",
-    },
-    new SignalQuarantineTheoryData()
-    {
-      ActionType = InProcessMaterialAction.ActionType.Loading,
-      LocType = InProcessMaterialLocation.LocType.InQueue,
-      QuarantineQueue = null,
-      AllowQuarantineToCancelLoad = true,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove,
     },
   ];
 
@@ -1284,7 +1471,6 @@ public sealed class JobAndQueueSpec
   public async Task QuarantinesMatOnPallet(SignalQuarantineTheoryData data)
   {
     _settings = _settings with { QuarantineQueue = data.QuarantineQueue };
-    AllowQuarantineToCancelLoad = data.AllowQuarantineToCancelLoad;
     await StartSyncThread();
 
     var now = DateTime.UtcNow;

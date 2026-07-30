@@ -76,6 +76,7 @@ import {
   SwapMaterialDialogContent,
   SwapMaterialState,
 } from "./InvalidateCycle.js";
+import { CancelLoadButton } from "./CancelLoadButton.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
 import { useSetTitle } from "../routes.js";
@@ -1572,6 +1573,7 @@ const SystemOverviewMaterialDialog = memo(function SystemOverviewMaterialDialog(
       buttons={
         <>
           <QuarantineMatButton ignoreOperator={ignoreOperator} />
+          <CancelLoadButton onClose={onClose} ignoreOperator={ignoreOperator} />
           <SignalInspectionButton />
           <SwapMaterialButtons
             st={swapSt}

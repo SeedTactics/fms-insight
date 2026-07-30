@@ -34,9 +34,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { Box, Button, ListItemIcon, ListItemText, ListSubheader, Stack } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
-import { ActionType, IActiveJob, IInProcessMaterial, LocType } from "../../network/api.js";
+import {
+  ActionType,
+  IActiveJob,
+  IInProcessMaterial,
+  ILogEntry,
+  LocType,
+  LogType,
+} from "../../network/api.js";
 import { JobsBackend } from "../../network/backend.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
 import {
   barcodePotentialNewMaterial,
@@ -44,6 +51,7 @@ import {
   materialDialogOpen,
   materialInDialogInfo,
   materialInDialogLargestUsedProcess,
+  materialInDialogLocalEvents,
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -51,18 +59,53 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { ReactNode, useEffect, useRef } from "react";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { PartIdenticon } from "./Material.js";
+import { isLogEntryInvalidated } from "../LogEntry.js";
+import { ApiException } from "../../network/api.js";
 
 export type InvalidateCycleState = {
   readonly process: number | null;
   readonly changeRawMat: string | null;
   readonly changeJobUnique: string | null;
   readonly updating: boolean;
+  readonly error: string | null;
 };
 
 export type InvalidateCycleProps = {
   readonly st: InvalidateCycleState | null;
   readonly setState: (s: InvalidateCycleState | null) => void;
 };
+
+const invalidatableEventTypes = LazySeq.of([
+  LogType.AddToQueue,
+  LogType.RemoveFromQueue,
+  LogType.LoadUnloadCycle,
+  LogType.MachineCycle,
+  LogType.BasketLoadUnload,
+  LogType.BasketCycle,
+]).toRSet((eventType) => eventType);
+
+export function affectedMaterialForInvalidation(
+  events: ReadonlyArray<Readonly<ILogEntry>>,
+  materialId: number,
+  process: number | null,
+): HashMap<number, string | null> {
+  let affected = HashMap.empty<number, string | null>();
+  for (const event of events) {
+    if (
+      !invalidatableEventTypes.has(event.type) ||
+      isLogEntryInvalidated(event) ||
+      !event.material.some(
+        (material) => material.id === materialId && (process === null || material.proc >= process),
+      )
+    ) {
+      continue;
+    }
+    for (const material of event.material) {
+      affected = affected.set(material.id, material.serial ?? null);
+    }
+  }
+  return affected;
+}
 
 function InvalidateSelect(props: InvalidateCycleProps) {
   const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
@@ -85,6 +128,7 @@ function InvalidateSelect(props: InvalidateCycleProps) {
   function change(e: string) {
     props.setState({
       updating: false,
+      error: null,
       process: e.startsWith("proc") ? parseInt(e.substring(4)) : null,
       changeRawMat: e.startsWith("rawMat") ? e.substring(6) : null,
       changeJobUnique: e.startsWith("job") ? e.substring(3) : null,
@@ -94,7 +138,7 @@ function InvalidateSelect(props: InvalidateCycleProps) {
   return (
     <TextField
       value={
-        props.st?.process
+        props.st?.process && hasProc
           ? "proc" + props.st.process.toString()
           : props.st?.changeRawMat
             ? "rawMat" + props.st.changeRawMat
@@ -162,6 +206,8 @@ function InvalidateSelect(props: InvalidateCycleProps) {
 
 export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
   const curMat = useAtomValue(materialInDialogInfo);
+  const events = useAtomValue(materialInDialogLocalEvents);
+  const status = useAtomValue(currentStatus);
   const show = props.st !== null && curMat !== null;
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -174,6 +220,20 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
 
   if (!show) return <div />;
 
+  const process =
+    props.st.process ?? (props.st.changeRawMat || props.st.changeJobUnique ? null : undefined);
+  const affected =
+    process === undefined
+      ? HashMap.empty<number, string | null>()
+      : affectedMaterialForInvalidation(events, curMat.materialID, process);
+  const affectedLabels = [...affected].map(([materialId, serial]) => ({
+    materialId,
+    serial,
+    queued:
+      status.material.find((material) => material.materialID === materialId)?.location.type ===
+      LocType.InQueue,
+  }));
+
   return (
     <Box
       ref={boxRef}
@@ -181,10 +241,24 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
     >
       <Stack spacing={2}>
         <p style={{ maxWidth: "35em" }}>
-          An invalidated cycle remains in the event log, but is not considered when determining the
-          next process to be machined on a piece of material.
+          Invalidating removes whole recorded cycle events from active material reconstruction while
+          retaining them in the event log.
         </p>
         <InvalidateSelect st={props.st} setState={props.setState} />
+        {affectedLabels.length > 0 ? (
+          <>
+            <p>All material recorded on these events will be affected:</p>
+            <ul>
+              {affectedLabels.map((material) => (
+                <li key={material.materialId}>
+                  {material.serial || `Material ID ${material.materialId}`}
+                  {material.queued ? " (currently in a queue)" : ""}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {props.st.error ? <p role="alert">{props.st.error}</p> : null}
       </Stack>
     </Box>
   );
@@ -210,6 +284,7 @@ export function InvalidateCycleDialogButton(
   if (curMat === null) return null;
 
   if (inProcMat && inProcMat.location.type === LocType.OnPallet) return null;
+  if (inProcMat && inProcMat.location.type === LocType.InQueue) return null;
 
   const allowChange =
     possibleNew !== null &&
@@ -220,7 +295,13 @@ export function InvalidateCycleDialogButton(
   if (props.ignoreOperator) operator = null;
 
   function showInvalidate() {
-    props.setState({ process: null, updating: false, changeRawMat: null, changeJobUnique: null });
+    props.setState({
+      process: null,
+      updating: false,
+      error: null,
+      changeRawMat: null,
+      changeJobUnique: null,
+    });
   }
 
   function invalidateCycle() {
@@ -239,16 +320,22 @@ export function InvalidateCycleDialogButton(
               type: "MatDetails",
               details: mat,
             });
-            props.onClose();
+            props.setState(null);
           } else {
             setMatToShow(null);
             props.onClose();
           }
         })
         .catch((e) => {
-          console.log(e);
-          setMatToShow(null);
-          props.onClose();
+          props.setState({
+            ...props.st!,
+            updating: false,
+            error: ApiException.isApiException(e)
+              ? e.response
+              : e instanceof Error
+                ? e.message
+                : String(e),
+          });
         });
     }
   }

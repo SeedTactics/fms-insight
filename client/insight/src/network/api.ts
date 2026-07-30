@@ -1105,6 +1105,59 @@ export class JobsClient {
     return Promise.resolve<void>(null as any);
   }
 
+  cancelLoad(
+    materialId: number,
+    operName: string | null | undefined,
+    request: CancelLoadRequest,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/cancel-load?";
+    if (materialId === undefined || materialId === null)
+      throw new globalThis.Error("The parameter 'materialId' must be defined.");
+    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(request);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "PUT",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processCancelLoad(_response);
+    });
+  }
+
+  protected processCancelLoad(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException(
+          "An unexpected server error occurred.",
+          status,
+          _responseText,
+          _headers,
+        );
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
   invalidatePalletCycle(
     materialId: number,
     operName: string | null | undefined,
@@ -2804,7 +2857,6 @@ export class FMSInfo implements IFMSInfo {
   openIDConnectClientId?: string | undefined;
   usingLabelPrinterForSerials?: boolean | undefined;
   useClientPrinterForLabels?: boolean | undefined;
-  allowQuarantineToCancelLoad?: boolean | undefined;
   quarantineQueue?: string | undefined;
   customStationMonitorDialogUrl?: string | undefined;
   supportsRebookings?: string | undefined;
@@ -2844,7 +2896,6 @@ export class FMSInfo implements IFMSInfo {
       this.openIDConnectClientId = _data["OpenIDConnectClientId"];
       this.usingLabelPrinterForSerials = _data["UsingLabelPrinterForSerials"];
       this.useClientPrinterForLabels = _data["UseClientPrinterForLabels"];
-      this.allowQuarantineToCancelLoad = _data["AllowQuarantineToCancelLoad"];
       this.quarantineQueue = _data["QuarantineQueue"];
       this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
       this.supportsRebookings = _data["SupportsRebookings"];
@@ -2893,7 +2944,6 @@ export class FMSInfo implements IFMSInfo {
     data["OpenIDConnectClientId"] = this.openIDConnectClientId;
     data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
     data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
-    data["AllowQuarantineToCancelLoad"] = this.allowQuarantineToCancelLoad;
     data["QuarantineQueue"] = this.quarantineQueue;
     data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
     data["SupportsRebookings"] = this.supportsRebookings;
@@ -2930,7 +2980,6 @@ export interface IFMSInfo {
   openIDConnectClientId?: string | undefined;
   usingLabelPrinterForSerials?: boolean | undefined;
   useClientPrinterForLabels?: boolean | undefined;
-  allowQuarantineToCancelLoad?: boolean | undefined;
   quarantineQueue?: string | undefined;
   customStationMonitorDialogUrl?: string | undefined;
   supportsRebookings?: string | undefined;
@@ -4533,7 +4582,7 @@ export class CurrentStatus implements ICurrentStatus {
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
   basketMoveInstructions?: BasketMoveInstruction[] | undefined;
-  customState?: unknown | undefined;
+  customState?: any | undefined;
 
   constructor(data?: ICurrentStatus) {
     if (data) {
@@ -4705,7 +4754,7 @@ export interface ICurrentStatus {
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
   basketMoveInstructions?: BasketMoveInstruction[] | undefined;
-  customState?: unknown | undefined;
+  customState?: any | undefined;
 }
 
 export class HistoricJob extends Job implements IHistoricJob {
@@ -5164,6 +5213,7 @@ export enum LocType {
 export class InProcessMaterialAction implements IInProcessMaterialAction {
   type!: ActionType;
   workId?: string | undefined;
+  loadCancellationId?: string | undefined;
   loadOntoPalletNum?: number | undefined;
   loadOntoFace?: number | undefined;
   processAfterLoad?: number | undefined;
@@ -5191,6 +5241,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     if (_data) {
       this.type = _data["Type"];
       this.workId = _data["WorkId"];
+      this.loadCancellationId = _data["LoadCancellationId"];
       this.loadOntoPalletNum = _data["LoadOntoPalletNum"];
       this.loadOntoFace = _data["LoadOntoFace"];
       this.processAfterLoad = _data["ProcessAfterLoad"];
@@ -5219,6 +5270,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     data = typeof data === "object" ? data : {};
     data["Type"] = this.type;
     data["WorkId"] = this.workId;
+    data["LoadCancellationId"] = this.loadCancellationId;
     data["LoadOntoPalletNum"] = this.loadOntoPalletNum;
     data["LoadOntoFace"] = this.loadOntoFace;
     data["ProcessAfterLoad"] = this.processAfterLoad;
@@ -5240,6 +5292,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
 export interface IInProcessMaterialAction {
   type: ActionType;
   workId?: string | undefined;
+  loadCancellationId?: string | undefined;
   loadOntoPalletNum?: number | undefined;
   loadOntoFace?: number | undefined;
   processAfterLoad?: number | undefined;
@@ -6616,6 +6669,45 @@ export class QueuePosition implements IQueuePosition {
 export interface IQueuePosition {
   queue: string;
   position: number;
+}
+
+export class CancelLoadRequest implements ICancelLoadRequest {
+  expectedLoadCancellationId!: string;
+  reason?: string | undefined;
+
+  constructor(data?: ICancelLoadRequest) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
+      }
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.expectedLoadCancellationId = _data["ExpectedLoadCancellationId"];
+      this.reason = _data["Reason"];
+    }
+  }
+
+  static fromJS(data: any): CancelLoadRequest {
+    data = typeof data === "object" ? data : {};
+    let result = new CancelLoadRequest();
+    result.init(data);
+    return result;
+  }
+
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["ExpectedLoadCancellationId"] = this.expectedLoadCancellationId;
+    data["Reason"] = this.reason;
+    return data;
+  }
+}
+
+export interface ICancelLoadRequest {
+  expectedLoadCancellationId: string;
+  reason?: string | undefined;
 }
 
 export class MatToPutOnPallet implements IMatToPutOnPallet {

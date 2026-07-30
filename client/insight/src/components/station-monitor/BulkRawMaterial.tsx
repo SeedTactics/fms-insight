@@ -258,13 +258,13 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
       !isNaN(enteredQty) &&
       enteredQty > 0
     ) {
-      addNewCasting({
+      void addNewCasting({
         casting: selectedCasting,
         quantity: enteredQty,
         queue: queue,
         workorder: null,
         operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
-      });
+      }).catch(console.log);
     }
     close();
   }
@@ -272,7 +272,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
   function addAndPrint() {
     if (queue !== null && selectedCasting !== null && enteredQty !== null && !isNaN(enteredQty)) {
       setAdding(true);
-      addNewCasting({
+      void addNewCasting({
         casting: selectedCasting,
         quantity: enteredQty,
         queue: queue,
@@ -291,7 +291,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
         onError: () => {
           close();
         },
-      });
+      }).catch(() => {});
     }
   }
 

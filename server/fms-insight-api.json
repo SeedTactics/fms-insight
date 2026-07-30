@@ -822,6 +822,50 @@
         }
       }
     },
+    "/api/v1/jobs/material/{materialId}/cancel-load": {
+      "put": {
+        "tags": ["Jobs"],
+        "operationId": "Jobs_CancelLoad",
+        "parameters": [
+          {
+            "name": "materialId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "operName",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 3
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelLoadRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/material/{materialId}/invalidate-process": {
       "put": {
         "tags": ["Jobs"],
@@ -2087,10 +2131,6 @@
             "nullable": true
           },
           "UseClientPrinterForLabels": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "AllowQuarantineToCancelLoad": {
             "type": "boolean",
             "nullable": true
           },
@@ -3612,6 +3652,10 @@
             "type": "string",
             "nullable": true
           },
+          "LoadCancellationId": {
+            "type": "string",
+            "nullable": true
+          },
           "LoadOntoPalletNum": {
             "type": "integer",
             "format": "int32",
@@ -4423,6 +4467,20 @@
           "Position": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "CancelLoadRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ExpectedLoadCancellationId", "ExpectedLoadCancellationId"],
+        "properties": {
+          "ExpectedLoadCancellationId": {
+            "type": "string"
+          },
+          "Reason": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

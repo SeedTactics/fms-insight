@@ -5208,6 +5208,10 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).ShouldBe(3);
 
+      origMatLog.AddRange(
+        _jobLog.RecordRemoveMaterialFromAllQueues(matProc1, operatorName: "theoper", timeUTC: now)
+      );
+
       // ------------------------------------------------------
       // Invalidate
       // ------------------------------------------------------
@@ -5254,24 +5258,7 @@ namespace BlackMaple.FMSInsight.Tests
           .Add("operator", "theoper"),
       };
 
-      var expectedReaddToQueue = new LogEntry(
-        cntr: 0,
-        mat: [logMatProc0], // was process 1, adding back as process 0
-        pal: 0,
-        ty: LogType.AddToQueue,
-        locName: "xyz",
-        locNum: 0,
-        prog: "Invalidating",
-        start: false,
-        endTime: now,
-        result: ""
-      );
-      expectedReaddToQueue = expectedReaddToQueue with
-      {
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", "theoper"),
-      };
-
-      result.EventsShouldBe(new[] { expectedInvalidateMsg, expectedReaddToQueue });
+      result.EventsShouldBe([expectedInvalidateMsg]);
 
       var newMatLog = origMatLog
         .Select(RemoveActiveTime())
@@ -5297,17 +5284,154 @@ namespace BlackMaple.FMSInsight.Tests
 
       logMatProc0 = logMatProc0 with { Path = null };
 
-      // log for initiallyLoadedMatProc matches, and importantly has only process 0 as max
       _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).ShouldBe(1);
 
       _jobLog
         .GetLogForMaterial(matProc0.MaterialID)
         .EventsShouldBe(
-          newMatLog
-            .Concat(newPalLog)
-            .Concat(proc0Evts)
-            .Concat(new[] { expectedInvalidateMsg, expectedReaddToQueue })
+          newMatLog.Concat(newPalLog).Concat(proc0Evts).Append(expectedInvalidateMsg)
         );
+    }
+
+    [Test]
+    public void InvalidateCycleRejectsQueuedAffectedMaterialWithoutWriting()
+    {
+      using var db = _repoCfg.OpenConnection();
+      var now = DateTime.UtcNow;
+      var selected = new EventLogMaterial()
+      {
+        MaterialID = db.AllocateMaterialID("selected", "part", 1),
+        Process = 1,
+        Face = 1,
+      };
+      var affectedPeer = new EventLogMaterial()
+      {
+        MaterialID = db.AllocateMaterialID("peer", "part", 1),
+        Process = 1,
+        Face = 2,
+      };
+
+      db.RecordMachineStart(
+        [selected, affectedPeer],
+        pallet: 1,
+        statName: "machine",
+        statNum: 1,
+        program: "program",
+        timeUTC: now
+      );
+      db.RecordAddMaterialToQueue(
+        affectedPeer with
+        {
+          Process = 0,
+        },
+        queue: "queue",
+        position: -1,
+        operatorName: null,
+        reason: null,
+        timeUTC: now.AddMinutes(1)
+      );
+      var logBefore = db.GetLogForMaterial(selected.MaterialID).ToList();
+
+      Should
+        .Throw<ConflictRequestException>(() =>
+          db.InvalidatePalletCycle(selected.MaterialID, process: 1, operatorName: "operator")
+        )
+        .Message.ShouldContain(affectedPeer.MaterialID.ToString());
+
+      db.GetLogForMaterial(selected.MaterialID).EventsShouldBe(logBefore);
+      db.GetMaterialInAllQueues().Single().MaterialID.ShouldBe(affectedPeer.MaterialID);
+    }
+
+    [Test]
+    public void InvalidateCycleRejectsQueuedSelectedMaterialWithoutWriting()
+    {
+      using var db = _repoCfg.OpenConnection();
+      var now = DateTime.UtcNow;
+      var selected = new EventLogMaterial()
+      {
+        MaterialID = db.AllocateMaterialID("selected", "part", 1),
+        Process = 1,
+        Face = 1,
+      };
+
+      db.RecordMachineStart(
+        [selected],
+        pallet: 1,
+        statName: "machine",
+        statNum: 1,
+        program: "program",
+        timeUTC: now
+      );
+      db.RecordAddMaterialToQueue(
+        selected with
+        {
+          Process = 0,
+        },
+        queue: "queue",
+        position: -1,
+        operatorName: null,
+        reason: null,
+        timeUTC: now.AddMinutes(1)
+      );
+      var logBefore = db.GetLogForMaterial(selected.MaterialID).ToList();
+
+      Should
+        .Throw<ConflictRequestException>(() =>
+          db.InvalidatePalletCycle(selected.MaterialID, process: 1, operatorName: "operator")
+        )
+        .Message.ShouldContain(selected.MaterialID.ToString());
+
+      db.GetLogForMaterial(selected.MaterialID).EventsShouldBe(logBefore);
+      db.GetMaterialInAllQueues().Single().MaterialID.ShouldBe(selected.MaterialID);
+    }
+
+    [Test]
+    public void InvalidateAssignmentRejectsQueuedMaterialWithoutWriting()
+    {
+      using var db = _repoCfg.OpenConnection();
+      var now = DateTime.UtcNow;
+      var selected = new EventLogMaterial()
+      {
+        MaterialID = db.AllocateMaterialID("selected", "part", 1),
+        Process = 1,
+        Face = 1,
+      };
+
+      db.RecordMachineStart(
+        [selected],
+        pallet: 1,
+        statName: "machine",
+        statNum: 1,
+        program: "program",
+        timeUTC: now
+      );
+      db.RecordAddMaterialToQueue(
+        selected with
+        {
+          Process = 0,
+        },
+        queue: "queue",
+        position: -1,
+        operatorName: null,
+        reason: null,
+        timeUTC: now.AddMinutes(1)
+      );
+      var logBefore = db.GetLogForMaterial(selected.MaterialID).ToList();
+
+      Should
+        .Throw<ConflictRequestException>(() =>
+          db.InvalidateAndChangeAssignment(
+            matId: selected.MaterialID,
+            operatorName: "operator",
+            changeJobUniqueTo: null,
+            changePartNameTo: "casting",
+            changeNumProcessesTo: 1
+          )
+        )
+        .Message.ShouldContain(selected.MaterialID.ToString());
+
+      db.GetLogForMaterial(selected.MaterialID).EventsShouldBe(logBefore);
+      db.GetMaterialInAllQueues().Single().MaterialID.ShouldBe(selected.MaterialID);
     }
 
     [Test]
@@ -5443,10 +5567,10 @@ namespace BlackMaple.FMSInsight.Tests
           .Select(proc =>
             MkLogMat.Mk(
               matID: matProc1.MaterialID,
-              uniq: "",
-              part: "thecasting",
+              uniq: "uniq1",
+              part: "part1",
               proc: proc,
-              numProc: 1,
+              numProc: 3,
               serial: "ser1",
               workorder: "",
               face: ""
@@ -5527,7 +5651,21 @@ namespace BlackMaple.FMSInsight.Tests
                   .ToImmutableList(),
               }
             )
-            .Append(expectedInvalidate)
+            .Append(
+              expectedInvalidate with
+              {
+                Material = expectedInvalidate
+                  .Material.Select(m =>
+                    m with
+                    {
+                      JobUniqueStr = "",
+                      PartName = "thecasting",
+                      NumProcesses = 1,
+                    }
+                  )
+                  .ToImmutableList(),
+              }
+            )
         );
     }
 
@@ -5579,6 +5717,12 @@ namespace BlackMaple.FMSInsight.Tests
 
       db.NextProcessForQueuedMaterial(matId).ShouldBe(1);
 
+      var removeFromQueue = db.RecordRemoveMaterialFromAllQueues(
+        matProc0,
+        operatorName: "theoper",
+        timeUTC: now.AddMinutes(4)
+      );
+
       // invalidate
       var expectedInvalidate = new LogEntry()
       {
@@ -5587,10 +5731,10 @@ namespace BlackMaple.FMSInsight.Tests
         {
           MkLogMat.Mk(
             matID: matProc0.MaterialID,
-            uniq: "ZZZuniq",
-            part: "ZZZpart",
+            uniq: "uniqqq",
+            part: "parttt",
             proc: 0,
-            numProc: 2,
+            numProc: 3,
             serial: "ser111",
             workorder: "",
             face: ""
@@ -5607,37 +5751,11 @@ namespace BlackMaple.FMSInsight.Tests
         ActiveOperationTime = TimeSpan.Zero,
         Result = "Invalidate all events on cycles",
         ProgramDetails = ImmutableDictionary<string, string>
-          .Empty.Add("EditedCounters", string.Join(",", addToQueue.First().Counter))
+          .Empty.Add(
+            "EditedCounters",
+            string.Join(",", addToQueue.Concat(removeFromQueue).Select(entry => entry.Counter))
+          )
           .Add("operator", "theoper"),
-      };
-
-      var expectedReaddToQueue = new LogEntry()
-      {
-        Counter = 0,
-        Material = new[]
-        {
-          MkLogMat.Mk(
-            matID: matProc0.MaterialID,
-            uniq: "ZZZuniq",
-            part: "ZZZpart",
-            proc: 0,
-            numProc: 2,
-            serial: "ser111",
-            workorder: "",
-            face: ""
-          ),
-        }.ToImmutableList(),
-        Pallet = 0,
-        LogType = LogType.AddToQueue,
-        LocationName = "rawmat",
-        LocationNum = 0,
-        Program = "ChangedJob",
-        StartOfCycle = false,
-        EndTimeUTC = now.AddMinutes(5),
-        ElapsedTime = TimeSpan.FromMinutes(-1),
-        ActiveOperationTime = TimeSpan.Zero,
-        Result = "",
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", "theoper"),
       };
 
       db.InvalidateAndChangeAssignment(
@@ -5648,7 +5766,7 @@ namespace BlackMaple.FMSInsight.Tests
           changeNumProcessesTo: 2,
           timeUTC: now.AddMinutes(5)
         )
-        .EventsShouldBe([expectedInvalidate, expectedReaddToQueue]);
+        .EventsShouldBe([expectedInvalidate]);
 
       db.GetMaterialDetails(matId)
         .ShouldBeEquivalentTo(
@@ -5664,7 +5782,7 @@ namespace BlackMaple.FMSInsight.Tests
           }
         );
 
-      db.NextProcessForQueuedMaterial(matId).ShouldBe(1);
+      db.NextProcessForQueuedMaterial(matId).ShouldBeNull();
 
       db.GetLogForMaterial(matId)
         .EventsShouldBe(
@@ -5679,9 +5797,17 @@ namespace BlackMaple.FMSInsight.Tests
                   ).Add("PalletCycleInvalidated", "1"),
                 },
                 .. addToQueue.Skip(1),
+                .. removeFromQueue.Select(entry =>
+                  entry with
+                  {
+                    ActiveOperationTime = TimeSpan.Zero,
+                    ProgramDetails = (
+                      entry.ProgramDetails ?? ImmutableDictionary<string, string>.Empty
+                    ).Add("PalletCycleInvalidated", "1"),
+                  }
+                ),
                 serial,
                 expectedInvalidate,
-                expectedReaddToQueue,
               ]
           ).Select(e =>
             e with
@@ -5700,22 +5826,7 @@ namespace BlackMaple.FMSInsight.Tests
           )
         );
 
-      db.GetMaterialInAllQueues()
-        .ShouldBe([
-          new QueuedMaterial()
-          {
-            MaterialID = matId,
-            Unique = "ZZZuniq",
-            PartNameOrCasting = "ZZZpart",
-            NumProcesses = 2,
-            Serial = "ser111",
-            Queue = "rawmat",
-            Position = 0,
-            Paths = ImmutableDictionary<int, int>.Empty,
-            AddTimeUTC = now,
-            NextProcess = 1,
-          },
-        ]);
+      db.GetMaterialInAllQueues().ShouldBeEmpty();
     }
 
     [Test]

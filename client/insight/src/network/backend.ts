@@ -73,6 +73,11 @@ export interface JobAPI {
     operName: string | null,
     reason: string | undefined,
   ): Promise<void>;
+  cancelLoad(
+    materialId: number,
+    operName: string | null,
+    request: Readonly<api.ICancelLoadRequest>,
+  ): Promise<void>;
   swapMaterialOnPallet(
     materialId: number,
     operName: string | null,

@@ -27,10 +27,12 @@ export function createCurrentStatus({
   pallets = [],
   baskets = [],
   material = [],
+  queues = {},
 }: {
   readonly pallets?: ReadonlyArray<api.PalletStatus>;
   readonly baskets?: ReadonlyArray<api.BasketStatus>;
   readonly material?: ReadonlyArray<api.InProcessMaterial>;
+  readonly queues?: Readonly<Record<string, api.QueueInfo>>;
 } = {}): api.CurrentStatus {
   return new api.CurrentStatus({
     timeOfCurrentStatusUTC: new Date("2026-04-24T12:00:00Z"),
@@ -38,7 +40,7 @@ export function createCurrentStatus({
     pallets: Object.fromEntries(pallets.map((p) => [p.palletNum, p])),
     material: Array.from(material),
     alarms: [],
-    queues: {},
+    queues,
     baskets: Object.fromEntries(baskets.map((b) => [b.basketId, b])),
   });
 }
