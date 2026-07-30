@@ -103,6 +103,8 @@ jobs:
 
       - run: pnpm --dir client/insight run test:unit
 
+      - run: pnpm --dir client/insight exec playwright install chromium
+
       - run: pnpm --dir client/insight run test:integration
 
       - run: pnpm --dir client/insight run build
