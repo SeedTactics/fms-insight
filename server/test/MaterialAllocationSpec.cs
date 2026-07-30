@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
@@ -10,7 +12,7 @@ public sealed class MaterialAllocationSpec
   [Test]
   public async Task IdempotentBatchAllocationSurvivesRestartAndConcurrentRetries()
   {
-    using var repositoryConfig = RepositoryConfig.InitializeMemoryDB(null);
+    var databaseFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
     var request = ImmutableList.Create(
       new MaterialToAllocate
       {
@@ -28,40 +30,102 @@ public sealed class MaterialAllocationSpec
       }
     );
 
-    ImmutableList<MaterialDetails> allocated;
-    using (var repository = repositoryConfig.OpenConnection())
-      allocated = repository.AllocateMaterialIDs(request, "raw-basket-work");
-
-    var retries = await Task.WhenAll(
-      Enumerable
-        .Range(0, 8)
-        .Select(_ =>
-          Task.Run(() =>
-          {
-            using var repository = repositoryConfig.OpenConnection();
-            return repository.AllocateMaterialIDs(request, "raw-basket-work");
-          })
+    try
+    {
+      ImmutableList<MaterialDetails>[] allocations;
+      using (
+        var repositoryConfig = RepositoryConfig.InitializeEventDatabase(
+          null,
+          databaseFile,
+          pooling: false
         )
+      )
+      {
+        allocations = await Task.WhenAll(
+          Enumerable
+            .Range(0, 8)
+            .Select(_ =>
+              Task.Run(() =>
+              {
+                using var repository = repositoryConfig.OpenConnection();
+                return repository.AllocateMaterialIDs(request, "raw-basket-work");
+              })
+            )
+        );
+      }
+
+      using var restartedConfig = RepositoryConfig.InitializeEventDatabase(
+        null,
+        databaseFile,
+        pooling: false
+      );
+      using var verify = restartedConfig.OpenConnection();
+      var retry = verify.AllocateMaterialIDs(request, "raw-basket-work");
+
+      await Assert
+        .That(
+          allocations
+            .Append(retry)
+            .All(allocation =>
+              allocation.Select(material => material.MaterialID).SequenceEqual([1L, 2L])
+              && allocation.All(material => material.Paths![1] == 3)
+            )
+        )
+        .IsTrue();
+      await Assert.That(verify.AllocateMaterialID("next", "part", 1)).IsEqualTo(3L);
+      await Assert
+        .That(() =>
+          verify.AllocateMaterialIDs(
+            request.SetItem(1, request[1] with { PartName = "changed" }),
+            "raw-basket-work"
+          )
+        )
+        .Throws<ConflictRequestException>();
+    }
+    finally
+    {
+      if (File.Exists(databaseFile))
+        File.Delete(databaseFile);
+    }
+  }
+
+  [Test]
+  public async Task IdempotentBatchAllocationRejectsDifferentItemAndPathBoundaries()
+  {
+    using var repositoryConfig = RepositoryConfig.InitializeMemoryDB(null);
+    using var repository = repositoryConfig.OpenConnection();
+    var first = ImmutableList.Create(
+      new MaterialToAllocate
+      {
+        JobUnique = "a",
+        PartName = "b",
+        NumProcesses = 1,
+        Paths = ImmutableDictionary<int, int>.Empty.Add(1, 2),
+      },
+      new MaterialToAllocate
+      {
+        JobUnique = "1",
+        PartName = "1",
+        NumProcesses = 1,
+        Paths = ImmutableDictionary<int, int>.Empty,
+      }
+    );
+    var second = ImmutableList.Create(
+      first[0] with
+      {
+        Paths = ImmutableDictionary<int, int>.Empty,
+      },
+      first[1] with
+      {
+        PartName = "2",
+        Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+      }
     );
 
-    await Assert.That(allocated.Select(material => material.MaterialID)).IsEquivalentTo([1L, 2L]);
+    repository.AllocateMaterialIDs(first, "same-key");
+
     await Assert
-      .That(
-        retries.All(retry =>
-          retry.Select(material => material.MaterialID).SequenceEqual([1L, 2L])
-          && retry.All(material => material.Paths![1] == 3)
-        )
-      )
-      .IsTrue();
-    using var verify = repositoryConfig.OpenConnection();
-    await Assert.That(verify.AllocateMaterialID("next", "part", 1)).IsEqualTo(3L);
-    await Assert
-      .That(() =>
-        verify.AllocateMaterialIDs(
-          request.SetItem(1, request[1] with { PartName = "changed" }),
-          "raw-basket-work"
-        )
-      )
+      .That(() => repository.AllocateMaterialIDs(second, "same-key"))
       .Throws<ConflictRequestException>();
   }
 }

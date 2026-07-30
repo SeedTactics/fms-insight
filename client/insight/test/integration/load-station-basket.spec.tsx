@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import LoadStation from "../../src/components/station-monitor/LoadStation.js";
 import type { SubmitBasketLoadStationCommand } from "../../src/components/station-monitor/BasketLoadStationWork.js";
+import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
 import * as api from "../../src/network/api.js";
 import { renderInsightPage } from "./framework.js";
 import {
@@ -14,6 +15,38 @@ import {
   queueRegionTestId,
   region,
 } from "./load-station-testkit.js";
+
+function confirmableBasketStatus(workId: string, partName: string): Readonly<api.ICurrentStatus> {
+  return createCurrentStatus({
+    baskets: [
+      createBasket({
+        basketId: 7,
+        position: new api.BasketPosition({
+          location: api.BasketLocationEnum.LoadUnload,
+          locationNum: 1,
+        }),
+        emptySlots: [1],
+      }),
+    ],
+    material: [
+      createMaterial({
+        materialID: -1,
+        jobUnique: "JOB",
+        partName,
+        process: 0,
+        path: 1,
+        location: { type: api.LocType.Free },
+        action: {
+          type: api.ActionType.LoadingToBasket,
+          workId,
+          loadToBasketId: 7,
+          loadToBasketSlot: 1,
+          processAfterLoad: 1,
+        },
+      }),
+    ],
+  });
+}
 
 describe("load station with active basket", () => {
   test("places basket loads, queued material, and staging baskets in the correct regions", async () => {
@@ -309,6 +342,37 @@ describe("load station with active basket", () => {
     await expect.element(screen.getByText(/Basket work changed/)).toBeVisible();
     await expect.element(complete).toBeDisabled();
     expect(submit).toHaveBeenCalledWith(1, { workId: "stale-work" });
+    expect(submit).toHaveBeenCalledTimes(1);
+  });
+
+  test("ignores a submission response after the displayed work changes", async () => {
+    let resolveSubmission!: (result: "accepted" | "conflict") => void;
+    const pendingSubmission = new Promise<"accepted" | "conflict">((resolve) => {
+      resolveSubmission = resolve;
+    });
+    const submit = vi.fn(() => pendingSubmission);
+
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
+      { currentStatus: confirmableBasketStatus("first-work", "First Part") },
+    );
+    const confirm = screen.getByRole("button", { name: "Confirm" });
+
+    await confirm.click();
+    await expect.element(confirm).toBeDisabled();
+    screen.store.set(
+      onLoadCurrentSt,
+      confirmableBasketStatus("replacement-work", "Replacement Part"),
+    );
+    await expect.element(screen.getByText("Replacement Part · Process 1")).toBeVisible();
+    await expect.element(confirm).toBeEnabled();
+
+    resolveSubmission("accepted");
+    await pendingSubmission;
+
+    await expect.element(confirm).toBeEnabled();
+    await expect.element(screen.getByText(/Confirmation accepted/)).not.toBeInTheDocument();
+    expect(submit).toHaveBeenCalledWith(1, { workId: "first-work" });
     expect(submit).toHaveBeenCalledTimes(1);
   });
 

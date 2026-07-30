@@ -47,7 +47,7 @@ import { useAtomValue } from "jotai";
 import { fmsInformation } from "../network/server-settings.js";
 import { basketDisplayName, loadStationDisplayName } from "../cell-status/station-cycles.js";
 import { filterRemoveAddQueue } from "./log-entry-queue-filter.js";
-import { basketContainerName } from "./log-entry-container-name.js";
+import { basketContainerName, basketCycleDescription } from "./log-entry-container-name.js";
 
 type ColoredSpanType =
   | "machine"
@@ -249,22 +249,7 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
 
     case api.LogType.BasketCycle: {
       const basketName = basketDisplayName(fmsInfo.basketName);
-      if (entry.startofcycle) {
-        return (
-          <span>
-            {basketName} {entry.pal} started cycle
-          </span>
-        );
-      } else {
-        return (
-          <span>
-            {basketName} {entry.pal} completed cycle
-            {entry.containerIds && entry.containerIds.length > 0
-              ? ` from ${entry.containerIds.length} UUID fragment${entry.containerIds.length === 1 ? "" : "s"}`
-              : ""}
-          </span>
-        );
-      }
+      return <span>{basketCycleDescription(entry, basketName)}</span>;
     }
 
     case api.LogType.BasketInLocation: {

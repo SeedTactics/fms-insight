@@ -906,33 +906,6 @@ namespace BlackMaple.MachineFramework
       return ids.ToImmutable();
     }
 
-    public ImmutableDictionary<Guid, CurrentBasketIdentityHint> ReconstructBasketIdentityHints()
-    {
-      using var cmd = _connection.CreateCommand();
-      cmd.CommandText =
-        "SELECT s.ContainerId, s.Pallet, s.Counter FROM stations s "
-        + "WHERE s.StationLoc = $hintType AND s.ContainerId IS NOT NULL "
-        + "AND NOT EXISTS(SELECT 1 FROM stations newer WHERE newer.StationLoc = $hintType AND newer.ContainerId = s.ContainerId AND newer.Counter > s.Counter) "
-        + "AND NOT EXISTS(SELECT 1 FROM basket_cycle_container_ids f WHERE f.ContainerId = s.ContainerId)";
-      cmd.Parameters.Add("hintType", SqliteType.Integer).Value = (int)LogType.BasketIdentityHint;
-      using var reader = cmd.ExecuteReader();
-      var hints = ImmutableDictionary.CreateBuilder<Guid, CurrentBasketIdentityHint>();
-      while (reader.Read())
-      {
-        var id = Guid.Parse(reader.GetString(0));
-        hints.Add(
-          id,
-          new CurrentBasketIdentityHint
-          {
-            ContainerId = id,
-            BasketNum = reader.GetInt32(1),
-            HintEventCounter = reader.GetInt64(2),
-          }
-        );
-      }
-      return hints.ToImmutable();
-    }
-
     public IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter)
     {
       using (var cmd = _connection.CreateCommand())
@@ -2153,6 +2126,45 @@ namespace BlackMaple.MachineFramework
           );
       }
 
+      foreach (
+        var start in palletBasketCompletion.CycleBoundaries.OfType<BasketCycleBoundary.Start>()
+      )
+      {
+        var end = palletBasketCompletion
+          .CycleBoundaries.OfType<BasketCycleBoundary.End>()
+          .FirstOrDefault(boundary => boundary.BasketIdentity == start.BasketIdentity);
+        if (end is null)
+          continue;
+
+        var unloaded = palletBasketCompletion
+          .Transfers.OfType<PalletBasketTransfer.UnloadFromBasket>()
+          .Where(transfer => transfer.BasketIdentity == start.BasketIdentity)
+          .SelectMany(transfer =>
+            transfer.Material.Select(material => (material.MaterialID, material.Process))
+          )
+          .ToImmutableHashSet();
+        var loaded = palletBasketCompletion
+          .Transfers.OfType<PalletBasketTransfer.LoadOntoBasket>()
+          .Where(transfer => transfer.BasketIdentity == start.BasketIdentity)
+          .SelectMany(transfer =>
+            transfer.Material.Select(material => (material.MaterialID, material.Process))
+          )
+          .ToImmutableHashSet();
+        var expectedStartMaterial = end
+          .Material.Select(material => (material.MaterialID, material.Process))
+          .ToImmutableHashSet()
+          .Except(unloaded)
+          .Union(loaded);
+        var actualStartMaterial = start
+          .Material.Select(material => (material.MaterialID, material.Process))
+          .ToImmutableHashSet();
+        if (!expectedStartMaterial.SetEquals(actualStartMaterial))
+          throw new ArgumentException(
+            "A basket cycle start after turnover must equal the completed cycle material with unloads removed and loads added.",
+            nameof(palletBasketCompletion)
+          );
+      }
+
       if (toLoad is not null)
       {
         var palletLoadMaterial = toLoad
@@ -2893,33 +2905,30 @@ namespace BlackMaple.MachineFramework
     )
     {
       var fingerprint = new StringBuilder();
-      AppendBasketStationFingerprint(fingerprint, lulNum.ToString(CultureInfo.InvariantCulture));
-      AppendBasketStationFingerprint(
-        fingerprint,
-        totalElapsed.Ticks.ToString(CultureInfo.InvariantCulture)
-      );
+      AppendFingerprint(fingerprint, lulNum.ToString(CultureInfo.InvariantCulture));
+      AppendFingerprint(fingerprint, totalElapsed.Ticks.ToString(CultureInfo.InvariantCulture));
       foreach (var transfer in operation.Transfers)
       {
-        AppendBasketStationFingerprint(
+        AppendFingerprint(
           fingerprint,
           transfer is BasketStationTransfer.LoadOntoBasket ? "load" : "unload"
         );
-        AppendBasketStationFingerprint(fingerprint, BasketStationIdentity(transfer.BasketIdentity));
-        AppendBasketStationFingerprint(
+        AppendFingerprint(fingerprint, BasketStationIdentity(transfer.BasketIdentity));
+        AppendFingerprint(
           fingerprint,
           transfer.ActiveOperationTime.Ticks.ToString(CultureInfo.InvariantCulture)
         );
         var queue = (transfer as BasketStationTransfer.UnloadFromBasket)?.DestinationQueue;
-        AppendBasketStationFingerprint(fingerprint, queue);
+        AppendFingerprint(fingerprint, queue);
         if (
           transfer is BasketStationTransfer.UnloadFromBasket
           && queue is not null
           && externalQueues is not null
           && externalQueues.TryGetValue(queue, out var externalServer)
         )
-          AppendBasketStationFingerprint(fingerprint, externalServer);
+          AppendFingerprint(fingerprint, externalServer);
         else
-          AppendBasketStationFingerprint(fingerprint, null);
+          AppendFingerprint(fingerprint, null);
         foreach (
           var material in transfer
             .Material.OrderBy(material => material.MaterialID)
@@ -2927,28 +2936,19 @@ namespace BlackMaple.MachineFramework
             .ThenBy(material => material.Face)
         )
         {
-          AppendBasketStationFingerprint(
+          AppendFingerprint(
             fingerprint,
             material.MaterialID.ToString(CultureInfo.InvariantCulture)
           );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            material.Process.ToString(CultureInfo.InvariantCulture)
-          );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            material.Face.ToString(CultureInfo.InvariantCulture)
-          );
+          AppendFingerprint(fingerprint, material.Process.ToString(CultureInfo.InvariantCulture));
+          AppendFingerprint(fingerprint, material.Face.ToString(CultureInfo.InvariantCulture));
         }
       }
       foreach (var boundary in operation.CycleBoundaries)
       {
-        AppendBasketStationFingerprint(
-          fingerprint,
-          boundary is BasketCycleBoundary.Start ? "start" : "end"
-        );
-        AppendBasketStationFingerprint(fingerprint, BasketStationIdentity(boundary.BasketIdentity));
-        AppendBasketStationFingerprint(
+        AppendFingerprint(fingerprint, boundary is BasketCycleBoundary.Start ? "start" : "end");
+        AppendFingerprint(fingerprint, BasketStationIdentity(boundary.BasketIdentity));
+        AppendFingerprint(
           fingerprint,
           (boundary as BasketCycleBoundary.Start)?.AssociatedBasketNum?.ToString(
             CultureInfo.InvariantCulture
@@ -2961,25 +2961,19 @@ namespace BlackMaple.MachineFramework
             .ThenBy(material => material.Face)
         )
         {
-          AppendBasketStationFingerprint(
+          AppendFingerprint(
             fingerprint,
             material.MaterialID.ToString(CultureInfo.InvariantCulture)
           );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            material.Process.ToString(CultureInfo.InvariantCulture)
-          );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            material.Face.ToString(CultureInfo.InvariantCulture)
-          );
+          AppendFingerprint(fingerprint, material.Process.ToString(CultureInfo.InvariantCulture));
+          AppendFingerprint(fingerprint, material.Face.ToString(CultureInfo.InvariantCulture));
         }
         foreach (
           var containerId in (
             boundary as BasketCycleBoundary.End
           )?.ReconciledBasketIdentities.OrderBy(id => id) ?? Enumerable.Empty<Guid>()
         )
-          AppendBasketStationFingerprint(fingerprint, containerId.ToString("D"));
+          AppendFingerprint(fingerprint, containerId.ToString("D"));
       }
       return fingerprint.ToString();
     }
@@ -2992,7 +2986,7 @@ namespace BlackMaple.MachineFramework
         _ => "none",
       };
 
-    private static void AppendBasketStationFingerprint(StringBuilder fingerprint, string value)
+    private static void AppendFingerprint(StringBuilder fingerprint, string value)
     {
       value ??= "";
       fingerprint
@@ -3037,43 +3031,6 @@ namespace BlackMaple.MachineFramework
         },
         foreignId: foreignId
       );
-    }
-
-    public IEnumerable<LogEntry> RecordEmptyBasket(
-      int basketId,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      bool basketEnd = false
-    )
-    {
-      return AddEntryInTransaction(trans =>
-      {
-        var logs = new List<LogEntry>();
-        if (basketEnd)
-        {
-          RecordBasketCycleEnd(
-            basketId: basketId,
-            lulNum: lulNum,
-            timeUTC: timeUTC,
-            logs: logs,
-            trans: trans
-          );
-        }
-        else
-        {
-          RecordBasketCycleStart(
-            basketId: basketId,
-            lulNum: lulNum,
-            mats: [],
-            timeUTC: timeUTC,
-            logs: logs,
-            trans: trans,
-            foreignId: foreignId
-          );
-        }
-        return logs;
-      });
     }
 
     // Records pallet unload events and queue destinations. Basket destinations are recorded only
@@ -3256,157 +3213,6 @@ namespace BlackMaple.MachineFramework
           null
         )
       );
-    }
-
-    private void RecordBasketCycleStart(
-      int basketId,
-      int lulNum,
-      IEnumerable<EventLogMaterial> mats,
-      DateTime timeUTC,
-      List<LogEntry> logs,
-      IDbTransaction trans,
-      string foreignId = null
-    )
-    {
-      RecordBasketCycleStart(
-        new ContainerIdentity.Numbered { ContainerNum = basketId },
-        lulNum,
-        mats,
-        timeUTC,
-        logs,
-        trans,
-        foreignId
-      );
-    }
-
-    private void RecordBasketCycleStart(
-      ContainerIdentity basketIdentity,
-      int lulNum,
-      IEnumerable<EventLogMaterial> mats,
-      DateTime timeUTC,
-      List<LogEntry> logs,
-      IDbTransaction trans,
-      string foreignId = null
-    )
-    {
-      var (containerNum, containerId) = RecordedContainerIdentity(basketIdentity);
-      logs.Add(
-        AddLogEntry(
-          trans,
-          new NewEventLogEntry()
-          {
-            Material = mats,
-            Pallet = containerNum,
-            ContainerId = containerId,
-            LogType = LogType.BasketCycle,
-            LocationName = "Basket Cycle",
-            LocationNum = lulNum,
-            Program = "",
-            StartOfCycle = true,
-            EndTimeUTC = timeUTC,
-            Result = "BasketCycle",
-            ElapsedTime = TimeSpan.Zero,
-            ActiveOperationTime = TimeSpan.Zero,
-          },
-          foreignID: foreignId,
-          null
-        )
-      );
-    }
-
-    // Looks up the most recent BasketCycle event for this basket. If it's a start event,
-    // emits a BasketCycleEnd with the material from that start. If it's already an end
-    // (or no prior events), does nothing.
-    private void RecordBasketCycleEnd(
-      int basketId,
-      int lulNum,
-      DateTime timeUTC,
-      List<LogEntry> logs,
-      IDbTransaction trans
-    )
-    {
-      // Query the most recent BasketCycle event (start or end) for this basket
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = (SqliteTransaction)trans;
-      cmd.CommandText =
-        "SELECT Counter, Start, TimeUTC, "
-        + "  (SELECT COUNT(*) FROM program_details WHERE program_details.Counter = stations.Counter AND program_details.Key = 'PalletCycleInvalidated') AS Invalidated "
-        + "FROM stations "
-        + "WHERE Pallet = $basketId AND Result = 'BasketCycle' "
-        + "ORDER BY Counter DESC LIMIT 1";
-      cmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
-
-      using var reader = cmd.ExecuteReader();
-      if (!reader.Read())
-      {
-        // No prior basket cycle events - don't emit an end
-        return;
-      }
-
-      var lastCounter = reader.GetInt64(0);
-      var lastIsStart = reader.GetBoolean(1);
-      var lastTimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
-      var isInvalidated = reader.GetInt64(3) > 0;
-      reader.Close();
-
-      if (!lastIsStart || isInvalidated)
-      {
-        // Most recent event is already an end, or it's invalidated - don't emit
-        return;
-      }
-
-      // Most recent is a start - look up the material from that event
-      var mats = GetMaterialFromLogEvent(lastCounter, trans);
-      var elapsed = timeUTC.Subtract(lastTimeUTC);
-
-      logs.Add(
-        AddLogEntry(
-          trans,
-          new NewEventLogEntry()
-          {
-            Material = mats,
-            Pallet = basketId,
-            LogType = LogType.BasketCycle,
-            LocationName = "Basket Cycle",
-            LocationNum = lulNum,
-            Program = "",
-            StartOfCycle = false,
-            EndTimeUTC = timeUTC,
-            Result = "BasketCycle",
-            ElapsedTime = elapsed,
-            ActiveOperationTime = TimeSpan.Zero,
-          },
-          null,
-          null
-        )
-      );
-    }
-
-    private IReadOnlyList<EventLogMaterial> GetMaterialFromLogEvent(
-      long counter,
-      IDbTransaction trans
-    )
-    {
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = (SqliteTransaction)trans;
-      cmd.CommandText =
-        "SELECT MaterialID, Process, Face FROM stations_mat WHERE Counter = $counter";
-      cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
-
-      var result = new List<EventLogMaterial>();
-      using var reader = cmd.ExecuteReader();
-      while (reader.Read())
-      {
-        result.Add(
-          new EventLogMaterial
-          {
-            MaterialID = reader.GetInt64(0),
-            Process = reader.GetInt32(1),
-            Face = reader.GetInt32(2),
-          }
-        );
-      }
-      return result;
     }
 
     private void RecordLoadMaterialPaths(
@@ -5562,24 +5368,17 @@ namespace BlackMaple.MachineFramework
     private static string MaterialAllocationFingerprint(ImmutableList<MaterialToAllocate> material)
     {
       var fingerprint = new StringBuilder();
+      AppendFingerprint(fingerprint, material.Count.ToString(CultureInfo.InvariantCulture));
       foreach (var item in material)
       {
-        AppendBasketStationFingerprint(fingerprint, item.JobUnique);
-        AppendBasketStationFingerprint(fingerprint, item.PartName);
-        AppendBasketStationFingerprint(
-          fingerprint,
-          item.NumProcesses.ToString(CultureInfo.InvariantCulture)
-        );
+        AppendFingerprint(fingerprint, item.JobUnique);
+        AppendFingerprint(fingerprint, item.PartName);
+        AppendFingerprint(fingerprint, item.NumProcesses.ToString(CultureInfo.InvariantCulture));
+        AppendFingerprint(fingerprint, item.Paths.Count.ToString(CultureInfo.InvariantCulture));
         foreach (var path in item.Paths.OrderBy(path => path.Key))
         {
-          AppendBasketStationFingerprint(
-            fingerprint,
-            path.Key.ToString(CultureInfo.InvariantCulture)
-          );
-          AppendBasketStationFingerprint(
-            fingerprint,
-            path.Value.ToString(CultureInfo.InvariantCulture)
-          );
+          AppendFingerprint(fingerprint, path.Key.ToString(CultureInfo.InvariantCulture));
+          AppendFingerprint(fingerprint, path.Value.ToString(CultureInfo.InvariantCulture));
         }
       }
       return fingerprint.ToString();

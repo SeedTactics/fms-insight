@@ -209,7 +209,8 @@ export function setUserToken(u: User): void {
 
 /** Performs a request using the authenticated Insight user's bearer token, when present. */
 export function authenticatedFetch(url: RequestInfo, init?: RequestInit): Promise<Response> {
-  const headers = new Headers(init?.headers);
+  const headers = new Headers(url instanceof Request ? url.headers : undefined);
+  new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
   if (userAccessToken) {
     headers.set("Authorization", "Bearer " + userAccessToken);
   }

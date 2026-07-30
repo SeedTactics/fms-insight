@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { filterRemoveAddQueue } from "./log-entry-queue-filter.js";
-import { basketContainerName } from "./log-entry-container-name.js";
+import { basketContainerName, basketCycleDescription } from "./log-entry-container-name.js";
 import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/events.fake.js";
 import { it, expect } from "vitest";
 
@@ -40,6 +40,37 @@ it("displays the UUID fragment when a basket identity hint also has a number", (
   expect(
     basketContainerName({ pal: 5, containerId: "12345678-1234-1234-1234-123456789abc" }, "Basket"),
   ).toBe("Basket fragment 12345678");
+});
+
+it("displays UUID basket cycle starts without the numeric sentinel", () => {
+  expect(
+    basketCycleDescription(
+      {
+        pal: -1,
+        containerId: "12345678-1234-1234-1234-123456789abc",
+        containerIds: undefined,
+        startofcycle: true,
+      },
+      "Basket",
+    ),
+  ).toBe("Basket fragment 12345678 started cycle");
+});
+
+it("describes the fragments finalized by a numbered basket cycle", () => {
+  expect(
+    basketCycleDescription(
+      {
+        pal: 5,
+        containerId: undefined,
+        containerIds: [
+          "12345678-1234-1234-1234-123456789abc",
+          "87654321-4321-4321-4321-cba987654321",
+        ],
+        startofcycle: false,
+      },
+      "Basket",
+    ),
+  ).toBe("Basket 5 completed cycle from 2 UUID fragments");
 });
 
 it("doesn't filter just a single add", () => {
