@@ -1039,6 +1039,14 @@ export class JobsClient {
       return response.text().then((_responseText) => {
         return;
       });
+    } else if (status === 400) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
+    } else if (status === 409) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
     } else if (status !== 200 && status !== 204) {
       return response.text().then((_responseText) => {
         return throwException(
@@ -1092,6 +1100,75 @@ export class JobsClient {
       return response.text().then((_responseText) => {
         return;
       });
+    } else if (status === 400) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
+    } else if (status === 409) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException(
+          "An unexpected server error occurred.",
+          status,
+          _responseText,
+          _headers,
+        );
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  quarantineQueuedMaterial(
+    materialId: number,
+    operName: string | null | undefined,
+    reason: string | undefined,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/quarantine-queued?";
+    if (materialId === undefined || materialId === null)
+      throw new globalThis.Error("The parameter 'materialId' must be defined.");
+    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(reason);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "PUT",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processQuarantineQueuedMaterial(_response);
+    });
+  }
+
+  protected processQuarantineQueuedMaterial(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status === 400) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
+    } else if (status === 409) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
     } else if (status !== 200 && status !== 204) {
       return response.text().then((_responseText) => {
         return throwException(
@@ -1144,6 +1221,18 @@ export class JobsClient {
     if (status === 200) {
       return response.text().then((_responseText) => {
         return;
+      });
+    } else if (status === 400) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
+    } else if (status === 409) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
+    } else if (status === 500) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then((_responseText) => {
@@ -1208,6 +1297,14 @@ export class JobsClient {
           _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
         result200 = MaterialDetails.fromJS(resultData200);
         return result200;
+      });
+    } else if (status === 400) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
+    } else if (status === 409) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
       });
     } else if (status !== 200 && status !== 204) {
       return response.text().then((_responseText) => {

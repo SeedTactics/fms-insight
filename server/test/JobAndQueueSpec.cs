@@ -62,7 +62,7 @@ public sealed class JobAndQueueSpec
   private ServerSettings _serverSettings;
   private JobsAndQueuesFromDb<MockCellState> _jq;
   private readonly Fixture _fixture;
-  private ImmutableList<ILoadCancel<MockCellState>> _loadCancelHandlers = [];
+  private ILoadCancel<MockCellState> _loadCancelHandler;
 
   public JobAndQueueSpec()
   {
@@ -119,7 +119,7 @@ public sealed class JobAndQueueSpec
       _serverSettings,
       _settings,
       this,
-      loadCancelHandlers: _loadCancelHandlers,
+      loadCancelHandler: _loadCancelHandler,
       startThread: false
     );
     _jq.OnNewCurrentStatus += OnNewCurrentStatus;
@@ -271,14 +271,21 @@ public sealed class JobAndQueueSpec
 
   private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
   {
-    await SetCurrentState(
-      stateUpdated: false,
-      executeAction: false,
-      curSt: _curSt.CurrentStatus with
-      {
-        Material = material,
-      }
-    );
+    (await PublishCurrentMaterial(material)).ShouldBe(_curSt.CurrentStatus);
+  }
+
+  private async Task<CurrentStatus> PublishCurrentMaterial(
+    ImmutableList<InProcessMaterial> material
+  )
+  {
+    _curSt = _curSt with
+    {
+      StateUpdated = false,
+      CurrentStatus = _curSt.CurrentStatus with { Material = material },
+    };
+    var task = CreateTaskToWaitForNewStatus();
+    NewCellState?.Invoke();
+    return await task;
   }
 
   private sealed class RecordingLoadCancel : ILoadCancel<MockCellState>
@@ -286,14 +293,14 @@ public sealed class JobAndQueueSpec
     public ImmutableList<long> MaterialIds { get; private set; } = [];
     public string Reason { get; private set; }
     public int Calls { get; private set; }
-    public Action OnCancel { get; init; }
+    public Action OnCancel { get; set; }
     public Exception Failure { get; init; }
 
     public void CancelLoad(
       IRepository repository,
       MockCellState state,
       InProcessMaterial selectedMaterial,
-      ImmutableList<InProcessMaterial> material,
+      ImmutableList<InProcessMaterial> cancellationGroup,
       string cancellationId,
       string operatorName,
       string reason
@@ -305,7 +312,7 @@ public sealed class JobAndQueueSpec
       {
         throw Failure;
       }
-      MaterialIds = material.Select(m => m.MaterialID).ToImmutableList();
+      MaterialIds = cancellationGroup.Select(m => m.MaterialID).ToImmutableList();
       Reason = reason;
     }
   }
@@ -314,7 +321,7 @@ public sealed class JobAndQueueSpec
   public async Task CancelsExactlyTheMaterialWithTheDisplayedCancellationId()
   {
     var handler = new RecordingLoadCancel();
-    _loadCancelHandlers = [handler];
+    _loadCancelHandler = handler;
     await StartSyncThread();
 
     var first = QueuedMat(1, null, "part", 0, 1, "first", "q1", 0) with
@@ -342,7 +349,7 @@ public sealed class JobAndQueueSpec
   public async Task CancelLoadRejectsStaleCancellationIdBeforeCallingTheHandler()
   {
     var handler = new RecordingLoadCancel();
-    _loadCancelHandlers = [handler];
+    _loadCancelHandler = handler;
     await StartSyncThread();
 
     var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
@@ -368,7 +375,7 @@ public sealed class JobAndQueueSpec
   public async Task CancelLoadPassesASingletonCancellationGroupToTheHandler()
   {
     var handler = new RecordingLoadCancel();
-    _loadCancelHandlers = [handler];
+    _loadCancelHandler = handler;
     await StartSyncThread();
 
     var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
@@ -387,6 +394,30 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
+  public async Task CancelLoadUsesTheAdvertisedIdInsteadOfLocationOrAction()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandler = handler;
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free },
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Waiting,
+        LoadCancellationId = "current",
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    _jq.CancelLoad(material.MaterialID, "current", null, null);
+
+    handler.Calls.ShouldBe(1);
+    handler.MaterialIds.ShouldBe([material.MaterialID]);
+  }
+
+  [Test]
   public async Task CancelLoadRecalculatesStateAfterSuccessfulHandlerAndMakesPriorTokenStale()
   {
     var handler = new RecordingLoadCancel()
@@ -398,7 +429,7 @@ public sealed class JobAndQueueSpec
           CurrentStatus = _curSt.CurrentStatus with { Material = [] },
         },
     };
-    _loadCancelHandlers = [handler];
+    _loadCancelHandler = handler;
     await StartSyncThread();
 
     var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
@@ -426,7 +457,7 @@ public sealed class JobAndQueueSpec
   public async Task CancelLoadRejectsAConsumedTokenBeforeTheCurrentStateIsReconstructed()
   {
     var handler = new RecordingLoadCancel();
-    _loadCancelHandlers = [handler];
+    _loadCancelHandler = handler;
     await StartSyncThread();
 
     var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
@@ -461,7 +492,7 @@ public sealed class JobAndQueueSpec
       OnCancel = () => _curSt = _curSt with { Uniq = _curSt.Uniq + 1 },
       Failure = new Exception("cancellation failed"),
     };
-    _loadCancelHandlers = [handler];
+    _loadCancelHandler = handler;
     await StartSyncThread();
 
     var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
@@ -495,13 +526,168 @@ public sealed class JobAndQueueSpec
         LoadCancellationId = "current",
       },
     };
+    var status = await PublishCurrentMaterial([material]);
+
+    status.Alarms.ShouldContain(
+      "Error communicating with machines: The backend advertised a load cancellation, but no load cancellation handler is configured. Will try again in a few minutes."
+    );
+  }
+
+  [Test]
+  public async Task SynchronizationRejectsBlankAdvertisedCancellationId()
+  {
+    _loadCancelHandler = new RecordingLoadCancel();
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "  ",
+      },
+    };
+    var status = await PublishCurrentMaterial([material]);
+
+    status.Alarms.ShouldContain(
+      "Error communicating with machines: The backend advertised a blank load cancellation ID. Use null when cancellation is unavailable. Will try again in a few minutes."
+    );
+  }
+
+  [Test]
+  public async Task CancelLoadKeepsConsumedIdUntilOperationDisappears()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandler = handler;
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "current",
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    var newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.CancelLoad(material.MaterialID, "current", null, null);
+    (await newStatusTask).Material.ShouldBe([material]);
+
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.CancelLoad(material.MaterialID, "current", null, null)
+      )
+      .Message.ShouldContain("no longer current");
+
+    handler.Calls.ShouldBe(1);
+  }
+
+  [Test]
+  public async Task CancelLoadAllowsNewIdAfterThePreviousOperationDisappears()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandler = handler;
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "current",
+      },
+    };
+    var replacement = material with
+    {
+      Action = material.Action with { LoadCancellationId = "replacement" },
+    };
+    handler.OnCancel = () =>
+    {
+      if (handler.Calls == 1)
+        _curSt = _curSt with
+        {
+          CurrentStatus = _curSt.CurrentStatus with { Material = [replacement] },
+        };
+    };
+    await SetCurrentMaterial([material]);
+
+    var replacementStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.CancelLoad(material.MaterialID, "current", null, null);
+    (await replacementStatusTask).Material.ShouldBe([replacement]);
+
+    _jq.CancelLoad(material.MaterialID, "replacement", null, null);
+    handler.Calls.ShouldBe(2);
+  }
+
+  [Test]
+  public async Task ActiveCancellationOperationOwnsQueueDisposition()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandler = handler;
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction
+      {
+        Type = InProcessMaterialAction.ActionType.Waiting,
+        LoadCancellationId = "current",
+      },
+    };
     await SetCurrentMaterial([material]);
 
     Should
-      .Throw<InvalidOperationException>(() =>
-        _jq.CancelLoad(material.MaterialID, "current", null, null)
+      .Throw<ConflictRequestException>(() =>
+        _jq.RemoveMaterialFromAllQueues([material.MaterialID], null)
       )
-      .Message.ShouldContain("does not have exactly one load cancellation handler");
+      .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.SignalMaterialForQuarantine(material.MaterialID, null, null)
+      )
+      .Message.ShouldBe("Material is not eligible for deferred quarantine in its current state.");
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.QuarantineQueuedMaterial(material.MaterialID, null, null)
+      )
+      .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
+    handler.Calls.ShouldBe(0);
+  }
+
+  [Test]
+  public async Task AutomationControlledMaterialCannotUseHumanQueueDisposition()
+  {
+    await StartSyncThread();
+
+    var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+    {
+      Location = new InProcessMaterialLocation()
+      {
+        Type = InProcessMaterialLocation.LocType.OnPallet,
+        PalletNum = 1,
+      },
+      Action = new InProcessMaterialAction()
+      {
+        Type = InProcessMaterialAction.ActionType.Machining,
+      },
+    };
+    await SetCurrentMaterial([material]);
+
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.RemoveMaterialFromAllQueues([material.MaterialID], null)
+      )
+      .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.QuarantineQueuedMaterial(material.MaterialID, null, null)
+      )
+      .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(material.MaterialID, 1))
+      .Message.ShouldBe("Material is not eligible for cycle invalidation in its current state.");
   }
 
   #endregion
@@ -898,6 +1084,11 @@ public sealed class JobAndQueueSpec
 
     (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
+    await SetCurrentMaterial([
+      QueuedMat(1, null, "c1", 0, 1, "aaa", "q1", 0),
+      QueuedMat(2, null, "c1", 0, 1, "", "q1", 1),
+    ]);
+
     newStatusTask = CreateTaskToWaitForNewStatus();
 
     _jq.RemoveMaterialFromAllQueues(new List<long> { 1 }, "theoper");
@@ -1021,8 +1212,8 @@ public sealed class JobAndQueueSpec
     ]);
 
     Should
-      .Throw<BadRequestException>(() => _jq.RemoveMaterialFromAllQueues([2L], "theoper"))
-      .Message.ShouldBe("Material on pallet can not be removed from queues");
+      .Throw<ConflictRequestException>(() => _jq.RemoveMaterialFromAllQueues([2L], "theoper"))
+      .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
 
     await SetCurrentMaterial([
       expectedMat2 with
@@ -1035,8 +1226,8 @@ public sealed class JobAndQueueSpec
     ]);
 
     Should
-      .Throw<BadRequestException>(() => _jq.RemoveMaterialFromAllQueues([2L], "theoper"))
-      .Message.ShouldBe("Only waiting material can be removed from queues");
+      .Throw<ConflictRequestException>(() => _jq.RemoveMaterialFromAllQueues([2L], "theoper"))
+      .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
 
     db.GetMaterialInAllQueues().ShouldContain(m => m.MaterialID == 2);
   }
@@ -1259,8 +1450,12 @@ public sealed class JobAndQueueSpec
     ]);
 
     Should
-      .Throw<BadRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q1", 3, "theoper"))
-      .Message.ShouldBe("Material on pallet can not be moved to a queue");
+      .Throw<ConflictRequestException>(() =>
+        _jq.SetMaterialInQueue(materialId: 1, "q1", 3, "theoper")
+      )
+      .Message.ShouldBe(
+        "Material is owned by an active operation and cannot be moved to another queue."
+      );
 
     await SetCurrentMaterial([
       expectedMat1 with
@@ -1273,11 +1468,98 @@ public sealed class JobAndQueueSpec
     ]);
 
     Should
-      .Throw<BadRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q2", 3, "oper"))
-      .Message.ShouldBe("Only waiting material can be moved between queues");
+      .Throw<ConflictRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q2", 3, "oper"))
+      .Message.ShouldBe(
+        "Material is owned by an active operation and cannot be moved to another queue."
+      );
 
     // no new events added, already checked them equal to expectedLog above
     db.GetLogForMaterial(materialID: 1).Count().ShouldBe(expectedLog.Length);
+  }
+
+  [Test]
+  public async Task AllowsMovingWaitingMaterialBetweenQueues()
+  {
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var expectedMat = QueuedMat(
+      matId: 1,
+      job: null,
+      part: "c1",
+      proc: 0,
+      path: 1,
+      serial: "aaa",
+      queue: "q1",
+      pos: 0
+    );
+    _jq.AddUnallocatedCastingToQueue(
+        casting: "c1",
+        qty: 1,
+        queue: "q1",
+        serial: ["aaa"],
+        workorder: null,
+        operatorName: "theoper"
+      )
+      .ShouldBe([expectedMat]);
+
+    await SetCurrentMaterial([expectedMat]);
+    var newStatusTask = CreateTaskToWaitForNewStatus();
+
+    _jq.SetMaterialInQueue(materialId: 1, "q2", 0, "oper");
+
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
+    db.GetMaterialInAllQueues().Single().Queue.ShouldBe("q2");
+  }
+
+  [Test]
+  public async Task RejectsMovingMaterialWithLoadCancellationIdBetweenQueues()
+  {
+    _loadCancelHandler = new RecordingLoadCancel();
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var expectedMat = QueuedMat(
+      matId: 1,
+      job: null,
+      part: "c1",
+      proc: 0,
+      path: 1,
+      serial: "aaa",
+      queue: "q1",
+      pos: 0
+    );
+    _jq.AddUnallocatedCastingToQueue(
+        casting: "c1",
+        qty: 1,
+        queue: "q1",
+        serial: ["aaa"],
+        workorder: null,
+        operatorName: "theoper"
+      )
+      .ShouldBe([expectedMat]);
+
+    await SetCurrentMaterial([
+      expectedMat with
+      {
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting,
+          LoadCancellationId = "active-load",
+        },
+      },
+    ]);
+
+    Should
+      .Throw<ConflictRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q2", 0, "oper"))
+      .Message.ShouldBe(
+        "Material is owned by an active operation and cannot be moved to another queue."
+      );
+    db.GetMaterialInAllQueues().Single().Queue.ShouldBe("q1");
   }
 
   [Test]
@@ -1340,24 +1622,21 @@ public sealed class JobAndQueueSpec
     db.GetMaterialInAllQueues().Select(m => m.MaterialID).ShouldBe(new[] { 2L, 1L });
 
     Should
-      .Throw<BadRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q2", -1, "oper"))
-      .Message.ShouldBe("Only waiting material can be moved between queues");
+      .Throw<ConflictRequestException>(() =>
+        _jq.SetMaterialInQueue(materialId: 1, "q2", -1, "oper")
+      )
+      .Message.ShouldBe(
+        "Material is owned by an active operation and cannot be moved to another queue."
+      );
   }
 
   public record SignalQuarantineTheoryData
   {
-    public enum QuarantineType
-    {
-      Add,
-      Signal,
-      Remove,
-    }
-
     public required InProcessMaterialLocation.LocType LocType { get; set; }
     public required InProcessMaterialAction.ActionType ActionType { get; set; }
     public required string QuarantineQueue { get; set; }
+    public int Pallet { get; set; } = 4;
     public string Error { get; set; } = null;
-    public QuarantineType? QuarantineAction { get; set; } = null;
     public int Process { get; set; } = 0;
     public string JobTransferQeuue { get; set; } = "q1";
   }
@@ -1369,21 +1648,21 @@ public sealed class JobAndQueueSpec
       ActionType = InProcessMaterialAction.ActionType.Waiting,
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = "quarqqq",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add,
+      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
     new SignalQuarantineTheoryData()
     {
       ActionType = InProcessMaterialAction.ActionType.Waiting,
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = null,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove,
+      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
     new SignalQuarantineTheoryData
     {
       ActionType = InProcessMaterialAction.ActionType.Waiting,
       LocType = InProcessMaterialLocation.LocType.Free,
       QuarantineQueue = "quarqqq",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add,
+      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
     // Now OnPallet with various tests for transfer queues and proces
     new SignalQuarantineTheoryData
@@ -1393,7 +1672,6 @@ public sealed class JobAndQueueSpec
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = "q1",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
     },
     new SignalQuarantineTheoryData
     {
@@ -1402,7 +1680,7 @@ public sealed class JobAndQueueSpec
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = "q1",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
+      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
     new SignalQuarantineTheoryData
     {
@@ -1411,7 +1689,7 @@ public sealed class JobAndQueueSpec
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = "q1",
-      Error = "Material on pallet can not be quarantined while loading",
+      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
     new SignalQuarantineTheoryData()
     {
@@ -1420,7 +1698,6 @@ public sealed class JobAndQueueSpec
       QuarantineQueue = null,
       Process = 2,
       JobTransferQeuue = "q1",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
     },
     new SignalQuarantineTheoryData
     {
@@ -1429,8 +1706,7 @@ public sealed class JobAndQueueSpec
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = null,
-      Error =
-        "Can only signal material for quarantine if the current process and path has an output queue",
+      Error = "Material does not have a supported path out of automation control.",
     },
     new SignalQuarantineTheoryData
     {
@@ -1439,7 +1715,15 @@ public sealed class JobAndQueueSpec
       QuarantineQueue = "quarqqq",
       Process = 2,
       JobTransferQeuue = null,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Waiting,
+      LocType = InProcessMaterialLocation.LocType.InBasket,
+      QuarantineQueue = "quarqqq",
+      Pallet = 0,
+      Process = 1,
+      JobTransferQeuue = "q1",
     },
     // Loading from a queue
     new SignalQuarantineTheoryData()
@@ -1447,14 +1731,14 @@ public sealed class JobAndQueueSpec
       ActionType = InProcessMaterialAction.ActionType.Loading,
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = "quarqqq",
-      Error = "Invalid material state for quarantine",
+      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
     new SignalQuarantineTheoryData()
     {
       ActionType = InProcessMaterialAction.ActionType.Loading,
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = null,
-      Error = "Invalid material state for quarantine",
+      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
   ];
 
@@ -1558,10 +1842,10 @@ public sealed class JobAndQueueSpec
     }
 
     Should
-      .Throw<BadRequestException>(() =>
+      .Throw<ConflictRequestException>(() =>
         _jq.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
       )
-      .Message.ShouldBe("Material not found");
+      .Message.ShouldBe("Material not found in the current cell state.");
 
     var queuedMat = QueuedMat(
       matId: 1,
@@ -1581,7 +1865,8 @@ public sealed class JobAndQueueSpec
         Location = new InProcessMaterialLocation()
         {
           Type = data.LocType,
-          PalletNum = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null,
+          PalletNum =
+            data.LocType == InProcessMaterialLocation.LocType.OnPallet ? data.Pallet : null,
         },
       },
     ]);
@@ -1589,7 +1874,7 @@ public sealed class JobAndQueueSpec
     if (data.Error != null)
     {
       Should
-        .Throw<BadRequestException>(() =>
+        .Throw<ConflictRequestException>(() =>
           _jq.SignalMaterialForQuarantine(materialId: 1, "theoper", reason: "a reason")
         )
         .Message.ShouldBe(data.Error);
@@ -1602,65 +1887,18 @@ public sealed class JobAndQueueSpec
 
       (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
-      if (data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Signal)
-      {
-        expectedLog.Add(
-          SignalQuarantineExpectedEntry(
-            logMat,
-            cntr: expectedLog.Count + 1,
-            pal: 4,
-            queue: data.QuarantineQueue ?? "",
-            operName: "theoper",
-            reason: "signaling reason",
-            timeUTC: now
-          )
-        );
-      }
-      else
-      {
-        expectedLog.Add(
-          OperatorNoteExpectedEntry(
-            logMat,
-            cntr: expectedLog.Count + 1,
-            note: "signaling reason",
-            operName: "theoper",
-            timeUTC: now
-          )
-        );
-
-        if (data.LocType == InProcessMaterialLocation.LocType.InQueue)
-        {
-          expectedLog.Add(
-            RemoveFromQueueExpectedEntry(
-              logMat,
-              cntr: expectedLog.Count + 1,
-              queue: "q1",
-              position: 0,
-              elapsedMin: 0,
-              reason: data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Add
-                ? "MovingInQueue"
-                : "Quarantine",
-              operName: "theoper",
-              timeUTC: now
-            )
-          );
-        }
-      }
-
-      if (data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Add)
-      {
-        expectedLog.Add(
-          AddToQueueExpectedEntry(
-            logMat,
-            cntr: expectedLog.Count + 1,
-            queue: data.QuarantineQueue,
-            position: 0,
-            reason: "Quarantine",
-            operName: "theoper",
-            timeUTC: now
-          )
-        );
-      }
+      expectedLog.Add(
+        SignalQuarantineExpectedEntry(
+          logMat,
+          cntr: expectedLog.Count + 1,
+          pal: data.Pallet,
+          queue: data.QuarantineQueue ?? "",
+          operName: "theoper",
+          reason: "signaling reason",
+          timeUTC: now
+        )
+      );
+      db.GetMaterialInAllQueues().ShouldBeEmpty();
     }
 
     var mat1Log = db.GetLogForMaterial(materialID: 1).ToList();
@@ -1672,6 +1910,458 @@ public sealed class JobAndQueueSpec
       .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
       .ToList()
       .ShouldBeEquivalentTo(expectedLog);
+  }
+
+  [Test]
+  public async Task DirectlyQuarantinesQueuedMaterialIntoConfiguredQueue()
+  {
+    _settings = _settings with { QuarantineQueue = "q2" };
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var material = QueuedMat(
+      matId: 1,
+      job: null,
+      part: "c1",
+      proc: 0,
+      path: 1,
+      serial: "serial",
+      queue: "q1",
+      pos: 0
+    );
+    _jq.AddUnallocatedCastingToQueue(
+        casting: "c1",
+        qty: 1,
+        queue: "q1",
+        serial: ["serial"],
+        workorder: null,
+        operatorName: "adder"
+      )
+      .ShouldBe([material]);
+    await SetCurrentMaterial([material]);
+
+    var newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.QuarantineQueuedMaterial(1, operatorName: "theoper", reason: "direct reason");
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
+
+    db.GetMaterialInAllQueues().ShouldContain(m => m.MaterialID == 1 && m.Queue == "q2");
+    var logs = db.GetLogForMaterial(1).ToList();
+    var note = logs.Single(e => e.Program == "OperatorNotes");
+    note.ProgramDetails.ShouldNotBeNull();
+    note.ProgramDetails["note"].ShouldBe("direct reason");
+    note.ProgramDetails["operator"].ShouldBe("theoper");
+    var quarantineAdd = logs.Single(e => e.LogType == LogType.AddToQueue && e.LocationName == "q2");
+    quarantineAdd.Program.ShouldBe("Quarantine");
+    quarantineAdd.ProgramDetails.ShouldNotBeNull();
+    quarantineAdd.ProgramDetails["operator"].ShouldBe("theoper");
+  }
+
+  [Test]
+  public async Task DirectlyQuarantinesQueuedMaterialWithoutConfiguredQueue()
+  {
+    _settings = _settings with { QuarantineQueue = null };
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var material = QueuedMat(
+      matId: 1,
+      job: null,
+      part: "c1",
+      proc: 0,
+      path: 1,
+      serial: "serial",
+      queue: "q1",
+      pos: 0
+    );
+    _jq.AddUnallocatedCastingToQueue(
+        casting: "c1",
+        qty: 1,
+        queue: "q1",
+        serial: ["serial"],
+        workorder: null,
+        operatorName: "adder"
+      )
+      .ShouldBe([material]);
+    await SetCurrentMaterial([material]);
+
+    var newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.QuarantineQueuedMaterial(1, operatorName: "theoper", reason: "direct reason");
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
+
+    db.GetMaterialInAllQueues().ShouldBeEmpty();
+    var logs = db.GetLogForMaterial(1).ToList();
+    var note = logs.Single(e => e.Program == "OperatorNotes");
+    note.ProgramDetails.ShouldNotBeNull();
+    note.ProgramDetails["note"].ShouldBe("direct reason");
+    note.ProgramDetails["operator"].ShouldBe("theoper");
+    var quarantineRemove = logs.Single(e => e.LogType == LogType.RemoveFromQueue);
+    quarantineRemove.Program.ShouldBe("Quarantine");
+    quarantineRemove.ProgramDetails.ShouldNotBeNull();
+    quarantineRemove.ProgramDetails["operator"].ShouldBe("theoper");
+  }
+
+  [Test]
+  public async Task DirectQuarantineRejectsMaterialOutsideHumanControlledQueue()
+  {
+    _loadCancelHandler = new RecordingLoadCancel();
+    await StartSyncThread();
+    var queuedMaterial = QueuedMat(1, null, "c1", 0, 1, "serial", "q1", 0);
+    await SetCurrentMaterial([
+      queuedMaterial with
+      {
+        Location = new InProcessMaterialLocation { Type = InProcessMaterialLocation.LocType.Free },
+      },
+    ]);
+
+    Should
+      .Throw<ConflictRequestException>(() => _jq.QuarantineQueuedMaterial(1, null, null))
+      .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
+
+    await SetCurrentMaterial([
+      queuedMaterial with
+      {
+        Action = new InProcessMaterialAction
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting,
+          LoadCancellationId = "active",
+        },
+      },
+    ]);
+
+    Should
+      .Throw<ConflictRequestException>(() => _jq.QuarantineQueuedMaterial(1, null, null))
+      .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
+  }
+
+  [Test]
+  public async Task InvalidationRequiresEligibleAddToQueueProposal()
+  {
+    _loadCancelHandler = new RecordingLoadCancel();
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var materialId = db.AllocateMaterialID("job", "part", 1);
+    db.RecordMachineStart(
+      [
+        new EventLogMaterial
+        {
+          MaterialID = materialId,
+          Process = 1,
+          Face = 1,
+        },
+      ],
+      pallet: 1,
+      statName: "machine",
+      statNum: 1,
+      program: "program",
+      timeUTC: DateTime.UtcNow
+    );
+    var material = QueuedMat(materialId, null, "part", 1, 1, "serial", "q1", 0);
+
+    await SetCurrentMaterial([
+      material with
+      {
+        Location = new InProcessMaterialLocation
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = "q1",
+          QueuePosition = 0,
+        },
+      },
+    ]);
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 1))
+      .Message.ShouldBe("Material is not eligible for cycle invalidation in its current state.");
+
+    await SetCurrentMaterial([
+      material with
+      {
+        Location = new InProcessMaterialLocation
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          PalletNum = 1,
+        },
+      },
+    ]);
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 1))
+      .Message.ShouldBe("Material is not eligible for cycle invalidation in its current state.");
+
+    await SetCurrentMaterial([
+      material with
+      {
+        Action = new InProcessMaterialAction
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting,
+          LoadCancellationId = "active",
+        },
+      },
+    ]);
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 1))
+      .Message.ShouldBe("Material is not eligible for cycle invalidation in its current state.");
+  }
+
+  [Test]
+  public async Task InvalidationRejectsAffectedAutomationMaterialBeforeWriting()
+  {
+    _loadCancelHandler = new RecordingLoadCancel();
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var selectedId = db.AllocateMaterialID("selected", "part", 1);
+    var affectedId = db.AllocateMaterialID("affected", "part", 1);
+    db.RecordMachineStart(
+      [
+        new EventLogMaterial
+        {
+          MaterialID = selectedId,
+          Process = 1,
+          Face = 1,
+        },
+        new EventLogMaterial
+        {
+          MaterialID = affectedId,
+          Process = 1,
+          Face = 2,
+        },
+      ],
+      pallet: 1,
+      statName: "machine",
+      statNum: 1,
+      program: "program",
+      timeUTC: DateTime.UtcNow
+    );
+
+    await SetCurrentMaterial([
+      QueuedMat(selectedId, null, "part", 1, 1, "selected", "q1", 0) with
+      {
+        Location = new InProcessMaterialLocation { Type = InProcessMaterialLocation.LocType.Free },
+      },
+      QueuedMat(affectedId, null, "part", 1, 1, "affected", "q1", 0) with
+      {
+        Location = new InProcessMaterialLocation
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          PalletNum = 1,
+        },
+        Action = new InProcessMaterialAction
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting,
+          LoadCancellationId = "active",
+        },
+      },
+    ]);
+    var logBefore = db.GetLogForMaterial(selectedId).ToList();
+
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(selectedId, 1))
+      .Message.ShouldBe("Material is not eligible for cycle invalidation in its current state.");
+
+    db.GetLogForMaterial(selectedId).EventsShouldBe(logBefore);
+  }
+
+  [Test]
+  public async Task InvalidationAllowsOnlyMostRecentPartialProcess()
+  {
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var materialId = db.AllocateMaterialID("job", "part", 3);
+    for (var process = 1; process <= 3; process++)
+    {
+      db.RecordMachineStart(
+        [
+          new EventLogMaterial
+          {
+            MaterialID = materialId,
+            Process = process,
+            Face = process,
+          },
+        ],
+        pallet: process,
+        statName: "machine",
+        statNum: process,
+        program: "program",
+        timeUTC: DateTime.UtcNow
+      );
+    }
+
+    await SetCurrentMaterial([
+      QueuedMat(materialId, null, "part", 3, 1, "serial", "q1", 0) with
+      {
+        Location = new InProcessMaterialLocation { Type = InProcessMaterialLocation.LocType.Free },
+      },
+    ]);
+
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 2))
+      .Message.ShouldBe("The requested process is no longer current.");
+
+    var newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.InvalidatePalletCycle(materialId, 3);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
+    db.GetLogForMaterial(materialId).ShouldContain(e => e.LogType == LogType.InvalidateCycle);
+  }
+
+  [Test]
+  public async Task InvalidationAllowsHistoricalMaterialAbsentFromCurrentStatus()
+  {
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var oldJob = new Job()
+    {
+      UniqueStr = "old-job",
+      PartName = "old-part",
+      Cycles = 0,
+      Processes =
+      [
+        new ProcessInfo() { Paths = [JobLogTest.EmptyPath] },
+        new ProcessInfo() { Paths = [JobLogTest.EmptyPath] },
+      ],
+      RouteStartUTC = DateTime.MinValue,
+      RouteEndUTC = DateTime.MinValue,
+      Archived = false,
+    };
+    var newJob = oldJob with { UniqueStr = "new-job", PartName = "new-part" };
+    db.AddJobs(
+      new NewJobs() { ScheduleId = "schedule", Jobs = [oldJob, newJob] },
+      null,
+      addAsCopiedToSystem: true
+    );
+
+    var latestMaterialId = db.AllocateMaterialID("old-job", "old-part", 2);
+    for (var process = 1; process <= 2; process++)
+    {
+      db.RecordMachineStart(
+        [
+          new EventLogMaterial()
+          {
+            MaterialID = latestMaterialId,
+            Process = process,
+            Face = 1,
+          },
+        ],
+        pallet: process,
+        statName: "machine",
+        statNum: process,
+        program: "program",
+        timeUTC: DateTime.UtcNow
+      );
+    }
+
+    await SetCurrentMaterial([]);
+    var latestStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.InvalidatePalletCycle(latestMaterialId, 2);
+    (await latestStatusTask).Material.ShouldBeEmpty();
+
+    var reassignedMaterialId = db.AllocateMaterialID("old-job", "old-part", 1);
+    db.RecordMachineStart(
+      [
+        new EventLogMaterial()
+        {
+          MaterialID = reassignedMaterialId,
+          Process = 1,
+          Face = 1,
+        },
+      ],
+      pallet: 2,
+      statName: "machine",
+      statNum: 2,
+      program: "program",
+      timeUTC: DateTime.UtcNow
+    );
+
+    var reassignedStatusTask = CreateTaskToWaitForNewStatus();
+    var details = _jq.InvalidatePalletCycle(reassignedMaterialId, 1, changeJobUniqueTo: "new-job");
+    (await reassignedStatusTask).Material.ShouldBeEmpty();
+    details.JobUnique.ShouldBe("new-job");
+    db.GetLogForMaterial(reassignedMaterialId)
+      .ShouldContain(e => e.LogType == LogType.InvalidateCycle);
+  }
+
+  [Test]
+  public async Task ActiveLoadStationActionsWithoutCancellationIdOwnAllMaterialDisposition()
+  {
+    await StartSyncThread();
+
+    foreach (
+      var actionType in new[]
+      {
+        InProcessMaterialAction.ActionType.Loading,
+        InProcessMaterialAction.ActionType.UnloadToInProcess,
+        InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+        InProcessMaterialAction.ActionType.LoadingToBasket,
+      }
+    )
+    {
+      var material = QueuedMat(1, null, "part", 0, 1, "serial", "q1", 0) with
+      {
+        Action = new InProcessMaterialAction() { Type = actionType },
+      };
+      await SetCurrentMaterial([material]);
+
+      Should
+        .Throw<ConflictRequestException>(() =>
+          _jq.SignalMaterialForQuarantine(material.MaterialID, null, null)
+        )
+        .Message.ShouldBe("Material is not eligible for deferred quarantine in its current state.");
+      Should
+        .Throw<ConflictRequestException>(() =>
+          _jq.QuarantineQueuedMaterial(material.MaterialID, null, null)
+        )
+        .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
+      Should
+        .Throw<ConflictRequestException>(() =>
+          _jq.RemoveMaterialFromAllQueues([material.MaterialID], null)
+        )
+        .Message.ShouldBe("Material must be waiting in a queue with no active operation.");
+      Should
+        .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(material.MaterialID, 1))
+        .Message.ShouldBe("Material is not eligible for cycle invalidation in its current state.");
+    }
+  }
+
+  [Test]
+  public async Task InvalidationRejectsMalformedProcessShape()
+  {
+    await StartSyncThread();
+    using var db = _repo.OpenConnection();
+    await SetCurrentState(stateUpdated: false, executeAction: false);
+
+    var materialId = db.AllocateMaterialID("job", "part", 1);
+    await SetCurrentMaterial([
+      QueuedMat(materialId, null, "part", 1, 1, "serial", "q1", 0) with
+      {
+        Location = new InProcessMaterialLocation { Type = InProcessMaterialLocation.LocType.Free },
+      },
+    ]);
+
+    Should
+      .Throw<BadRequestException>(() => _jq.InvalidatePalletCycle(materialId, 0))
+      .Message.ShouldBe("Process must be at least 1.");
+    Should
+      .Throw<BadRequestException>(() =>
+        _jq.InvalidatePalletCycle(materialId, 2, changeCastingTo: "new-casting")
+      )
+      .Message.ShouldBe("Can only change casting when invalidating all processes");
+    Should
+      .Throw<BadRequestException>(() =>
+        _jq.InvalidatePalletCycle(
+          materialId,
+          1,
+          changeCastingTo: "new-casting",
+          changeJobUniqueTo: "new-job"
+        )
+      )
+      .Message.ShouldBe("Can not change both casting and job assignment");
   }
 
   private static LogEntry MarkExpectedEntry(
