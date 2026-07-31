@@ -267,6 +267,9 @@ export function registerMockBackend(
     signalMaterialForQuarantine(): Promise<void> {
       return Promise.resolve();
     },
+    quarantineQueuedMaterial(): Promise<void> {
+      return Promise.resolve();
+    },
     cancelLoad(): Promise<void> {
       return Promise.resolve();
     },

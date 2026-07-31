@@ -46,19 +46,26 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import {
   inProcessMaterialInDialog,
   materialDialogOpen,
+  useQuarantineQueuedMaterial,
   useRemoveFromQueue,
   useSignalForQuarantine,
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
 import {
-  ActionType,
   ApiException,
+  ICurrentStatus,
   IInProcessMaterial,
   LocType,
   QueueRole,
 } from "../../network/api.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
+import {
+  canDirectlyQuarantine,
+  canRemoveFromQueue,
+  canSignalQuarantine,
+  isActiveLoadStationOperation,
+} from "../../data/material-operation-policy.js";
 
 type QuarantineMaterialTypes = "Remove" | "Scrap" | "SignalForScrap";
 
@@ -72,16 +79,34 @@ type QuarantineMaterialData = {
   readonly removingFromQueues: boolean;
 };
 
+function hasSupportedQuarantineExit(
+  material: Readonly<IInProcessMaterial>,
+  status: Readonly<ICurrentStatus>,
+): boolean {
+  const job = status.jobs[material.jobUnique];
+  if (!job) return false;
+
+  const path = job.procsAndPaths[material.process - 1]?.paths[material.path - 1];
+  if (!path) return false;
+
+  return material.process === job.procsAndPaths.length || Boolean(path.outputQueue);
+}
+
 function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData | null {
   const fmsInfo = useAtomValue(fmsInformation);
   const [removeFromQueue, removingFromQueue] = useRemoveFromQueue();
   const [signalQuarantine, signalingQuarantine] = useSignalForQuarantine();
+  const [quarantineQueued, quarantiningQueued] = useQuarantineQueuedMaterial();
   const inProcMat = useAtomValue(inProcessMaterialInDialog);
   const curSt = useAtomValue(currentStatus);
   let operator = useAtomValue(currentOperator);
   if (ignoreOperator) operator = null;
 
   if (inProcMat === null || inProcMat.materialID < 0) return null;
+
+  if (isActiveLoadStationOperation(inProcMat)) return null;
+
+  if (inProcMat.quarantineAfterUnload) return null;
 
   const quarantineQueue = fmsInfo.quarantineQueue?.length ? fmsInfo.quarantineQueue : null;
 
@@ -127,53 +152,43 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
 
   switch (inProcMat.location.type) {
     case LocType.OnPallet:
-      if (inProcMat.action.type === ActionType.Loading) {
-        return null;
-      }
-      // Check that the job outputs to a queue, only then can signaling for quarantine work
-      const job = curSt.jobs[inProcMat.jobUnique];
-      if (!job) return null;
-      const path = job.procsAndPaths?.[inProcMat.process - 1]?.paths?.[inProcMat.path - 1];
-      if (inProcMat.process != job.procsAndPaths.length && (!path || !path.outputQueue)) {
+    case LocType.InBasket:
+      if (!canSignalQuarantine(inProcMat) || !hasSupportedQuarantineExit(inProcMat, curSt)) {
         return null;
       }
       type = "SignalForScrap";
       break;
 
     case LocType.InQueue:
+      if (!canDirectlyQuarantine(inProcMat)) return null;
       if (
-        inProcMat.action.type === ActionType.Loading ||
-        inProcMat.action.type === ActionType.LoadingToBasket
+        inProcMat.location.currentQueue === undefined ||
+        quarantineQueues.has(inProcMat.location.currentQueue)
       ) {
         return null;
       }
       type = "Scrap";
       break;
 
-    case LocType.InBasket:
-      if (inProcMat.action.type === ActionType.Loading) {
-        return null;
-      }
-      type = "Scrap";
-      break;
-
     case LocType.Free:
-      type = "Scrap";
-      break;
+      return null;
   }
 
   if (type) {
     return {
       type,
       material: inProcMat,
-      quarantine: async (reason) => signalQuarantine(inProcMat.materialID, operator, reason),
-      removing: signalingQuarantine,
+      quarantine:
+        type === "SignalForScrap"
+          ? async (reason) => signalQuarantine(inProcMat.materialID, operator, reason)
+          : async (reason) => quarantineQueued(inProcMat.materialID, operator, reason),
+      removing: type === "SignalForScrap" ? signalingQuarantine : quarantiningQueued,
       quarantineQueueDestination: quarantineQueue,
       removeFromQueues:
         inProcMat.location.type === LocType.InQueue &&
         inProcMat.location.currentQueue !== undefined &&
-        activeQueues.has(inProcMat.location.currentQueue) &&
-        inProcMat.action.type === ActionType.Waiting
+        !quarantineQueues.has(inProcMat.location.currentQueue) &&
+        canRemoveFromQueue(inProcMat)
           ? () => removeFromQueue(inProcMat.materialID, operator)
           : null,
       removingFromQueues: removingFromQueue,
@@ -216,22 +231,31 @@ function RemoveFromQueuesButton({
     }
   }
 
+  function openRemoval() {
+    setError(null);
+    setOpen(true);
+  }
+
   return (
     <>
-      <Tooltip title="Remove from all queues">
-        <Button color="primary" disabled={removing} onClick={() => setOpen(true)}>
-          Remove from Queues
+      <Tooltip title="Remove from the current queue so it can be rescanned">
+        <Button color="primary" disabled={removing} onClick={openRemoval}>
+          Remove from Queue
         </Button>
       </Tooltip>
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>Remove Material from Queues</DialogTitle>
+        <DialogTitle>Remove Material from Queue</DialogTitle>
         <DialogContent>
-          <p>The material will be removed from all queues.</p>
+          <p>
+            Remove this material from its current queue. Its production history will remain
+            available. You can scan it again to correct its history or assignment and then add it
+            back to a queue.
+          </p>
           {error ? <p role="alert">{error}</p> : null}
         </DialogContent>
         <DialogActions>
           <Button color="primary" disabled={removing} onClick={remove}>
-            Remove from Queues
+            Remove from Queue
           </Button>
           <Button color="secondary" disabled={removing} onClick={() => setOpen(false)}>
             Cancel
@@ -255,6 +279,12 @@ export function QuarantineMatButton({
   const q = useQuarantineMaterial(!!ignoreOperator);
   const setMatToShow = useSetAtom(materialDialogOpen);
 
+  function openQuarantine() {
+    setError(null);
+    setReason("");
+    setOpen(true);
+  }
+
   if (q === null) return null;
 
   let title: string;
@@ -268,13 +298,13 @@ export function QuarantineMatButton({
     case "Scrap":
       title = q.quarantineQueueDestination
         ? `Move to ${q.quarantineQueueDestination}`
-        : "Remove from queue";
-      btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Remove";
+        : "Remove from queue and treat as scrap";
+      btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Scrap";
       break;
     case "SignalForScrap":
       title = q.quarantineQueueDestination
-        ? `After unload, move to ${q.quarantineQueueDestination}`
-        : "After unload, remove the part as scrap";
+        ? `The current automated operation will continue. When the material leaves automation control, move it to ${q.quarantineQueueDestination}`
+        : "The current automated operation will continue. When the material leaves automation control, remove it from normal production flow as scrap";
       btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Scrap";
       break;
   }
@@ -309,7 +339,7 @@ export function QuarantineMatButton({
   return (
     <>
       <Tooltip title={title}>
-        <Button color="primary" disabled={q.removing} onClick={() => setOpen(true)}>
+        <Button color="primary" disabled={q.removing} onClick={openQuarantine}>
           {btnTxt}
         </Button>
       </Tooltip>

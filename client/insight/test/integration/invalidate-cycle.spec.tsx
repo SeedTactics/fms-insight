@@ -6,6 +6,7 @@ import {
   InvalidateCycleDialogContent,
   type InvalidateCycleState,
 } from "../../src/components/station-monitor/InvalidateCycle.js";
+import { MaterialDialog } from "../../src/components/station-monitor/Material.js";
 import { QuarantineMatButton } from "../../src/components/station-monitor/QuarantineButton.js";
 import { AddToQueueButton } from "../../src/components/station-monitor/QueuesAddMaterial.js";
 import { materialDialogOpen } from "../../src/cell-status/material-details.js";
@@ -38,12 +39,55 @@ function material({
   });
 }
 
-function statusWithMaterial(materials: ReadonlyArray<api.InProcessMaterial>): api.CurrentStatus {
+function statusWithMaterial(
+  materials: ReadonlyArray<api.InProcessMaterial>,
+  jobs: Readonly<Record<string, api.ActiveJob>> = {},
+): api.CurrentStatus {
   return createCurrentStatus({
     material: materials,
+    jobs,
     queues: {
       "Queue A": new api.QueueInfo({ role: api.QueueRole.InProcessTransfer }),
     },
+  });
+}
+
+function quarantinePath(outputQueue: string | undefined): api.ProcPathInfo {
+  return new api.ProcPathInfo({
+    palletNums: [1],
+    load: [],
+    expectedLoadTime: "PT0S",
+    unload: [],
+    expectedUnloadTime: "PT0S",
+    stops: [],
+    simulatedStartingUTC: new Date("2026-04-20T08:00:00Z"),
+    simulatedAverageFlowTime: "PT0S",
+    partsPerPallet: 1,
+    outputQueue,
+  });
+}
+
+function quarantineJob(outputQueue: string | undefined): api.ActiveJob {
+  return new api.ActiveJob({
+    unique: "JOB-1",
+    routeStartUTC: new Date("2026-04-20T08:00:00Z"),
+    routeEndUTC: new Date("2026-05-05T08:00:00Z"),
+    archived: false,
+    partName: "Part",
+    copiedToSystem: true,
+    cycles: 1,
+    procsAndPaths: [
+      new api.ProcessInfo({
+        paths: [quarantinePath(outputQueue)],
+      }),
+      ...(outputQueue === undefined
+        ? [
+            new api.ProcessInfo({
+              paths: [quarantinePath("Queue A")],
+            }),
+          ]
+        : []),
+    ],
   });
 }
 
@@ -216,6 +260,85 @@ describe("cycle invalidation workflow", () => {
     expect(fetch).toHaveBeenCalledWith("/api/v1/log/events/for-material/101", expect.anything());
   });
 
+  test("previews process-zero events for an assignment change", async () => {
+    const selected = material({ materialId: 101 });
+    const localEvents = [
+      logEvent({ counter: 1, process: 0, peerId: 102, peerSerial: "PROCESS-ZERO-PEER" }),
+    ];
+    vi.spyOn(window, "fetch").mockResolvedValue(eventResponse(localEvents));
+    registerNetworkBackend();
+
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <InvalidateCycleDialogContent
+          st={{
+            process: 1,
+            changeRawMat: "NEW-CASTING",
+            changeJobUnique: null,
+            updating: false,
+            error: null,
+          }}
+          setState={() => {}}
+        />
+      </Suspense>,
+      {
+        currentStatus: statusWithMaterial([selected]),
+        ...dialogData(selected),
+      },
+    );
+
+    await expect.element(screen.getByText("PROCESS-ZERO-PEER")).toBeVisible();
+  });
+
+  test("does not offer quarantine for a basket without a supported exit", async () => {
+    const selected = material({
+      materialId: 201,
+      location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
+    });
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <QuarantineMatButton />
+      </Suspense>,
+      {
+        currentStatus: statusWithMaterial([selected], { "JOB-1": quarantineJob(undefined) }),
+        fmsInfo: { quarantineQueue: "Quarantine" },
+        ...dialogData(selected),
+      },
+    );
+
+    await expect
+      .element(screen.getByRole("button", { name: /current automated operation/ }))
+      .not.toBeInTheDocument();
+  });
+
+  test("signals quarantine for a basket with a supported exit", async () => {
+    const selected = material({
+      materialId: 201,
+      location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
+    });
+    const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+    registerNetworkBackend();
+
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <QuarantineMatButton />
+      </Suspense>,
+      {
+        currentStatus: statusWithMaterial([selected], { "JOB-1": quarantineJob("Queue A") }),
+        fmsInfo: { quarantineQueue: "Quarantine" },
+        ...dialogData(selected),
+      },
+    );
+
+    await screen.getByRole("button", { name: /current automated operation/ }).click();
+    await screen.getByRole("dialog").getByRole("button", { name: "Quarantine" }).click();
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/jobs/material/201/signal-quarantine",
+      expect.objectContaining({ method: "PUT" }),
+    );
+  });
+
   test("removes waiting queued material without losing the scanned dialog context", async () => {
     const selected = material({
       materialId: 101,
@@ -231,9 +354,11 @@ describe("cycle invalidation workflow", () => {
       { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
     );
 
-    await screen.getByRole("button", { name: "Remove from all queues" }).click();
+    await screen
+      .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
+      .click();
     const dialog = screen.getByRole("dialog");
-    await dialog.getByRole("button", { name: "Remove from Queues" }).click();
+    await dialog.getByRole("button", { name: "Remove from Queue" }).click();
 
     await expect.element(dialog).not.toBeInTheDocument();
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -261,7 +386,11 @@ describe("cycle invalidation workflow", () => {
 
     await expect.element(screen.getByRole("button", { name: "Move to Quarantine" })).toBeVisible();
     await expect
-      .element(screen.getByRole("button", { name: "Remove from all queues" }))
+      .element(
+        screen.getByRole("button", {
+          name: "Remove from the current queue so it can be rescanned",
+        }),
+      )
       .toBeVisible();
 
     await screen.getByRole("button", { name: "Move to Quarantine" }).click();
@@ -269,7 +398,7 @@ describe("cycle invalidation workflow", () => {
     await dialog.getByRole("button", { name: "Quarantine" }).click();
 
     expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/jobs/material/101/signal-quarantine",
+      "/api/v1/jobs/material/101/quarantine-queued",
       expect.objectContaining({ method: "PUT" }),
     );
   });
@@ -289,12 +418,72 @@ describe("cycle invalidation workflow", () => {
       { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
     );
 
-    await screen.getByRole("button", { name: "Remove from all queues" }).click();
+    await screen
+      .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
+      .click();
     const dialog = screen.getByRole("dialog");
-    await dialog.getByRole("button", { name: "Remove from Queues" }).click();
+    await dialog.getByRole("button", { name: "Remove from Queue" }).click();
 
     await expect.element(dialog).toBeVisible();
     await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+  });
+
+  test("clears quarantine errors and reason when reopened", async () => {
+    const selected = material({
+      materialId: 101,
+      location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
+    });
+    vi.spyOn(window, "fetch").mockResolvedValue(new Response("Queue changed", { status: 409 }));
+    registerNetworkBackend();
+
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <QuarantineMatButton />
+      </Suspense>,
+      { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
+    );
+
+    await screen.getByRole("button", { name: "Remove from queue and treat as scrap" }).click();
+    let dialog = screen.getByRole("dialog");
+    await dialog.getByRole("textbox", { name: "Reason" }).fill("bad material");
+    await dialog.getByRole("button", { name: "Scrap" }).click();
+    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await screen.getByRole("button", { name: "Remove from queue and treat as scrap" }).click();
+    dialog = screen.getByRole("dialog");
+    await expect.element(dialog).not.toHaveTextContent("Queue changed");
+    await expect.element(dialog.getByRole("textbox", { name: "Reason" })).toHaveValue("");
+  });
+
+  test("clears queue-removal errors when reopened", async () => {
+    const selected = material({
+      materialId: 101,
+      location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
+    });
+    vi.spyOn(window, "fetch").mockResolvedValue(new Response("Queue changed", { status: 409 }));
+    registerNetworkBackend();
+
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <QuarantineMatButton />
+      </Suspense>,
+      { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
+    );
+
+    await screen
+      .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
+      .click();
+    let dialog = screen.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Remove from Queue" }).click();
+    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await screen
+      .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
+      .click();
+    dialog = screen.getByRole("dialog");
+    await expect.element(dialog).not.toHaveTextContent("Queue changed");
   });
 
   test("retains the dialog context after a successful invalidation", async () => {
@@ -385,6 +574,47 @@ describe("cycle invalidation workflow", () => {
 
     expect(closed).toHaveBeenCalledOnce();
     expect(screen.store.get(materialDialogOpen)).toBeNull();
+  });
+
+  test("allows moving waiting material from one queue to another", async () => {
+    const selected = material({
+      materialId: 101,
+      location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
+    });
+    const fetch = vi.spyOn(window, "fetch").mockImplementation(async (input, init) => {
+      if (init?.method === "GET") return eventResponse([]);
+      if (init?.method === "PUT") return new Response(null, { status: 204 });
+      throw new Error(`Unexpected request: ${requestUrl(input)}`);
+    });
+    registerNetworkBackend();
+
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <MaterialDialog
+          buttons={
+            <AddToQueueButton
+              st={{ toQueue: "Queue B", enteredOperator: null, newMaterialTy: null }}
+              queueNames={["Queue B"]}
+              onClose={() => {}}
+            />
+          }
+        />
+      </Suspense>,
+      { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
+    );
+
+    await expect
+      .element(screen.getByRole("button", { name: "Move From Queue A To Queue B" }))
+      .toBeVisible();
+    await screen.getByRole("button", { name: "Move From Queue A To Queue B" }).click();
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/jobs/material/101/queue",
+      expect.objectContaining({
+        method: "PUT",
+        body: '{"Queue":"Queue B","Position":-1}',
+      }),
+    );
   });
 
   test("retains queue addition errors in the dialog", async () => {

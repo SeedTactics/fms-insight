@@ -1,7 +1,16 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { CancelLoadButton } from "../../src/components/station-monitor/CancelLoadButton.js";
+import { QuarantineMatButton } from "../../src/components/station-monitor/QuarantineButton.js";
+import { MaterialDialog } from "../../src/components/station-monitor/Material.js";
+import { AddToQueueButton } from "../../src/components/station-monitor/QueuesAddMaterial.js";
+import {
+  InvalidateCycleDialogButton,
+  type InvalidateCycleState,
+  SwapMaterialButtons,
+  type SwapMaterialState,
+} from "../../src/components/station-monitor/InvalidateCycle.js";
 import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
 import { materialDialogOpen } from "../../src/cell-status/material-details.js";
 import { registerNetworkBackend } from "../../src/network/backend.js";
@@ -54,6 +63,33 @@ async function renderCancelLoadButton(
   );
 }
 
+function MutatingMaterialActions() {
+  const [swapState, setSwapState] = useState<SwapMaterialState>(null);
+  const [invalidateState, setInvalidateState] = useState<InvalidateCycleState | null>(null);
+
+  return (
+    <MaterialDialog
+      buttons={
+        <>
+          <QuarantineMatButton />
+          <CancelLoadButton />
+          <AddToQueueButton
+            st={{ toQueue: null, enteredOperator: null, newMaterialTy: null }}
+            queueNames={["Queue B"]}
+            onClose={() => {}}
+          />
+          <SwapMaterialButtons st={swapState} setState={setSwapState} onClose={() => {}} />
+          <InvalidateCycleDialogButton
+            st={invalidateState}
+            setState={setInvalidateState}
+            onClose={() => {}}
+          />
+        </>
+      }
+    />
+  );
+}
+
 describe("cancel load", () => {
   test("is only available for an instruction with a cancellation ID", async () => {
     const material = loadingMaterial({ materialId: 101, serial: "SERIAL-101" });
@@ -62,6 +98,46 @@ describe("cancel load", () => {
     await expect
       .element(screen.getByRole("button", { name: "Cancel the displayed load instruction" }))
       .not.toBeInTheDocument();
+  });
+
+  test("blocks competing actions and explains machine-control cancellation", async () => {
+    const material = loadingMaterial({ materialId: 101, serial: "SERIAL-101" });
+    vi.spyOn(window, "fetch").mockImplementation(async () => new Response("[]", { status: 200 }));
+    registerNetworkBackend();
+
+    const screen = await renderInsightPage(<MutatingMaterialActions />, {
+      currentStatus: createCurrentStatus({ material: [material] }),
+      fmsInfo: {
+        allowInvalidateMaterialOnQueuesPage: true,
+        allowSwapSerialAtLoadStation: true,
+      },
+      seedStore: (store) => store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
+    });
+
+    await expect
+      .element(
+        screen.getByText(
+          "This material is part of the current load/unload operation. Complete the operation or cancel it at the machine control before making other changes.",
+        ),
+      )
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Cancel Load" }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: "Quarantine" }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: /Add To Queue/ }))
+      .not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: /Swap/ })).not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: /Invalidate Cycle/ }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: /Remove from Queue/ }))
+      .not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Close" })).toBeVisible();
   });
 
   test("shows the cancellation group and submits its displayed token", async () => {

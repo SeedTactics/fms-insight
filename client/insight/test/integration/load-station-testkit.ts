@@ -27,16 +27,18 @@ export function createCurrentStatus({
   pallets = [],
   baskets = [],
   material = [],
+  jobs = {},
   queues = {},
 }: {
   readonly pallets?: ReadonlyArray<api.PalletStatus>;
   readonly baskets?: ReadonlyArray<api.BasketStatus>;
   readonly material?: ReadonlyArray<api.InProcessMaterial>;
+  readonly jobs?: Readonly<Record<string, api.ActiveJob>>;
   readonly queues?: Readonly<Record<string, api.QueueInfo>>;
 } = {}): api.CurrentStatus {
   return new api.CurrentStatus({
     timeOfCurrentStatusUTC: new Date("2026-04-24T12:00:00Z"),
-    jobs: {},
+    jobs: { ...jobs },
     pallets: Object.fromEntries(pallets.map((p) => [p.palletNum, p])),
     material: Array.from(material),
     alarms: [],
