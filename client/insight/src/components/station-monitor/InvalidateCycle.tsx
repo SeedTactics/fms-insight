@@ -34,14 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { Box, Button, ListItemIcon, ListItemText, ListSubheader, Stack } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
-import {
-  ActionType,
-  IActiveJob,
-  IInProcessMaterial,
-  ILogEntry,
-  LocType,
-  LogType,
-} from "../../network/api.js";
+import { IActiveJob, IInProcessMaterial, ILogEntry, LocType, LogType } from "../../network/api.js";
 import { JobsBackend } from "../../network/backend.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -61,6 +54,10 @@ import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { PartIdenticon } from "./Material.js";
 import { isLogEntryInvalidated } from "../LogEntry.js";
 import { ApiException } from "../../network/api.js";
+import {
+  canInvalidateMaterial,
+  isActiveLoadStationOperation,
+} from "../../data/material-operation-policy.js";
 
 export type InvalidateCycleState = {
   readonly process: number | null;
@@ -124,12 +121,20 @@ function InvalidateSelect(props: InvalidateCycleProps) {
 
   const hasProc = lastMat !== null && lastMat.process >= 1;
   const hasChangeMat = castings.length > 0 || jobs.length > 0;
+  const selectedCasting =
+    props.st?.changeRawMat !== null &&
+    props.st?.changeRawMat !== undefined &&
+    castings.includes(props.st.changeRawMat);
+  const selectedJob =
+    props.st?.changeJobUnique !== null &&
+    props.st?.changeJobUnique !== undefined &&
+    jobs.some((job) => job.jobUnique === props.st?.changeJobUnique);
 
   function change(e: string) {
     props.setState({
       updating: false,
       error: null,
-      process: e.startsWith("proc") ? parseInt(e.substring(4)) : null,
+      process: e.startsWith("proc") ? parseInt(e.substring(4)) : 1,
       changeRawMat: e.startsWith("rawMat") ? e.substring(6) : null,
       changeJobUnique: e.startsWith("job") ? e.substring(3) : null,
     });
@@ -138,24 +143,24 @@ function InvalidateSelect(props: InvalidateCycleProps) {
   return (
     <TextField
       value={
-        props.st?.process && hasProc
-          ? "proc" + props.st.process.toString()
-          : props.st?.changeRawMat
-            ? "rawMat" + props.st.changeRawMat
-            : props.st?.changeJobUnique
-              ? "job" + props.st.changeJobUnique
+        selectedCasting
+          ? "rawMat" + props.st.changeRawMat
+          : selectedJob
+            ? "job" + props.st.changeJobUnique
+            : props.st?.process && hasProc
+              ? "proc" + props.st.process.toString()
               : ""
       }
       select
       onChange={(e) => change(e.target.value)}
       variant="outlined"
       label={
-        props.st?.process || !hasChangeMat
-          ? "Invalidate Process"
-          : props.st?.changeRawMat
-            ? "Change Raw Material"
-            : props.st?.changeJobUnique
-              ? "Change Assigned Job"
+        props.st?.changeRawMat
+          ? "Change Raw Material"
+          : props.st?.changeJobUnique
+            ? "Change Assigned Job"
+            : props.st?.process || !hasChangeMat
+              ? "Invalidate Process"
               : !hasProc
                 ? "Change Assignment"
                 : ""
@@ -165,14 +170,19 @@ function InvalidateSelect(props: InvalidateCycleProps) {
         hasProc && hasChangeMat
           ? [<ListSubheader key={"procheader"}>Invalidate Selected Process</ListSubheader>]
           : [],
-        lastMat
-          ? LazySeq.ofRange(1, lastMat.process + 1)
-              .map((p) => (
-                <MenuItem key={p} value={"proc" + p.toString()}>
-                  Invalidate Process {p}
-                </MenuItem>
-              ))
-              .toRArray()
+        hasProc
+          ? [
+              <MenuItem key={lastMat.process} value={"proc" + lastMat.process.toString()}>
+                Invalidate Process {lastMat.process}
+              </MenuItem>,
+              ...(lastMat.process > 1
+                ? [
+                    <MenuItem key="all" value="proc1">
+                      Invalidate All Processes
+                    </MenuItem>,
+                  ]
+                : []),
+            ]
           : [],
         hasProc && hasChangeMat
           ? [<ListSubheader key="matheader">Change Material Type</ListSubheader>]
@@ -181,7 +191,7 @@ function InvalidateSelect(props: InvalidateCycleProps) {
           ? [
               ...castings.map((c) => (
                 <MenuItem key={"rawMat" + c} value={"rawMat" + c}>
-                  Invalidate Everything And Change to {c}
+                  Invalidate Everything and Change to {c}
                 </MenuItem>
               )),
               ...jobs.map(({ jobUnique, job }) => (
@@ -192,7 +202,7 @@ function InvalidateSelect(props: InvalidateCycleProps) {
                     </ListItemIcon>
                   ) : undefined}
                   <ListItemText
-                    primary={"Invalidate Everything And Change To Job " + jobUnique}
+                    primary={"Invalidate Everything and Change to Job " + jobUnique}
                     secondary={job?.partName}
                   />
                 </MenuItem>
@@ -220,12 +230,15 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
 
   if (!show) return <div />;
 
-  const process =
-    props.st.process ?? (props.st.changeRawMat || props.st.changeJobUnique ? null : undefined);
-  const affected =
-    process === undefined
-      ? HashMap.empty<number, string | null>()
-      : affectedMaterialForInvalidation(events, curMat.materialID, process);
+  const hasSelection =
+    props.st.process !== null ||
+    props.st.changeRawMat !== null ||
+    props.st.changeJobUnique !== null;
+  const previewProcess =
+    props.st.changeRawMat !== null || props.st.changeJobUnique !== null ? null : props.st.process;
+  const affected = hasSelection
+    ? affectedMaterialForInvalidation(events, curMat.materialID, previewProcess)
+    : HashMap.empty<number, string | null>();
   const affectedLabels = [...affected].map(([materialId, serial]) => ({
     materialId,
     serial,
@@ -283,8 +296,7 @@ export function InvalidateCycleDialogButton(
   if (!props.loadStation && !fmsInfo.allowInvalidateMaterialOnQueuesPage) return null;
   if (curMat === null) return null;
 
-  if (inProcMat && inProcMat.location.type === LocType.OnPallet) return null;
-  if (inProcMat && inProcMat.location.type === LocType.InQueue) return null;
+  if (!canInvalidateMaterial(inProcMat)) return null;
 
   const allowChange =
     possibleNew !== null &&
@@ -358,12 +370,16 @@ export function InvalidateCycleDialogButton(
               props.st.changeJobUnique === null)
           }
         >
-          {props.st.process !== null
-            ? "Invalidate Process " + props.st.process.toString()
-            : props.st.changeJobUnique !== null
-              ? "Invalidate And Change To Job " + props.st.changeJobUnique
-              : props.st.changeRawMat !== null
-                ? "Invalidate And Change To " + props.st.changeRawMat
+          {props.st.changeJobUnique !== null
+            ? "Invalidate Everything and Change to Job " + props.st.changeJobUnique
+            : props.st.changeRawMat !== null
+              ? "Invalidate Everything and Change to " + props.st.changeRawMat
+              : props.st.process !== null
+                ? props.st.process === 1
+                  ? lastMat && lastMat.process > 1
+                    ? "Invalidate All Processes"
+                    : "Invalidate Process 1"
+                  : "Invalidate Process " + props.st.process.toString()
                 : "Invalidate Cycle"}
         </Button>
       ) : undefined}
@@ -486,9 +502,7 @@ export function SwapMaterialButtons(
   if (
     !curMat ||
     curMat.location.type !== LocType.OnPallet ||
-    curMat.action.type === ActionType.Loading ||
-    curMat.action.type === ActionType.UnloadToCompletedMaterial ||
-    curMat.action.type === ActionType.UnloadToInProcess
+    isActiveLoadStationOperation(curMat)
   ) {
     return null;
   }

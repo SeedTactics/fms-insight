@@ -68,8 +68,12 @@ namespace BlackMaple.MachineFramework
     public string? WorkId { get; init; }
 
     /// <summary>
-    /// Opaque token identifying the currently offered load cancellation. Every material in one
-    /// atomic cancellation unit carries the same token.
+    /// Opaque operation-instance token identifying the currently offered cancellation of one
+    /// complete operator-facing load-station instruction. The instruction may include loading,
+    /// unloading, basket transfers, or unload/reload operations. Every material in one atomic
+    /// cancellation unit carries the same nonblank token; it remains stable while the advertised
+    /// operation is unchanged and changes when the operation's membership or cancellation effects
+    /// change. It is not a reusable slot or operation-category identifier.
     /// </summary>
     public string? LoadCancellationId { get; init; }
 

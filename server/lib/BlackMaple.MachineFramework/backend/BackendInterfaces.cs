@@ -73,11 +73,23 @@ namespace BlackMaple.MachineFramework
   public interface ILoadCancel<in St>
     where St : ICellState
   {
+    /// <summary>
+    /// Cancels one complete operator-facing load-station instruction.
+    /// </summary>
+    /// <remarks>
+    /// The instruction may include loading, unloading, basket transfers, or unload/reload
+    /// operations. <see cref="JobsAndQueuesFromDb{St}" /> validates the selected material, exact
+    /// cancellation ID, complete group, and duplicate-request state before invoking this method.
+    /// The handler runs while the server change lock is held and must durably record all effects
+    /// before returning. It should be short-running, avoid unnecessary network I/O, and be atomic
+    /// or safely idempotent if external effects can occur before an exception. Throwing means the
+    /// cancellation failed: the ID is not consumed and state recalculation is not requested.
+    /// </remarks>
     void CancelLoad(
       IRepository repository,
       St state,
       InProcessMaterial selectedMaterial,
-      ImmutableList<InProcessMaterial> material,
+      ImmutableList<InProcessMaterial> cancellationGroup,
       string cancellationId,
       string? operatorName,
       string? reason

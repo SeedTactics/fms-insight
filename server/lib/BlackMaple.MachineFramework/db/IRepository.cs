@@ -465,6 +465,13 @@ namespace BlackMaple.MachineFramework
       string reason = null,
       DateTime? timeUTC = null
     );
+    IEnumerable<LogEntry> QuarantineQueuedMaterial(
+      long matId,
+      string quarantineQueue,
+      string operatorName = null,
+      string reason = null,
+      DateTime? timeUTC = null
+    );
     LogEntry RecordGeneralMessage(
       EventLogMaterial mat,
       string program,
@@ -515,7 +522,8 @@ namespace BlackMaple.MachineFramework
       long matId,
       int process,
       string operatorName,
-      DateTime? timeUTC = null
+      DateTime? timeUTC = null,
+      Action<ImmutableList<EventLogMaterial>> validateAffectedMaterials = null
     );
     IEnumerable<LogEntry> InvalidateAndChangeAssignment(
       long matId,
@@ -523,7 +531,8 @@ namespace BlackMaple.MachineFramework
       string changeJobUniqueTo,
       string changePartNameTo,
       int changeNumProcessesTo,
-      DateTime? timeUTC = null
+      DateTime? timeUTC = null,
+      Action<ImmutableList<EventLogMaterial>> validateAffectedMaterials = null
     );
     LogEntry CreateRebooking(
       string bookingId,

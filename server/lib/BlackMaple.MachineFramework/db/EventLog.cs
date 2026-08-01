@@ -4385,6 +4385,68 @@ namespace BlackMaple.MachineFramework
       });
     }
 
+    public IEnumerable<LogEntry> QuarantineQueuedMaterial(
+      long matId,
+      string quarantineQueue,
+      string operatorName = null,
+      string reason = null,
+      DateTime? timeUTC = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+      {
+        var time = timeUTC ?? DateTime.UtcNow;
+        var nextProc = NextProcessForQueuedMaterial(trans, matId);
+        var proc = (nextProc ?? 1) - 1;
+        var logs = new List<LogEntry>();
+
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+          logs.Add(
+            RecordOperatorNotes(
+              trans,
+              materialId: matId,
+              process: proc,
+              notes: reason,
+              operatorName: operatorName,
+              timeUTC: time
+            )
+          );
+        }
+
+        if (string.IsNullOrWhiteSpace(quarantineQueue))
+        {
+          logs.AddRange(
+            RemoveFromAllQueues(
+              trans,
+              matId,
+              proc,
+              operatorName,
+              reason: "Quarantine",
+              timeUTC: time
+            )
+          );
+        }
+        else
+        {
+          logs.AddRange(
+            AddToQueue(
+              trans,
+              matId,
+              proc,
+              quarantineQueue,
+              position: -1,
+              operatorName,
+              time,
+              reason: "Quarantine"
+            )
+          );
+        }
+
+        return logs;
+      });
+    }
+
     public LogEntry SignalMaterialForQuarantine(
       EventLogMaterial mat,
       int pallet,
@@ -4496,24 +4558,56 @@ namespace BlackMaple.MachineFramework
       {
         throw new ArgumentException("Operator notes cannot be empty", nameof(notes));
       }
+      return AddEntryInTransaction(trans =>
+        RecordOperatorNotes(
+          trans,
+          materialId,
+          process,
+          notes,
+          operatorName,
+          timeUtc ?? DateTime.UtcNow
+        )
+      );
+    }
+
+    private LogEntry RecordOperatorNotes(
+      IDbTransaction trans,
+      long materialId,
+      int process,
+      string notes,
+      string operatorName,
+      DateTime timeUTC
+    )
+    {
       var extra = new Dictionary<string, string>();
       extra["note"] = notes;
       if (!string.IsNullOrEmpty(operatorName))
       {
         extra["operator"] = operatorName;
       }
-      return RecordGeneralMessage(
-        mat: new EventLogMaterial()
+      var log = new NewEventLogEntry()
+      {
+        Material = new[]
         {
-          MaterialID = materialId,
-          Process = process,
-          Face = 0,
+          new EventLogMaterial()
+          {
+            MaterialID = materialId,
+            Process = process,
+            Face = 0,
+          },
         },
-        program: "OperatorNotes",
-        result: "Operator Notes",
-        timeUTC: timeUtc,
-        extraData: extra
-      );
+        Pallet = 0,
+        LogType = LogType.GeneralMessage,
+        LocationName = "Message",
+        LocationNum = 1,
+        Program = "OperatorNotes",
+        StartOfCycle = false,
+        EndTimeUTC = timeUTC,
+        Result = "Operator Notes",
+      };
+      foreach (var x in extra)
+        log.ProgramDetails.Add(x.Key, x.Value);
+      return AddLogEntry(trans, log, null, null);
     }
 
     public SwapMaterialResult SwapMaterialInCurrentPalletCycle(
@@ -4810,7 +4904,8 @@ namespace BlackMaple.MachineFramework
       string operatorName,
       DateTime timeUTC,
       SqliteTransaction trans,
-      List<LogEntry> newLogEntries
+      List<LogEntry> newLogEntries,
+      Action<ImmutableList<EventLogMaterial>> validateAffectedMaterials = null
     )
     {
       using var getCycles = _connection.CreateCommand();
@@ -4890,6 +4985,34 @@ namespace BlackMaple.MachineFramework
         }
       }
 
+      if (process is > 1)
+      {
+        using var getLatestProcess = _connection.CreateCommand();
+        getLatestProcess.CommandText =
+          "SELECT MAX(m.Process) FROM stations s "
+          + "JOIN stations_mat m ON s.Counter = m.Counter "
+          + "WHERE m.MaterialID = $matid "
+          + "AND s.StationLoc IN ("
+          + LogTypesToCheckForNextProcess
+          + ") AND NOT EXISTS("
+          + "SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'"
+          + ")";
+        getLatestProcess.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+        getLatestProcess.Transaction = trans;
+
+        var latestProcess = getLatestProcess.ExecuteScalar();
+        if (latestProcess is DBNull || latestProcess is null)
+        {
+          throw new ConflictRequestException("No valid process remains to invalidate.");
+        }
+
+        var latestProcessNumber = Convert.ToInt32(latestProcess);
+        if (latestProcessNumber != process.Value)
+        {
+          throw new ConflictRequestException("The requested process is no longer current.");
+        }
+      }
+
       foreach (var affectedMatId in allMatIds.Select(m => m.matId).Distinct())
       {
         checkQueueCmd.Parameters[0].Value = affectedMatId;
@@ -4901,6 +5024,21 @@ namespace BlackMaple.MachineFramework
           );
         }
       }
+
+      if (invalidatedCntrs.Count == 0)
+      {
+        throw new ConflictRequestException("No valid process remains to invalidate.");
+      }
+
+      var affectedMaterials = allMatIds
+        .Select(m => new EventLogMaterial()
+        {
+          MaterialID = m.matId,
+          Process = m.proc,
+          Face = 0,
+        })
+        .ToImmutableList();
+      validateAffectedMaterials?.Invoke(affectedMaterials);
 
       foreach (var cntr in invalidatedCntrs)
       {
@@ -4921,12 +5059,7 @@ namespace BlackMaple.MachineFramework
       // record events
       var newMsg = new NewEventLogEntry()
       {
-        Material = allMatIds.Select(m => new EventLogMaterial()
-        {
-          MaterialID = m.matId,
-          Process = m.proc,
-          Face = 0,
-        }),
+        Material = affectedMaterials,
         Pallet = 0,
         LogType = LogType.InvalidateCycle,
         LocationName = "InvalidateCycle",
@@ -4948,7 +5081,8 @@ namespace BlackMaple.MachineFramework
       long matId,
       int process,
       string operatorName,
-      DateTime? timeUTC = null
+      DateTime? timeUTC = null,
+      Action<ImmutableList<EventLogMaterial>> validateAffectedMaterials = null
     )
     {
       var newLogEntries = new List<LogEntry>();
@@ -4963,7 +5097,8 @@ namespace BlackMaple.MachineFramework
           operatorName: operatorName,
           timeUTC: timeUTC ?? DateTime.UtcNow,
           trans: trans,
-          newLogEntries: newLogEntries
+          newLogEntries: newLogEntries,
+          validateAffectedMaterials: validateAffectedMaterials
         );
 
         trans.Commit();
@@ -4981,7 +5116,8 @@ namespace BlackMaple.MachineFramework
       string changeJobUniqueTo,
       string changePartNameTo,
       int changeNumProcessesTo,
-      DateTime? timeUTC = null
+      DateTime? timeUTC = null,
+      Action<ImmutableList<EventLogMaterial>> validateAffectedMaterials = null
     )
     {
       var newLogEntries = new List<LogEntry>();
@@ -4989,15 +5125,6 @@ namespace BlackMaple.MachineFramework
       lock (_cfg)
       {
         using var trans = _connection.BeginTransaction();
-
-        InvalidatePalletCycle(
-          matId: matId,
-          process: null,
-          operatorName: operatorName,
-          timeUTC: timeUTC ?? DateTime.UtcNow,
-          trans: trans,
-          newLogEntries: newLogEntries
-        );
 
         using var updateMatDetailsCmd = _connection.CreateCommand();
         updateMatDetailsCmd.Transaction = trans;
@@ -5013,6 +5140,19 @@ namespace BlackMaple.MachineFramework
           changeNumProcessesTo;
         updateMatDetailsCmd.Parameters.Add("mid", SqliteType.Integer).Value = matId;
         updateMatDetailsCmd.ExecuteNonQuery();
+
+        // Update the assignment before creating the invalidation event so the event describes the
+        // material's new assignment. Both operations use the same transaction, so a validation
+        // failure during invalidation rolls back the assignment update.
+        InvalidatePalletCycle(
+          matId: matId,
+          process: null,
+          operatorName: operatorName,
+          timeUTC: timeUTC ?? DateTime.UtcNow,
+          trans: trans,
+          newLogEntries: newLogEntries,
+          validateAffectedMaterials: validateAffectedMaterials
+        );
 
         trans.Commit();
       }

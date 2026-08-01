@@ -73,6 +73,11 @@ export interface JobAPI {
     operName: string | null,
     reason: string | undefined,
   ): Promise<void>;
+  quarantineQueuedMaterial(
+    materialId: number,
+    operName: string | null,
+    reason: string | undefined,
+  ): Promise<void>;
   cancelLoad(
     materialId: number,
     operName: string | null,

@@ -584,6 +584,27 @@ export function useSignalForQuarantine(): [
   return [callback, updating];
 }
 
+export function useQuarantineQueuedMaterial(): [
+  (matId: number, operator: string | null, reason: string) => Promise<void>,
+  boolean,
+] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const callback = useCallback(async (matId: number, operator: string | null, reason: string) => {
+    setUpdating(true);
+    try {
+      await JobsBackend.quarantineQueuedMaterial(
+        matId,
+        operator,
+        reason === "" ? undefined : reason,
+      );
+    } finally {
+      setUpdating(false);
+    }
+  }, []);
+
+  return [callback, updating];
+}
+
 export interface AddExistingMaterialToQueueData {
   readonly materialId: number;
   readonly queue: string;

@@ -34,15 +34,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace BlackMaple.MachineFramework
 {
+  /// <summary>Identifies the exact currently advertised load-station instruction to cancel.</summary>
   public record CancelLoadRequest
   {
-    public required string ExpectedLoadCancellationId { get; init; }
+    /// <summary>
+    /// Opaque operation-instance ID displayed with the load-station instruction. The server
+    /// rejects a missing or blank value as a malformed request.
+    /// </summary>
+    [Required(AllowEmptyStrings = false)]
+    public string ExpectedLoadCancellationId { get; init; } = null!;
+
+    /// <summary>Optional operator context recorded by the backend.</summary>
     public string? Reason { get; init; }
   }
 
@@ -119,14 +128,25 @@ namespace BlackMaple.MachineFramework
       string? operatorName = null
     );
 
-    /// Mark the material for quarantine.  If the material is already in a queue, it is directly moved.
-    /// If the material is still on a pallet, it will be moved after unload completes.
+    /// Record a deferred quarantine intent for automation-controlled material. The backend observes
+    /// this event and decides how to handle the material after it leaves automation control.
     void SignalMaterialForQuarantine(
       long materialId,
       string? operatorName = null,
       string? reason = null
     );
 
+    /// Directly quarantine material which is waiting in a human-controlled queue.
+    void QuarantineQueuedMaterial(
+      long materialId,
+      string? operatorName = null,
+      string? reason = null
+    );
+
+    /// <summary>
+    /// Cancels the complete currently advertised load-station instruction identified by the
+    /// expected operation-instance ID.
+    /// </summary>
     void CancelLoad(
       long materialId,
       string expectedLoadCancellationId,
@@ -134,6 +154,7 @@ namespace BlackMaple.MachineFramework
       string? reason = null
     );
 
+    /// Remove material only from a human-controlled waiting queue.
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName = null);
 
     void SwapMaterialOnPallet(
@@ -144,6 +165,7 @@ namespace BlackMaple.MachineFramework
     );
     event EditMaterialInLogDelegate? OnEditMaterialInLog;
 
+    /// Reject a current add-to-queue proposal by invalidating its latest process or all processes.
     MaterialDetails? InvalidatePalletCycle(
       long matId,
       int process,
@@ -163,7 +185,7 @@ namespace BlackMaple.MachineFramework
     private readonly FMSSettings _settings;
     private readonly ISynchronizeCellState<St> _syncState;
     private readonly IEnumerable<IAdditionalCheckJobs> _additionalCheckJobs;
-    private readonly ImmutableList<ILoadCancel<St>> _loadCancelHandlers;
+    private readonly ILoadCancel<St>? _loadCancelHandler;
 
     public event NewCurrentStatus? OnNewCurrentStatus;
 
@@ -173,7 +195,7 @@ namespace BlackMaple.MachineFramework
       FMSSettings settings,
       ISynchronizeCellState<St> syncSt,
       IEnumerable<IAdditionalCheckJobs>? additionalCheckJobs = null,
-      IEnumerable<ILoadCancel<St>>? loadCancelHandlers = null,
+      ILoadCancel<St>? loadCancelHandler = null,
       bool startThread = true
     )
     {
@@ -182,9 +204,7 @@ namespace BlackMaple.MachineFramework
       _serverSettings = serverSt;
       _syncState = syncSt;
       _additionalCheckJobs = additionalCheckJobs ?? Enumerable.Empty<IAdditionalCheckJobs>();
-      _loadCancelHandlers = (
-        loadCancelHandlers ?? Enumerable.Empty<ILoadCancel<St>>()
-      ).ToImmutableList();
+      _loadCancelHandler = loadCancelHandler;
       _syncState.NewCellState += NewCellState;
 
       _thread = new Thread(Thread) { IsBackground = true };
@@ -326,13 +346,21 @@ namespace BlackMaple.MachineFramework
           {
             _newCellState.Reset();
             var st = _syncState.CalculateCellState(db);
+            ValidateLoadCancellationState(st);
             raiseNewCurStatus = raiseNewCurStatus || st.StateUpdated;
             timeUntilNextRefresh = st.TimeUntilNextRefresh;
 
             lock (_curStLock)
             {
               _lastCurrentStatus = st;
-              _consumedLoadCancellationIds = ImmutableHashSet<string>.Empty;
+              var currentlyAdvertisedIds = st
+                .CurrentStatus.Material.Select(m => m.Action.LoadCancellationId)
+                .OfType<string>()
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToImmutableHashSet();
+              _consumedLoadCancellationIds = _consumedLoadCancellationIds.Intersect(
+                currentlyAdvertisedIds
+              );
             }
 
             if (raiseNewCurStatus && Log.IsEnabled(Serilog.Events.LogEventLevel.Verbose))
@@ -408,6 +436,28 @@ namespace BlackMaple.MachineFramework
         {
           OnNewCurrentStatus?.Invoke(GetCurrentStatus());
         }
+      }
+    }
+
+    private void ValidateLoadCancellationState(St state)
+    {
+      var advertisedIds = state
+        .CurrentStatus.Material.Select(material => material.Action.LoadCancellationId)
+        .Where(id => id is not null)
+        .ToImmutableList();
+
+      if (advertisedIds.Any(string.IsNullOrWhiteSpace))
+      {
+        throw new InvalidOperationException(
+          "The backend advertised a blank load cancellation ID. Use null when cancellation is unavailable"
+        );
+      }
+
+      if (advertisedIds.Count > 0 && _loadCancelHandler is null)
+      {
+        throw new InvalidOperationException(
+          "The backend advertised a load cancellation, but no load cancellation handler is configured"
+        );
       }
     }
 
@@ -747,7 +797,6 @@ namespace BlackMaple.MachineFramework
         position
       );
 
-      string? error = null;
       bool requireStateRefresh = false;
 
       using (var ldb = _repo.OpenConnection())
@@ -761,32 +810,37 @@ namespace BlackMaple.MachineFramework
           }
 
           var mat = st?.Material.FirstOrDefault(m => m.MaterialID == materialId);
-          if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+          var isReorder =
+            mat?.Location.Type == InProcessMaterialLocation.LocType.InQueue
+            && mat.Location.CurrentQueue == queue;
+          if (!isReorder && mat is not null)
           {
-            error = "Material on pallet can not be moved to a queue";
+            var operation = MaterialOperationState.Classify(mat);
+            if (
+              operation
+              is not (
+                MaterialOperationKind.HumanControlledQueuedMaterial
+                or MaterialOperationKind.EligibleAddToQueueProposal
+              )
+            )
+            {
+              throw new ConflictRequestException(
+                "Material is owned by an active operation and cannot be moved to another queue."
+              );
+            }
           }
-          else if (
-            mat != null
-            && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting
-            && mat.Location.CurrentQueue != queue
-          )
-          {
-            error = "Only waiting material can be moved between queues";
-          }
-          else
-          {
-            var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
-            var proc = (nextProc ?? 1) - 1;
-            ldb.RecordAddMaterialToQueue(
-              matID: materialId,
-              process: proc,
-              queue: queue,
-              position: position,
-              operatorName: operatorName,
-              reason: "SetByOperator"
-            );
-            requireStateRefresh = true;
-          }
+
+          var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+          var proc = (nextProc ?? 1) - 1;
+          ldb.RecordAddMaterialToQueue(
+            matID: materialId,
+            process: proc,
+            queue: queue,
+            position: position,
+            operatorName: operatorName,
+            reason: "SetByOperator"
+          );
+          requireStateRefresh = true;
         }
       }
 
@@ -794,19 +848,11 @@ namespace BlackMaple.MachineFramework
       {
         RecalculateCellState();
       }
-
-      if (error != null)
-      {
-        throw new BadRequestException(error);
-      }
     }
 
     public void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
-
-      string? error = null;
-      bool requireStateRefresh = false;
 
       lock (_changeLock)
       {
@@ -820,42 +866,30 @@ namespace BlackMaple.MachineFramework
         foreach (var matId in materialIds)
         {
           var mat = st?.Material.FirstOrDefault(m => m.MaterialID == matId);
-          if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+          if (mat == null)
           {
-            error = "Material on pallet can not be removed from queues";
-            break;
+            throw new ConflictRequestException("Material not found in the current cell state.");
           }
-          else if (mat != null && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
+          else if (
+            MaterialOperationState.Classify(mat)
+            != MaterialOperationKind.HumanControlledQueuedMaterial
+          )
           {
-            error = "Only waiting material can be removed from queues";
-            break;
+            throw new ConflictRequestException(
+              "Material must be waiting in a queue with no active operation."
+            );
           }
         }
 
-        if (error == null)
-        {
-          ldb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
-          requireStateRefresh = true;
-        }
+        ldb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
       }
 
-      if (requireStateRefresh)
-      {
-        RecalculateCellState();
-      }
-
-      if (error != null)
-      {
-        throw new BadRequestException(error);
-      }
+      RecalculateCellState();
     }
 
     public void SignalMaterialForQuarantine(long materialId, string? operatorName, string? reason)
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
-
-      string? error = null;
-      bool requireStateRefresh = false;
 
       using (var ldb = _repo.OpenConnection())
       {
@@ -870,132 +904,93 @@ namespace BlackMaple.MachineFramework
           var mat = st?.Material.FirstOrDefault(m => m.MaterialID == materialId);
 
           if (mat == null)
-          {
-            error = "Material not found";
-          }
-          else
-          {
-            switch (mat.Location.Type, mat.Action.Type)
+            throw new ConflictRequestException("Material not found in the current cell state.");
+          if (MaterialOperationState.Classify(mat) != MaterialOperationKind.AutomationControlled)
+            throw new ConflictRequestException(
+              "Material is not eligible for deferred quarantine in its current state."
+            );
+          if (
+            mat.Location.Type
+            is not (
+              InProcessMaterialLocation.LocType.OnPallet
+              or InProcessMaterialLocation.LocType.InBasket
+            )
+          )
+            throw new ConflictRequestException(
+              "Material does not have a supported path out of automation control."
+            );
+
+          var job = st?.Jobs.GetValueOrDefault(mat.JobUnique);
+          if (job == null)
+            throw new ConflictRequestException("Material job is no longer current.");
+          if (
+            mat.Process < 1
+            || mat.Process > job.Processes.Count
+            || mat.Path < 1
+            || mat.Path > job.Processes[mat.Process - 1].Paths.Count
+          )
+            throw new ConflictRequestException("Material routing is no longer current.");
+
+          var path = job.Processes[mat.Process - 1].Paths[mat.Path - 1];
+          if (mat.Process != job.Processes.Count && string.IsNullOrEmpty(path.OutputQueue))
+            throw new ConflictRequestException(
+              "Material does not have a supported path out of automation control."
+            );
+
+          ldb.SignalMaterialForQuarantine(
+            mat: new EventLogMaterial()
             {
-              case (InProcessMaterialLocation.LocType.OnPallet, _):
-                if (mat.Action.Type == InProcessMaterialAction.ActionType.Loading)
-                {
-                  error = "Material on pallet can not be quarantined while loading";
-                }
-                else
-                {
-                  // If the material will eventually stay on the pallet, disallow quarantine
-                  var job = st?.Jobs.GetValueOrDefault(mat.JobUnique);
-                  if (job == null)
-                  {
-                    error = "Job not found";
-                  }
-                  else
-                  {
-                    var path = job.Processes[mat.Process - 1].Paths[mat.Path - 1];
-                    if (
-                      mat.Process != job.Processes.Count
-                      && (path == null || path.OutputQueue == null)
-                    )
-                    {
-                      error =
-                        "Can only signal material for quarantine if the current process and path has an output queue";
-                    }
-                  }
-                }
-                if (error == null)
-                {
-                  ldb.SignalMaterialForQuarantine(
-                    mat: new EventLogMaterial()
-                    {
-                      MaterialID = materialId,
-                      Process = mat.Process,
-                      Face = 0,
-                    },
-                    pallet: mat.Location.PalletNum ?? 0,
-                    queue: _settings.QuarantineQueue ?? "",
-                    timeUTC: null,
-                    operatorName: operatorName,
-                    reason: reason
-                  );
-                  requireStateRefresh = true;
-                }
-                break;
-
-              case (
-                InProcessMaterialLocation.LocType.Free,
-                InProcessMaterialAction.ActionType.Waiting
-              ) when !string.IsNullOrEmpty(_settings.QuarantineQueue):
-              case (
-                InProcessMaterialLocation.LocType.InQueue,
-                InProcessMaterialAction.ActionType.Waiting
-              ) when !string.IsNullOrEmpty(_settings.QuarantineQueue):
-                {
-                  var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
-                  var proc = (nextProc ?? 1) - 1;
-                  if (!string.IsNullOrEmpty(reason))
-                  {
-                    ldb.RecordOperatorNotes(
-                      materialId: materialId,
-                      process: proc,
-                      notes: reason,
-                      operatorName: operatorName
-                    );
-                  }
-                  ldb.RecordAddMaterialToQueue(
-                    matID: materialId,
-                    process: proc,
-                    queue: _settings.QuarantineQueue,
-                    position: -1,
-                    operatorName: operatorName,
-                    reason: "Quarantine"
-                  );
-                  requireStateRefresh = true;
-                }
-                break;
-
-              case (
-                InProcessMaterialLocation.LocType.InQueue,
-                InProcessMaterialAction.ActionType.Waiting
-              ) when string.IsNullOrEmpty(_settings.QuarantineQueue):
-                {
-                  var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
-                  var proc = (nextProc ?? 1) - 1;
-                  if (!string.IsNullOrEmpty(reason))
-                  {
-                    ldb.RecordOperatorNotes(
-                      materialId: materialId,
-                      process: proc,
-                      notes: reason,
-                      operatorName: operatorName
-                    );
-                  }
-                  ldb.BulkRemoveMaterialFromAllQueues(
-                    new[] { materialId },
-                    operatorName: operatorName,
-                    reason: "Quarantine"
-                  );
-                  requireStateRefresh = true;
-                }
-                break;
-
-              default:
-                error = "Invalid material state for quarantine";
-                break;
-            }
-          }
+              MaterialID = materialId,
+              Process = mat.Process,
+              Face = 0,
+            },
+            pallet: mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet
+              ? mat.Location.PalletNum ?? 0
+              : 0,
+            queue: _settings.QuarantineQueue ?? "",
+            timeUTC: null,
+            operatorName: operatorName,
+            reason: reason
+          );
         }
       }
 
-      if (requireStateRefresh)
+      RecalculateCellState();
+    }
+
+    public void QuarantineQueuedMaterial(long materialId, string? operatorName, string? reason)
+    {
+      Log.Debug("Directly quarantining queued material {matId}", materialId);
+
+      lock (_changeLock)
       {
-        RecalculateCellState();
+        CurrentStatus? st;
+        lock (_curStLock)
+        {
+          st = _lastCurrentStatus?.CurrentStatus;
+        }
+
+        var mat = st?.Material.FirstOrDefault(m => m.MaterialID == materialId);
+        if (mat == null)
+          throw new ConflictRequestException("Material not found in the current cell state.");
+        if (
+          MaterialOperationState.Classify(mat)
+          != MaterialOperationKind.HumanControlledQueuedMaterial
+        )
+          throw new ConflictRequestException(
+            "Material must be waiting in a queue with no active operation."
+          );
+
+        using var ldb = _repo.OpenConnection();
+        ldb.QuarantineQueuedMaterial(
+          matId: materialId,
+          quarantineQueue: _settings.QuarantineQueue,
+          operatorName: operatorName,
+          reason: reason
+        );
       }
 
-      if (error != null)
-      {
-        throw new BadRequestException(error);
-      }
+      RecalculateCellState();
     }
 
     public void CancelLoad(
@@ -1030,31 +1025,38 @@ namespace BlackMaple.MachineFramework
             "The displayed load cancellation is no longer current."
           );
 
-        var material = state!
+        if (
+          MaterialOperationState.Classify(selected)
+          != MaterialOperationKind.ActiveLoadStationOperation
+        )
+          throw new ConflictRequestException(
+            "The displayed load cancellation is no longer current."
+          );
+
+        var cancellationGroup = state!
           .CurrentStatus.Material.Where(m =>
             m.Action.LoadCancellationId == expectedLoadCancellationId
           )
           .ToImmutableList();
-        if (material.IsEmpty)
+        if (cancellationGroup.IsEmpty)
           throw new ConflictRequestException(
             "The displayed load cancellation is no longer current."
           );
-        if (_loadCancelHandlers.Count != 1)
+        if (_loadCancelHandler is null)
           throw new InvalidOperationException(
-            "A load cancellation was advertised, but this backend does not have exactly one load cancellation handler."
+            "A load cancellation was advertised, but this backend does not have a load cancellation handler."
           );
 
         using var repository = _repo.OpenConnection();
-        _loadCancelHandlers[0]
-          .CancelLoad(
-            repository,
-            state,
-            selected,
-            material,
-            expectedLoadCancellationId,
-            operatorName,
-            reason
-          );
+        _loadCancelHandler.CancelLoad(
+          repository,
+          state,
+          selected,
+          cancellationGroup,
+          expectedLoadCancellationId,
+          operatorName,
+          reason
+        );
         _consumedLoadCancellationIds = _consumedLoadCancellationIds.Add(expectedLoadCancellationId);
       }
 
@@ -1114,29 +1116,47 @@ namespace BlackMaple.MachineFramework
       {
         using var db = _repo.OpenConnection();
 
+        if (process < 1)
+        {
+          throw new BadRequestException("Process must be at least 1.");
+        }
+
+        if (!string.IsNullOrEmpty(changeCastingTo) && !string.IsNullOrEmpty(changeJobUniqueTo))
+        {
+          throw new BadRequestException("Can not change both casting and job assignment");
+        }
+
+        if (!string.IsNullOrEmpty(changeCastingTo) && process != 1)
+        {
+          throw new BadRequestException("Can only change casting when invalidating all processes");
+        }
+
+        if (!string.IsNullOrEmpty(changeJobUniqueTo) && process != 1)
+        {
+          throw new BadRequestException("Can only change job when invalidating all processes");
+        }
+
+        CurrentStatus? st;
+        lock (_curStLock)
+        {
+          st = _lastCurrentStatus?.CurrentStatus;
+        }
+        ValidateMaterialForInvalidation(st, matId);
+
         if (!string.IsNullOrEmpty(changeCastingTo))
         {
-          if (process > 1)
-          {
-            throw new BadRequestException(
-              "Can only change casting when invalidating all processes"
-            );
-          }
-
           db.InvalidateAndChangeAssignment(
             matId: matId,
             changeJobUniqueTo: null,
             changePartNameTo: changeCastingTo,
             changeNumProcessesTo: 1,
-            operatorName: operatorName
+            operatorName: operatorName,
+            validateAffectedMaterials: affected =>
+              ValidateAffectedMaterialsForInvalidation(st, affected)
           );
         }
         else if (!string.IsNullOrEmpty(changeJobUniqueTo))
         {
-          if (process > 1)
-          {
-            throw new BadRequestException("Can only change job when invalidating all processes");
-          }
           var job = db.LoadJob(changeJobUniqueTo);
           if (job == null)
           {
@@ -1147,20 +1167,61 @@ namespace BlackMaple.MachineFramework
             changeJobUniqueTo: changeJobUniqueTo,
             changePartNameTo: job.PartName,
             changeNumProcessesTo: job.Processes.Count,
-            operatorName: operatorName
+            operatorName: operatorName,
+            validateAffectedMaterials: affected =>
+              ValidateAffectedMaterialsForInvalidation(st, affected)
           );
         }
         else
         {
-          db.InvalidatePalletCycle(matId: matId, process: process, operatorName: operatorName);
+          db.InvalidatePalletCycle(
+            matId: matId,
+            process: process,
+            operatorName: operatorName,
+            validateAffectedMaterials: affected =>
+              ValidateAffectedMaterialsForInvalidation(st, affected)
+          );
         }
 
         materialDetails = db.GetMaterialDetails(matId);
       }
 
       RecalculateCellState();
-
       return materialDetails;
+    }
+
+    private static void ValidateMaterialForInvalidation(CurrentStatus? state, long materialId)
+    {
+      if (state == null)
+      {
+        throw new ConflictRequestException("Current cell state is unavailable.");
+      }
+
+      var material = state.Material.FirstOrDefault(m => m.MaterialID == materialId);
+      if (material == null)
+      {
+        return;
+      }
+      if (
+        MaterialOperationState.Classify(material)
+        != MaterialOperationKind.EligibleAddToQueueProposal
+      )
+      {
+        throw new ConflictRequestException(
+          "Material is not eligible for cycle invalidation in its current state."
+        );
+      }
+    }
+
+    private static void ValidateAffectedMaterialsForInvalidation(
+      CurrentStatus? state,
+      ImmutableList<EventLogMaterial> affectedMaterials
+    )
+    {
+      foreach (var materialId in affectedMaterials.Select(m => m.MaterialID).Distinct())
+      {
+        ValidateMaterialForInvalidation(state, materialId);
+      }
     }
     #endregion
   }

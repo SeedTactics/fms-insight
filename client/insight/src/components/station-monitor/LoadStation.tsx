@@ -82,6 +82,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { PrintLabelButton } from "./PrintedLabel.js";
 import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
+import { canAddOrMoveMaterialToQueue } from "../../data/material-operation-policy.js";
 import {
   BasketLoadStationWorkflow,
   SubmitBasketLoadStationCommand,
@@ -1024,12 +1025,7 @@ function AddMatButton({
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addError, setAddError] = useState<string | null>(null);
 
-  if (
-    !existingMat ||
-    inProcMat?.location.type === api.LocType.OnPallet ||
-    inProcMat?.action.type === api.ActionType.Loading ||
-    inProcMat?.action.type === api.ActionType.LoadingToBasket
-  ) {
+  if (!existingMat || !canAddOrMoveMaterialToQueue(inProcMat)) {
     return null;
   }
   if (queues.length === 0) return null;

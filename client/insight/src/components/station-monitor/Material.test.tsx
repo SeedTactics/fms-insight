@@ -134,6 +134,9 @@ const jobBackend: JobAPI = {
   signalMaterialForQuarantine() {
     return unexpectedCall("JobAPI.signalMaterialForQuarantine");
   },
+  quarantineQueuedMaterial() {
+    return unexpectedCall("JobAPI.quarantineQueuedMaterial");
+  },
   cancelLoad() {
     return unexpectedCall("JobAPI.cancelLoad");
   },

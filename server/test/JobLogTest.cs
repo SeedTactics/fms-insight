@@ -38,6 +38,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
 using BlackMaple.MachineFramework;
+using Microsoft.Data.Sqlite;
 using Shouldly;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
@@ -3364,6 +3365,70 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
+    public void QuarantineQueuedMaterialRollsBackOperatorNoteWhenQueueMoveFails()
+    {
+      var guid = Guid.NewGuid();
+      using var repositoryConfig = RepositoryConfig.InitializeMemoryDB(null, guid);
+
+      using (
+        var triggerConnection = new SqliteConnection(
+          $"Data Source=file:${guid}?mode=memory&cache=shared"
+        )
+      )
+      {
+        triggerConnection.Open();
+        using var command = triggerConnection.CreateCommand();
+        command.CommandText = """
+          CREATE TRIGGER FailQuarantineQueueInsert
+          BEFORE INSERT ON queues
+          WHEN NEW.Queue = 'broken'
+          BEGIN
+            SELECT RAISE(ABORT, 'quarantine destination unavailable');
+          END;
+          """;
+        command.ExecuteNonQuery();
+      }
+
+      using var repository = repositoryConfig.OpenConnection();
+      var materialId = repository.AllocateMaterialID("job", "part", 1);
+      repository
+        .RecordAddMaterialToQueue(
+          new EventLogMaterial()
+          {
+            MaterialID = materialId,
+            Process = 0,
+            Face = 0,
+          },
+          queue: "source",
+          position: 0,
+          operatorName: null,
+          reason: "Initial"
+        )
+        .ShouldHaveSingleItem();
+
+      Should.Throw<SqliteException>(() =>
+        repository
+          .QuarantineQueuedMaterial(
+            materialId,
+            quarantineQueue: "broken",
+            operatorName: "operator",
+            reason: "direct reason"
+          )
+          .ToList()
+      );
+
+      var queued = repository.GetMaterialInAllQueues().ToList();
+      queued.ShouldHaveSingleItem();
+      queued[0].MaterialID.ShouldBe(materialId);
+      queued[0].Queue.ShouldBe("source");
+
+      var logs = repository.GetLogForMaterial(materialId).ToList();
+      logs.ShouldContain(entry => entry.Program == "Initial");
+      logs.ShouldNotContain(entry => entry.Program == "OperatorNotes");
+      logs.ShouldNotContain(entry => entry.Program == "Quarantine");
+    }
+
+    [Test]
     public void LoadUnloadIntoQueues()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -5383,6 +5448,19 @@ namespace BlackMaple.FMSInsight.Tests
 
       db.GetLogForMaterial(selected.MaterialID).EventsShouldBe(logBefore);
       db.GetMaterialInAllQueues().Single().MaterialID.ShouldBe(selected.MaterialID);
+      db.GetMaterialDetails(selected.MaterialID)
+        .ShouldBeEquivalentTo(
+          new MaterialDetails()
+          {
+            MaterialID = selected.MaterialID,
+            JobUnique = "selected",
+            PartName = "part",
+            NumProcesses = 1,
+            Workorder = null,
+            Serial = null,
+            Paths = null,
+          }
+        );
     }
 
     [Test]
@@ -5567,10 +5645,10 @@ namespace BlackMaple.FMSInsight.Tests
           .Select(proc =>
             MkLogMat.Mk(
               matID: matProc1.MaterialID,
-              uniq: "uniq1",
-              part: "part1",
+              uniq: "",
+              part: "thecasting",
               proc: proc,
-              numProc: 3,
+              numProc: 1,
               serial: "ser1",
               workorder: "",
               face: ""
@@ -5731,10 +5809,10 @@ namespace BlackMaple.FMSInsight.Tests
         {
           MkLogMat.Mk(
             matID: matProc0.MaterialID,
-            uniq: "uniqqq",
-            part: "parttt",
+            uniq: "ZZZuniq",
+            part: "ZZZpart",
             proc: 0,
-            numProc: 3,
+            numProc: 2,
             serial: "ser111",
             workorder: "",
             face: ""

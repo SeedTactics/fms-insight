@@ -228,6 +228,8 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpDelete("material/{materialId}/queue")]
     [ProducesResponseType(typeof(void), 200)]
+    [ProducesResponseType(typeof(void), 400)]
+    [ProducesResponseType(typeof(void), 409)]
     public void RemoveMaterialFromAllQueues(long materialId, [FromQuery] string? operName = null)
     {
       jobAndQueue.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
@@ -235,6 +237,8 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPut("material/{materialId}/signal-quarantine")]
     [ProducesResponseType(typeof(void), 200)]
+    [ProducesResponseType(typeof(void), 400)]
+    [ProducesResponseType(typeof(void), 409)]
     public void SignalMaterialForQuarantine(
       long materialId,
       [FromQuery] string? operName = null,
@@ -244,8 +248,24 @@ namespace BlackMaple.MachineFramework.Controllers
       jobAndQueue.SignalMaterialForQuarantine(materialId, operatorName: operName, reason: reason);
     }
 
+    [HttpPut("material/{materialId}/quarantine-queued")]
+    [ProducesResponseType(typeof(void), 200)]
+    [ProducesResponseType(typeof(void), 400)]
+    [ProducesResponseType(typeof(void), 409)]
+    public void QuarantineQueuedMaterial(
+      long materialId,
+      [FromQuery] string? operName = null,
+      [FromBody] string? reason = null
+    )
+    {
+      jobAndQueue.QuarantineQueuedMaterial(materialId, operatorName: operName, reason: reason);
+    }
+
     [HttpPut("material/{materialId}/cancel-load")]
     [ProducesResponseType(typeof(void), 200)]
+    [ProducesResponseType(typeof(void), 400)]
+    [ProducesResponseType(typeof(void), 409)]
+    [ProducesResponseType(typeof(void), 500)]
     public void CancelLoad(
       long materialId,
       [FromBody] CancelLoadRequest request,
@@ -261,6 +281,9 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPut("material/{materialId}/invalidate-process")]
+    [ProducesResponseType(typeof(MaterialDetails), 200)]
+    [ProducesResponseType(typeof(void), 400)]
+    [ProducesResponseType(typeof(void), 409)]
     public MaterialDetails? InvalidatePalletCycle(
       long materialId,
       [FromBody] int process,

@@ -18,6 +18,7 @@ import {
 import { currentOperator } from "../../data/operators.js";
 import { JobsBackend } from "../../network/backend.js";
 import { ApiException, CancelLoadRequest, IInProcessMaterial } from "../../network/api.js";
+import { canCancelLoad } from "../../data/material-operation-policy.js";
 
 type CancelLoadSnapshot = {
   readonly material: Readonly<IInProcessMaterial>;
@@ -44,7 +45,7 @@ export function CancelLoadButton({
 
   const cancellationId = material?.action.loadCancellationId ?? null;
   const currentSnapshot: CancelLoadSnapshot | null =
-    material === null || cancellationId === null
+    material === null || cancellationId === null || !canCancelLoad(material)
       ? null
       : {
           material,

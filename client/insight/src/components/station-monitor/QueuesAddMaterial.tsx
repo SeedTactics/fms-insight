@@ -60,6 +60,7 @@ import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { useAtomValue, useSetAtom } from "jotai";
+import { canAddOrMoveMaterialToQueue } from "../../data/material-operation-policy.js";
 
 export type AddMaterialState = {
   readonly toQueue: string | null;
@@ -72,19 +73,15 @@ function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const possibleNewMats = useAtomValue(matDetails.barcodePotentialNewMaterial);
 
-  const curInQueueOnScreen =
-    inProcMat !== null &&
-    inProcMat.location.type === api.LocType.InQueue &&
-    inProcMat.location.currentQueue &&
-    queueNames.includes(inProcMat.location.currentQueue);
-  if (curInQueueOnScreen) return false;
+  if (!canAddOrMoveMaterialToQueue(inProcMat)) return false;
 
-  if (inProcMat?.location.type === api.LocType.OnPallet) return false;
   if (
-    inProcMat?.action.type === api.ActionType.Loading ||
-    inProcMat?.action.type === api.ActionType.LoadingToBasket
-  )
+    inProcMat?.location.type === api.LocType.InQueue &&
+    inProcMat.location.currentQueue !== undefined &&
+    queueNames.includes(inProcMat.location.currentQueue)
+  ) {
     return false;
+  }
 
   if (existingMat === null && !possibleNewMats) {
     return false;

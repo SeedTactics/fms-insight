@@ -82,6 +82,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { basketDisplayName } from "../../cell-status/station-cycles.js";
+import { materialOperationState } from "../../data/material-operation-policy.js";
 
 export class PartIdenticon extends PureComponent<{
   part: string;
@@ -990,6 +991,29 @@ function RebookingNote() {
   return null;
 }
 
+function MaterialOperationNotice() {
+  const material = useAtomValue(matDetails.inProcessMaterialInDialog);
+  if (material === null) return null;
+
+  if (material.quarantineAfterUnload) {
+    return (
+      <Typography variant="caption" component="p">
+        Quarantine requested
+      </Typography>
+    );
+  }
+
+  const state = materialOperationState(material);
+  if (state.kind !== "ActiveLoadStationOperation" || state.cancellationId !== null) return null;
+
+  return (
+    <Typography variant="caption" component="p">
+      This material is part of the current load/unload operation. Complete the operation or cancel
+      it at the machine control before making other changes.
+    </Typography>
+  );
+}
+
 export const MaterialDetailContent = memo(function MaterialDetailContent({
   highlightProcsGreaterOrEqualTo,
 }: {
@@ -1026,6 +1050,7 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
   return (
     <>
       <div style={{ marginLeft: "1em" }}>
+        <MaterialOperationNotice />
         <div>
           <small>Workorder: {mat?.workorderId ?? "none"}</small>
         </div>
