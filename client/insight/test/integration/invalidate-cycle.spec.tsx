@@ -9,6 +9,7 @@ import {
 import { MaterialDialog } from "../../src/components/station-monitor/Material.js";
 import { QuarantineMatButton } from "../../src/components/station-monitor/QuarantineButton.js";
 import { AddToQueueButton } from "../../src/components/station-monitor/QueuesAddMaterial.js";
+import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
 import { materialDialogOpen } from "../../src/cell-status/material-details.js";
 import { registerNetworkBackend, setOtherLogBackends } from "../../src/network/backend.js";
 import * as api from "../../src/network/api.js";
@@ -23,9 +24,11 @@ afterEach(() => {
 function material({
   materialId,
   location = { type: api.LocType.Free },
+  action = { type: api.ActionType.Waiting },
 }: {
   readonly materialId: number;
   readonly location?: api.IInProcessMaterialLocation;
+  readonly action?: api.IInProcessMaterialAction;
 }): api.InProcessMaterial {
   return createMaterial({
     materialID: materialId,
@@ -35,7 +38,7 @@ function material({
     path: 1,
     serial: `SERIAL-${materialId}`,
     location,
-    action: { type: api.ActionType.Waiting },
+    action,
   });
 }
 
@@ -395,6 +398,44 @@ describe("cycle invalidation workflow", () => {
 
     await screen.getByRole("button", { name: "Move to Quarantine" }).click();
     const dialog = screen.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Quarantine" }).click();
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/jobs/material/101/quarantine-queued",
+      expect.objectContaining({ method: "PUT" }),
+    );
+  });
+
+  test("preserves the quarantine operation when current status refreshes", async () => {
+    const selected = material({
+      materialId: 101,
+      location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
+    });
+    const refreshed = material({
+      materialId: 101,
+      location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
+      action: { type: api.ActionType.Loading },
+    });
+    const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+    registerNetworkBackend();
+
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <QuarantineMatButton />
+      </Suspense>,
+      {
+        currentStatus: statusWithMaterial([selected]),
+        fmsInfo: { quarantineQueue: "Quarantine" },
+        ...dialogData(selected),
+      },
+    );
+
+    await screen.getByRole("button", { name: "Move to Quarantine" }).click();
+    const dialog = screen.getByRole("dialog");
+    screen.store.set(onLoadCurrentSt, statusWithMaterial([refreshed]));
+
+    await expect.element(dialog).toBeVisible();
+    await expect.element(dialog).toHaveTextContent("Move to Quarantine");
     await dialog.getByRole("button", { name: "Quarantine" }).click();
 
     expect(fetch).toHaveBeenCalledWith(

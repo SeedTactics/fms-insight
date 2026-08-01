@@ -2340,7 +2340,15 @@ public sealed class JobAndQueueSpec
     await SetCurrentMaterial([
       QueuedMat(materialId, null, "part", 1, 1, "serial", "q1", 0) with
       {
-        Location = new InProcessMaterialLocation { Type = InProcessMaterialLocation.LocType.Free },
+        Location = new InProcessMaterialLocation
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          PalletNum = 1,
+        },
+        Action = new InProcessMaterialAction
+        {
+          Type = InProcessMaterialAction.ActionType.Machining,
+        },
       },
     ]);
 
@@ -2352,6 +2360,11 @@ public sealed class JobAndQueueSpec
         _jq.InvalidatePalletCycle(materialId, 2, changeCastingTo: "new-casting")
       )
       .Message.ShouldBe("Can only change casting when invalidating all processes");
+    Should
+      .Throw<BadRequestException>(() =>
+        _jq.InvalidatePalletCycle(materialId, 2, changeJobUniqueTo: "new-job")
+      )
+      .Message.ShouldBe("Can only change job when invalidating all processes");
     Should
       .Throw<BadRequestException>(() =>
         _jq.InvalidatePalletCycle(

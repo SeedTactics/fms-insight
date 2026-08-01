@@ -1126,6 +1126,16 @@ namespace BlackMaple.MachineFramework
           throw new BadRequestException("Can not change both casting and job assignment");
         }
 
+        if (!string.IsNullOrEmpty(changeCastingTo) && process != 1)
+        {
+          throw new BadRequestException("Can only change casting when invalidating all processes");
+        }
+
+        if (!string.IsNullOrEmpty(changeJobUniqueTo) && process != 1)
+        {
+          throw new BadRequestException("Can only change job when invalidating all processes");
+        }
+
         CurrentStatus? st;
         lock (_curStLock)
         {
@@ -1135,13 +1145,6 @@ namespace BlackMaple.MachineFramework
 
         if (!string.IsNullOrEmpty(changeCastingTo))
         {
-          if (process != 1)
-          {
-            throw new BadRequestException(
-              "Can only change casting when invalidating all processes"
-            );
-          }
-
           db.InvalidateAndChangeAssignment(
             matId: matId,
             changeJobUniqueTo: null,
@@ -1154,10 +1157,6 @@ namespace BlackMaple.MachineFramework
         }
         else if (!string.IsNullOrEmpty(changeJobUniqueTo))
         {
-          if (process != 1)
-          {
-            throw new BadRequestException("Can only change job when invalidating all processes");
-          }
           var job = db.LoadJob(changeJobUniqueTo);
           if (job == null)
           {

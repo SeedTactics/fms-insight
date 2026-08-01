@@ -69,14 +69,21 @@ import {
 
 type QuarantineMaterialTypes = "Remove" | "Scrap" | "SignalForScrap";
 
+type QuarantineOperation = "DeferredQuarantine" | "DirectQuarantine" | "RemoveFromSystem";
+
+type QuarantineSnapshot = {
+  readonly material: Readonly<IInProcessMaterial>;
+  readonly materialId: number;
+  readonly operation: QuarantineOperation;
+  readonly destination: string | null;
+  readonly operator: string | null;
+};
+
 type QuarantineMaterialData = {
   readonly type: QuarantineMaterialTypes;
   readonly material: Readonly<IInProcessMaterial>;
-  readonly quarantine: (reason: string) => Promise<void>;
-  readonly removing: boolean;
   readonly quarantineQueueDestination: string | null;
-  readonly removeFromQueues: (() => Promise<void>) | null;
-  readonly removingFromQueues: boolean;
+  readonly canRemoveFromQueues: boolean;
 };
 
 function hasSupportedQuarantineExit(
@@ -92,15 +99,10 @@ function hasSupportedQuarantineExit(
   return material.process === job.procsAndPaths.length || Boolean(path.outputQueue);
 }
 
-function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData | null {
+function useQuarantineMaterial(): QuarantineMaterialData | null {
   const fmsInfo = useAtomValue(fmsInformation);
-  const [removeFromQueue, removingFromQueue] = useRemoveFromQueue();
-  const [signalQuarantine, signalingQuarantine] = useSignalForQuarantine();
-  const [quarantineQueued, quarantiningQueued] = useQuarantineQueuedMaterial();
   const inProcMat = useAtomValue(inProcessMaterialInDialog);
   const curSt = useAtomValue(currentStatus);
-  let operator = useAtomValue(currentOperator);
-  if (ignoreOperator) operator = null;
 
   if (inProcMat === null || inProcMat.materialID < 0) return null;
 
@@ -140,11 +142,8 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
     return {
       type: "Remove",
       material: inProcMat,
-      quarantine: () => removeFromQueue(inProcMat.materialID, operator),
-      removing: removingFromQueue,
       quarantineQueueDestination: null,
-      removeFromQueues: null,
-      removingFromQueues: removingFromQueue,
+      canRemoveFromQueues: false,
     };
   }
 
@@ -178,20 +177,12 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
     return {
       type,
       material: inProcMat,
-      quarantine:
-        type === "SignalForScrap"
-          ? async (reason) => signalQuarantine(inProcMat.materialID, operator, reason)
-          : async (reason) => quarantineQueued(inProcMat.materialID, operator, reason),
-      removing: type === "SignalForScrap" ? signalingQuarantine : quarantiningQueued,
       quarantineQueueDestination: quarantineQueue,
-      removeFromQueues:
+      canRemoveFromQueues:
         inProcMat.location.type === LocType.InQueue &&
         inProcMat.location.currentQueue !== undefined &&
         !quarantineQueues.has(inProcMat.location.currentQueue) &&
-        canRemoveFromQueue(inProcMat)
-          ? () => removeFromQueue(inProcMat.materialID, operator)
-          : null,
-      removingFromQueues: removingFromQueue,
+        canRemoveFromQueue(inProcMat),
     };
   } else {
     return null;
@@ -276,53 +267,97 @@ export function QuarantineMatButton({
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const q = useQuarantineMaterial(!!ignoreOperator);
+  const [updating, setUpdating] = useState(false);
+  const [snapshot, setSnapshot] = useState<QuarantineSnapshot | null>(null);
+  const q = useQuarantineMaterial();
+  const [removeFromQueue, removingFromQueue] = useRemoveFromQueue();
+  const [signalQuarantine, signalingQuarantine] = useSignalForQuarantine();
+  const [quarantineQueued, quarantiningQueued] = useQuarantineQueuedMaterial();
+  const currentOperatorValue = useAtomValue(currentOperator);
+  const operator = ignoreOperator ? null : currentOperatorValue;
   const setMatToShow = useSetAtom(materialDialogOpen);
 
+  const currentSnapshot: QuarantineSnapshot | null =
+    q === null
+      ? null
+      : {
+          material: q.material,
+          materialId: q.material.materialID,
+          operation:
+            q.type === "SignalForScrap"
+              ? "DeferredQuarantine"
+              : q.type === "Scrap"
+                ? "DirectQuarantine"
+                : "RemoveFromSystem",
+          destination: q.quarantineQueueDestination,
+          operator,
+        };
+  const displayedSnapshot = snapshot ?? currentSnapshot;
+
   function openQuarantine() {
+    if (currentSnapshot === null) return;
     setError(null);
     setReason("");
+    setSnapshot(currentSnapshot);
     setOpen(true);
   }
 
-  if (q === null) return null;
+  function closeQuarantine() {
+    if (updating) return;
+    setOpen(false);
+    setSnapshot(null);
+  }
+
+  if (displayedSnapshot === null) return null;
 
   let title: string;
   let btnTxt: string;
 
-  switch (q.type) {
-    case "Remove":
+  switch (displayedSnapshot.operation) {
+    case "RemoveFromSystem":
       title = "Remove from system";
       btnTxt = "Remove";
       break;
-    case "Scrap":
-      title = q.quarantineQueueDestination
-        ? `Move to ${q.quarantineQueueDestination}`
+    case "DirectQuarantine":
+      title = displayedSnapshot.destination
+        ? `Move to ${displayedSnapshot.destination}`
         : "Remove from queue and treat as scrap";
-      btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Scrap";
+      btnTxt = displayedSnapshot.destination ? "Quarantine" : "Scrap";
       break;
-    case "SignalForScrap":
-      title = q.quarantineQueueDestination
-        ? `The current automated operation will continue. When the material leaves automation control, move it to ${q.quarantineQueueDestination}`
+    case "DeferredQuarantine":
+      title = displayedSnapshot.destination
+        ? `The current automated operation will continue. When the material leaves automation control, move it to ${displayedSnapshot.destination}`
         : "The current automated operation will continue. When the material leaves automation control, remove it from normal production flow as scrap";
-      btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Scrap";
+      btnTxt = displayedSnapshot.destination ? "Quarantine" : "Scrap";
       break;
   }
 
   async function quarantine() {
-    if (!q) return;
+    if (snapshot === null) return;
+    setUpdating(true);
     setError(null);
     try {
-      await q.quarantine(reason);
+      switch (snapshot.operation) {
+        case "DeferredQuarantine":
+          await signalQuarantine(snapshot.materialId, snapshot.operator, reason);
+          break;
+        case "DirectQuarantine":
+          await quarantineQueued(snapshot.materialId, snapshot.operator, reason);
+          break;
+        case "RemoveFromSystem":
+          await removeFromQueue(snapshot.materialId, snapshot.operator);
+          break;
+      }
       setOpen(false);
+      setSnapshot(null);
       setReason("");
-      if (q.type === "Remove") {
+      if (snapshot.operation === "RemoveFromSystem") {
         setMatToShow({
           type: "MatSummary",
           summary: {
-            materialID: q.material.materialID,
-            partName: q.material.partName,
-            serial: q.material.serial,
+            materialID: snapshot.materialId,
+            partName: snapshot.material.partName,
+            serial: snapshot.material.serial,
           },
         });
       } else {
@@ -333,24 +368,38 @@ export function QuarantineMatButton({
       setError(
         ApiException.isApiException(e) ? e.response : e instanceof Error ? e.message : String(e),
       );
+    } finally {
+      setUpdating(false);
     }
   }
 
+  const removing =
+    updating ||
+    (displayedSnapshot.operation === "DeferredQuarantine"
+      ? signalingQuarantine
+      : displayedSnapshot.operation === "DirectQuarantine"
+        ? quarantiningQueued
+        : removingFromQueue);
+  const removeFromQueues =
+    q?.canRemoveFromQueues === true ? () => removeFromQueue(q.material.materialID, operator) : null;
+
   return (
     <>
-      <Tooltip title={title}>
-        <Button color="primary" disabled={q.removing} onClick={openQuarantine}>
-          {btnTxt}
-        </Button>
-      </Tooltip>
-      {q.removeFromQueues ? (
+      {q ? (
+        <Tooltip title={title}>
+          <Button color="primary" disabled={removing} onClick={openQuarantine}>
+            {btnTxt}
+          </Button>
+        </Tooltip>
+      ) : null}
+      {removeFromQueues && q ? (
         <RemoveFromQueuesButton
           material={q.material}
-          removeFromQueues={q.removeFromQueues}
-          removing={q.removingFromQueues}
+          removeFromQueues={removeFromQueues}
+          removing={removingFromQueue}
         />
       ) : null}
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog open={open && snapshot !== null} onClose={closeQuarantine}>
         <DialogTitle>Quarantine Material</DialogTitle>
         <DialogContent>
           <p>{title}</p>
@@ -365,10 +414,10 @@ export function QuarantineMatButton({
           {error ? <p role="alert">{error}</p> : null}
         </DialogContent>
         <DialogActions>
-          <Button color="primary" disabled={q.removing} onClick={quarantine}>
+          <Button color="primary" disabled={removing} onClick={quarantine}>
             {btnTxt}
           </Button>
-          <Button color="secondary" onClick={() => setOpen(false)}>
+          <Button color="secondary" disabled={removing} onClick={closeQuarantine}>
             Cancel
           </Button>
         </DialogActions>
