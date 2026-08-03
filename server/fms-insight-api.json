@@ -2425,6 +2425,14 @@
             "items": {
               "$ref": "#/components/schemas/ToolUse"
             }
+          },
+          "foreignId": {
+            "type": "string",
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -2510,8 +2518,14 @@
           "BasketLoadUnload",
           "BasketCycle",
           "BasketInLocation",
-          "BasketIdentityHint",
-          "BasketContentSnapshot"
+          "BasketIdentityAssociation",
+          "BasketContentSnapshot",
+          "BasketLocationObservation",
+          "BasketLocationObservationCorrection",
+          "BasketIdentityAssociationCorrection",
+          "BasketRegionSurvey",
+          "BasketMisload",
+          "BasketMisloadResolution"
         ],
         "enum": [
           "LoadUnloadCycle",
@@ -2537,8 +2551,14 @@
           "BasketLoadUnload",
           "BasketCycle",
           "BasketInLocation",
-          "BasketIdentityHint",
-          "BasketContentSnapshot"
+          "BasketIdentityAssociation",
+          "BasketContentSnapshot",
+          "BasketLocationObservation",
+          "BasketLocationObservationCorrection",
+          "BasketIdentityAssociationCorrection",
+          "BasketRegionSurvey",
+          "BasketMisload",
+          "BasketMisloadResolution"
         ]
       },
       "ToolUse": {
@@ -4084,13 +4104,11 @@
         "additionalProperties": false,
         "required": [
           "InstructionId",
-          "BasketId",
           "Source",
           "Destination",
           "Reason",
           "DisplayText",
           "InstructionId",
-          "BasketId",
           "Source",
           "Destination",
           "Reason",
@@ -4102,7 +4120,8 @@
           },
           "BasketId": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "nullable": true
           },
           "Source": {
             "$ref": "#/components/schemas/BasketPosition"

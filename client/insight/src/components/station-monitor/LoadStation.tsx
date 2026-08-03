@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useMemo, memo, useState, useCallback, ReactNode } from "react";
+import { useMemo, memo, useState, useCallback, useEffect, ReactNode } from "react";
 import { Box, useMediaQuery, Button, Typography } from "@mui/material";
 import { LazySeq, mkCompareByProperties, OrderedMap } from "@seedtactics/immutable-collections";
 
@@ -87,6 +87,13 @@ import {
   BasketLoadStationWorkflow,
   SubmitBasketLoadStationCommand,
 } from "./BasketLoadStationWork.js";
+import {
+  BasketArrivalReceipt,
+  BasketMovementArrival,
+  SubmitBasketLocationCorrection,
+  loadStationArrivalInstruction,
+  SubmitBasketMovementCompletion,
+} from "./BasketMovementArrival.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -1195,6 +1202,8 @@ interface LoadStationProps {
   readonly completed: boolean;
   readonly whiteBackground?: boolean;
   readonly submitBasketLoadStationCommand?: SubmitBasketLoadStationCommand;
+  readonly submitBasketMovementCompletion?: SubmitBasketMovementCompletion;
+  readonly submitBasketLocationCorrection?: SubmitBasketLocationCorrection;
 }
 
 function useGridLayout({
@@ -1254,6 +1263,26 @@ export function LoadStation(props: LoadStationProps) {
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt, hideNonLoading),
     [currentSt, props.loadNum, props.queues, hideNonLoading],
   );
+  const arrivalInstruction = loadStationArrivalInstruction(
+    currentSt.basketMoveInstructions ?? [],
+    props.loadNum,
+  );
+  const [recentArrivalReceipt, setRecentArrivalReceipt] = useState<BasketArrivalReceipt>();
+  useEffect(() => {
+    if (
+      recentArrivalReceipt !== undefined &&
+      (recentArrivalReceipt.stationNumber !== props.loadNum ||
+        (arrivalInstruction !== undefined &&
+          arrivalInstruction.instructionId !== recentArrivalReceipt.instruction.instructionId))
+    )
+      setRecentArrivalReceipt(undefined);
+  }, [arrivalInstruction, props.loadNum, recentArrivalReceipt]);
+  const displayedArrivalInstruction = arrivalInstruction ?? recentArrivalReceipt?.instruction;
+  const displayedArrivalReceipt =
+    recentArrivalReceipt?.stationNumber === props.loadNum &&
+    displayedArrivalInstruction?.instructionId === recentArrivalReceipt?.instruction.instructionId
+      ? recentArrivalReceipt
+      : undefined;
 
   const queueCols = LazySeq.of(data.queues)
     .sortBy(([q, _]) => q)
@@ -1311,69 +1340,112 @@ export function LoadStation(props: LoadStationProps) {
   });
 
   return (
-    <MoveMaterialArrowContainer hideArrows={!fillViewPort} whiteBackground={props.whiteBackground}>
-      <Box
-        component="main"
-        sx={{
-          width: "100%",
-          display: "grid",
-          gridTemplate: grid,
-          minHeight: {
-            xs: "calc(100vh - 64px - 32px)",
-            sm: "calc(100vh - 64px - 40px)",
-            md: "calc(100vh - 64px)",
-          },
-          padding: fillViewPort ? undefined : "8px",
-        }}
+    <>
+      {displayedArrivalInstruction === undefined ? null : (
+        <BasketMovementArrival
+          basketName={basketName}
+          instruction={displayedArrivalInstruction}
+          stationNumber={props.loadNum}
+          submitCommand={props.submitBasketMovementCompletion}
+          submitCorrection={props.submitBasketLocationCorrection}
+          receipt={displayedArrivalReceipt}
+          onAccepted={setRecentArrivalReceipt}
+          onCorrected={(command) =>
+            setRecentArrivalReceipt((current) => {
+              if (
+                current === undefined ||
+                current.stationNumber !== props.loadNum ||
+                current.receipt.observationId !== command.targetObservationId
+              )
+                return current;
+              return command.replacementBasketId === null ||
+                command.replacementObservationId === null
+                ? { ...current, status: "retracted" }
+                : {
+                    ...current,
+                    receipt: {
+                      ...current.receipt,
+                      observationId: command.replacementObservationId,
+                      observedBasketId: command.replacementBasketId,
+                    },
+                    command: {
+                      ...current.command,
+                      commandId: command.replacementObservationId,
+                      observedBasketId: command.replacementBasketId,
+                    },
+                    status: "corrected",
+                  };
+            })
+          }
+        />
+      )}
+      <MoveMaterialArrowContainer
+        hideArrows={!fillViewPort}
+        whiteBackground={props.whiteBackground}
       >
-        {matCols.map((col, idx) => (
-          <Box
-            key={idx}
-            data-testid={materialColumnTestId(col)}
-            sx={{
-              gridArea: `mat${idx}`,
-              padding: "8px",
-              borderRight: fillViewPort ? "1px solid black" : undefined,
-              borderBottom: !fillViewPort ? "1px solid black" : undefined,
-            }}
-          >
-            <MaterialColumn data={data} region={col} />
-          </Box>
-        ))}
-        {data.face.keysToAscLazySeq().map((faceNum, idx) => (
-          <Box
-            key={faceNum}
-            sx={{
-              marginLeft: "15px",
-              gridArea: `palface${idx}`,
-              padding: "8px",
-              borderTop: data.pallet && idx !== 0 ? "1px solid black" : undefined,
-            }}
-          >
-            <PalletFace
-              data={data}
-              faceNum={faceNum}
-              loadNum={props.loadNum}
-              submitBasketLoadStationCommand={props.submitBasketLoadStationCommand}
-            />
-          </Box>
-        ))}
         <Box
-          data-testid="load-station-completed"
+          component="main"
           sx={{
-            borderLeft: fillViewPort ? "1px solid black" : undefined,
-            borderTop: !fillViewPort ? "1px solid black" : undefined,
-            gridArea: "completed",
+            width: "100%",
+            display: "grid",
+            gridTemplate: grid,
+            minHeight: {
+              xs: "calc(100vh - 64px - 32px)",
+              sm: "calc(100vh - 64px - 40px)",
+              md: "calc(100vh - 64px)",
+            },
+            padding: fillViewPort ? undefined : "8px",
           }}
         >
-          <CompletedCol fillViewPort={fillViewPort} showMaterial={props.completed} />
+          {matCols.map((col, idx) => (
+            <Box
+              key={idx}
+              data-testid={materialColumnTestId(col)}
+              sx={{
+                gridArea: `mat${idx}`,
+                padding: "8px",
+                borderRight: fillViewPort ? "1px solid black" : undefined,
+                borderBottom: !fillViewPort ? "1px solid black" : undefined,
+              }}
+            >
+              <MaterialColumn data={data} region={col} />
+            </Box>
+          ))}
+          {data.face.keysToAscLazySeq().map((faceNum, idx) => (
+            <Box
+              key={faceNum}
+              sx={{
+                marginLeft: "15px",
+                gridArea: `palface${idx}`,
+                padding: "8px",
+                borderTop: data.pallet && idx !== 0 ? "1px solid black" : undefined,
+              }}
+            >
+              <PalletFace
+                data={data}
+                faceNum={faceNum}
+                loadNum={props.loadNum}
+                submitBasketLoadStationCommand={props.submitBasketLoadStationCommand}
+              />
+            </Box>
+          ))}
+          <Box
+            data-testid="load-station-completed"
+            sx={{
+              borderLeft: fillViewPort ? "1px solid black" : undefined,
+              borderTop: !fillViewPort ? "1px solid black" : undefined,
+              gridArea: "completed",
+            }}
+          >
+            <CompletedCol fillViewPort={fillViewPort} showMaterial={props.completed} />
+          </Box>
+          <MultiInstructionButton loadData={data} />
+          <SelectWorkorderDialog />
+          <SelectInspTypeDialog />
+          <LoadMatDialog pallet={data.pallet?.palletNum ?? null} queues={props.queues} />
         </Box>
-        <MultiInstructionButton loadData={data} />
-        <SelectWorkorderDialog />
-        <SelectInspTypeDialog />
-        <LoadMatDialog pallet={data.pallet?.palletNum ?? null} queues={props.queues} />
-      </Box>
-    </MoveMaterialArrowContainer>
+      </MoveMaterialArrowContainer>
+    </>
   );
 }
 
