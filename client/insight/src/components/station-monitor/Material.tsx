@@ -603,6 +603,7 @@ const MatCard = forwardRef(function MatCard(
             sx={{
               marginLeft: "8px",
               flexGrow: 1,
+              minWidth: 0,
             }}
           >
             <MatCardHeader fsize={props.fsize}>{props.mat.partName}</MatCardHeader>
@@ -656,6 +657,7 @@ const MatCard = forwardRef(function MatCard(
               justifyContent: "space-between",
               alignItems: "flex-end",
               alignSelf: "start",
+              flexShrink: 0,
             }}
           >
             {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (

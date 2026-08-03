@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>BlackMaple.FMSInsight.Tests</PackageId>
     <AssemblyName>BlackMaple.FMSInsight.Tests</AssemblyName>
@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+    <ProjectReference Include="../debug-mock/debugmock.csproj" />
     <ProjectReference Include="../machines/mazak/mazak.csproj" />
     <ProjectReference Include="../machines/niigata/niigata.csproj" />
     <ProjectReference Include="../machines/makino/makino.csproj" />

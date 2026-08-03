@@ -871,7 +871,9 @@ namespace DebugMachineWatchApiServer
       {
         var newJobsOffset = newJobs with
         {
-          Jobs = newJobs.Jobs.Select(j => OffsetJob(j, offset)).ToImmutableList(),
+          Jobs = newJobs
+            .Jobs.Select(j => DebugMockStatusLoader.OffsetJob(j, offset))
+            .ToImmutableList(),
           StationUse = newJobs
             .StationUse?.Select(su =>
               su with
@@ -906,26 +908,24 @@ namespace DebugMachineWatchApiServer
         var name = System.IO.Path.GetFileNameWithoutExtension(f).Replace("status-", "");
 
         var statusJson = System.IO.File.ReadAllText(f);
-        var curSt = JsonSerializer.Deserialize<CurrentStatus>(statusJson, _jsonSettings);
-        curSt = curSt with
-        {
-          TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset),
-          Jobs = curSt
-            .Jobs.Values.Select(j =>
-              OffsetJob(j, offset).CloneToDerived<ActiveJob, Job>() with
-              {
-                ScheduleId = j.ScheduleId,
-                CopiedToSystem = j.CopiedToSystem,
-                Decrements = j.Decrements,
-                Completed = j.Completed,
-                RemainingToStart = j.RemainingToStart,
-                Precedence = j.Precedence,
-                AssignedWorkorders = j.AssignedWorkorders,
-              }
-            )
-            .ToImmutableDictionary(j => j.UniqueStr, j => j),
-        };
+        var curSt = DebugMockStatusLoader.OffsetStatus(
+          JsonSerializer.Deserialize<CurrentStatus>(statusJson, _jsonSettings),
+          offset
+        );
         Statuses.Add(name, curSt);
+      }
+
+      string statusFileFromEnv = System.Environment.GetEnvironmentVariable(
+        "BMS_CURRENT_STATUS_FILE"
+      );
+      if (!string.IsNullOrEmpty(statusFileFromEnv))
+      {
+        CurrentStatus = DebugMockStatusLoader.LoadExternal(
+          statusFileFromEnv,
+          _jsonSettings,
+          offset
+        );
+        return;
       }
 
       string statusFromEnv = System.Environment.GetEnvironmentVariable("BMS_CURRENT_STATUS");
@@ -937,39 +937,6 @@ namespace DebugMachineWatchApiServer
       {
         CurrentStatus = Statuses[statusFromEnv];
       }
-    }
-
-    public static Job OffsetJob(Job originalJob, TimeSpan offset)
-    {
-      return originalJob with
-      {
-        RouteStartUTC = originalJob.RouteStartUTC.Add(offset),
-        RouteEndUTC = originalJob.RouteEndUTC.Add(offset),
-        Processes = originalJob
-          .Processes.Select(p =>
-            p with
-            {
-              Paths = p
-                .Paths.Select(path =>
-                  path with
-                  {
-                    SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
-                    SimulatedProduction = path
-                      .SimulatedProduction.Select(prod =>
-                        prod with
-                        {
-                          TimeUTC = prod.TimeUTC.Add(offset),
-                        }
-                      )
-                      .ToImmutableSortedSet(),
-                  }
-                )
-                .ToImmutableList(),
-            }
-          )
-          .ToImmutableList(),
-      };
-      // not converted: hold patterns
     }
 
     public void LoadTools(string sampleDataPath)

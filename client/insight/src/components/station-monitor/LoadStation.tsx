@@ -414,6 +414,29 @@ function selectLoadStationAndQueueProps(
   );
 
   const matCount = freeLoading.length + palFaces.valuesToAscLazySeq().sumBy((x) => x.length);
+  const activeBasketSlotCount = activeBasket
+    ? LazySeq.of(activeBasket.emptySlots ?? [])
+        .concat(activeBasket.unknownSlots ?? [])
+        .concat(
+          LazySeq.of(curSt.material).collect((mat) =>
+            mat.location.type === api.LocType.InBasket &&
+            mat.location.basketId === activeBasket.basketId
+              ? mat.location.basketSlot
+              : undefined,
+          ),
+        )
+        .concat(
+          LazySeq.of(curSt.material).collect((mat) =>
+            mat.action.type === api.ActionType.LoadingToBasket &&
+            mat.action.loadToBasketId === activeBasket.basketId
+              ? mat.action.loadToBasketSlot
+              : undefined,
+          ),
+        )
+        .distinctBy((slot) => slot)
+        .toRArray().length
+    : 0;
+  const layoutCount = Math.max(matCount, activeBasketSlotCount);
   return {
     pallet: pal,
     activeBasket,
@@ -423,7 +446,7 @@ function selectLoadStationAndQueueProps(
     queues: queueMat,
     baskets: basketMat,
     elapsedLoadingTime,
-    fsize: matCount <= 2 ? "x-large" : matCount <= 6 ? "large" : "normal",
+    fsize: layoutCount <= 2 ? "x-large" : layoutCount <= 6 ? "large" : "normal",
   };
 }
 

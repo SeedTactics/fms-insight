@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 import { useMemo, useState } from "react";
-import { Alert, Box, Button, Card, CardContent, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
 import * as api from "../../network/api.js";
@@ -265,8 +265,19 @@ export function BasketLoadStationWorkflow({
           const loads = loadsBySlot.get(slot) ?? [];
           const isUnknown = basket.unknownSlots?.includes(slot) === true;
           return (
-            <Card key={slot} data-testid={`basket-load-station-slot-${slot}`} variant="outlined">
-              <CardContent>
+            <MoveMaterialArrowNode
+              key={slot}
+              kind={{
+                type: MoveMaterialNodeKindType.BasketSlotZone,
+                basketId: basket.basketId,
+                slot,
+              }}
+            >
+              <Box
+                component="section"
+                data-testid={`basket-load-station-slot-${slot}`}
+                sx={{ border: "1px solid", borderColor: "text.primary", p: 2 }}
+              >
                 <Typography variant="h6">Slot {slot}</Typography>
                 {slotMaterial.length > 0 ? (
                   <SlotMaterial material={slotMaterial} fsize={fsize} />
@@ -283,8 +294,8 @@ export function BasketLoadStationWorkflow({
                     </Typography>
                   </Box>
                 ))}
-              </CardContent>
-            </Card>
+              </Box>
+            </MoveMaterialArrowNode>
           );
         })}
       </Box>
