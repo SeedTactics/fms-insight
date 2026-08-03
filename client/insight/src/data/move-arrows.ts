@@ -42,6 +42,7 @@ export enum MoveMaterialNodeKindType {
   PalletFaceZone,
   QueueZone,
   BasketZone,
+  BasketSlotZone,
 }
 
 export type MoveMaterialNodeKind =
@@ -64,6 +65,11 @@ export type MoveMaterialNodeKind =
   | {
       readonly type: MoveMaterialNodeKindType.BasketZone;
       readonly basketId: number;
+    }
+  | {
+      readonly type: MoveMaterialNodeKindType.BasketSlotZone;
+      readonly basketId: number;
+      readonly slot: number;
     };
 
 export type MoveMaterialIdentifier = string;
@@ -84,6 +90,8 @@ export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIde
       return "QueueZone-" + kind.queue;
     case MoveMaterialNodeKindType.BasketZone:
       return "BasketZone-" + kind.basketId.toString();
+    case MoveMaterialNodeKindType.BasketSlotZone:
+      return `BasketSlotZone-${kind.basketId}-${kind.slot}`;
   }
 }
 
@@ -101,6 +109,8 @@ export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<
       return [kind.type, kind.queue];
     case MoveMaterialNodeKindType.BasketZone:
       return [kind.type, kind.basketId];
+    case MoveMaterialNodeKindType.BasketSlotZone:
+      return [kind.type, kind.basketId, kind.slot];
   }
 }
 
@@ -132,6 +142,7 @@ type NodeRectsGroupedByKind = {
   readonly faces: ReadonlyMap<number, MoveMaterialElemRect>;
   readonly queues: ReadonlyMap<string, MoveMaterialElemRect>;
   readonly baskets: ReadonlyMap<number, MoveMaterialElemRect>;
+  readonly basketSlots: ReadonlyMap<string, MoveMaterialElemRect>;
 
   readonly material: ReadonlyArray<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>;
 };
@@ -144,6 +155,7 @@ function groupMatByKind(
   const faces = new Map<number, MoveMaterialElemRect>();
   const queues = new Map<string, MoveMaterialElemRect>();
   const baskets = new Map<number, MoveMaterialElemRect>();
+  const basketSlots = new Map<string, MoveMaterialElemRect>();
   const material = new Array<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>();
 
   for (const node of allNodes.values()) {
@@ -164,6 +176,9 @@ function groupMatByKind(
       case MoveMaterialNodeKindType.BasketZone:
         baskets.set(node.basketId, node.elem);
         break;
+      case MoveMaterialNodeKindType.BasketSlotZone:
+        basketSlots.set(`${node.basketId}:${node.slot}`, node.elem);
+        break;
       case MoveMaterialNodeKindType.Material:
         if (node.material) {
           material.push([node.elem, node.material]);
@@ -172,7 +187,7 @@ function groupMatByKind(
     }
   }
 
-  return { freeMaterial, completedMaterial, faces, queues, baskets, material };
+  return { freeMaterial, completedMaterial, faces, queues, baskets, basketSlots, material };
 }
 
 export function computeArrows(
@@ -333,7 +348,11 @@ export function computeArrows(
       case api.ActionType.LoadingToBasket: {
         const basketId = mat.action.loadToBasketId;
         if (basketId === undefined) break;
-        const dest = byKind.baskets.get(basketId);
+        const dest =
+          mat.action.loadToBasketSlot === undefined
+            ? byKind.baskets.get(basketId)
+            : (byKind.basketSlots.get(`${basketId}:${mat.action.loadToBasketSlot}`) ??
+              byKind.baskets.get(basketId));
         const lastSlotUsed = basketDestUsed.get(basketId) ?? 0;
         basketDestUsed.set(basketId, lastSlotUsed + 1);
         arrows.push({

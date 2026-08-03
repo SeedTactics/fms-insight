@@ -95,7 +95,9 @@ export interface JobAPI {
     changeJobUniqueTo: string | null | undefined,
     process: number,
   ): Promise<Readonly<api.IMaterialDetails> | null | undefined>;
-  unscheduledRebookings(signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.IRebooking>>>;
+  unscheduledRebookings(
+    signal?: AbortSignal,
+  ): Promise<ReadonlyArray<Readonly<api.IRebooking>> | null>;
 }
 
 export interface FmsAPI {

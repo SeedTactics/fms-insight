@@ -51,10 +51,16 @@ const unschRebookings = unwrap(
       return OrderedMap.empty<string, Readonly<IRebooking>>();
     }
     const bookings = await JobsBackend.unscheduledRebookings(signal);
-    return OrderedMap.build(bookings, (booking) => booking.bookingId);
+    return mapUnscheduledRebookings(bookings);
   }),
   (prev) => prev ?? OrderedMap.empty<string, Readonly<IRebooking>>(),
 );
+
+export function mapUnscheduledRebookings(
+  bookings: ReadonlyArray<Readonly<IRebooking>> | null | undefined,
+): OrderedMap<string, Readonly<IRebooking>> {
+  return OrderedMap.build(bookings ?? [], (booking) => booking.bookingId);
+}
 
 export const last30Rebookings: Atom<OrderedMap<string, Readonly<IRebooking>>> = atom((get) => {
   const evts = get(rebookingEvts);

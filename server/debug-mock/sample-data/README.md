@@ -16,6 +16,15 @@ BMS_CURRENT_STATUS=z-basket-unload dotnet run --project server/debug-mock
 pnpm --dir client/insight start
 ```
 
+For a complete status document outside this repository, set `BMS_CURRENT_STATUS_FILE` to its path.
+The file is deserialized as `CurrentStatus` with the normal debug-mock JSON settings and timestamp
+offset. An explicit file must exist and be valid; startup reports an error instead of falling back
+to a built-in status.
+
+```bash
+BMS_CURRENT_STATUS_FILE=/path/to/current-status.json dotnet run --project server/debug-mock
+```
+
 Open `http://localhost:1234/station/loadunload/4?completed=t`. Use `z-basket-load` instead to review
 the load phase.
 
