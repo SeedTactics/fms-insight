@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
-using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.FMSInsight.Tests;
 
@@ -305,58 +303,40 @@ public sealed class BasketLocationObservationSpec : IDisposable
   }
 
   [Test]
-  public async Task Version43DatabaseUpgradesWithTypedLocationObservationTables()
+  public async Task Version40DatabaseUpgradesWithTypedLocationObservationTables()
   {
-    var databaseId = Guid.NewGuid();
-    using var initialConfig = RepositoryConfig.InitializeMemoryDB(null, databaseId);
-    using (var initial = initialConfig.OpenConnection()) { }
-    using (
-      var connection = new SqliteConnection(
-        $"Data Source=file:${databaseId}?mode=memory&cache=shared"
-      )
-    )
+    var databaseFile = Path.GetTempFileName();
+    File.Copy("database-ver40.db", databaseFile, overwrite: true);
+    try
     {
-      connection.Open();
-      using var command = connection.CreateCommand();
-      command.CommandText =
-        "DROP TABLE active_basket_misloads; "
-        + "DROP TABLE basket_misload_resolutions; "
-        + "DROP TABLE basket_misload_episodes; "
-        + "DROP TABLE basket_misload_details; "
-        + "DROP TABLE basket_misloads; "
-        + "DROP TABLE basket_region_survey_baskets; "
-        + "DROP TABLE basket_region_survey_details; "
-        + "DROP TABLE basket_region_surveys; "
-        + "DROP TABLE basket_location_observation_corrections; "
-        + "DROP TABLE basket_location_observation_details; "
-        + "DROP TABLE basket_location_observations; "
-        + "UPDATE version SET ver = 43";
-      command.ExecuteNonQuery();
+      using var upgradedConfig = RepositoryConfig.InitializeEventDatabase(
+        null,
+        databaseFile,
+        pooling: false
+      );
+      using var upgraded = upgradedConfig.OpenConnection();
+      var observation = upgraded.RecordBasketLocationObservation(
+        Guid.NewGuid(),
+        4,
+        Storage(),
+        DateTime.UtcNow,
+        OperatorSource()
+      );
+      upgraded.CorrectBasketLocationObservation(
+        Guid.NewGuid(),
+        observation.ObservationId,
+        replacement: null,
+        DateTime.UtcNow,
+        OperatorSource()
+      );
+
+      await Assert.That(upgraded.GetCurrentBasketLocationObservations()).IsEmpty();
     }
-
-    using var upgradedConfig = RepositoryConfig.InitializeMemoryDB(
-      null,
-      databaseId,
-      createTables: false,
-      upgradeTables: true
-    );
-    using var upgraded = upgradedConfig.OpenConnection();
-    var observation = upgraded.RecordBasketLocationObservation(
-      Guid.NewGuid(),
-      4,
-      Storage(),
-      DateTime.UtcNow,
-      OperatorSource()
-    );
-    upgraded.CorrectBasketLocationObservation(
-      Guid.NewGuid(),
-      observation.ObservationId,
-      replacement: null,
-      DateTime.UtcNow,
-      OperatorSource()
-    );
-
-    await Assert.That(upgraded.GetCurrentBasketLocationObservations()).IsEmpty();
+    finally
+    {
+      if (File.Exists(databaseFile))
+        File.Delete(databaseFile);
+    }
   }
 
   private static BasketEvidenceSource OperatorSource(string sourceObservationId = null) =>

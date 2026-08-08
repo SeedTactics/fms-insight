@@ -927,6 +927,32 @@ namespace BlackMaple.FMSInsight.Tests
     }
   }
 
+  public sealed class Ver40UpgradeSpec : IDisposable
+  {
+    private readonly string _tempFile;
+    private readonly RepositoryConfig _repo;
+
+    public Ver40UpgradeSpec()
+    {
+      _tempFile = System.IO.Path.GetTempFileName();
+      System.IO.File.Copy("database-ver40.db", _tempFile, overwrite: true);
+      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
+    }
+
+    public void Dispose()
+    {
+      _repo.Dispose();
+      if (!string.IsNullOrEmpty(_tempFile) && System.IO.File.Exists(_tempFile))
+        System.IO.File.Delete(_tempFile);
+    }
+
+    [Test]
+    public void Schema()
+    {
+      SchemaUpgradeSpec.Check(_tempFile);
+    }
+  }
+
   // the ver32 has sample data in almost every table
   public sealed class Ver32UpgradeSpec : IDisposable
   {

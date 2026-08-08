@@ -17,6 +17,7 @@
     <None Update="job.v16.db" CopyToOutputDirectory="Always" />
     <None Update="database-ver25.db" CopyToOutputDirectory="Always" />
     <None Update="repo.v32.db" CopyToOutputDirectory="Always" />
+    <None Update="database-ver40.db" CopyToOutputDirectory="Always" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TUnit" />

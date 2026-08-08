@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 45;
+    private const int Version = 41;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -559,18 +559,6 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 41)
             Ver40ToVer41(trans, updateJobsTables);
-
-          if (curVersion < 42)
-            Ver41ToVer42(trans);
-
-          if (curVersion < 43)
-            Ver42ToVer43(trans);
-
-          if (curVersion < 44)
-            Ver43ToVer44(trans);
-
-          if (curVersion < 45)
-            Ver44ToVer45(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1356,20 +1344,15 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver40ToVer41(IDbTransaction trans, bool updateJobTables)
     {
-      if (!updateJobTables)
-        return;
-
       using var cmd = trans.Connection.CreateCommand();
       cmd.Transaction = trans;
-      cmd.CommandText =
-        "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
-      cmd.ExecuteNonQuery();
-    }
 
-    private static void Ver41ToVer42(IDbTransaction trans)
-    {
-      using var cmd = trans.Connection.CreateCommand();
-      cmd.Transaction = trans;
+      if (updateJobTables)
+      {
+        cmd.CommandText =
+          "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
+        cmd.ExecuteNonQuery();
+      }
 
       cmd.CommandText = "ALTER TABLE stations ADD ContainerId TEXT";
       cmd.ExecuteNonQuery();
@@ -1391,12 +1374,7 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText =
         "CREATE INDEX basket_cycle_container_ids_cycle ON basket_cycle_container_ids(CycleCounter, ContainerId)";
       cmd.ExecuteNonQuery();
-    }
 
-    private static void Ver42ToVer43(IDbTransaction trans)
-    {
-      using var cmd = trans.Connection.CreateCommand();
-      cmd.Transaction = trans;
       cmd.CommandText =
         "CREATE TABLE basket_station_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL)";
       cmd.ExecuteNonQuery();
@@ -1409,6 +1387,19 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText =
         "CREATE TABLE material_allocation_material(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, MaterialID INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
       cmd.ExecuteNonQuery();
+
+      cmd.CommandText =
+        "CREATE TABLE basket_location_observations(ObservationId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE, SupersededByCorrectionId TEXT)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE basket_location_observation_details(Counter INTEGER PRIMARY KEY, PositionLocation INTEGER NOT NULL, PositionZone INTEGER, PositionTitle TEXT)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE basket_location_observation_corrections(CorrectionId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, TargetObservationId TEXT NOT NULL, ReplacementObservationId TEXT, Counter INTEGER NOT NULL UNIQUE, Note TEXT)";
+      cmd.ExecuteNonQuery();
+      CreateBasketLocationObservationCorrectionIndexes(cmd);
+      CreateBasketRegionSurveyTables(cmd);
+      CreateBasketMisloadTables(cmd);
     }
 
     private static void CreateBasketIdentityAssociationTables(IDbCommand cmd)
@@ -1442,24 +1433,6 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
     }
 
-    private static void Ver43ToVer44(IDbTransaction trans)
-    {
-      using var cmd = trans.Connection.CreateCommand();
-      cmd.Transaction = trans;
-      cmd.CommandText =
-        "CREATE TABLE basket_location_observations(ObservationId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE, SupersededByCorrectionId TEXT)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_location_observation_details(Counter INTEGER PRIMARY KEY, PositionLocation INTEGER NOT NULL, PositionZone INTEGER, PositionTitle TEXT)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_location_observation_corrections(CorrectionId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, TargetObservationId TEXT NOT NULL, ReplacementObservationId TEXT, Counter INTEGER NOT NULL UNIQUE, Note TEXT)";
-      cmd.ExecuteNonQuery();
-      CreateBasketLocationObservationCorrectionIndexes(cmd);
-      CreateBasketRegionSurveyTables(cmd);
-      CreateBasketMisloadTables(cmd);
-    }
-
     private static void CreateBasketLocationObservationCorrectionIndexes(IDbCommand cmd)
     {
       cmd.CommandText =
@@ -1468,25 +1441,6 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText =
         "CREATE UNIQUE INDEX basket_location_observation_corrections_replacement ON basket_location_observation_corrections(ReplacementObservationId) WHERE ReplacementObservationId IS NOT NULL";
       cmd.ExecuteNonQuery();
-    }
-
-    private static void Ver44ToVer45(IDbTransaction trans)
-    {
-      using var columns = trans.Connection.CreateCommand();
-      columns.Transaction = trans;
-      columns.CommandText = "PRAGMA table_info(basket_identity_association_details)";
-      using var reader = columns.ExecuteReader();
-      while (reader.Read())
-      {
-        if (reader.GetString(1) == "Note")
-          return;
-      }
-      reader.Close();
-
-      using var alter = trans.Connection.CreateCommand();
-      alter.Transaction = trans;
-      alter.CommandText = "ALTER TABLE basket_identity_association_details ADD COLUMN Note TEXT";
-      alter.ExecuteNonQuery();
     }
 
     private static void CreateBasketRegionSurveyTables(IDbCommand cmd)
