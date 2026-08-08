@@ -111,7 +111,8 @@ namespace BlackMaple.MachineFramework
     public static RepositoryConfig InitializeMemoryDB(
       SerialSettings? st,
       Guid? guid = null,
-      bool createTables = true
+      bool createTables = true,
+      bool upgradeTables = false
     )
     {
       var guidStr = (guid ?? Guid.NewGuid()).ToString();
@@ -124,6 +125,10 @@ namespace BlackMaple.MachineFramework
       if (createTables)
       {
         DatabaseSchema.CreateTables(conn, st);
+      }
+      else if (upgradeTables)
+      {
+        DatabaseSchema.UpgradeTables(conn, st, oldInspDbFile: null, oldJobDbFile: null);
       }
       return new RepositoryConfig(st, connStr, conn);
     }

@@ -3172,6 +3172,8 @@ export class LogEntry implements ILogEntry {
   active!: string;
   details?: { [key: string]: string } | undefined;
   tooluse?: ToolUse[] | undefined;
+  foreignId?: string | undefined;
+  correlationId?: string | undefined;
 
   constructor(data?: ILogEntry) {
     if (data) {
@@ -3217,6 +3219,8 @@ export class LogEntry implements ILogEntry {
         this.tooluse = [] as any;
         for (let item of _data["tooluse"]) this.tooluse!.push(ToolUse.fromJS(item));
       }
+      this.foreignId = _data["foreignId"];
+      this.correlationId = _data["correlationId"];
     }
   }
 
@@ -3262,6 +3266,8 @@ export class LogEntry implements ILogEntry {
       for (let item of this.tooluse)
         data["tooluse"].push(item ? item.toJSON() : (undefined as any));
     }
+    data["foreignId"] = this.foreignId;
+    data["correlationId"] = this.correlationId;
     return data;
   }
 }
@@ -3283,6 +3289,8 @@ export interface ILogEntry {
   active: string;
   details?: { [key: string]: string } | undefined;
   tooluse?: ToolUse[] | undefined;
+  foreignId?: string | undefined;
+  correlationId?: string | undefined;
 }
 
 export class LogMaterial implements ILogMaterial {
@@ -3376,8 +3384,14 @@ export enum LogType {
   BasketLoadUnload = "BasketLoadUnload",
   BasketCycle = "BasketCycle",
   BasketInLocation = "BasketInLocation",
-  BasketIdentityHint = "BasketIdentityHint",
+  BasketIdentityAssociation = "BasketIdentityAssociation",
   BasketContentSnapshot = "BasketContentSnapshot",
+  BasketLocationObservation = "BasketLocationObservation",
+  BasketLocationObservationCorrection = "BasketLocationObservationCorrection",
+  BasketIdentityAssociationCorrection = "BasketIdentityAssociationCorrection",
+  BasketRegionSurvey = "BasketRegionSurvey",
+  BasketMisload = "BasketMisload",
+  BasketMisloadResolution = "BasketMisloadResolution",
 }
 
 export class ToolUse implements IToolUse {
@@ -5866,7 +5880,7 @@ export enum BasketLocationEnum {
 
 export class BasketMoveInstruction implements IBasketMoveInstruction {
   instructionId!: string;
-  basketId!: number;
+  basketId?: number | undefined;
   source!: BasketPosition;
   destination!: BasketPosition;
   reason!: BasketMoveReason;
@@ -5921,7 +5935,7 @@ export class BasketMoveInstruction implements IBasketMoveInstruction {
 
 export interface IBasketMoveInstruction {
   instructionId: string;
-  basketId: number;
+  basketId?: number | undefined;
   source: BasketPosition;
   destination: BasketPosition;
   reason: BasketMoveReason;
@@ -7239,11 +7253,11 @@ export interface IProgramRevision {
 
 function formatDate(d: Date) {
   return (
-    d.getUTCFullYear() +
+    d.getFullYear() +
     "-" +
-    (d.getUTCMonth() < 9 ? "0" + (d.getUTCMonth() + 1) : d.getUTCMonth() + 1) +
+    (d.getMonth() < 9 ? "0" + (d.getMonth() + 1) : d.getMonth() + 1) +
     "-" +
-    (d.getUTCDate() < 10 ? "0" + d.getUTCDate() : d.getUTCDate())
+    (d.getDate() < 10 ? "0" + d.getDate() : d.getDate())
   );
 }
 

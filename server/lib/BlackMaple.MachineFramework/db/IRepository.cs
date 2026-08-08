@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace BlackMaple.MachineFramework
@@ -62,14 +63,45 @@ namespace BlackMaple.MachineFramework
     );
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
+    ImmutableList<LogEntry> GetLogForCorrelationId(string correlationId);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
     ImmutableList<LogEntry> CurrentBasketLog(
       ContainerIdentity basketIdentity,
       bool includeLastCycleEvt = false
     );
-    ImmutableList<CurrentBasketIdentityHint> GetCurrentBasketIdentityHints(int? basketNum = null);
-    ImmutableList<Guid> GetUnresolvedOpenBasketContainerIds();
+    ImmutableList<BasketIdentityAssociation> GetCurrentBasketIdentityAssociations(
+      int? basketNum = null
+    );
+
+    [return: MaybeNull]
+    BasketIdentityAssociation GetBasketIdentityAssociation(Guid associationId);
+    ImmutableList<BasketIdentityAssociationCorrection> GetBasketIdentityAssociationCorrections(
+      Guid? targetAssociationId = null
+    );
+    ImmutableList<BasketLocationObservation> GetCurrentBasketLocationObservations(
+      int? basketNum = null
+    );
+
+    [return: MaybeNull]
+    BasketLocationObservation GetBasketLocationObservation(Guid observationId);
+    ImmutableList<BasketLocationObservationCorrection> GetBasketLocationObservationCorrections(
+      Guid? targetObservationId = null
+    );
+    ImmutableList<BasketRegionSurvey> GetBasketRegionSurveys(
+      BasketPosition region = null,
+      long? afterCounter = null
+    );
+
+    [return: MaybeNull]
+    BasketRegionSurvey GetBasketRegionSurvey(Guid surveyId);
+    ImmutableList<BasketRegionSurvey> GetLatestBasketRegionSurveys();
+    ImmutableList<BasketMisload> GetActiveBasketMisloads();
+
+    [return: MaybeNull]
+    BasketMisload GetBasketMisload(Guid misloadId);
+    ImmutableList<BasketMisloadResolution> GetBasketMisloadResolutions(Guid? misloadId = null);
+    ImmutableList<Guid> GetUnresolvedOpenBasketContentEpisodeIds();
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -89,10 +121,14 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Adding Events
     // --------------------------------------------------------------------------------
-    // A foreignId is optional correlation or source metadata stored on each event. It is not unique
-    // and does not make an event write idempotent. Callers may deliberately use one foreignId for
-    // several related events. Methods with an idempotencyKey instead define an atomic retry
-    // contract: identical retries return the original result and changed durable input conflicts.
+    // foreignId identifies the external message, observation, command, or source operation that
+    // caused an event. One external input may generate several log events, so foreignId is not
+    // necessarily unique and does not itself provide an idempotency contract.
+    //
+    // correlationId optionally groups events from several inputs into a larger workflow or
+    // operation. It is also not an idempotency key.
+    //
+    // APIs that accept an explicit idempotency key define their retry behavior separately.
     LogEntry RecordLoadStart(
       IEnumerable<EventLogMaterial> mats,
       int pallet,
@@ -115,7 +151,8 @@ namespace BlackMaple.MachineFramework
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordBasketLoadBegin(
       IEnumerable<EventLogMaterial> mats,
@@ -123,7 +160,8 @@ namespace BlackMaple.MachineFramework
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordBasketUnloadBegin(
       IEnumerable<EventLogMaterial> mats,
@@ -131,7 +169,8 @@ namespace BlackMaple.MachineFramework
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordBasketUnloadBegin(
       IEnumerable<EventLogMaterial> mats,
@@ -139,7 +178,8 @@ namespace BlackMaple.MachineFramework
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
 
     // RecordPartialLoadUnload is for partial pallet <-> queue or pallet <-> basket events.
@@ -195,7 +235,8 @@ namespace BlackMaple.MachineFramework
       IReadOnlyDictionary<string, string> externalQueues,
       string idempotencyKey,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
 
     IEnumerable<LogEntry> RecordEmptyPallet(
@@ -299,7 +340,8 @@ namespace BlackMaple.MachineFramework
       int locationPosition,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordBasketArriveLocation(
       IEnumerable<EventLogMaterial> mats,
@@ -308,7 +350,8 @@ namespace BlackMaple.MachineFramework
       int locationPosition,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordBasketDepartLocation(
       IEnumerable<EventLogMaterial> mats,
@@ -318,7 +361,8 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       TimeSpan elapsed,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordBasketDepartLocation(
       IEnumerable<EventLogMaterial> mats,
@@ -328,21 +372,82 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       TimeSpan elapsed,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordBasketContentSnapshot(
       IEnumerable<EventLogMaterial> mats,
       ContainerIdentity basketIdentity,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      EventLogMetadata metadata = null
     );
-    LogEntry RecordBasketIdentityHint(
-      Guid containerId,
-      int basketNum,
+    BasketIdentityAssociation RecordBasketIdentityAssociation(
+      Guid associationId,
+      int basketId,
+      ImmutableSortedSet<Guid> contentEpisodeIds,
+      BasketIdentityAssociationBasis basis,
+      BasketEvidenceSource source,
       DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null
+      BasketPosition observedPosition = null,
+      EventLogMetadata metadata = null,
+      string note = null
+    );
+    BasketIdentityAssociationCorrectionResult CorrectBasketIdentityAssociation(
+      Guid correctionId,
+      Guid targetAssociationId,
+      [AllowNull] BasketIdentityAssociationReplacement replacement,
+      BasketEvidenceSource source,
+      DateTime timeUTC,
+      string note = null,
+      EventLogMetadata metadata = null
+    );
+    BasketLocationObservation RecordBasketLocationObservation(
+      Guid observationId,
+      int basketId,
+      BasketPosition position,
+      DateTime timeUTC,
+      BasketEvidenceSource source,
+      EventLogMetadata metadata = null
+    );
+    BasketLocationObservationCorrectionResult CorrectBasketLocationObservation(
+      Guid correctionId,
+      Guid targetObservationId,
+      [AllowNull] BasketLocationObservationReplacement replacement,
+      DateTime timeUTC,
+      BasketEvidenceSource source,
+      string note = null,
+      EventLogMetadata metadata = null
+    );
+    BasketRegionSurvey RecordBasketRegionSurvey(
+      Guid surveyId,
+      BasketPosition region,
+      ImmutableSortedSet<int> observedBasketIds,
+      int unidentifiedBasketCount,
+      BasketRegionSurveyCompleteness completeness,
+      DateTime timeUTC,
+      BasketEvidenceSource source,
+      EventLogMetadata metadata = null
+    );
+    BasketMisload RecordBasketMisload(
+      Guid misloadId,
+      int? basketId,
+      ImmutableSortedSet<Guid> contentEpisodeIds,
+      BasketPosition detectedAt,
+      BasketEvidenceSource source,
+      string reason,
+      DateTime timeUTC,
+      EventLogMetadata metadata = null
+    );
+    BasketMisloadResolution ResolveBasketMisload(
+      Guid resolutionId,
+      Guid misloadId,
+      BasketMisloadResolutionKind kind,
+      BasketEvidenceSource source,
+      DateTime timeUTC,
+      string note = null,
+      EventLogMetadata metadata = null
     );
 
     LogEntry RecordSerialForMaterialID(
@@ -480,7 +585,8 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null,
       string foreignId = null,
       string originalMessage = null,
-      IDictionary<string, string> extraData = null
+      IDictionary<string, string> extraData = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordGeneralMessage(
       IEnumerable<EventLogMaterial> mats,
@@ -490,7 +596,8 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null,
       string foreignId = null,
       string originalMessage = null,
-      IDictionary<string, string> extraData = null
+      IDictionary<string, string> extraData = null,
+      EventLogMetadata metadata = null
     );
     LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName);
     LogEntry RecordOperatorNotes(
@@ -930,5 +1037,34 @@ namespace BlackMaple.MachineFramework
   {
     public required HashSet<long> MaterialIds { get; init; }
     public required IReadOnlyList<LogEntry> Logs { get; init; }
+  }
+
+  public sealed record BasketIdentityAssociationReplacement
+  {
+    public required Guid AssociationId { get; init; }
+    public required int BasketId { get; init; }
+    public required ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; }
+    public required BasketIdentityAssociationBasis Basis { get; init; }
+    public required BasketEvidenceSource Source { get; init; }
+    public BasketPosition ObservedPosition { get; init; }
+  }
+
+  public sealed record BasketIdentityAssociationCorrectionResult
+  {
+    public required BasketIdentityAssociationCorrection Correction { get; init; }
+    public BasketIdentityAssociation Replacement { get; init; }
+  }
+
+  public sealed record BasketLocationObservationReplacement
+  {
+    public required Guid ObservationId { get; init; }
+    public required int BasketId { get; init; }
+    public required BasketPosition Position { get; init; }
+  }
+
+  public sealed record BasketLocationObservationCorrectionResult
+  {
+    public required BasketLocationObservationCorrection Correction { get; init; }
+    public BasketLocationObservation Replacement { get; init; }
   }
 }

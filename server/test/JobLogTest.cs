@@ -8393,6 +8393,7 @@ namespace BlackMaple.FMSInsight.Tests
         Result = "0000000001",
         ElapsedTime = TimeSpan.FromMinutes(-1),
         ActiveOperationTime = TimeSpan.Zero,
+        ForeignID = "for2",
       };
 
       serialLogEntry.ShouldBeEquivalentTo(expected);

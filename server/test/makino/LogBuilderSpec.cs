@@ -672,6 +672,7 @@ public sealed class LogBuilderSpec : IDisposable
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -718,6 +719,7 @@ public sealed class LogBuilderSpec : IDisposable
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -747,6 +749,7 @@ public sealed class LogBuilderSpec : IDisposable
       .ShouldBeFalse();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -813,6 +816,7 @@ public sealed class LogBuilderSpec : IDisposable
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -842,6 +846,7 @@ public sealed class LogBuilderSpec : IDisposable
       .ShouldBeFalse();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -934,6 +939,7 @@ public sealed class LogBuilderSpec : IDisposable
 
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -1029,6 +1035,7 @@ public sealed class LogBuilderSpec : IDisposable
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -1120,6 +1127,7 @@ public sealed class LogBuilderSpec : IDisposable
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -1232,6 +1240,7 @@ public sealed class LogBuilderSpec : IDisposable
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -1345,6 +1354,7 @@ public sealed class LogBuilderSpec : IDisposable
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -1414,6 +1424,7 @@ public sealed class LogBuilderSpec : IDisposable
     new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
+      .Select(WithoutEventMetadata)
       .ToList()
       .ShouldBeEquivalentTo(
         _expectedLog
@@ -1422,4 +1433,11 @@ public sealed class LogBuilderSpec : IDisposable
           .ToList()
       );
   }
+
+  private static LogEntry WithoutEventMetadata(LogEntry entry) =>
+    entry with
+    {
+      ForeignID = null,
+      CorrelationId = null,
+    };
 }

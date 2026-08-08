@@ -182,7 +182,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task InvalidatedHintedUuidEventsDoNotLeakIntoNumberedBasket()
+  public async Task InvalidatedAssociatedUuidEventsDoNotLeakIntoNumberedBasket()
   {
     var time = new DateTime(2026, 7, 27, 10, 30, 0, DateTimeKind.Utc);
     var id = Guid.NewGuid();
@@ -200,16 +200,23 @@ public sealed class ContainerIdentitySpec : IDisposable
       idempotencyKey: "hinted-uuid-load-operation",
       foreignId: "hinted-uuid-load"
     );
-    repository.RecordBasketIdentityHint(id, 8, time.AddMinutes(2));
+    repository.RecordBasketIdentityAssociation(
+      Guid.NewGuid(),
+      8,
+      [id],
+      BasketIdentityAssociationBasis.CalculatedInference,
+      IntegrationSource(),
+      time.AddMinutes(2)
+    );
 
     repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(3));
 
     await Assert
       .That(repository.CurrentBasketLog(uuidIdentity).Select(log => log.LogType))
-      .IsEquivalentTo([LogType.BasketIdentityHint]);
+      .IsEmpty();
     await Assert
       .That(repository.CurrentBasketLog(numberedIdentity).Select(log => log.LogType))
-      .IsEquivalentTo([LogType.BasketIdentityHint]);
+      .IsEquivalentTo([LogType.BasketIdentityAssociation]);
   }
 
   [Test]
@@ -478,7 +485,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       using var trigger = connection.CreateCommand();
       trigger.CommandText =
         "CREATE TRIGGER fail_atomic_basket_association BEFORE INSERT ON stations "
-        + $"WHEN NEW.StationLoc = {(int)LogType.BasketIdentityHint} "
+        + $"WHEN NEW.StationLoc = {(int)LogType.BasketIdentityAssociation} "
         + "BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
       trigger.ExecuteNonQuery();
     }
@@ -493,7 +500,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         idempotencyKey: "associated-release"
       )
     );
-    await Assert.That(repository.GetCurrentBasketIdentityHints()).IsEmpty();
+    await Assert.That(repository.GetCurrentBasketIdentityAssociations()).IsEmpty();
     await Assert
       .That(repository.GetRecentLog(0).Any(entry => entry.LogType == LogType.BasketCycle))
       .IsFalse();
@@ -520,10 +527,12 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert
       .That(logs.Single(entry => entry.LogType == LogType.BasketCycle).LocationNum)
       .IsEqualTo(2);
-    await Assert.That(logs.Select(entry => entry.LogType)).Contains(LogType.BasketIdentityHint);
     await Assert
-      .That(repository.GetCurrentBasketIdentityHints(7).Single().ContainerId)
-      .IsEqualTo(containerId);
+      .That(logs.Select(entry => entry.LogType))
+      .Contains(LogType.BasketIdentityAssociation);
+    await Assert
+      .That(repository.GetCurrentBasketIdentityAssociations(7).Single().ContentEpisodeIds)
+      .IsEquivalentTo([containerId]);
   }
 
   [Test]
@@ -1467,7 +1476,9 @@ public sealed class ContainerIdentitySpec : IDisposable
       .That(repository.CurrentBasketLog(new ContainerIdentity.Uuid { ContainerId = basketId }))
       .Count()
       .IsEqualTo(2);
-    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEquivalentTo([basketId]);
+    await Assert
+      .That(repository.GetUnresolvedOpenBasketContentEpisodeIds())
+      .IsEquivalentTo([basketId]);
 
     await Verifier
       .Verify(
@@ -1553,7 +1564,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
     );
     await Assert.That(repository.GetRecentLog(0)).IsEmpty();
-    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEmpty();
+    await Assert.That(repository.GetUnresolvedOpenBasketContentEpisodeIds()).IsEmpty();
   }
 
   [Test]
@@ -1655,7 +1666,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert
       .That(retry.Select(log => log.Counter))
       .IsEquivalentTo(logs.Select(log => log.Counter));
-    await Assert.That(repository.GetUnresolvedOpenBasketContainerIds()).IsEmpty();
+    await Assert.That(repository.GetUnresolvedOpenBasketContentEpisodeIds()).IsEmpty();
   }
 
   [Test]
@@ -2030,7 +2041,14 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
     );
     await AssertThrows<ArgumentException>(() =>
-      repository.RecordBasketIdentityHint(Guid.Empty, 1, DateTime.UtcNow)
+      repository.RecordBasketIdentityAssociation(
+        Guid.Empty,
+        1,
+        [Guid.NewGuid()],
+        BasketIdentityAssociationBasis.CalculatedInference,
+        IntegrationSource(),
+        DateTime.UtcNow
+      )
     );
     await Assert.That(repository.GetRecentLog(0)).IsEmpty();
     await Assert
@@ -2146,6 +2164,9 @@ public sealed class ContainerIdentitySpec : IDisposable
     }
     await Assert.That(exception).IsTypeOf<TException>();
   }
+
+  private static BasketEvidenceSource IntegrationSource() =>
+    new() { Kind = BasketEvidenceSourceKind.Integration, Name = "test" };
 
   private static BasketStationOperation LoadOntoBasketOperation(
     ContainerIdentity identity,

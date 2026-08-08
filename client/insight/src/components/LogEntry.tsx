@@ -117,11 +117,29 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
         return "Depart";
       }
 
-    case api.LogType.BasketIdentityHint:
-      return `${basketName} Identity Hint`;
+    case api.LogType.BasketIdentityAssociation:
+      return `${basketName} Identity Association`;
+
+    case api.LogType.BasketIdentityAssociationCorrection:
+      return `${basketName} Identity Correction`;
 
     case api.LogType.BasketContentSnapshot:
       return `${basketName} Content Snapshot`;
+
+    case api.LogType.BasketLocationObservation:
+      return `${basketName} Location Observation`;
+
+    case api.LogType.BasketLocationObservationCorrection:
+      return `${basketName} Location Correction`;
+
+    case api.LogType.BasketRegionSurvey:
+      return `${basketName} Region Survey`;
+
+    case api.LogType.BasketMisload:
+      return `${basketName} Inspection Hold`;
+
+    case api.LogType.BasketMisloadResolution:
+      return `${basketName} Inspection Resolution`;
 
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
@@ -182,6 +200,13 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
     default:
       return "Message";
   }
+}
+
+function evidencePosition(entry: api.ILogEntry): string {
+  const title = entry.details?.locationTitle ?? entry.details?.location ?? entry.loc;
+  const locationNumber = entry.locnum > 0 ? ` ${entry.locnum}` : "";
+  const zone = entry.details?.zone === undefined ? "" : ` zone ${entry.details.zone}`;
+  return `${title}${locationNumber}${zone}`;
 }
 
 export function isLogEntryInvalidated(e: api.ILogEntry): boolean {
@@ -271,12 +296,30 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
       }
     }
 
-    case api.LogType.BasketIdentityHint: {
+    case api.LogType.BasketIdentityAssociation: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      const episodeCount = entry.details?.episodeCount;
+      const source = entry.details?.sourceName;
+      const note = entry.details?.note;
+      return (
+        <span>
+          {source === undefined ? "" : `${source} recorded `}
+          {episodeCount === undefined
+            ? `content episodes associated with ${basketName} ${entry.pal}`
+            : `${episodeCount} content episode${episodeCount === "1" ? "" : "s"} associated with ${basketName} ${entry.pal}`}
+          {entry.details?.location === undefined && entry.details?.locationTitle === undefined
+            ? ""
+            : ` at ${evidencePosition(entry)}`}
+          {note === undefined ? "" : `: ${note}`}
+        </span>
+      );
+    }
+
+    case api.LogType.BasketIdentityAssociationCorrection: {
       const basketName = basketDisplayName(fmsInfo.basketName);
       return (
         <span>
-          {basketContainerName(entry, basketName)} presently associated with {basketName}{" "}
-          {entry.pal}
+          Identity association for {basketName} {entry.pal} corrected
         </span>
       );
     }
@@ -286,6 +329,77 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
       return (
         <span>
           {basketContainerName(entry, basketName)} contained {displayMat(entry.material)}
+        </span>
+      );
+    }
+
+    case api.LogType.BasketLocationObservation: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      const operator = entry.details?.sourceName ?? entry.details?.operator ?? "Operator";
+      return (
+        <span>
+          {operator} observed {basketName} {entry.pal} at {evidencePosition(entry)}
+        </span>
+      );
+    }
+
+    case api.LogType.BasketLocationObservationCorrection: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      const operator = entry.details?.sourceName ?? entry.details?.operator ?? "Operator";
+      const location = evidencePosition(entry);
+      const replacementBasketId = entry.details?.replacementBasketId;
+      return replacementBasketId === undefined ? (
+        <span>
+          {operator} retracted the observation of {basketName} {entry.pal} at {location}
+        </span>
+      ) : (
+        <span>
+          {operator} changed the observation of {basketName} {entry.pal} at {location} to{" "}
+          {basketName} {replacementBasketId} at {location}
+        </span>
+      );
+    }
+
+    case api.LogType.BasketRegionSurvey: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      const source = entry.details?.sourceName;
+      const observed = entry.details?.observedBasketCount;
+      const unidentified = entry.details?.unidentifiedBasketCount;
+      return (
+        <span>
+          {source === undefined ? "Operator" : source} recorded a {entry.result.toLowerCase()}{" "}
+          {basketName.toLowerCase()} survey at {evidencePosition(entry)}
+          {observed === undefined ? "" : ` (${observed} identified`}
+          {unidentified === undefined ? "" : `, ${unidentified} unidentified`}
+          {observed === undefined && unidentified === undefined ? "" : ")"}
+        </span>
+      );
+    }
+
+    case api.LogType.BasketMisload: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      const source = entry.details?.sourceName;
+      const reason = entry.details?.reason;
+      const subject =
+        entry.pal > 0 ? `${basketName} ${entry.pal}` : `Unnumbered ${basketName.toLowerCase()}`;
+      return (
+        <span>
+          {source === undefined ? subject : `${source} reported ${subject}`} requires inspection at{" "}
+          {evidencePosition(entry)}
+          {reason === undefined ? "" : `: ${reason}`}
+        </span>
+      );
+    }
+
+    case api.LogType.BasketMisloadResolution: {
+      const basketName = basketDisplayName(fmsInfo.basketName);
+      const source = entry.details?.sourceName;
+      const subject =
+        entry.pal > 0 ? `${basketName} ${entry.pal}` : `Unnumbered ${basketName.toLowerCase()}`;
+      return (
+        <span>
+          {source === undefined ? "Inspection hold" : `${source} resolved inspection hold`} for{" "}
+          {subject} at {evidencePosition(entry)}: {entry.result}
         </span>
       );
     }
