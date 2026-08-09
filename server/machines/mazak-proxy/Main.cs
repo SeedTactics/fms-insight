@@ -103,7 +103,7 @@ public class ProxyService : System.ServiceProcess.ServiceBase
             " OleDbDatabasePath: " + _cfg.OleDbDatabasePath,
             " LogCSVPath: " + _cfg.LogCSVPath,
             " LoadCSVPath: " + _cfg.LoadCSVPath,
-            " SQLConnectionString: " + _cfg.SQLConnectionString,
+            " SQLConnectionString configured: " + !string.IsNullOrEmpty(_cfg.SQLConnectionString),
           ]
         )
       );

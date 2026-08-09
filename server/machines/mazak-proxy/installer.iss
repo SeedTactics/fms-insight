@@ -35,6 +35,9 @@ Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: s
   ValueName: "DBType"; ValueData: "{code:GetDBType}"; \
   Flags: createvalueifdoesntexist uninsdeletekey
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
+  ValueName: "SQLConnectionString"; ValueData: "{code:GetSQLConnectionString}"; \
+  Flags: createvalueifdoesntexist uninsdeletekey
+Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
   ValueName: "OleDbDatabasePath"; ValueData: "{code:GetDatabasePath}"; \
   Flags: createvalueifdoesntexist uninsdeletekey
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
@@ -49,6 +52,7 @@ var
   PortPage: TInputQueryWizardPage;
   VersionPage: TInputOptionWizardPage;
   DatabasePage: TInputDirWizardPage;
+  SQLConnectionPage: TInputQueryWizardPage;
   LogCSVPage: TInputDirWizardPage;
   LoadCSVPage: TInputDirWizardPage;
 
@@ -75,6 +79,7 @@ begin
     True, False);
   VersionPage.Add('Version E');
   VersionPage.Add('Web');
+  VersionPage.Add('Smooth / Neo');
 
   PortPage := CreateInputQueryPage(VersionPage.ID,
     'Mazak Proxy Port', 'Select the port',
@@ -88,7 +93,13 @@ begin
     False, '');
   DatabasePage.Add('');
 
-  LogCSVPage := CreateInputDirPage(DatabasePage.ID,
+  SQLConnectionPage := CreateInputQueryPage(DatabasePage.ID,
+    'Select Mazak SQL Server', 'Configure the Mazak SQL Server connection',
+    'The default connects to the local Smooth or Neo PMC databases.');
+  SQLConnectionPage.Add('Connection string: ', False);
+  SQLConnectionPage.Values[0] := 'Data Source=(local)\PMCSQLSERVER;User ID=mazakpmc;Password=Fms-978';
+
+  LogCSVPage := CreateInputDirPage(SQLConnectionPage.ID,
     'Select Log CSV', 'Please select the directory containing the log CSV files.',
     '', False, '');
   LogCSVPage.Add('');
@@ -115,6 +126,18 @@ begin
       Result := False
     end
   end;
+
+  if PageID = DatabasePage.ID then begin
+    Result := VersionPage.Values[2]
+  end;
+
+  if PageID = SQLConnectionPage.ID then begin
+    Result := not VersionPage.Values[2]
+  end;
+
+  if PageID = LoadCSVPage.ID then begin
+    Result := VersionPage.Values[2]
+  end;
 end;
 
 function GetDBType(Param: string): string;
@@ -124,6 +147,31 @@ begin
   end;
   if VersionPage.Values[1] then begin
     Result := 'MazakWeb'
+  end;
+  if VersionPage.Values[2] then begin
+    Result := 'MazakSmooth'
+  end;
+end;
+
+function GetSQLConnectionString(Param: string): string;
+var
+  InstalledDBType: string;
+begin
+  if IsUpgrade() then begin
+    if RegQueryStringValue(HKLM,
+      'Software\SeedTactics\FMS Insight Mazak Proxy', 'DBType', InstalledDBType) and
+      (InstalledDBType = 'MazakSmooth') then begin
+      Result := 'Data Source=(local)\PMCSQLSERVER;User ID=mazakpmc;Password=Fms-978'
+    end else begin
+      Result := 'Provider=Microsoft.Jet.OLEDB.4.0;Password="";User ID=Admin;Mode=Share Deny None;'
+    end;
+    exit;
+  end;
+
+  if VersionPage.Values[2] then begin
+    Result := SQLConnectionPage.Values[0]
+  end else begin
+    Result := 'Provider=Microsoft.Jet.OLEDB.4.0;Password="";User ID=Admin;Mode=Share Deny None;'
   end;
 end;
 
