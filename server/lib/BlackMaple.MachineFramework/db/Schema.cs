@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 41;
+    private const int Version = 42;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet INTEGER,"
           + "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER,"
-          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, ContainerId TEXT, CorrelationId TEXT)";
+          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, BasketContentEpisodeId TEXT, CorrelationId TEXT)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -101,7 +101,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE INDEX stations_container_id ON stations(ContainerId, StationLoc, Result, Counter) WHERE ContainerId IS NOT NULL";
+          "CREATE INDEX stations_basket_content_episode_id ON stations(BasketContentEpisodeId, StationLoc, Result, Counter) WHERE BasketContentEpisodeId IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -182,7 +182,7 @@ namespace BlackMaple.MachineFramework
         CreateBasketIdentityAssociationTables(cmd);
 
         cmd.CommandText =
-          "CREATE TABLE basket_cycle_container_ids(CycleCounter INTEGER NOT NULL, ContainerId TEXT PRIMARY KEY)";
+          "CREATE TABLE basket_cycle_content_episode_ids(CycleCounter INTEGER NOT NULL, BasketContentEpisodeId TEXT PRIMARY KEY)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -198,7 +198,7 @@ namespace BlackMaple.MachineFramework
         CreateBasketRegionSurveyTables(cmd);
         CreateBasketMisloadTables(cmd);
         cmd.CommandText =
-          "CREATE INDEX basket_cycle_container_ids_cycle ON basket_cycle_container_ids(CycleCounter, ContainerId)";
+          "CREATE INDEX basket_cycle_content_episode_ids_cycle ON basket_cycle_content_episode_ids(CycleCounter, BasketContentEpisodeId)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -559,6 +559,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 41)
             Ver40ToVer41(trans, updateJobsTables);
+
+          if (curVersion < 42)
+            Ver41ToVer42(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1344,22 +1347,28 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver40ToVer41(IDbTransaction trans, bool updateJobTables)
     {
+      if (!updateJobTables)
+        return;
+
       using var cmd = trans.Connection.CreateCommand();
       cmd.Transaction = trans;
 
-      if (updateJobTables)
-      {
-        cmd.CommandText =
-          "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
-        cmd.ExecuteNonQuery();
-      }
+      cmd.CommandText =
+        "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
+      cmd.ExecuteNonQuery();
+    }
 
-      cmd.CommandText = "ALTER TABLE stations ADD ContainerId TEXT";
+    private static void Ver41ToVer42(IDbTransaction trans)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText = "ALTER TABLE stations ADD BasketContentEpisodeId TEXT";
       cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE stations ADD CorrelationId TEXT";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
-        "CREATE INDEX stations_container_id ON stations(ContainerId, StationLoc, Result, Counter) WHERE ContainerId IS NOT NULL";
+        "CREATE INDEX stations_basket_content_episode_id ON stations(BasketContentEpisodeId, StationLoc, Result, Counter) WHERE BasketContentEpisodeId IS NOT NULL";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE INDEX stations_basket_cycles ON stations(Pallet, Counter) WHERE StationLoc = 117 AND Result = 'BasketCycle'";
@@ -1369,10 +1378,10 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       CreateBasketIdentityAssociationTables(cmd);
       cmd.CommandText =
-        "CREATE TABLE basket_cycle_container_ids(CycleCounter INTEGER NOT NULL, ContainerId TEXT PRIMARY KEY)";
+        "CREATE TABLE basket_cycle_content_episode_ids(CycleCounter INTEGER NOT NULL, BasketContentEpisodeId TEXT PRIMARY KEY)";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
-        "CREATE INDEX basket_cycle_container_ids_cycle ON basket_cycle_container_ids(CycleCounter, ContainerId)";
+        "CREATE INDEX basket_cycle_content_episode_ids_cycle ON basket_cycle_content_episode_ids(CycleCounter, BasketContentEpisodeId)";
       cmd.ExecuteNonQuery();
 
       cmd.CommandText =

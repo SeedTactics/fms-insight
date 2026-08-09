@@ -86,9 +86,9 @@ public sealed class BasketIdentityAssociationSpec : IDisposable
       await Assert
         .That(
           repository
-            .CurrentBasketLog(new ContainerIdentity.Numbered { ContainerNum = 5 })
+            .CurrentBasketLog(new BasketLogIdentity.NumberedBasket { BasketId = 5 })
             .Where(entry => entry.LogType == LogType.BasketContentSnapshot)
-            .Select(entry => entry.ContainerId)
+            .Select(entry => entry.BasketContentEpisodeId)
         )
         .IsEquivalentTo(new Guid?[] { first, second });
     }
@@ -354,7 +354,7 @@ public sealed class BasketIdentityAssociationSpec : IDisposable
     foreach (var id in episodeIds)
       repository.RecordBasketContentSnapshot(
         [],
-        new ContainerIdentity.Uuid { ContainerId = id },
+        new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id },
         DateTime.UtcNow
       );
   }

@@ -67,7 +67,7 @@ namespace BlackMaple.MachineFramework
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
     ImmutableList<LogEntry> CurrentBasketLog(
-      ContainerIdentity basketIdentity,
+      BasketLogIdentity basketIdentity,
       bool includeLastCycleEvt = false
     );
     ImmutableList<BasketIdentityAssociation> GetCurrentBasketIdentityAssociations(
@@ -156,7 +156,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordBasketLoadBegin(
       IEnumerable<EventLogMaterial> mats,
-      ContainerIdentity basketIdentity,
+      BasketLogIdentity basketIdentity,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -174,7 +174,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordBasketUnloadBegin(
       IEnumerable<EventLogMaterial> mats,
-      ContainerIdentity basketIdentity,
+      BasketLogIdentity basketIdentity,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -345,7 +345,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordBasketArriveLocation(
       IEnumerable<EventLogMaterial> mats,
-      ContainerIdentity basketIdentity,
+      BasketLogIdentity basketIdentity,
       string locationName,
       int locationPosition,
       DateTime timeUTC,
@@ -366,7 +366,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordBasketDepartLocation(
       IEnumerable<EventLogMaterial> mats,
-      ContainerIdentity basketIdentity,
+      BasketLogIdentity basketIdentity,
       string locationName,
       int locationPosition,
       DateTime timeUTC,
@@ -377,7 +377,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordBasketContentSnapshot(
       IEnumerable<EventLogMaterial> mats,
-      ContainerIdentity basketIdentity,
+      BasketLogIdentity basketIdentity,
       DateTime timeUTC,
       string foreignId = null,
       string originalMessage = null,
@@ -913,7 +913,7 @@ namespace BlackMaple.MachineFramework
   {
     private PalletBasketTransfer() { }
 
-    public required ContainerIdentity BasketIdentity { get; init; }
+    public required BasketLogIdentity BasketIdentity { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
     public sealed record LoadOntoBasket : PalletBasketTransfer;
@@ -925,7 +925,7 @@ namespace BlackMaple.MachineFramework
   {
     private BasketCycleBoundary() { }
 
-    public required ContainerIdentity BasketIdentity { get; init; }
+    public required BasketLogIdentity BasketIdentity { get; init; }
 
     /// <summary>
     /// Slot-aware material associated with the boundary. An end declares the complete material
@@ -965,7 +965,7 @@ namespace BlackMaple.MachineFramework
   {
     private BasketStationTransfer() { }
 
-    public required ContainerIdentity BasketIdentity { get; init; }
+    public required BasketLogIdentity BasketIdentity { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
     /// <summary>

@@ -2385,12 +2385,12 @@
             "type": "integer",
             "format": "int32"
           },
-          "containerId": {
+          "basketContentEpisodeId": {
             "type": "string",
             "format": "guid",
             "nullable": true
           },
-          "containerIds": {
+          "basketCycleEndContentEpisodeIds": {
             "type": "array",
             "nullable": true,
             "items": {
@@ -2425,14 +2425,6 @@
             "items": {
               "$ref": "#/components/schemas/ToolUse"
             }
-          },
-          "foreignId": {
-            "type": "string",
-            "nullable": true
-          },
-          "correlationId": {
-            "type": "string",
-            "nullable": true
           }
         }
       },

@@ -2,14 +2,16 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using Microsoft.Data.Sqlite;
+using Shouldly;
 using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Tests;
 
-public sealed class ContainerIdentitySpec : IDisposable
+public sealed class BasketLogIdentitySpec : IDisposable
 {
   private readonly string _databaseFile = Path.Combine(
     Path.GetTempPath(),
@@ -17,7 +19,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   );
   private readonly RepositoryConfig _repositoryConfig;
 
-  public ContainerIdentitySpec()
+  public BasketLogIdentitySpec()
   {
     _repositoryConfig = RepositoryConfig.InitializeEventDatabase(
       null,
@@ -34,7 +36,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task PersistsNumberedUuidAndNoContainerIdentity()
+  public async Task PersistsNumberedBasketContentEpisodeAndNoBasketIdentity()
   {
     var id = Guid.NewGuid();
     using var repository = _repositoryConfig.OpenConnection();
@@ -47,25 +49,74 @@ public sealed class ContainerIdentitySpec : IDisposable
     );
     var numbered = repository.RecordBasketContentSnapshot(
       mats: [],
-      new ContainerIdentity.Numbered { ContainerNum = 7 },
+      new BasketLogIdentity.NumberedBasket { BasketId = 7 },
       DateTime.UtcNow
     );
     var uuid = repository.RecordBasketContentSnapshot(
       mats: [],
-      new ContainerIdentity.Uuid { ContainerId = id },
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id },
       DateTime.UtcNow
     );
 
     var loaded = repository.GetRecentLog(0).ToImmutableList();
     await Assert
-      .That(loaded.Single(entry => entry.Counter == noIdentity.Counter).Identity)
-      .IsTypeOf<ContainerIdentity.None>();
+      .That(loaded.Single(entry => entry.Counter == noIdentity.Counter).BasketIdentity)
+      .IsTypeOf<BasketLogIdentity.None>();
     await Assert
-      .That(loaded.Single(entry => entry.Counter == numbered.Counter).Identity)
-      .IsEqualTo(new ContainerIdentity.Numbered { ContainerNum = 7 });
+      .That(loaded.Single(entry => entry.Counter == noIdentity.Counter).BasketContentEpisodeId)
+      .IsNull();
     await Assert
-      .That(loaded.Single(entry => entry.Counter == uuid.Counter).Identity)
-      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = id });
+      .That(
+        loaded.Single(entry => entry.Counter == noIdentity.Counter).BasketCycleEndContentEpisodeIds
+      )
+      .IsNull();
+    await Assert
+      .That(loaded.Single(entry => entry.Counter == numbered.Counter).BasketIdentity)
+      .IsEqualTo(new BasketLogIdentity.NumberedBasket { BasketId = 7 });
+    await Assert
+      .That(loaded.Single(entry => entry.Counter == uuid.Counter).BasketIdentity)
+      .IsEqualTo(new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id });
+  }
+
+  [Test]
+  public async Task OrdinaryPalletMachineCycleHasNoBasketIdentity()
+  {
+    var ordinaryPalletEvent = new LogEntry(
+      1,
+      [],
+      7,
+      LogType.MachineCycle,
+      "Machine",
+      1,
+      "program",
+      true,
+      DateTime.UtcNow,
+      ""
+    );
+
+    await Assert.That(ordinaryPalletEvent.BasketIdentity).IsTypeOf<BasketLogIdentity.None>();
+  }
+
+  [Test]
+  public void HidesRepositoryMetadataFromLogEntryJson()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var log = repository.RecordBasketLoadBegin(
+      [],
+      basketId: 7,
+      lulNum: 1,
+      timeUTC: DateTime.UtcNow,
+      metadata: new EventLogMetadata
+      {
+        ForeignId = "repository-only-foreign-id",
+        CorrelationId = "repository-only-correlation-id",
+      }
+    );
+
+    var json = JsonSerializer.Serialize(log);
+    json.ShouldNotContain("foreignId");
+    json.ShouldNotContain("correlationId");
+    json.ShouldContain("basketContentEpisodeId");
   }
 
   [Test]
@@ -83,12 +134,12 @@ public sealed class ContainerIdentitySpec : IDisposable
 
     var numbered = repository.RecordBasketContentSnapshot(
       [material],
-      new ContainerIdentity.Numbered { ContainerNum = 4 },
+      new BasketLogIdentity.NumberedBasket { BasketId = 4 },
       DateTime.UtcNow
     );
     var uuid = repository.RecordBasketContentSnapshot(
       [material],
-      new ContainerIdentity.Uuid { ContainerId = id },
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id },
       DateTime.UtcNow
     );
 
@@ -105,7 +156,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   public async Task BasketEvidenceForeignIdsRemainCorrelationMetadata()
   {
     var id = Guid.NewGuid();
-    var identity = new ContainerIdentity.Uuid { ContainerId = id };
+    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id };
     var time = new DateTime(2026, 7, 27, 12, 0, 0, DateTimeKind.Utc);
     using var repository = _repositoryConfig.OpenConnection();
 
@@ -144,7 +195,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     var id = Guid.NewGuid();
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 1);
-    var identity = new ContainerIdentity.Uuid { ContainerId = id };
+    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id };
     var logs = repository
       .RecordBasketStationOperation(
         new BasketStationOperation
@@ -177,7 +228,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       .Single(entry => entry.LogType == LogType.BasketLoadUnload);
 
     await Assert.That(logs.Pallet).IsEqualTo(-1);
-    await Assert.That(logs.ContainerId).IsEqualTo(id);
+    await Assert.That(logs.BasketContentEpisodeId).IsEqualTo(id);
     await Assert.That(logs.Material.Single().MaterialID).IsEqualTo(materialId);
   }
 
@@ -186,8 +237,8 @@ public sealed class ContainerIdentitySpec : IDisposable
   {
     var time = new DateTime(2026, 7, 27, 10, 30, 0, DateTimeKind.Utc);
     var id = Guid.NewGuid();
-    var uuidIdentity = new ContainerIdentity.Uuid { ContainerId = id };
-    var numberedIdentity = new ContainerIdentity.Numbered { ContainerNum = 8 };
+    var uuidIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id };
+    var numberedIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 8 };
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 1);
     QueueMaterial(repository, materialId, "raw", time);
@@ -223,7 +274,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   public async Task ExplicitBasketEndRejectsInvalidatedStart()
   {
     var time = new DateTime(2026, 7, 27, 11, 0, 0, DateTimeKind.Utc);
-    var identity = new ContainerIdentity.Numbered { ContainerNum = 5 };
+    var identity = new BasketLogIdentity.NumberedBasket { BasketId = 5 };
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 1);
     QueueMaterial(repository, materialId, "raw", time);
@@ -276,7 +327,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   public async Task NumberedBasketEndAllowsOnlyDegenerateEmptyCycleWithoutOpenCycle()
   {
     var time = new DateTime(2026, 7, 27, 11, 30, 0, DateTimeKind.Utc);
-    var identity = new ContainerIdentity.Numbered { ContainerNum = 5 };
+    var identity = new BasketLogIdentity.NumberedBasket { BasketId = 5 };
     using var repository = _repositoryConfig.OpenConnection();
     var end = new BasketStationOperation
     {
@@ -336,7 +387,10 @@ public sealed class ContainerIdentitySpec : IDisposable
       [
         new BasketCycleBoundary.End
         {
-          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() },
+          BasketIdentity = new BasketLogIdentity.ContentEpisode
+          {
+            ContentEpisodeId = Guid.NewGuid(),
+          },
           Material = [],
           ReconciledBasketIdentities = [],
         },
@@ -418,10 +472,10 @@ public sealed class ContainerIdentitySpec : IDisposable
   {
     var time = new DateTime(2026, 7, 27, 11, 45, 0, DateTimeKind.Utc);
     using var repository = _repositoryConfig.OpenConnection();
-    ContainerIdentity[] identities =
+    BasketLogIdentity[] identities =
     [
-      new ContainerIdentity.Numbered { ContainerNum = 5 },
-      new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() },
+      new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.NewGuid() },
     ];
     foreach (var (identity, index) in identities.Select((identity, index) => (identity, index)))
     {
@@ -454,8 +508,8 @@ public sealed class ContainerIdentitySpec : IDisposable
   public async Task UuidCycleStartAtomicallyAssociatesAndRecordsStation()
   {
     var time = new DateTime(2026, 7, 27, 11, 50, 0, DateTimeKind.Utc);
-    var containerId = Guid.NewGuid();
-    var identity = new ContainerIdentity.Uuid { ContainerId = containerId };
+    var contentEpisodeId = Guid.NewGuid();
+    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = contentEpisodeId };
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 1);
     QueueMaterial(repository, materialId, "raw", time);
@@ -532,14 +586,14 @@ public sealed class ContainerIdentitySpec : IDisposable
       .Contains(LogType.BasketIdentityAssociation);
     await Assert
       .That(repository.GetCurrentBasketIdentityAssociations(7).Single().ContentEpisodeIds)
-      .IsEquivalentTo([containerId]);
+      .IsEquivalentTo([contentEpisodeId]);
   }
 
   [Test]
   public async Task InvalidatedBasketMaterialCanBeRescannedAndLoadedAsFreshProcess()
   {
     var time = new DateTime(2026, 7, 27, 12, 0, 0, DateTimeKind.Utc);
-    var identity = new ContainerIdentity.Numbered { ContainerNum = 6 };
+    var identity = new BasketLogIdentity.NumberedBasket { BasketId = 6 };
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 1);
     QueueMaterial(repository, materialId, "raw", time);
@@ -603,7 +657,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       reason: null,
       DateTime.UtcNow
     );
-    var basketIdentity = new ContainerIdentity.Numbered { ContainerNum = 5 };
+    var basketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 };
     repository.RecordBasketStationOperation(
       new BasketStationOperation
       {
@@ -669,7 +723,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       [
         new BasketCycleBoundary.End
         {
-          BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 5 },
+          BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
           Material =
           [
             new EventLogMaterial
@@ -732,8 +786,8 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
       .IsTrue();
     await Assert
-      .That(logs.Select(log => log.Identity))
-      .IsEquivalentTo(Enumerable.Repeat<ContainerIdentity>(basketIdentity, 4));
+      .That(logs.Select(log => log.BasketIdentity))
+      .IsEquivalentTo(Enumerable.Repeat<BasketLogIdentity>(basketIdentity, 4));
     await Assert.That(logs.Count(log => log.LogType == LogType.BasketLoadUnload)).IsEqualTo(2);
     await Assert.That(logs[0].Material.Single().MaterialID).IsEqualTo(unloadedMaterialId);
     await Assert.That(logs[1].Material.Single().Face).IsEqualTo(4);
@@ -755,8 +809,8 @@ public sealed class ContainerIdentitySpec : IDisposable
     using var repository = _repositoryConfig.OpenConnection();
     var unloadedMaterialId = repository.AllocateMaterialID("job", "part", 2);
     var loadedMaterialId = repository.AllocateMaterialID("job", "part", 2);
-    var unloadIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
-    var loadIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
+    var unloadIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.NewGuid() };
+    var loadIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.NewGuid() };
     var time = new DateTime(2026, 7, 27, 12, 0, 0, DateTimeKind.Utc);
     repository.RecordBasketContentSnapshot(
       [
@@ -827,7 +881,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         [
           new BasketCycleBoundary.End
           {
-            BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 5 },
+            BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
             Material =
             [
               new EventLogMaterial
@@ -837,7 +891,7 @@ public sealed class ContainerIdentitySpec : IDisposable
                 Face = 2,
               },
             ],
-            ReconciledBasketIdentities = [unloadIdentity.ContainerId],
+            ReconciledBasketIdentities = [unloadIdentity.ContentEpisodeId],
           },
           new BasketCycleBoundary.Start
           {
@@ -893,12 +947,12 @@ public sealed class ContainerIdentitySpec : IDisposable
       .ToImmutableList();
 
     await Assert
-      .That(first.Select(log => log.Identity))
+      .That(first.Select(log => log.BasketIdentity))
       .IsEquivalentTo(
-        new ContainerIdentity[]
+        new BasketLogIdentity[]
         {
           unloadIdentity,
-          new ContainerIdentity.Numbered { ContainerNum = 5 },
+          new BasketLogIdentity.NumberedBasket { BasketId = 5 },
           loadIdentity,
           loadIdentity,
         }
@@ -986,7 +1040,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           [
             new BasketStationTransfer.UnloadFromBasket
             {
-              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 8 },
+              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 8 },
               Material =
               [
                 new EventLogMaterial
@@ -1006,7 +1060,7 @@ public sealed class ContainerIdentitySpec : IDisposable
             },
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 8 },
+              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 8 },
               Material =
               [
                 new EventLogMaterial
@@ -1056,7 +1110,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       reason: null,
       DateTime.UtcNow
     );
-    var basketIdentity = new ContainerIdentity.Uuid { ContainerId = Guid.NewGuid() };
+    var basketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.NewGuid() };
     var operation = new BasketStationOperation
     {
       Transfers =
@@ -1121,7 +1175,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       .IsEqualTo(materialId);
     await Assert
       .That(repository.GetRecentLog(0))
-      .DoesNotContain(log => log.ContainerId == basketIdentity.ContainerId);
+      .DoesNotContain(log => log.BasketContentEpisodeId == basketIdentity.ContentEpisodeId);
 
     using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
     {
@@ -1165,7 +1219,8 @@ public sealed class ContainerIdentitySpec : IDisposable
         repository
           .GetRecentLog(0)
           .Count(log =>
-            log.ContainerId == basketIdentity.ContainerId && log.LogType == LogType.BasketLoadUnload
+            log.BasketContentEpisodeId == basketIdentity.ContentEpisodeId
+            && log.LogType == LogType.BasketLoadUnload
           )
       )
       .IsEqualTo(1);
@@ -1194,7 +1249,7 @@ public sealed class ContainerIdentitySpec : IDisposable
         DateTime.UtcNow
       );
 
-    var basketIdentity = new ContainerIdentity.Numbered { ContainerNum = 8 };
+    var basketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 8 };
     ImmutableList<EventLogMaterial> Material(long materialId, int process, int face) =>
       [
         new EventLogMaterial
@@ -1298,7 +1353,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       .IsEquivalentTo([loadProcessTwo, loadProcessThree]);
     await Assert
       .That(repository.GetRecentLog(seed.Counter))
-      .DoesNotContain(log => log.Identity == basketIdentity);
+      .DoesNotContain(log => log.BasketIdentity == basketIdentity);
 
     using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
     {
@@ -1360,7 +1415,9 @@ public sealed class ContainerIdentitySpec : IDisposable
       .That(repository.GetMaterialInAllQueues().Select(material => material.MaterialID))
       .IsEquivalentTo([unloadProcessOne, unloadProcessTwo]);
     await Assert
-      .That(repository.GetRecentLog(seed.Counter).Count(log => log.Identity == basketIdentity))
+      .That(
+        repository.GetRecentLog(seed.Counter).Count(log => log.BasketIdentity == basketIdentity)
+      )
       .IsEqualTo(6);
   }
 
@@ -1393,7 +1450,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       [
         new BasketStationTransfer.LoadOntoBasket
         {
-          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+          BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId },
           Material = [completeContents[1]],
           ActiveOperationTime = TimeSpan.Zero,
         },
@@ -1402,7 +1459,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       [
         new BasketCycleBoundary.Start
         {
-          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+          BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId },
           Material = completeContents,
         },
       ],
@@ -1426,8 +1483,8 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert.That(loadEnd.Program).IsEqualTo("LOAD");
     await Assert.That(loadEnd.StartOfCycle).IsFalse();
     await Assert
-      .That(loadEnd.Identity)
-      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = basketId });
+      .That(loadEnd.BasketIdentity)
+      .IsEqualTo(new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId });
     await Assert.That(loadEnd.Material.Single().MaterialID).IsEqualTo(loadedMaterialId);
     await Assert.That(loadEnd.Material.Single().Process).IsEqualTo(2);
     await Assert.That(loadEnd.Material.Single().Face).IsEqualTo(7);
@@ -1436,8 +1493,8 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert.That(cycleStart.LogType).IsEqualTo(LogType.BasketCycle);
     await Assert.That(cycleStart.StartOfCycle).IsTrue();
     await Assert
-      .That(cycleStart.Identity)
-      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = basketId });
+      .That(cycleStart.BasketIdentity)
+      .IsEqualTo(new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId });
     await Assert
       .That(
         cycleStart.Material.Select(material =>
@@ -1473,7 +1530,11 @@ public sealed class ContainerIdentitySpec : IDisposable
       )
     );
     await Assert
-      .That(repository.CurrentBasketLog(new ContainerIdentity.Uuid { ContainerId = basketId }))
+      .That(
+        repository.CurrentBasketLog(
+          new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId }
+        )
+      )
       .Count()
       .IsEqualTo(2);
     await Assert
@@ -1488,7 +1549,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           log.Program,
           log.StartOfCycle,
           log.Pallet,
-          log.ContainerId,
+          log.BasketContentEpisodeId,
           Material = log.Material.Select(material => new
           {
             material.MaterialID,
@@ -1525,7 +1586,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+              BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId },
               Material =
               [
                 new EventLogMaterial
@@ -1542,7 +1603,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+              BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId },
               Material =
               [
                 new EventLogMaterial
@@ -1594,13 +1655,13 @@ public sealed class ContainerIdentitySpec : IDisposable
     var firstEvidenceTime = new DateTime(2026, 7, 24, 10, 0, 0, DateTimeKind.Utc);
     repository.RecordBasketContentSnapshot(
       firstContents,
-      new ContainerIdentity.Uuid { ContainerId = first },
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = first },
       firstEvidenceTime,
       foreignId: "first-fragment"
     );
     repository.RecordBasketContentSnapshot(
       secondContents,
-      new ContainerIdentity.Uuid { ContainerId = second },
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = second },
       firstEvidenceTime.AddMinutes(1),
       foreignId: "second-fragment"
     );
@@ -1610,13 +1671,13 @@ public sealed class ContainerIdentitySpec : IDisposable
       [
         new BasketStationTransfer.UnloadFromBasket
         {
-          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = first },
+          BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = first },
           Material = firstContents,
           ActiveOperationTime = TimeSpan.Zero,
         },
         new BasketStationTransfer.UnloadFromBasket
         {
-          BasketIdentity = new ContainerIdentity.Uuid { ContainerId = second },
+          BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = second },
           Material = secondContents,
           ActiveOperationTime = TimeSpan.Zero,
         },
@@ -1625,7 +1686,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       [
         new BasketCycleBoundary.End
         {
-          BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 9 },
+          BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 9 },
           Material = [.. firstContents, .. secondContents],
           ReconciledBasketIdentities = [first, second],
         },
@@ -1658,9 +1719,9 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert.That(logs.Select(log => log.Program)).IsEquivalentTo(["UNLOAD", "UNLOAD", ""]);
     var cycleEnd = logs[2];
     await Assert
-      .That(cycleEnd.Identity)
-      .IsEqualTo(new ContainerIdentity.Numbered { ContainerNum = 9 });
-    await Assert.That(cycleEnd.CycleEndContainerIds).IsEquivalentTo([first, second]);
+      .That(cycleEnd.BasketIdentity)
+      .IsEqualTo(new BasketLogIdentity.NumberedBasket { BasketId = 9 });
+    await Assert.That(cycleEnd.BasketCycleEndContentEpisodeIds).IsEquivalentTo([first, second]);
     await Assert.That(cycleEnd.Material.Select(material => material.Face)).IsEquivalentTo([2, 8]);
     await Assert.That(cycleEnd.ElapsedTime).IsEqualTo(TimeSpan.FromMinutes(10));
     await Assert
@@ -1676,7 +1737,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     using var repository = _repositoryConfig.OpenConnection();
     repository.RecordBasketContentSnapshot(
       [],
-      new ContainerIdentity.Uuid { ContainerId = fragment },
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = fragment },
       DateTime.UtcNow
     );
     var operation = new BasketStationOperation
@@ -1686,7 +1747,7 @@ public sealed class ContainerIdentitySpec : IDisposable
       [
         new BasketCycleBoundary.End
         {
-          BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 9 },
+          BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 9 },
           Material = [],
           ReconciledBasketIdentities = [fragment],
         },
@@ -1732,7 +1793,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           [
             new BasketStationTransfer.UnloadFromBasket
             {
-              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = fragment },
+              BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = fragment },
               Material =
               [
                 new EventLogMaterial
@@ -1749,7 +1810,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           [
             new BasketCycleBoundary.End
             {
-              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 9 },
+              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 9 },
               Material =
               [
                 new EventLogMaterial
@@ -1808,7 +1869,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           [
             new PalletBasketTransfer.LoadOntoBasket
             {
-              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+              BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId },
               Material =
               [
                 new EventLogMaterial
@@ -1827,8 +1888,8 @@ public sealed class ContainerIdentitySpec : IDisposable
 
     var basketLoad = logs.Single(log => log.LogType == LogType.BasketLoadUnload);
     await Assert
-      .That(basketLoad.Identity)
-      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = basketId });
+      .That(basketLoad.BasketIdentity)
+      .IsEqualTo(new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId });
     await Assert.That(basketLoad.Material.Single().Process).IsEqualTo(1);
     await Assert.That(basketLoad.Material.Single().Face).IsEqualTo(6);
     await Assert.That(logs).DoesNotContain(log => log.LogType == LogType.BasketCycle);
@@ -1868,7 +1929,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           [
             new PalletBasketTransfer.LoadOntoBasket
             {
-              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = basketId },
+              BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId },
               Material =
               [
                 new EventLogMaterial
@@ -1893,7 +1954,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     var basketId = Guid.NewGuid();
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job", "part", 2);
-    var identity = new ContainerIdentity.Uuid { ContainerId = basketId };
+    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = basketId };
 
     await AssertThrows<ArgumentException>(() =>
       repository.RecordBasketStationOperation(
@@ -1980,7 +2041,7 @@ public sealed class ContainerIdentitySpec : IDisposable
   public async Task BasketTurnoverRejectsUnloadedMaterialInCompleteCycleStart()
   {
     using var repository = _repositoryConfig.OpenConnection();
-    var identity = new ContainerIdentity.Numbered { ContainerNum = 4 };
+    var identity = new BasketLogIdentity.NumberedBasket { BasketId = 4 };
     var materialId = repository.AllocateMaterialID("job", "part", 1);
     var material = new EventLogMaterial
     {
@@ -2029,12 +2090,12 @@ public sealed class ContainerIdentitySpec : IDisposable
   {
     using var repository = _repositoryConfig.OpenConnection();
     await AssertThrows<ArgumentException>(() =>
-      repository.RecordBasketContentSnapshot([], new ContainerIdentity.None(), DateTime.UtcNow)
+      repository.RecordBasketContentSnapshot([], new BasketLogIdentity.None(), DateTime.UtcNow)
     );
     await AssertThrows<ArgumentException>(() =>
       repository.RecordBasketArriveLocation(
         [],
-        new ContainerIdentity.Uuid { ContainerId = Guid.Empty },
+        new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.Empty },
         "Staging",
         1,
         DateTime.UtcNow
@@ -2064,9 +2125,9 @@ public sealed class ContainerIdentitySpec : IDisposable
           false,
           DateTime.UtcNow,
           ""
-        ).Identity
+        ).BasketIdentity
       )
-      .IsTypeOf<ContainerIdentity.None>();
+      .IsTypeOf<BasketLogIdentity.None>();
   }
 
   [Test]
@@ -2088,7 +2149,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           Face = 0,
         },
       ],
-      new ContainerIdentity.Uuid { ContainerId = oldId },
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = oldId },
       oldCycleStart
     );
 
@@ -2101,7 +2162,7 @@ public sealed class ContainerIdentitySpec : IDisposable
           [
             new BasketCycleBoundary.End
             {
-              BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = 4 },
+              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 4 },
               Material =
               [
                 new EventLogMaterial
@@ -2115,7 +2176,7 @@ public sealed class ContainerIdentitySpec : IDisposable
             },
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new ContainerIdentity.Uuid { ContainerId = newId },
+              BasketIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = newId },
               Material =
               [
                 new EventLogMaterial
@@ -2142,12 +2203,12 @@ public sealed class ContainerIdentitySpec : IDisposable
     await Assert.That(turnover[0].StartOfCycle).IsFalse();
     await Assert.That(turnover[0].ElapsedTime).IsEqualTo(TimeSpan.FromHours(2));
     await Assert
-      .That(turnover[0].Identity)
-      .IsEqualTo(new ContainerIdentity.Numbered { ContainerNum = 4 });
+      .That(turnover[0].BasketIdentity)
+      .IsEqualTo(new BasketLogIdentity.NumberedBasket { BasketId = 4 });
     await Assert.That(turnover[1].StartOfCycle).IsTrue();
     await Assert
-      .That(turnover[1].Identity)
-      .IsEqualTo(new ContainerIdentity.Uuid { ContainerId = newId });
+      .That(turnover[1].BasketIdentity)
+      .IsEqualTo(new BasketLogIdentity.ContentEpisode { ContentEpisodeId = newId });
   }
 
   private static async Task AssertThrows<TException>(Action action)
@@ -2169,7 +2230,7 @@ public sealed class ContainerIdentitySpec : IDisposable
     new() { Kind = BasketEvidenceSourceKind.Integration, Name = "test" };
 
   private static BasketStationOperation LoadOntoBasketOperation(
-    ContainerIdentity identity,
+    BasketLogIdentity identity,
     long materialId
   ) =>
     new()
