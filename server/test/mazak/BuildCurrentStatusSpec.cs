@@ -107,6 +107,57 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       cfg.InverseLoadStationNumber(202).ShouldBe(2);
     }
 
+    [Test]
+    public async Task CopiedJobPreservesProcessMetadataFromRepository()
+    {
+      using var repository = _repoCfg.OpenConnection();
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      )!;
+      var sourceJob = newJobs.Jobs.Single(job => job.UniqueStr == "aaa-schId1234");
+      var expectedExtraFields = ImmutableDictionary<string, double>.Empty.Add(
+        "client-defined-field",
+        42
+      );
+      var updatedJob = sourceJob with
+      {
+        Processes = sourceJob
+          .Processes.Select(process => process with { ExtraFields = expectedExtraFields })
+          .ToImmutableList(),
+      };
+      repository.AddJobs(
+        newJobs with
+        {
+          Jobs = newJobs
+            .Jobs.Select(job => job.UniqueStr == updatedJob.UniqueStr ? updatedJob : job)
+            .ToImmutableList(),
+        },
+        expectedPreviousScheduleId: null,
+        addAsCopiedToSystem: true
+      );
+      var allData = JsonSerializer.Deserialize<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-no-material.data.json")
+        ),
+        jsonSettings
+      )!;
+
+      var status = BuildCurrentStatus.Build(
+        repository,
+        _settings,
+        _mazakCfg,
+        allData,
+        machineGroupName: "MC",
+        palletWithUnprocessedUnloads: null,
+        new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+      );
+
+      await Assert
+        .That(status.Jobs[updatedJob.UniqueStr].Processes.Select(process => process.ExtraFields))
+        .IsEquivalentTo([expectedExtraFields, expectedExtraFields]);
+    }
+
     /*
     [Fact]
     public void CreateSnapshot()

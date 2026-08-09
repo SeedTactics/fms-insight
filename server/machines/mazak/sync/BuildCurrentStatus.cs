@@ -517,7 +517,15 @@ namespace MazakMachineInterface
             : null,
           Cycles = job.Cycles,
           Processes = job
-            .Processes.Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() })
+            .Processes.Select(
+              (paths, processIndex) =>
+                processIndex < (job.DbJob?.Processes.Count ?? 0)
+                  ? job.DbJob.Processes[processIndex] with
+                  {
+                    Paths = paths.ToImmutable(),
+                  }
+                  : new ProcessInfo { Paths = paths.ToImmutable() }
+            )
             .ToImmutableList(),
           CopiedToSystem = true,
           Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),

@@ -46,6 +46,13 @@ public class MazakConfig
 
   public const string DefaultConnectionStr =
     "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;Mode=Share Deny None;";
+  public const string DefaultSmoothConnectionStr =
+    @"Data Source=(local)\PMCSQLSERVER;User ID=mazakpmc;Password=Fms-978";
+
+  private static string DefaultConnectionString(MazakDbType dbType)
+  {
+    return dbType == MazakDbType.MazakSmooth ? DefaultSmoothConnectionStr : DefaultConnectionStr;
+  }
 
   public static MazakConfig LoadFromRegistry()
   {
@@ -54,12 +61,16 @@ public class MazakConfig
     );
     if (key != null)
     {
+      var dbType = (MazakDbType)
+        Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString());
+      var sqlConnectionString = key.GetValue("SQLConnectionString", "").ToString();
       return new MazakConfig()
       {
         Port = int.TryParse(key.GetValue("Port", "5200").ToString(), out var p) ? p : 5200,
-        DBType = (MazakDbType)
-          Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString()),
-        SQLConnectionString = key.GetValue("SQLConnectionString", DefaultConnectionStr).ToString(),
+        DBType = dbType,
+        SQLConnectionString = string.IsNullOrEmpty(sqlConnectionString)
+          ? DefaultConnectionString(dbType)
+          : sqlConnectionString,
         OleDbDatabasePath = key.GetValue("OleDbDatabasePath", "c:\\Mazak\\NFMS\\DB").ToString(),
         LogCSVPath = key.GetValue("LogCSVPath", "c:\\Mazak\\FMS\\Log").ToString(),
         LoadCSVPath = key.GetValue("LoadCSVPath", "c:\\Mazak\\FMS\\LDS").ToString(),
@@ -75,6 +86,14 @@ public class MazakConfig
         @"Software\SeedTactics\FMS Insight Mazak Proxy",
         "DBType"
       );
+      var dbType = string.IsNullOrEmpty(dbTy)
+        ? MazakDbType.MazakWeb
+        : (MazakDbType)Enum.Parse(typeof(MazakDbType), dbTy);
+      var sqlConnectionString = RegistryWOW6432.GetRegKey32(
+        RegHive.HKEY_LOCAL_MACHINE,
+        @"Software\SeedTactics\FMS Insight Mazak Proxy",
+        "SQLConnectionString"
+      );
 
       return new MazakConfig()
       {
@@ -88,14 +107,10 @@ public class MazakConfig
         )
           ? p
           : 5200,
-        DBType = string.IsNullOrEmpty(dbTy)
-          ? MazakDbType.MazakWeb
-          : (MazakDbType)Enum.Parse(typeof(MazakDbType), dbTy),
-        SQLConnectionString = RegistryWOW6432.GetRegKey32(
-          RegHive.HKEY_LOCAL_MACHINE,
-          @"Software\SeedTactics\FMS Insight Mazak Proxy",
-          "SQLConnectionString"
-        ),
+        DBType = dbType,
+        SQLConnectionString = string.IsNullOrEmpty(sqlConnectionString)
+          ? DefaultConnectionString(dbType)
+          : sqlConnectionString,
         OleDbDatabasePath = RegistryWOW6432.GetRegKey32(
           RegHive.HKEY_LOCAL_MACHINE,
           @"Software\SeedTactics\FMS Insight Mazak Proxy",
