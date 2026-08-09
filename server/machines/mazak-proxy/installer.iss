@@ -16,12 +16,14 @@ DisableProgramGroupPage=auto
 CloseApplications=yes
 
 [Files]
-Source: "proxy-build\mazak-proxy.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "proxy-build\mazak-proxy.exe"; DestDir: "{app}"; Flags: ignoreversion; BeforeInstall: StopProxyService
 Source: "proxy-build\mazak-proxy.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "proxy-build\mazak-proxy.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
-Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start= auto binPath= ""{app}\mazak-proxy.exe"" DisplayName= ""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden
+Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start= auto binPath= ""{app}\mazak-proxy.exe"" DisplayName= ""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden; Check: ShouldCreateProxyService
+Filename: {sys}\sc.exe; Parameters: "config fmsinsightmazakproxy start= auto binPath= ""{app}\mazak-proxy.exe"" DisplayName= ""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden
+Filename: {sys}\sc.exe; Parameters: "start fmsinsightmazakproxy"; Flags: runhidden
 
 [UninstallRun]
 Filename: {sys}\sc.exe; Parameters: "stop fmsinsightmazakproxy" ; Flags: runhidden
@@ -66,6 +68,35 @@ begin
   Result := (sPrevPath <> '');
 end;
 
+function ProxyServiceExists(): Boolean;
+begin
+  Result := RegKeyExists(HKLM,
+    'SYSTEM\CurrentControlSet\Services\fmsinsightmazakproxy');
+end;
+
+function ShouldCreateProxyService(): Boolean;
+begin
+  Result := not ProxyServiceExists();
+end;
+
+procedure StopProxyService;
+var
+  ResultCode: Integer;
+begin
+  if ProxyServiceExists() then begin
+    Exec(ExpandConstant('{sys}\net.exe'), 'stop fmsinsightmazakproxy', '',
+      SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
+end;
+
+function GetInstalledValue(ValueName: string; DefaultValue: string): string;
+begin
+  if not RegQueryStringValue(HKLM,
+    'Software\SeedTactics\FMS Insight Mazak Proxy', ValueName, Result) then begin
+    Result := DefaultValue;
+  end;
+end;
+
 procedure InitializeWizard;
 begin
   { Create page }
@@ -91,7 +122,7 @@ begin
     'Select Mazak Database Path', 'Where are the Mazak databases located?',
     'Select the folder where the Mazak transaction and read-only databases are located',
     False, '');
-  DatabasePage.Add('');
+  DatabasePage.Add('c:\Mazak\NFMS\DB');
 
   SQLConnectionPage := CreateInputQueryPage(DatabasePage.ID,
     'Select Mazak SQL Server', 'Configure the Mazak SQL Server connection',
@@ -102,12 +133,12 @@ begin
   LogCSVPage := CreateInputDirPage(SQLConnectionPage.ID,
     'Select Log CSV', 'Please select the directory containing the log CSV files.',
     '', False, '');
-  LogCSVPage.Add('');
+  LogCSVPage.Add('c:\Mazak\FMS\Log');
 
   LoadCSVPage := CreateInputDirPage(LogCSVPage.ID,
     'Select Load CSV', 'Please select the directory containing the load/unload LDS files.',
     '', False, '');
-  LoadCSVPage.Add('');
+  LoadCSVPage.Add('c:\Mazak\FMS\LDS');
 
 end;
 
@@ -142,6 +173,11 @@ end;
 
 function GetDBType(Param: string): string;
 begin
+  if IsUpgrade() then begin
+    Result := GetInstalledValue('DBType', 'MazakWeb');
+    exit;
+  end;
+
   if VersionPage.Values[0] then begin
     Result := 'MazakVersionE'
   end;
@@ -158,12 +194,13 @@ var
   InstalledDBType: string;
 begin
   if IsUpgrade() then begin
-    if RegQueryStringValue(HKLM,
-      'Software\SeedTactics\FMS Insight Mazak Proxy', 'DBType', InstalledDBType) and
-      (InstalledDBType = 'MazakSmooth') then begin
-      Result := 'Data Source=(local)\PMCSQLSERVER;User ID=mazakpmc;Password=Fms-978'
+    InstalledDBType := GetInstalledValue('DBType', 'MazakWeb');
+    if InstalledDBType = 'MazakSmooth' then begin
+      Result := GetInstalledValue('SQLConnectionString',
+        'Data Source=(local)\PMCSQLSERVER;User ID=mazakpmc;Password=Fms-978')
     end else begin
-      Result := 'Provider=Microsoft.Jet.OLEDB.4.0;Password="";User ID=Admin;Mode=Share Deny None;'
+      Result := GetInstalledValue('SQLConnectionString',
+        'Provider=Microsoft.Jet.OLEDB.4.0;Password="";User ID=Admin;Mode=Share Deny None;')
     end;
     exit;
   end;
@@ -177,20 +214,36 @@ end;
 
 function GetDatabasePath(Param: string): string;
 begin
-  Result := DatabasePage.Values[0]
+  if IsUpgrade() then begin
+    Result := GetInstalledValue('OleDbDatabasePath', '');
+  end else begin
+    Result := DatabasePage.Values[0];
+  end;
 end;
 
 function GetLogCSVPath(Param: string): string;
 begin
-  Result := LogCSVPage.Values[0]
+  if IsUpgrade() then begin
+    Result := GetInstalledValue('LogCSVPath', '');
+  end else begin
+    Result := LogCSVPage.Values[0];
+  end;
 end;
 
 function GetLoadCSVPath(Param: string): string;
 begin
-  Result := LoadCSVPage.Values[0]
+  if IsUpgrade() then begin
+    Result := GetInstalledValue('LoadCSVPath', '');
+  end else begin
+    Result := LoadCSVPage.Values[0];
+  end;
 end;
 
 function GetPort(Param: string): string;
 begin
-  Result := PortPage.Values[0];
+  if IsUpgrade() then begin
+    Result := GetInstalledValue('Port', '5200');
+  end else begin
+    Result := PortPage.Values[0];
+  end;
 end;
