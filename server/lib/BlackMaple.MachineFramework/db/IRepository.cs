@@ -1067,4 +1067,23 @@ namespace BlackMaple.MachineFramework
     public required BasketLocationObservationCorrection Correction { get; init; }
     public BasketLocationObservation Replacement { get; init; }
   }
+
+  /// <summary>
+  /// An identity accepted by repository APIs that address basket event history. The numbered form
+  /// is stored in the historical pallet field; the content-episode form is stored with Pallet = -1.
+  /// </summary>
+  public abstract record BasketLogIdentity
+  {
+    private BasketLogIdentity() { }
+
+    public sealed record NumberedBasket : BasketLogIdentity
+    {
+      public required int BasketId { get; init; }
+    }
+
+    public sealed record ContentEpisode : BasketLogIdentity
+    {
+      public required Guid ContentEpisodeId { get; init; }
+    }
+  }
 }

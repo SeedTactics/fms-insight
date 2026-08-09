@@ -819,7 +819,6 @@ namespace BlackMaple.MachineFramework
       using var trans = _connection.BeginTransaction();
       var logs = basketIdentity switch
       {
-        BasketLogIdentity.None => [],
         BasketLogIdentity.NumberedBasket numbered when numbered.BasketId > 0 =>
           CurrentNumberedBasketAndFragments(numbered.BasketId, includeLastCycleEvt, trans),
         BasketLogIdentity.ContentEpisode uuid when uuid.ContentEpisodeId != Guid.Empty =>

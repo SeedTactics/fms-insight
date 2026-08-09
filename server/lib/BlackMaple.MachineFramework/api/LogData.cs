@@ -123,27 +123,6 @@ namespace BlackMaple.MachineFramework
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 
-  /// <summary>
-  /// The basket identity recorded by an immutable basket event. The numbered form uses the
-  /// historical <see cref="LogEntry.Pallet"/> field.
-  /// </summary>
-  public abstract record BasketLogIdentity
-  {
-    private BasketLogIdentity() { }
-
-    public sealed record None : BasketLogIdentity;
-
-    public sealed record NumberedBasket : BasketLogIdentity
-    {
-      public required int BasketId { get; init; }
-    }
-
-    public sealed record ContentEpisode : BasketLogIdentity
-    {
-      public required Guid ContentEpisodeId { get; init; }
-    }
-  }
-
   public enum BasketEvidenceSourceKind
   {
     Operator,
@@ -322,12 +301,19 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("locnum")]
     public required int LocationNum { get; init; }
 
+    /// <summary>
+    /// Historical pallet number field. Basket events also use this field for a known numbered
+    /// basket; unresolved basket content episodes use -1 with
+    /// <see cref="BasketContentEpisodeId"/>. Non-basket events retain their ordinary pallet
+    /// number here.
+    /// </summary>
     [JsonPropertyName("pal")]
     public required int Pallet { get; init; }
 
     /// <summary>
-    /// A basket content episode UUID. Ordinary events record either this UUID or a positive
-    /// <see cref="Pallet"/>, never both.
+    /// For basket events whose numbered basket identity is unresolved, identifies the basket
+    /// content episode and <see cref="Pallet"/> is -1. Numbered basket events use a positive
+    /// <see cref="Pallet"/> and leave this null. Non-basket events leave this null.
     /// </summary>
     [JsonPropertyName("basketContentEpisodeId")]
     public Guid? BasketContentEpisodeId { get; init; }
@@ -337,39 +323,6 @@ namespace BlackMaple.MachineFramework
     /// </summary>
     [JsonPropertyName("basketCycleEndContentEpisodeIds")]
     public ImmutableList<Guid>? BasketCycleEndContentEpisodeIds { get; init; }
-
-    [JsonIgnore]
-    public BasketLogIdentity BasketIdentity =>
-      !IsBasketLogType(LogType)
-        ? new BasketLogIdentity.None()
-        : (Pallet, BasketContentEpisodeId) switch
-        {
-          (0, null) => new BasketLogIdentity.None(),
-          (> 0, null) => new BasketLogIdentity.NumberedBasket { BasketId = Pallet },
-          (-1, Guid id) when id != Guid.Empty => new BasketLogIdentity.ContentEpisode
-          {
-            ContentEpisodeId = id,
-          },
-          // Older databases can contain -1 as a non-identity sentinel.
-          (-1, null) => new BasketLogIdentity.None(),
-          _ => throw new InvalidOperationException(
-            $"Invalid basket identity on log entry {Counter}: basket number {Pallet}, content episode ID {BasketContentEpisodeId}, log type {LogType}."
-          ),
-        };
-
-    private static bool IsBasketLogType(LogType logType) =>
-      logType
-        is LogType.BasketLoadUnload
-          or LogType.BasketCycle
-          or LogType.BasketInLocation
-          or LogType.BasketIdentityAssociation
-          or LogType.BasketContentSnapshot
-          or LogType.BasketLocationObservation
-          or LogType.BasketLocationObservationCorrection
-          or LogType.BasketIdentityAssociationCorrection
-          or LogType.BasketRegionSurvey
-          or LogType.BasketMisload
-          or LogType.BasketMisloadResolution;
 
     [JsonPropertyName("program")]
     public required string Program { get; init; }
