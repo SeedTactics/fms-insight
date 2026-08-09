@@ -129,9 +129,17 @@ namespace BlackMaple.MachineFramework.Controllers
 
     private void Send(ServerEvent val)
     {
-      if (!_messages.TryAdd(val, TimeSpan.FromSeconds(1)))
+      try
       {
-        Log.Error("Unable to add server event {@val} to outgoing websocket messages", val);
+        if (!_messages.TryAdd(val, TimeSpan.FromSeconds(1)))
+        {
+          Log.Error("Unable to add server event {@val} to outgoing websocket messages", val);
+        }
+      }
+      catch (InvalidOperationException) when (_messages.IsAddingCompleted)
+      {
+        // Event publishers can outlive this singleton during host shutdown. Once outgoing
+        // messages are complete, later callbacks have nowhere to go and should be ignored.
       }
     }
 
