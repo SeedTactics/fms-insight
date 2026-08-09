@@ -1,11 +1,12 @@
 import * as api from "../network/api.js";
 
-type ContainerNameEntry = Readonly<Pick<api.ILogEntry, "pal" | "containerId">>;
-type BasketCycleEntry = ContainerNameEntry &
-  Readonly<Pick<api.ILogEntry, "startofcycle" | "containerIds">>;
+type BasketNameEntry = Readonly<Pick<api.ILogEntry, "pal" | "basketContentEpisodeId">>;
+type BasketCycleEntry = BasketNameEntry &
+  Readonly<Pick<api.ILogEntry, "startofcycle" | "basketCycleEndContentEpisodeIds">>;
 
-export function basketContainerName(entry: ContainerNameEntry, basketName: string): string {
-  if (entry.containerId) return `${basketName} fragment ${entry.containerId.slice(0, 8)}`;
+export function basketContainerName(entry: BasketNameEntry, basketName: string): string {
+  if (entry.basketContentEpisodeId)
+    return `${basketName} fragment ${entry.basketContentEpisodeId.slice(0, 8)}`;
   if (entry.pal > 0) return `${basketName} ${entry.pal}`;
   return basketName;
 }
@@ -14,7 +15,7 @@ export function basketCycleDescription(entry: BasketCycleEntry, basketName: stri
   const container = basketContainerName(entry, basketName);
   if (entry.startofcycle) return `${container} started cycle`;
 
-  const fragmentCount = entry.containerIds?.length ?? 0;
+  const fragmentCount = entry.basketCycleEndContentEpisodeIds?.length ?? 0;
   const fragments =
     fragmentCount > 0
       ? ` from ${fragmentCount} UUID fragment${fragmentCount === 1 ? "" : "s"}`

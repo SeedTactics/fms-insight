@@ -736,7 +736,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ContainerId, ForeignID, CorrelationId FROM stations WHERE Counter = $counter";
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId FROM stations WHERE Counter = $counter";
       cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
       using var reader = cmd.ExecuteReader();
       return LoadLog(reader, trans).Single();

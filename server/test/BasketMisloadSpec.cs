@@ -167,7 +167,7 @@ public sealed class BasketMisloadSpec : IDisposable
       connection.Open();
       using var command = connection.CreateCommand();
       command.CommandText =
-        "INSERT INTO basket_cycle_container_ids(CycleCounter, ContainerId) VALUES(1, $id)";
+        "INSERT INTO basket_cycle_content_episode_ids(CycleCounter, BasketContentEpisodeId) VALUES(1, $id)";
       command.Parameters.AddWithValue("id", contentEpisodeId.ToString("D"));
       command.ExecuteNonQuery();
     }
@@ -353,7 +353,7 @@ public sealed class BasketMisloadSpec : IDisposable
     foreach (var id in episodeIds)
       repository.RecordBasketContentSnapshot(
         [],
-        new ContainerIdentity.Uuid { ContainerId = id },
+        new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id },
         DateTime.UtcNow
       );
   }

@@ -118,6 +118,17 @@ namespace BlackMaple.FMSInsight.Tests
       conn1.Open();
       memDb.Open();
 
+      using (var versionCmd = conn1.CreateCommand())
+      {
+        versionCmd.CommandText = "SELECT ver FROM version";
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(42);
+      }
+      using (var versionCmd = memDb.CreateCommand())
+      {
+        versionCmd.CommandText = "SELECT ver FROM version";
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(42);
+      }
+
       CheckSchema(conn1, memDb);
     }
   }
@@ -936,6 +947,42 @@ namespace BlackMaple.FMSInsight.Tests
     {
       _tempFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("database-ver40.db", _tempFile, overwrite: true);
+      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
+    }
+
+    public void Dispose()
+    {
+      _repo.Dispose();
+      if (!string.IsNullOrEmpty(_tempFile) && System.IO.File.Exists(_tempFile))
+        System.IO.File.Delete(_tempFile);
+    }
+
+    [Test]
+    public void Schema()
+    {
+      SchemaUpgradeSpec.Check(_tempFile);
+    }
+  }
+
+  public sealed class Ver41UpgradeSpec : IDisposable
+  {
+    private readonly string _tempFile;
+    private readonly RepositoryConfig _repo;
+
+    public Ver41UpgradeSpec()
+    {
+      _tempFile = System.IO.Path.GetTempFileName();
+      System.IO.File.Copy("database-ver40.db", _tempFile, overwrite: true);
+      using (var conn = new SqliteConnection("Data Source=" + _tempFile))
+      {
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+          "CREATE TABLE process_extra_fields(UniqueStr TEXT, Process INTEGER, Name TEXT, Value NUMERIC NOT NULL, PRIMARY KEY(UniqueStr,Process,Name))";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText = "UPDATE version SET ver = 41";
+        cmd.ExecuteNonQuery();
+      }
       _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
     }
 

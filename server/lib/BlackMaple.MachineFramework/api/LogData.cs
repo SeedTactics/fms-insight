@@ -123,28 +123,6 @@ namespace BlackMaple.MachineFramework
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 
-  /// <summary>
-  /// The container identity recorded by an immutable event. The numbered form uses the historical
-  /// <see cref="LogEntry.Pallet"/> field, which can identify either a pallet or a basket depending
-  /// on the event type.
-  /// </summary>
-  public abstract record ContainerIdentity
-  {
-    private ContainerIdentity() { }
-
-    public sealed record None : ContainerIdentity;
-
-    public sealed record Numbered : ContainerIdentity
-    {
-      public required int ContainerNum { get; init; }
-    }
-
-    public sealed record Uuid : ContainerIdentity
-    {
-      public required Guid ContainerId { get; init; }
-    }
-  }
-
   public enum BasketEvidenceSourceKind
   {
     Operator,
@@ -323,35 +301,28 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("locnum")]
     public required int LocationNum { get; init; }
 
+    /// <summary>
+    /// Historical pallet number field. Basket events also use this field for a known numbered
+    /// basket; unresolved basket content episodes use -1 with
+    /// <see cref="BasketContentEpisodeId"/>. Non-basket events retain their ordinary pallet
+    /// number here.
+    /// </summary>
     [JsonPropertyName("pal")]
     public required int Pallet { get; init; }
 
     /// <summary>
-    /// An opaque, globally unique container identity. Ordinary events record either this UUID or a
-    /// positive <see cref="Pallet"/>, never both.
+    /// For basket events whose numbered basket identity is unresolved, identifies the basket
+    /// content episode and <see cref="Pallet"/> is -1. Numbered basket events use a positive
+    /// <see cref="Pallet"/> and leave this null. Non-basket events leave this null.
     /// </summary>
-    [JsonPropertyName("containerId")]
-    public Guid? ContainerId { get; init; }
+    [JsonPropertyName("basketContentEpisodeId")]
+    public Guid? BasketContentEpisodeId { get; init; }
 
     /// <summary>
     /// Basket content episodes authoritatively finalized by this numbered cycle-end event.
     /// </summary>
-    [JsonPropertyName("containerIds")]
-    public ImmutableList<Guid>? CycleEndContainerIds { get; init; }
-
-    [JsonIgnore]
-    public ContainerIdentity Identity =>
-      (Pallet, ContainerId, LogType) switch
-      {
-        (0, null, _) => new ContainerIdentity.None(),
-        (> 0, null, _) => new ContainerIdentity.Numbered { ContainerNum = Pallet },
-        (-1, Guid id, _) when id != Guid.Empty => new ContainerIdentity.Uuid { ContainerId = id },
-        // Older databases can contain -1 as a non-identity sentinel.
-        (-1, null, _) => new ContainerIdentity.None(),
-        _ => throw new InvalidOperationException(
-          $"Invalid container identity on log entry {Counter}: container number {Pallet}, container ID {ContainerId}, log type {LogType}."
-        ),
-      };
+    [JsonPropertyName("basketCycleEndContentEpisodeIds")]
+    public ImmutableList<Guid>? BasketCycleEndContentEpisodeIds { get; init; }
 
     [JsonPropertyName("program")]
     public required string Program { get; init; }
@@ -371,10 +342,10 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("tooluse")]
     public ImmutableList<ToolUse>? Tools { get; init; } = null;
 
-    [JsonPropertyName("foreignId")]
+    [JsonIgnore]
     public string? ForeignID { get; init; } = null;
 
-    [JsonPropertyName("correlationId")]
+    [JsonIgnore]
     public string? CorrelationId { get; init; } = null;
 
     public LogEntry() { }
@@ -398,8 +369,8 @@ namespace BlackMaple.MachineFramework
       Counter = cntr;
       Material = mat.ToImmutableList();
       Pallet = pal;
-      ContainerId = null;
-      CycleEndContainerIds = null;
+      BasketContentEpisodeId = null;
+      BasketCycleEndContentEpisodeIds = null;
       LogType = ty;
       LocationName = locName;
       LocationNum = locNum;

@@ -676,9 +676,9 @@ namespace DebugMachineWatchApiServer
                 [
                   new PalletBasketTransfer.LoadOntoBasket
                   {
-                    BasketIdentity = new ContainerIdentity.Numbered
+                    BasketIdentity = new BasketLogIdentity.NumberedBasket
                     {
-                      ContainerNum = basketId.Value,
+                      BasketId = basketId.Value,
                     },
                     Material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
                   },
@@ -782,7 +782,7 @@ namespace DebugMachineWatchApiServer
                 [
                   new BasketStationTransfer.LoadOntoBasket
                   {
-                    BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = e.Pallet },
+                    BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = e.Pallet },
                     Material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
                     ActiveOperationTime = e.ActiveOperationTime,
                   },
@@ -810,7 +810,7 @@ namespace DebugMachineWatchApiServer
                 [
                   new BasketStationTransfer.UnloadFromBasket
                   {
-                    BasketIdentity = new ContainerIdentity.Numbered { ContainerNum = e.Pallet },
+                    BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = e.Pallet },
                     Material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
                     ActiveOperationTime = e.ActiveOperationTime,
                     DestinationQueue = queue,

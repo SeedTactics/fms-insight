@@ -3164,16 +3164,14 @@ export class LogEntry implements ILogEntry {
   loc!: string;
   locnum!: number;
   pal!: number;
-  containerId?: string | undefined;
-  containerIds?: string[] | undefined;
+  basketContentEpisodeId?: string | undefined;
+  basketCycleEndContentEpisodeIds?: string[] | undefined;
   program!: string;
   result!: string;
   elapsed!: string;
   active!: string;
   details?: { [key: string]: string } | undefined;
   tooluse?: ToolUse[] | undefined;
-  foreignId?: string | undefined;
-  correlationId?: string | undefined;
 
   constructor(data?: ILogEntry) {
     if (data) {
@@ -3199,10 +3197,11 @@ export class LogEntry implements ILogEntry {
       this.loc = _data["loc"];
       this.locnum = _data["locnum"];
       this.pal = _data["pal"];
-      this.containerId = _data["containerId"];
-      if (Array.isArray(_data["containerIds"])) {
-        this.containerIds = [] as any;
-        for (let item of _data["containerIds"]) this.containerIds!.push(item);
+      this.basketContentEpisodeId = _data["basketContentEpisodeId"];
+      if (Array.isArray(_data["basketCycleEndContentEpisodeIds"])) {
+        this.basketCycleEndContentEpisodeIds = [] as any;
+        for (let item of _data["basketCycleEndContentEpisodeIds"])
+          this.basketCycleEndContentEpisodeIds!.push(item);
       }
       this.program = _data["program"];
       this.result = _data["result"];
@@ -3219,8 +3218,6 @@ export class LogEntry implements ILogEntry {
         this.tooluse = [] as any;
         for (let item of _data["tooluse"]) this.tooluse!.push(ToolUse.fromJS(item));
       }
-      this.foreignId = _data["foreignId"];
-      this.correlationId = _data["correlationId"];
     }
   }
 
@@ -3245,10 +3242,11 @@ export class LogEntry implements ILogEntry {
     data["loc"] = this.loc;
     data["locnum"] = this.locnum;
     data["pal"] = this.pal;
-    data["containerId"] = this.containerId;
-    if (Array.isArray(this.containerIds)) {
-      data["containerIds"] = [];
-      for (let item of this.containerIds) data["containerIds"].push(item);
+    data["basketContentEpisodeId"] = this.basketContentEpisodeId;
+    if (Array.isArray(this.basketCycleEndContentEpisodeIds)) {
+      data["basketCycleEndContentEpisodeIds"] = [];
+      for (let item of this.basketCycleEndContentEpisodeIds)
+        data["basketCycleEndContentEpisodeIds"].push(item);
     }
     data["program"] = this.program;
     data["result"] = this.result;
@@ -3266,8 +3264,6 @@ export class LogEntry implements ILogEntry {
       for (let item of this.tooluse)
         data["tooluse"].push(item ? item.toJSON() : (undefined as any));
     }
-    data["foreignId"] = this.foreignId;
-    data["correlationId"] = this.correlationId;
     return data;
   }
 }
@@ -3281,16 +3277,14 @@ export interface ILogEntry {
   loc: string;
   locnum: number;
   pal: number;
-  containerId?: string | undefined;
-  containerIds?: string[] | undefined;
+  basketContentEpisodeId?: string | undefined;
+  basketCycleEndContentEpisodeIds?: string[] | undefined;
   program: string;
   result: string;
   elapsed: string;
   active: string;
   details?: { [key: string]: string } | undefined;
   tooluse?: ToolUse[] | undefined;
-  foreignId?: string | undefined;
-  correlationId?: string | undefined;
 }
 
 export class LogMaterial implements ILogMaterial {

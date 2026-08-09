@@ -38,7 +38,10 @@ import { it, expect } from "vitest";
 
 it("displays the UUID fragment when a basket identity hint also has a number", () => {
   expect(
-    basketContainerName({ pal: 5, containerId: "12345678-1234-1234-1234-123456789abc" }, "Basket"),
+    basketContainerName(
+      { pal: 5, basketContentEpisodeId: "12345678-1234-1234-1234-123456789abc" },
+      "Basket",
+    ),
   ).toBe("Basket fragment 12345678");
 });
 
@@ -47,8 +50,8 @@ it("displays UUID basket cycle starts without the numeric sentinel", () => {
     basketCycleDescription(
       {
         pal: -1,
-        containerId: "12345678-1234-1234-1234-123456789abc",
-        containerIds: undefined,
+        basketContentEpisodeId: "12345678-1234-1234-1234-123456789abc",
+        basketCycleEndContentEpisodeIds: undefined,
         startofcycle: true,
       },
       "Basket",
@@ -61,8 +64,8 @@ it("describes the fragments finalized by a numbered basket cycle", () => {
     basketCycleDescription(
       {
         pal: 5,
-        containerId: undefined,
-        containerIds: [
+        basketContentEpisodeId: undefined,
+        basketCycleEndContentEpisodeIds: [
           "12345678-1234-1234-1234-123456789abc",
           "87654321-4321-4321-4321-cba987654321",
         ],
