@@ -40,6 +40,7 @@ using System.Reflection;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -170,7 +171,12 @@ namespace DebugMachineWatchApiServer
             );
           }
         })
-        .AddFMSInsightWebHost(cfg, serverSettings, fmsSettings);
+        .AddFMSInsightWebHost(
+          cfg,
+          serverSettings,
+          fmsSettings,
+          [new AssemblyPart(typeof(DebugMockScenarioController).Assembly)]
+        );
 
       var host = hostB.Build();
 
@@ -208,6 +214,8 @@ namespace DebugMachineWatchApiServer
     private Dictionary<string, CurrentStatus> Statuses { get; } =
       new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
+    private DebugMockScenarioPlayer _scenario;
+    private readonly object _scenarioLock = new();
     private ImmutableList<ToolInMachine> Tools { get; set; }
 
     private class MockProgram
@@ -352,10 +360,57 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-    public event Action NewCellState
+    public event Action NewCellState = delegate { };
+
+    public DebugMockScenarioStatus ScenarioStatus
     {
-      add { }
-      remove { }
+      get
+      {
+        lock (_scenarioLock)
+          return _scenario?.Status;
+      }
+    }
+
+    public bool TryApplyScenarioRequest(
+      string method,
+      string path,
+      out DebugMockScenarioResponse response
+    )
+    {
+      response = null;
+      lock (_scenarioLock)
+      {
+        if (_scenario is null || !_scenario.TryTransition(method, path, out response))
+          return false;
+        CurrentStatus = _scenario.CurrentStatus;
+      }
+      NewCellState();
+      return true;
+    }
+
+    public bool AdvanceScenario()
+    {
+      lock (_scenarioLock)
+      {
+        if (_scenario is null || !_scenario.Next())
+          return false;
+        CurrentStatus = _scenario.CurrentStatus;
+      }
+      NewCellState();
+      return true;
+    }
+
+    public bool ResetScenario()
+    {
+      lock (_scenarioLock)
+      {
+        if (_scenario is null)
+          return false;
+        _scenario.Reset();
+        CurrentStatus = _scenario.CurrentStatus;
+      }
+      NewCellState();
+      return true;
     }
 
     public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
@@ -367,7 +422,7 @@ namespace DebugMachineWatchApiServer
     {
       bool changed = false;
       _curStatusLoadCount += 1;
-      if (_curStatusLoadCount % 5 == 0)
+      if (_scenario is null && _curStatusLoadCount % 5 == 0)
       {
         changed = true;
         if (CurrentStatus.Alarms.Count > 0)
@@ -918,6 +973,19 @@ namespace DebugMachineWatchApiServer
       string statusFileFromEnv = System.Environment.GetEnvironmentVariable(
         "BMS_CURRENT_STATUS_FILE"
       );
+      string scenarioFileFromEnv = System.Environment.GetEnvironmentVariable(
+        "BMS_CURRENT_STATUS_SCENARIO"
+      );
+      if (!string.IsNullOrEmpty(statusFileFromEnv) && !string.IsNullOrEmpty(scenarioFileFromEnv))
+        throw new InvalidOperationException(
+          "Set only one of BMS_CURRENT_STATUS_FILE and BMS_CURRENT_STATUS_SCENARIO."
+        );
+      if (!string.IsNullOrEmpty(scenarioFileFromEnv))
+      {
+        _scenario = DebugMockScenarioPlayer.Load(scenarioFileFromEnv, _jsonSettings, offset);
+        CurrentStatus = _scenario.CurrentStatus;
+        return;
+      }
       if (!string.IsNullOrEmpty(statusFileFromEnv))
       {
         CurrentStatus = DebugMockStatusLoader.LoadExternal(
