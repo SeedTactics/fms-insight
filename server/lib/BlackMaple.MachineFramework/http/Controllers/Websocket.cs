@@ -61,13 +61,13 @@ namespace BlackMaple.MachineFramework.Controllers
     private class WebsocketDict
     {
       private System.Threading.Lock _lock = new();
-      private Dictionary<Guid, WebSocket> _sockets = new Dictionary<Guid, WebSocket>();
+      private Dictionary<Guid, WebSocket>? _sockets = new Dictionary<Guid, WebSocket>();
 
       public List<WebSocket> AllSockets()
       {
         lock (_lock)
         {
-          return _sockets.Values.ToList();
+          return _sockets?.Values.ToList() ?? [];
         }
       }
 
@@ -75,8 +75,8 @@ namespace BlackMaple.MachineFramework.Controllers
       {
         lock (_lock)
         {
-          var sockets = _sockets.Values.ToList();
-          _sockets = new();
+          var sockets = _sockets?.Values.ToList() ?? [];
+          _sockets = null;
           return sockets;
         }
       }
@@ -190,7 +190,7 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    public async Task HandleWebsocket(WebSocket ws)
+    public async Task HandleWebsocket(WebSocket ws, CancellationToken applicationStopping)
     {
       var buffer = new byte[1024 * 4];
       var guid = Guid.NewGuid();
@@ -198,18 +198,36 @@ namespace BlackMaple.MachineFramework.Controllers
       {
         _sockets.Add(guid, ws);
 
-        var res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        var res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), applicationStopping);
         while (res.MessageType != WebSocketMessageType.Close)
         {
           //process client to server messages here.  Currently there are no messages from the client to the server.
 
-          res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+          res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), applicationStopping);
         }
       }
       catch (WebSocketException ex)
         when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
       {
         //do nothing, just exit the loop
+      }
+      catch (OperationCanceledException) when (applicationStopping.IsCancellationRequested)
+      {
+        using var closeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        try
+        {
+          await ws.CloseAsync(
+            WebSocketCloseStatus.NormalClosure,
+            "Server is stopping",
+            closeTimeout.Token
+          );
+        }
+        catch (Exception ex)
+        {
+          Log.Debug(ex, "Unable to close websocket during server shutdown");
+          ws.Abort();
+        }
+        return;
       }
       catch (ServerClosingException)
       {

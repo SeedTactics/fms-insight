@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2024, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -287,7 +287,7 @@ public static class FMSInsightWebHost
                 }
               }
               var ws = await context.WebSockets.AcceptWebSocketAsync();
-              await wsManager.HandleWebsocket(ws);
+              await wsManager.HandleWebsocket(ws, lifetime.ApplicationStopping);
             }
             else
             {
