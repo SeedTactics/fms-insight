@@ -40,6 +40,19 @@ using Microsoft.Extensions.Configuration;
 
 namespace MazakMachineInterface
 {
+  public sealed record MazakBasketLoadMaterialContext
+  {
+    public required int Pallet { get; init; }
+    public required int LoadStation { get; init; }
+    public required string JobUnique { get; init; }
+    public required int Process { get; init; }
+    public required int Path { get; init; }
+    public required int Face { get; init; }
+    public required int Quantity { get; init; }
+    public required DateTime TimeUTC { get; init; }
+    public string? ForeignId { get; init; }
+  }
+
   public record MazakConfig
   {
     public required MazakDbType DBType { get; init; }
@@ -72,6 +85,16 @@ namespace MazakMachineInterface
     public Func<IRepository, CurrentStatus, CurrentStatus>? AdjustCurrentStatus { get; init; }
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
+
+    // Optionally resolve the exact FMS material IDs for a load from a
+    // configured basket load station. Returning null, throwing, or returning
+    // unusable material causes Mazak log translation to fall back to its
+    // standard material selection.
+    public Func<
+      IRepository,
+      MazakBasketLoadMaterialContext,
+      ImmutableList<long>?
+    >? FindMaterialForBasketLoad { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
     public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
