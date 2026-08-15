@@ -242,12 +242,13 @@ namespace MazakMachineInterface
     private void HandleLoadEnd(IReadOnlyList<LogEntry> es)
     {
       int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
+      int loadStation = mazakConfig.TranslateLoadStationNumber(es[0].StationNumber);
 
       var cycle = new List<MWI.LogEntry>();
       if (pallet >= 1)
         cycle = repo.CurrentPalletLog(pallet);
 
-      var toLoad = FindMatToLoad(es, cycle);
+      var toLoad = FindMatToLoad(es, cycle, pallet);
       var toUnload = FindMatToUnload(es, cycle);
 
       repo.RecordLoadUnloadComplete(
@@ -256,13 +257,8 @@ namespace MazakMachineInterface
         toUnload: toUnload,
         previouslyUnloaded: null,
         pallet: pallet,
-        lulNum: mazakConfig.TranslateLoadStationNumber(es[0].StationNumber),
-        totalElapsed: CalculateElapsed(
-          es[0].TimeUTC,
-          LogType.LoadUnloadCycle,
-          cycle,
-          mazakConfig.TranslateLoadStationNumber(es[0].StationNumber)
-        ),
+        lulNum: loadStation,
+        totalElapsed: CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, loadStation),
         timeUTC: es[0].TimeUTC,
         externalQueues: fmsSettings.ExternalQueues
       );
@@ -705,7 +701,8 @@ namespace MazakMachineInterface
 
     private List<MaterialToLoadOntoFace> FindMatToLoad(
       IEnumerable<LogEntry> events,
-      List<MWI.LogEntry> oldPalEvents
+      List<MWI.LogEntry> oldPalEvents,
+      int pallet
     )
     {
       var toLoad = new List<MaterialToLoadOntoFace>();
@@ -739,7 +736,16 @@ namespace MazakMachineInterface
         }
 
         var mats = ImmutableList.CreateBuilder<long>();
-        if (job != null && !string.IsNullOrEmpty(job.Processes[jobProc - 1].Paths[0].InputQueue))
+        var loadStation = mazakConfig.TranslateLoadStationNumber(e.StationNumber);
+        var processInfo =
+          job != null && jobProc > 0 && jobProc <= job.Processes.Count
+            ? job.Processes[jobProc - 1]
+            : null;
+        var pathInfo = processInfo?.Paths.Count > 0 ? processInfo.Paths[0] : null;
+        var inputQueue = pathInfo?.InputQueue;
+        var isBasketLoad = processInfo?.BasketLoadStations?.Contains(loadStation) == true;
+
+        if (!string.IsNullOrEmpty(inputQueue))
         {
           var info = job.Processes[jobProc - 1].Paths[0];
           // search input queue for material
@@ -806,6 +812,31 @@ namespace MazakMachineInterface
               }
             }
           }
+        }
+        else if (
+          isBasketLoad
+          && mazakConfig.FindMaterialForBasketLoad is { } findMaterial
+          && TryFindBasketLoadMaterial(
+            findMaterial,
+            new MazakBasketLoadMaterialContext()
+            {
+              Pallet = pallet,
+              LoadStation = loadStation,
+              JobUnique = unique,
+              Process = jobProc,
+              Path = 1,
+              Face = e.Process,
+              Quantity = fixQty,
+              TimeUTC = e.TimeUTC,
+              ForeignId = e.ForeignID,
+            },
+            e.JobPartName,
+            numProc,
+            out var basketMaterialIds
+          )
+        )
+        {
+          mats.AddRange(basketMaterialIds);
         }
         else if (jobProc == 1)
         {
@@ -895,6 +926,114 @@ namespace MazakMachineInterface
       }
 
       return toLoad;
+    }
+
+    private bool TryFindBasketLoadMaterial(
+      Func<IRepository, MazakBasketLoadMaterialContext, ImmutableList<long>> findMaterial,
+      MazakBasketLoadMaterialContext context,
+      string part,
+      int numProc,
+      out ImmutableList<long> materialIds
+    )
+    {
+      materialIds = null;
+
+      try
+      {
+        var resolvedMaterialIds = findMaterial(repo, context);
+        if (
+          !TryValidateBasketLoadMaterial(
+            resolvedMaterialIds,
+            context,
+            part,
+            numProc,
+            out var validationFailure
+          )
+        )
+        {
+          Log.Warning(
+            "Basket material resolver returned unusable material for {@context}: {reason}. Continuing with standard Mazak material selection.",
+            context,
+            validationFailure
+          );
+          return false;
+        }
+
+        materialIds = resolvedMaterialIds;
+        return true;
+      }
+      catch (Exception ex)
+      {
+        Log.Error(
+          ex,
+          "Basket material resolver failed for {@context}. Continuing with standard Mazak material selection.",
+          context
+        );
+        return false;
+      }
+    }
+
+    private bool TryValidateBasketLoadMaterial(
+      ImmutableList<long> materialIds,
+      MazakBasketLoadMaterialContext context,
+      string part,
+      int numProc,
+      out string failure
+    )
+    {
+      failure = null;
+
+      if (materialIds is null)
+      {
+        failure = "the resolver returned null";
+        return false;
+      }
+
+      if (materialIds.Count != context.Quantity)
+      {
+        failure =
+          $"the resolver returned {materialIds.Count} material IDs for a load of {context.Quantity}";
+        return false;
+      }
+
+      if (materialIds.Distinct().Count() != materialIds.Count)
+      {
+        failure = "the resolver returned duplicate material IDs";
+        return false;
+      }
+
+      foreach (var materialId in materialIds)
+      {
+        if (materialId <= 0 || materialId > MaterialId.MaxValue)
+        {
+          failure = $"the resolver returned invalid material ID {materialId}";
+          return false;
+        }
+
+        var details = repo.GetMaterialDetails(materialId);
+        if (details is null)
+        {
+          failure = $"material ID {materialId} is not registered";
+          return false;
+        }
+
+        if (
+          details.JobUnique != context.JobUnique
+          || details.PartName != part
+          || details.NumProcesses != numProc
+          || (
+            details.Paths?.TryGetValue(context.Process, out var path) == true
+            && path != context.Path
+          )
+        )
+        {
+          failure =
+            $"material ID {materialId} is incompatible with job {context.JobUnique} process {context.Process} path {context.Path}";
+          return false;
+        }
+      }
+
+      return true;
     }
 
     private List<MaterialToUnloadFromFace> FindMatToUnload(
