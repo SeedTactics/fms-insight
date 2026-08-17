@@ -87,7 +87,17 @@ jobs:
           git add "package.json"
           git commit -m "chore: release $ENV:NEW_VERSION"
           git tag $ENV:NEW_VERSION
-          echo "NEW_VERSION_NUM=$($ENV:NEW_VERSION.substring(1))" | Out-File -FilePath $ENV:GITHUB_ENV -Append
+          $version = $ENV:NEW_VERSION.substring(1)
+          echo "NEW_VERSION_NUM=$version" | Out-File -FilePath $ENV:GITHUB_ENV -Append
+          if ($version -match '^(\d+\.\d+\.\d+)-beta\.(\d+)$') {
+            $betaNumber = [int]$matches[2]
+            if ($betaNumber -ge 100) {
+              throw "Beta release number $betaNumber is too high; beta file versions must be below 100."
+            }
+            echo "FILE_VERSION=$($matches[1]).$($matches[2])" | Out-File -FilePath $ENV:GITHUB_ENV -Append
+          } else {
+            echo "FILE_VERSION=$version.100" | Out-File -FilePath $ENV:GITHUB_ENV -Append
+          }
         env:
           NEW_VERSION: ${{ env.NEW_VERSION }}
 
@@ -116,19 +126,19 @@ jobs:
 
       - name: Build MachineFramework
         run:
-          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
+          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" /p:FileVersion="${{ env.FILE_VERSION }}"
           server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
         run:
-          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
+          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" /p:FileVersion="${{ env.FILE_VERSION }}"
           server/machines/mazak
       - name: Build Makino
         run:
-          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
+          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" /p:FileVersion="${{ env.FILE_VERSION }}"
           server/machines/makino
       - name: Build Niigata
         run:
-          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
+          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" /p:FileVersion="${{ env.FILE_VERSION }}"
           server/machines/niigata
 
       # ----------------------------------------------------------
