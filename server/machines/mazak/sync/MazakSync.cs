@@ -59,6 +59,9 @@ public interface INotifyMazakLogEvent
 
 public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakLogEvent, IDisposable
 {
+  private const string MazakCsvForeignIDLowerBound = "LG";
+  private const string MazakCsvForeignIDUpperBound = "LH";
+
   public static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MazakSync>();
   public event Action? NewCellState;
   public event MazakLogEventDel? MazakLogEvent;
@@ -169,7 +172,12 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   public MazakState CalculateCellState(IRepository db)
   {
     var now = DateTime.UtcNow;
-    var mazakData = mazakDB.LoadAllDataAndLogs(db.MaxForeignID());
+    // The repository also contains foreign IDs from other event sources, such as robot
+    // commands. Mazak's CSV reader compares its filenames to this watermark, so use only
+    // foreign IDs produced by the Mazak CSV source. Mazak's CSV filenames begin with LG.
+    var mazakData = mazakDB.LoadAllDataAndLogs(
+      db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound)
+    );
     var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
     var evtResults = LogTranslation.HandleEvents(
@@ -195,7 +203,9 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       loadTools: mazakDB.LoadTools
     );
 
-    mazakDB.DeleteLogs(db.MaxForeignID());
+    mazakDB.DeleteLogs(
+      db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound)
+    );
 
     var st = BuildCurrentStatus.Build(
       db,

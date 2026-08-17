@@ -79,6 +79,13 @@ namespace MazakMachineInterface
       _cfg = cfg;
       _loadOper = loadOper;
 
+      Log.Debug(
+        "Initializing Mazak database access for {dbType} with log CSV path {logPath} and load CSV path {loadPath}",
+        cfg.DBType,
+        cfg.LogCSVPath,
+        cfg.LoadCSVPath
+      );
+
       if (_dbType != MazakDbType.MazakSmooth)
       {
         ready4ConectPath = System.IO.Path.Combine(cfg.OleDbDatabasePath, "ready4Conect.mdb");
@@ -114,7 +121,9 @@ namespace MazakMachineInterface
         else
         {
           Log.Error(
-            "Load CSV Directory does not exist.  Set the directory in the config.ini file."
+            "Load CSV Directory "
+              + cfg.LoadCSVPath
+              + " does not exist. Set the directory in the proxy configuration."
           );
         }
       }
@@ -124,10 +133,15 @@ namespace MazakMachineInterface
         {
           logWatcher = new System.IO.FileSystemWatcher(cfg.LogCSVPath) { Filter = "*.csv" };
           logWatcher.Created += RaiseNewLog;
+          Log.Debug("Watching Mazak log CSV directory {path} for new files", cfg.LogCSVPath);
         }
         else
         {
-          Log.Error("Log CSV Directory does not exist.  Set the directory in the config.ini file.");
+          Log.Error(
+            "Log CSV Directory "
+              + cfg.LogCSVPath
+              + " does not exist. Set the directory in the proxy configuration."
+          );
         }
       }
       if (logWatcher != null)
@@ -1325,6 +1339,7 @@ namespace MazakMachineInterface
 
     public MazakAllDataAndLogs LoadAllDataAndLogs(string maxLogID)
     {
+      Log.Debug("Loading Mazak data and logs after foreign ID {maxLogID}", maxLogID);
       return WithReadDBConnection(conn =>
       {
         using var trans = conn.BeginTransaction();
@@ -1361,6 +1376,10 @@ namespace MazakMachineInterface
 
     public void DeleteLogs(string lastSeenForeignId)
     {
+      Log.Debug(
+        "Received request to delete Mazak logs through foreign ID {lastSeenForeignId}",
+        lastSeenForeignId
+      );
       if (_dbType == MazakDbType.MazakVersionE)
       {
         // verE logs are deleted by Mazak
@@ -1375,6 +1394,11 @@ namespace MazakMachineInterface
 
     private void RaiseNewLog(object sender, System.IO.FileSystemEventArgs e)
     {
+      Log.Debug(
+        "Detected Mazak log CSV filesystem event {changeType} for {file}",
+        e.ChangeType,
+        e.FullPath
+      );
       OnNewEvent?.Invoke();
     }
     #endregion

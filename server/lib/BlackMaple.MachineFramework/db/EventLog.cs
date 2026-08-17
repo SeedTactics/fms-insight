@@ -1026,6 +1026,23 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public string MaxForeignIDInRange(string lowerBound, string upperBound)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        cmd.CommandText =
+          "SELECT MAX(ForeignID) FROM stations WHERE ForeignID >= $lowerBound AND ForeignID < $upperBound";
+        cmd.Parameters.Add("lowerBound", SqliteType.Text).Value = lowerBound;
+        cmd.Parameters.Add("upperBound", SqliteType.Text).Value = upperBound;
+        var maxStat = cmd.ExecuteScalar();
+
+        if (maxStat == DBNull.Value)
+          return "";
+        else
+          return (string)maxStat;
+      }
+    }
+
     public string ForeignIDForCounter(long counter)
     {
       using (var cmd = _connection.CreateCommand())

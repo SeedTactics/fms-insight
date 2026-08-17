@@ -111,6 +111,7 @@ namespace BlackMaple.MachineFramework
     ImmutableSortedSet<string> GetWorkordersForUnique(string jobUnique);
     DateTime MaxLogDate();
     string MaxForeignID(); // WARNING: uses sqlite default string collate (binary), not lexicographic
+    string MaxForeignIDInRange(string lowerBound, string upperBound); // WARNING: uses sqlite default string collate (binary), not lexicographic
     string ForeignIDForCounter(long counter);
     string OriginalMessageByForeignID(string foreignID);
 

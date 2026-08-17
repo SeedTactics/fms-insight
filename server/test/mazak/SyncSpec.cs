@@ -278,20 +278,27 @@ public sealed class MazakSyncSpec : IDisposable
   }
 
   [Test]
-  public void LoadsEvents()
+  public void LoadsEventsUsingMazakCSVWatermark()
   {
     using var db = repo.OpenConnection();
 
+    db.RecordGeneralMessage(
+      mat: null,
+      program: "external robot",
+      result: "accepted",
+      foreignId: "external-robot:accepted"
+    );
+
     File.WriteAllLines(
-      Path.Combine(_tempDir, "111loadstart.csv"),
+      Path.Combine(_tempDir, "LG20240611-040506-001.csv"),
       ["2024,6,11,4,5,6,501,,12,,,1,6,4,prog,,,"]
     );
     File.WriteAllLines(
-      Path.Combine(_tempDir, "222loadend.csv"),
+      Path.Combine(_tempDir, "LG20240611-040509-002.csv"),
       ["2024,6,11,4,5,9,502,,,12,,1,6,4,prog,,,"]
     );
     File.WriteAllLines(
-      Path.Combine(_tempDir, "333leaveload.csv"),
+      Path.Combine(_tempDir, "LG20240611-040610-003.csv"),
       ["2024,6,11,4,6,10,301,,,,,,4,,,,L01,S04"]
     );
 
@@ -309,6 +316,8 @@ public sealed class MazakSyncSpec : IDisposable
     _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
     var cellSt = _sync.CalculateCellState(db);
+
+    _mazakDB.Received().LoadAllDataAndLogs("");
     cellSt.CurrentStatus.TimeOfCurrentStatusUTC.ShouldBe(
       DateTime.UtcNow,
       tolerance: TimeSpan.FromSeconds(5)
@@ -333,13 +342,16 @@ public sealed class MazakSyncSpec : IDisposable
       }
     );
 
-    db.MaxForeignID().ShouldBe("222loadend.csv");
+    db.MaxForeignID().ShouldBe("external-robot:accepted");
+    db.MaxForeignIDInRange("LG", "LH").ShouldBe("LG20240611-040509-002.csv");
 
-    _mazakDB.Received().DeleteLogs("222loadend.csv");
+    _mazakDB.Received().DeleteLogs("LG20240611-040509-002.csv");
 
-    LogCSVParsing.DeleteLog("222loadend.csv", _tempDir);
+    LogCSVParsing.DeleteLog("LG20240611-040509-002.csv", _tempDir);
 
-    Directory.GetFiles(_tempDir, "*.csv").ShouldBe([Path.Combine(_tempDir, "333leaveload.csv")]);
+    Directory
+      .GetFiles(_tempDir, "*.csv")
+      .ShouldBe([Path.Combine(_tempDir, "LG20240611-040610-003.csv")]);
   }
 
   [Test]
@@ -367,11 +379,11 @@ public sealed class MazakSyncSpec : IDisposable
     );
 
     File.WriteAllLines(
-      Path.Combine(_tempDir, "111loadstart.csv"),
+      Path.Combine(_tempDir, "LG20240611-040506-001.csv"),
       ["2024,6,11,4,5,6,501,,12,,,1,6,1,prog,,,"]
     );
     File.WriteAllLines(
-      Path.Combine(_tempDir, "222loadend.csv"),
+      Path.Combine(_tempDir, "LG20240611-040509-002.csv"),
       ["2024,6,11,4,5,9,502,,12,,,1,6,1,prog,,,"]
     );
 
@@ -411,9 +423,9 @@ public sealed class MazakSyncSpec : IDisposable
         new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
       );
 
-    db.MaxForeignID().ShouldBe("111loadstart.csv");
+    db.MaxForeignID().ShouldBe("LG20240611-040506-001.csv");
 
-    _mazakDB.Received().DeleteLogs("111loadstart.csv");
+    _mazakDB.Received().DeleteLogs("LG20240611-040506-001.csv");
   }
 
   [Test]
@@ -426,15 +438,15 @@ public sealed class MazakSyncSpec : IDisposable
     var dateFmt = "yyyy,MM,dd,HH,mm,ss";
 
     File.WriteAllLines(
-      Path.Combine(_tempDir, "111loadstart.csv"),
+      Path.Combine(_tempDir, "LG20240611-040506-001.csv"),
       [now.AddMinutes(-1).ToString(dateFmt) + ",501,,12,,1,6,4,prog,,,,"]
     );
     File.WriteAllLines(
-      Path.Combine(_tempDir, "222machineend.csv"),
+      Path.Combine(_tempDir, "LG20240611-040509-002.csv"),
       [now.ToString(dateFmt) + ",442,,3,,1,6,2,prog,,,,"]
     );
     File.WriteAllLines(
-      Path.Combine(_tempDir, "333loadend.csv"),
+      Path.Combine(_tempDir, "LG20240611-040510-003.csv"),
       [now.AddSeconds(10).ToString(dateFmt) + ",501,,12,,1,6,4,prog,,,,"]
     );
 
@@ -457,16 +469,19 @@ public sealed class MazakSyncSpec : IDisposable
     st.StoppedBecauseRecentLogEvent.ShouldBeTrue();
     st.TimeUntilNextRefresh.ShouldBe(TimeSpan.FromSeconds(15));
 
-    db.MaxForeignID().ShouldBe("111loadstart.csv");
+    db.MaxForeignID().ShouldBe("LG20240611-040506-001.csv");
 
-    _mazakDB.Received().DeleteLogs("111loadstart.csv");
+    _mazakDB.Received().DeleteLogs("LG20240611-040506-001.csv");
 
-    LogCSVParsing.DeleteLog("111loadstart.csv", _tempDir);
+    LogCSVParsing.DeleteLog("LG20240611-040506-001.csv", _tempDir);
 
     Directory
       .GetFiles(_tempDir, "*.csv")
       .ShouldBe(
-        [Path.Combine(_tempDir, "222machineend.csv"), Path.Combine(_tempDir, "333loadend.csv")],
+        [
+          Path.Combine(_tempDir, "LG20240611-040509-002.csv"),
+          Path.Combine(_tempDir, "LG20240611-040510-003.csv"),
+        ],
         ignoreOrder: true
       );
   }
