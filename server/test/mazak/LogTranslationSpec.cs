@@ -1671,7 +1671,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void ExactLoadResolverInvalidMaterialFailsClosed()
+    public void InvalidResolvedMaterialRecordsErrorAndFallsBack()
     {
       AddTestJob(
         unique: "basket-job",
@@ -1684,34 +1684,46 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           new MazakLoadMaterialResolution.Resolved([0]),
       };
 
-      Should.Throw<MazakMaterialResolutionException>(() =>
-        CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"))
-      );
+      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
 
-      CurrentPalletLog(1).ShouldNotContain(log => log.LogType == LogType.LoadUnloadCycle);
-      jobLog.GetMaterialDetails(1).ShouldBeNull();
+      CurrentPalletLog(1)
+        .Single(log => log.LogType == LogType.LoadUnloadCycle)
+        .Material.ShouldHaveSingleItem()
+        .MaterialID.ShouldBe(1);
+      jobLog
+        .GetRecentLog(0)
+        .Single(log => log.Program == "MazakLoadMaterialResolution")
+        .Result.ShouldContain("invalid material ID 0");
     }
 
     [Test]
-    public void ExactLoadResolverNullFailsClosed()
+    public void ExplicitUnresolvedRecordsErrorAndFallsBack()
     {
       AddTestJob(
         unique: "basket-job",
         part: "basket-part",
         processes: [Process(basketLoadStations: [1])]
       );
-      mazakCfg = mazakCfg with { ResolveMaterialForLoad = (repository, context) => null };
+      mazakCfg = mazakCfg with
+      {
+        ResolveMaterialForLoad = (repository, context) =>
+          new MazakLoadMaterialResolution.Unresolved("Robot-send evidence is missing."),
+      };
 
-      Should.Throw<MazakMaterialResolutionException>(() =>
-        CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"))
-      );
+      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
 
-      CurrentPalletLog(1).ShouldNotContain(log => log.LogType == LogType.LoadUnloadCycle);
-      jobLog.GetMaterialDetails(1).ShouldBeNull();
+      CurrentPalletLog(1)
+        .Single(log => log.LogType == LogType.LoadUnloadCycle)
+        .Material.ShouldHaveSingleItem()
+        .MaterialID.ShouldBe(1);
+      jobLog
+        .GetRecentLog(0)
+        .Single(log => log.Program == "MazakLoadMaterialResolution")
+        .Result.ShouldContain("Robot-send evidence is missing.");
     }
 
     [Test]
-    public void ExactLoadResolverExceptionFailsClosed()
+    public void ResolverExceptionRecordsErrorAndFallsBack()
     {
       AddTestJob(
         unique: "basket-job",
@@ -1726,13 +1738,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         },
       };
 
-      var exception = Should.Throw<MazakMaterialResolutionException>(() =>
-        CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"))
-      );
+      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
 
-      exception.InnerException.ShouldBeOfType<InvalidOperationException>();
-      CurrentPalletLog(1).ShouldNotContain(log => log.LogType == LogType.LoadUnloadCycle);
-      jobLog.GetMaterialDetails(1).ShouldBeNull();
+      CurrentPalletLog(1)
+        .Single(log => log.LogType == LogType.LoadUnloadCycle)
+        .Material.ShouldHaveSingleItem()
+        .MaterialID.ShouldBe(1);
+      jobLog
+        .GetRecentLog(0)
+        .Single(log => log.Program == "MazakLoadMaterialResolution")
+        .Result.ShouldContain("InvalidOperationException");
     }
 
     [Test]
@@ -1774,44 +1789,91 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void FailedExactLoadResolutionRetriesTheSameLoadEnd()
+    public void UnresolvedLoadDoesNotBlockLaterMazakEvents()
     {
       AddTestJob(
         unique: "basket-job",
         part: "basket-part",
         processes: [Process(basketLoadStations: [999])]
       );
-      var materialId = jobLog.AllocateMaterialID("basket-job", "basket-part", numProc: 1);
-      var materialAvailable = false;
       mazakCfg = mazakCfg with
       {
         ResolveMaterialForLoad = (repository, context) =>
-          materialAvailable
-            ? new MazakLoadMaterialResolution.Resolved([materialId])
-            : throw new MazakMaterialResolutionException("Robot-send evidence is not available."),
+          new MazakLoadMaterialResolution.Unresolved("Robot-send evidence is not available."),
       };
-      var loadEnd = LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part");
-
-      Should.Throw<MazakMaterialResolutionException>(() => CompleteLoad(loadEnd));
-      CurrentPalletLog(1).ShouldNotContain(log => log.LogType == LogType.LoadUnloadCycle);
-
-      materialAvailable = true;
-      HandleEvent(
-        new MazakMachineInterface.LogEntry()
+      var time = DateTime.UtcNow.AddHours(-1);
+      var processedForeignIds = new List<string>();
+      var result = LogTranslation.HandleEvents(
+        repo: jobLog,
+        mazakData: mazakData with
         {
-          TimeUTC = loadEnd.TimeUTC.AddMinutes(2),
-          Code = LogCode.PalletMoving,
-          ForeignID = "retry-after-evidence",
-          Pallet = loadEnd.Pallet,
-          TargetPosition = "S011",
-          FromPosition = "LS01" + loadEnd.StationNumber,
-        }
+          Logs =
+          [
+            new MazakMachineInterface.LogEntry
+            {
+              TimeUTC = time,
+              Code = LogCode.PalletMoving,
+              ForeignID = "LG001",
+              Pallet = 1,
+              TargetPosition = "S011",
+              FromPosition = "M001",
+            },
+            LoadEndEvent(time.AddSeconds(1), part: "basket-part") with
+            {
+              ForeignID = "LG002",
+            },
+            new MazakMachineInterface.LogEntry
+            {
+              TimeUTC = time.AddSeconds(2),
+              Code = LogCode.PalletMoving,
+              ForeignID = "LG003",
+              Pallet = 1,
+              TargetPosition = "S012",
+              FromPosition = "LS011",
+            },
+          ],
+        },
+        machGroupName: "machinespec",
+        fmsSettings: settings,
+        chunk =>
+        {
+          if (chunk.LulEndChunk is not null)
+            processedForeignIds.AddRange(chunk.LulEndChunk.Select(entry => entry.ForeignID));
+          else if (chunk.NonLulEndEvt is not null)
+            processedForeignIds.Add(chunk.NonLulEndEvt.ForeignID);
+        },
+        mazakConfig: mazakCfg,
+        loadTools: () => mazakDataTools
       );
 
+      result.StoppedBecauseRecentMachineEvent.ShouldBeFalse();
+      result.PalletWithMostRecentEventAsLoadUnloadEnd.ShouldBeNull();
+      processedForeignIds.ShouldBe(["LG001", "LG002", "LG003"]);
       CurrentPalletLog(1)
         .Single(log => log.LogType == LogType.LoadUnloadCycle)
         .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(materialId);
+        .MaterialID.ShouldBe(1);
+      jobLog
+        .GetRecentLog(0)
+        .Single(log => log.Program == "MazakLoadMaterialResolution")
+        .Result.ShouldContain("Robot-send evidence is not available.");
+    }
+
+    [Test]
+    public void UnresolvedMaterialErrorEvidenceIsIdempotent()
+    {
+      AddTestJob(unique: "basket-job", part: "basket-part", processes: [Process()]);
+      mazakCfg = mazakCfg with
+      {
+        ResolveMaterialForLoad = (repository, context) =>
+          new MazakLoadMaterialResolution.Unresolved("Robot-send evidence is unavailable."),
+      };
+      var loadEnd = LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part");
+
+      CompleteLoad(loadEnd);
+      CompleteLoad(loadEnd);
+
+      jobLog.GetRecentLog(0).Count(log => log.Program == "MazakLoadMaterialResolution").ShouldBe(1);
     }
 
     [Test]

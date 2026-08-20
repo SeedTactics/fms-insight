@@ -60,15 +60,8 @@ namespace MazakMachineInterface
     public sealed record NotApplicable : MazakLoadMaterialResolution;
 
     public sealed record Resolved(ImmutableList<long> MaterialIds) : MazakLoadMaterialResolution;
-  }
 
-  public sealed class MazakMaterialResolutionException : Exception
-  {
-    public MazakMaterialResolutionException(string message)
-      : base(message) { }
-
-    public MazakMaterialResolutionException(string message, Exception innerException)
-      : base(message, innerException) { }
+    public sealed record Unresolved(string Reason) : MazakLoadMaterialResolution;
   }
 
   public record MazakConfig
@@ -106,7 +99,8 @@ namespace MazakMachineInterface
 
     // Optionally claim exact FMS material identity for an individual Mazak load before ordinary
     // queue and generic material selection. NotApplicable preserves ordinary selection; Resolved
-    // is authoritative, and failures abort translation so the same Mazak event can be retried.
+    // is authoritative. Unresolved records a durable data-quality error and uses ordinary
+    // selection so enrichment failures never block the Mazak event stream.
     public Func<
       IRepository,
       MazakLoadMaterialContext,

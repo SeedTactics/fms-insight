@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using MWI = BlackMaple.MachineFramework;
@@ -193,10 +194,6 @@ namespace MazakMachineInterface
           {
             HandleLoadEnd(e.LulEndChunk);
             onMazakLog(e);
-          }
-          catch (MazakMaterialResolutionException)
-          {
-            throw;
           }
           catch (Exception ex)
           {
@@ -940,22 +937,31 @@ namespace MazakMachineInterface
       {
         resolution = resolveMaterial(repo, context);
       }
-      catch (MazakMaterialResolutionException)
-      {
-        throw;
-      }
       catch (Exception ex)
       {
-        throw new MazakMaterialResolutionException(
-          $"Exact material resolution failed for pallet {context.Pallet}, load station {context.LoadStation}, job {context.JobUnique}, process {context.Process}, path {context.Path}, face {context.Face}.",
+        RecordMaterialResolutionFailure(
+          context,
+          $"The configured resolver threw {ex.GetType().Name}: {ex.Message}",
           ex
         );
+        return null;
       }
 
       if (resolution is MazakLoadMaterialResolution.NotApplicable)
         return null;
+      if (resolution is MazakLoadMaterialResolution.Unresolved unresolved)
+      {
+        RecordMaterialResolutionFailure(context, unresolved.Reason);
+        return null;
+      }
       if (resolution is not MazakLoadMaterialResolution.Resolved resolved)
-        throw ResolutionFailure(context, "the resolver returned null or an unknown result");
+      {
+        RecordMaterialResolutionFailure(
+          context,
+          "The resolver returned null or an unknown result."
+        );
+        return null;
+      }
       if (
         !TryValidateResolvedMaterial(
           resolved.MaterialIds,
@@ -965,18 +971,50 @@ namespace MazakMachineInterface
           out var validationFailure
         )
       )
-        throw ResolutionFailure(context, validationFailure);
+      {
+        RecordMaterialResolutionFailure(context, validationFailure);
+        return null;
+      }
 
       return resolved.MaterialIds;
     }
 
-    private static MazakMaterialResolutionException ResolutionFailure(
+    private void RecordMaterialResolutionFailure(
       MazakLoadMaterialContext context,
-      string failure
-    ) =>
-      new(
-        $"Exact material resolution failed for pallet {context.Pallet}, load station {context.LoadStation}, job {context.JobUnique}, process {context.Process}, path {context.Path}, face {context.Face}: {failure}."
-      );
+      string failure,
+      Exception exception = null
+    )
+    {
+      const string program = "MazakLoadMaterialResolution";
+      var message =
+        $"Exact material resolution failed for pallet {context.Pallet}, load station {context.LoadStation}, job {context.JobUnique}, process {context.Process}, path {context.Path}, face {context.Face}: {failure}";
+      Log.Error(exception, "{Message} Falling back to ordinary Mazak material selection.", message);
+      var foreignId =
+        $"mazak-material-resolution:{context.ForeignId}:{context.Pallet}:{context.LoadStation}:{context.Process}:{context.Path}:{context.Face}:{context.TimeUTC:O}";
+      if (repo.MostRecentLogEntryForForeignID(foreignId) is null)
+      {
+        var extraData = new Dictionary<string, string>
+        {
+          ["loadStation"] = context.LoadStation.ToString(CultureInfo.InvariantCulture),
+          ["process"] = context.Process.ToString(CultureInfo.InvariantCulture),
+          ["path"] = context.Path.ToString(CultureInfo.InvariantCulture),
+          ["face"] = context.Face.ToString(CultureInfo.InvariantCulture),
+          ["quantity"] = context.Quantity.ToString(CultureInfo.InvariantCulture),
+        };
+        if (!string.IsNullOrEmpty(context.JobUnique))
+          extraData["jobUnique"] = context.JobUnique;
+        repo.RecordGeneralMessage(
+          mat: null,
+          program: program,
+          result: message,
+          pallet: context.Pallet,
+          timeUTC: context.TimeUTC,
+          foreignId: foreignId,
+          originalMessage: context.ForeignId,
+          extraData: extraData
+        );
+      }
+    }
 
     private bool TryValidateResolvedMaterial(
       ImmutableList<long> materialIds,
