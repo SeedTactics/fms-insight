@@ -1562,26 +1562,26 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void BasketLoadResolverUsesTranslatedContextAndReturnedMaterial()
+    public void ExactLoadResolverRunsBeforeQueueAndBasketStationMetadata()
     {
       AddTestJob(
         unique: "basket-job",
         part: "basket-part",
-        processes: [Process(), Process(basketLoadStations: [21])]
+        processes: [Process(), Process(inputQueue: "thequeue", basketLoadStations: [999])]
       );
       var materialId = jobLog.AllocateMaterialID("basket-job", "basket-part", numProc: 2);
       var time = DateTime.UtcNow.AddHours(-1);
-      MazakBasketLoadMaterialContext receivedContext = null;
+      MazakLoadMaterialContext receivedContext = null;
 
       mazakCfg = mazakCfg with
       {
         StartingPalletNumber = 100,
         StartingLoadStationNumber = 20,
-        FindMaterialForBasketLoad = (repository, context) =>
+        ResolveMaterialForLoad = (repository, context) =>
         {
           repository.ShouldBe(jobLog);
           receivedContext = context;
-          return [materialId];
+          return new MazakLoadMaterialResolution.Resolved([materialId]);
         },
       };
 
@@ -1589,7 +1589,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       receivedContext.ShouldNotBeNull();
       receivedContext.ShouldBe(
-        new MazakBasketLoadMaterialContext()
+        new MazakLoadMaterialContext()
         {
           Pallet = 101,
           LoadStation = 21,
@@ -1611,22 +1611,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void BasketLoadResolverIsNotUsedForNonBasketLoad()
+    public void NotApplicableResolverRetainsOrdinaryLoadBehavior()
     {
       AddTestJob(unique: "ordinary-job", part: "ordinary-part", processes: [Process()]);
       var resolverCalled = false;
       mazakCfg = mazakCfg with
       {
-        FindMaterialForBasketLoad = (repository, context) =>
+        ResolveMaterialForLoad = (repository, context) =>
         {
           resolverCalled = true;
-          throw new InvalidOperationException("The resolver should not be called.");
+          return new MazakLoadMaterialResolution.NotApplicable();
         },
       };
 
       CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "ordinary-part"));
 
-      resolverCalled.ShouldBeFalse();
+      resolverCalled.ShouldBeTrue();
       CurrentPalletLog(1)
         .Single(log => log.LogType == LogType.LoadUnloadCycle)
         .Material.ShouldHaveSingleItem()
@@ -1634,7 +1634,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void InputQueueLoadRetainsQueueBehaviorWithResolverConfigured()
+    public void NotApplicableResolverRetainsInputQueueBehavior()
     {
       AddTestJob(
         unique: "queue-job",
@@ -1653,16 +1653,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var resolverCalled = false;
       mazakCfg = mazakCfg with
       {
-        FindMaterialForBasketLoad = (repository, context) =>
+        ResolveMaterialForLoad = (repository, context) =>
         {
           resolverCalled = true;
-          throw new InvalidOperationException("The resolver should not be called.");
+          return new MazakLoadMaterialResolution.NotApplicable();
         },
       };
 
       CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "queue-part", process: 2));
 
-      resolverCalled.ShouldBeFalse();
+      resolverCalled.ShouldBeTrue();
       jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
       CurrentPalletLog(1)
         .Single(log => log.LogType == LogType.LoadUnloadCycle)
@@ -1671,43 +1671,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void BasketLoadResolverInvalidMaterialFallsBackToLegacyBehavior()
-    {
-      AddTestJob(
-        unique: "basket-job",
-        part: "basket-part",
-        processes: [Process(basketLoadStations: [1])]
-      );
-      mazakCfg = mazakCfg with { FindMaterialForBasketLoad = (repository, context) => [0] };
-
-      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
-
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(1);
-    }
-
-    [Test]
-    public void BasketLoadResolverNullFallsBackToLegacyBehavior()
-    {
-      AddTestJob(
-        unique: "basket-job",
-        part: "basket-part",
-        processes: [Process(basketLoadStations: [1])]
-      );
-      mazakCfg = mazakCfg with { FindMaterialForBasketLoad = (repository, context) => null };
-
-      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
-
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(1);
-    }
-
-    [Test]
-    public void BasketLoadResolverExceptionFallsBackToLegacyBehavior()
+    public void ExactLoadResolverInvalidMaterialFailsClosed()
     {
       AddTestJob(
         unique: "basket-job",
@@ -1716,22 +1680,63 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       mazakCfg = mazakCfg with
       {
-        FindMaterialForBasketLoad = (repository, context) =>
+        ResolveMaterialForLoad = (repository, context) =>
+          new MazakLoadMaterialResolution.Resolved([0]),
+      };
+
+      Should.Throw<MazakMaterialResolutionException>(() =>
+        CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"))
+      );
+
+      CurrentPalletLog(1).ShouldNotContain(log => log.LogType == LogType.LoadUnloadCycle);
+      jobLog.GetMaterialDetails(1).ShouldBeNull();
+    }
+
+    [Test]
+    public void ExactLoadResolverNullFailsClosed()
+    {
+      AddTestJob(
+        unique: "basket-job",
+        part: "basket-part",
+        processes: [Process(basketLoadStations: [1])]
+      );
+      mazakCfg = mazakCfg with { ResolveMaterialForLoad = (repository, context) => null };
+
+      Should.Throw<MazakMaterialResolutionException>(() =>
+        CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"))
+      );
+
+      CurrentPalletLog(1).ShouldNotContain(log => log.LogType == LogType.LoadUnloadCycle);
+      jobLog.GetMaterialDetails(1).ShouldBeNull();
+    }
+
+    [Test]
+    public void ExactLoadResolverExceptionFailsClosed()
+    {
+      AddTestJob(
+        unique: "basket-job",
+        part: "basket-part",
+        processes: [Process(basketLoadStations: [1])]
+      );
+      mazakCfg = mazakCfg with
+      {
+        ResolveMaterialForLoad = (repository, context) =>
         {
           throw new InvalidOperationException("The basket material could not be resolved.");
         },
       };
 
-      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
+      var exception = Should.Throw<MazakMaterialResolutionException>(() =>
+        CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"))
+      );
 
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(1);
+      exception.InnerException.ShouldBeOfType<InvalidOperationException>();
+      CurrentPalletLog(1).ShouldNotContain(log => log.LogType == LogType.LoadUnloadCycle);
+      jobLog.GetMaterialDetails(1).ShouldBeNull();
     }
 
     [Test]
-    public void InputQueueTakesPrecedenceOverBasketResolver()
+    public void ExactLoadResolverTakesPrecedenceOverInputQueue()
     {
       AddTestJob(
         unique: "queue-basket-job",
@@ -1751,22 +1756,58 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         operatorName: null,
         reason: "Test"
       );
-      var resolverCalled = false;
       mazakCfg = mazakCfg with
       {
-        FindMaterialForBasketLoad = (repository, context) =>
-        {
-          resolverCalled = true;
-          throw new InvalidOperationException("The basket resolver should not be called.");
-        },
+        ResolveMaterialForLoad = (repository, context) =>
+          new MazakLoadMaterialResolution.Resolved([materialId]),
       };
 
       CompleteLoad(
         LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "queue-basket-part", process: 2)
       );
 
-      resolverCalled.ShouldBeFalse();
       jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
+      CurrentPalletLog(1)
+        .Single(log => log.LogType == LogType.LoadUnloadCycle)
+        .Material.ShouldHaveSingleItem()
+        .MaterialID.ShouldBe(materialId);
+    }
+
+    [Test]
+    public void FailedExactLoadResolutionRetriesTheSameLoadEnd()
+    {
+      AddTestJob(
+        unique: "basket-job",
+        part: "basket-part",
+        processes: [Process(basketLoadStations: [999])]
+      );
+      var materialId = jobLog.AllocateMaterialID("basket-job", "basket-part", numProc: 1);
+      var materialAvailable = false;
+      mazakCfg = mazakCfg with
+      {
+        ResolveMaterialForLoad = (repository, context) =>
+          materialAvailable
+            ? new MazakLoadMaterialResolution.Resolved([materialId])
+            : throw new MazakMaterialResolutionException("Robot-send evidence is not available."),
+      };
+      var loadEnd = LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part");
+
+      Should.Throw<MazakMaterialResolutionException>(() => CompleteLoad(loadEnd));
+      CurrentPalletLog(1).ShouldNotContain(log => log.LogType == LogType.LoadUnloadCycle);
+
+      materialAvailable = true;
+      HandleEvent(
+        new MazakMachineInterface.LogEntry()
+        {
+          TimeUTC = loadEnd.TimeUTC.AddMinutes(2),
+          Code = LogCode.PalletMoving,
+          ForeignID = "retry-after-evidence",
+          Pallet = loadEnd.Pallet,
+          TargetPosition = "S011",
+          FromPosition = "LS01" + loadEnd.StationNumber,
+        }
+      );
+
       CurrentPalletLog(1)
         .Single(log => log.LogType == LogType.LoadUnloadCycle)
         .Material.ShouldHaveSingleItem()

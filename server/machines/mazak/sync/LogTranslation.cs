@@ -194,6 +194,10 @@ namespace MazakMachineInterface
             HandleLoadEnd(e.LulEndChunk);
             onMazakLog(e);
           }
+          catch (MazakMaterialResolutionException)
+          {
+            throw;
+          }
           catch (Exception ex)
           {
             Log.Error(ex, "Error translating log event at time {t}", e.LulEndChunk[0].TimeUTC);
@@ -743,9 +747,28 @@ namespace MazakMachineInterface
             : null;
         var pathInfo = processInfo?.Paths.Count > 0 ? processInfo.Paths[0] : null;
         var inputQueue = pathInfo?.InputQueue;
-        var isBasketLoad = processInfo?.BasketLoadStations?.Contains(loadStation) == true;
+        var resolvedMaterial = ResolveMaterialForLoad(
+          new MazakLoadMaterialContext()
+          {
+            Pallet = pallet,
+            LoadStation = loadStation,
+            JobUnique = unique,
+            Process = jobProc,
+            Path = 1,
+            Face = e.Process,
+            Quantity = fixQty,
+            TimeUTC = e.TimeUTC,
+            ForeignId = e.ForeignID,
+          },
+          e.JobPartName,
+          numProc
+        );
 
-        if (!string.IsNullOrEmpty(inputQueue))
+        if (resolvedMaterial is not null)
+        {
+          mats.AddRange(resolvedMaterial);
+        }
+        else if (!string.IsNullOrEmpty(inputQueue))
         {
           var info = job.Processes[jobProc - 1].Paths[0];
           // search input queue for material
@@ -812,31 +835,6 @@ namespace MazakMachineInterface
               }
             }
           }
-        }
-        else if (
-          isBasketLoad
-          && mazakConfig.FindMaterialForBasketLoad is { } findMaterial
-          && TryFindBasketLoadMaterial(
-            findMaterial,
-            new MazakBasketLoadMaterialContext()
-            {
-              Pallet = pallet,
-              LoadStation = loadStation,
-              JobUnique = unique,
-              Process = jobProc,
-              Path = 1,
-              Face = e.Process,
-              Quantity = fixQty,
-              TimeUTC = e.TimeUTC,
-              ForeignId = e.ForeignID,
-            },
-            e.JobPartName,
-            numProc,
-            out var basketMaterialIds
-          )
-        )
-        {
-          mats.AddRange(basketMaterialIds);
         }
         else if (jobProc == 1)
         {
@@ -928,54 +926,61 @@ namespace MazakMachineInterface
       return toLoad;
     }
 
-    private bool TryFindBasketLoadMaterial(
-      Func<IRepository, MazakBasketLoadMaterialContext, ImmutableList<long>> findMaterial,
-      MazakBasketLoadMaterialContext context,
+    private ImmutableList<long> ResolveMaterialForLoad(
+      MazakLoadMaterialContext context,
       string part,
-      int numProc,
-      out ImmutableList<long> materialIds
+      int numProc
     )
     {
-      materialIds = null;
+      if (mazakConfig.ResolveMaterialForLoad is not { } resolveMaterial)
+        return null;
 
+      MazakLoadMaterialResolution resolution;
       try
       {
-        var resolvedMaterialIds = findMaterial(repo, context);
-        if (
-          !TryValidateBasketLoadMaterial(
-            resolvedMaterialIds,
-            context,
-            part,
-            numProc,
-            out var validationFailure
-          )
-        )
-        {
-          Log.Warning(
-            "Basket material resolver returned unusable material for {@context}: {reason}. Continuing with standard Mazak material selection.",
-            context,
-            validationFailure
-          );
-          return false;
-        }
-
-        materialIds = resolvedMaterialIds;
-        return true;
+        resolution = resolveMaterial(repo, context);
+      }
+      catch (MazakMaterialResolutionException)
+      {
+        throw;
       }
       catch (Exception ex)
       {
-        Log.Error(
-          ex,
-          "Basket material resolver failed for {@context}. Continuing with standard Mazak material selection.",
-          context
+        throw new MazakMaterialResolutionException(
+          $"Exact material resolution failed for pallet {context.Pallet}, load station {context.LoadStation}, job {context.JobUnique}, process {context.Process}, path {context.Path}, face {context.Face}.",
+          ex
         );
-        return false;
       }
+
+      if (resolution is MazakLoadMaterialResolution.NotApplicable)
+        return null;
+      if (resolution is not MazakLoadMaterialResolution.Resolved resolved)
+        throw ResolutionFailure(context, "the resolver returned null or an unknown result");
+      if (
+        !TryValidateResolvedMaterial(
+          resolved.MaterialIds,
+          context,
+          part,
+          numProc,
+          out var validationFailure
+        )
+      )
+        throw ResolutionFailure(context, validationFailure);
+
+      return resolved.MaterialIds;
     }
 
-    private bool TryValidateBasketLoadMaterial(
+    private static MazakMaterialResolutionException ResolutionFailure(
+      MazakLoadMaterialContext context,
+      string failure
+    ) =>
+      new(
+        $"Exact material resolution failed for pallet {context.Pallet}, load station {context.LoadStation}, job {context.JobUnique}, process {context.Process}, path {context.Path}, face {context.Face}: {failure}."
+      );
+
+    private bool TryValidateResolvedMaterial(
       ImmutableList<long> materialIds,
-      MazakBasketLoadMaterialContext context,
+      MazakLoadMaterialContext context,
       string part,
       int numProc,
       out string failure
