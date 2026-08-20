@@ -355,6 +355,77 @@ public sealed class MazakSyncSpec : IDisposable
   }
 
   [Test]
+  public async Task MaterialResolutionErrorStaysOutsideMazakCsvWatermark()
+  {
+    using var db = repo.OpenConnection();
+    var newJobs = JsonSerializer.Deserialize<NewJobs>(
+      File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+      _jsonSettings
+    );
+    db.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+    var materialId = db.AllocateMaterialID("aaa-schId1234", "aaa", 2);
+    db.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = materialId,
+        Process = 0,
+        Face = 0,
+      },
+      "castings",
+      -1,
+      operatorName: null,
+      reason: "TheQueueReason"
+    );
+
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "LG20240611-040506-001.csv"),
+      ["2024,6,11,4,5,6,501,,12,,,1,6,1,prog,,,"]
+    );
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "LG20240611-040509-002.csv"),
+      ["2024,6,11,4,5,9,502,,12,,,1,6,1,prog,,,"]
+    );
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "LG20240611-040510-003.csv"),
+      ["2024,6,11,4,5,10,301,,,,,,1,,,,L01,S04"]
+    );
+    var allData = JsonSerializer.Deserialize<MazakAllDataAndLogs>(
+      File.ReadAllText(
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.data.json")
+      ),
+      _jsonSettings
+    ) with
+    {
+      Logs = LogCSVParsing.LoadLog(null, _tempDir),
+    };
+    _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
+    using var sync = new MazakSync(
+      _mazakDB,
+      _fmsSt,
+      new MazakConfig
+      {
+        DBType = MazakDbType.MazakSmooth,
+        SQLConnectionString = "unused sql string",
+        LogCSVPath = _tempDir,
+        ProgramDirectory = "not used",
+        LoadCSVPath = "not used",
+        ResolveMaterialForLoad = (repository, context) =>
+          new MazakLoadMaterialResolution.Unresolved("Missing exact test evidence."),
+      }
+    );
+
+    sync.CalculateCellState(db);
+
+    var resolutionForeignId = db.MaxForeignID();
+    var resolutionError = db.MostRecentLogEntryForForeignID(resolutionForeignId);
+    await Assert.That(resolutionForeignId).StartsWith("mazak-material-resolution:");
+    await Assert.That(resolutionForeignId.StartsWith("LG")).IsFalse();
+    await Assert.That(resolutionError.Program).IsEqualTo("MazakLoadMaterialResolution");
+    await Assert.That(db.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG20240611-040509-002.csv");
+    _mazakDB.Received().DeleteLogs("LG20240611-040509-002.csv");
+  }
+
+  [Test]
   public void StopsProcessingOnLoadEvents()
   {
     using var db = repo.OpenConnection();

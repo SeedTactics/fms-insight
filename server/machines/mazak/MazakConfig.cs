@@ -40,7 +40,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace MazakMachineInterface
 {
-  public sealed record MazakBasketLoadMaterialContext
+  public sealed record MazakLoadMaterialContext
   {
     public required int Pallet { get; init; }
     public required int LoadStation { get; init; }
@@ -51,6 +51,17 @@ namespace MazakMachineInterface
     public required int Quantity { get; init; }
     public required DateTime TimeUTC { get; init; }
     public string? ForeignId { get; init; }
+  }
+
+  public abstract record MazakLoadMaterialResolution
+  {
+    private MazakLoadMaterialResolution() { }
+
+    public sealed record NotApplicable : MazakLoadMaterialResolution;
+
+    public sealed record Resolved(ImmutableList<long> MaterialIds) : MazakLoadMaterialResolution;
+
+    public sealed record Unresolved(string Reason) : MazakLoadMaterialResolution;
   }
 
   public record MazakConfig
@@ -86,15 +97,15 @@ namespace MazakMachineInterface
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
 
-    // Optionally resolve the exact FMS material IDs for a load from a
-    // configured basket load station. Returning null, throwing, or returning
-    // unusable material causes Mazak log translation to fall back to its
-    // standard material selection.
+    // Optionally claim exact FMS material identity for an individual Mazak load before ordinary
+    // queue and generic material selection. NotApplicable preserves ordinary selection; Resolved
+    // is authoritative. Unresolved records a durable data-quality error and uses ordinary
+    // selection so enrichment failures never block the Mazak event stream.
     public Func<
       IRepository,
-      MazakBasketLoadMaterialContext,
-      ImmutableList<long>?
-    >? FindMaterialForBasketLoad { get; init; }
+      MazakLoadMaterialContext,
+      MazakLoadMaterialResolution
+    >? ResolveMaterialForLoad { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
     public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
