@@ -45,7 +45,7 @@ public sealed class BasketMisloadSpec : IDisposable
       contentEpisodeIds: [],
       Storage(),
       OperatorSource(),
-      " Contents require inspection ",
+      " Contents require correction ",
       DateTime.UtcNow,
       new EventLogMetadata
       {
@@ -54,7 +54,7 @@ public sealed class BasketMisloadSpec : IDisposable
       }
     );
 
-    await Assert.That(misload.Reason).IsEqualTo("Contents require inspection");
+    await Assert.That(misload.Reason).IsEqualTo("Contents require correction");
     await Assert.That(misload.CorrelationId).IsEqualTo(correlationId.ToString("D"));
     await Assert.That(repository.GetActiveBasketMisloads().Single()).IsEqualTo(misload);
     await Assert.That(repository.GetBasketMisload(misloadId)).IsEqualTo(misload);
@@ -105,7 +105,7 @@ public sealed class BasketMisloadSpec : IDisposable
         [contentEpisodeId],
         Staging(),
         SensorSource(),
-        "inspection",
+        "correction",
         DateTime.UtcNow
       );
     }
@@ -135,7 +135,7 @@ public sealed class BasketMisloadSpec : IDisposable
           [],
           Storage(),
           OperatorSource(),
-          "inspection",
+          "correction",
           DateTime.UtcNow
         )
       )
@@ -148,7 +148,7 @@ public sealed class BasketMisloadSpec : IDisposable
           [Guid.NewGuid()],
           Staging(),
           SensorSource(),
-          "inspection",
+          "correction",
           DateTime.UtcNow
         )
       )
@@ -181,7 +181,7 @@ public sealed class BasketMisloadSpec : IDisposable
           [contentEpisodeId],
           Staging(),
           SensorSource(),
-          "inspection",
+          "correction",
           DateTime.UtcNow
         )
       )
@@ -200,7 +200,7 @@ public sealed class BasketMisloadSpec : IDisposable
       [],
       Storage(),
       OperatorSource(),
-      "inspection",
+      "correction",
       DateTime.UtcNow
     );
     var retry = repository.RecordBasketMisload(
@@ -209,7 +209,7 @@ public sealed class BasketMisloadSpec : IDisposable
       [],
       Storage(),
       OperatorSource(),
-      "inspection",
+      "correction",
       DateTime.UtcNow.AddHours(1)
     );
 
@@ -224,7 +224,7 @@ public sealed class BasketMisloadSpec : IDisposable
           [],
           Storage(),
           OperatorSource(),
-          "inspection",
+          "correction",
           DateTime.UtcNow
         )
       )
@@ -244,7 +244,7 @@ public sealed class BasketMisloadSpec : IDisposable
         [],
         Storage(),
         OperatorSource(),
-        "inspection",
+        "correction",
         DateTime.UtcNow
       );
       var resolution = repository.ResolveBasketMisload(
@@ -285,7 +285,7 @@ public sealed class BasketMisloadSpec : IDisposable
       [],
       Storage(),
       OperatorSource(),
-      "inspection",
+      "correction",
       DateTime.UtcNow
     );
     var first = repository.ResolveBasketMisload(
@@ -339,7 +339,7 @@ public sealed class BasketMisloadSpec : IDisposable
           [],
           Storage(),
           OperatorSource(),
-          "inspection",
+          "correction",
           DateTime.UtcNow
         )
       )
