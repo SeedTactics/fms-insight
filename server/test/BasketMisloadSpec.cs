@@ -250,7 +250,7 @@ public sealed class BasketMisloadSpec : IDisposable
       var resolution = repository.ResolveBasketMisload(
         resolutionId,
         misloadId,
-        BasketMisloadResolutionKind.ClearedAfterInspection,
+        BasketMisloadResolutionKind.ClearedAfterCorrection,
         OperatorSource(),
         DateTime.UtcNow,
         "inspected"

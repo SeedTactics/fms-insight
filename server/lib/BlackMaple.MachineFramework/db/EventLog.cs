@@ -47,6 +47,44 @@ namespace BlackMaple.MachineFramework
 {
   internal sealed partial class Repository
   {
+    // Removed beta location evidence retained only until its obsolete persistence implementation is
+    // deleted below. It is unreachable through IRepository.
+    private sealed record BasketLocationObservation
+    {
+      public required Guid ObservationId { get; init; }
+      public required int BasketId { get; init; }
+      public required BasketPosition Position { get; init; }
+      public required DateTime TimeUTC { get; init; }
+      public required BasketEvidenceSource Source { get; init; }
+      public string CorrelationId { get; init; }
+      public required long EventCounter { get; init; }
+    }
+
+    private sealed record BasketLocationObservationCorrection
+    {
+      public required Guid CorrectionId { get; init; }
+      public required Guid TargetObservationId { get; init; }
+      public Guid? ReplacementObservationId { get; init; }
+      public required DateTime TimeUTC { get; init; }
+      public required BasketEvidenceSource Source { get; init; }
+      public string Note { get; init; }
+      public string CorrelationId { get; init; }
+      public required long EventCounter { get; init; }
+    }
+
+    private sealed record BasketLocationObservationReplacement
+    {
+      public required Guid ObservationId { get; init; }
+      public required int BasketId { get; init; }
+      public required BasketPosition Position { get; init; }
+    }
+
+    private sealed record BasketLocationObservationCorrectionResult
+    {
+      public required BasketLocationObservationCorrection Correction { get; init; }
+      public BasketLocationObservation Replacement { get; init; }
+    }
+
     #region Loading
     private IEnumerable<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans)
     {
@@ -871,7 +909,7 @@ namespace BlackMaple.MachineFramework
       return LoadLog(reader, trans).ToImmutableList();
     }
 
-    public ImmutableList<BasketLocationObservation> GetCurrentBasketLocationObservations(
+    private ImmutableList<BasketLocationObservation> GetCurrentBasketLocationObservations(
       int? basketNum = null
     )
     {
@@ -886,7 +924,7 @@ namespace BlackMaple.MachineFramework
         + (basketNum.HasValue ? "AND s.Pallet = $num " : "")
         + ") SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
         + "FROM current_observations WHERE ObservationRank = 1 ORDER BY Pallet";
-      cmd.Parameters.Add("type", SqliteType.Integer).Value = (int)LogType.BasketLocationObservation;
+      cmd.Parameters.Add("type", SqliteType.Integer).Value = 121;
       if (basketNum.HasValue)
         cmd.Parameters.Add("num", SqliteType.Integer).Value = basketNum.Value;
       using var reader = cmd.ExecuteReader();
@@ -898,7 +936,7 @@ namespace BlackMaple.MachineFramework
     }
 
     [return: MaybeNull]
-    public BasketLocationObservation GetBasketLocationObservation(Guid observationId)
+    private BasketLocationObservation GetBasketLocationObservation(Guid observationId)
     {
       if (observationId == Guid.Empty)
         throw new ArgumentException("Observation ID can not be empty.", nameof(observationId));
@@ -908,7 +946,7 @@ namespace BlackMaple.MachineFramework
       return observation;
     }
 
-    public ImmutableList<BasketLocationObservationCorrection> GetBasketLocationObservationCorrections(
+    private ImmutableList<BasketLocationObservationCorrection> GetBasketLocationObservationCorrections(
       Guid? targetObservationId = null
     )
     {
@@ -2533,18 +2571,22 @@ namespace BlackMaple.MachineFramework
             );
           if (currentBasket is null)
             logs.Add(
-              AddBasketIdentityAssociation(
+              AddBasketObservation(
                 Guid.NewGuid(),
                 basketNum,
+                new BasketPosition
+                {
+                  Location = BasketLocationEnum.LoadUnload,
+                  LocationNum = lulNum,
+                  LocationTitle = "Basket Load Station",
+                },
                 [contentEpisodeId.Value],
-                BasketIdentityAssociationBasis.CalculatedInference,
                 new BasketEvidenceSource
                 {
                   Kind = BasketEvidenceSourceKind.Integration,
                   Name = "BasketCycle",
                 },
                 timeUTC,
-                observedPosition: null,
                 metadata: new EventLogMetadata
                 {
                   ForeignId = metadata?.ForeignId ?? foreignId,
@@ -4035,7 +4077,7 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    public BasketLocationObservation RecordBasketLocationObservation(
+    private BasketLocationObservation RecordBasketLocationObservation(
       Guid observationId,
       int basketId,
       BasketPosition position,
@@ -4076,7 +4118,7 @@ namespace BlackMaple.MachineFramework
       return GetBasketLocationObservation(observationId);
     }
 
-    public BasketLocationObservationCorrectionResult CorrectBasketLocationObservation(
+    private BasketLocationObservationCorrectionResult CorrectBasketLocationObservation(
       Guid correctionId,
       Guid targetObservationId,
       [AllowNull] BasketLocationObservationReplacement replacement,
@@ -4188,7 +4230,7 @@ namespace BlackMaple.MachineFramework
         {
           Material = [],
           Pallet = target.BasketId,
-          LogType = LogType.BasketLocationObservationCorrection,
+          LogType = (LogType)122,
           LocationName = target.Position.Location.ToString(),
           LocationNum = target.Position.LocationNum,
           Program = normalizedSource.Kind.ToString(),
@@ -4279,9 +4321,7 @@ namespace BlackMaple.MachineFramework
         foreach (var log in logs)
           _cfg.OnNewLogEntry(log, normalizedMetadata.ForeignId, this);
       }
-      var correctionLog = logs.First(entry =>
-        entry.LogType == LogType.BasketLocationObservationCorrection
-      );
+      var correctionLog = logs.First(entry => (int)entry.LogType == 122);
       var correction = GetBasketLocationObservationCorrections(targetObservationId)
         .Single(entry => entry.CorrectionId == correctionId);
       return new BasketLocationObservationCorrectionResult
@@ -4337,7 +4377,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = [],
         Pallet = basketId,
-        LogType = LogType.BasketLocationObservation,
+        LogType = (LogType)121,
         LocationName = position.Location.ToString(),
         LocationNum = position.LocationNum,
         Program = source.Kind.ToString(),

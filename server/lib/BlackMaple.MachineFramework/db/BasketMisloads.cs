@@ -112,7 +112,7 @@ namespace BlackMaple.MachineFramework
           Program = normalizedSource.Kind.ToString(),
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
-          Result = "RequiresInspection",
+          Result = "RequiresCorrection",
           ElapsedTime = TimeSpan.Zero,
           ActiveOperationTime = TimeSpan.Zero,
           Metadata = normalizedMetadata,

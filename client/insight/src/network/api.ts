@@ -3378,14 +3378,12 @@ export enum LogType {
   BasketLoadUnload = "BasketLoadUnload",
   BasketCycle = "BasketCycle",
   BasketInLocation = "BasketInLocation",
-  BasketIdentityAssociation = "BasketIdentityAssociation",
   BasketContentSnapshot = "BasketContentSnapshot",
-  BasketLocationObservation = "BasketLocationObservation",
-  BasketLocationObservationCorrection = "BasketLocationObservationCorrection",
-  BasketIdentityAssociationCorrection = "BasketIdentityAssociationCorrection",
   BasketRegionSurvey = "BasketRegionSurvey",
   BasketMisload = "BasketMisload",
   BasketMisloadResolution = "BasketMisloadResolution",
+  BasketObservation = "BasketObservation",
+  BasketObservationCorrection = "BasketObservationCorrection",
 }
 
 export class ToolUse implements IToolUse {
