@@ -112,14 +112,12 @@ namespace BlackMaple.MachineFramework
     BasketLoadUnload = 116,
     BasketCycle = 117,
     BasketInLocation = 118,
-    BasketIdentityAssociation = 119,
     BasketContentSnapshot = 120,
-    BasketLocationObservation = 121,
-    BasketLocationObservationCorrection = 122,
-    BasketIdentityAssociationCorrection = 123,
     BasketRegionSurvey = 124,
     BasketMisload = 125,
     BasketMisloadResolution = 126,
+    BasketObservation = 127,
+    BasketObservationCorrection = 128,
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 
@@ -136,78 +134,33 @@ namespace BlackMaple.MachineFramework
     public required string Name { get; init; }
   }
 
-  public enum BasketIdentityAssociationBasis
-  {
-    // The claim was established by directly observing the basket or its identity, regardless of
-    // whether the source was an operator, sensor, or integration.
-    DirectObservation,
-
-    // The claim was derived from other facts rather than directly observed. Administrative
-    // correction is represented by the correction event, not by this basis.
-    CalculatedInference,
-  }
-
-  // Associates content episodes with a basket ID.
-  // Source identifies who supplied the evidence; Basis identifies how the claim was established.
-  public sealed record BasketIdentityAssociation
-  {
-    // Identifies the association
-    public required Guid AssociationId { get; init; }
-    public required int BasketId { get; init; }
-    public required ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; }
-    public required BasketIdentityAssociationBasis Basis { get; init; }
-    public required BasketEvidenceSource Source { get; init; }
-    public string? Note { get; init; }
-    public BasketPosition? ObservedPosition { get; init; }
-
-    public string? CorrelationId { get; init; }
-    public required DateTime TimeUTC { get; init; }
-    public required long EventCounter { get; init; }
-  }
-
-  public sealed record BasketIdentityAssociationCorrection
-  {
-    // Identifies the correction
-    public required Guid CorrectionId { get; init; }
-
-    // The association being corrected
-    public required Guid TargetAssociationId { get; init; }
-
-    // If the association is being retracted, this the replacement null
-    // If the association is being replaced, this is the ID of the replacement
-    public Guid? ReplacementAssociationId { get; init; }
-
-    public required BasketEvidenceSource Source { get; init; }
-
-    public string? Note { get; init; }
-
-    // Optional field to help identify workflows containing multiple events
-    public string? CorrelationId { get; init; }
-
-    public required DateTime TimeUTC { get; init; }
-    public required long EventCounter { get; init; }
-  }
-
-  public sealed record BasketLocationObservation
+  /// <summary>
+  /// Direct evidence that a numbered basket was observed at a physical position. Content episode
+  /// IDs are included only when the recorder has direct physical continuity to one uniquely
+  /// tracked occupant; their absence makes no content-identity claim.
+  /// </summary>
+  public sealed record BasketObservation
   {
     public required Guid ObservationId { get; init; }
     public required int BasketId { get; init; }
     public required BasketPosition Position { get; init; }
-    public required DateTime TimeUTC { get; init; }
+    public ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; } = [];
     public required BasketEvidenceSource Source { get; init; }
+    public string? Note { get; init; }
     public string? CorrelationId { get; init; }
+    public required DateTime TimeUTC { get; init; }
     public required long EventCounter { get; init; }
   }
 
-  public sealed record BasketLocationObservationCorrection
+  public sealed record BasketObservationCorrection
   {
     public required Guid CorrectionId { get; init; }
     public required Guid TargetObservationId { get; init; }
     public Guid? ReplacementObservationId { get; init; }
-    public required DateTime TimeUTC { get; init; }
     public required BasketEvidenceSource Source { get; init; }
     public string? Note { get; init; }
     public string? CorrelationId { get; init; }
+    public required DateTime TimeUTC { get; init; }
     public required long EventCounter { get; init; }
   }
 
@@ -245,7 +198,7 @@ namespace BlackMaple.MachineFramework
 
   public enum BasketMisloadResolutionKind
   {
-    ClearedAfterInspection,
+    ClearedAfterCorrection,
     ReportedInError,
     Superseded,
   }

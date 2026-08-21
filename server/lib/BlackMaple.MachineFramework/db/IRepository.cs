@@ -70,22 +70,11 @@ namespace BlackMaple.MachineFramework
       BasketLogIdentity basketIdentity,
       bool includeLastCycleEvt = false
     );
-    ImmutableList<BasketIdentityAssociation> GetCurrentBasketIdentityAssociations(
-      int? basketNum = null
-    );
+    ImmutableList<BasketObservation> GetCurrentBasketObservations(int? basketNum = null);
 
     [return: MaybeNull]
-    BasketIdentityAssociation GetBasketIdentityAssociation(Guid associationId);
-    ImmutableList<BasketIdentityAssociationCorrection> GetBasketIdentityAssociationCorrections(
-      Guid? targetAssociationId = null
-    );
-    ImmutableList<BasketLocationObservation> GetCurrentBasketLocationObservations(
-      int? basketNum = null
-    );
-
-    [return: MaybeNull]
-    BasketLocationObservation GetBasketLocationObservation(Guid observationId);
-    ImmutableList<BasketLocationObservationCorrection> GetBasketLocationObservationCorrections(
+    BasketObservation GetBasketObservation(Guid observationId);
+    ImmutableList<BasketObservationCorrection> GetBasketObservationCorrections(
       Guid? targetObservationId = null
     );
     ImmutableList<BasketRegionSurvey> GetBasketRegionSurveys(
@@ -384,40 +373,22 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null,
       EventLogMetadata metadata = null
     );
-    BasketIdentityAssociation RecordBasketIdentityAssociation(
-      Guid associationId,
-      int basketId,
-      ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketIdentityAssociationBasis basis,
-      BasketEvidenceSource source,
-      DateTime timeUTC,
-      BasketPosition observedPosition = null,
-      EventLogMetadata metadata = null,
-      string note = null
-    );
-    BasketIdentityAssociationCorrectionResult CorrectBasketIdentityAssociation(
-      Guid correctionId,
-      Guid targetAssociationId,
-      [AllowNull] BasketIdentityAssociationReplacement replacement,
-      BasketEvidenceSource source,
-      DateTime timeUTC,
-      string note = null,
-      EventLogMetadata metadata = null
-    );
-    BasketLocationObservation RecordBasketLocationObservation(
+    BasketObservation RecordBasketObservation(
       Guid observationId,
       int basketId,
       BasketPosition position,
-      DateTime timeUTC,
+      ImmutableSortedSet<Guid> contentEpisodeIds,
       BasketEvidenceSource source,
-      EventLogMetadata metadata = null
+      DateTime timeUTC,
+      EventLogMetadata metadata = null,
+      string note = null
     );
-    BasketLocationObservationCorrectionResult CorrectBasketLocationObservation(
+    BasketObservationCorrectionResult CorrectBasketObservation(
       Guid correctionId,
       Guid targetObservationId,
-      [AllowNull] BasketLocationObservationReplacement replacement,
-      DateTime timeUTC,
+      [AllowNull] BasketObservationReplacement replacement,
       BasketEvidenceSource source,
+      DateTime timeUTC,
       string note = null,
       EventLogMetadata metadata = null
     );
@@ -1040,33 +1011,19 @@ namespace BlackMaple.MachineFramework
     public required IReadOnlyList<LogEntry> Logs { get; init; }
   }
 
-  public sealed record BasketIdentityAssociationReplacement
-  {
-    public required Guid AssociationId { get; init; }
-    public required int BasketId { get; init; }
-    public required ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; }
-    public required BasketIdentityAssociationBasis Basis { get; init; }
-    public required BasketEvidenceSource Source { get; init; }
-    public BasketPosition ObservedPosition { get; init; }
-  }
-
-  public sealed record BasketIdentityAssociationCorrectionResult
-  {
-    public required BasketIdentityAssociationCorrection Correction { get; init; }
-    public BasketIdentityAssociation Replacement { get; init; }
-  }
-
-  public sealed record BasketLocationObservationReplacement
+  public sealed record BasketObservationReplacement
   {
     public required Guid ObservationId { get; init; }
     public required int BasketId { get; init; }
     public required BasketPosition Position { get; init; }
+    public required ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; }
+    public required BasketEvidenceSource Source { get; init; }
   }
 
-  public sealed record BasketLocationObservationCorrectionResult
+  public sealed record BasketObservationCorrectionResult
   {
-    public required BasketLocationObservationCorrection Correction { get; init; }
-    public BasketLocationObservation Replacement { get; init; }
+    public required BasketObservationCorrection Correction { get; init; }
+    public BasketObservation Replacement { get; init; }
   }
 
   /// <summary>

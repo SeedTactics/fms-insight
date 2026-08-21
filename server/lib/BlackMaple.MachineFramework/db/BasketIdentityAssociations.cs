@@ -8,9 +8,9 @@ modification, are permitted provided that the following conditions are met:
     * Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following disclaimer
+      in the documentation and/or other materials provided with the distribution.
 
     * Neither the name of John Lenz, Black Maple Software, SeedTactics,
       nor the names of other contributors may be used to endorse or
@@ -46,56 +46,47 @@ namespace BlackMaple.MachineFramework
 {
   internal sealed partial class Repository
   {
-    private sealed record AddedBasketIdentityAssociation(
-      BasketIdentityAssociation Association,
+    private sealed record AddedBasketObservation(
+      BasketObservation Observation,
       LogEntry Log,
       bool Created
     );
 
-    public BasketIdentityAssociation RecordBasketIdentityAssociation(
-      Guid associationId,
+    public BasketObservation RecordBasketObservation(
+      Guid observationId,
       int basketId,
+      BasketPosition position,
       ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketIdentityAssociationBasis basis,
       BasketEvidenceSource source,
       DateTime timeUTC,
-      BasketPosition observedPosition = null,
       EventLogMetadata metadata = null,
       string note = null
     )
     {
       var normalizedSource = NormalizeBasketEvidenceSource(source);
+      var normalizedPosition = NormalizeBasketPosition(position);
       var normalizedMetadata = NormalizeEventLogMetadata(metadata);
-      var normalizedPosition = NormalizeBasketPosition(observedPosition);
       var normalizedNote = NormalizeOptional(note);
-      ValidateBasketIdentityAssociation(
-        associationId,
+      ValidateBasketObservation(observationId, basketId, normalizedPosition, contentEpisodeIds);
+      var fingerprint = BasketObservationFingerprint(
         basketId,
-        contentEpisodeIds,
-        basis,
-        normalizedPosition
-      );
-      var fingerprint = BasketIdentityAssociationFingerprint(
-        basketId,
-        contentEpisodeIds,
-        basis,
-        normalizedSource,
         normalizedPosition,
+        contentEpisodeIds,
+        normalizedSource,
         normalizedNote
       );
 
-      AddedBasketIdentityAssociation added;
+      AddedBasketObservation added;
       lock (_cfg)
       {
         using var trans = _connection.BeginTransaction();
-        added = AddBasketIdentityAssociation(
-          associationId,
+        added = AddBasketObservation(
+          observationId,
           basketId,
+          normalizedPosition,
           contentEpisodeIds,
-          basis,
           normalizedSource,
           timeUTC,
-          normalizedPosition,
           normalizedMetadata,
           trans,
           fingerprint,
@@ -105,13 +96,13 @@ namespace BlackMaple.MachineFramework
       }
       if (added.Created)
         _cfg.OnNewLogEntry(added.Log, normalizedMetadata.ForeignId, this);
-      return added.Association;
+      return added.Observation;
     }
 
-    public BasketIdentityAssociationCorrectionResult CorrectBasketIdentityAssociation(
+    public BasketObservationCorrectionResult CorrectBasketObservation(
       Guid correctionId,
-      Guid targetAssociationId,
-      [AllowNull] BasketIdentityAssociationReplacement replacement,
+      Guid targetObservationId,
+      [AllowNull] BasketObservationReplacement replacement,
       BasketEvidenceSource source,
       DateTime timeUTC,
       string note = null,
@@ -120,14 +111,14 @@ namespace BlackMaple.MachineFramework
     {
       if (correctionId == Guid.Empty)
         throw new ArgumentException("Correction ID can not be empty.", nameof(correctionId));
-      if (targetAssociationId == Guid.Empty)
+      if (targetObservationId == Guid.Empty)
         throw new ArgumentException(
-          "Target association ID can not be empty.",
-          nameof(targetAssociationId)
+          "Target observation ID can not be empty.",
+          nameof(targetObservationId)
         );
-      if (replacement?.AssociationId == targetAssociationId)
+      if (replacement?.ObservationId == targetObservationId)
         throw new ArgumentException(
-          "The replacement association must have a new association ID.",
+          "The replacement observation must have a new observation ID.",
           nameof(replacement)
         );
 
@@ -138,25 +129,24 @@ namespace BlackMaple.MachineFramework
         ? null
         : replacement with
         {
+          Position = NormalizeBasketPosition(replacement.Position),
           Source = NormalizeBasketEvidenceSource(replacement.Source),
-          ObservedPosition = NormalizeBasketPosition(replacement.ObservedPosition),
         };
       if (normalizedReplacement is not null)
-        ValidateBasketIdentityAssociation(
-          normalizedReplacement.AssociationId,
+        ValidateBasketObservation(
+          normalizedReplacement.ObservationId,
           normalizedReplacement.BasketId,
-          normalizedReplacement.ContentEpisodeIds,
-          normalizedReplacement.Basis,
-          normalizedReplacement.ObservedPosition
+          normalizedReplacement.Position,
+          normalizedReplacement.ContentEpisodeIds
         );
-      var fingerprint = BasketIdentityAssociationCorrectionFingerprint(
-        targetAssociationId,
+      var fingerprint = BasketObservationCorrectionFingerprint(
+        targetObservationId,
         normalizedReplacement,
         normalizedSource,
         normalizedNote
       );
 
-      BasketIdentityAssociationCorrectionResult result;
+      BasketObservationCorrectionResult result;
       var newLogs = ImmutableList.CreateBuilder<LogEntry>();
       lock (_cfg)
       {
@@ -172,29 +162,28 @@ namespace BlackMaple.MachineFramework
           {
             if (existingFingerprint != fingerprint)
               throw new ConflictRequestException(
-                $"Basket identity association correction {correctionId:D} was already used with different arguments."
+                $"Basket observation correction {correctionId:D} was already used with different arguments."
               );
-            result = BasketIdentityAssociationCorrectionResultForId(correctionId, trans);
+            result = BasketObservationCorrectionResultForId(correctionId, trans);
             trans.Commit();
             return result;
           }
         }
 
-        var target = BasketIdentityAssociationForId(targetAssociationId, trans);
+        var target = BasketObservationForId(targetObservationId, trans);
         if (target is null)
           throw new ConflictRequestException(
-            $"Basket identity association {targetAssociationId:D} does not exist."
+            $"Basket observation {targetObservationId:D} does not exist."
           );
         using (var current = _connection.CreateCommand())
         {
           current.Transaction = trans;
           current.CommandText =
             "SELECT SupersededByCorrectionId FROM basket_identity_associations WHERE AssociationId = $id";
-          current.Parameters.Add("id", SqliteType.Text).Value = targetAssociationId.ToString("D");
-          var superseded = current.ExecuteScalar();
-          if (superseded is not null and not DBNull)
+          current.Parameters.Add("id", SqliteType.Text).Value = targetObservationId.ToString("D");
+          if (current.ExecuteScalar() is not null and not DBNull)
             throw new ConflictRequestException(
-              $"Basket identity association {targetAssociationId:D} is already superseded."
+              $"Basket observation {targetObservationId:D} is already corrected."
             );
         }
 
@@ -205,10 +194,10 @@ namespace BlackMaple.MachineFramework
           replacementExists.CommandText =
             "SELECT 1 FROM basket_identity_associations WHERE AssociationId = $id";
           replacementExists.Parameters.Add("id", SqliteType.Text).Value =
-            normalizedReplacement.AssociationId.ToString("D");
+            normalizedReplacement.ObservationId.ToString("D");
           if (replacementExists.ExecuteScalar() is not null)
             throw new ConflictRequestException(
-              $"Basket identity association {normalizedReplacement.AssociationId:D} already exists."
+              $"Basket observation {normalizedReplacement.ObservationId:D} already exists."
             );
         }
 
@@ -216,10 +205,10 @@ namespace BlackMaple.MachineFramework
         {
           Material = [],
           Pallet = target.BasketId,
-          LogType = LogType.BasketIdentityAssociationCorrection,
-          LocationName = "Basket Identity",
-          LocationNum = 1,
-          Program = "Association Correction",
+          LogType = LogType.BasketObservationCorrection,
+          LocationName = target.Position.LocationTitle ?? "Basket Observation",
+          LocationNum = target.Position.LocationNum,
+          Program = "Observation Correction",
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
           Result = normalizedReplacement is null ? "Retracted" : "Replaced",
@@ -229,10 +218,6 @@ namespace BlackMaple.MachineFramework
         };
         correctionEntry.ProgramDetails.Add("sourceKind", normalizedSource.Kind.ToString());
         correctionEntry.ProgramDetails.Add("sourceName", normalizedSource.Name);
-        correctionEntry.ProgramDetails.Add(
-          "episodeCount",
-          target.ContentEpisodeIds.Count.ToString(CultureInfo.InvariantCulture)
-        );
         if (normalizedNote is not null)
           correctionEntry.ProgramDetails.Add("note", normalizedNote);
         var correctionLog = AddLogEntry(trans, correctionEntry, normalizedMetadata);
@@ -245,11 +230,11 @@ namespace BlackMaple.MachineFramework
           insertCorrection.Parameters.Add("id", SqliteType.Text).Value = correctionId.ToString("D");
           insertCorrection.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
           insertCorrection.Parameters.Add("target", SqliteType.Text).Value =
-            targetAssociationId.ToString("D");
+            targetObservationId.ToString("D");
           insertCorrection.Parameters.Add("replacement", SqliteType.Text).Value =
             normalizedReplacement is null
               ? DBNull.Value
-              : normalizedReplacement.AssociationId.ToString("D");
+              : normalizedReplacement.ObservationId.ToString("D");
           insertCorrection.Parameters.Add("counter", SqliteType.Integer).Value =
             correctionLog.Counter;
           insertCorrection.Parameters.Add("note", SqliteType.Text).Value = normalizedNote is null
@@ -265,7 +250,7 @@ namespace BlackMaple.MachineFramework
           supersede.Parameters.Add("correction", SqliteType.Text).Value = correctionId.ToString(
             "D"
           );
-          supersede.Parameters.Add("target", SqliteType.Text).Value = targetAssociationId.ToString(
+          supersede.Parameters.Add("target", SqliteType.Text).Value = targetObservationId.ToString(
             "D"
           );
           supersede.ExecuteNonQuery();
@@ -276,39 +261,38 @@ namespace BlackMaple.MachineFramework
           supersede.ExecuteNonQuery();
         }
 
-        BasketIdentityAssociation replacementAssociation = null;
+        BasketObservation replacementObservation = null;
         newLogs.Add(correctionLog);
         if (normalizedReplacement is not null)
         {
-          var added = AddBasketIdentityAssociation(
-            normalizedReplacement.AssociationId,
+          var added = AddBasketObservation(
+            normalizedReplacement.ObservationId,
             normalizedReplacement.BasketId,
+            normalizedReplacement.Position,
             normalizedReplacement.ContentEpisodeIds,
-            normalizedReplacement.Basis,
             normalizedReplacement.Source,
             timeUTC,
-            normalizedReplacement.ObservedPosition,
             normalizedMetadata,
             trans
           );
-          replacementAssociation = added.Association;
+          replacementObservation = added.Observation;
           newLogs.Add(added.Log);
         }
 
-        result = new BasketIdentityAssociationCorrectionResult
+        result = new BasketObservationCorrectionResult
         {
-          Correction = new BasketIdentityAssociationCorrection
+          Correction = new BasketObservationCorrection
           {
             CorrectionId = correctionId,
-            TargetAssociationId = targetAssociationId,
-            ReplacementAssociationId = normalizedReplacement?.AssociationId,
+            TargetObservationId = targetObservationId,
+            ReplacementObservationId = normalizedReplacement?.ObservationId,
             Source = normalizedSource,
             Note = normalizedNote,
             CorrelationId = normalizedMetadata.CorrelationId,
             TimeUTC = timeUTC,
             EventCounter = correctionLog.Counter,
           },
-          Replacement = replacementAssociation,
+          Replacement = replacementObservation,
         };
         trans.Commit();
       }
@@ -318,43 +302,47 @@ namespace BlackMaple.MachineFramework
       return result;
     }
 
-    public ImmutableList<BasketIdentityAssociation> GetCurrentBasketIdentityAssociations(
-      int? basketNum = null
-    )
+    public ImmutableList<BasketObservation> GetCurrentBasketObservations(int? basketNum = null)
     {
       using var trans = _connection.BeginTransaction();
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT DISTINCT AssociationCounter FROM current_basket_identity_associations "
-        + (basketNum.HasValue ? "WHERE BasketNum = $num " : "")
-        + "ORDER BY BasketNum, AssociationCounter";
+        "WITH active AS ("
+        + "SELECT a.Counter, s.Pallet, ROW_NUMBER() OVER (PARTITION BY s.Pallet ORDER BY a.Counter DESC) AS LocationRank "
+        + "FROM basket_identity_associations a JOIN stations s ON s.Counter = a.Counter "
+        + "WHERE a.SupersededByCorrectionId IS NULL AND s.StationLoc = $type "
+        + (basketNum.HasValue ? "AND s.Pallet = $num " : "")
+        + ") SELECT Counter FROM active WHERE LocationRank = 1 "
+        + "OR EXISTS(SELECT 1 FROM current_basket_identity_associations c WHERE c.AssociationCounter = active.Counter) "
+        + "ORDER BY Pallet, Counter";
+      cmd.Parameters.Add("type", SqliteType.Integer).Value = (int)LogType.BasketObservation;
       if (basketNum.HasValue)
         cmd.Parameters.Add("num", SqliteType.Integer).Value = basketNum.Value;
       using var reader = cmd.ExecuteReader();
       var counters = ImmutableList.CreateBuilder<long>();
       while (reader.Read())
         counters.Add(reader.GetInt64(0));
-      var associations = counters
-        .Select(counter => CurrentBasketIdentityAssociationForCounter(counter, trans))
+      var observations = counters
+        .Select(counter => CurrentBasketObservationForCounter(counter, trans))
         .ToImmutableList();
       trans.Commit();
-      return associations;
+      return observations;
     }
 
     [return: MaybeNull]
-    public BasketIdentityAssociation GetBasketIdentityAssociation(Guid associationId)
+    public BasketObservation GetBasketObservation(Guid observationId)
     {
-      if (associationId == Guid.Empty)
-        throw new ArgumentException("Association ID can not be empty.", nameof(associationId));
+      if (observationId == Guid.Empty)
+        throw new ArgumentException("Observation ID can not be empty.", nameof(observationId));
       using var trans = _connection.BeginTransaction();
-      var association = BasketIdentityAssociationForId(associationId, trans);
+      var observation = BasketObservationForId(observationId, trans);
       trans.Commit();
-      return association;
+      return observation;
     }
 
-    public ImmutableList<BasketIdentityAssociationCorrection> GetBasketIdentityAssociationCorrections(
-      Guid? targetAssociationId = null
+    public ImmutableList<BasketObservationCorrection> GetBasketObservationCorrections(
+      Guid? targetObservationId = null
     )
     {
       using var trans = _connection.BeginTransaction();
@@ -362,10 +350,10 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT Counter FROM basket_identity_association_corrections "
-        + (targetAssociationId.HasValue ? "WHERE TargetAssociationId = $target " : "")
+        + (targetObservationId.HasValue ? "WHERE TargetAssociationId = $target " : "")
         + "ORDER BY Counter";
-      if (targetAssociationId.HasValue)
-        cmd.Parameters.Add("target", SqliteType.Text).Value = targetAssociationId.Value.ToString(
+      if (targetObservationId.HasValue)
+        cmd.Parameters.Add("target", SqliteType.Text).Value = targetObservationId.Value.ToString(
           "D"
         );
       using var reader = cmd.ExecuteReader();
@@ -373,32 +361,30 @@ namespace BlackMaple.MachineFramework
       while (reader.Read())
         counters.Add(reader.GetInt64(0));
       var corrections = counters
-        .Select(counter => BasketIdentityAssociationCorrectionForCounter(counter, trans))
+        .Select(counter => BasketObservationCorrectionForCounter(counter, trans))
         .ToImmutableList();
       trans.Commit();
       return corrections;
     }
 
-    private AddedBasketIdentityAssociation AddBasketIdentityAssociation(
-      Guid associationId,
+    private AddedBasketObservation AddBasketObservation(
+      Guid observationId,
       int basketId,
+      BasketPosition position,
       ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketIdentityAssociationBasis basis,
       BasketEvidenceSource source,
       DateTime timeUTC,
-      BasketPosition observedPosition,
       EventLogMetadata metadata,
       IDbTransaction trans,
       string fingerprint = null,
       string note = null
     )
     {
-      fingerprint ??= BasketIdentityAssociationFingerprint(
+      fingerprint ??= BasketObservationFingerprint(
         basketId,
+        position,
         contentEpisodeIds,
-        basis,
         source,
-        observedPosition,
         note
       );
       using (var existing = _connection.CreateCommand())
@@ -406,17 +392,17 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)existing).Transaction = trans;
         existing.CommandText =
           "SELECT Fingerprint, Counter FROM basket_identity_associations WHERE AssociationId = $id";
-        existing.Parameters.Add("id", SqliteType.Text).Value = associationId.ToString("D");
+        existing.Parameters.Add("id", SqliteType.Text).Value = observationId.ToString("D");
         using var reader = existing.ExecuteReader();
         if (reader.Read())
         {
           if (reader.GetString(0) != fingerprint)
             throw new ConflictRequestException(
-              $"Basket identity association {associationId:D} was already used with different arguments."
+              $"Basket observation {observationId:D} was already used with different arguments."
             );
           var counter = reader.GetInt64(1);
-          return new AddedBasketIdentityAssociation(
-            BasketIdentityAssociationForCounter(counter, trans),
+          return new AddedBasketObservation(
+            BasketObservationForCounter(counter, trans),
             LogForCounter(counter, trans),
             Created: false
           );
@@ -431,7 +417,10 @@ namespace BlackMaple.MachineFramework
         current.CommandText =
           "SELECT BasketNum FROM current_basket_identity_associations WHERE ContentEpisodeId = $id";
         current.Parameters.Add("id", SqliteType.Text).Value = contentEpisodeId.ToString("D");
-        if (current.ExecuteScalar() is { } existingBasket)
+        if (
+          current.ExecuteScalar() is { } existingBasket
+          && Convert.ToInt32(existingBasket, CultureInfo.InvariantCulture) != basketId
+        )
           throw new ConflictRequestException(
             $"Basket content episode {contentEpisodeId:D} is already associated with basket {Convert.ToInt32(existingBasket, CultureInfo.InvariantCulture)}."
           );
@@ -441,28 +430,25 @@ namespace BlackMaple.MachineFramework
       {
         Material = [],
         Pallet = basketId,
-        LogType = LogType.BasketIdentityAssociation,
-        LocationName = observedPosition?.LocationTitle ?? "Basket Identity",
-        LocationNum = observedPosition?.LocationNum ?? 1,
-        Program = "Association",
+        LogType = LogType.BasketObservation,
+        LocationName = position.LocationTitle ?? "Basket Observation",
+        LocationNum = position.LocationNum,
+        Program = "Observation",
         StartOfCycle = false,
         EndTimeUTC = timeUTC,
-        Result = basis.ToString(),
+        Result = "Observed",
         ElapsedTime = TimeSpan.Zero,
         ActiveOperationTime = TimeSpan.Zero,
         Metadata = metadata,
       };
+      newLog.ProgramDetails.Add("observationId", observationId.ToString("D"));
       newLog.ProgramDetails.Add("sourceKind", source.Kind.ToString());
       newLog.ProgramDetails.Add("sourceName", source.Name);
-      newLog.ProgramDetails.Add("basis", basis.ToString());
-      if (observedPosition is { } position)
-      {
-        newLog.ProgramDetails.Add("location", position.Location.ToString());
-        if (position.Zone is { } zone)
-          newLog.ProgramDetails.Add("zone", zone.ToString(CultureInfo.InvariantCulture));
-        if (!string.IsNullOrWhiteSpace(position.LocationTitle))
-          newLog.ProgramDetails.Add("locationTitle", position.LocationTitle);
-      }
+      newLog.ProgramDetails.Add("location", position.Location.ToString());
+      if (position.Zone is { } zone)
+        newLog.ProgramDetails.Add("zone", zone.ToString(CultureInfo.InvariantCulture));
+      if (!string.IsNullOrWhiteSpace(position.LocationTitle))
+        newLog.ProgramDetails.Add("locationTitle", position.LocationTitle);
       newLog.ProgramDetails.Add(
         "episodeCount",
         contentEpisodeIds.Count.ToString(CultureInfo.InvariantCulture)
@@ -476,27 +462,21 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)insert).Transaction = trans;
         insert.CommandText =
           "INSERT INTO basket_identity_associations(AssociationId, Fingerprint, Counter, SupersededByCorrectionId) VALUES($id, $fingerprint, $counter, NULL)";
-        insert.Parameters.Add("id", SqliteType.Text).Value = associationId.ToString("D");
+        insert.Parameters.Add("id", SqliteType.Text).Value = observationId.ToString("D");
         insert.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
         insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
         insert.ExecuteNonQuery();
 
         insert.CommandText =
-          "INSERT INTO basket_identity_association_details(Counter, Basis, ObservedLocation, ObservedLocationNum, ObservedZone, ObservedLocationTitle, Note) VALUES($counter, $basis, $location, $locationNum, $zone, $title, $note)";
+          "INSERT INTO basket_identity_association_details(Counter, Basis, ObservedLocation, ObservedLocationNum, ObservedZone, ObservedLocationTitle, Note) VALUES($counter, 0, $location, $locationNum, $zone, $title, $note)";
         insert.Parameters.Clear();
         insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
-        insert.Parameters.Add("basis", SqliteType.Integer).Value = (int)basis;
-        insert.Parameters.Add("location", SqliteType.Integer).Value = observedPosition is null
-          ? DBNull.Value
-          : (int)observedPosition.Location;
-        insert.Parameters.Add("locationNum", SqliteType.Integer).Value = observedPosition is null
-          ? DBNull.Value
-          : observedPosition.LocationNum;
-        insert.Parameters.Add("zone", SqliteType.Integer).Value = observedPosition?.Zone is { } zone
-          ? zone
+        insert.Parameters.Add("location", SqliteType.Integer).Value = (int)position.Location;
+        insert.Parameters.Add("locationNum", SqliteType.Integer).Value = position.LocationNum;
+        insert.Parameters.Add("zone", SqliteType.Integer).Value = position.Zone is { } positionZone
+          ? positionZone
           : DBNull.Value;
-        insert.Parameters.Add("title", SqliteType.Text).Value = observedPosition?.LocationTitle
-          is { } title
+        insert.Parameters.Add("title", SqliteType.Text).Value = position.LocationTitle is { } title
           ? title
           : DBNull.Value;
         insert.Parameters.Add("note", SqliteType.Text).Value = note is { } value
@@ -513,7 +493,8 @@ namespace BlackMaple.MachineFramework
           insert.Parameters.Add("episode", SqliteType.Text).Value = contentEpisodeId.ToString("D");
           insert.ExecuteNonQuery();
           insert.CommandText =
-            "INSERT INTO current_basket_identity_associations(ContentEpisodeId, AssociationCounter, BasketNum) VALUES($episode, $counter, $basket)";
+            "INSERT INTO current_basket_identity_associations(ContentEpisodeId, AssociationCounter, BasketNum) VALUES($episode, $counter, $basket) "
+            + "ON CONFLICT(ContentEpisodeId) DO UPDATE SET AssociationCounter = excluded.AssociationCounter, BasketNum = excluded.BasketNum";
           insert.Parameters.Clear();
           insert.Parameters.Add("episode", SqliteType.Text).Value = contentEpisodeId.ToString("D");
           insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
@@ -522,16 +503,15 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      return new AddedBasketIdentityAssociation(
-        new BasketIdentityAssociation
+      return new AddedBasketObservation(
+        new BasketObservation
         {
-          AssociationId = associationId,
+          ObservationId = observationId,
           BasketId = basketId,
+          Position = position,
           ContentEpisodeIds = contentEpisodeIds,
-          Basis = basis,
           Source = source,
           Note = note,
-          ObservedPosition = observedPosition,
           CorrelationId = metadata.CorrelationId,
           TimeUTC = timeUTC,
           EventCounter = log.Counter,
@@ -541,50 +521,41 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    private BasketIdentityAssociation BasketIdentityAssociationForId(
-      Guid associationId,
-      IDbTransaction trans
-    )
+    private BasketObservation BasketObservationForId(Guid observationId, IDbTransaction trans)
     {
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
         "SELECT Counter FROM basket_identity_associations WHERE AssociationId = $id";
-      cmd.Parameters.Add("id", SqliteType.Text).Value = associationId.ToString("D");
+      cmd.Parameters.Add("id", SqliteType.Text).Value = observationId.ToString("D");
       return cmd.ExecuteScalar() is long counter
-        ? BasketIdentityAssociationForCounter(counter, trans)
+        ? BasketObservationForCounter(counter, trans)
         : null;
     }
 
-    private BasketIdentityAssociation BasketIdentityAssociationForCounter(
-      long counter,
-      IDbTransaction trans
-    )
+    private BasketObservation BasketObservationForCounter(long counter, IDbTransaction trans)
     {
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT a.AssociationId, s.Pallet, d.Basis, d.ObservedLocation, d.ObservedLocationNum, d.ObservedZone, d.ObservedLocationTitle, d.Note, s.TimeUTC "
+        "SELECT a.AssociationId, s.Pallet, d.ObservedLocation, d.ObservedLocationNum, d.ObservedZone, d.ObservedLocationTitle, d.Note, s.TimeUTC "
         + "FROM basket_identity_associations a JOIN stations s ON s.Counter = a.Counter "
         + "JOIN basket_identity_association_details d ON d.Counter = a.Counter WHERE a.Counter = $counter";
       cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
       using var reader = cmd.ExecuteReader();
       if (!reader.Read())
         return null;
-      var associationId = Guid.Parse(reader.GetString(0));
+      var observationId = Guid.Parse(reader.GetString(0));
       var basketId = reader.GetInt32(1);
-      var basis = (BasketIdentityAssociationBasis)reader.GetInt32(2);
-      var observedPosition = reader.IsDBNull(3)
-        ? null
-        : new BasketPosition
-        {
-          Location = (BasketLocationEnum)reader.GetInt32(3),
-          LocationNum = reader.GetInt32(4),
-          Zone = reader.IsDBNull(5) ? null : reader.GetInt32(5),
-          LocationTitle = reader.IsDBNull(6) ? null : reader.GetString(6),
-        };
-      var note = reader.IsDBNull(7) ? null : reader.GetString(7);
-      var timeUTC = new DateTime(reader.GetInt64(8), DateTimeKind.Utc);
+      var position = new BasketPosition
+      {
+        Location = (BasketLocationEnum)reader.GetInt32(2),
+        LocationNum = reader.GetInt32(3),
+        Zone = reader.IsDBNull(4) ? null : reader.GetInt32(4),
+        LocationTitle = reader.IsDBNull(5) ? null : reader.GetString(5),
+      };
+      var note = reader.IsDBNull(6) ? null : reader.GetString(6);
+      var timeUTC = new DateTime(reader.GetInt64(7), DateTimeKind.Utc);
       reader.Close();
 
       cmd.CommandText =
@@ -595,27 +566,23 @@ namespace BlackMaple.MachineFramework
         episodes.Add(Guid.Parse(episodeReader.GetString(0)));
       episodeReader.Close();
       var (source, correlationId) = BasketEvidenceSourceForCounter(counter, trans);
-      return new BasketIdentityAssociation
+      return new BasketObservation
       {
-        AssociationId = associationId,
+        ObservationId = observationId,
         BasketId = basketId,
+        Position = position,
         ContentEpisodeIds = episodes.ToImmutable(),
-        Basis = basis,
         Source = source,
         Note = note,
-        ObservedPosition = observedPosition,
         CorrelationId = correlationId,
         TimeUTC = timeUTC,
         EventCounter = counter,
       };
     }
 
-    private BasketIdentityAssociation CurrentBasketIdentityAssociationForCounter(
-      long counter,
-      IDbTransaction trans
-    )
+    private BasketObservation CurrentBasketObservationForCounter(long counter, IDbTransaction trans)
     {
-      var association = BasketIdentityAssociationForCounter(counter, trans);
+      var observation = BasketObservationForCounter(counter, trans);
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
@@ -625,10 +592,10 @@ namespace BlackMaple.MachineFramework
       var activeEpisodes = ImmutableSortedSet.CreateBuilder<Guid>();
       while (reader.Read())
         activeEpisodes.Add(Guid.Parse(reader.GetString(0)));
-      return association with { ContentEpisodeIds = activeEpisodes.ToImmutable() };
+      return observation with { ContentEpisodeIds = activeEpisodes.ToImmutable() };
     }
 
-    private BasketIdentityAssociationCorrectionResult BasketIdentityAssociationCorrectionResultForId(
+    private BasketObservationCorrectionResult BasketObservationCorrectionResultForId(
       Guid correctionId,
       IDbTransaction trans
     )
@@ -644,14 +611,14 @@ namespace BlackMaple.MachineFramework
       var counter = reader.GetInt64(0);
       var replacementId = reader.IsDBNull(1) ? (Guid?)null : Guid.Parse(reader.GetString(1));
       reader.Close();
-      return new BasketIdentityAssociationCorrectionResult
+      return new BasketObservationCorrectionResult
       {
-        Correction = BasketIdentityAssociationCorrectionForCounter(counter, trans),
-        Replacement = replacementId is { } id ? BasketIdentityAssociationForId(id, trans) : null,
+        Correction = BasketObservationCorrectionForCounter(counter, trans),
+        Replacement = replacementId is { } id ? BasketObservationForId(id, trans) : null,
       };
     }
 
-    private BasketIdentityAssociationCorrection BasketIdentityAssociationCorrectionForCounter(
+    private BasketObservationCorrection BasketObservationCorrectionForCounter(
       long counter,
       IDbTransaction trans
     )
@@ -666,19 +633,19 @@ namespace BlackMaple.MachineFramework
       if (!reader.Read())
         return null;
       var correctionId = Guid.Parse(reader.GetString(0));
-      var targetAssociationId = Guid.Parse(reader.GetString(1));
-      var replacementAssociationId = reader.IsDBNull(2)
+      var targetObservationId = Guid.Parse(reader.GetString(1));
+      var replacementObservationId = reader.IsDBNull(2)
         ? (Guid?)null
         : Guid.Parse(reader.GetString(2));
       var note = reader.IsDBNull(3) ? null : reader.GetString(3);
       var timeUTC = new DateTime(reader.GetInt64(4), DateTimeKind.Utc);
       reader.Close();
       var (source, correlationId) = BasketEvidenceSourceForCounter(counter, trans);
-      return new BasketIdentityAssociationCorrection
+      return new BasketObservationCorrection
       {
         CorrectionId = correctionId,
-        TargetAssociationId = targetAssociationId,
-        ReplacementAssociationId = replacementAssociationId,
+        TargetObservationId = targetObservationId,
+        ReplacementObservationId = replacementObservationId,
         Source = source,
         Note = note,
         CorrelationId = correlationId,
@@ -727,8 +694,7 @@ namespace BlackMaple.MachineFramework
       cmd.Parameters.Clear();
       cmd.CommandText = "SELECT CorrelationId FROM stations WHERE Counter = $counter";
       cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
-      var correlationId = cmd.ExecuteScalar() as string;
-      return (source, correlationId);
+      return (source, cmd.ExecuteScalar() as string);
     }
 
     private LogEntry LogForCounter(long counter, IDbTransaction trans)
@@ -771,78 +737,67 @@ namespace BlackMaple.MachineFramework
         OriginalMessage = NormalizeOptional(metadata?.OriginalMessage),
       };
 
-    private static void ValidateBasketIdentityAssociation(
-      Guid associationId,
+    private static void ValidateBasketObservation(
+      Guid observationId,
       int basketId,
-      ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketIdentityAssociationBasis basis,
-      BasketPosition observedPosition
+      BasketPosition position,
+      ImmutableSortedSet<Guid> contentEpisodeIds
     )
     {
-      if (associationId == Guid.Empty)
-        throw new ArgumentException("Association ID can not be empty.", nameof(associationId));
+      if (observationId == Guid.Empty)
+        throw new ArgumentException("Observation ID can not be empty.", nameof(observationId));
       if (basketId <= 0)
         throw new ArgumentOutOfRangeException(nameof(basketId));
+      ArgumentNullException.ThrowIfNull(position);
+      if (position.LocationNum <= 0 || position.Zone is <= 0)
+        throw new ArgumentException("Basket position numbers must be positive.", nameof(position));
       ArgumentNullException.ThrowIfNull(contentEpisodeIds);
-      if (contentEpisodeIds.IsEmpty || contentEpisodeIds.Contains(Guid.Empty))
+      if (contentEpisodeIds.Contains(Guid.Empty))
         throw new ArgumentException(
-          "Content episode IDs must be nonempty and contain no empty UUID.",
+          "Content episode IDs can not contain an empty UUID.",
           nameof(contentEpisodeIds)
-        );
-      if (!Enum.IsDefined(basis))
-        throw new ArgumentOutOfRangeException(nameof(basis));
-      if (
-        observedPosition is not null
-        && (observedPosition.LocationNum <= 0 || observedPosition.Zone is <= 0)
-      )
-        throw new ArgumentException(
-          "Observed basket position numbers must be positive.",
-          nameof(observedPosition)
         );
     }
 
-    private static string BasketIdentityAssociationFingerprint(
+    private static string BasketObservationFingerprint(
       int basketId,
+      BasketPosition position,
       ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketIdentityAssociationBasis basis,
       BasketEvidenceSource source,
-      BasketPosition observedPosition,
       string note
     )
     {
       var fingerprint = new StringBuilder();
       AppendFingerprint(fingerprint, basketId.ToString(CultureInfo.InvariantCulture));
+      AppendBasketPositionFingerprint(fingerprint, position);
       foreach (var id in contentEpisodeIds)
         AppendFingerprint(fingerprint, id.ToString("D"));
-      AppendFingerprint(fingerprint, basis.ToString());
       AppendBasketEvidenceSourceFingerprint(fingerprint, source);
-      AppendBasketPositionFingerprint(fingerprint, observedPosition);
       AppendFingerprint(fingerprint, note);
       return fingerprint.ToString();
     }
 
-    private static string BasketIdentityAssociationCorrectionFingerprint(
-      Guid targetAssociationId,
-      BasketIdentityAssociationReplacement replacement,
+    private static string BasketObservationCorrectionFingerprint(
+      Guid targetObservationId,
+      BasketObservationReplacement replacement,
       BasketEvidenceSource source,
       string note
     )
     {
       var fingerprint = new StringBuilder();
-      AppendFingerprint(fingerprint, targetAssociationId.ToString("D"));
+      AppendFingerprint(fingerprint, targetObservationId.ToString("D"));
       if (replacement is null)
       {
         AppendFingerprint(fingerprint, null);
       }
       else
       {
-        AppendFingerprint(fingerprint, replacement.AssociationId.ToString("D"));
+        AppendFingerprint(fingerprint, replacement.ObservationId.ToString("D"));
         AppendFingerprint(fingerprint, replacement.BasketId.ToString(CultureInfo.InvariantCulture));
+        AppendBasketPositionFingerprint(fingerprint, replacement.Position);
         foreach (var id in replacement.ContentEpisodeIds)
           AppendFingerprint(fingerprint, id.ToString("D"));
-        AppendFingerprint(fingerprint, replacement.Basis.ToString());
         AppendBasketEvidenceSourceFingerprint(fingerprint, replacement.Source);
-        AppendBasketPositionFingerprint(fingerprint, replacement.ObservedPosition);
       }
       AppendBasketEvidenceSourceFingerprint(fingerprint, source);
       AppendFingerprint(fingerprint, note);
@@ -863,10 +818,15 @@ namespace BlackMaple.MachineFramework
       BasketPosition position
     )
     {
-      AppendFingerprint(fingerprint, position?.Location.ToString());
-      AppendFingerprint(fingerprint, position?.LocationNum.ToString(CultureInfo.InvariantCulture));
-      AppendFingerprint(fingerprint, position?.Zone?.ToString(CultureInfo.InvariantCulture));
-      AppendFingerprint(fingerprint, position?.LocationTitle);
+      if (position is null)
+      {
+        AppendFingerprint(fingerprint, null);
+        return;
+      }
+      AppendFingerprint(fingerprint, position.Location.ToString());
+      AppendFingerprint(fingerprint, position.LocationNum.ToString(CultureInfo.InvariantCulture));
+      AppendFingerprint(fingerprint, position.Zone?.ToString(CultureInfo.InvariantCulture));
+      AppendFingerprint(fingerprint, position.LocationTitle);
     }
   }
 }

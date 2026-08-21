@@ -229,11 +229,11 @@ public sealed class BasketLogIdentitySpec : IDisposable
       idempotencyKey: "hinted-uuid-load-operation",
       foreignId: "hinted-uuid-load"
     );
-    repository.RecordBasketIdentityAssociation(
+    repository.RecordBasketObservation(
       Guid.NewGuid(),
       8,
+      BasketLoadStation(),
       [id],
-      BasketIdentityAssociationBasis.CalculatedInference,
       IntegrationSource(),
       time.AddMinutes(2)
     );
@@ -245,7 +245,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
       .IsEmpty();
     await Assert
       .That(repository.CurrentBasketLog(numberedIdentity).Select(log => log.LogType))
-      .IsEquivalentTo([LogType.BasketIdentityAssociation]);
+      .IsEquivalentTo([LogType.BasketObservation]);
   }
 
   [Test]
@@ -517,7 +517,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
       using var trigger = connection.CreateCommand();
       trigger.CommandText =
         "CREATE TRIGGER fail_atomic_basket_association BEFORE INSERT ON stations "
-        + $"WHEN NEW.StationLoc = {(int)LogType.BasketIdentityAssociation} "
+        + $"WHEN NEW.StationLoc = {(int)LogType.BasketObservation} "
         + "BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
       trigger.ExecuteNonQuery();
     }
@@ -532,7 +532,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
         idempotencyKey: "associated-release"
       )
     );
-    await Assert.That(repository.GetCurrentBasketIdentityAssociations()).IsEmpty();
+    await Assert.That(repository.GetCurrentBasketObservations()).IsEmpty();
     await Assert
       .That(repository.GetRecentLog(0).Any(entry => entry.LogType == LogType.BasketCycle))
       .IsFalse();
@@ -559,11 +559,9 @@ public sealed class BasketLogIdentitySpec : IDisposable
     await Assert
       .That(logs.Single(entry => entry.LogType == LogType.BasketCycle).LocationNum)
       .IsEqualTo(2);
+    await Assert.That(logs.Select(entry => entry.LogType)).Contains(LogType.BasketObservation);
     await Assert
-      .That(logs.Select(entry => entry.LogType))
-      .Contains(LogType.BasketIdentityAssociation);
-    await Assert
-      .That(repository.GetCurrentBasketIdentityAssociations(7).Single().ContentEpisodeIds)
+      .That(repository.GetCurrentBasketObservations(7).Single().ContentEpisodeIds)
       .IsEquivalentTo([contentEpisodeId]);
   }
 
@@ -2048,11 +2046,11 @@ public sealed class BasketLogIdentitySpec : IDisposable
       )
     );
     await AssertThrows<ArgumentException>(() =>
-      repository.RecordBasketIdentityAssociation(
+      repository.RecordBasketObservation(
         Guid.Empty,
         1,
+        BasketLoadStation(),
         [Guid.NewGuid()],
-        BasketIdentityAssociationBasis.CalculatedInference,
         IntegrationSource(),
         DateTime.UtcNow
       )
@@ -2152,6 +2150,14 @@ public sealed class BasketLogIdentitySpec : IDisposable
 
   private static BasketEvidenceSource IntegrationSource() =>
     new() { Kind = BasketEvidenceSourceKind.Integration, Name = "test" };
+
+  private static BasketPosition BasketLoadStation() =>
+    new()
+    {
+      Location = BasketLocationEnum.LoadUnload,
+      LocationNum = 2,
+      LocationTitle = "Basket Load Station",
+    };
 
   private static BasketStationOperation LoadOntoBasketOperation(
     BasketLogIdentity identity,

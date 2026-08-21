@@ -117,29 +117,23 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
         return "Depart";
       }
 
-    case api.LogType.BasketIdentityAssociation:
-      return `${basketName} Identity Association`;
+    case api.LogType.BasketObservation:
+      return `${basketName} Observation`;
 
-    case api.LogType.BasketIdentityAssociationCorrection:
-      return `${basketName} Identity Correction`;
+    case api.LogType.BasketObservationCorrection:
+      return `${basketName} Observation Correction`;
 
     case api.LogType.BasketContentSnapshot:
       return `${basketName} Content Snapshot`;
-
-    case api.LogType.BasketLocationObservation:
-      return `${basketName} Location Observation`;
-
-    case api.LogType.BasketLocationObservationCorrection:
-      return `${basketName} Location Correction`;
 
     case api.LogType.BasketRegionSurvey:
       return `${basketName} Region Survey`;
 
     case api.LogType.BasketMisload:
-      return `${basketName} Inspection Hold`;
+      return `${basketName} Misload`;
 
     case api.LogType.BasketMisloadResolution:
-      return `${basketName} Inspection Resolution`;
+      return `${basketName} Misload Resolution`;
 
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
@@ -296,30 +290,27 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
       }
     }
 
-    case api.LogType.BasketIdentityAssociation: {
+    case api.LogType.BasketObservation: {
       const basketName = basketDisplayName(fmsInfo.basketName);
       const episodeCount = entry.details?.episodeCount;
       const source = entry.details?.sourceName;
       const note = entry.details?.note;
       return (
         <span>
-          {source === undefined ? "" : `${source} recorded `}
-          {episodeCount === undefined
-            ? `content episodes associated with ${basketName} ${entry.pal}`
-            : `${episodeCount} content episode${episodeCount === "1" ? "" : "s"} associated with ${basketName} ${entry.pal}`}
-          {entry.details?.location === undefined && entry.details?.locationTitle === undefined
+          {source ?? "Source"} observed {basketName} {entry.pal} at {evidencePosition(entry)}
+          {episodeCount === undefined || episodeCount === "0"
             ? ""
-            : ` at ${evidencePosition(entry)}`}
+            : ` with direct continuity to ${episodeCount} tracked content episode${episodeCount === "1" ? "" : "s"}`}
           {note === undefined ? "" : `: ${note}`}
         </span>
       );
     }
 
-    case api.LogType.BasketIdentityAssociationCorrection: {
+    case api.LogType.BasketObservationCorrection: {
       const basketName = basketDisplayName(fmsInfo.basketName);
       return (
         <span>
-          Identity association for {basketName} {entry.pal} corrected
+          Observation of {basketName} {entry.pal} corrected
         </span>
       );
     }
@@ -329,33 +320,6 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
       return (
         <span>
           {basketContainerName(entry, basketName)} contained {displayMat(entry.material)}
-        </span>
-      );
-    }
-
-    case api.LogType.BasketLocationObservation: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      const operator = entry.details?.sourceName ?? entry.details?.operator ?? "Operator";
-      return (
-        <span>
-          {operator} observed {basketName} {entry.pal} at {evidencePosition(entry)}
-        </span>
-      );
-    }
-
-    case api.LogType.BasketLocationObservationCorrection: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      const operator = entry.details?.sourceName ?? entry.details?.operator ?? "Operator";
-      const location = evidencePosition(entry);
-      const replacementBasketId = entry.details?.replacementBasketId;
-      return replacementBasketId === undefined ? (
-        <span>
-          {operator} retracted the observation of {basketName} {entry.pal} at {location}
-        </span>
-      ) : (
-        <span>
-          {operator} changed the observation of {basketName} {entry.pal} at {location} to{" "}
-          {basketName} {replacementBasketId} at {location}
         </span>
       );
     }

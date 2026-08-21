@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 42;
+    private const int Version = 43;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -185,16 +185,6 @@ namespace BlackMaple.MachineFramework
           "CREATE TABLE basket_cycle_content_episode_ids(CycleCounter INTEGER NOT NULL, BasketContentEpisodeId TEXT PRIMARY KEY)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText =
-          "CREATE TABLE basket_location_observations(ObservationId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE, SupersededByCorrectionId TEXT)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText =
-          "CREATE TABLE basket_location_observation_details(Counter INTEGER PRIMARY KEY, PositionLocation INTEGER NOT NULL, PositionZone INTEGER, PositionTitle TEXT)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText =
-          "CREATE TABLE basket_location_observation_corrections(CorrectionId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, TargetObservationId TEXT NOT NULL, ReplacementObservationId TEXT, Counter INTEGER NOT NULL UNIQUE, Note TEXT)";
-        cmd.ExecuteNonQuery();
-        CreateBasketLocationObservationCorrectionIndexes(cmd);
         CreateBasketRegionSurveyTables(cmd);
         CreateBasketMisloadTables(cmd);
         cmd.CommandText =
@@ -562,6 +552,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 42)
             Ver41ToVer42(trans);
+
+          if (curVersion < 43)
+            Ver42ToVer43(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1409,6 +1402,33 @@ namespace BlackMaple.MachineFramework
       CreateBasketLocationObservationCorrectionIndexes(cmd);
       CreateBasketRegionSurveyTables(cmd);
       CreateBasketMisloadTables(cmd);
+    }
+
+    private static void Ver42ToVer43(IDbTransaction trans)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      // The identity and location evidence APIs were beta. Version 43 replaces both with atomic
+      // basket observations. Preserve the historical audit log, but explicitly reset the obsolete
+      // projections rather than interpreting their event numbers as the new evidence vocabulary.
+      cmd.CommandText = "DELETE FROM current_basket_identity_associations";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "DELETE FROM basket_identity_association_corrections";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "DELETE FROM basket_identity_association_episodes";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "DELETE FROM basket_identity_association_details";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "DELETE FROM basket_identity_associations";
+      cmd.ExecuteNonQuery();
+
+      cmd.CommandText = "DROP TABLE basket_location_observation_corrections";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "DROP TABLE basket_location_observation_details";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "DROP TABLE basket_location_observations";
+      cmd.ExecuteNonQuery();
     }
 
     private static void CreateBasketIdentityAssociationTables(IDbCommand cmd)
