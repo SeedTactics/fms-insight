@@ -116,6 +116,8 @@ namespace BlackMaple.MachineFramework
     BasketRegionSurvey = 124,
     BasketMisload = 125,
     BasketMisloadResolution = 126,
+
+    // 119, 121, 122, and 123 belonged to beta-only basket event types. Keep those values unused.
     BasketObservation = 127,
     BasketObservationCorrection = 128,
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
@@ -137,7 +139,9 @@ namespace BlackMaple.MachineFramework
   /// <summary>
   /// Direct evidence that a numbered basket was observed at a physical position. Content episode
   /// IDs are included only when the recorder has direct physical continuity to one uniquely
-  /// tracked occupant; their absence makes no content-identity claim.
+  /// tracked occupant; their absence makes no content-identity claim. Integration sources should
+  /// record an observation only when they possess the underlying physical or external evidence for
+  /// the claim. A calculated best-fit reconstruction is not itself an observation.
   /// </summary>
   public sealed record BasketObservation
   {
@@ -150,6 +154,30 @@ namespace BlackMaple.MachineFramework
     public string? CorrelationId { get; init; }
     public required DateTime TimeUTC { get; init; }
     public required long EventCounter { get; init; }
+  }
+
+  /// <summary>
+  /// The active claims currently supported by one immutable basket observation. Position evidence
+  /// and content continuity can have different lifetimes, so an older observation may remain here
+  /// only because it still owns active content episode claims.
+  /// </summary>
+  public sealed record ActiveBasketObservationEvidence
+  {
+    /// <summary>The original immutable historical observation.</summary>
+    public required BasketObservation Observation { get; init; }
+
+    /// <summary>
+    /// Whether this observation is the currently effective positive position evidence for its
+    /// numbered basket. This describes the current evidence projection, not omniscient physical
+    /// truth.
+    /// </summary>
+    public required bool IsCurrentPositionEvidence { get; init; }
+
+    /// <summary>
+    /// The content episode claims from <see cref="Observation"/> that remain active through this
+    /// observation.
+    /// </summary>
+    public required ImmutableSortedSet<Guid> ActiveContentEpisodeIds { get; init; }
   }
 
   public sealed record BasketObservationCorrection

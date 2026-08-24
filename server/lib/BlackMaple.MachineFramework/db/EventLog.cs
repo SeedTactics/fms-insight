@@ -839,7 +839,7 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
-        + "FROM stations s WHERE BasketContentEpisodeId IN (SELECT ContentEpisodeId FROM current_basket_identity_associations WHERE BasketNum = $num) AND "
+        + "FROM stations s WHERE BasketContentEpisodeId IN (SELECT ContentEpisodeId FROM current_basket_observation_episodes WHERE BasketNum = $num) AND "
         + ignoreInvalidEventCondition
         + " ORDER BY Counter";
       cmd.Parameters.Add("num", SqliteType.Integer).Value = basketId;
@@ -880,7 +880,7 @@ namespace BlackMaple.MachineFramework
         + "AND "
         + ignoreInvalidEventCondition
         + " "
-        + "AND NOT EXISTS(SELECT 1 FROM current_basket_identity_associations a WHERE a.ContentEpisodeId = s.BasketContentEpisodeId) "
+        + "AND NOT EXISTS(SELECT 1 FROM current_basket_observation_episodes a WHERE a.ContentEpisodeId = s.BasketContentEpisodeId) "
         + "AND NOT EXISTS(SELECT 1 FROM basket_cycle_content_episode_ids f WHERE f.BasketContentEpisodeId = s.BasketContentEpisodeId) "
         + "ORDER BY s.BasketContentEpisodeId";
       cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
@@ -2359,15 +2359,15 @@ namespace BlackMaple.MachineFramework
 
         if (contentEpisodeIds.Count > 0)
         {
-          using var removeAssociations = _connection.CreateCommand();
-          ((IDbCommand)removeAssociations).Transaction = trans;
-          removeAssociations.CommandText =
-            "DELETE FROM current_basket_identity_associations WHERE ContentEpisodeId = $id";
-          removeAssociations.Parameters.Add("id", SqliteType.Text);
+          using var removeObservationEpisodes = _connection.CreateCommand();
+          ((IDbCommand)removeObservationEpisodes).Transaction = trans;
+          removeObservationEpisodes.CommandText =
+            "DELETE FROM current_basket_observation_episodes WHERE ContentEpisodeId = $id";
+          removeObservationEpisodes.Parameters.Add("id", SqliteType.Text);
           foreach (var id in contentEpisodeIds)
           {
-            removeAssociations.Parameters[0].Value = id.ToString("D");
-            removeAssociations.ExecuteNonQuery();
+            removeObservationEpisodes.Parameters[0].Value = id.ToString("D");
+            removeObservationEpisodes.ExecuteNonQuery();
           }
         }
       }
@@ -2458,13 +2458,13 @@ namespace BlackMaple.MachineFramework
         );
         if (boundary.AssociatedBasketNum is { } basketNum)
         {
-          using var currentAssociation = _connection.CreateCommand();
-          ((IDbCommand)currentAssociation).Transaction = trans;
-          currentAssociation.CommandText =
-            "SELECT BasketNum FROM current_basket_identity_associations WHERE ContentEpisodeId = $id";
-          currentAssociation.Parameters.Add("id", SqliteType.Text).Value =
+          using var currentObservation = _connection.CreateCommand();
+          ((IDbCommand)currentObservation).Transaction = trans;
+          currentObservation.CommandText =
+            "SELECT BasketNum FROM current_basket_observation_episodes WHERE ContentEpisodeId = $id";
+          currentObservation.Parameters.Add("id", SqliteType.Text).Value =
             contentEpisodeId!.Value.ToString("D");
-          var currentBasket = currentAssociation.ExecuteScalar();
+          var currentBasket = currentObservation.ExecuteScalar();
           if (currentBasket is long currentBasketNum && currentBasketNum != basketNum)
             throw new ConflictRequestException(
               $"Basket content episode {contentEpisodeId.Value:D} is associated with basket {currentBasketNum}, not basket {basketNum}."

@@ -155,7 +155,7 @@ namespace BlackMaple.MachineFramework
         {
           existing.Transaction = trans;
           existing.CommandText =
-            "SELECT Fingerprint FROM basket_identity_association_corrections WHERE CorrectionId = $id";
+            "SELECT Fingerprint FROM basket_observation_corrections WHERE CorrectionId = $id";
           existing.Parameters.Add("id", SqliteType.Text).Value = correctionId.ToString("D");
           var existingFingerprint = existing.ExecuteScalar() as string;
           if (existingFingerprint is not null)
@@ -179,7 +179,7 @@ namespace BlackMaple.MachineFramework
         {
           current.Transaction = trans;
           current.CommandText =
-            "SELECT SupersededByCorrectionId FROM basket_identity_associations WHERE AssociationId = $id";
+            "SELECT SupersededByCorrectionId FROM basket_observations WHERE ObservationId = $id";
           current.Parameters.Add("id", SqliteType.Text).Value = targetObservationId.ToString("D");
           if (current.ExecuteScalar() is not null and not DBNull)
             throw new ConflictRequestException(
@@ -192,7 +192,7 @@ namespace BlackMaple.MachineFramework
           using var replacementExists = _connection.CreateCommand();
           replacementExists.Transaction = trans;
           replacementExists.CommandText =
-            "SELECT 1 FROM basket_identity_associations WHERE AssociationId = $id";
+            "SELECT 1 FROM basket_observations WHERE ObservationId = $id";
           replacementExists.Parameters.Add("id", SqliteType.Text).Value =
             normalizedReplacement.ObservationId.ToString("D");
           if (replacementExists.ExecuteScalar() is not null)
@@ -226,7 +226,7 @@ namespace BlackMaple.MachineFramework
         {
           insertCorrection.Transaction = trans;
           insertCorrection.CommandText =
-            "INSERT INTO basket_identity_association_corrections(CorrectionId, Fingerprint, TargetAssociationId, ReplacementAssociationId, Counter, Note) VALUES($id, $fingerprint, $target, $replacement, $counter, $note)";
+            "INSERT INTO basket_observation_corrections(CorrectionId, Fingerprint, TargetObservationId, ReplacementObservationId, Counter, Note) VALUES($id, $fingerprint, $target, $replacement, $counter, $note)";
           insertCorrection.Parameters.Add("id", SqliteType.Text).Value = correctionId.ToString("D");
           insertCorrection.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
           insertCorrection.Parameters.Add("target", SqliteType.Text).Value =
@@ -246,7 +246,7 @@ namespace BlackMaple.MachineFramework
         {
           supersede.Transaction = trans;
           supersede.CommandText =
-            "UPDATE basket_identity_associations SET SupersededByCorrectionId = $correction WHERE AssociationId = $target";
+            "UPDATE basket_observations SET SupersededByCorrectionId = $correction WHERE ObservationId = $target";
           supersede.Parameters.Add("correction", SqliteType.Text).Value = correctionId.ToString(
             "D"
           );
@@ -254,12 +254,9 @@ namespace BlackMaple.MachineFramework
             "D"
           );
           supersede.ExecuteNonQuery();
-          supersede.CommandText =
-            "DELETE FROM current_basket_identity_associations WHERE AssociationCounter = $counter";
-          supersede.Parameters.Clear();
-          supersede.Parameters.Add("counter", SqliteType.Integer).Value = target.EventCounter;
-          supersede.ExecuteNonQuery();
         }
+
+        RebuildActiveBasketObservationEpisodes(target.ContentEpisodeIds, trans);
 
         BasketObservation replacementObservation = null;
         newLogs.Add(correctionLog);
@@ -302,32 +299,35 @@ namespace BlackMaple.MachineFramework
       return result;
     }
 
-    public ImmutableList<BasketObservation> GetCurrentBasketObservations(int? basketNum = null)
+    public ImmutableList<ActiveBasketObservationEvidence> GetActiveBasketObservationEvidence(
+      int? basketNum = null
+    )
     {
       using var trans = _connection.BeginTransaction();
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
         "WITH active AS ("
-        + "SELECT a.Counter, s.Pallet, ROW_NUMBER() OVER (PARTITION BY s.Pallet ORDER BY a.Counter DESC) AS LocationRank "
-        + "FROM basket_identity_associations a JOIN stations s ON s.Counter = a.Counter "
-        + "WHERE a.SupersededByCorrectionId IS NULL AND s.StationLoc = $type "
+        + "SELECT o.Counter, s.Pallet, ROW_NUMBER() OVER (PARTITION BY s.Pallet ORDER BY o.Counter DESC) AS PositionRank "
+        + "FROM basket_observations o JOIN stations s ON s.Counter = o.Counter "
+        + "WHERE o.SupersededByCorrectionId IS NULL AND s.StationLoc = $type "
         + (basketNum.HasValue ? "AND s.Pallet = $num " : "")
-        + ") SELECT Counter FROM active WHERE LocationRank = 1 "
-        + "OR EXISTS(SELECT 1 FROM current_basket_identity_associations c WHERE c.AssociationCounter = active.Counter) "
+        + ") SELECT Counter, PositionRank = 1 AS IsCurrentPositionEvidence FROM active WHERE PositionRank = 1 "
+        + "OR EXISTS(SELECT 1 FROM current_basket_observation_episodes c WHERE c.ObservationCounter = active.Counter) "
         + "ORDER BY Pallet, Counter";
       cmd.Parameters.Add("type", SqliteType.Integer).Value = (int)LogType.BasketObservation;
       if (basketNum.HasValue)
         cmd.Parameters.Add("num", SqliteType.Integer).Value = basketNum.Value;
       using var reader = cmd.ExecuteReader();
-      var counters = ImmutableList.CreateBuilder<long>();
+      var evidence = ImmutableList.CreateBuilder<ActiveBasketObservationEvidence>();
       while (reader.Read())
-        counters.Add(reader.GetInt64(0));
-      var observations = counters
-        .Select(counter => CurrentBasketObservationForCounter(counter, trans))
-        .ToImmutableList();
+      {
+        evidence.Add(
+          ActiveBasketObservationEvidenceForCounter(reader.GetInt64(0), reader.GetBoolean(1), trans)
+        );
+      }
       trans.Commit();
-      return observations;
+      return evidence.ToImmutable();
     }
 
     [return: MaybeNull]
@@ -349,8 +349,8 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter FROM basket_identity_association_corrections "
-        + (targetObservationId.HasValue ? "WHERE TargetAssociationId = $target " : "")
+        "SELECT Counter FROM basket_observation_corrections "
+        + (targetObservationId.HasValue ? "WHERE TargetObservationId = $target " : "")
         + "ORDER BY Counter";
       if (targetObservationId.HasValue)
         cmd.Parameters.Add("target", SqliteType.Text).Value = targetObservationId.Value.ToString(
@@ -391,7 +391,7 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)existing).Transaction = trans;
         existing.CommandText =
-          "SELECT Fingerprint, Counter FROM basket_identity_associations WHERE AssociationId = $id";
+          "SELECT Fingerprint, Counter FROM basket_observations WHERE ObservationId = $id";
         existing.Parameters.Add("id", SqliteType.Text).Value = observationId.ToString("D");
         using var reader = existing.ExecuteReader();
         if (reader.Read())
@@ -415,7 +415,7 @@ namespace BlackMaple.MachineFramework
         using var current = _connection.CreateCommand();
         ((IDbCommand)current).Transaction = trans;
         current.CommandText =
-          "SELECT BasketNum FROM current_basket_identity_associations WHERE ContentEpisodeId = $id";
+          "SELECT BasketNum FROM current_basket_observation_episodes WHERE ContentEpisodeId = $id";
         current.Parameters.Add("id", SqliteType.Text).Value = contentEpisodeId.ToString("D");
         if (
           current.ExecuteScalar() is { } existingBasket
@@ -461,14 +461,14 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)insert).Transaction = trans;
         insert.CommandText =
-          "INSERT INTO basket_identity_associations(AssociationId, Fingerprint, Counter, SupersededByCorrectionId) VALUES($id, $fingerprint, $counter, NULL)";
+          "INSERT INTO basket_observations(ObservationId, Fingerprint, Counter, SupersededByCorrectionId) VALUES($id, $fingerprint, $counter, NULL)";
         insert.Parameters.Add("id", SqliteType.Text).Value = observationId.ToString("D");
         insert.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
         insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
         insert.ExecuteNonQuery();
 
         insert.CommandText =
-          "INSERT INTO basket_identity_association_details(Counter, Basis, ObservedLocation, ObservedLocationNum, ObservedZone, ObservedLocationTitle, Note) VALUES($counter, 0, $location, $locationNum, $zone, $title, $note)";
+          "INSERT INTO basket_observation_details(Counter, PositionLocation, PositionLocationNum, PositionZone, PositionLocationTitle, Note) VALUES($counter, $location, $locationNum, $zone, $title, $note)";
         insert.Parameters.Clear();
         insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
         insert.Parameters.Add("location", SqliteType.Integer).Value = (int)position.Location;
@@ -487,14 +487,14 @@ namespace BlackMaple.MachineFramework
         foreach (var contentEpisodeId in contentEpisodeIds)
         {
           insert.CommandText =
-            "INSERT INTO basket_identity_association_episodes(Counter, ContentEpisodeId) VALUES($counter, $episode)";
+            "INSERT INTO basket_observation_episodes(Counter, ContentEpisodeId) VALUES($counter, $episode)";
           insert.Parameters.Clear();
           insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
           insert.Parameters.Add("episode", SqliteType.Text).Value = contentEpisodeId.ToString("D");
           insert.ExecuteNonQuery();
           insert.CommandText =
-            "INSERT INTO current_basket_identity_associations(ContentEpisodeId, AssociationCounter, BasketNum) VALUES($episode, $counter, $basket) "
-            + "ON CONFLICT(ContentEpisodeId) DO UPDATE SET AssociationCounter = excluded.AssociationCounter, BasketNum = excluded.BasketNum";
+            "INSERT INTO current_basket_observation_episodes(ContentEpisodeId, ObservationCounter, BasketNum) VALUES($episode, $counter, $basket) "
+            + "ON CONFLICT(ContentEpisodeId) DO UPDATE SET ObservationCounter = excluded.ObservationCounter, BasketNum = excluded.BasketNum";
           insert.Parameters.Clear();
           insert.Parameters.Add("episode", SqliteType.Text).Value = contentEpisodeId.ToString("D");
           insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
@@ -521,12 +521,40 @@ namespace BlackMaple.MachineFramework
       );
     }
 
+    private void RebuildActiveBasketObservationEpisodes(
+      IEnumerable<Guid> contentEpisodeIds,
+      IDbTransaction trans
+    )
+    {
+      using var cmd = _connection.CreateCommand();
+      ((IDbCommand)cmd).Transaction = trans;
+      cmd.Parameters.Add("id", SqliteType.Text);
+
+      foreach (var contentEpisodeId in contentEpisodeIds)
+      {
+        cmd.CommandText =
+          "DELETE FROM current_basket_observation_episodes WHERE ContentEpisodeId = $id";
+        cmd.Parameters["id"].Value = contentEpisodeId.ToString("D");
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "INSERT INTO current_basket_observation_episodes(ContentEpisodeId, ObservationCounter, BasketNum) "
+          + "SELECT e.ContentEpisodeId, o.Counter, s.Pallet "
+          + "FROM basket_observation_episodes e "
+          + "JOIN basket_observations o ON o.Counter = e.Counter "
+          + "JOIN stations s ON s.Counter = o.Counter "
+          + "WHERE e.ContentEpisodeId = $id AND o.SupersededByCorrectionId IS NULL "
+          + "AND NOT EXISTS(SELECT 1 FROM basket_cycle_content_episode_ids f WHERE f.BasketContentEpisodeId = e.ContentEpisodeId) "
+          + "ORDER BY o.Counter DESC LIMIT 1";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
     private BasketObservation BasketObservationForId(Guid observationId, IDbTransaction trans)
     {
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
-      cmd.CommandText =
-        "SELECT Counter FROM basket_identity_associations WHERE AssociationId = $id";
+      cmd.CommandText = "SELECT Counter FROM basket_observations WHERE ObservationId = $id";
       cmd.Parameters.Add("id", SqliteType.Text).Value = observationId.ToString("D");
       return cmd.ExecuteScalar() is long counter
         ? BasketObservationForCounter(counter, trans)
@@ -538,9 +566,9 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT a.AssociationId, s.Pallet, d.ObservedLocation, d.ObservedLocationNum, d.ObservedZone, d.ObservedLocationTitle, d.Note, s.TimeUTC "
-        + "FROM basket_identity_associations a JOIN stations s ON s.Counter = a.Counter "
-        + "JOIN basket_identity_association_details d ON d.Counter = a.Counter WHERE a.Counter = $counter";
+        "SELECT a.ObservationId, s.Pallet, d.PositionLocation, d.PositionLocationNum, d.PositionZone, d.PositionLocationTitle, d.Note, s.TimeUTC "
+        + "FROM basket_observations a JOIN stations s ON s.Counter = a.Counter "
+        + "JOIN basket_observation_details d ON d.Counter = a.Counter WHERE a.Counter = $counter";
       cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
       using var reader = cmd.ExecuteReader();
       if (!reader.Read())
@@ -559,7 +587,7 @@ namespace BlackMaple.MachineFramework
       reader.Close();
 
       cmd.CommandText =
-        "SELECT ContentEpisodeId FROM basket_identity_association_episodes WHERE Counter = $counter ORDER BY ContentEpisodeId";
+        "SELECT ContentEpisodeId FROM basket_observation_episodes WHERE Counter = $counter ORDER BY ContentEpisodeId";
       using var episodeReader = cmd.ExecuteReader();
       var episodes = ImmutableSortedSet.CreateBuilder<Guid>();
       while (episodeReader.Read())
@@ -580,19 +608,33 @@ namespace BlackMaple.MachineFramework
       };
     }
 
-    private BasketObservation CurrentBasketObservationForCounter(long counter, IDbTransaction trans)
+    private ActiveBasketObservationEvidence ActiveBasketObservationEvidenceForCounter(
+      long counter,
+      bool isCurrentPositionEvidence,
+      IDbTransaction trans
+    )
     {
       var observation = BasketObservationForCounter(counter, trans);
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT ContentEpisodeId FROM current_basket_identity_associations WHERE AssociationCounter = $counter ORDER BY ContentEpisodeId";
+        "SELECT ContentEpisodeId FROM current_basket_observation_episodes WHERE ObservationCounter = $counter ORDER BY ContentEpisodeId";
       cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
       using var reader = cmd.ExecuteReader();
       var activeEpisodes = ImmutableSortedSet.CreateBuilder<Guid>();
       while (reader.Read())
         activeEpisodes.Add(Guid.Parse(reader.GetString(0)));
-      return observation with { ContentEpisodeIds = activeEpisodes.ToImmutable() };
+      var activeContentEpisodeIds = activeEpisodes.ToImmutable();
+      if (!isCurrentPositionEvidence && activeContentEpisodeIds.IsEmpty)
+        throw new InvalidOperationException(
+          $"Basket observation {observation.ObservationId:D} has no active evidence."
+        );
+      return new ActiveBasketObservationEvidence
+      {
+        Observation = observation,
+        IsCurrentPositionEvidence = isCurrentPositionEvidence,
+        ActiveContentEpisodeIds = activeContentEpisodeIds,
+      };
     }
 
     private BasketObservationCorrectionResult BasketObservationCorrectionResultForId(
@@ -603,7 +645,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, ReplacementAssociationId FROM basket_identity_association_corrections WHERE CorrectionId = $id";
+        "SELECT Counter, ReplacementObservationId FROM basket_observation_corrections WHERE CorrectionId = $id";
       cmd.Parameters.Add("id", SqliteType.Text).Value = correctionId.ToString("D");
       using var reader = cmd.ExecuteReader();
       if (!reader.Read())
@@ -626,8 +668,8 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT c.CorrectionId, c.TargetAssociationId, c.ReplacementAssociationId, c.Note, s.TimeUTC "
-        + "FROM basket_identity_association_corrections c JOIN stations s ON s.Counter = c.Counter WHERE c.Counter = $counter";
+        "SELECT c.CorrectionId, c.TargetObservationId, c.ReplacementObservationId, c.Note, s.TimeUTC "
+        + "FROM basket_observation_corrections c JOIN stations s ON s.Counter = c.Counter WHERE c.Counter = $counter";
       cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
       using var reader = cmd.ExecuteReader();
       if (!reader.Read())
