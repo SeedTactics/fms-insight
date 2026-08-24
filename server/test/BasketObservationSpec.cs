@@ -5,7 +5,6 @@ All rights reserved.
 
 using System;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
@@ -383,51 +382,42 @@ public sealed class BasketObservationSpec : IDisposable
   [Test]
   public async Task RestartRoundTripsHistoricalAndActiveEvidence()
   {
-    var databaseFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
+    var databaseId = Guid.NewGuid();
     var observationId = Guid.NewGuid();
     var contentEpisodeId = Guid.NewGuid();
     var time = new DateTime(2026, 8, 21, 10, 0, 0, DateTimeKind.Utc);
-    try
-    {
-      using (
-        var config = RepositoryConfig.InitializeEventDatabase(null, databaseFile, pooling: false)
-      )
-      using (var repository = config.OpenConnection())
-      {
-        OpenEpisode(repository, contentEpisodeId, time);
-        repository.RecordBasketObservation(
-          observationId,
-          4,
-          RobotZone(1),
-          [contentEpisodeId],
-          IntegrationSource(),
-          time.AddMinutes(1),
-          new EventLogMetadata { CorrelationId = "restart-correlation" },
-          "restart note"
-        );
-      }
 
-      using var restartedConfig = RepositoryConfig.InitializeEventDatabase(
-        null,
-        databaseFile,
-        pooling: false
-      );
-      using var restarted = restartedConfig.OpenConnection();
-      var observation = restarted.GetBasketObservation(observationId);
-      var evidence = restarted.GetActiveBasketObservationEvidence(4).Single();
-      await Assert.That(observation).IsNotNull();
-      await Assert.That(observation!.ContentEpisodeIds).IsEquivalentTo([contentEpisodeId]);
-      await Assert.That(observation.CorrelationId).IsEqualTo("restart-correlation");
-      await Assert.That(observation.Note).IsEqualTo("restart note");
-      await Assert.That(evidence.Observation).IsEquivalentTo(observation);
-      await Assert.That(evidence.IsCurrentPositionEvidence).IsTrue();
-      await Assert.That(evidence.ActiveContentEpisodeIds).IsEquivalentTo([contentEpisodeId]);
-    }
-    finally
+    using var config = RepositoryConfig.InitializeMemoryDB(null, databaseId);
+    using (var repository = config.OpenConnection())
     {
-      if (File.Exists(databaseFile))
-        File.Delete(databaseFile);
+      OpenEpisode(repository, contentEpisodeId, time);
+      repository.RecordBasketObservation(
+        observationId,
+        4,
+        RobotZone(1),
+        [contentEpisodeId],
+        IntegrationSource(),
+        time.AddMinutes(1),
+        new EventLogMetadata { CorrelationId = "restart-correlation" },
+        "restart note"
+      );
     }
+
+    using var restartedConfig = RepositoryConfig.InitializeMemoryDB(
+      null,
+      databaseId,
+      createTables: false
+    );
+    using var restarted = restartedConfig.OpenConnection();
+    var observation = restarted.GetBasketObservation(observationId);
+    var evidence = restarted.GetActiveBasketObservationEvidence(4).Single();
+    await Assert.That(observation).IsNotNull();
+    await Assert.That(observation!.ContentEpisodeIds).IsEquivalentTo([contentEpisodeId]);
+    await Assert.That(observation.CorrelationId).IsEqualTo("restart-correlation");
+    await Assert.That(observation.Note).IsEqualTo("restart note");
+    await Assert.That(evidence.Observation).IsEquivalentTo(observation);
+    await Assert.That(evidence.IsCurrentPositionEvidence).IsTrue();
+    await Assert.That(evidence.ActiveContentEpisodeIds).IsEquivalentTo([contentEpisodeId]);
   }
 
   [Test]
@@ -466,120 +456,104 @@ public sealed class BasketObservationSpec : IDisposable
   [Test]
   public async Task ObservationAndActiveProjectionRollBackTogether()
   {
-    var databaseFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
-    try
+    var databaseId = Guid.NewGuid();
+    using var config = RepositoryConfig.InitializeMemoryDB(null, databaseId);
+    using (
+      var connection = new SqliteConnection(
+        $"Data Source=file:${databaseId}?mode=memory&cache=shared"
+      )
+    )
     {
-      using var config = RepositoryConfig.InitializeEventDatabase(
-        null,
-        databaseFile,
-        pooling: false
-      );
-      using (var connection = new SqliteConnection("Data Source=" + databaseFile))
-      {
-        connection.Open();
-        using var trigger = connection.CreateCommand();
-        trigger.CommandText =
-          "CREATE TRIGGER fail_basket_observation_projection BEFORE INSERT ON current_basket_observation_episodes BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
-        trigger.ExecuteNonQuery();
-      }
+      connection.Open();
+      using var trigger = connection.CreateCommand();
+      trigger.CommandText =
+        "CREATE TRIGGER fail_basket_observation_projection BEFORE INSERT ON current_basket_observation_episodes BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
+      trigger.ExecuteNonQuery();
+    }
 
-      using var repository = config.OpenConnection();
-      var contentEpisodeId = Guid.NewGuid();
-      OpenEpisode(repository, contentEpisodeId, DateTime.UtcNow);
-      await Assert.ThrowsAsync<SqliteException>(() =>
-        Task.Run(() =>
-          repository.RecordBasketObservation(
-            Guid.NewGuid(),
-            4,
-            Storage(),
-            [contentEpisodeId],
-            IntegrationSource(),
-            DateTime.UtcNow
-          )
+    using var repository = config.OpenConnection();
+    var contentEpisodeId = Guid.NewGuid();
+    OpenEpisode(repository, contentEpisodeId, DateTime.UtcNow);
+    await Assert.ThrowsAsync<SqliteException>(() =>
+      Task.Run(() =>
+        repository.RecordBasketObservation(
+          Guid.NewGuid(),
+          4,
+          Storage(),
+          [contentEpisodeId],
+          IntegrationSource(),
+          DateTime.UtcNow
         )
-      );
-      await Assert.That(repository.GetRecentLog(0)).Count().IsEqualTo(1);
-      await Assert
-        .That(repository.GetRecentLog(0).Single().LogType)
-        .IsEqualTo(LogType.BasketContentSnapshot);
-      await Assert.That(repository.GetActiveBasketObservationEvidence()).IsEmpty();
-      await Assert.That(repository.GetBasketObservationCorrections()).IsEmpty();
-    }
-    finally
-    {
-      if (File.Exists(databaseFile))
-        File.Delete(databaseFile);
-    }
+      )
+    );
+    await Assert.That(repository.GetRecentLog(0)).Count().IsEqualTo(1);
+    await Assert
+      .That(repository.GetRecentLog(0).Single().LogType)
+      .IsEqualTo(LogType.BasketContentSnapshot);
+    await Assert.That(repository.GetActiveBasketObservationEvidence()).IsEmpty();
+    await Assert.That(repository.GetBasketObservationCorrections()).IsEmpty();
   }
 
   [Test]
   public async Task CorrectionAndReplacementRollBackTogether()
   {
-    var databaseFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
-    try
+    var databaseId = Guid.NewGuid();
+    using var config = RepositoryConfig.InitializeMemoryDB(null, databaseId);
+    var targetId = Guid.NewGuid();
+    var replacementId = Guid.NewGuid();
+    var correctionId = Guid.NewGuid();
+    using (var repository = config.OpenConnection())
     {
-      using var config = RepositoryConfig.InitializeEventDatabase(
-        null,
-        databaseFile,
-        pooling: false
+      repository.RecordBasketObservation(
+        targetId,
+        4,
+        Storage(),
+        [],
+        IntegrationSource(),
+        DateTime.UtcNow
       );
-      var targetId = Guid.NewGuid();
-      var replacementId = Guid.NewGuid();
-      var correctionId = Guid.NewGuid();
-      using (var repository = config.OpenConnection())
-      {
-        repository.RecordBasketObservation(
-          targetId,
-          4,
-          Storage(),
-          [],
-          IntegrationSource(),
-          DateTime.UtcNow
-        );
-      }
-      using (var connection = new SqliteConnection("Data Source=" + databaseFile))
-      {
-        connection.Open();
-        using var trigger = connection.CreateCommand();
-        trigger.CommandText =
-          "CREATE TRIGGER fail_basket_observation_replacement BEFORE INSERT ON basket_observations WHEN NEW.ObservationId = '"
-          + replacementId.ToString("D")
-          + "' BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
-        trigger.ExecuteNonQuery();
-      }
+    }
+    using (
+      var connection = new SqliteConnection(
+        $"Data Source=file:${databaseId}?mode=memory&cache=shared"
+      )
+    )
+    {
+      connection.Open();
+      using var trigger = connection.CreateCommand();
+      trigger.CommandText =
+        "CREATE TRIGGER fail_basket_observation_replacement BEFORE INSERT ON basket_observations WHEN NEW.ObservationId = '"
+        + replacementId.ToString("D")
+        + "' BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
+      trigger.ExecuteNonQuery();
+    }
 
-      using var repositoryAfterFailure = config.OpenConnection();
-      await Assert.ThrowsAsync<SqliteException>(() =>
-        Task.Run(() =>
-          repositoryAfterFailure.CorrectBasketObservation(
-            correctionId,
-            targetId,
-            new BasketObservationReplacement
-            {
-              ObservationId = replacementId,
-              BasketId = 4,
-              Position = LoadStation(),
-              ContentEpisodeIds = [],
-              Source = IntegrationSource(),
-            },
-            IntegrationSource(),
-            DateTime.UtcNow,
-            "replacement"
-          )
+    using var repositoryAfterFailure = config.OpenConnection();
+    await Assert.ThrowsAsync<SqliteException>(() =>
+      Task.Run(() =>
+        repositoryAfterFailure.CorrectBasketObservation(
+          correctionId,
+          targetId,
+          new BasketObservationReplacement
+          {
+            ObservationId = replacementId,
+            BasketId = 4,
+            Position = LoadStation(),
+            ContentEpisodeIds = [],
+            Source = IntegrationSource(),
+          },
+          IntegrationSource(),
+          DateTime.UtcNow,
+          "replacement"
         )
-      );
-      await Assert.That(repositoryAfterFailure.GetBasketObservationCorrections()).IsEmpty();
-      await Assert.That(repositoryAfterFailure.GetBasketObservation(replacementId)).IsNull();
-      var evidence = repositoryAfterFailure.GetActiveBasketObservationEvidence(4).Single();
-      await Assert.That(evidence.Observation.ObservationId).IsEqualTo(targetId);
-      await Assert.That(evidence.IsCurrentPositionEvidence).IsTrue();
-      await Assert.That(evidence.ActiveContentEpisodeIds).IsEmpty();
-    }
-    finally
-    {
-      if (File.Exists(databaseFile))
-        File.Delete(databaseFile);
-    }
+      )
+    );
+    await Assert.That(repositoryAfterFailure.GetBasketObservationCorrections()).IsEmpty();
+    await Assert.That(repositoryAfterFailure.GetBasketObservation(replacementId)).IsNull();
+    var evidence = repositoryAfterFailure.GetActiveBasketObservationEvidence(4).Single();
+    await Assert.That(evidence.Observation.ObservationId).IsEqualTo(targetId);
+    await Assert.That(evidence.IsCurrentPositionEvidence).IsTrue();
+    await Assert.That(evidence.ActiveContentEpisodeIds).IsEmpty();
   }
 
   [Test]
