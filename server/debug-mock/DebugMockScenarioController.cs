@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DebugMachineWatchApiServer;
 
+[ApiExplorerSettings(IgnoreApi = true)]
 [ApiController]
 public sealed class DebugMockScenarioController(MockServerBackend backend) : ControllerBase
 {

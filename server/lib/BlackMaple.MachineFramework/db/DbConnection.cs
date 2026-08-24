@@ -116,10 +116,12 @@ namespace BlackMaple.MachineFramework
     )
     {
       var guidStr = (guid ?? Guid.NewGuid()).ToString();
+      // Keep the literal '$' in this legacy test database URI. SQLite shared-memory databases
+      // are identified by the exact URI, and existing test callers attach using this spelling.
       var connStr = $"Data Source=file:${guidStr}?mode=memory&cache=shared";
       // need to keep a memory connection open, since sqlite reclaims the memory once the last
       // connection closes.  This connection is kept private and new connections using the same guid
-      // are openend for all operations.
+      // are opened for all operations.
       var conn = new SqliteConnection(connStr);
       conn.Open();
       if (createTables)

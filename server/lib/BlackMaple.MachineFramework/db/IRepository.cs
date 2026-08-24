@@ -70,7 +70,15 @@ namespace BlackMaple.MachineFramework
       BasketLogIdentity basketIdentity,
       bool includeLastCycleEvt = false
     );
-    ImmutableList<BasketObservation> GetCurrentBasketObservations(int? basketNum = null);
+
+    /// <summary>
+    /// Returns the bounded active projection of basket observations. Each result contributes
+    /// current position evidence, active content continuity, or both; the nested observation is
+    /// unchanged historical data.
+    /// </summary>
+    ImmutableList<ActiveBasketObservationEvidence> GetActiveBasketObservationEvidence(
+      int? basketNum = null
+    );
 
     [return: MaybeNull]
     BasketObservation GetBasketObservation(Guid observationId);
@@ -373,6 +381,12 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null,
       EventLogMetadata metadata = null
     );
+
+    /// <summary>
+    /// Records one immutable direct basket observation. Integration sources must possess the
+    /// underlying physical or external evidence for the claim; a calculated best-fit
+    /// reconstruction is not itself an observation.
+    /// </summary>
     BasketObservation RecordBasketObservation(
       Guid observationId,
       int basketId,

@@ -532,7 +532,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
         idempotencyKey: "associated-release"
       )
     );
-    await Assert.That(repository.GetCurrentBasketObservations()).IsEmpty();
+    await Assert.That(repository.GetActiveBasketObservationEvidence()).IsEmpty();
     await Assert
       .That(repository.GetRecentLog(0).Any(entry => entry.LogType == LogType.BasketCycle))
       .IsFalse();
@@ -561,7 +561,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
       .IsEqualTo(2);
     await Assert.That(logs.Select(entry => entry.LogType)).Contains(LogType.BasketObservation);
     await Assert
-      .That(repository.GetCurrentBasketObservations(7).Single().ContentEpisodeIds)
+      .That(repository.GetActiveBasketObservationEvidence(7).Single().ActiveContentEpisodeIds)
       .IsEquivalentTo([contentEpisodeId]);
   }
 

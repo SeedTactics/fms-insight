@@ -2510,14 +2510,12 @@
           "BasketLoadUnload",
           "BasketCycle",
           "BasketInLocation",
-          "BasketIdentityAssociation",
           "BasketContentSnapshot",
-          "BasketLocationObservation",
-          "BasketLocationObservationCorrection",
-          "BasketIdentityAssociationCorrection",
           "BasketRegionSurvey",
           "BasketMisload",
-          "BasketMisloadResolution"
+          "BasketMisloadResolution",
+          "BasketObservation",
+          "BasketObservationCorrection"
         ],
         "enum": [
           "LoadUnloadCycle",
@@ -2543,14 +2541,12 @@
           "BasketLoadUnload",
           "BasketCycle",
           "BasketInLocation",
-          "BasketIdentityAssociation",
           "BasketContentSnapshot",
-          "BasketLocationObservation",
-          "BasketLocationObservationCorrection",
-          "BasketIdentityAssociationCorrection",
           "BasketRegionSurvey",
           "BasketMisload",
-          "BasketMisloadResolution"
+          "BasketMisloadResolution",
+          "BasketObservation",
+          "BasketObservationCorrection"
         ]
       },
       "ToolUse": {
