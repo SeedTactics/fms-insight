@@ -50,16 +50,14 @@ namespace Serilog
   {
     public const string SourceName = "FMS Insight Mazak Proxy";
     public const string LogName = "Application";
-
-    static EventLogConfig()
-    {
-      if (!EventLog.SourceExists(SourceName))
-        EventLog.CreateEventSource(SourceName, LogName);
-    }
   }
 
   public class Log : ILogger
   {
+    private static readonly object DebugFileLock = new object();
+    private static readonly object EventLogLock = new object();
+    private static DateTime _lastLogMaintenanceDate = DateTime.MinValue;
+
     public static ILogger ForContext<T>()
     {
       return new Log();
@@ -77,15 +75,10 @@ namespace Serilog
 
     public static void Error(Exception ex, string message)
     {
-      using (var ev = new EventLog(EventLogConfig.LogName, ".", EventLogConfig.SourceName))
-      {
-        string msg = message;
-        if (ex != null)
-        {
-          msg += Environment.NewLine + ex.ToString();
-        }
-        ev.WriteEntry(msg, EventLogEntryType.Error);
-      }
+      string msg = message;
+      if (ex != null)
+        msg += Environment.NewLine + ex;
+      TryWriteEventLog(msg, EventLogEntryType.Error);
 
       // Also to debug
       Debug(ex, message);
@@ -98,17 +91,7 @@ namespace Serilog
 
     public static void Information(string message)
     {
-      try
-      {
-        using (var ev = new EventLog(EventLogConfig.LogName, ".", EventLogConfig.SourceName))
-        {
-          ev.WriteEntry(message, EventLogEntryType.Information);
-        }
-      }
-      catch (Exception ex)
-      {
-        Debug(ex, "Error writing to event log");
-      }
+      TryWriteEventLog(message, EventLogEntryType.Information);
 
       // Also to debug
       Debug(message);
@@ -126,12 +109,14 @@ namespace Serilog
 
     void ILogger.Verbose(string messageTemplate, params object[] propertyValues)
     {
-      Log.Debug(messageTemplate, propertyValues);
+      Log.Verbose(messageTemplate, propertyValues);
     }
 
     public static void Verbose(string messageTemplate, params object[] propertyValues)
     {
-      Debug(null, messageTemplate, propertyValues);
+      // Per-row parsing details are intentionally disabled in the always-on proxy log. Request
+      // boundaries and aggregate scan results retain the operational chronology without allowing
+      // ordinary Mazak CSV traffic to dominate disk usage.
     }
 
     public class DebugMessage
@@ -144,38 +129,89 @@ namespace Serilog
 
     public static void Debug(Exception ex, string messageTemplate, params object[] propertyValues)
     {
-      var dir = System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        "FMS Insight Mazak Proxy"
-      );
-      if (!System.IO.Directory.Exists(dir))
+      try
       {
-        System.IO.Directory.CreateDirectory(dir);
-      }
-
-      // delete old files
-      foreach (var fname in System.IO.Directory.GetFiles(dir, "debug*.txt"))
-      {
-        if (System.IO.File.GetLastWriteTime(fname) < DateTime.Now.AddDays(-7))
+        lock (DebugFileLock)
         {
-          System.IO.File.Delete(fname);
+          var dir = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "FMS Insight Mazak Proxy"
+          );
+          if (!System.IO.Directory.Exists(dir))
+            System.IO.Directory.CreateDirectory(dir);
+
+          var today = DateTime.Today;
+          if (_lastLogMaintenanceDate != today)
+          {
+            try
+            {
+              ProxyLogRetention.Maintain(dir, today);
+            }
+            catch (Exception maintenanceException)
+            {
+              TryWriteEventLog(
+                "Error maintaining Mazak proxy debug logs"
+                  + Environment.NewLine
+                  + maintenanceException,
+                EventLogEntryType.Error
+              );
+            }
+            _lastLogMaintenanceDate = today;
+          }
+
+          var path = System.IO.Path.Combine(dir, $"debug{today:yyyy-MM-dd}.txt");
+          using (
+            var stream = new System.IO.FileStream(
+              path,
+              System.IO.FileMode.Append,
+              System.IO.FileAccess.Write,
+              System.IO.FileShare.ReadWrite
+            )
+          )
+          using (var file = new System.IO.StreamWriter(stream))
+          {
+            var ser = new System.Web.Script.Serialization.JavaScriptSerializer();
+            file.WriteLine(
+              ser.Serialize(
+                new DebugMessage
+                {
+                  UtcNow = DateTime.UtcNow,
+                  Message = messageTemplate,
+                  Exception = ex?.ToString(),
+                  Properties = propertyValues,
+                }
+              )
+            );
+          }
         }
       }
+      catch (Exception logException)
+      {
+        // Logging must never terminate the proxy. Use the independent Windows event log as the
+        // final fallback, but swallow its failure as well.
+        TryWriteEventLog(
+          "Error writing Mazak proxy debug log" + Environment.NewLine + logException,
+          EventLogEntryType.Error
+        );
+      }
+    }
 
-      var today = DateTime.Today.ToString("yyyy-MM-dd");
-      using var file = System.IO.File.AppendText(System.IO.Path.Combine(dir, $"debug{today}.txt"));
-      var ser = new System.Web.Script.Serialization.JavaScriptSerializer();
-      file.WriteLine(
-        ser.Serialize(
-          new DebugMessage
-          {
-            UtcNow = DateTime.UtcNow,
-            Message = messageTemplate,
-            Exception = ex?.ToString(),
-            Properties = propertyValues,
-          }
-        )
-      );
+    private static void TryWriteEventLog(string message, EventLogEntryType type)
+    {
+      try
+      {
+        lock (EventLogLock)
+        {
+          if (!EventLog.SourceExists(EventLogConfig.SourceName))
+            EventLog.CreateEventSource(EventLogConfig.SourceName, EventLogConfig.LogName);
+          using (var ev = new EventLog(EventLogConfig.LogName, ".", EventLogConfig.SourceName))
+            ev.WriteEntry(message, type);
+        }
+      }
+      catch
+      {
+        // A diagnostics failure must not become a process failure.
+      }
     }
   }
 }

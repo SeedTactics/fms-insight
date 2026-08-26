@@ -8,6 +8,11 @@
       >true</ContinuousIntegrationBuild>
   </PropertyGroup>
   <ItemGroup>
+    <Compile
+      Include="../machines/mazak-proxy/ProxyLogRetention.cs"
+      Link="mazak-proxy/ProxyLogRetention.cs"
+    />
+    <Compile Include="../machines/mazak-proxy/Server.cs" Link="mazak-proxy/Server.cs" />
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <ProjectReference Include="../debug-mock/debugmock.csproj" />
     <ProjectReference Include="../machines/mazak/mazak.csproj" />
