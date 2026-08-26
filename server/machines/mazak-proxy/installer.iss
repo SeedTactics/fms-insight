@@ -23,6 +23,8 @@ Source: "proxy-build\mazak-proxy.exe.config"; DestDir: "{app}"; Flags: ignorever
 [Run]
 Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start= auto binPath= ""{app}\mazak-proxy.exe"" DisplayName= ""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden; Check: ShouldCreateProxyService
 Filename: {sys}\sc.exe; Parameters: "config fmsinsightmazakproxy start= auto binPath= ""{app}\mazak-proxy.exe"" DisplayName= ""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden
+Filename: {sys}\sc.exe; Parameters: "failure fmsinsightmazakproxy reset= 86400 actions= restart/5000/restart/15000/restart/60000"; Flags: runhidden
+Filename: {sys}\sc.exe; Parameters: "failureflag fmsinsightmazakproxy 1"; Flags: runhidden
 Filename: {sys}\sc.exe; Parameters: "start fmsinsightmazakproxy"; Flags: runhidden
 
 [UninstallRun]
@@ -48,6 +50,13 @@ Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: s
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
   ValueName: "LoadCSVPath"; ValueData: "{code:GetLoadCSVPath}"; \
   Flags: createvalueifdoesntexist uninsdeletekey
+Root: HKLM; Subkey: "Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\mazak-proxy.exe"; ValueType: expandsz; \
+  ValueName: "DumpFolder"; ValueData: "{commonappdata}\FMS Insight Mazak Proxy\CrashDumps"; \
+  Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\mazak-proxy.exe"; ValueType: dword; \
+  ValueName: "DumpType"; ValueData: "2"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\mazak-proxy.exe"; ValueType: dword; \
+  ValueName: "DumpCount"; ValueData: "5"; Flags: uninsdeletekey
 
 [Code]
 var

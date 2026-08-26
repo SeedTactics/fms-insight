@@ -73,16 +73,10 @@ namespace MazakMachineInterface
     public static List<LogEntry> LoadLog(string lastForeignID, string path)
     {
       var files = FindCSVFiles(path);
-      Serilog.Log.Debug(
-        "Scanning Mazak CSV log directory {path} after foreign ID {lastForeignID}; found {fileCount} files {@files}",
-        path,
-        lastForeignID,
-        files.Count,
-        files
-      );
 
       var ret = new List<LogEntry>();
       int skippedFiles = 0;
+      int scannedFiles = 0;
 
       foreach (var f in files)
       {
@@ -93,6 +87,7 @@ namespace MazakMachineInterface
           continue;
         }
 
+        scannedFiles += 1;
         int lineCount = 0;
         int eventCount = 0;
         using (var fstream = WaitToOpenFile(f))
@@ -146,7 +141,7 @@ namespace MazakMachineInterface
 
             ret.Add(e);
             eventCount += 1;
-            Serilog.Log.Debug(
+            Serilog.Log.Verbose(
               "Parsed Mazak CSV event from {file}: code {code}, time {timeUTC}, pallet {pallet}, station {station}, part {part}, process {process}",
               filename,
               e.Code,
@@ -159,7 +154,7 @@ namespace MazakMachineInterface
           }
         }
 
-        Serilog.Log.Debug(
+        Serilog.Log.Verbose(
           "Read Mazak CSV file {file}: {lineCount} rows, {eventCount} recognized events",
           filename,
           lineCount,
@@ -167,12 +162,15 @@ namespace MazakMachineInterface
         );
       }
 
-      Serilog.Log.Debug(
-        "Finished scanning Mazak CSV log directory {path}: parsed {eventCount} events and skipped {skippedFiles} older files",
-        path,
-        ret.Count,
-        skippedFiles
-      );
+      if (ret.Count > 0)
+        Serilog.Log.Debug(
+          "Scanned {scannedFiles} new Mazak CSV files in {path} after foreign ID {lastForeignID}: parsed {eventCount} events and skipped {skippedFiles} older files",
+          scannedFiles,
+          path,
+          lastForeignID,
+          ret.Count,
+          skippedFiles
+        );
 
       return ret;
     }
@@ -180,14 +178,6 @@ namespace MazakMachineInterface
     public static void DeleteLog(string lastForeignID, string path)
     {
       var files = FindCSVFiles(path);
-      Serilog.Log.Debug(
-        "Deleting Mazak CSV log files through foreign ID {lastForeignID} from {path}; found {fileCount} files {@files}",
-        lastForeignID,
-        path,
-        files.Count,
-        files
-      );
-
       int deletedFiles = 0;
       foreach (var f in files)
       {
@@ -199,7 +189,7 @@ namespace MazakMachineInterface
         {
           File.Delete(f);
           deletedFiles += 1;
-          Serilog.Log.Debug("Deleted Mazak CSV log file {file}", filename);
+          Serilog.Log.Verbose("Deleted Mazak CSV log file {file}", filename);
         }
         catch (Exception ex)
         {
@@ -207,11 +197,12 @@ namespace MazakMachineInterface
         }
       }
 
-      Serilog.Log.Debug(
-        "Finished deleting Mazak CSV log files through foreign ID {lastForeignID}: deleted {deletedFiles} files",
-        lastForeignID,
-        deletedFiles
-      );
+      if (deletedFiles > 0)
+        Serilog.Log.Debug(
+          "Deleted {deletedFiles} Mazak CSV log files through foreign ID {lastForeignID}",
+          deletedFiles,
+          lastForeignID
+        );
     }
   }
 }

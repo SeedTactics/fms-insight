@@ -35,6 +35,7 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
 {
   using System;
   using System.Collections.Generic;
+  using System.Diagnostics;
   using System.Net;
   using System.Threading;
 
@@ -57,6 +58,9 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
 
     private readonly Dictionary<string, Func<object>> _loadingHandlers;
     private readonly Dictionary<string, PostHandler> _postHandlers;
+    private int _disposed;
+    private long _requestSequence;
+    private int _activeRequests;
 
     public HttpServer(string url)
     {
@@ -68,18 +72,45 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
 
     public void Dispose()
     {
-      _listener.Close();
+      if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        return;
+      try
+      {
+        _listener.Close();
+      }
+      catch (Exception ex)
+      {
+        Serilog.Log.Error(ex, "Error closing Mazak proxy HTTP listener");
+      }
     }
 
     public void Start()
     {
       _listener.Start();
-      Listen();
+      BeginListening();
     }
 
-    private void Listen()
+    private bool IsDisposed => Interlocked.CompareExchange(ref _disposed, 0, 0) != 0;
+
+    private void BeginListening()
     {
-      _listener.BeginGetContext(HandleRequest, _listener);
+      if (IsDisposed)
+        return;
+      try
+      {
+        _listener.BeginGetContext(HandleRequest, null);
+      }
+      catch (ObjectDisposedException) when (IsDisposed) { }
+      catch (HttpListenerException) when (IsDisposed) { }
+      catch (Exception ex)
+      {
+        Serilog.Log.Error(ex, "Error accepting Mazak proxy HTTP request; retrying in one second");
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+          Thread.Sleep(TimeSpan.FromSeconds(1));
+          BeginListening();
+        });
+      }
     }
 
     public void AddLoadingHandler<T>(string path, Func<T> handler)
@@ -97,16 +128,48 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
 
     private void HandleRequest(IAsyncResult asyncResult)
     {
-      HttpListener listener = (HttpListener)asyncResult.AsyncState;
-      var ctx = listener.EndGetContext(asyncResult);
-      var req = ctx.Request;
-      var resp = ctx.Response;
-
-      // listen for another request
-      Listen();
+      var requestId = Interlocked.Increment(ref _requestSequence);
+      var timer = Stopwatch.StartNew();
+      var activeRequests = Interlocked.Increment(ref _activeRequests);
+      HttpListenerContext ctx = null;
+      string method = "unknown";
+      string path = "unknown";
+      string remote = "unknown";
 
       try
       {
+        try
+        {
+          ctx = _listener.EndGetContext(asyncResult);
+        }
+        catch (ObjectDisposedException) when (IsDisposed)
+        {
+          return;
+        }
+        catch (HttpListenerException) when (IsDisposed)
+        {
+          return;
+        }
+
+        // Always arm the next accept before processing this request. BeginListening catches and
+        // retries its own failures so an accept error cannot escape this ThreadPool callback.
+        BeginListening();
+
+        var req = ctx.Request;
+        var resp = ctx.Response;
+        method = req.HttpMethod ?? "unknown";
+        path = req.Url?.AbsolutePath ?? "unknown";
+        remote = req.RemoteEndPoint?.ToString() ?? "unknown";
+        resp.Headers["X-FMS-Insight-Request-ID"] = requestId.ToString();
+        Serilog.Log.Debug(
+          "Started Mazak proxy request {requestId}: {method} {path} from {remote}; {activeRequests} active requests",
+          requestId,
+          method,
+          path,
+          remote,
+          activeRequests
+        );
+
         if (req.HttpMethod == "GET")
         {
           if (_loadingHandlers.TryGetValue(req.Url.AbsolutePath, out var handler))
@@ -158,17 +221,90 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
       }
       catch (Exception ex)
       {
-        var buffer = System.Text.Encoding.UTF8.GetBytes(ex.ToString());
-        resp.StatusCode = 500;
-        resp.ContentType = "text/plain";
-        resp.ContentEncoding = System.Text.Encoding.UTF8;
-        resp.ContentLength64 = buffer.Length;
-        resp.OutputStream.Write(buffer, 0, buffer.Length);
-        Serilog.Log.Error(ex, "Error handling request");
+        if (ctx == null && !IsDisposed)
+          BeginListening();
+        // Log before touching the response. A disconnected client can make even the error response
+        // fail, and that secondary failure must not hide the original exception or terminate the
+        // service.
+        Serilog.Log.Error(
+          ex,
+          $"Error handling Mazak proxy request {requestId}: {method} {path} from {remote}"
+        );
+        TryWriteErrorResponse(ctx, requestId);
       }
       finally
       {
-        resp.Close();
+        var statusCode = TryGetStatusCode(ctx);
+        TryCloseResponse(ctx, requestId);
+        timer.Stop();
+        var remainingRequests = Interlocked.Decrement(ref _activeRequests);
+        if (ctx != null)
+          Serilog.Log.Debug(
+            "Finished Mazak proxy request {requestId}: {method} {path} with status {statusCode} in {elapsedMilliseconds}ms; {activeRequests} active requests remain",
+            requestId,
+            method,
+            path,
+            statusCode,
+            timer.ElapsedMilliseconds,
+            remainingRequests
+          );
+      }
+    }
+
+    private static int TryGetStatusCode(HttpListenerContext ctx)
+    {
+      if (ctx == null)
+        return 0;
+      try
+      {
+        return ctx.Response.StatusCode;
+      }
+      catch
+      {
+        return 0;
+      }
+    }
+
+    private static void TryWriteErrorResponse(HttpListenerContext ctx, long requestId)
+    {
+      if (ctx == null)
+        return;
+      try
+      {
+        var buffer = System.Text.Encoding.UTF8.GetBytes(
+          $"Mazak proxy request {requestId} failed. See the proxy diagnostics for details."
+        );
+        ctx.Response.StatusCode = 500;
+        ctx.Response.ContentType = "text/plain";
+        ctx.Response.ContentEncoding = System.Text.Encoding.UTF8;
+        ctx.Response.ContentLength64 = buffer.Length;
+        ctx.Response.OutputStream.Write(buffer, 0, buffer.Length);
+      }
+      catch (Exception responseException)
+      {
+        Serilog.Log.Debug(
+          responseException,
+          "Unable to write error response for Mazak proxy request {requestId}",
+          requestId
+        );
+      }
+    }
+
+    private static void TryCloseResponse(HttpListenerContext ctx, long requestId)
+    {
+      if (ctx == null)
+        return;
+      try
+      {
+        ctx.Response.Close();
+      }
+      catch (Exception closeException)
+      {
+        Serilog.Log.Debug(
+          closeException,
+          "Unable to close response for Mazak proxy request {requestId}",
+          requestId
+        );
       }
     }
   }

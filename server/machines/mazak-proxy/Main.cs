@@ -32,7 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using MazakMachineInterface;
 using Serilog;
@@ -59,29 +61,61 @@ public class ProxyService : System.ServiceProcess.ServiceBase
 
   public static void Main(string[] args)
   {
-#if DEBUG
-    if (args.Length > 0 && args[0] == "--console")
+    AppDomain.CurrentDomain.UnhandledException += LogUnhandledException;
+    int processId;
+    using (var process = Process.GetCurrentProcess())
+      processId = process.Id;
+    var version = Assembly.GetExecutingAssembly().GetName().Version;
+    Log.Information(
+      $"Mazak Proxy process starting: PID {processId}, version {version}, runtime {Environment.Version}, OS {Environment.OSVersion}"
+    );
+
+    try
     {
-      var svc = new ProxyService(
-        new MazakConfig()
-        {
-          Port = 5200,
-          DBType = MazakDbType.MazakVersionE,
-          OleDbDatabasePath = "c:\\Mazak\\NFMS\\DB",
-          SQLConnectionString = MazakConfig.DefaultConnectionStr,
-          LogCSVPath = "c:\\Mazak\\FMS\\Log",
-          LoadCSVPath = "c:\\Mazak\\FMS\\LDS",
-        }
-      );
-      svc.OnStart(args.Where(e => e != "--console").ToArray());
-      System.Console.WriteLine("Press enter to stop");
-      System.Console.ReadLine();
-      svc.OnStop();
-      return;
-    }
+#if DEBUG
+      if (args.Length > 0 && args[0] == "--console")
+      {
+        var svc = new ProxyService(
+          new MazakConfig()
+          {
+            Port = 5200,
+            DBType = MazakDbType.MazakVersionE,
+            OleDbDatabasePath = "c:\\Mazak\\NFMS\\DB",
+            SQLConnectionString = MazakConfig.DefaultConnectionStr,
+            LogCSVPath = "c:\\Mazak\\FMS\\Log",
+            LoadCSVPath = "c:\\Mazak\\FMS\\LDS",
+          }
+        );
+        svc.OnStart(args.Where(e => e != "--console").ToArray());
+        System.Console.WriteLine("Press enter to stop");
+        System.Console.ReadLine();
+        svc.OnStop();
+        return;
+      }
 #endif
 
-    System.ServiceProcess.ServiceBase.Run(new ProxyService());
+      System.ServiceProcess.ServiceBase.Run(new ProxyService());
+    }
+    catch (Exception ex)
+    {
+      Log.Error(ex, "Fatal exception escaping Mazak Proxy process entry point");
+      throw;
+    }
+    finally
+    {
+      Log.Information($"Mazak Proxy process exiting: PID {processId}");
+    }
+  }
+
+  private static void LogUnhandledException(object sender, UnhandledExceptionEventArgs args)
+  {
+    var exception =
+      args.ExceptionObject as Exception
+      ?? new Exception("Non-Exception object reached the unhandled exception boundary");
+    Log.Error(
+      exception,
+      $"Unhandled Mazak Proxy exception; process terminating: {args.IsTerminating}"
+    );
   }
 
   private void OnNewEvent()
