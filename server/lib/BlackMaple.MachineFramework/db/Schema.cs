@@ -115,7 +115,7 @@ namespace BlackMaple.MachineFramework
           "CREATE INDEX stations_correlation_id ON stations(CorrelationId, Counter) WHERE CorrelationId IS NOT NULL";
         cmd.ExecuteNonQuery();
 
-        CreateBasketStationOperationTables(cmd);
+        CreateBasketOperationTables(cmd);
         CreateMaterialAllocationOperationTables(cmd);
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
@@ -1351,7 +1351,7 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       CreateBasketObservationTables(cmd);
       CreateBasketCycleTables(cmd);
-      CreateBasketStationOperationTables(cmd);
+      CreateBasketOperationTables(cmd);
       CreateMaterialAllocationOperationTables(cmd);
       CreateBasketRegionSurveyTables(cmd);
       CreateBasketMisloadTables(cmd);
@@ -1398,13 +1398,13 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
     }
 
-    private static void CreateBasketStationOperationTables(IDbCommand cmd)
+    private static void CreateBasketOperationTables(IDbCommand cmd)
     {
       cmd.CommandText =
-        "CREATE TABLE basket_station_operations(IdempotencyKey TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL)";
+        "CREATE TABLE basket_operations(IdempotencyKey TEXT PRIMARY KEY, OperationType TEXT NOT NULL, Fingerprint TEXT NOT NULL, ForeignID TEXT, OriginalMessage TEXT NOT NULL)";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
-        "CREATE TABLE basket_station_operation_events(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, Counter INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
+        "CREATE TABLE basket_operation_events(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, Counter INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
       cmd.ExecuteNonQuery();
     }
 

@@ -237,6 +237,24 @@ namespace BlackMaple.MachineFramework
       EventLogMetadata metadata = null
     );
 
+    /// <summary>
+    /// Atomically records one or more basket cycle boundaries and any directly evidenced basket
+    /// observations that accompany those lifecycle transitions. A lifecycle operation must contain
+    /// at least one boundary; standalone observations use <see cref="RecordBasketObservation"/>.
+    /// Identical retries return the original event group and changed reuse of the idempotency key
+    /// throws <see cref="ConflictRequestException"/>. <paramref name="timeUTC"/> is intentionally
+    /// excluded from retry comparison.
+    /// </summary>
+    IEnumerable<LogEntry> RecordBasketLifecycleOperation(
+      BasketLifecycleOperation operation,
+      int locationNum,
+      DateTime timeUTC,
+      string idempotencyKey,
+      string foreignId = null,
+      string originalMessage = null,
+      EventLogMetadata metadata = null
+    );
+
     IEnumerable<LogEntry> RecordEmptyPallet(
       int pallet,
       DateTime timeUTC,
@@ -931,14 +949,7 @@ namespace BlackMaple.MachineFramework
       public required ImmutableHashSet<Guid> ReconciledBasketIdentities { get; init; }
     }
 
-    public sealed record Start : BasketCycleBoundary
-    {
-      /// <summary>
-      /// Atomically records the current numbered-basket association for a UUID cycle start. Leave
-      /// null for a numbered start or when the numbered identity is not known.
-      /// </summary>
-      public int? AssociatedBasketNum { get; init; }
-    }
+    public sealed record Start : BasketCycleBoundary;
   }
 
   public sealed record PalletBasketLoadUnloadCompletion
@@ -976,6 +987,13 @@ namespace BlackMaple.MachineFramework
   {
     public required ImmutableList<BasketStationTransfer> Transfers { get; init; }
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
+    public ImmutableList<BasketObservationInput> Observations { get; init; } = [];
+  }
+
+  public sealed record BasketLifecycleOperation
+  {
+    public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
+    public ImmutableList<BasketObservationInput> Observations { get; init; } = [];
   }
 
   public record MaterialToUnloadFromFace
@@ -1032,6 +1050,20 @@ namespace BlackMaple.MachineFramework
     public required BasketPosition Position { get; init; }
     public required ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; }
     public required BasketEvidenceSource Source { get; init; }
+  }
+
+  /// <summary>
+  /// Direct physical evidence supplied as part of an atomic basket operation. Integrations must
+  /// not construct this input from calculated identity, candidate elimination, or workflow intent.
+  /// </summary>
+  public sealed record BasketObservationInput
+  {
+    public required Guid ObservationId { get; init; }
+    public required int BasketId { get; init; }
+    public required BasketPosition Position { get; init; }
+    public ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; } = [];
+    public required BasketEvidenceSource Source { get; init; }
+    public string Note { get; init; }
   }
 
   public sealed record BasketObservationCorrectionResult

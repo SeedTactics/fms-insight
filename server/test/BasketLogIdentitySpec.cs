@@ -483,7 +483,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task UuidCycleStartAtomicallyAssociatesAndRecordsStation()
+  public async Task UuidCycleStartAndExplicitObservationCommitAtomically()
   {
     var time = new DateTime(2026, 7, 27, 11, 50, 0, DateTimeKind.Utc);
     var contentEpisodeId = Guid.NewGuid();
@@ -507,7 +507,18 @@ public sealed class BasketLogIdentitySpec : IDisposable
               Face = 0,
             },
           ],
-          AssociatedBasketNum = 7,
+        },
+      ],
+      Observations =
+      [
+        new BasketObservationInput
+        {
+          ObservationId = Guid.NewGuid(),
+          BasketId = 7,
+          Position = BasketLoadStation(),
+          ContentEpisodeIds = [contentEpisodeId],
+          Source = IntegrationSource(),
+          Note = "Basket 7 and its contents were directly observed at the station.",
         },
       ],
     };
