@@ -93,6 +93,14 @@ namespace BlackMaple.MachineFramework
     [return: MaybeNull]
     BasketRegionSurvey GetBasketRegionSurvey(Guid surveyId);
     ImmutableList<BasketRegionSurvey> GetLatestBasketRegionSurveys();
+    ImmutableList<BasketRegionSurvey> GetCurrentBasketRegionSurveyEvidence();
+
+    [return: MaybeNull]
+    LogEntry MostRecentNumberedBasketArrival(int basketId);
+
+    [return: MaybeNull]
+    LogEntry MostRecentNumberedBasketDeparture(int basketId, string locationName, int locationNum);
+    ImmutableDictionary<int, long> GetBasketPositionEvidenceSeen(IEnumerable<int> basketIds);
     ImmutableList<BasketMisload> GetActiveBasketMisloads();
 
     [return: MaybeNull]
@@ -397,7 +405,8 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       string foreignId = null,
       string originalMessage = null,
-      EventLogMetadata metadata = null
+      EventLogMetadata metadata = null,
+      IReadOnlyDictionary<string, string> extraData = null
     );
 
     /// <summary>

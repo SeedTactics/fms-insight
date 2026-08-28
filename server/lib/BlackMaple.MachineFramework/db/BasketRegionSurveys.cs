@@ -166,6 +166,31 @@ namespace BlackMaple.MachineFramework
             insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
             insert.Parameters.Add("basket", SqliteType.Integer).Value = basketId;
             insert.ExecuteNonQuery();
+
+            insert.CommandText =
+              "INSERT INTO current_basket_survey_positive(BasketNum, SurveyCounter) VALUES($basket, $counter) "
+              + "ON CONFLICT(BasketNum) DO UPDATE SET SurveyCounter = excluded.SurveyCounter";
+            insert.ExecuteNonQuery();
+            RecordBasketPositionEvidenceSeen(basketId, log.Counter, trans);
+          }
+
+          if (
+            completeness == BasketRegionSurveyCompleteness.Complete
+            && unidentifiedBasketCount == 0
+          )
+          {
+            insert.CommandText =
+              "INSERT INTO current_basket_region_complete_survey(RegionLocation, RegionLocationNum, RegionZone, SurveyCounter) "
+              + "VALUES($location, $locationNum, $zone, $counter) "
+              + "ON CONFLICT(RegionLocation, RegionLocationNum, RegionZone) DO UPDATE SET SurveyCounter = excluded.SurveyCounter";
+            insert.Parameters.Clear();
+            insert.Parameters.Add("location", SqliteType.Integer).Value = (int)
+              normalizedRegion.Location;
+            insert.Parameters.Add("locationNum", SqliteType.Integer).Value =
+              normalizedRegion.LocationNum;
+            insert.Parameters.Add("zone", SqliteType.Integer).Value = normalizedRegion.Zone ?? -1;
+            insert.Parameters.Add("counter", SqliteType.Integer).Value = log.Counter;
+            insert.ExecuteNonQuery();
           }
         }
 
@@ -243,6 +268,26 @@ namespace BlackMaple.MachineFramework
         .ThenBy(survey => survey.Region.LocationNum)
         .ThenBy(survey => survey.Region.Zone)
         .ToImmutableList();
+
+    public ImmutableList<BasketRegionSurvey> GetCurrentBasketRegionSurveyEvidence()
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT SurveyCounter FROM current_basket_survey_positive "
+        + "UNION SELECT SurveyCounter FROM current_basket_region_complete_survey "
+        + "ORDER BY SurveyCounter";
+      using var reader = cmd.ExecuteReader();
+      var counters = ImmutableList.CreateBuilder<long>();
+      while (reader.Read())
+        counters.Add(reader.GetInt64(0));
+      var surveys = counters
+        .Select(counter => BasketRegionSurveyForCounter(counter, trans))
+        .ToImmutableList();
+      trans.Commit();
+      return surveys;
+    }
 
     private static bool SameBasketRegion(BasketPosition left, BasketPosition right) =>
       left.Location == right.Location

@@ -874,26 +874,80 @@ namespace BlackMaple.MachineFramework
     {
       using var cmd = _connection.CreateCommand();
       cmd.CommandText =
-        "SELECT DISTINCT s.BasketContentEpisodeId FROM stations s "
-        + "WHERE s.BasketContentEpisodeId IS NOT NULL "
-        + "AND s.StationLoc IN ($loadUnloadType, $locationType, $snapshotType, $cycleType) "
-        + "AND "
-        + ignoreInvalidEventCondition
-        + " "
-        + "AND NOT EXISTS(SELECT 1 FROM current_basket_observation_episodes a WHERE a.ContentEpisodeId = s.BasketContentEpisodeId) "
-        + "AND NOT EXISTS(SELECT 1 FROM basket_cycle_content_episode_ids f WHERE f.BasketContentEpisodeId = s.BasketContentEpisodeId) "
-        + "ORDER BY s.BasketContentEpisodeId";
-      cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
-        LogType.BasketLoadUnload;
-      cmd.Parameters.Add("locationType", SqliteType.Integer).Value = (int)LogType.BasketInLocation;
-      cmd.Parameters.Add("snapshotType", SqliteType.Integer).Value = (int)
-        LogType.BasketContentSnapshot;
-      cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
+        "SELECT o.ContentEpisodeId FROM open_basket_content_episodes o "
+        + "WHERE NOT EXISTS(SELECT 1 FROM current_basket_observation_episodes a WHERE a.ContentEpisodeId = o.ContentEpisodeId) "
+        + "ORDER BY o.ContentEpisodeId";
       using var reader = cmd.ExecuteReader();
       var ids = ImmutableList.CreateBuilder<Guid>();
       while (reader.Read())
         ids.Add(Guid.Parse(reader.GetString(0)));
       return ids.ToImmutable();
+    }
+
+    public LogEntry MostRecentNumberedBasketArrival(int basketId) =>
+      MostRecentNumberedBasketLocationEvent(basketId, "Arrive", null, null);
+
+    public LogEntry MostRecentNumberedBasketDeparture(
+      int basketId,
+      string locationName,
+      int locationNum
+    ) => MostRecentNumberedBasketLocationEvent(basketId, "Depart", locationName, locationNum);
+
+    private LogEntry MostRecentNumberedBasketLocationEvent(
+      int basketId,
+      string program,
+      string locationName,
+      int? locationNum
+    )
+    {
+      if (basketId <= 0)
+        throw new ArgumentOutOfRangeException(nameof(basketId));
+      if (string.IsNullOrWhiteSpace(program))
+        throw new ArgumentException("Program is required.", nameof(program));
+      if ((locationName is null) != (locationNum is null))
+        throw new ArgumentException("Location name and number must be supplied together.");
+
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+        + "FROM stations s WHERE Pallet = $basket AND StationLoc = $type AND BasketContentEpisodeId IS NULL AND Program = $program "
+        + (locationName is null ? "" : "AND StationName = $location AND StationNum = $num ")
+        + "AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY Counter DESC LIMIT 1";
+      cmd.Parameters.Add("basket", SqliteType.Integer).Value = basketId;
+      cmd.Parameters.Add("type", SqliteType.Integer).Value = (int)LogType.BasketInLocation;
+      cmd.Parameters.Add("program", SqliteType.Text).Value = program;
+      if (locationName is not null)
+      {
+        cmd.Parameters.Add("location", SqliteType.Text).Value = locationName;
+        cmd.Parameters.Add("num", SqliteType.Integer).Value = locationNum!.Value;
+      }
+      using var reader = cmd.ExecuteReader();
+      var log = LoadLog(reader, trans).FirstOrDefault();
+      trans.Commit();
+      return log;
+    }
+
+    public ImmutableDictionary<int, long> GetBasketPositionEvidenceSeen(IEnumerable<int> basketIds)
+    {
+      var ids = basketIds.Distinct().OrderBy(id => id).ToImmutableList();
+      if (ids.Any(id => id <= 0))
+        throw new ArgumentOutOfRangeException(nameof(basketIds));
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText =
+        "SELECT FirstEvidenceCounter FROM basket_position_evidence_seen WHERE BasketNum = $basket";
+      cmd.Parameters.Add("basket", SqliteType.Integer);
+      var evidence = ImmutableDictionary.CreateBuilder<int, long>();
+      foreach (var basketId in ids)
+      {
+        cmd.Parameters[0].Value = basketId;
+        if (cmd.ExecuteScalar() is long counter)
+          evidence.Add(basketId, counter);
+      }
+      return evidence.ToImmutable();
     }
 
     public IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter)
@@ -1595,7 +1649,20 @@ namespace BlackMaple.MachineFramework
             "D"
           );
           cmd.ExecuteNonQuery();
+          cmd.CommandText =
+            "DELETE FROM open_basket_content_episodes WHERE ContentEpisodeId = $contentEpisodeId";
+          cmd.ExecuteNonQuery();
         }
+
+        if (
+          log.Pallet > 0
+          && log.BasketContentEpisodeId is null
+          && log.LogType
+            is LogType.BasketInLocation
+              or LogType.BasketObservation
+              or LogType.BasketObservationCorrection
+        )
+          RecordBasketPositionEvidenceSeen(log.Pallet, ctr, trans);
 
         return log.ToLogEntry(ctr, m => this.GetMaterialDetails(m, trans));
       }
@@ -1615,6 +1682,24 @@ namespace BlackMaple.MachineFramework
         throw new ConflictRequestException(
           $"Basket content episode {contentEpisodeId:D} was finalized by basket cycle {cycleCounter}."
         );
+      cmd.CommandText =
+        "INSERT OR IGNORE INTO open_basket_content_episodes(ContentEpisodeId) VALUES($contentEpisodeId)";
+      cmd.ExecuteNonQuery();
+    }
+
+    private void RecordBasketPositionEvidenceSeen(
+      int basketId,
+      long evidenceCounter,
+      IDbTransaction trans
+    )
+    {
+      using var cmd = _connection.CreateCommand();
+      ((IDbCommand)cmd).Transaction = trans;
+      cmd.CommandText =
+        "INSERT OR IGNORE INTO basket_position_evidence_seen(BasketNum, FirstEvidenceCounter) VALUES($basket, $counter)";
+      cmd.Parameters.Add("basket", SqliteType.Integer).Value = basketId;
+      cmd.Parameters.Add("counter", SqliteType.Integer).Value = evidenceCounter;
+      cmd.ExecuteNonQuery();
     }
 
     private static EventLogMetadata MergeEventLogMetadata(
@@ -4073,29 +4158,33 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       string foreignId = null,
       string originalMessage = null,
-      EventLogMetadata metadata = null
+      EventLogMetadata metadata = null,
+      IReadOnlyDictionary<string, string> extraData = null
     )
     {
       return AddEntryInTransaction(trans =>
       {
         var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(basketIdentity);
+        var entry = new NewEventLogEntry
+        {
+          Material = mats,
+          Pallet = recordedBasketId,
+          BasketContentEpisodeId = contentEpisodeId,
+          LogType = LogType.BasketContentSnapshot,
+          LocationName = "Basket",
+          LocationNum = 1,
+          Program = "Snapshot",
+          StartOfCycle = false,
+          EndTimeUTC = timeUTC,
+          Result = "CompleteContent",
+          ElapsedTime = TimeSpan.Zero,
+          ActiveOperationTime = TimeSpan.Zero,
+        };
+        foreach (var (key, value) in extraData ?? ImmutableDictionary<string, string>.Empty)
+          entry.ProgramDetails.Add(key, value);
         return AddLogEntry(
           trans,
-          new NewEventLogEntry
-          {
-            Material = mats,
-            Pallet = recordedBasketId,
-            BasketContentEpisodeId = contentEpisodeId,
-            LogType = LogType.BasketContentSnapshot,
-            LocationName = "Basket",
-            LocationNum = 1,
-            Program = "Snapshot",
-            StartOfCycle = false,
-            EndTimeUTC = timeUTC,
-            Result = "CompleteContent",
-            ElapsedTime = TimeSpan.Zero,
-            ActiveOperationTime = TimeSpan.Zero,
-          },
+          entry,
           MergeEventLogMetadata(metadata, foreignId, originalMessage)
         );
       });

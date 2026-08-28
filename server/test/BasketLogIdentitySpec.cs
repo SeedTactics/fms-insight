@@ -131,6 +131,107 @@ public sealed class BasketLogIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task SnapshotRoundTripsOptionalProgramDetails()
+  {
+    var id = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+
+    var snapshot = repository.RecordBasketContentSnapshot(
+      [],
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id },
+      DateTime.UtcNow,
+      extraData: ImmutableDictionary<string, string>.Empty.Add("sensor:1", "tag-A")
+    );
+
+    await Assert
+      .That(repository.GetRecentLog(0).Single(e => e.Counter == snapshot.Counter).ProgramDetails)
+      .IsEquivalentTo(ImmutableDictionary<string, string>.Empty.Add("sensor:1", "tag-A"));
+  }
+
+  [Test]
+  public async Task NumberedLocationEvidenceRemainsQueryableAcrossBasketCycle()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var arrival = repository.RecordBasketArriveLocation(
+      [],
+      basketId: 4,
+      locationName: "Storage",
+      locationPosition: 20,
+      timeUTC: DateTime.UtcNow
+    );
+    repository.RecordBasketLifecycleOperation(
+      new BasketLifecycleOperation
+      {
+        CycleBoundaries =
+        [
+          new BasketCycleBoundary.End
+          {
+            BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 4 },
+            Material = [],
+            ReconciledBasketIdentities = [],
+          },
+        ],
+      },
+      locationNum: 3,
+      timeUTC: DateTime.UtcNow,
+      idempotencyKey: "cycle-after-arrival"
+    );
+
+    await Assert
+      .That(repository.CurrentBasketLog(4, includeLastCycleEvt: true))
+      .Count()
+      .IsEqualTo(1);
+    await Assert
+      .That(repository.MostRecentNumberedBasketArrival(4)?.Counter)
+      .IsEqualTo(arrival.Counter);
+    await Assert.That(repository.GetBasketPositionEvidenceSeen([4])[4]).IsEqualTo(arrival.Counter);
+
+    var departure = repository.RecordBasketDepartLocation(
+      [],
+      basketId: 4,
+      locationName: "Storage",
+      locationPosition: 20,
+      timeUTC: DateTime.UtcNow,
+      elapsed: TimeSpan.Zero
+    );
+    await Assert
+      .That(repository.MostRecentNumberedBasketDeparture(4, "Storage", 20)?.Counter)
+      .IsEqualTo(departure.Counter);
+  }
+
+  [Test]
+  public async Task BoundedNumberedBasketQueriesUseDedicatedIndexes()
+  {
+    using var connection = new SqliteConnection("Data Source=" + _databaseFile);
+    connection.Open();
+
+    await Assert
+      .That(
+        QueryPlan(
+          connection,
+          "SELECT Counter FROM stations WHERE Pallet = 4 AND BasketContentEpisodeId IS NULL AND Counter > 10 ORDER BY Counter"
+        )
+      )
+      .Contains("stations_pallet_counter");
+    await Assert
+      .That(
+        QueryPlan(
+          connection,
+          "SELECT Counter FROM stations WHERE Pallet = 4 AND StationLoc = 116 AND BasketContentEpisodeId IS NULL AND Program = 'Arrive' ORDER BY Counter DESC LIMIT 1"
+        )
+      )
+      .Contains("stations_numbered_basket_location_program_counter");
+    await Assert
+      .That(
+        QueryPlan(
+          connection,
+          "SELECT Counter FROM stations WHERE Pallet = 4 AND StationLoc = 116 AND BasketContentEpisodeId IS NULL AND Program = 'Depart' AND StationName = 'Storage' AND StationNum = 20 ORDER BY Counter DESC LIMIT 1"
+        )
+      )
+      .Contains("stations_numbered_basket_location");
+  }
+
+  [Test]
   public async Task BasketEvidenceForeignIdsRemainCorrelationMetadata()
   {
     var id = Guid.NewGuid();
@@ -2157,6 +2258,17 @@ public sealed class BasketLogIdentitySpec : IDisposable
       exception = caught;
     }
     await Assert.That(exception).IsTypeOf<TException>();
+  }
+
+  private static string QueryPlan(SqliteConnection connection, string sql)
+  {
+    using var command = connection.CreateCommand();
+    command.CommandText = "EXPLAIN QUERY PLAN " + sql;
+    using var reader = command.ExecuteReader();
+    var details = ImmutableList.CreateBuilder<string>();
+    while (reader.Read())
+      details.Add(reader.GetString(3));
+    return string.Join("\n", details);
   }
 
   private static BasketEvidenceSource IntegrationSource() =>
