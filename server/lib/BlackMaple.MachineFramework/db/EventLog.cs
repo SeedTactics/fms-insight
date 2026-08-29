@@ -1687,6 +1687,38 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
     }
 
+    private void RebuildOpenContentEpisodeProjection(Guid contentEpisodeId, IDbTransaction trans)
+    {
+      using var cmd = _connection.CreateCommand();
+      ((IDbCommand)cmd).Transaction = trans;
+      cmd.CommandText =
+        "SELECT EXISTS("
+        + " SELECT 1 FROM stations s"
+        + " WHERE s.BasketContentEpisodeId = $contentEpisodeId"
+        + " AND s.StationLoc IN ($loadUnloadType, $locationType, $snapshotType, $cycleType)"
+        + " AND "
+        + ignoreInvalidEventCondition
+        + ") AND NOT EXISTS("
+        + " SELECT 1 FROM basket_cycle_content_episode_ids f"
+        + " WHERE f.BasketContentEpisodeId = $contentEpisodeId"
+        + ")";
+      cmd.Parameters.Add("contentEpisodeId", SqliteType.Text).Value = contentEpisodeId.ToString(
+        "D"
+      );
+      cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
+        LogType.BasketLoadUnload;
+      cmd.Parameters.Add("locationType", SqliteType.Integer).Value = (int)LogType.BasketInLocation;
+      cmd.Parameters.Add("snapshotType", SqliteType.Integer).Value = (int)
+        LogType.BasketContentSnapshot;
+      cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
+      var isOpen = (long)cmd.ExecuteScalar() != 0;
+
+      cmd.CommandText = isOpen
+        ? "INSERT OR IGNORE INTO open_basket_content_episodes(ContentEpisodeId) VALUES($contentEpisodeId)"
+        : "DELETE FROM open_basket_content_episodes WHERE ContentEpisodeId = $contentEpisodeId";
+      cmd.ExecuteNonQuery();
+    }
+
     private void RecordBasketPositionEvidenceSeen(
       int basketId,
       long evidenceCounter,
@@ -5196,7 +5228,7 @@ namespace BlackMaple.MachineFramework
       using var checkQueueCmd = _connection.CreateCommand();
 
       getCycles.CommandText =
-        "SELECT s.Counter FROM stations s WHERE "
+        "SELECT s.Counter, s.BasketContentEpisodeId FROM stations s WHERE "
         + " EXISTS ("
         + "   SELECT 1 FROM stations_mat m "
         + "        WHERE s.Counter = m.Counter "
@@ -5245,12 +5277,15 @@ namespace BlackMaple.MachineFramework
       // Determine the complete affected event and material sets before changing anything.
       var invalidatedCntrs = new List<long>();
       var allMatIds = new HashSet<(long matId, int proc)>();
+      var affectedContentEpisodeIds = new HashSet<Guid>();
       using (var reader = getCycles.ExecuteReader())
       {
         while (reader.Read())
         {
           var cntr = reader.GetInt64(0);
           invalidatedCntrs.Add(cntr);
+          if (!reader.IsDBNull(1))
+            affectedContentEpisodeIds.Add(Guid.Parse(reader.GetString(1)));
 
           getMatsCmd.Parameters[0].Value = cntr;
           using (var matIdReader = getMatsCmd.ExecuteReader())
@@ -5328,6 +5363,9 @@ namespace BlackMaple.MachineFramework
         addMessageCmd.Parameters[0].Value = cntr;
         addMessageCmd.ExecuteNonQuery();
       }
+
+      foreach (var contentEpisodeId in affectedContentEpisodeIds)
+        RebuildOpenContentEpisodeProjection(contentEpisodeId, trans);
 
       foreach (var (affectedMatId, affectedProcess) in allMatIds)
       {

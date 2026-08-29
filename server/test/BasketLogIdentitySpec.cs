@@ -330,7 +330,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
       idempotencyKey: "hinted-uuid-load-operation",
       foreignId: "hinted-uuid-load"
     );
-    repository.RecordBasketObservation(
+    var observation = repository.RecordBasketObservation(
       Guid.NewGuid(),
       8,
       BasketLoadStation(),
@@ -347,6 +347,74 @@ public sealed class BasketLogIdentitySpec : IDisposable
     await Assert
       .That(repository.CurrentBasketLog(numberedIdentity).Select(log => log.LogType))
       .IsEquivalentTo([LogType.BasketObservation]);
+
+    repository.CorrectBasketObservation(
+      Guid.NewGuid(),
+      observation.ObservationId,
+      replacement: null,
+      IntegrationSource(),
+      time.AddMinutes(4),
+      "Retract the association."
+    );
+
+    await Assert.That(repository.GetUnresolvedOpenBasketContentEpisodeIds()).IsEmpty();
+  }
+
+  [Test]
+  public async Task InvalidatingAllUuidBasketEventsRemovesOpenEpisode()
+  {
+    var time = new DateTime(2026, 8, 28, 10, 0, 0, DateTimeKind.Utc);
+    var contentEpisodeId = Guid.NewGuid();
+    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = contentEpisodeId };
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(identity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: time.AddMinutes(1),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "invalidate-only-uuid-events"
+    );
+
+    await Assert
+      .That(repository.GetUnresolvedOpenBasketContentEpisodeIds())
+      .IsEquivalentTo([contentEpisodeId]);
+
+    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(2));
+
+    await Assert.That(repository.CurrentBasketLog(identity)).IsEmpty();
+    await Assert.That(repository.GetUnresolvedOpenBasketContentEpisodeIds()).IsEmpty();
+  }
+
+  [Test]
+  public async Task InvalidatingSomeUuidBasketEventsKeepsEpisodeOpen()
+  {
+    var time = new DateTime(2026, 8, 28, 11, 0, 0, DateTimeKind.Utc);
+    var contentEpisodeId = Guid.NewGuid();
+    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = contentEpisodeId };
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(identity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: time.AddMinutes(1),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "invalidate-some-uuid-events"
+    );
+    repository.RecordBasketArriveLocation([], identity, "Staging", 1, time.AddMinutes(2));
+
+    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(3));
+
+    await Assert
+      .That(repository.CurrentBasketLog(identity).Select(log => log.LogType))
+      .IsEquivalentTo([LogType.BasketInLocation]);
+    await Assert
+      .That(repository.GetUnresolvedOpenBasketContentEpisodeIds())
+      .IsEquivalentTo([contentEpisodeId]);
   }
 
   [Test]
