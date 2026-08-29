@@ -64,6 +64,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     ImmutableList<LogEntry> GetLogForCorrelationId(string correlationId);
+    ImmutableList<LogEntry> GetLogForForeignID(string foreignID);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
     ImmutableList<LogEntry> CurrentBasketLog(

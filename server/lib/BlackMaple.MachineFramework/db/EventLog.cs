@@ -397,6 +397,21 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public ImmutableList<LogEntry> GetLogForForeignID(string foreignID)
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+        + "FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
+      cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
+      using var reader = cmd.ExecuteReader();
+      var entries = LoadLog(reader, trans).ToImmutableList();
+      trans.Commit();
+      return entries;
+    }
+
     public LogEntry MostRecentLogEntryLessOrEqualToForeignID(string foreignID)
     {
       using (var trans = _connection.BeginTransaction())
