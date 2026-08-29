@@ -367,6 +367,45 @@ namespace BlackMaple.MachineFramework
       return corrections;
     }
 
+    public BasketObservationCorrection GetBasketObservationCorrection(Guid correctionId)
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT Counter FROM basket_observation_corrections WHERE CorrectionId = $id";
+      cmd.Parameters.Add("id", SqliteType.Text).Value = correctionId.ToString("D");
+      var counter = cmd.ExecuteScalar();
+      if (counter is not long value)
+        return null;
+      var correction = BasketObservationCorrectionForCounter(value, trans);
+      trans.Commit();
+      return correction;
+    }
+
+    public ImmutableList<BasketObservationCorrection> GetBasketObservationCorrectionsAfter(
+      long counter
+    )
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT Counter FROM basket_observation_corrections WHERE Counter > $counter ORDER BY Counter";
+      cmd.Parameters.Add("counter", SqliteType.Integer).Value = counter;
+      using var reader = cmd.ExecuteReader();
+      var counters = ImmutableList.CreateBuilder<long>();
+      while (reader.Read())
+        counters.Add(reader.GetInt64(0));
+      var corrections = counters
+        .Select(correctionCounter =>
+          BasketObservationCorrectionForCounter(correctionCounter, trans)
+        )
+        .ToImmutableList();
+      trans.Commit();
+      return corrections;
+    }
+
     private AddedBasketObservation AddBasketObservation(
       Guid observationId,
       int basketId,

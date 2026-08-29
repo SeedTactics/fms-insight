@@ -72,6 +72,11 @@ namespace BlackMaple.MachineFramework
       BasketLogIdentity basketIdentity,
       bool includeLastCycleEvt = false
     );
+    ImmutableList<LogEntry> GetBasketLogForCounterRange(
+      BasketLogIdentity basketIdentity,
+      long afterCounter,
+      long beforeCounter
+    );
 
     /// <summary>
     /// Returns the bounded active projection of basket observations. Each result contributes
@@ -84,9 +89,13 @@ namespace BlackMaple.MachineFramework
 
     [return: MaybeNull]
     BasketObservation GetBasketObservation(Guid observationId);
+
+    [return: MaybeNull]
+    BasketObservationCorrection GetBasketObservationCorrection(Guid correctionId);
     ImmutableList<BasketObservationCorrection> GetBasketObservationCorrections(
       Guid? targetObservationId = null
     );
+    ImmutableList<BasketObservationCorrection> GetBasketObservationCorrectionsAfter(long counter);
     ImmutableList<BasketRegionSurvey> GetBasketRegionSurveys(
       BasketPosition region = null,
       long? afterCounter = null

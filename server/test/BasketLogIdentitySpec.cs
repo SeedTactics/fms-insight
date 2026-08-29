@@ -1783,7 +1783,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
       }
     );
     var firstEvidenceTime = new DateTime(2026, 7, 24, 10, 0, 0, DateTimeKind.Utc);
-    repository.RecordBasketContentSnapshot(
+    var firstSnapshot = repository.RecordBasketContentSnapshot(
       firstContents,
       new BasketLogIdentity.ContentEpisode { ContentEpisodeId = first },
       firstEvidenceTime,
@@ -1851,6 +1851,28 @@ public sealed class BasketLogIdentitySpec : IDisposable
     await Assert.That(cycleEnd.BasketCycleEndContentEpisodeIds).IsEquivalentTo([first, second]);
     await Assert.That(cycleEnd.Material.Select(material => material.Face)).IsEquivalentTo([2, 8]);
     await Assert.That(cycleEnd.ElapsedTime).IsEqualTo(TimeSpan.FromMinutes(10));
+    await Assert
+      .That(
+        repository
+          .GetBasketLogForCounterRange(
+            new BasketLogIdentity.ContentEpisode { ContentEpisodeId = first },
+            0,
+            cycleEnd.Counter + 1
+          )
+          .Select(log => log.Counter)
+      )
+      .IsEquivalentTo([firstSnapshot.Counter, logs[0].Counter, cycleEnd.Counter]);
+    await Assert
+      .That(
+        repository
+          .GetBasketLogForCounterRange(
+            new BasketLogIdentity.NumberedBasket { BasketId = 9 },
+            logs[0].Counter,
+            cycleEnd.Counter + 1
+          )
+          .Select(log => log.Counter)
+      )
+      .IsEquivalentTo([cycleEnd.Counter]);
     await Assert
       .That(retry.Select(log => log.Counter))
       .IsEquivalentTo(logs.Select(log => log.Counter));

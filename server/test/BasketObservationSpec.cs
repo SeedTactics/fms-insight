@@ -416,6 +416,10 @@ public sealed class BasketObservationSpec : IDisposable
     );
 
     await Assert.That(retry.Correction).IsEqualTo(first.Correction);
+    await Assert
+      .That(repository.GetBasketObservationCorrection(correctionId))
+      .IsEqualTo(first.Correction);
+    await Assert.That(repository.GetBasketObservationCorrection(Guid.NewGuid())).IsNull();
     await Assert.That(retry.Replacement).IsEquivalentTo(first.Replacement);
     await Assert.That(first.Replacement!.BasketId).IsEqualTo(4);
     await Assert.That(first.Replacement.ContentEpisodeIds).IsEquivalentTo([contentEpisodeId]);
@@ -423,6 +427,12 @@ public sealed class BasketObservationSpec : IDisposable
     await Assert.That(evidence.Observation).IsEquivalentTo(first.Replacement);
     await Assert.That(evidence.IsCurrentPositionEvidence).IsTrue();
     await Assert.That(evidence.ActiveContentEpisodeIds).IsEquivalentTo([contentEpisodeId]);
+    await Assert
+      .That(repository.GetBasketObservationCorrectionsAfter(first.Correction.EventCounter - 1))
+      .IsEquivalentTo([first.Correction]);
+    await Assert
+      .That(repository.GetBasketObservationCorrectionsAfter(first.Correction.EventCounter))
+      .IsEmpty();
     await Assert
       .That(repository.GetRecentLog(0).Select(entry => entry.LogType))
       .IsEquivalentTo([

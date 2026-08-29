@@ -866,6 +866,54 @@ namespace BlackMaple.MachineFramework
       return logs;
     }
 
+    public ImmutableList<LogEntry> GetBasketLogForCounterRange(
+      BasketLogIdentity basketIdentity,
+      long afterCounter,
+      long beforeCounter
+    )
+    {
+      if (beforeCounter <= afterCounter)
+        throw new ArgumentException("The basket log counter range must be increasing.");
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      var identityCondition = basketIdentity switch
+      {
+        BasketLogIdentity.NumberedBasket { BasketId: > 0 } =>
+          "s.Pallet = $basket AND s.BasketContentEpisodeId IS NULL",
+        BasketLogIdentity.ContentEpisode episode when episode.ContentEpisodeId != Guid.Empty =>
+          "(s.BasketContentEpisodeId = $episode OR EXISTS("
+            + " SELECT 1 FROM basket_cycle_content_episode_ids c"
+            + " WHERE c.CycleCounter = s.Counter AND c.BasketContentEpisodeId = $episode"
+            + "))",
+        _ => throw new ArgumentException("Invalid basket identity.", nameof(basketIdentity)),
+      };
+      cmd.CommandText =
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+        + "FROM stations s WHERE Counter > $after AND Counter < $before AND "
+        + identityCondition
+        + " AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY Counter";
+      cmd.Parameters.Add("after", SqliteType.Integer).Value = afterCounter;
+      cmd.Parameters.Add("before", SqliteType.Integer).Value = beforeCounter;
+      switch (basketIdentity)
+      {
+        case BasketLogIdentity.NumberedBasket numbered:
+          cmd.Parameters.Add("basket", SqliteType.Integer).Value = numbered.BasketId;
+          break;
+        case BasketLogIdentity.ContentEpisode episode:
+          cmd.Parameters.Add("episode", SqliteType.Text).Value = episode.ContentEpisodeId.ToString(
+            "D"
+          );
+          break;
+      }
+      using var reader = cmd.ExecuteReader();
+      var logs = LoadLog(reader, trans).ToImmutableList();
+      trans.Commit();
+      return logs;
+    }
+
     private ImmutableList<LogEntry> CurrentNumberedBasketAndFragments(
       int basketId,
       bool includeLastCycleEvt,
