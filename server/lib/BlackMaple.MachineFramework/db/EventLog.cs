@@ -694,7 +694,7 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
-        + "FROM stations s WHERE Pallet = $pal AND Counter >= COALESCE(("
+        + "FROM stations s WHERE Pallet = $pal AND BasketContentEpisodeId IS NULL AND Counter >= COALESCE(("
         + " SELECT Counter FROM stations"
         + " WHERE Pallet = $pal AND Result = 'PalletCycle'"
         // One load/unload completion can write both a cycle end and the next cycle start. The
@@ -877,24 +877,32 @@ namespace BlackMaple.MachineFramework
       using var trans = _connection.BeginTransaction();
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
-      var identityCondition = basketIdentity switch
+      const string columns =
+        "s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.BasketContentEpisodeId, s.ForeignID, s.CorrelationId ";
+      cmd.CommandText = basketIdentity switch
       {
-        BasketLogIdentity.NumberedBasket { BasketId: > 0 } =>
-          "s.Pallet = $basket AND s.BasketContentEpisodeId IS NULL",
+        BasketLogIdentity.NumberedBasket { BasketId: > 0 } => "SELECT "
+          + columns
+          + "FROM stations s WHERE s.Pallet = $basket AND s.BasketContentEpisodeId IS NULL "
+          + "AND s.Counter > $after AND s.Counter < $before AND "
+          + ignoreInvalidEventCondition
+          + " ORDER BY s.Counter",
         BasketLogIdentity.ContentEpisode episode when episode.ContentEpisodeId != Guid.Empty =>
-          "(s.BasketContentEpisodeId = $episode OR EXISTS("
-            + " SELECT 1 FROM basket_cycle_content_episode_ids c"
-            + " WHERE c.CycleCounter = s.Counter AND c.BasketContentEpisodeId = $episode"
-            + "))",
+          "SELECT "
+            + columns
+            + "FROM stations s WHERE s.BasketContentEpisodeId = $episode "
+            + "AND s.Counter > $after AND s.Counter < $before AND "
+            + ignoreInvalidEventCondition
+            + " UNION ALL SELECT "
+            + columns
+            + "FROM basket_cycle_content_episode_ids c "
+            + "JOIN stations s ON s.Counter = c.CycleCounter "
+            + "WHERE c.BasketContentEpisodeId = $episode "
+            + "AND s.Counter > $after AND s.Counter < $before AND "
+            + ignoreInvalidEventCondition
+            + " ORDER BY Counter",
         _ => throw new ArgumentException("Invalid basket identity.", nameof(basketIdentity)),
       };
-      cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
-        + "FROM stations s WHERE Counter > $after AND Counter < $before AND "
-        + identityCondition
-        + " AND "
-        + ignoreInvalidEventCondition
-        + " ORDER BY Counter";
       cmd.Parameters.Add("after", SqliteType.Integer).Value = afterCounter;
       cmd.Parameters.Add("before", SqliteType.Integer).Value = beforeCounter;
       switch (basketIdentity)

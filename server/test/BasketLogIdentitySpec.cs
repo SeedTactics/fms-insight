@@ -200,7 +200,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task BoundedNumberedBasketQueriesUseDedicatedIndexes()
+  public async Task BoundedBasketQueriesUseDedicatedIndexes()
   {
     using var connection = new SqliteConnection("Data Source=" + _databaseFile);
     connection.Open();
@@ -229,6 +229,23 @@ public sealed class BasketLogIdentitySpec : IDisposable
         )
       )
       .Contains("stations_numbered_basket_location");
+
+    var palletWindowPlan = QueryPlan(
+      connection,
+      "SELECT Counter FROM stations s WHERE Pallet = 4 AND BasketContentEpisodeId IS NULL AND Counter >= COALESCE((SELECT Counter FROM stations WHERE Pallet = 4 AND Result = 'PalletCycle' ORDER BY Counter DESC LIMIT 1 OFFSET 2), 0) AND NOT EXISTS (SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated') AND StationLoc != 15 ORDER BY Counter"
+    );
+    await Assert.That(palletWindowPlan).Contains("stations_pallet_counter");
+    await Assert.That(palletWindowPlan).DoesNotContain("USE TEMP B-TREE FOR ORDER BY");
+
+    var contentEpisodeWindowPlan = QueryPlan(
+      connection,
+      "SELECT s.Counter FROM stations s WHERE s.BasketContentEpisodeId = 'episode' AND s.Counter > 10 AND s.Counter < 1000000 AND NOT EXISTS (SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated') AND StationLoc != 15 UNION ALL SELECT s.Counter FROM basket_cycle_content_episode_ids c JOIN stations s ON s.Counter = c.CycleCounter WHERE c.BasketContentEpisodeId = 'episode' AND s.Counter > 10 AND s.Counter < 1000000 AND NOT EXISTS (SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated') AND StationLoc != 15 ORDER BY Counter"
+    );
+    await Assert.That(contentEpisodeWindowPlan).Contains("stations_basket_content_episode_id");
+    await Assert
+      .That(contentEpisodeWindowPlan)
+      .Contains("sqlite_autoindex_basket_cycle_content_episode_ids_1");
+    await Assert.That(contentEpisodeWindowPlan).DoesNotContain("(rowid>? AND rowid<?)");
   }
 
   [Test]
