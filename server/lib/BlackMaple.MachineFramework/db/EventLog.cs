@@ -687,6 +687,29 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public ImmutableList<LogEntry> CurrentAndPreviousPalletLog(int pallet)
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+        + "FROM stations s WHERE Pallet = $pal AND Counter >= COALESCE(("
+        + " SELECT Counter FROM stations"
+        + " WHERE Pallet = $pal AND Result = 'PalletCycle'"
+        // One load/unload completion can write both a cycle end and the next cycle start. The
+        // third marker is therefore the bounded beginning of the immediately previous cycle.
+        + " ORDER BY Counter DESC LIMIT 1 OFFSET 2"
+        + "), 0) AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY Counter ASC";
+      cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
+      using var reader = cmd.ExecuteReader();
+      var entries = LoadLog(reader, trans).ToImmutableList();
+      trans.Commit();
+      return entries;
+    }
+
     private List<LogEntry> CurrentPalletLog(
       int pallet,
       bool includeLastPalletCycleEvt,
