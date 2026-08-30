@@ -135,6 +135,104 @@ public sealed class BasketObservationSpec : IDisposable
   }
 
   [Test]
+  public async Task NumberedCurrentLogTracksActiveUuidAssociationAcrossPositionAndCorrections()
+  {
+    var associatedEpisode = Guid.NewGuid();
+    var unrelatedEpisode = Guid.NewGuid();
+    var associationId = Guid.NewGuid();
+    var replacementId = Guid.NewGuid();
+    var time = new DateTime(2026, 8, 21, 10, 0, 0, DateTimeKind.Utc);
+    using var repository = _repositoryConfig.OpenConnection();
+    var associatedSnapshot = repository.RecordBasketContentSnapshot(
+      [],
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = associatedEpisode },
+      time
+    );
+    var unrelatedSnapshot = repository.RecordBasketContentSnapshot(
+      [],
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = unrelatedEpisode },
+      time
+    );
+    repository.RecordBasketObservation(
+      associationId,
+      4,
+      RobotZone(1),
+      [associatedEpisode],
+      OperatorSource(),
+      time.AddMinutes(1)
+    );
+    repository.RecordBasketObservation(
+      Guid.NewGuid(),
+      4,
+      Storage(),
+      [],
+      OperatorSource(),
+      time.AddMinutes(2)
+    );
+
+    var basketFour = repository.CurrentBasketLog(
+      new BasketLogIdentity.NumberedBasket { BasketId = 4 }
+    );
+    await Assert
+      .That(basketFour.Select(entry => entry.Counter))
+      .Contains(associatedSnapshot.Counter);
+    await Assert
+      .That(basketFour.Select(entry => entry.Counter))
+      .DoesNotContain(unrelatedSnapshot.Counter);
+
+    repository.CorrectBasketObservation(
+      Guid.NewGuid(),
+      associationId,
+      new BasketObservationReplacement
+      {
+        ObservationId = replacementId,
+        BasketId = 5,
+        Position = RobotZone(1),
+        ContentEpisodeIds = [associatedEpisode],
+        Source = OperatorSource("recovery"),
+      },
+      OperatorSource("recovery"),
+      time.AddMinutes(3),
+      "The basket label was 5, not 4."
+    );
+
+    await Assert
+      .That(
+        repository
+          .CurrentBasketLog(new BasketLogIdentity.NumberedBasket { BasketId = 4 })
+          .Any(entry => entry.BasketContentEpisodeId == associatedEpisode)
+      )
+      .IsFalse();
+    await Assert
+      .That(
+        repository
+          .CurrentBasketLog(new BasketLogIdentity.NumberedBasket { BasketId = 5 })
+          .Select(entry => entry.Counter)
+      )
+      .Contains(associatedSnapshot.Counter);
+
+    repository.CorrectBasketObservation(
+      Guid.NewGuid(),
+      replacementId,
+      replacement: null,
+      OperatorSource("recovery"),
+      time.AddMinutes(4),
+      "Retracted after a second inspection."
+    );
+
+    await Assert
+      .That(
+        repository
+          .CurrentBasketLog(new BasketLogIdentity.NumberedBasket { BasketId = 5 })
+          .Any(entry => entry.BasketContentEpisodeId == associatedEpisode)
+      )
+      .IsFalse();
+    await Assert
+      .That(repository.GetUnresolvedOpenBasketContentEpisodeIds())
+      .IsEquivalentTo([associatedEpisode, unrelatedEpisode]);
+  }
+
+  [Test]
   public async Task LaterLocationEvidenceSupersedesChronologicallyWithoutCorrection()
   {
     var time = new DateTime(2026, 8, 21, 10, 0, 0, DateTimeKind.Utc);
@@ -318,6 +416,10 @@ public sealed class BasketObservationSpec : IDisposable
     );
 
     await Assert.That(retry.Correction).IsEqualTo(first.Correction);
+    await Assert
+      .That(repository.GetBasketObservationCorrection(correctionId))
+      .IsEqualTo(first.Correction);
+    await Assert.That(repository.GetBasketObservationCorrection(Guid.NewGuid())).IsNull();
     await Assert.That(retry.Replacement).IsEquivalentTo(first.Replacement);
     await Assert.That(first.Replacement!.BasketId).IsEqualTo(4);
     await Assert.That(first.Replacement.ContentEpisodeIds).IsEquivalentTo([contentEpisodeId]);
@@ -325,6 +427,12 @@ public sealed class BasketObservationSpec : IDisposable
     await Assert.That(evidence.Observation).IsEquivalentTo(first.Replacement);
     await Assert.That(evidence.IsCurrentPositionEvidence).IsTrue();
     await Assert.That(evidence.ActiveContentEpisodeIds).IsEquivalentTo([contentEpisodeId]);
+    await Assert
+      .That(repository.GetBasketObservationCorrectionsAfter(first.Correction.EventCounter - 1))
+      .IsEquivalentTo([first.Correction]);
+    await Assert
+      .That(repository.GetBasketObservationCorrectionsAfter(first.Correction.EventCounter))
+      .IsEmpty();
     await Assert
       .That(repository.GetRecentLog(0).Select(entry => entry.LogType))
       .IsEquivalentTo([
@@ -585,6 +693,33 @@ public sealed class BasketObservationSpec : IDisposable
         )
       )
     );
+  }
+
+  [Test]
+  public async Task PositionEvidenceMarkerSurvivesObservationRetraction()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var observation = repository.RecordBasketObservation(
+      Guid.NewGuid(),
+      4,
+      Storage(),
+      [],
+      OperatorSource(),
+      DateTime.UtcNow
+    );
+    repository.CorrectBasketObservation(
+      Guid.NewGuid(),
+      observation.ObservationId,
+      replacement: null,
+      OperatorSource(),
+      DateTime.UtcNow,
+      "retracted"
+    );
+
+    await Assert.That(repository.GetActiveBasketObservationEvidence(4)).IsEmpty();
+    await Assert
+      .That(repository.GetBasketPositionEvidenceSeen([4]))
+      .IsEquivalentTo(ImmutableDictionary<int, long>.Empty.Add(4, observation.EventCounter));
   }
 
   private static void AssertActiveEvidenceInvariant(

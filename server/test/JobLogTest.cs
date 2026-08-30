@@ -1580,6 +1580,11 @@ namespace BlackMaple.FMSInsight.Tests
 
       // added 2 hours in the past, but still most recent since recent is checking counters, not time
       _jobLog.MostRecentLogEntryForForeignID("for1").ShouldBeEquivalentTo(expectedFor1Serial);
+      _jobLog
+        .GetLogForForeignID("for1")
+        .Select(entry => entry.Counter)
+        .ShouldBe([log1.Counter, expectedFor1Serial.Counter]);
+      _jobLog.GetLogForForeignID("missing").ShouldBeEmpty();
     }
 
     [Test]

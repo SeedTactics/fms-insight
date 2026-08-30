@@ -251,6 +251,76 @@ public sealed class BasketRegionSurveySpec : IDisposable
   }
 
   [Test]
+  public async Task CurrentEvidenceKeepsPositiveAndConclusiveSurveyLifetimesSeparate()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var conclusive = repository.RecordBasketRegionSurvey(
+      Guid.NewGuid(),
+      Storage(),
+      [],
+      0,
+      BasketRegionSurveyCompleteness.Complete,
+      DateTime.UtcNow,
+      OperatorSource()
+    );
+    repository.RecordBasketRegionSurvey(
+      Guid.NewGuid(),
+      Storage(),
+      [],
+      0,
+      BasketRegionSurveyCompleteness.Partial,
+      DateTime.UtcNow,
+      OperatorSource()
+    );
+    repository.RecordBasketRegionSurvey(
+      Guid.NewGuid(),
+      Storage(),
+      [],
+      1,
+      BasketRegionSurveyCompleteness.Complete,
+      DateTime.UtcNow,
+      OperatorSource()
+    );
+
+    await Assert
+      .That(repository.GetCurrentBasketRegionSurveyEvidence().Select(s => s.EventCounter))
+      .IsEquivalentTo([conclusive.EventCounter]);
+
+    var positive = repository.RecordBasketRegionSurvey(
+      Guid.NewGuid(),
+      Storage(),
+      [4, 5],
+      0,
+      BasketRegionSurveyCompleteness.Partial,
+      DateTime.UtcNow,
+      OperatorSource()
+    );
+    await Assert
+      .That(repository.GetCurrentBasketRegionSurveyEvidence().Select(s => s.EventCounter))
+      .IsEquivalentTo([conclusive.EventCounter, positive.EventCounter]);
+    await Assert
+      .That(repository.GetBasketPositionEvidenceSeen([4, 5]))
+      .IsEquivalentTo(
+        ImmutableDictionary<int, long>
+          .Empty.Add(4, positive.EventCounter)
+          .Add(5, positive.EventCounter)
+      );
+
+    var replacement = repository.RecordBasketRegionSurvey(
+      Guid.NewGuid(),
+      Storage(),
+      [],
+      0,
+      BasketRegionSurveyCompleteness.Complete,
+      DateTime.UtcNow,
+      OperatorSource()
+    );
+    await Assert
+      .That(repository.GetCurrentBasketRegionSurveyEvidence().Select(s => s.EventCounter))
+      .IsEquivalentTo([positive.EventCounter, replacement.EventCounter]);
+  }
+
+  [Test]
   public async Task PayloadAndCanonicalEventRollBackTogether()
   {
     using (var connection = new SqliteConnection("Data Source=" + _databaseFile))

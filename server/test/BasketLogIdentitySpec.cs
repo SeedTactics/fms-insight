@@ -131,6 +131,124 @@ public sealed class BasketLogIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task SnapshotRoundTripsOptionalProgramDetails()
+  {
+    var id = Guid.NewGuid();
+    using var repository = _repositoryConfig.OpenConnection();
+
+    var snapshot = repository.RecordBasketContentSnapshot(
+      [],
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id },
+      DateTime.UtcNow,
+      extraData: ImmutableDictionary<string, string>.Empty.Add("sensor:1", "tag-A")
+    );
+
+    await Assert
+      .That(repository.GetRecentLog(0).Single(e => e.Counter == snapshot.Counter).ProgramDetails)
+      .IsEquivalentTo(ImmutableDictionary<string, string>.Empty.Add("sensor:1", "tag-A"));
+  }
+
+  [Test]
+  public async Task NumberedLocationEvidenceRemainsQueryableAcrossBasketCycle()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var arrival = repository.RecordBasketArriveLocation(
+      [],
+      basketId: 4,
+      locationName: "Storage",
+      locationPosition: 20,
+      timeUTC: DateTime.UtcNow
+    );
+    repository.RecordBasketLifecycleOperation(
+      new BasketLifecycleOperation
+      {
+        CycleBoundaries =
+        [
+          new BasketCycleBoundary.End
+          {
+            BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 4 },
+            Material = [],
+            ReconciledBasketIdentities = [],
+          },
+        ],
+      },
+      locationNum: 3,
+      timeUTC: DateTime.UtcNow,
+      idempotencyKey: "cycle-after-arrival"
+    );
+
+    await Assert
+      .That(repository.CurrentBasketLog(4, includeLastCycleEvt: true))
+      .Count()
+      .IsEqualTo(1);
+    await Assert
+      .That(repository.MostRecentNumberedBasketArrival(4)?.Counter)
+      .IsEqualTo(arrival.Counter);
+    await Assert.That(repository.GetBasketPositionEvidenceSeen([4])[4]).IsEqualTo(arrival.Counter);
+
+    var departure = repository.RecordBasketDepartLocation(
+      [],
+      basketId: 4,
+      locationName: "Storage",
+      locationPosition: 20,
+      timeUTC: DateTime.UtcNow,
+      elapsed: TimeSpan.Zero
+    );
+    await Assert
+      .That(repository.MostRecentNumberedBasketDeparture(4, "Storage", 20)?.Counter)
+      .IsEqualTo(departure.Counter);
+  }
+
+  [Test]
+  public async Task BoundedBasketQueriesUseDedicatedIndexes()
+  {
+    using var connection = new SqliteConnection("Data Source=" + _databaseFile);
+    connection.Open();
+
+    await Assert
+      .That(
+        QueryPlan(
+          connection,
+          "SELECT Counter FROM stations WHERE Pallet = 4 AND BasketContentEpisodeId IS NULL AND Counter > 10 ORDER BY Counter"
+        )
+      )
+      .Contains("stations_pallet_counter");
+    await Assert
+      .That(
+        QueryPlan(
+          connection,
+          "SELECT Counter FROM stations WHERE Pallet = 4 AND StationLoc = 116 AND BasketContentEpisodeId IS NULL AND Program = 'Arrive' ORDER BY Counter DESC LIMIT 1"
+        )
+      )
+      .Contains("stations_numbered_basket_location_program_counter");
+    await Assert
+      .That(
+        QueryPlan(
+          connection,
+          "SELECT Counter FROM stations WHERE Pallet = 4 AND StationLoc = 116 AND BasketContentEpisodeId IS NULL AND Program = 'Depart' AND StationName = 'Storage' AND StationNum = 20 ORDER BY Counter DESC LIMIT 1"
+        )
+      )
+      .Contains("stations_numbered_basket_location");
+
+    var palletWindowPlan = QueryPlan(
+      connection,
+      "SELECT Counter FROM stations s WHERE Pallet = 4 AND BasketContentEpisodeId IS NULL AND Counter >= COALESCE((SELECT Counter FROM stations WHERE Pallet = 4 AND Result = 'PalletCycle' ORDER BY Counter DESC LIMIT 1 OFFSET 2), 0) AND NOT EXISTS (SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated') AND StationLoc != 15 ORDER BY Counter"
+    );
+    await Assert.That(palletWindowPlan).Contains("stations_pallet_counter");
+    await Assert.That(palletWindowPlan).DoesNotContain("USE TEMP B-TREE FOR ORDER BY");
+
+    var contentEpisodeWindowPlan = QueryPlan(
+      connection,
+      "SELECT s.Counter FROM stations s WHERE s.BasketContentEpisodeId = 'episode' AND s.Counter > 10 AND s.Counter < 1000000 AND NOT EXISTS (SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated') AND StationLoc != 15 UNION ALL SELECT s.Counter FROM basket_cycle_content_episode_ids c JOIN stations s ON s.Counter = c.CycleCounter WHERE c.BasketContentEpisodeId = 'episode' AND s.Counter > 10 AND s.Counter < 1000000 AND NOT EXISTS (SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated') AND StationLoc != 15 ORDER BY Counter"
+    );
+    await Assert.That(contentEpisodeWindowPlan).Contains("stations_basket_content_episode_id");
+    await Assert
+      .That(contentEpisodeWindowPlan)
+      .Contains("sqlite_autoindex_basket_cycle_content_episode_ids_1");
+    await Assert.That(contentEpisodeWindowPlan).DoesNotContain("(rowid>? AND rowid<?)");
+  }
+
+  [Test]
   public async Task BasketEvidenceForeignIdsRemainCorrelationMetadata()
   {
     var id = Guid.NewGuid();
@@ -229,7 +347,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
       idempotencyKey: "hinted-uuid-load-operation",
       foreignId: "hinted-uuid-load"
     );
-    repository.RecordBasketObservation(
+    var observation = repository.RecordBasketObservation(
       Guid.NewGuid(),
       8,
       BasketLoadStation(),
@@ -246,6 +364,74 @@ public sealed class BasketLogIdentitySpec : IDisposable
     await Assert
       .That(repository.CurrentBasketLog(numberedIdentity).Select(log => log.LogType))
       .IsEquivalentTo([LogType.BasketObservation]);
+
+    repository.CorrectBasketObservation(
+      Guid.NewGuid(),
+      observation.ObservationId,
+      replacement: null,
+      IntegrationSource(),
+      time.AddMinutes(4),
+      "Retract the association."
+    );
+
+    await Assert.That(repository.GetUnresolvedOpenBasketContentEpisodeIds()).IsEmpty();
+  }
+
+  [Test]
+  public async Task InvalidatingAllUuidBasketEventsRemovesOpenEpisode()
+  {
+    var time = new DateTime(2026, 8, 28, 10, 0, 0, DateTimeKind.Utc);
+    var contentEpisodeId = Guid.NewGuid();
+    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = contentEpisodeId };
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(identity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: time.AddMinutes(1),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "invalidate-only-uuid-events"
+    );
+
+    await Assert
+      .That(repository.GetUnresolvedOpenBasketContentEpisodeIds())
+      .IsEquivalentTo([contentEpisodeId]);
+
+    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(2));
+
+    await Assert.That(repository.CurrentBasketLog(identity)).IsEmpty();
+    await Assert.That(repository.GetUnresolvedOpenBasketContentEpisodeIds()).IsEmpty();
+  }
+
+  [Test]
+  public async Task InvalidatingSomeUuidBasketEventsKeepsEpisodeOpen()
+  {
+    var time = new DateTime(2026, 8, 28, 11, 0, 0, DateTimeKind.Utc);
+    var contentEpisodeId = Guid.NewGuid();
+    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = contentEpisodeId };
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "raw", time);
+    repository.RecordBasketStationOperation(
+      LoadOntoBasketOperation(identity, materialId),
+      lulNum: 2,
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: time.AddMinutes(1),
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "invalidate-some-uuid-events"
+    );
+    repository.RecordBasketArriveLocation([], identity, "Staging", 1, time.AddMinutes(2));
+
+    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(3));
+
+    await Assert
+      .That(repository.CurrentBasketLog(identity).Select(log => log.LogType))
+      .IsEquivalentTo([LogType.BasketInLocation]);
+    await Assert
+      .That(repository.GetUnresolvedOpenBasketContentEpisodeIds())
+      .IsEquivalentTo([contentEpisodeId]);
   }
 
   [Test]
@@ -483,7 +669,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
   }
 
   [Test]
-  public async Task UuidCycleStartAtomicallyAssociatesAndRecordsStation()
+  public async Task UuidCycleStartAndExplicitObservationCommitAtomically()
   {
     var time = new DateTime(2026, 7, 27, 11, 50, 0, DateTimeKind.Utc);
     var contentEpisodeId = Guid.NewGuid();
@@ -507,7 +693,18 @@ public sealed class BasketLogIdentitySpec : IDisposable
               Face = 0,
             },
           ],
-          AssociatedBasketNum = 7,
+        },
+      ],
+      Observations =
+      [
+        new BasketObservationInput
+        {
+          ObservationId = Guid.NewGuid(),
+          BasketId = 7,
+          Position = BasketLoadStation(),
+          ContentEpisodeIds = [contentEpisodeId],
+          Source = IntegrationSource(),
+          Note = "Basket 7 and its contents were directly observed at the station.",
         },
       ],
     };
@@ -1189,6 +1386,95 @@ public sealed class BasketLogIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task BasketStationOperationIdempotencyIncludesCorrelationId()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "incoming", DateTime.UtcNow);
+    var operation = LoadOntoBasketOperation(
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.NewGuid() },
+      materialId
+    );
+
+    var first = repository
+      .RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = "workflow-A" }
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow.AddHours(1),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = "workflow-A" }
+      )
+      .ToImmutableList();
+
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .IsEquivalentTo(first.Select(log => log.Counter));
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = "workflow-B" }
+      )
+    );
+  }
+
+  [Test]
+  public async Task BasketStationOperationIdempotencyNormalizesEmptyCorrelationId()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "incoming", DateTime.UtcNow);
+    var operation = LoadOntoBasketOperation(
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.NewGuid() },
+      materialId
+    );
+
+    var first = repository
+      .RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-empty-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = null }
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow.AddHours(1),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-empty-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = "" }
+      )
+      .ToImmutableList();
+
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .IsEquivalentTo(first.Select(log => log.Counter));
+  }
+
+  [Test]
   public async Task MultiProcessBasketStationOperationIsOrderedAtomicAndIdempotent()
   {
     using var repository = _repositoryConfig.OpenConnection();
@@ -1603,7 +1889,7 @@ public sealed class BasketLogIdentitySpec : IDisposable
       }
     );
     var firstEvidenceTime = new DateTime(2026, 7, 24, 10, 0, 0, DateTimeKind.Utc);
-    repository.RecordBasketContentSnapshot(
+    var firstSnapshot = repository.RecordBasketContentSnapshot(
       firstContents,
       new BasketLogIdentity.ContentEpisode { ContentEpisodeId = first },
       firstEvidenceTime,
@@ -1671,6 +1957,28 @@ public sealed class BasketLogIdentitySpec : IDisposable
     await Assert.That(cycleEnd.BasketCycleEndContentEpisodeIds).IsEquivalentTo([first, second]);
     await Assert.That(cycleEnd.Material.Select(material => material.Face)).IsEquivalentTo([2, 8]);
     await Assert.That(cycleEnd.ElapsedTime).IsEqualTo(TimeSpan.FromMinutes(10));
+    await Assert
+      .That(
+        repository
+          .GetBasketLogForCounterRange(
+            new BasketLogIdentity.ContentEpisode { ContentEpisodeId = first },
+            0,
+            cycleEnd.Counter + 1
+          )
+          .Select(log => log.Counter)
+      )
+      .IsEquivalentTo([firstSnapshot.Counter, logs[0].Counter, cycleEnd.Counter]);
+    await Assert
+      .That(
+        repository
+          .GetBasketLogForCounterRange(
+            new BasketLogIdentity.NumberedBasket { BasketId = 9 },
+            logs[0].Counter,
+            cycleEnd.Counter + 1
+          )
+          .Select(log => log.Counter)
+      )
+      .IsEquivalentTo([cycleEnd.Counter]);
     await Assert
       .That(retry.Select(log => log.Counter))
       .IsEquivalentTo(logs.Select(log => log.Counter));
@@ -2146,6 +2454,17 @@ public sealed class BasketLogIdentitySpec : IDisposable
       exception = caught;
     }
     await Assert.That(exception).IsTypeOf<TException>();
+  }
+
+  private static string QueryPlan(SqliteConnection connection, string sql)
+  {
+    using var command = connection.CreateCommand();
+    command.CommandText = "EXPLAIN QUERY PLAN " + sql;
+    using var reader = command.ExecuteReader();
+    var details = ImmutableList.CreateBuilder<string>();
+    while (reader.Read())
+      details.Add(reader.GetString(3));
+    return string.Join("\n", details);
   }
 
   private static BasketEvidenceSource IntegrationSource() =>
