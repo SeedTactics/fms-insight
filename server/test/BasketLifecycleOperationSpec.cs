@@ -198,20 +198,14 @@ public sealed class BasketLifecycleOperationSpec : IDisposable
   }
 
   [Test]
-  public async Task IdempotencyIncludesCorrelationId()
+  public async Task IdempotencyIgnoresRecoveryCorrelationIdAndReturnsOriginalMetadata()
   {
     using var repository = _repositoryConfig.OpenConnection();
     var episode = Guid.NewGuid();
     var operation = Operation(episode, Guid.NewGuid(), basketId: 4, Material(repository, 1));
 
     var first = repository
-      .RecordBasketLifecycleOperation(
-        operation,
-        1,
-        DateTime.UtcNow,
-        "correlation-idempotency",
-        metadata: new EventLogMetadata { CorrelationId = "workflow-A" }
-      )
+      .RecordBasketLifecycleOperation(operation, 1, DateTime.UtcNow, "correlation-idempotency")
       .ToImmutableList();
     var retry = repository
       .RecordBasketLifecycleOperation(
@@ -219,53 +213,14 @@ public sealed class BasketLifecycleOperationSpec : IDisposable
         1,
         DateTime.UtcNow.AddHours(1),
         "correlation-idempotency",
-        metadata: new EventLogMetadata { CorrelationId = "workflow-A" }
+        metadata: new EventLogMetadata { CorrelationId = "recovery-session" }
       )
       .ToImmutableList();
 
     await Assert
       .That(retry.Select(log => log.Counter))
       .IsEquivalentTo(first.Select(log => log.Counter));
-    await AssertThrows<ConflictRequestException>(() =>
-      repository.RecordBasketLifecycleOperation(
-        operation,
-        1,
-        DateTime.UtcNow,
-        "correlation-idempotency",
-        metadata: new EventLogMetadata { CorrelationId = "workflow-B" }
-      )
-    );
-  }
-
-  [Test]
-  public async Task IdempotencyNormalizesEmptyCorrelationId()
-  {
-    using var repository = _repositoryConfig.OpenConnection();
-    var episode = Guid.NewGuid();
-    var operation = Operation(episode, Guid.NewGuid(), basketId: 4, Material(repository, 1));
-
-    var first = repository
-      .RecordBasketLifecycleOperation(
-        operation,
-        1,
-        DateTime.UtcNow,
-        "empty-correlation-idempotency",
-        metadata: new EventLogMetadata { CorrelationId = null }
-      )
-      .ToImmutableList();
-    var retry = repository
-      .RecordBasketLifecycleOperation(
-        operation,
-        1,
-        DateTime.UtcNow.AddHours(1),
-        "empty-correlation-idempotency",
-        metadata: new EventLogMetadata { CorrelationId = "" }
-      )
-      .ToImmutableList();
-
-    await Assert
-      .That(retry.Select(log => log.Counter))
-      .IsEquivalentTo(first.Select(log => log.Counter));
+    await Assert.That(retry.All(log => log.CorrelationId is null)).IsTrue();
   }
 
   private static BasketLifecycleOperation Operation(

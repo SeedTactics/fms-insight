@@ -235,9 +235,10 @@ namespace BlackMaple.MachineFramework
     // identity so a physical turnover can unload one UUID episode and load another. Queue changes,
     // operation timing, transfer evidence, and complete-content cycle boundaries are committed
     // under one idempotency key. An identical retry returns the original event group; changed
-    // durable input throws ConflictRequestException. timeUTC is intentionally excluded from retry
-    // comparison. Cycle-boundary events record lulNum as their location number. foreignId remains
-    // optional event correlation metadata.
+    // durable input throws ConflictRequestException. timeUTC and metadata.CorrelationId are
+    // intentionally excluded from retry comparison. A retry with a different correlation ID returns
+    // the original event group with its original metadata. Cycle-boundary events record lulNum as
+    // their location number. foreignId remains optional event correlation metadata.
     //
     // totalElapsed is apportioned among transfers in proportion to ActiveOperationTime when every
     // transfer has a positive expected time. Otherwise, it is apportioned by material count.
@@ -261,8 +262,10 @@ namespace BlackMaple.MachineFramework
     /// observations that accompany those lifecycle transitions. A lifecycle operation must contain
     /// at least one boundary; standalone observations use <see cref="RecordBasketObservation"/>.
     /// Identical retries return the original event group and changed reuse of the idempotency key
-    /// throws <see cref="ConflictRequestException"/>. <paramref name="timeUTC"/> is intentionally
-    /// excluded from retry comparison.
+    /// throws <see cref="ConflictRequestException"/>. <paramref name="timeUTC"/> and
+    /// <paramref name="metadata"/>'s correlation ID are intentionally excluded from retry
+    /// comparison. A retry with a different correlation ID returns the original event group with its
+    /// original metadata.
     /// </summary>
     IEnumerable<LogEntry> RecordBasketLifecycleOperation(
       BasketLifecycleOperation operation,

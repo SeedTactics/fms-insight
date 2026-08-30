@@ -2883,8 +2883,7 @@ namespace BlackMaple.MachineFramework
         observations,
         lulNum,
         totalElapsed,
-        externalQueues,
-        eventMetadata
+        externalQueues
       );
       var sendToExternal = new List<MaterialToSendToExternalQueue>();
       var transferMaterialCount = operation.Transfers.Sum(transfer => transfer.Material.Count);
@@ -3023,8 +3022,7 @@ namespace BlackMaple.MachineFramework
       var fingerprint = BasketLifecycleFingerprint(
         operation.CycleBoundaries,
         observations,
-        locationNum,
-        eventMetadata
+        locationNum
       );
       return RecordBasketOperation(
         operationType: "lifecycle",
@@ -3301,14 +3299,12 @@ namespace BlackMaple.MachineFramework
       ImmutableList<BasketObservationInput> observations,
       int lulNum,
       TimeSpan totalElapsed,
-      IReadOnlyDictionary<string, string> externalQueues,
-      EventLogMetadata metadata
+      IReadOnlyDictionary<string, string> externalQueues
     )
     {
       var fingerprint = new StringBuilder();
       AppendFingerprint(fingerprint, lulNum.ToString(CultureInfo.InvariantCulture));
       AppendFingerprint(fingerprint, totalElapsed.Ticks.ToString(CultureInfo.InvariantCulture));
-      AppendFingerprint(fingerprint, metadata.CorrelationId);
       foreach (var transfer in operation.Transfers)
       {
         AppendFingerprint(
@@ -3353,13 +3349,11 @@ namespace BlackMaple.MachineFramework
     private static string BasketLifecycleFingerprint(
       ImmutableList<BasketCycleBoundary> cycleBoundaries,
       ImmutableList<BasketObservationInput> observations,
-      int locationNum,
-      EventLogMetadata metadata
+      int locationNum
     )
     {
       var fingerprint = new StringBuilder();
       AppendFingerprint(fingerprint, locationNum.ToString(CultureInfo.InvariantCulture));
-      AppendFingerprint(fingerprint, metadata.CorrelationId);
       AppendBasketLifecycleFingerprint(fingerprint, cycleBoundaries, observations);
       return fingerprint.ToString();
     }
