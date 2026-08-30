@@ -1386,6 +1386,95 @@ public sealed class BasketLogIdentitySpec : IDisposable
   }
 
   [Test]
+  public async Task BasketStationOperationIdempotencyIncludesCorrelationId()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "incoming", DateTime.UtcNow);
+    var operation = LoadOntoBasketOperation(
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.NewGuid() },
+      materialId
+    );
+
+    var first = repository
+      .RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = "workflow-A" }
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow.AddHours(1),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = "workflow-A" }
+      )
+      .ToImmutableList();
+
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .IsEquivalentTo(first.Select(log => log.Counter));
+    await AssertThrows<ConflictRequestException>(() =>
+      repository.RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = "workflow-B" }
+      )
+    );
+  }
+
+  [Test]
+  public async Task BasketStationOperationIdempotencyNormalizesEmptyCorrelationId()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job", "part", 1);
+    QueueMaterial(repository, materialId, "incoming", DateTime.UtcNow);
+    var operation = LoadOntoBasketOperation(
+      new BasketLogIdentity.ContentEpisode { ContentEpisodeId = Guid.NewGuid() },
+      materialId
+    );
+
+    var first = repository
+      .RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-empty-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = null }
+      )
+      .ToImmutableList();
+    var retry = repository
+      .RecordBasketStationOperation(
+        operation,
+        lulNum: 2,
+        totalElapsed: TimeSpan.FromMinutes(1),
+        timeUTC: DateTime.UtcNow.AddHours(1),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "station-empty-correlation-idempotency",
+        metadata: new EventLogMetadata { CorrelationId = "" }
+      )
+      .ToImmutableList();
+
+    await Assert
+      .That(retry.Select(log => log.Counter))
+      .IsEquivalentTo(first.Select(log => log.Counter));
+  }
+
+  [Test]
   public async Task MultiProcessBasketStationOperationIsOrderedAtomicAndIdempotent()
   {
     using var repository = _repositoryConfig.OpenConnection();

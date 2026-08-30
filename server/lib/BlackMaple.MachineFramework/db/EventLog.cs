@@ -3308,6 +3308,7 @@ namespace BlackMaple.MachineFramework
       var fingerprint = new StringBuilder();
       AppendFingerprint(fingerprint, lulNum.ToString(CultureInfo.InvariantCulture));
       AppendFingerprint(fingerprint, totalElapsed.Ticks.ToString(CultureInfo.InvariantCulture));
+      AppendFingerprint(fingerprint, metadata.CorrelationId);
       foreach (var transfer in operation.Transfers)
       {
         AppendFingerprint(
@@ -3358,6 +3359,7 @@ namespace BlackMaple.MachineFramework
     {
       var fingerprint = new StringBuilder();
       AppendFingerprint(fingerprint, locationNum.ToString(CultureInfo.InvariantCulture));
+      AppendFingerprint(fingerprint, metadata.CorrelationId);
       AppendBasketLifecycleFingerprint(fingerprint, cycleBoundaries, observations);
       return fingerprint.ToString();
     }
