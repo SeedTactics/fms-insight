@@ -60,14 +60,14 @@ namespace BlackMaple.MachineFramework.Controllers
 
     private class WebsocketDict
     {
-      private System.Threading.Lock _lock = new();
+      private readonly System.Threading.Lock _lock = new();
       private Dictionary<Guid, WebSocket>? _sockets = new Dictionary<Guid, WebSocket>();
 
-      public List<WebSocket> AllSockets()
+      public List<KeyValuePair<Guid, WebSocket>> AllSockets()
       {
         lock (_lock)
         {
-          return _sockets?.Values.ToList() ?? [];
+          return _sockets?.ToList() ?? [];
         }
       }
 
@@ -106,11 +106,22 @@ namespace BlackMaple.MachineFramework.Controllers
     private readonly WebsocketDict _sockets = new WebsocketDict();
     private readonly JsonSerializerOptions _serSettings;
     private readonly System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
+    private readonly TimeSpan _clientSendTimeout;
     private readonly Thread _thread;
 
     // Injecting IJobAndQueueControl here ensures that logging starts as soon as FMS Insight starts
-    public WebsocketManager(RepositoryConfig repo, IJobAndQueueControl jobAndQueue)
+    public WebsocketManager(
+      RepositoryConfig repo,
+      IJobAndQueueControl jobAndQueue,
+      TimeSpan? clientSendTimeout = null
+    )
     {
+      _clientSendTimeout = clientSendTimeout ?? TimeSpan.FromSeconds(5);
+      if (_clientSendTimeout <= TimeSpan.Zero)
+        throw new ArgumentOutOfRangeException(
+          nameof(clientSendTimeout),
+          "The websocket client send timeout must be positive."
+        );
       _serSettings = new JsonSerializerOptions();
       FMSInsightWebHost.JsonSettings(_serSettings);
 
@@ -171,22 +182,52 @@ namespace BlackMaple.MachineFramework.Controllers
           continue;
         }
 
-        var sockets = _sockets.AllSockets();
-        foreach (var ws in sockets)
-        {
-          if (ws.CloseStatus.HasValue)
-            continue;
-          try
-          {
-            ws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None)
-              .GetAwaiter()
-              .GetResult();
-          }
-          catch (Exception ex)
-          {
-            Log.Debug(ex, "Unable to send websocket event to a disconnected client");
-          }
-        }
+        Task.WhenAll(_sockets.AllSockets().Select(socket => SendToClient(socket, buffer)))
+          .GetAwaiter()
+          .GetResult();
+      }
+    }
+
+    private async Task SendToClient(KeyValuePair<Guid, WebSocket> client, ArraySegment<byte> buffer)
+    {
+      var (clientId, ws) = client;
+      if (ws.CloseStatus.HasValue)
+      {
+        _sockets.Remove(clientId);
+        return;
+      }
+
+      using var timeout = new CancellationTokenSource(_clientSendTimeout);
+      try
+      {
+        await ws.SendAsync(buffer, WebSocketMessageType.Text, true, timeout.Token);
+      }
+      catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+      {
+        Log.Warning(
+          "Websocket client {ClientId} did not accept an event within {Timeout}; aborting the connection",
+          clientId,
+          _clientSendTimeout
+        );
+        RemoveAndAbort(clientId, ws);
+      }
+      catch (Exception ex)
+      {
+        Log.Debug(ex, "Unable to send websocket event to client {ClientId}", clientId);
+        RemoveAndAbort(clientId, ws);
+      }
+    }
+
+    private void RemoveAndAbort(Guid clientId, WebSocket ws)
+    {
+      _sockets.Remove(clientId);
+      try
+      {
+        ws.Abort();
+      }
+      catch (Exception ex)
+      {
+        Log.Debug(ex, "Unable to abort websocket client {ClientId}", clientId);
       }
     }
 
