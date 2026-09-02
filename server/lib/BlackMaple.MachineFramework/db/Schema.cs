@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 43;
+    private const int Version = 44;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -128,6 +128,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         CreateBasketOperationTables(cmd);
+        CreateBasketContentsTables(cmd);
         CreateMaterialAllocationOperationTables(cmd);
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
@@ -547,6 +548,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 43)
             Ver41ToVer43(trans);
+
+          if (curVersion < 44)
+            Ver43ToVer44(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1435,6 +1439,28 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE basket_operation_events(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, Counter INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver43ToVer44(IDbTransaction trans)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+      CreateBasketContentsTables(cmd);
+    }
+
+    private static void CreateBasketContentsTables(IDbCommand cmd)
+    {
+      cmd.CommandText = "CREATE TABLE current_baskets(BasketId INTEGER PRIMARY KEY)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE current_basket_material(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, MaterialID INTEGER NOT NULL UNIQUE, Process INTEGER NOT NULL, PRIMARY KEY(BasketId, Slot, MaterialID))";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX current_basket_material_basket_slot ON current_basket_material(BasketId, Slot, MaterialID)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE current_basket_slot_data(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, Key TEXT NOT NULL, Value TEXT NOT NULL, PRIMARY KEY(BasketId, Slot, Key))";
       cmd.ExecuteNonQuery();
     }
 

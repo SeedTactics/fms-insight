@@ -68,6 +68,9 @@ namespace BlackMaple.MachineFramework
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     ImmutableList<LogEntry> CurrentAndPreviousPalletLog(int pallet);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
+
+    [return: MaybeNull]
+    BasketContents GetBasketContents(int basketId);
     ImmutableList<LogEntry> CurrentBasketLog(
       BasketLogIdentity basketIdentity,
       bool includeLastCycleEvt = false
@@ -254,6 +257,19 @@ namespace BlackMaple.MachineFramework
       string idempotencyKey,
       string foreignId = null,
       string originalMessage = null,
+      EventLogMetadata metadata = null
+    );
+
+    /// <summary>
+    /// Atomically applies exact current-content changes to one or more numbered baskets. The
+    /// expected contents provide optimistic concurrency; identical retries under one idempotency
+    /// key return the original events and changed reuse throws <see cref="ConflictRequestException"/>.
+    /// </summary>
+    IEnumerable<LogEntry> RecordBasketContentsOperation(
+      BasketContentsOperation operation,
+      int locationNum,
+      DateTime timeUTC,
+      string idempotencyKey,
       EventLogMetadata metadata = null
     );
 
@@ -888,6 +904,41 @@ namespace BlackMaple.MachineFramework
         Face = m.Face,
       };
     }
+  }
+
+  public sealed record BasketMaterial
+  {
+    public required long MaterialID { get; init; }
+    public required int Process { get; init; }
+  }
+
+  public sealed record BasketSlotContents
+  {
+    public required ImmutableList<BasketMaterial> Material { get; init; }
+    public ImmutableSortedDictionary<string, string> AdditionalData { get; init; } =
+      ImmutableSortedDictionary<string, string>.Empty;
+  }
+
+  public sealed record BasketContents
+  {
+    public required int BasketId { get; init; }
+    public required ImmutableSortedDictionary<int, BasketSlotContents> Slots { get; init; }
+  }
+
+  public sealed record BasketContentsChange
+  {
+    public required int BasketId { get; init; }
+
+    /// <summary>Null means the basket must not yet have a current projection.</summary>
+    [AllowNull]
+    public required BasketContents Expected { get; init; }
+
+    public required BasketContents Result { get; init; }
+  }
+
+  public sealed record BasketContentsOperation
+  {
+    public required ImmutableList<BasketContentsChange> Changes { get; init; }
   }
 
   public record SwapMaterialResult
