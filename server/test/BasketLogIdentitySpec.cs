@@ -184,8 +184,6 @@ public sealed class BasketLogIdentitySpec : IDisposable
     await Assert
       .That(repository.MostRecentNumberedBasketArrival(4)?.Counter)
       .IsEqualTo(arrival.Counter);
-    await Assert.That(repository.GetBasketPositionEvidenceSeen([4])[4]).IsEqualTo(arrival.Counter);
-
     var departure = repository.RecordBasketDepartLocation(
       [],
       basketId: 4,
@@ -326,55 +324,6 @@ public sealed class BasketLogIdentitySpec : IDisposable
     await Assert.That(logs.Pallet).IsEqualTo(-1);
     await Assert.That(logs.BasketContentEpisodeId).IsEqualTo(id);
     await Assert.That(logs.Material.Single().MaterialID).IsEqualTo(materialId);
-  }
-
-  [Test]
-  public async Task InvalidatedAssociatedUuidEventsDoNotLeakIntoNumberedBasket()
-  {
-    var time = new DateTime(2026, 7, 27, 10, 30, 0, DateTimeKind.Utc);
-    var id = Guid.NewGuid();
-    var uuidIdentity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = id };
-    var numberedIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 8 };
-    using var repository = _repositoryConfig.OpenConnection();
-    var materialId = repository.AllocateMaterialID("job", "part", 1);
-    QueueMaterial(repository, materialId, "raw", time);
-    repository.RecordBasketStationOperation(
-      LoadOntoBasketOperation(uuidIdentity, materialId),
-      lulNum: 2,
-      totalElapsed: TimeSpan.FromMinutes(1),
-      timeUTC: time.AddMinutes(1),
-      externalQueues: ImmutableDictionary<string, string>.Empty,
-      idempotencyKey: "hinted-uuid-load-operation",
-      foreignId: "hinted-uuid-load"
-    );
-    var observation = repository.RecordBasketObservation(
-      Guid.NewGuid(),
-      8,
-      BasketLoadStation(),
-      [id],
-      IntegrationSource(),
-      time.AddMinutes(2)
-    );
-
-    repository.InvalidatePalletCycle(materialId, process: 1, "operator", time.AddMinutes(3));
-
-    await Assert
-      .That(repository.CurrentBasketLog(uuidIdentity).Select(log => log.LogType))
-      .IsEmpty();
-    await Assert
-      .That(repository.CurrentBasketLog(numberedIdentity).Select(log => log.LogType))
-      .IsEquivalentTo([LogType.BasketObservation]);
-
-    repository.CorrectBasketObservation(
-      Guid.NewGuid(),
-      observation.ObservationId,
-      replacement: null,
-      IntegrationSource(),
-      time.AddMinutes(4),
-      "Retract the association."
-    );
-
-    await Assert.That(repository.GetUnresolvedOpenBasketContentEpisodeIds()).IsEmpty();
   }
 
   [Test]
@@ -666,100 +615,6 @@ public sealed class BasketLogIdentitySpec : IDisposable
         )
       );
     }
-  }
-
-  [Test]
-  public async Task UuidCycleStartAndExplicitObservationCommitAtomically()
-  {
-    var time = new DateTime(2026, 7, 27, 11, 50, 0, DateTimeKind.Utc);
-    var contentEpisodeId = Guid.NewGuid();
-    var identity = new BasketLogIdentity.ContentEpisode { ContentEpisodeId = contentEpisodeId };
-    using var repository = _repositoryConfig.OpenConnection();
-    var materialId = repository.AllocateMaterialID("job", "part", 1);
-    QueueMaterial(repository, materialId, "raw", time);
-    var operation = LoadOntoBasketOperation(identity, materialId) with
-    {
-      CycleBoundaries =
-      [
-        new BasketCycleBoundary.Start
-        {
-          BasketIdentity = identity,
-          Material =
-          [
-            new EventLogMaterial
-            {
-              MaterialID = materialId,
-              Process = 1,
-              Face = 0,
-            },
-          ],
-        },
-      ],
-      Observations =
-      [
-        new BasketObservationInput
-        {
-          ObservationId = Guid.NewGuid(),
-          BasketId = 7,
-          Position = BasketLoadStation(),
-          ContentEpisodeIds = [contentEpisodeId],
-          Source = IntegrationSource(),
-          Note = "Basket 7 and its contents were directly observed at the station.",
-        },
-      ],
-    };
-    using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
-    {
-      connection.Open();
-      using var trigger = connection.CreateCommand();
-      trigger.CommandText =
-        "CREATE TRIGGER fail_atomic_basket_association BEFORE INSERT ON stations "
-        + $"WHEN NEW.StationLoc = {(int)LogType.BasketObservation} "
-        + "BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
-      trigger.ExecuteNonQuery();
-    }
-
-    await AssertThrows<SqliteException>(() =>
-      repository.RecordBasketStationOperation(
-        operation,
-        lulNum: 2,
-        totalElapsed: TimeSpan.Zero,
-        timeUTC: time,
-        externalQueues: ImmutableDictionary<string, string>.Empty,
-        idempotencyKey: "associated-release"
-      )
-    );
-    await Assert.That(repository.GetActiveBasketObservationEvidence()).IsEmpty();
-    await Assert
-      .That(repository.GetRecentLog(0).Any(entry => entry.LogType == LogType.BasketCycle))
-      .IsFalse();
-
-    using (var connection = new SqliteConnection("Data Source=" + _databaseFile))
-    {
-      connection.Open();
-      using var trigger = connection.CreateCommand();
-      trigger.CommandText = "DROP TRIGGER fail_atomic_basket_association";
-      trigger.ExecuteNonQuery();
-    }
-
-    var logs = repository
-      .RecordBasketStationOperation(
-        operation,
-        lulNum: 2,
-        totalElapsed: TimeSpan.Zero,
-        timeUTC: time,
-        externalQueues: ImmutableDictionary<string, string>.Empty,
-        idempotencyKey: "associated-release"
-      )
-      .ToImmutableList();
-
-    await Assert
-      .That(logs.Single(entry => entry.LogType == LogType.BasketCycle).LocationNum)
-      .IsEqualTo(2);
-    await Assert.That(logs.Select(entry => entry.LogType)).Contains(LogType.BasketObservation);
-    await Assert
-      .That(repository.GetActiveBasketObservationEvidence(7).Single().ActiveContentEpisodeIds)
-      .IsEquivalentTo([contentEpisodeId]);
   }
 
   [Test]
@@ -2303,16 +2158,6 @@ public sealed class BasketLogIdentitySpec : IDisposable
         DateTime.UtcNow
       )
     );
-    await AssertThrows<ArgumentException>(() =>
-      repository.RecordBasketObservation(
-        Guid.Empty,
-        1,
-        BasketLoadStation(),
-        [Guid.NewGuid()],
-        IntegrationSource(),
-        DateTime.UtcNow
-      )
-    );
     await Assert.That(repository.GetRecentLog(0)).IsEmpty();
   }
 
@@ -2416,9 +2261,6 @@ public sealed class BasketLogIdentitySpec : IDisposable
       details.Add(reader.GetString(3));
     return string.Join("\n", details);
   }
-
-  private static BasketEvidenceSource IntegrationSource() =>
-    new() { Kind = BasketEvidenceSourceKind.Integration, Name = "test" };
 
   private static BasketPosition BasketLoadStation() =>
     new()

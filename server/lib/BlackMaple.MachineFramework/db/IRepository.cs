@@ -81,45 +81,11 @@ namespace BlackMaple.MachineFramework
       long beforeCounter
     );
 
-    /// <summary>
-    /// Returns the bounded active projection of basket observations. Each result contributes
-    /// current position evidence, active content continuity, or both; the nested observation is
-    /// unchanged historical data.
-    /// </summary>
-    ImmutableList<ActiveBasketObservationEvidence> GetActiveBasketObservationEvidence(
-      int? basketNum = null
-    );
-
-    [return: MaybeNull]
-    BasketObservation GetBasketObservation(Guid observationId);
-
-    [return: MaybeNull]
-    BasketObservationCorrection GetBasketObservationCorrection(Guid correctionId);
-    ImmutableList<BasketObservationCorrection> GetBasketObservationCorrections(
-      Guid? targetObservationId = null
-    );
-    ImmutableList<BasketObservationCorrection> GetBasketObservationCorrectionsAfter(long counter);
-    ImmutableList<BasketRegionSurvey> GetBasketRegionSurveys(
-      BasketPosition region = null,
-      long? afterCounter = null
-    );
-
-    [return: MaybeNull]
-    BasketRegionSurvey GetBasketRegionSurvey(Guid surveyId);
-    ImmutableList<BasketRegionSurvey> GetLatestBasketRegionSurveys();
-    ImmutableList<BasketRegionSurvey> GetCurrentBasketRegionSurveyEvidence();
-
     [return: MaybeNull]
     LogEntry MostRecentNumberedBasketArrival(int basketId);
 
     [return: MaybeNull]
     LogEntry MostRecentNumberedBasketDeparture(int basketId, string locationName, int locationNum);
-    ImmutableDictionary<int, long> GetBasketPositionEvidenceSeen(IEnumerable<int> basketIds);
-    ImmutableList<BasketMisload> GetActiveBasketMisloads();
-
-    [return: MaybeNull]
-    BasketMisload GetBasketMisload(Guid misloadId);
-    ImmutableList<BasketMisloadResolution> GetBasketMisloadResolutions(Guid? misloadId = null);
     ImmutableList<Guid> GetUnresolvedOpenBasketContentEpisodeIds();
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
@@ -274,9 +240,8 @@ namespace BlackMaple.MachineFramework
     );
 
     /// <summary>
-    /// Atomically records one or more basket cycle boundaries and any directly evidenced basket
-    /// observations that accompany those lifecycle transitions. A lifecycle operation must contain
-    /// at least one boundary; standalone observations use <see cref="RecordBasketObservation"/>.
+    /// Atomically records one or more basket cycle boundaries. A lifecycle operation must contain
+    /// at least one boundary.
     /// Identical retries return the original event group and changed reuse of the idempotency key
     /// throws <see cref="ConflictRequestException"/>. <paramref name="timeUTC"/> and
     /// <paramref name="metadata"/>'s correlation ID are intentionally excluded from retry
@@ -437,60 +402,6 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null,
       EventLogMetadata metadata = null,
       IReadOnlyDictionary<string, string> extraData = null
-    );
-
-    /// <summary>
-    /// Records one immutable direct basket observation. Integration sources must possess the
-    /// underlying physical or external evidence for the claim; a calculated best-fit
-    /// reconstruction is not itself an observation.
-    /// </summary>
-    BasketObservation RecordBasketObservation(
-      Guid observationId,
-      int basketId,
-      BasketPosition position,
-      ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketEvidenceSource source,
-      DateTime timeUTC,
-      EventLogMetadata metadata = null,
-      string note = null
-    );
-    BasketObservationCorrectionResult CorrectBasketObservation(
-      Guid correctionId,
-      Guid targetObservationId,
-      [AllowNull] BasketObservationReplacement replacement,
-      BasketEvidenceSource source,
-      DateTime timeUTC,
-      string note = null,
-      EventLogMetadata metadata = null
-    );
-    BasketRegionSurvey RecordBasketRegionSurvey(
-      Guid surveyId,
-      BasketPosition region,
-      ImmutableSortedSet<int> observedBasketIds,
-      int unidentifiedBasketCount,
-      BasketRegionSurveyCompleteness completeness,
-      DateTime timeUTC,
-      BasketEvidenceSource source,
-      EventLogMetadata metadata = null
-    );
-    BasketMisload RecordBasketMisload(
-      Guid misloadId,
-      int? basketId,
-      ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketPosition detectedAt,
-      BasketEvidenceSource source,
-      string reason,
-      DateTime timeUTC,
-      EventLogMetadata metadata = null
-    );
-    BasketMisloadResolution ResolveBasketMisload(
-      Guid resolutionId,
-      Guid misloadId,
-      BasketMisloadResolutionKind kind,
-      BasketEvidenceSource source,
-      DateTime timeUTC,
-      string note = null,
-      EventLogMetadata metadata = null
     );
 
     LogEntry RecordSerialForMaterialID(
@@ -1061,13 +972,11 @@ namespace BlackMaple.MachineFramework
   {
     public required ImmutableList<BasketStationTransfer> Transfers { get; init; }
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
-    public ImmutableList<BasketObservationInput> Observations { get; init; } = [];
   }
 
   public sealed record BasketLifecycleOperation
   {
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
-    public ImmutableList<BasketObservationInput> Observations { get; init; } = [];
   }
 
   public record MaterialToUnloadFromFace
@@ -1115,35 +1024,6 @@ namespace BlackMaple.MachineFramework
   {
     public required HashSet<long> MaterialIds { get; init; }
     public required IReadOnlyList<LogEntry> Logs { get; init; }
-  }
-
-  public sealed record BasketObservationReplacement
-  {
-    public required Guid ObservationId { get; init; }
-    public required int BasketId { get; init; }
-    public required BasketPosition Position { get; init; }
-    public required ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; }
-    public required BasketEvidenceSource Source { get; init; }
-  }
-
-  /// <summary>
-  /// Direct physical evidence supplied as part of an atomic basket operation. Integrations must
-  /// not construct this input from calculated identity, candidate elimination, or workflow intent.
-  /// </summary>
-  public sealed record BasketObservationInput
-  {
-    public required Guid ObservationId { get; init; }
-    public required int BasketId { get; init; }
-    public required BasketPosition Position { get; init; }
-    public ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; } = [];
-    public required BasketEvidenceSource Source { get; init; }
-    public string Note { get; init; }
-  }
-
-  public sealed record BasketObservationCorrectionResult
-  {
-    public required BasketObservationCorrection Correction { get; init; }
-    public BasketObservation Replacement { get; init; }
   }
 
   /// <summary>
