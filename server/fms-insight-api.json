@@ -2385,19 +2385,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "basketContentEpisodeId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "basketCycleEndContentEpisodeIds": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "type": "string",
-              "format": "guid"
-            }
-          },
           "program": {
             "type": "string"
           },
@@ -2509,13 +2496,7 @@
           "CancelRebooking",
           "BasketLoadUnload",
           "BasketCycle",
-          "BasketInLocation",
-          "BasketContentSnapshot",
-          "BasketRegionSurvey",
-          "BasketMisload",
-          "BasketMisloadResolution",
-          "BasketObservation",
-          "BasketObservationCorrection"
+          "BasketInLocation"
         ],
         "enum": [
           "LoadUnloadCycle",
@@ -2540,13 +2521,7 @@
           "CancelRebooking",
           "BasketLoadUnload",
           "BasketCycle",
-          "BasketInLocation",
-          "BasketContentSnapshot",
-          "BasketRegionSurvey",
-          "BasketMisload",
-          "BasketMisloadResolution",
-          "BasketObservation",
-          "BasketObservationCorrection"
+          "BasketInLocation"
         ]
       },
       "ToolUse": {
@@ -4092,11 +4067,13 @@
         "additionalProperties": false,
         "required": [
           "InstructionId",
+          "BasketId",
           "Source",
           "Destination",
           "Reason",
           "DisplayText",
           "InstructionId",
+          "BasketId",
           "Source",
           "Destination",
           "Reason",
@@ -4108,8 +4085,7 @@
           },
           "BasketId": {
             "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "format": "int32"
           },
           "Source": {
             "$ref": "#/components/schemas/BasketPosition"

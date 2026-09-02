@@ -36,44 +36,32 @@ import { basketContainerName, basketCycleDescription } from "./log-entry-contain
 import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/events.fake.js";
 import { it, expect } from "vitest";
 
-it("displays the UUID fragment when a basket identity hint also has a number", () => {
-  expect(
-    basketContainerName(
-      { pal: 5, basketContentEpisodeId: "12345678-1234-1234-1234-123456789abc" },
-      "Basket",
-    ),
-  ).toBe("Basket fragment 12345678");
+it("displays a numbered basket", () => {
+  expect(basketContainerName({ pal: 5 }, "Basket")).toBe("Basket 5");
 });
 
-it("displays UUID basket cycle starts without the numeric sentinel", () => {
-  expect(
-    basketCycleDescription(
-      {
-        pal: -1,
-        basketContentEpisodeId: "12345678-1234-1234-1234-123456789abc",
-        basketCycleEndContentEpisodeIds: undefined,
-        startofcycle: true,
-      },
-      "Basket",
-    ),
-  ).toBe("Basket fragment 12345678 started cycle");
-});
-
-it("describes the fragments finalized by a numbered basket cycle", () => {
+it("displays numbered basket cycle starts", () => {
   expect(
     basketCycleDescription(
       {
         pal: 5,
-        basketContentEpisodeId: undefined,
-        basketCycleEndContentEpisodeIds: [
-          "12345678-1234-1234-1234-123456789abc",
-          "87654321-4321-4321-4321-cba987654321",
-        ],
+        startofcycle: true,
+      },
+      "Basket",
+    ),
+  ).toBe("Basket 5 started cycle");
+});
+
+it("displays numbered basket cycle completion", () => {
+  expect(
+    basketCycleDescription(
+      {
+        pal: 5,
         startofcycle: false,
       },
       "Basket",
     ),
-  ).toBe("Basket 5 completed cycle from 2 UUID fragments");
+  ).toBe("Basket 5 completed cycle");
 });
 
 it("doesn't filter just a single add", () => {

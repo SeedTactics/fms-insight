@@ -112,8 +112,7 @@ namespace BlackMaple.MachineFramework
     BasketLoadUnload = 116,
     BasketCycle = 117,
     BasketInLocation = 118,
-    BasketContentSnapshot = 120,
-    // 119 and 121 through 128 belonged to beta-only basket event types. Keep those values unused.
+    // 119 through 128 belonged to beta-only basket event types. Keep those values unused.
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 

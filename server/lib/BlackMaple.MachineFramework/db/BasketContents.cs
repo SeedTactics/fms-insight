@@ -34,7 +34,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IEnumerable<LogEntry> RecordBasketContentsOperation(
+    public void RecordBasketContentsOperation(
       BasketContentsOperation operation,
       int locationNum,
       DateTime timeUTC,
@@ -52,9 +52,6 @@ namespace BlackMaple.MachineFramework
         );
       var fingerprint = BasketContentsFingerprint(normalized, locationNum);
       var eventMetadata = NormalizeEventLogMetadata(metadata);
-      ImmutableList<LogEntry> logs;
-      var created = false;
-
       lock (_cfg)
       {
         using var trans = _connection.BeginTransaction();
@@ -82,30 +79,17 @@ namespace BlackMaple.MachineFramework
                 $"Idempotency key {idempotencyKey} already identifies a different basket operation."
               );
 
-            logs = BasketOperationForIdempotencyKey(idempotencyKey, trans);
             trans.Commit();
-            return logs;
+            return;
           }
         }
 
         ValidateBasketContentsChanges(normalized, trans);
         ApplyBasketContentsChanges(normalized, trans);
 
-        var newLogs = new List<LogEntry>();
-        foreach (var change in normalized.Changes)
-          newLogs.Add(
-            RecordBasketContents(change.Result, locationNum, timeUTC, eventMetadata, trans)
-          );
-        RecordBasketOperationIdentity(idempotencyKey, fingerprint, eventMetadata, newLogs, trans);
+        RecordBasketOperationIdentity(idempotencyKey, fingerprint, eventMetadata, trans);
         trans.Commit();
-        logs = newLogs.ToImmutableList();
-        created = true;
       }
-
-      if (created)
-        foreach (var log in logs)
-          _cfg.OnNewLogEntry(log, eventMetadata.ForeignId, this);
-      return logs;
     }
 
     private void ValidateBasketContentsChanges(
@@ -306,47 +290,10 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private LogEntry RecordBasketContents(
-      BasketContents contents,
-      int locationNum,
-      DateTime timeUTC,
-      EventLogMetadata metadata,
-      SqliteTransaction trans
-    )
-    {
-      var entry = new NewEventLogEntry
-      {
-        Material = contents.Slots.SelectMany(pair =>
-          pair.Value.Material.Select(material => new EventLogMaterial
-          {
-            MaterialID = material.MaterialID,
-            Process = material.Process,
-            Face = pair.Key,
-          })
-        ),
-        LogType = LogType.BasketContentSnapshot,
-        StartOfCycle = false,
-        EndTimeUTC = timeUTC,
-        LocationName = "Basket",
-        LocationNum = locationNum,
-        Pallet = contents.BasketId,
-        Program = "CONTENTS",
-        Result = "CONTENTS",
-      };
-      foreach (var (slot, slotContents) in contents.Slots)
-      foreach (var (key, value) in slotContents.AdditionalData)
-        entry.ProgramDetails.Add(
-          $"slot:{slot.ToString(CultureInfo.InvariantCulture)}:{key}",
-          value
-        );
-      return AddLogEntry(trans, entry, metadata);
-    }
-
     private void RecordBasketOperationIdentity(
       string idempotencyKey,
       string fingerprint,
       EventLogMetadata metadata,
-      IReadOnlyList<LogEntry> logs,
       SqliteTransaction trans
     )
     {
@@ -365,20 +312,6 @@ namespace BlackMaple.MachineFramework
         : metadata.ForeignId;
       command.Parameters.Add("original", SqliteType.Text).Value = metadata.OriginalMessage ?? "";
       command.ExecuteNonQuery();
-
-      command.CommandText =
-        "INSERT INTO basket_operation_events(IdempotencyKey, Position, Counter) "
-        + "VALUES($key, $position, $counter)";
-      command.Parameters.Clear();
-      command.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
-      command.Parameters.Add("position", SqliteType.Integer);
-      command.Parameters.Add("counter", SqliteType.Integer);
-      for (var position = 0; position < logs.Count; ++position)
-      {
-        command.Parameters[1].Value = position;
-        command.Parameters[2].Value = logs[position].Counter;
-        command.ExecuteNonQuery();
-      }
     }
 
     private static BasketContentsOperation NormalizeBasketContentsOperation(

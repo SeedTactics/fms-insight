@@ -117,24 +117,6 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
         return "Depart";
       }
 
-    case api.LogType.BasketObservation:
-      return `${basketName} Observation`;
-
-    case api.LogType.BasketObservationCorrection:
-      return `${basketName} Observation Correction`;
-
-    case api.LogType.BasketContentSnapshot:
-      return `${basketName} Content Snapshot`;
-
-    case api.LogType.BasketRegionSurvey:
-      return `${basketName} Region Survey`;
-
-    case api.LogType.BasketMisload:
-      return `${basketName} Misload`;
-
-    case api.LogType.BasketMisloadResolution:
-      return `${basketName} Misload Resolution`;
-
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
         return "Start Cycle";
@@ -194,13 +176,6 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
     default:
       return "Message";
   }
-}
-
-function evidencePosition(entry: api.ILogEntry): string {
-  const title = entry.details?.locationTitle ?? entry.details?.location ?? entry.loc;
-  const locationNumber = entry.locnum > 0 ? ` ${entry.locnum}` : "";
-  const zone = entry.details?.zone === undefined ? "" : ` zone ${entry.details.zone}`;
-  return `${title}${locationNumber}${zone}`;
 }
 
 export function isLogEntryInvalidated(e: api.ILogEntry): boolean {
@@ -288,84 +263,6 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
           </span>
         );
       }
-    }
-
-    case api.LogType.BasketObservation: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      const episodeCount = entry.details?.episodeCount;
-      const source = entry.details?.sourceName;
-      const note = entry.details?.note;
-      return (
-        <span>
-          {source ?? "Source"} observed {basketName} {entry.pal} at {evidencePosition(entry)}
-          {episodeCount === undefined || episodeCount === "0"
-            ? ""
-            : ` with direct continuity to ${episodeCount} tracked content episode${episodeCount === "1" ? "" : "s"}`}
-          {note === undefined ? "" : `: ${note}`}
-        </span>
-      );
-    }
-
-    case api.LogType.BasketObservationCorrection: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      return (
-        <span>
-          Observation of {basketName} {entry.pal} corrected
-        </span>
-      );
-    }
-
-    case api.LogType.BasketContentSnapshot: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      return (
-        <span>
-          {basketContainerName(entry, basketName)} contained {displayMat(entry.material)}
-        </span>
-      );
-    }
-
-    case api.LogType.BasketRegionSurvey: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      const source = entry.details?.sourceName;
-      const observed = entry.details?.observedBasketCount;
-      const unidentified = entry.details?.unidentifiedBasketCount;
-      return (
-        <span>
-          {source === undefined ? "Operator" : source} recorded a {entry.result.toLowerCase()}{" "}
-          {basketName.toLowerCase()} survey at {evidencePosition(entry)}
-          {observed === undefined ? "" : ` (${observed} identified`}
-          {unidentified === undefined ? "" : `, ${unidentified} unidentified`}
-          {observed === undefined && unidentified === undefined ? "" : ")"}
-        </span>
-      );
-    }
-
-    case api.LogType.BasketMisload: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      const source = entry.details?.sourceName;
-      const reason = entry.details?.reason;
-      const subject =
-        entry.pal > 0 ? `${basketName} ${entry.pal}` : `Unnumbered ${basketName.toLowerCase()}`;
-      return (
-        <span>
-          {source === undefined ? subject : `${source} reported ${subject}`} requires inspection at{" "}
-          {evidencePosition(entry)}
-          {reason === undefined ? "" : `: ${reason}`}
-        </span>
-      );
-    }
-
-    case api.LogType.BasketMisloadResolution: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      const source = entry.details?.sourceName;
-      const subject =
-        entry.pal > 0 ? `${basketName} ${entry.pal}` : `Unnumbered ${basketName.toLowerCase()}`;
-      return (
-        <span>
-          {source === undefined ? "Inspection hold" : `${source} resolved inspection hold`} for{" "}
-          {subject} at {evidencePosition(entry)}: {entry.result}
-        </span>
-      );
     }
 
     case api.LogType.MachineCycle:

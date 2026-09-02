@@ -1588,9 +1588,6 @@ namespace BlackMaple.MachineFramework
     {
       if (log.Pallet < 0)
         throw new ArgumentException("Pallet and BasketId values cannot be negative.");
-
-      if (log.LogType == LogType.BasketContentSnapshot && log.Pallet == 0)
-        throw new ArgumentException("BasketContentSnapshot requires a basket identity.");
     }
 
     private void AddMaterial(long counter, IEnumerable<EventLogMaterial> mat, IDbTransaction trans)

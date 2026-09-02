@@ -221,7 +221,7 @@ namespace BlackMaple.MachineFramework
     /// expected contents provide optimistic concurrency; identical retries under one idempotency
     /// key return the original events and changed reuse throws <see cref="ConflictRequestException"/>.
     /// </summary>
-    IEnumerable<LogEntry> RecordBasketContentsOperation(
+    void RecordBasketContentsOperation(
       BasketContentsOperation operation,
       int locationNum,
       DateTime timeUTC,

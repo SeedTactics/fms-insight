@@ -25,25 +25,21 @@ public sealed class BasketContentsSpec : IDisposable
     var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
     var result = Contents(4, slot: 1, materialId, "tp-101");
 
-    var logs = repository
-      .RecordBasketContentsOperation(
-        Operation(
-          new BasketContentsChange
-          {
-            BasketId = 4,
-            Expected = null,
-            Result = result,
-          }
-        ),
-        locationNum: 1,
-        DateTime.UtcNow,
-        idempotencyKey: "prepare-4"
-      )
-      .ToImmutableList();
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = null,
+          Result = result,
+        }
+      ),
+      locationNum: 1,
+      DateTime.UtcNow,
+      idempotencyKey: "prepare-4"
+    );
     var loaded = repository.GetBasketContents(4);
 
-    await Assert.That(logs).Count().IsEqualTo(1);
-    await Assert.That(logs[0].LogType).IsEqualTo(LogType.BasketContentSnapshot);
     await Assert.That(loaded).IsNotNull();
     await Assert.That(loaded!.BasketId).IsEqualTo(4);
     await Assert.That(loaded.Slots[1].Material.Single().MaterialID).IsEqualTo(materialId);
@@ -134,7 +130,7 @@ public sealed class BasketContentsSpec : IDisposable
   }
 
   [Test]
-  public async Task IdenticalRetryReturnsOriginalEventAndChangedRetryConflicts()
+  public async Task IdenticalRetrySucceedsAndChangedRetryConflicts()
   {
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
@@ -147,14 +143,13 @@ public sealed class BasketContentsSpec : IDisposable
       }
     );
 
-    var first = repository
-      .RecordBasketContentsOperation(operation, 1, DateTime.UtcNow, "prepare-4")
-      .Single();
-    var retry = repository
-      .RecordBasketContentsOperation(operation, 1, DateTime.UtcNow.AddHours(1), "prepare-4")
-      .Single();
-
-    await Assert.That(retry.Counter).IsEqualTo(first.Counter);
+    repository.RecordBasketContentsOperation(operation, 1, DateTime.UtcNow, "prepare-4");
+    repository.RecordBasketContentsOperation(
+      operation,
+      1,
+      DateTime.UtcNow.AddHours(1),
+      "prepare-4"
+    );
     await Assert
       .That(() =>
         repository.RecordBasketContentsOperation(
