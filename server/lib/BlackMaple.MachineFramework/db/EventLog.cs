@@ -2515,6 +2515,11 @@ namespace BlackMaple.MachineFramework
       var eventMetadata = MergeEventLogMetadata(metadata, foreignId, originalMessage);
       var palletCompletion = ToPalletBasketLoadUnloadCompletion(operation);
       ValidatePalletBasketCompletion(palletCompletion, toLoad: null, toUnload: null);
+      var contentsOperation = operation.ContentsChanges.IsEmpty
+        ? null
+        : NormalizeBasketContentsOperation(
+          new BasketContentsOperation { Changes = operation.ContentsChanges }
+        );
       foreach (var transfer in operation.Transfers)
       {
         if (transfer.ActiveOperationTime < TimeSpan.Zero)
@@ -2533,7 +2538,13 @@ namespace BlackMaple.MachineFramework
           );
       }
 
-      var fingerprint = BasketStationFingerprint(operation, lulNum, totalElapsed, externalQueues);
+      var fingerprint = BasketStationFingerprint(
+        operation,
+        contentsOperation,
+        lulNum,
+        totalElapsed,
+        externalQueues
+      );
       var sendToExternal = new List<MaterialToSendToExternalQueue>();
       var transferMaterialCount = operation.Transfers.Sum(transfer => transfer.Material.Count);
       var activeTimes = operation
@@ -2551,6 +2562,7 @@ namespace BlackMaple.MachineFramework
         idempotencyKey,
         fingerprint,
         eventMetadata,
+        contentsOperation,
         beforeCycleEnds: (trans, newLogs) =>
         {
           foreach (
@@ -2653,6 +2665,7 @@ namespace BlackMaple.MachineFramework
       string idempotencyKey,
       string fingerprint,
       EventLogMetadata metadata,
+      BasketContentsOperation contentsOperation,
       Action<IDbTransaction, List<LogEntry>> beforeCycleEnds = null,
       Action<IDbTransaction, List<LogEntry>> afterCycleEnds = null
     )
@@ -2710,6 +2723,9 @@ namespace BlackMaple.MachineFramework
           return new RecordedBasketOperation(logs, Created: false);
         }
 
+        if (contentsOperation is not null)
+          ValidateBasketContentsChanges(contentsOperation, trans);
+
         var newLogs = new List<LogEntry>();
         beforeCycleEnds?.Invoke(trans, newLogs);
         RecordExplicitBasketCycleEnds(
@@ -2729,6 +2745,8 @@ namespace BlackMaple.MachineFramework
           trans,
           metadata: metadata
         );
+        if (contentsOperation is not null)
+          ApplyBasketContentsChanges(contentsOperation, trans);
         using var recordOperation = _connection.CreateCommand();
         recordOperation.Transaction = trans;
         recordOperation.CommandText =
@@ -2846,6 +2864,7 @@ namespace BlackMaple.MachineFramework
 
     private static string BasketStationFingerprint(
       BasketStationOperation operation,
+      BasketContentsOperation contentsOperation,
       int lulNum,
       TimeSpan totalElapsed,
       IReadOnlyDictionary<string, string> externalQueues
@@ -2892,6 +2911,8 @@ namespace BlackMaple.MachineFramework
         }
       }
       AppendBasketLifecycleFingerprint(fingerprint, operation.CycleBoundaries);
+      if (contentsOperation is not null)
+        AppendFingerprint(fingerprint, BasketContentsFingerprint(contentsOperation, lulNum));
       return fingerprint.ToString();
     }
 

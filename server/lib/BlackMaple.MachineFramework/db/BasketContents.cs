@@ -88,17 +88,8 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        foreach (var change in normalized.Changes)
-          if (!SameBasketContents(LoadBasketContents(change.BasketId, trans), change.Expected))
-            throw new ConflictRequestException(
-              $"Basket {change.BasketId} contents changed before the operation was recorded."
-            );
-
-        ValidateMaterialOwnership(normalized, trans);
-        foreach (var change in normalized.Changes)
-          ClearBasketContents(change.BasketId, trans);
-        foreach (var change in normalized.Changes)
-          InsertBasketContents(change.Result, trans);
+        ValidateBasketContentsChanges(normalized, trans);
+        ApplyBasketContentsChanges(normalized, trans);
 
         var newLogs = new List<LogEntry>();
         foreach (var change in normalized.Changes)
@@ -115,6 +106,31 @@ namespace BlackMaple.MachineFramework
         foreach (var log in logs)
           _cfg.OnNewLogEntry(log, eventMetadata.ForeignId, this);
       return logs;
+    }
+
+    private void ValidateBasketContentsChanges(
+      BasketContentsOperation operation,
+      SqliteTransaction trans
+    )
+    {
+      foreach (var change in operation.Changes)
+        if (!SameBasketContents(LoadBasketContents(change.BasketId, trans), change.Expected))
+          throw new ConflictRequestException(
+            $"Basket {change.BasketId} contents changed before the operation was recorded."
+          );
+
+      ValidateMaterialOwnership(operation, trans);
+    }
+
+    private void ApplyBasketContentsChanges(
+      BasketContentsOperation operation,
+      SqliteTransaction trans
+    )
+    {
+      foreach (var change in operation.Changes)
+        ClearBasketContents(change.BasketId, trans);
+      foreach (var change in operation.Changes)
+        InsertBasketContents(change.Result, trans);
     }
 
     private BasketContents LoadBasketContents(int basketId, SqliteTransaction trans)

@@ -10,7 +10,11 @@ namespace BlackMaple.FMSInsight.Tests;
 
 public sealed class BasketContentsSpec : IDisposable
 {
-  private readonly RepositoryConfig _repositoryConfig = RepositoryConfig.InitializeMemoryDB(null);
+  private readonly Guid _databaseId = Guid.NewGuid();
+  private readonly RepositoryConfig _repositoryConfig;
+
+  public BasketContentsSpec() =>
+    _repositoryConfig = RepositoryConfig.InitializeMemoryDB(null, _databaseId);
 
   public void Dispose() => _repositoryConfig.Dispose();
 
@@ -44,6 +48,89 @@ public sealed class BasketContentsSpec : IDisposable
     await Assert.That(loaded!.BasketId).IsEqualTo(4);
     await Assert.That(loaded.Slots[1].Material.Single().MaterialID).IsEqualTo(materialId);
     await Assert.That(loaded.Slots[1].AdditionalData["transfer-plate-rfid"]).IsEqualTo("tp-101");
+  }
+
+  [Test]
+  public async Task BasketStationOperationUpdatesContentsInItsManufacturingTransaction()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var contents = Contents(4, slot: 1, materialId, "tp-101");
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = materialId,
+        Process = 0,
+        Face = 1,
+      },
+      "raw",
+      -1,
+      null,
+      null
+    );
+
+    repository.RecordBasketStationOperation(
+      StationPreparation(materialId, contents),
+      lulNum: 1,
+      totalElapsed: TimeSpan.Zero,
+      timeUTC: DateTime.UtcNow,
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      idempotencyKey: "station-prepare-4"
+    );
+
+    var loaded = repository.GetBasketContents(4);
+    await Assert.That(loaded).IsNotNull();
+    await Assert.That(loaded!.Slots[1].Material.Single().MaterialID).IsEqualTo(materialId);
+    await Assert.That(loaded.Slots[1].AdditionalData["transfer-plate-rfid"]).IsEqualTo("tp-101");
+  }
+
+  [Test]
+  public async Task BasketStationFailureRollsBackContentsChange()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = materialId,
+        Process = 0,
+        Face = 1,
+      },
+      "raw",
+      -1,
+      null,
+      null
+    );
+    using (
+      var connection = new SqliteConnection(
+        $"Data Source=file:${_databaseId}?mode=memory&cache=shared"
+      )
+    )
+    {
+      connection.Open();
+      using var command = connection.CreateCommand();
+      command.CommandText =
+        "CREATE TRIGGER fail_station_operation BEFORE INSERT ON basket_operations "
+        + "WHEN NEW.OperationType = 'station' BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
+      command.ExecuteNonQuery();
+    }
+
+    await Assert
+      .That(() =>
+        repository.RecordBasketStationOperation(
+          StationPreparation(materialId, Contents(4, slot: 1, materialId, "tp-101")),
+          lulNum: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: DateTime.UtcNow,
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          idempotencyKey: "station-prepare-4"
+        )
+      )
+      .Throws<SqliteException>();
+    await Assert.That(repository.GetBasketContents(4)).IsNull();
+    await Assert
+      .That(repository.GetMaterialInAllQueues().Single().MaterialID)
+      .IsEqualTo(materialId);
   }
 
   [Test]
@@ -472,6 +559,41 @@ public sealed class BasketContentsSpec : IDisposable
 
   private static BasketContentsOperation Operation(params BasketContentsChange[] changes) =>
     new() { Changes = changes.ToImmutableList() };
+
+  private static BasketStationOperation StationPreparation(
+    long materialId,
+    BasketContents result
+  ) =>
+    new()
+    {
+      Transfers =
+      [
+        new BasketStationTransfer.LoadOntoBasket
+        {
+          BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = result.BasketId },
+          Material =
+          [
+            new EventLogMaterial
+            {
+              MaterialID = materialId,
+              Process = 0,
+              Face = 1,
+            },
+          ],
+          ActiveOperationTime = TimeSpan.Zero,
+        },
+      ],
+      CycleBoundaries = [],
+      ContentsChanges =
+      [
+        new BasketContentsChange
+        {
+          BasketId = result.BasketId,
+          Expected = null,
+          Result = result,
+        },
+      ],
+    };
 
   private static BasketContents Empty(int basketId) =>
     new() { BasketId = basketId, Slots = ImmutableSortedDictionary<int, BasketSlotContents>.Empty };
