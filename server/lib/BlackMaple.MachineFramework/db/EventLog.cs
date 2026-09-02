@@ -52,14 +52,12 @@ namespace BlackMaple.MachineFramework
       using (var matCmd = _connection.CreateCommand())
       using (var detailCmd = _connection.CreateCommand())
       using (var toolCmd = _connection.CreateCommand())
-      using (var membershipCmd = _connection.CreateCommand())
       {
         if (trans != null)
         {
           ((IDbCommand)matCmd).Transaction = trans;
           ((IDbCommand)detailCmd).Transaction = trans;
           ((IDbCommand)toolCmd).Transaction = trans;
-          ((IDbCommand)membershipCmd).Transaction = trans;
         }
         matCmd.CommandText =
           "SELECT sm.MaterialID, m.UniqueStr, sm.Process, m.PartName, m.NumProcesses, sm.Face, m.Serial, m.Workorder, mp.Path "
@@ -76,9 +74,6 @@ namespace BlackMaple.MachineFramework
           "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange, SerialAtStart, SerialAtEnd, CountInCycle, CountAtEndOfCycle, LifeCount FROM station_tool_use WHERE Counter = $cntr";
         toolCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-        membershipCmd.CommandText =
-          "SELECT BasketContentEpisodeId FROM basket_cycle_content_episode_ids WHERE CycleCounter = $cntr ORDER BY BasketContentEpisodeId";
-        membershipCmd.Parameters.Add("cntr", SqliteType.Integer);
         while (reader.Read())
         {
           long ctr = reader.GetInt64(0);
@@ -106,7 +101,6 @@ namespace BlackMaple.MachineFramework
           string locName = null;
           if (!reader.IsDBNull(11))
             locName = reader.GetString(11);
-          Guid? contentEpisodeId = reader.IsDBNull(12) ? null : Guid.Parse(reader.GetString(12));
           string foreignId = reader.IsDBNull(13) ? null : reader.GetString(13);
           string correlationId = reader.IsDBNull(14) ? null : reader.GetString(14);
           LogType ty;
@@ -272,23 +266,11 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          var cycleContentEpisodeIds = ImmutableList.CreateBuilder<Guid>();
-          if (ty == LogType.BasketCycle && !start)
-          {
-            membershipCmd.Parameters[0].Value = ctr;
-            using var membershipReader = membershipCmd.ExecuteReader();
-            while (membershipReader.Read())
-              cycleContentEpisodeIds.Add(Guid.Parse(membershipReader.GetString(0)));
-          }
-
           yield return new LogEntry()
           {
             Counter = ctr,
             Material = matLst.ToImmutable(),
             Pallet = pal,
-            BasketContentEpisodeId = contentEpisodeId,
-            BasketCycleEndContentEpisodeIds =
-              cycleContentEpisodeIds.Count > 0 ? cycleContentEpisodeIds.ToImmutable() : null,
             LogType = ty,
             LocationName = locName,
             LocationNum = locNum,
@@ -846,120 +828,6 @@ namespace BlackMaple.MachineFramework
           }
         }
       }
-    }
-
-    public ImmutableList<LogEntry> CurrentBasketLog(
-      BasketLogIdentity basketIdentity,
-      bool includeLastCycleEvt = false
-    )
-    {
-      using var trans = _connection.BeginTransaction();
-      var logs = basketIdentity switch
-      {
-        BasketLogIdentity.NumberedBasket numbered when numbered.BasketId > 0 =>
-          CurrentNumberedBasketAndFragments(numbered.BasketId, includeLastCycleEvt, trans),
-        BasketLogIdentity.ContentEpisode uuid when uuid.ContentEpisodeId != Guid.Empty =>
-          CurrentContentEpisodeFragment(uuid.ContentEpisodeId, trans),
-        _ => throw new ArgumentException("Invalid basket identity.", nameof(basketIdentity)),
-      };
-      trans.Commit();
-      return logs;
-    }
-
-    public ImmutableList<LogEntry> GetBasketLogForCounterRange(
-      BasketLogIdentity basketIdentity,
-      long afterCounter,
-      long beforeCounter
-    )
-    {
-      if (beforeCounter <= afterCounter)
-        throw new ArgumentException("The basket log counter range must be increasing.");
-      using var trans = _connection.BeginTransaction();
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = trans;
-      const string columns =
-        "s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.BasketContentEpisodeId, s.ForeignID, s.CorrelationId ";
-      cmd.CommandText = basketIdentity switch
-      {
-        BasketLogIdentity.NumberedBasket { BasketId: > 0 } => "SELECT "
-          + columns
-          + "FROM stations s WHERE s.Pallet = $basket AND s.BasketContentEpisodeId IS NULL "
-          + "AND s.Counter > $after AND s.Counter < $before AND "
-          + ignoreInvalidEventCondition
-          + " ORDER BY s.Counter",
-        BasketLogIdentity.ContentEpisode episode when episode.ContentEpisodeId != Guid.Empty =>
-          "SELECT "
-            + columns
-            + "FROM stations s WHERE s.BasketContentEpisodeId = $episode "
-            + "AND s.Counter > $after AND s.Counter < $before AND "
-            + ignoreInvalidEventCondition
-            + " UNION ALL SELECT "
-            + columns
-            + "FROM basket_cycle_content_episode_ids c "
-            + "JOIN stations s ON s.Counter = c.CycleCounter "
-            + "WHERE c.BasketContentEpisodeId = $episode "
-            + "AND s.Counter > $after AND s.Counter < $before AND "
-            + ignoreInvalidEventCondition
-            + " ORDER BY Counter",
-        _ => throw new ArgumentException("Invalid basket identity.", nameof(basketIdentity)),
-      };
-      cmd.Parameters.Add("after", SqliteType.Integer).Value = afterCounter;
-      cmd.Parameters.Add("before", SqliteType.Integer).Value = beforeCounter;
-      switch (basketIdentity)
-      {
-        case BasketLogIdentity.NumberedBasket numbered:
-          cmd.Parameters.Add("basket", SqliteType.Integer).Value = numbered.BasketId;
-          break;
-        case BasketLogIdentity.ContentEpisode episode:
-          cmd.Parameters.Add("episode", SqliteType.Text).Value = episode.ContentEpisodeId.ToString(
-            "D"
-          );
-          break;
-      }
-      using var reader = cmd.ExecuteReader();
-      var logs = LoadLog(reader, trans).ToImmutableList();
-      trans.Commit();
-      return logs;
-    }
-
-    private ImmutableList<LogEntry> CurrentNumberedBasketAndFragments(
-      int basketId,
-      bool includeLastCycleEvt,
-      SqliteTransaction trans
-    ) => CurrentBasketLog(basketId, includeLastCycleEvt, trans).ToImmutableList();
-
-    private ImmutableList<LogEntry> CurrentContentEpisodeFragment(
-      Guid contentEpisodeId,
-      SqliteTransaction trans
-    )
-    {
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = trans;
-      cmd.CommandText =
-        "SELECT EXISTS(SELECT 1 FROM basket_cycle_content_episode_ids WHERE BasketContentEpisodeId = $id)";
-      cmd.Parameters.Add("id", SqliteType.Text).Value = contentEpisodeId.ToString("D");
-      if ((long)cmd.ExecuteScalar() != 0)
-        return [];
-
-      cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
-        + "FROM stations s WHERE BasketContentEpisodeId = $id AND "
-        + ignoreInvalidEventCondition
-        + " ORDER BY Counter";
-      using var reader = cmd.ExecuteReader();
-      return LoadLog(reader, trans).ToImmutableList();
-    }
-
-    public ImmutableList<Guid> GetUnresolvedOpenBasketContentEpisodeIds()
-    {
-      using var cmd = _connection.CreateCommand();
-      cmd.CommandText =
-        "SELECT ContentEpisodeId FROM open_basket_content_episodes ORDER BY ContentEpisodeId";
-      using var reader = cmd.ExecuteReader();
-      var ids = ImmutableList.CreateBuilder<Guid>();
-      while (reader.Read())
-        ids.Add(Guid.Parse(reader.GetString(0)));
-      return ids.ToImmutable();
     }
 
     public LogEntry MostRecentNumberedBasketArrival(int basketId) =>
@@ -1572,8 +1440,6 @@ namespace BlackMaple.MachineFramework
           LocationName = this.LocationName,
           LocationNum = this.LocationNum,
           Pallet = this.Pallet,
-          BasketContentEpisodeId = this.BasketContentEpisodeId,
-          BasketCycleEndContentEpisodeIds = this.BasketCycleEndContentEpisodeIds,
           Program = this.Program,
           Result = this.Result,
           ElapsedTime = this.ElapsedTime,
@@ -1594,8 +1460,6 @@ namespace BlackMaple.MachineFramework
         {
           Material = e.Material.Select(EventLogMaterial.FromLogMat),
           Pallet = e.Pallet,
-          BasketContentEpisodeId = e.BasketContentEpisodeId,
-          BasketCycleEndContentEpisodeIds = e.BasketCycleEndContentEpisodeIds,
           LogType = e.LogType,
           LocationName = e.LocationName,
           LocationNum = e.LocationNum,
@@ -2300,31 +2164,6 @@ namespace BlackMaple.MachineFramework
             "Transferred material must be present in the corresponding complete cycle material.",
             nameof(palletBasketCompletion)
           );
-
-        if (
-          transfer
-            is PalletBasketTransfer.UnloadFromBasket
-            {
-              BasketIdentity: BasketLogIdentity.ContentEpisode
-              {
-                ContentEpisodeId: var contentEpisodeId
-              },
-            }
-          && palletBasketCompletion
-            .CycleBoundaries.OfType<BasketCycleBoundary.End>()
-            .FirstOrDefault(end => end.ReconciledBasketIdentities.Contains(contentEpisodeId))
-            is { } episodeEnd
-          && transfer.Material.Any(material =>
-            !episodeEnd.Material.Any(cycleMaterial =>
-              cycleMaterial.MaterialID == material.MaterialID
-              && cycleMaterial.Process == material.Process
-            )
-          )
-        )
-          throw new ArgumentException(
-            "Material unloaded from a finalized basket content episode must be present in the complete cycle end.",
-            nameof(palletBasketCompletion)
-          );
       }
 
       foreach (
@@ -2469,13 +2308,12 @@ namespace BlackMaple.MachineFramework
         var contentEpisodeIds = boundary
           .ReconciledBasketIdentities.OrderBy(id => id)
           .ToImmutableList();
+        if (!contentEpisodeIds.IsEmpty)
+          throw new ArgumentException(
+            "Basket content episode reconciliation is no longer supported.",
+            nameof(palletBasketCompletion)
+          );
         var firstEventTime = timeUTC;
-        foreach (var id in contentEpisodeIds)
-        {
-          var eventTime = EnsureOpenBasketContentEpisode(id, trans);
-          if (eventTime < firstEventTime)
-            firstEventTime = eventTime;
-        }
         if (contentEpisodeIds.Count == 0)
         {
           var recentCycle = MostRecentBasketCycleEvent(boundary.BasketIdentity, trans);
@@ -2924,41 +2762,6 @@ namespace BlackMaple.MachineFramework
       return result.Logs;
     }
 
-    public IEnumerable<LogEntry> RecordBasketLifecycleOperation(
-      BasketLifecycleOperation operation,
-      int locationNum,
-      DateTime timeUTC,
-      string idempotencyKey,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    )
-    {
-      ArgumentNullException.ThrowIfNull(operation);
-      if (operation.CycleBoundaries is null || operation.CycleBoundaries.IsEmpty)
-        throw new ArgumentException(
-          "A basket lifecycle operation requires at least one cycle boundary.",
-          nameof(operation)
-        );
-      var palletCompletion = new PalletBasketLoadUnloadCompletion
-      {
-        Transfers = [],
-        CycleBoundaries = operation.CycleBoundaries,
-      };
-      ValidatePalletBasketCompletion(palletCompletion, toLoad: null, toUnload: null);
-      var eventMetadata = MergeEventLogMetadata(metadata, foreignId, originalMessage);
-      var fingerprint = BasketLifecycleFingerprint(operation.CycleBoundaries, locationNum);
-      return RecordBasketOperation(
-        operationType: "lifecycle",
-        operation.CycleBoundaries,
-        locationNum,
-        timeUTC,
-        idempotencyKey,
-        fingerprint,
-        eventMetadata
-      ).Logs;
-    }
-
     private sealed record RecordedBasketOperation(ImmutableList<LogEntry> Logs, bool Created);
 
     private RecordedBasketOperation RecordBasketOperation(
@@ -3259,7 +3062,6 @@ namespace BlackMaple.MachineFramework
       identity switch
       {
         BasketLogIdentity.NumberedBasket numbered => $"numbered:{numbered.BasketId}",
-        BasketLogIdentity.ContentEpisode uuid => $"uuid:{uuid.ContentEpisodeId:D}",
         _ => "none",
       };
 
@@ -4124,70 +3926,6 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    public LogEntry RecordBasketContentSnapshot(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null,
-      IReadOnlyDictionary<string, string> extraData = null
-    )
-    {
-      return AddEntryInTransaction(trans =>
-      {
-        var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(basketIdentity);
-        var entry = new NewEventLogEntry
-        {
-          Material = mats,
-          Pallet = recordedBasketId,
-          BasketContentEpisodeId = contentEpisodeId,
-          LogType = LogType.BasketContentSnapshot,
-          LocationName = "Basket",
-          LocationNum = 1,
-          Program = "Snapshot",
-          StartOfCycle = false,
-          EndTimeUTC = timeUTC,
-          Result = "CompleteContent",
-          ElapsedTime = TimeSpan.Zero,
-          ActiveOperationTime = TimeSpan.Zero,
-        };
-        foreach (var (key, value) in extraData ?? ImmutableDictionary<string, string>.Empty)
-          entry.ProgramDetails.Add(key, value);
-        return AddLogEntry(
-          trans,
-          entry,
-          MergeEventLogMetadata(metadata, foreignId, originalMessage)
-        );
-      });
-    }
-
-    private DateTime EnsureOpenBasketContentEpisode(Guid contentEpisodeId, IDbTransaction trans)
-    {
-      using var cmd = _connection.CreateCommand();
-      ((IDbCommand)cmd).Transaction = trans;
-      cmd.CommandText =
-        "SELECT MIN(TimeUTC) FROM stations s WHERE BasketContentEpisodeId = $id "
-        + "AND StationLoc IN ($loadUnloadType, $locationType, $snapshotType, $cycleType) "
-        + "AND "
-        + ignoreInvalidEventCondition
-        + " "
-        + "AND NOT EXISTS(SELECT 1 FROM basket_cycle_content_episode_ids f WHERE f.BasketContentEpisodeId = $id)";
-      cmd.Parameters.Add("id", SqliteType.Text).Value = contentEpisodeId.ToString("D");
-      cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
-        LogType.BasketLoadUnload;
-      cmd.Parameters.Add("locationType", SqliteType.Integer).Value = (int)LogType.BasketInLocation;
-      cmd.Parameters.Add("snapshotType", SqliteType.Integer).Value = (int)
-        LogType.BasketContentSnapshot;
-      cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
-      var firstEventTime = cmd.ExecuteScalar();
-      if (firstEventTime is null or DBNull)
-        throw new ConflictRequestException(
-          $"Basket content episode {contentEpisodeId:D} is not open."
-        );
-      return new DateTime((long)firstEventTime, DateTimeKind.Utc);
-    }
-
     private static (int BasketId, Guid? BasketContentEpisodeId) RecordedBasketIdentity(
       BasketLogIdentity identity
     ) =>
@@ -4197,12 +3935,8 @@ namespace BlackMaple.MachineFramework
           numbered.BasketId,
           null
         ),
-        BasketLogIdentity.ContentEpisode uuid when uuid.ContentEpisodeId != Guid.Empty => (
-          -1,
-          uuid.ContentEpisodeId
-        ),
         _ => throw new ArgumentException(
-          "A basket event requires a positive numbered identity or a non-empty UUID.",
+          "A basket event requires a positive BasketId.",
           nameof(identity)
         ),
       };

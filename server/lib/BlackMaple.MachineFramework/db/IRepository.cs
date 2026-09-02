@@ -71,22 +71,12 @@ namespace BlackMaple.MachineFramework
 
     [return: MaybeNull]
     BasketContents GetBasketContents(int basketId);
-    ImmutableList<LogEntry> CurrentBasketLog(
-      BasketLogIdentity basketIdentity,
-      bool includeLastCycleEvt = false
-    );
-    ImmutableList<LogEntry> GetBasketLogForCounterRange(
-      BasketLogIdentity basketIdentity,
-      long afterCounter,
-      long beforeCounter
-    );
 
     [return: MaybeNull]
     LogEntry MostRecentNumberedBasketArrival(int basketId);
 
     [return: MaybeNull]
     LogEntry MostRecentNumberedBasketDeparture(int basketId, string locationName, int locationNum);
-    ImmutableList<Guid> GetUnresolvedOpenBasketContentEpisodeIds();
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -239,25 +229,6 @@ namespace BlackMaple.MachineFramework
       EventLogMetadata metadata = null
     );
 
-    /// <summary>
-    /// Atomically records one or more basket cycle boundaries. A lifecycle operation must contain
-    /// at least one boundary.
-    /// Identical retries return the original event group and changed reuse of the idempotency key
-    /// throws <see cref="ConflictRequestException"/>. <paramref name="timeUTC"/> and
-    /// <paramref name="metadata"/>'s correlation ID are intentionally excluded from retry
-    /// comparison. A retry with a different correlation ID returns the original event group with its
-    /// original metadata.
-    /// </summary>
-    IEnumerable<LogEntry> RecordBasketLifecycleOperation(
-      BasketLifecycleOperation operation,
-      int locationNum,
-      DateTime timeUTC,
-      string idempotencyKey,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-
     IEnumerable<LogEntry> RecordEmptyPallet(
       int pallet,
       DateTime timeUTC,
@@ -394,16 +365,6 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null,
       EventLogMetadata metadata = null
     );
-    LogEntry RecordBasketContentSnapshot(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null,
-      IReadOnlyDictionary<string, string> extraData = null
-    );
-
     LogEntry RecordSerialForMaterialID(
       EventLogMaterial mat,
       string serial,
@@ -974,11 +935,6 @@ namespace BlackMaple.MachineFramework
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
   }
 
-  public sealed record BasketLifecycleOperation
-  {
-    public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
-  }
-
   public record MaterialToUnloadFromFace
   {
     public required ImmutableDictionary<
@@ -1026,10 +982,7 @@ namespace BlackMaple.MachineFramework
     public required IReadOnlyList<LogEntry> Logs { get; init; }
   }
 
-  /// <summary>
-  /// An identity accepted by repository APIs that address basket event history. The numbered form
-  /// is stored in the historical pallet field; the content-episode form is stored with Pallet = -1.
-  /// </summary>
+  /// <summary>A numbered physical basket identity used by basket manufacturing operations.</summary>
   public abstract record BasketLogIdentity
   {
     private BasketLogIdentity() { }
@@ -1037,11 +990,6 @@ namespace BlackMaple.MachineFramework
     public sealed record NumberedBasket : BasketLogIdentity
     {
       public required int BasketId { get; init; }
-    }
-
-    public sealed record ContentEpisode : BasketLogIdentity
-    {
-      public required Guid ContentEpisodeId { get; init; }
     }
   }
 }

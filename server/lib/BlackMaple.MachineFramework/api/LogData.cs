@@ -156,28 +156,9 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("locnum")]
     public required int LocationNum { get; init; }
 
-    /// <summary>
-    /// Historical pallet number field. Basket events also use this field for a known numbered
-    /// basket; unresolved basket content episodes use -1 with
-    /// <see cref="BasketContentEpisodeId"/>. Non-basket events retain their ordinary pallet
-    /// number here.
-    /// </summary>
+    /// <summary>Historical pallet number field. Basket events use it for BasketId.</summary>
     [JsonPropertyName("pal")]
     public required int Pallet { get; init; }
-
-    /// <summary>
-    /// For basket events whose numbered basket identity is unresolved, identifies the basket
-    /// content episode and <see cref="Pallet"/> is -1. Numbered basket events use a positive
-    /// <see cref="Pallet"/> and leave this null. Non-basket events leave this null.
-    /// </summary>
-    [JsonPropertyName("basketContentEpisodeId")]
-    public Guid? BasketContentEpisodeId { get; init; }
-
-    /// <summary>
-    /// Basket content episodes authoritatively finalized by this numbered cycle-end event.
-    /// </summary>
-    [JsonPropertyName("basketCycleEndContentEpisodeIds")]
-    public ImmutableList<Guid>? BasketCycleEndContentEpisodeIds { get; init; }
 
     [JsonPropertyName("program")]
     public required string Program { get; init; }
@@ -224,8 +205,6 @@ namespace BlackMaple.MachineFramework
       Counter = cntr;
       Material = mat.ToImmutableList();
       Pallet = pal;
-      BasketContentEpisodeId = null;
-      BasketCycleEndContentEpisodeIds = null;
       LogType = ty;
       LocationName = locName;
       LocationNum = locNum;
