@@ -103,10 +103,7 @@ namespace BlackMaple.MachineFramework
   public record BasketMoveInstruction
   {
     public required string InstructionId { get; init; }
-
-    // BasketId is nullable so recovery can target a tracked occupant whose numbered identity
-    // is not yet established.
-    public int? BasketId { get; init; }
+    public required int BasketId { get; init; }
     public required BasketPosition Source { get; init; }
     public required BasketPosition Destination { get; init; }
     public required BasketMoveReason Reason { get; init; }
