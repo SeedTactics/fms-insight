@@ -96,7 +96,9 @@ namespace BlackMaple.MachineFramework
 
         ValidateMaterialOwnership(normalized, trans);
         foreach (var change in normalized.Changes)
-          ReplaceBasketContents(change.Result, trans);
+          ClearBasketContents(change.BasketId, trans);
+        foreach (var change in normalized.Changes)
+          InsertBasketContents(change.Result, trans);
 
         var newLogs = new List<LogEntry>();
         foreach (var change in normalized.Changes)
@@ -202,41 +204,61 @@ namespace BlackMaple.MachineFramework
 
       using var command = _connection.CreateCommand();
       command.Transaction = trans;
-      command.CommandText = "SELECT MaterialID FROM matdetails";
-      var allocatedMaterial = ImmutableHashSet.CreateBuilder<long>();
-      using (var materialReader = command.ExecuteReader())
-        while (materialReader.Read())
-          allocatedMaterial.Add(materialReader.GetInt64(0));
-      var unknownMaterial = requestedMaterial.Except(allocatedMaterial).Order().ToImmutableList();
-      if (!unknownMaterial.IsEmpty)
-        throw new ArgumentException(
-          $"Basket contents contain unknown material IDs {string.Join(", ", unknownMaterial)}.",
-          nameof(operation)
-        );
-
-      command.CommandText = "SELECT BasketId, MaterialID FROM current_basket_material";
-      using var reader = command.ExecuteReader();
-      while (reader.Read())
+      command.CommandText = "SELECT NumProcesses FROM matdetails WHERE MaterialID = $material";
+      command.Parameters.Add("material", SqliteType.Integer);
+      foreach (
+        var material in operation
+          .Changes.SelectMany(change => change.Result.Slots.Values)
+          .SelectMany(slot => slot.Material)
+      )
       {
-        var basketId = reader.GetInt32(0);
-        var materialId = reader.GetInt64(1);
-        if (!changedBaskets.Contains(basketId) && requestedMaterial.Contains(materialId))
+        command.Parameters[0].Value = material.MaterialID;
+        var numProcesses = command.ExecuteScalar();
+        if (numProcesses is null)
+          throw new ArgumentException(
+            $"Basket contents contain unknown material ID {material.MaterialID}.",
+            nameof(operation)
+          );
+        if (material.Process > Convert.ToInt32(numProcesses, CultureInfo.InvariantCulture))
+          throw new ArgumentException(
+            $"Basket material {material.MaterialID} process {material.Process} exceeds its number of processes.",
+            nameof(operation)
+          );
+      }
+
+      command.CommandText =
+        "SELECT BasketId FROM current_basket_material WHERE MaterialID = $material";
+      foreach (var materialId in requestedMaterial)
+      {
+        command.Parameters[0].Value = materialId;
+        var owner = command.ExecuteScalar();
+        if (
+          owner is not null
+          && !changedBaskets.Contains(Convert.ToInt32(owner, CultureInfo.InvariantCulture))
+        )
           throw new ConflictRequestException(
-            $"Material {materialId} is already owned by basket {basketId}."
+            $"Material {materialId} is already owned by basket {owner}."
           );
       }
     }
 
-    private void ReplaceBasketContents(BasketContents contents, SqliteTransaction trans)
+    private void ClearBasketContents(int basketId, SqliteTransaction trans)
     {
       using var command = _connection.CreateCommand();
       command.Transaction = trans;
       command.CommandText = "DELETE FROM current_basket_material WHERE BasketId = $basket";
-      command.Parameters.Add("basket", SqliteType.Integer).Value = contents.BasketId;
+      command.Parameters.Add("basket", SqliteType.Integer).Value = basketId;
       command.ExecuteNonQuery();
       command.CommandText = "DELETE FROM current_basket_slot_data WHERE BasketId = $basket";
       command.ExecuteNonQuery();
+    }
+
+    private void InsertBasketContents(BasketContents contents, SqliteTransaction trans)
+    {
+      using var command = _connection.CreateCommand();
+      command.Transaction = trans;
       command.CommandText = "INSERT OR IGNORE INTO current_baskets(BasketId) VALUES($basket)";
+      command.Parameters.Add("basket", SqliteType.Integer).Value = contents.BasketId;
       command.ExecuteNonQuery();
 
       foreach (var (slot, slotContents) in contents.Slots)

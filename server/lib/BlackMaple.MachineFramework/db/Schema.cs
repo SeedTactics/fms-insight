@@ -1457,9 +1457,6 @@ namespace BlackMaple.MachineFramework
         "CREATE TABLE current_basket_material(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, MaterialID INTEGER NOT NULL UNIQUE, Process INTEGER NOT NULL, PRIMARY KEY(BasketId, Slot, MaterialID))";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
-        "CREATE INDEX current_basket_material_basket_slot ON current_basket_material(BasketId, Slot, MaterialID)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
         "CREATE TABLE current_basket_slot_data(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, Key TEXT NOT NULL, Value TEXT NOT NULL, PRIMARY KEY(BasketId, Slot, Key))";
       cmd.ExecuteNonQuery();
     }
