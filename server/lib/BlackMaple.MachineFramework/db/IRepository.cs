@@ -190,9 +190,8 @@ namespace BlackMaple.MachineFramework
       PalletBasketLoadUnloadCompletion palletBasketCompletion = null
     );
 
-    // Atomically records one completed basket-station operation. Each transfer owns its basket
-    // identity so a physical turnover can unload one UUID episode and load another. Queue changes,
-    // operation timing, transfer evidence, and complete-content cycle boundaries are committed
+    // Atomically records one completed basket-station operation. Each transfer names the physical
+    // basket it changes. Queue changes, operation timing, transfer events, and basket contents are committed
     // under one idempotency key. An identical retry returns the original event group; changed
     // durable input throws ConflictRequestException. timeUTC and metadata.CorrelationId are
     // intentionally excluded from retry comparison. A retry with a different correlation ID returns
@@ -219,7 +218,7 @@ namespace BlackMaple.MachineFramework
     /// <summary>
     /// Atomically applies exact current-content changes to one or more numbered baskets. The
     /// expected contents provide optimistic concurrency; identical retries under one idempotency
-    /// key return the original events and changed reuse throws <see cref="ConflictRequestException"/>.
+    /// key have no additional effect and changed reuse throws <see cref="ConflictRequestException"/>.
     /// </summary>
     void RecordBasketContentsOperation(
       BasketContentsOperation operation,

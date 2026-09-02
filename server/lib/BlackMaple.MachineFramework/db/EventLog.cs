@@ -2027,7 +2027,7 @@ namespace BlackMaple.MachineFramework
             );
           if (boundary.BasketIdentity is not BasketLogIdentity.NumberedBasket)
             throw new ArgumentException(
-              "A basket cycle end requires a numbered basket identity and may contain only non-empty content episode UUIDs.",
+              "A basket cycle end requires a numbered basket identity.",
               nameof(palletBasketCompletion)
             );
         }
@@ -2517,6 +2517,12 @@ namespace BlackMaple.MachineFramework
         : NormalizeBasketContentsOperation(
           new BasketContentsOperation { Changes = operation.ContentsChanges }
         );
+      var basketLoads = BasketTransferMaterialPositions<BasketStationTransfer.LoadOntoBasket>(
+        operation.Transfers
+      );
+      var basketUnloads = BasketTransferMaterialPositions<BasketStationTransfer.UnloadFromBasket>(
+        operation.Transfers
+      );
       foreach (var transfer in operation.Transfers)
       {
         if (transfer.ActiveOperationTime < TimeSpan.Zero)
@@ -2560,6 +2566,8 @@ namespace BlackMaple.MachineFramework
         fingerprint,
         eventMetadata,
         contentsOperation,
+        basketLoads,
+        basketUnloads,
         beforeCycleEnds: (trans, newLogs) =>
         {
           foreach (
@@ -2663,6 +2671,8 @@ namespace BlackMaple.MachineFramework
       string fingerprint,
       EventLogMetadata metadata,
       BasketContentsOperation contentsOperation,
+      ImmutableList<BasketMaterialPosition> basketLoads,
+      ImmutableList<BasketMaterialPosition> basketUnloads,
       Action<IDbTransaction, List<LogEntry>> beforeCycleEnds = null,
       Action<IDbTransaction, List<LogEntry>> afterCycleEnds = null
     )
@@ -2720,6 +2730,7 @@ namespace BlackMaple.MachineFramework
           return new RecordedBasketOperation(logs, Created: false);
         }
 
+        ValidateBasketTransferContents(contentsOperation, basketLoads, basketUnloads, trans);
         if (contentsOperation is not null)
           ValidateBasketContentsChanges(contentsOperation, trans);
 
@@ -2782,6 +2793,24 @@ namespace BlackMaple.MachineFramework
         _cfg.OnNewLogEntry(log, metadata.ForeignId, this);
       return new RecordedBasketOperation(logs, Created: true);
     }
+
+    private static ImmutableList<BasketMaterialPosition> BasketTransferMaterialPositions<TTransfer>(
+      ImmutableList<BasketStationTransfer> transfers
+    )
+      where TTransfer : BasketStationTransfer =>
+      transfers
+        .OfType<TTransfer>()
+        .SelectMany(transfer =>
+        {
+          var basketId = RecordedBasketIdentity(transfer.BasketIdentity);
+          return transfer.Material.Select(material => new BasketMaterialPosition(
+            basketId,
+            material.MaterialID,
+            material.Process,
+            material.Face
+          ));
+        })
+        .ToImmutableList();
 
     private static PalletBasketLoadUnloadCompletion ToPalletBasketLoadUnloadCompletion(
       BasketStationOperation operation

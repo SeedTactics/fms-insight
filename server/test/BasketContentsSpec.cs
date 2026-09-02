@@ -81,6 +81,170 @@ public sealed class BasketContentsSpec : IDisposable
   }
 
   [Test]
+  [Arguments(5, 1, false, false)]
+  [Arguments(4, 2, false, false)]
+  [Arguments(4, 1, true, false)]
+  [Arguments(4, 1, false, true)]
+  public async Task BasketStationTransfersMustExactlyMatchContentsDelta(
+    int resultBasketId,
+    int resultSlot,
+    bool useDifferentMaterial,
+    bool addUnloggedMaterial
+  )
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var transferredMaterial = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var otherMaterial = repository.AllocateMaterialID("job-1", "part-a", 2);
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = transferredMaterial,
+        Process = 0,
+        Face = 1,
+      },
+      "raw",
+      -1,
+      null,
+      null
+    );
+    var resultMaterial = useDifferentMaterial ? otherMaterial : transferredMaterial;
+    var result = Contents(resultBasketId, resultSlot, resultMaterial, "tp-101");
+    if (addUnloggedMaterial)
+      result = result with
+      {
+        Slots = result.Slots.Add(
+          2,
+          new BasketSlotContents
+          {
+            Material = [new BasketMaterial { MaterialID = otherMaterial, Process = 0 }],
+            AdditionalData = ImmutableSortedDictionary<string, string>.Empty,
+          }
+        ),
+      };
+
+    await Assert
+      .That(() =>
+        repository.RecordBasketStationOperation(
+          StationPreparation(transferredMaterial, result, transferBasketId: 4, transferSlot: 1),
+          lulNum: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: DateTime.UtcNow,
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          idempotencyKey: Guid.NewGuid().ToString()
+        )
+      )
+      .Throws<ArgumentException>();
+    await Assert.That(repository.GetBasketContents(4)).IsNull();
+    await Assert.That(repository.GetBasketContents(5)).IsNull();
+  }
+
+  [Test]
+  public async Task BasketStationContentsCannotSilentlyRemoveMaterial()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var existingMaterial = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var loadedMaterial = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var before = Contents(4, 1, existingMaterial, "tp-101");
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = null,
+          Result = before,
+        }
+      ),
+      1,
+      DateTime.UtcNow,
+      "seed-4"
+    );
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = loadedMaterial,
+        Process = 0,
+        Face = 2,
+      },
+      "raw",
+      -1,
+      null,
+      null
+    );
+
+    await Assert
+      .That(() =>
+        repository.RecordBasketStationOperation(
+          StationPreparation(
+            loadedMaterial,
+            Contents(4, 2, loadedMaterial, "tp-102"),
+            expected: before,
+            transferSlot: 2
+          ),
+          lulNum: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: DateTime.UtcNow,
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          idempotencyKey: "replace-without-unload"
+        )
+      )
+      .Throws<ArgumentException>();
+    var persisted = repository.GetBasketContents(4);
+    await Assert.That(persisted).IsNotNull();
+    await Assert.That(persisted!.Slots.Keys).IsEquivalentTo([1]);
+    await Assert.That(persisted.Slots[1].Material.Single().MaterialID).IsEqualTo(existingMaterial);
+  }
+
+  [Test]
+  public async Task EstablishedBasketContentsRequireManufacturingProjectionChange()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = null,
+          Result = Empty(4),
+        }
+      ),
+      1,
+      DateTime.UtcNow,
+      "initialize-4"
+    );
+    repository.RecordAddMaterialToQueue(
+      new EventLogMaterial
+      {
+        MaterialID = materialId,
+        Process = 0,
+        Face = 1,
+      },
+      "raw",
+      -1,
+      null,
+      null
+    );
+
+    var operation = StationPreparation(materialId, Contents(4, 1, materialId, "tp-101")) with
+    {
+      ContentsChanges = [],
+    };
+    await Assert
+      .That(() =>
+        repository.RecordBasketStationOperation(
+          operation,
+          lulNum: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: DateTime.UtcNow,
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          idempotencyKey: "missing-projection-change"
+        )
+      )
+      .Throws<ConflictRequestException>();
+    await Assert.That(repository.GetBasketContents(4)).IsEqualTo(Empty(4));
+  }
+
+  [Test]
   public async Task BasketStationFailureRollsBackContentsChange()
   {
     using var repository = _repositoryConfig.OpenConnection();
@@ -557,7 +721,10 @@ public sealed class BasketContentsSpec : IDisposable
 
   private static BasketStationOperation StationPreparation(
     long materialId,
-    BasketContents result
+    BasketContents result,
+    BasketContents expected = null,
+    int? transferBasketId = null,
+    int transferSlot = 1
   ) =>
     new()
     {
@@ -565,14 +732,17 @@ public sealed class BasketContentsSpec : IDisposable
       [
         new BasketStationTransfer.LoadOntoBasket
         {
-          BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = result.BasketId },
+          BasketIdentity = new BasketLogIdentity.NumberedBasket
+          {
+            BasketId = transferBasketId ?? result.BasketId,
+          },
           Material =
           [
             new EventLogMaterial
             {
               MaterialID = materialId,
               Process = 0,
-              Face = 1,
+              Face = transferSlot,
             },
           ],
           ActiveOperationTime = TimeSpan.Zero,
@@ -584,7 +754,7 @@ public sealed class BasketContentsSpec : IDisposable
         new BasketContentsChange
         {
           BasketId = result.BasketId,
-          Expected = null,
+          Expected = expected,
           Result = result,
         },
       ],

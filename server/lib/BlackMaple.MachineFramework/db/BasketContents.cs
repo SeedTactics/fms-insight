@@ -20,6 +20,13 @@ namespace BlackMaple.MachineFramework
 {
   internal sealed partial class Repository
   {
+    private sealed record BasketMaterialPosition(
+      int BasketId,
+      long MaterialId,
+      int Process,
+      int Slot
+    );
+
     public BasketContents GetBasketContents(int basketId)
     {
       if (basketId <= 0)
@@ -105,6 +112,60 @@ namespace BlackMaple.MachineFramework
 
       ValidateMaterialOwnership(operation, trans);
     }
+
+    private void ValidateBasketTransferContents(
+      BasketContentsOperation operation,
+      ImmutableList<BasketMaterialPosition> loads,
+      ImmutableList<BasketMaterialPosition> unloads,
+      SqliteTransaction trans
+    )
+    {
+      if (operation is null)
+      {
+        foreach (var basketId in loads.Concat(unloads).Select(item => item.BasketId).Distinct())
+          if (LoadBasketContents(basketId, trans) is not null)
+            throw new ConflictRequestException(
+              $"Basket {basketId} has established contents and requires an exact contents change."
+            );
+        return;
+      }
+
+      var expectedLoads = ImmutableHashSet.CreateBuilder<BasketMaterialPosition>();
+      var expectedUnloads = ImmutableHashSet.CreateBuilder<BasketMaterialPosition>();
+      foreach (var change in operation.Changes)
+      {
+        var before = BasketMaterialPositions(change.Expected);
+        var after = BasketMaterialPositions(change.Result);
+        expectedLoads.UnionWith(after.Except(before));
+        expectedUnloads.UnionWith(before.Except(after));
+      }
+
+      if (
+        loads.Count != loads.Distinct().Count()
+        || unloads.Count != unloads.Distinct().Count()
+        || !expectedLoads.SetEquals(loads)
+        || !expectedUnloads.SetEquals(unloads)
+      )
+        throw new ArgumentException(
+          "Basket transfers must exactly match the material, process, and slot delta in contents changes."
+        );
+    }
+
+    private static ImmutableHashSet<BasketMaterialPosition> BasketMaterialPositions(
+      BasketContents contents
+    ) =>
+      contents is null
+        ? []
+        : contents
+          .Slots.SelectMany(slot =>
+            slot.Value.Material.Select(material => new BasketMaterialPosition(
+              contents.BasketId,
+              material.MaterialID,
+              material.Process,
+              slot.Key
+            ))
+          )
+          .ToImmutableHashSet();
 
     private void ApplyBasketContentsChanges(
       BasketContentsOperation operation,
