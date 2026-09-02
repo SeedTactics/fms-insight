@@ -884,16 +884,7 @@ namespace BlackMaple.MachineFramework
     /// </summary>
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
-    public sealed record End : BasketCycleBoundary
-    {
-      /// <summary>
-      /// Durable UUID basket identities reconciled into this numbered cycle. Leave empty when every
-      /// event in the cycle was already recorded with the numbered identity. A numbered end with
-      /// empty material and no reconciled identities may also record a degenerate empty cycle when
-      /// there is no open numbered cycle; that boundary has zero elapsed time.
-      /// </summary>
-      public required ImmutableHashSet<Guid> ReconciledBasketIdentities { get; init; }
-    }
+    public sealed record End : BasketCycleBoundary;
 
     public sealed record Start : BasketCycleBoundary;
   }

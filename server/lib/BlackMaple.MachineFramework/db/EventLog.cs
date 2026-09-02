@@ -305,7 +305,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
           + " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
 
         cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
@@ -346,7 +346,7 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Transaction = trans;
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
             + " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
@@ -368,7 +368,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
           + " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
@@ -385,7 +385,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
         + "FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
       cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
       using var reader = cmd.ExecuteReader();
@@ -401,7 +401,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
           + " FROM stations WHERE ForeignID <= $foreign ORDER BY ForeignID DESC, Counter DESC LIMIT 1";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
@@ -453,7 +453,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.BasketContentEpisodeId, s.ForeignID, s.CorrelationId "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID, s.CorrelationId "
         + " FROM stations s "
         + " WHERE s.Counter IN (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID = $mat)"
         + (includeInvalidatedCycles ? "" : " AND " + ignoreInvalidEventCondition)
@@ -489,7 +489,7 @@ namespace BlackMaple.MachineFramework
       }
 
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.BasketContentEpisodeId, s.ForeignID, s.CorrelationId "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID, s.CorrelationId "
         + " FROM stations s WHERE s.Counter IN "
         + "     (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID IN "
         + "        (SELECT t.MaterialID FROM temp_mat_ids t))"
@@ -511,7 +511,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
           + " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
         cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
 
@@ -532,7 +532,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
           + " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
@@ -553,7 +553,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
           + " FROM stations "
           + " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) "
           + "    OR (Pallet = 0 AND Result = $work AND StationLoc = $workloc) "
@@ -580,7 +580,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
         + "FROM stations WHERE CorrelationId = $correlation ORDER BY Counter ASC";
       cmd.Parameters.Add("correlation", SqliteType.Text).Value = correlationId;
       using var reader = cmd.ExecuteReader();
@@ -622,7 +622,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
           + " FROM stations WHERE Counter IN ("
           + searchCompleted
           + ") ORDER BY Counter ASC";
@@ -646,7 +646,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
         + " FROM stations WHERE Counter > $cntr AND StationLoc = $loadty AND Result = 'UNLOAD' AND Start = 0";
       cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
       cmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
@@ -675,8 +675,8 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
-        + "FROM stations s WHERE Pallet = $pal AND BasketContentEpisodeId IS NULL AND Counter >= COALESCE(("
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+        + "FROM stations s WHERE Pallet = $pal AND Counter >= COALESCE(("
         + " SELECT Counter FROM stations"
         + " WHERE Pallet = $pal AND Result = 'PalletCycle'"
         // One load/unload completion can write both a cycle end and the next cycle start. The
@@ -710,7 +710,7 @@ namespace BlackMaple.MachineFramework
         if (counter == DBNull.Value)
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
             + " FROM stations s "
             + " WHERE Pallet = $pal AND "
             + ignoreInvalidEventCondition
@@ -723,7 +723,7 @@ namespace BlackMaple.MachineFramework
         else
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
             + " FROM stations s "
             + " WHERE Pallet = $pal AND Counter "
             + (includeLastPalletCycleEvt ? ">=" : ">")
@@ -749,7 +749,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
         + " FROM stations s "
         + " WHERE Pallet = $pal AND Counter < $cycleStart "
         + " AND "
@@ -794,9 +794,9 @@ namespace BlackMaple.MachineFramework
         if (counter == DBNull.Value)
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
             + " FROM stations s "
-            + " WHERE Pallet = $basketId AND BasketContentEpisodeId IS NULL AND "
+            + " WHERE Pallet = $basketId AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
           cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
@@ -810,9 +810,9 @@ namespace BlackMaple.MachineFramework
         else
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
             + " FROM stations s "
-            + " WHERE Pallet = $basketId AND BasketContentEpisodeId IS NULL AND Counter "
+            + " WHERE Pallet = $basketId AND Counter "
             + (includeLastCycleEvt ? ">=" : ">")
             + " $cntr AND "
             + ignoreInvalidEventCondition
@@ -857,8 +857,8 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, BasketContentEpisodeId, ForeignID, CorrelationId "
-        + "FROM stations s WHERE Pallet = $basket AND StationLoc = $type AND BasketContentEpisodeId IS NULL AND Program = $program "
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+        + "FROM stations s WHERE Pallet = $basket AND StationLoc = $type AND Program = $program "
         + (locationName is null ? "" : "AND StationName = $location AND StationNum = $num ")
         + "AND "
         + ignoreInvalidEventCondition
@@ -2028,10 +2028,7 @@ namespace BlackMaple.MachineFramework
               "Each completed basket can have only one cycle end.",
               nameof(palletBasketCompletion)
             );
-          if (
-            boundary.BasketIdentity is not BasketLogIdentity.NumberedBasket
-            || end.ReconciledBasketIdentities.Any(id => id == Guid.Empty)
-          )
+          if (boundary.BasketIdentity is not BasketLogIdentity.NumberedBasket)
             throw new ArgumentException(
               "A basket cycle end requires a numbered basket identity and may contain only non-empty content episode UUIDs.",
               nameof(palletBasketCompletion)
@@ -2164,7 +2161,7 @@ namespace BlackMaple.MachineFramework
     {
       foreach (var transfer in palletBasketCompletion?.Transfers.OfType<TTransfer>() ?? [])
       {
-        var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(transfer.BasketIdentity);
+        var recordedBasketId = RecordedBasketIdentity(transfer.BasketIdentity);
         var loadOntoBasket = transfer is PalletBasketTransfer.LoadOntoBasket;
         logs.Add(
           AddLogEntry(
@@ -2206,29 +2203,18 @@ namespace BlackMaple.MachineFramework
           ?? []
       )
       {
-        var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(boundary.BasketIdentity);
-        var contentEpisodeIds = boundary
-          .ReconciledBasketIdentities.OrderBy(id => id)
-          .ToImmutableList();
-        if (!contentEpisodeIds.IsEmpty)
-          throw new ArgumentException(
-            "Basket content episode reconciliation is no longer supported.",
-            nameof(palletBasketCompletion)
-          );
+        var recordedBasketId = RecordedBasketIdentity(boundary.BasketIdentity);
         var firstEventTime = timeUTC;
-        if (contentEpisodeIds.Count == 0)
+        var recentCycle = MostRecentBasketCycleEvent(boundary.BasketIdentity, trans);
+        if (recentCycle is { StartOfCycle: true, Invalidated: false })
         {
-          var recentCycle = MostRecentBasketCycleEvent(boundary.BasketIdentity, trans);
-          if (recentCycle is { StartOfCycle: true, Invalidated: false })
-          {
-            firstEventTime = recentCycle.TimeUTC;
-          }
-          else if (!boundary.Material.IsEmpty)
-          {
-            throw new ConflictRequestException(
-              "A nonempty numbered basket-cycle end requires a non-invalidated open cycle."
-            );
-          }
+          firstEventTime = recentCycle.TimeUTC;
+        }
+        else if (!boundary.Material.IsEmpty)
+        {
+          throw new ConflictRequestException(
+            "A nonempty numbered basket-cycle end requires a non-invalidated open cycle."
+          );
         }
 
         var cycleEnd = new NewEventLogEntry
@@ -2263,19 +2249,15 @@ namespace BlackMaple.MachineFramework
       IDbTransaction trans
     )
     {
-      var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(basketIdentity);
+      var recordedBasketId = RecordedBasketIdentity(basketIdentity);
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
         "SELECT TimeUTC, Start, EXISTS("
         + "SELECT 1 FROM program_details d WHERE d.Counter = s.Counter AND d.Key = 'PalletCycleInvalidated'"
         + ") FROM stations s WHERE Pallet = $num "
-        + "AND (($id IS NULL AND BasketContentEpisodeId IS NULL) OR BasketContentEpisodeId = $id) "
         + "AND StationLoc = $cycleType ORDER BY Counter DESC LIMIT 1";
       cmd.Parameters.Add("num", SqliteType.Integer).Value = recordedBasketId;
-      cmd.Parameters.Add("id", SqliteType.Text).Value = contentEpisodeId is { } id
-        ? id.ToString("D")
-        : DBNull.Value;
       cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
       using var reader = cmd.ExecuteReader();
       if (!reader.Read())
@@ -2304,7 +2286,7 @@ namespace BlackMaple.MachineFramework
           ?? []
       )
       {
-        var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(boundary.BasketIdentity);
+        var recordedBasketId = RecordedBasketIdentity(boundary.BasketIdentity);
         if (
           MostRecentBasketCycleEvent(boundary.BasketIdentity, trans) is
           { StartOfCycle: true, Invalidated: false }
@@ -2344,7 +2326,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.BasketContentEpisodeId, s.ForeignID, s.CorrelationId "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID, s.CorrelationId "
         + "FROM basket_operation_events o "
         + "JOIN stations s ON s.Counter = o.Counter "
         + "WHERE o.IdempotencyKey = $key ORDER BY o.Position";
@@ -2826,7 +2808,7 @@ namespace BlackMaple.MachineFramework
       EventLogMetadata metadata = null
     )
     {
-      var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(transfer.BasketIdentity);
+      var recordedBasketId = RecordedBasketIdentity(transfer.BasketIdentity);
       logs.Add(
         AddLogEntry(
           trans,
@@ -2947,12 +2929,6 @@ namespace BlackMaple.MachineFramework
           AppendFingerprint(fingerprint, material.Process.ToString(CultureInfo.InvariantCulture));
           AppendFingerprint(fingerprint, material.Face.ToString(CultureInfo.InvariantCulture));
         }
-        foreach (
-          var contentEpisodeId in (
-            boundary as BasketCycleBoundary.End
-          )?.ReconciledBasketIdentities.OrderBy(id => id) ?? Enumerable.Empty<Guid>()
-        )
-          AppendFingerprint(fingerprint, contentEpisodeId.ToString("D"));
       }
     }
 
@@ -3619,7 +3595,7 @@ namespace BlackMaple.MachineFramework
     {
       return AddEntryInTransaction(trans =>
       {
-        var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(basketIdentity);
+        var recordedBasketId = RecordedBasketIdentity(basketIdentity);
         var entry = new NewEventLogEntry()
         {
           Material = mats,
@@ -3675,7 +3651,7 @@ namespace BlackMaple.MachineFramework
     {
       return AddEntryInTransaction(trans =>
       {
-        var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(basketIdentity);
+        var recordedBasketId = RecordedBasketIdentity(basketIdentity);
         // Create BasketLoadUnload event
         var entry = new NewEventLogEntry()
         {
@@ -3735,7 +3711,7 @@ namespace BlackMaple.MachineFramework
     {
       return AddEntryInTransaction(trans =>
       {
-        var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(basketIdentity);
+        var recordedBasketId = RecordedBasketIdentity(basketIdentity);
         var entry = new NewEventLogEntry()
         {
           Material = mats,
@@ -3797,7 +3773,7 @@ namespace BlackMaple.MachineFramework
     {
       return AddEntryInTransaction(trans =>
       {
-        var (recordedBasketId, contentEpisodeId) = RecordedBasketIdentity(basketIdentity);
+        var recordedBasketId = RecordedBasketIdentity(basketIdentity);
         var entry = new NewEventLogEntry()
         {
           Material = mats,
@@ -3820,15 +3796,10 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    private static (int BasketId, Guid? BasketContentEpisodeId) RecordedBasketIdentity(
-      BasketLogIdentity identity
-    ) =>
+    private static int RecordedBasketIdentity(BasketLogIdentity identity) =>
       identity switch
       {
-        BasketLogIdentity.NumberedBasket numbered when numbered.BasketId > 0 => (
-          numbered.BasketId,
-          null
-        ),
+        BasketLogIdentity.NumberedBasket numbered when numbered.BasketId > 0 => numbered.BasketId,
         _ => throw new ArgumentException(
           "A basket event requires a positive BasketId.",
           nameof(identity)
@@ -4796,7 +4767,7 @@ namespace BlackMaple.MachineFramework
       using var checkQueueCmd = _connection.CreateCommand();
 
       getCycles.CommandText =
-        "SELECT s.Counter, s.BasketContentEpisodeId FROM stations s WHERE "
+        "SELECT s.Counter FROM stations s WHERE "
         + " EXISTS ("
         + "   SELECT 1 FROM stations_mat m "
         + "        WHERE s.Counter = m.Counter "

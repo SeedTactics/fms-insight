@@ -6870,7 +6870,6 @@ namespace BlackMaple.FMSInsight.Tests
                   Face = 0,
                 },
               ],
-              ReconciledBasketIdentities = [],
             },
           ],
         },
@@ -7113,7 +7112,6 @@ namespace BlackMaple.FMSInsight.Tests
             {
               BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 3 },
               Material = basket3ProcessTwoContents,
-              ReconciledBasketIdentities = [],
             },
           ],
         }
@@ -7292,7 +7290,6 @@ namespace BlackMaple.FMSInsight.Tests
                   Face = 0,
                 },
               ],
-              ReconciledBasketIdentities = [],
             },
           ],
         },
@@ -7465,7 +7462,6 @@ namespace BlackMaple.FMSInsight.Tests
                   Face = 0,
                 },
               ],
-              ReconciledBasketIdentities = [],
             },
             new BasketCycleBoundary.Start
             {
@@ -7961,7 +7957,6 @@ namespace BlackMaple.FMSInsight.Tests
                   Face = 0,
                 },
               ],
-              ReconciledBasketIdentities = [],
             },
           ],
         }

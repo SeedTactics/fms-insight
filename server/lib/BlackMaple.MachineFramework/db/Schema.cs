@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet INTEGER,"
           + "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER,"
-          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, BasketContentEpisodeId TEXT, CorrelationId TEXT)";
+          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, CorrelationId TEXT)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -1341,8 +1341,6 @@ namespace BlackMaple.MachineFramework
       using var cmd = trans.Connection.CreateCommand();
       cmd.Transaction = trans;
 
-      cmd.CommandText = "ALTER TABLE stations ADD BasketContentEpisodeId TEXT";
-      cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE stations ADD CorrelationId TEXT";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
