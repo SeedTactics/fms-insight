@@ -6755,7 +6755,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 1 },
+              BasketId = 1,
               Material =
               [
                 new EventLogMaterial
@@ -6778,7 +6778,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 1 },
+              BasketId = 1,
               Material =
               [
                 new EventLogMaterial
@@ -6830,7 +6830,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.UnloadFromBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 1 },
+              BasketId = 1,
               Material =
               [
                 new EventLogMaterial
@@ -6854,7 +6854,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.End
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 1 },
+              BasketId = 1,
               Material =
               [
                 new EventLogMaterial
@@ -7025,19 +7025,11 @@ namespace BlackMaple.FMSInsight.Tests
         {
           Transfers =
           [
-            new PalletBasketTransfer.LoadOntoBasket
-            {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 3 },
-              Material = basket3Contents,
-            },
+            new PalletBasketTransfer.LoadOntoBasket { BasketId = 3, Material = basket3Contents },
           ],
           CycleBoundaries =
           [
-            new BasketCycleBoundary.Start
-            {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 3 },
-              Material = basket3Contents,
-            },
+            new BasketCycleBoundary.Start { BasketId = 3, Material = basket3Contents },
           ],
         }
       );
@@ -7102,17 +7094,13 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new PalletBasketTransfer.UnloadFromBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 3 },
+              BasketId = 3,
               Material = basket3ProcessTwoContents,
             },
           ],
           CycleBoundaries =
           [
-            new BasketCycleBoundary.End
-            {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 3 },
-              Material = basket3ProcessTwoContents,
-            },
+            new BasketCycleBoundary.End { BasketId = 3, Material = basket3ProcessTwoContents },
           ],
         }
       );
@@ -7200,7 +7188,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7217,7 +7205,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7262,7 +7250,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.UnloadFromBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7280,7 +7268,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.End
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7367,7 +7355,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7384,7 +7372,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7414,7 +7402,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.UnloadFromBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7429,7 +7417,7 @@ namespace BlackMaple.FMSInsight.Tests
             },
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7452,7 +7440,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.End
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7465,7 +7453,7 @@ namespace BlackMaple.FMSInsight.Tests
             },
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7564,7 +7552,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7581,7 +7569,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 5 },
+              BasketId = 5,
               Material =
               [
                 new EventLogMaterial
@@ -7677,7 +7665,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 55 },
+              BasketId = 55,
               Material =
               [
                 new EventLogMaterial
@@ -7694,7 +7682,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 55 },
+              BasketId = 55,
               Material =
               [
                 new EventLogMaterial
@@ -7789,7 +7777,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new PalletBasketTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 3 },
+              BasketId = 3,
               Material =
               [
                 new EventLogMaterial
@@ -7805,7 +7793,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 3 },
+              BasketId = 3,
               Material =
               [
                 new EventLogMaterial
@@ -7860,7 +7848,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 55 },
+              BasketId = 55,
               Material =
               [
                 new EventLogMaterial
@@ -7877,7 +7865,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 55 },
+              BasketId = 55,
               Material =
               [
                 new EventLogMaterial
@@ -7931,7 +7919,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new PalletBasketTransfer.UnloadFromBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 55 },
+              BasketId = 55,
               Material =
               [
                 new EventLogMaterial
@@ -7947,7 +7935,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.End
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 55 },
+              BasketId = 55,
               Material =
               [
                 new EventLogMaterial
@@ -7981,7 +7969,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 66 },
+              BasketId = 66,
               Material =
               [
                 new EventLogMaterial
@@ -7998,7 +7986,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 66 },
+              BasketId = 66,
               Material =
               [
                 new EventLogMaterial
@@ -8084,7 +8072,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketStationTransfer.LoadOntoBasket
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 55 },
+              BasketId = 55,
               Material =
               [
                 new EventLogMaterial
@@ -8101,7 +8089,7 @@ namespace BlackMaple.FMSInsight.Tests
           [
             new BasketCycleBoundary.Start
             {
-              BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 55 },
+              BasketId = 55,
               Material =
               [
                 new EventLogMaterial

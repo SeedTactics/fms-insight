@@ -1992,7 +1992,7 @@ namespace BlackMaple.MachineFramework
       var transferredFromBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
       foreach (var transfer in palletBasketCompletion.Transfers)
       {
-        RecordedBasketIdentity(transfer.BasketIdentity);
+        ValidateBasketId(transfer.BasketId);
         if (transfer.Material.Count == 0)
           throw new ArgumentException(
             "A basket transfer requires material.",
@@ -2017,11 +2017,11 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      var starts = new HashSet<BasketLogIdentity>();
-      var ends = new HashSet<BasketLogIdentity>();
+      var starts = new HashSet<int>();
+      var ends = new HashSet<int>();
       foreach (var boundary in palletBasketCompletion.CycleBoundaries)
       {
-        RecordedBasketIdentity(boundary.BasketIdentity);
+        ValidateBasketId(boundary.BasketId);
         if (
           boundary.Material.Select(material => material.MaterialID).Distinct().Count()
           != boundary.Material.Count
@@ -2032,7 +2032,7 @@ namespace BlackMaple.MachineFramework
           );
         if (boundary is BasketCycleBoundary.Start)
         {
-          if (boundary.Material.Count == 0 || !starts.Add(boundary.BasketIdentity))
+          if (boundary.Material.Count == 0 || !starts.Add(boundary.BasketId))
             throw new ArgumentException(
               "Each nonempty basket boundary requires one cycle start.",
               nameof(palletBasketCompletion)
@@ -2040,14 +2040,9 @@ namespace BlackMaple.MachineFramework
         }
         else if (boundary is BasketCycleBoundary.End end)
         {
-          if (!ends.Add(boundary.BasketIdentity))
+          if (!ends.Add(boundary.BasketId))
             throw new ArgumentException(
               "Each completed basket can have only one cycle end.",
-              nameof(palletBasketCompletion)
-            );
-          if (boundary.BasketIdentity is not BasketLogIdentity.NumberedBasket)
-            throw new ArgumentException(
-              "A basket cycle end requires a numbered basket identity.",
               nameof(palletBasketCompletion)
             );
         }
@@ -2056,7 +2051,7 @@ namespace BlackMaple.MachineFramework
       foreach (var transfer in palletBasketCompletion.Transfers)
       {
         var matchingBoundary = palletBasketCompletion.CycleBoundaries.FirstOrDefault(boundary =>
-          boundary.BasketIdentity == transfer.BasketIdentity
+          boundary.BasketId == transfer.BasketId
           && (
             (
               transfer is PalletBasketTransfer.LoadOntoBasket
@@ -2089,20 +2084,20 @@ namespace BlackMaple.MachineFramework
       {
         var end = palletBasketCompletion
           .CycleBoundaries.OfType<BasketCycleBoundary.End>()
-          .FirstOrDefault(boundary => boundary.BasketIdentity == start.BasketIdentity);
+          .FirstOrDefault(boundary => boundary.BasketId == start.BasketId);
         if (end is null)
           continue;
 
         var unloaded = palletBasketCompletion
           .Transfers.OfType<PalletBasketTransfer.UnloadFromBasket>()
-          .Where(transfer => transfer.BasketIdentity == start.BasketIdentity)
+          .Where(transfer => transfer.BasketId == start.BasketId)
           .SelectMany(transfer =>
             transfer.Material.Select(material => (material.MaterialID, material.Process))
           )
           .ToImmutableHashSet();
         var loaded = palletBasketCompletion
           .Transfers.OfType<PalletBasketTransfer.LoadOntoBasket>()
-          .Where(transfer => transfer.BasketIdentity == start.BasketIdentity)
+          .Where(transfer => transfer.BasketId == start.BasketId)
           .SelectMany(transfer =>
             transfer.Material.Select(material => (material.MaterialID, material.Process))
           )
@@ -2178,7 +2173,7 @@ namespace BlackMaple.MachineFramework
     {
       foreach (var transfer in palletBasketCompletion?.Transfers.OfType<TTransfer>() ?? [])
       {
-        var recordedBasketId = RecordedBasketIdentity(transfer.BasketIdentity);
+        var recordedBasketId = ValidateBasketId(transfer.BasketId);
         var loadOntoBasket = transfer is PalletBasketTransfer.LoadOntoBasket;
         logs.Add(
           AddLogEntry(
@@ -2220,9 +2215,9 @@ namespace BlackMaple.MachineFramework
           ?? []
       )
       {
-        var recordedBasketId = RecordedBasketIdentity(boundary.BasketIdentity);
+        var recordedBasketId = ValidateBasketId(boundary.BasketId);
         var firstEventTime = timeUTC;
-        var recentCycle = MostRecentBasketCycleEvent(boundary.BasketIdentity, trans);
+        var recentCycle = MostRecentBasketCycleEvent(boundary.BasketId, trans);
         if (recentCycle is { StartOfCycle: true, Invalidated: false })
         {
           firstEventTime = recentCycle.TimeUTC;
@@ -2261,12 +2256,9 @@ namespace BlackMaple.MachineFramework
       public required bool Invalidated { get; init; }
     }
 
-    private BasketCycleEventState MostRecentBasketCycleEvent(
-      BasketLogIdentity basketIdentity,
-      IDbTransaction trans
-    )
+    private BasketCycleEventState MostRecentBasketCycleEvent(int basketId, IDbTransaction trans)
     {
-      var recordedBasketId = RecordedBasketIdentity(basketIdentity);
+      var recordedBasketId = ValidateBasketId(basketId);
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
@@ -2303,9 +2295,9 @@ namespace BlackMaple.MachineFramework
           ?? []
       )
       {
-        var recordedBasketId = RecordedBasketIdentity(boundary.BasketIdentity);
+        var recordedBasketId = ValidateBasketId(boundary.BasketId);
         if (
-          MostRecentBasketCycleEvent(boundary.BasketIdentity, trans) is
+          MostRecentBasketCycleEvent(boundary.BasketId, trans) is
           { StartOfCycle: true, Invalidated: false }
         )
           throw new ConflictRequestException(
@@ -2842,7 +2834,7 @@ namespace BlackMaple.MachineFramework
         .OfType<TTransfer>()
         .SelectMany(transfer =>
         {
-          var basketId = RecordedBasketIdentity(transfer.BasketIdentity);
+          var basketId = ValidateBasketId(transfer.BasketId);
           return transfer.Material.Select(material => new BasketMaterialPosition(
             basketId,
             material.MaterialID,
@@ -2860,7 +2852,7 @@ namespace BlackMaple.MachineFramework
         .OfType<TTransfer>()
         .SelectMany(transfer =>
         {
-          var basketId = RecordedBasketIdentity(transfer.BasketIdentity);
+          var basketId = ValidateBasketId(transfer.BasketId);
           return transfer.Material.Select(material => new BasketMaterialPosition(
             basketId,
             material.MaterialID,
@@ -2888,13 +2880,13 @@ namespace BlackMaple.MachineFramework
             {
               BasketStationTransfer.LoadOntoBasket load => new PalletBasketTransfer.LoadOntoBasket
               {
-                BasketIdentity = load.BasketIdentity,
+                BasketId = load.BasketId,
                 Material = load.Material,
               },
               BasketStationTransfer.UnloadFromBasket unload =>
                 new PalletBasketTransfer.UnloadFromBasket
                 {
-                  BasketIdentity = unload.BasketIdentity,
+                  BasketId = unload.BasketId,
                   Material = unload.Material,
                 },
               _ => throw new ArgumentOutOfRangeException(nameof(operation)),
@@ -2917,7 +2909,7 @@ namespace BlackMaple.MachineFramework
       EventLogMetadata metadata = null
     )
     {
-      var recordedBasketId = RecordedBasketIdentity(transfer.BasketIdentity);
+      var recordedBasketId = ValidateBasketId(transfer.BasketId);
       logs.Add(
         AddLogEntry(
           trans,
@@ -2970,7 +2962,7 @@ namespace BlackMaple.MachineFramework
           fingerprint,
           transfer is BasketStationTransfer.LoadOntoBasket ? "load" : "unload"
         );
-        AppendFingerprint(fingerprint, BasketStationIdentity(transfer.BasketIdentity));
+        AppendFingerprint(fingerprint, BasketStationIdentity(transfer.BasketId));
         AppendFingerprint(
           fingerprint,
           transfer.ActiveOperationTime.Ticks.ToString(CultureInfo.InvariantCulture)
@@ -3026,7 +3018,7 @@ namespace BlackMaple.MachineFramework
       foreach (var boundary in cycleBoundaries)
       {
         AppendFingerprint(fingerprint, boundary is BasketCycleBoundary.Start ? "start" : "end");
-        AppendFingerprint(fingerprint, BasketStationIdentity(boundary.BasketIdentity));
+        AppendFingerprint(fingerprint, BasketStationIdentity(boundary.BasketId));
         foreach (
           var material in boundary
             .Material.OrderBy(material => material.MaterialID)
@@ -3044,12 +3036,8 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private static string BasketStationIdentity(BasketLogIdentity identity) =>
-      identity switch
-      {
-        BasketLogIdentity.NumberedBasket numbered => $"numbered:{numbered.BasketId}",
-        _ => "none",
-      };
+    private static string BasketStationIdentity(int basketId) =>
+      $"numbered:{ValidateBasketId(basketId)}";
 
     private static void AppendFingerprint(StringBuilder fingerprint, string value)
     {
@@ -3684,30 +3672,9 @@ namespace BlackMaple.MachineFramework
       EventLogMetadata metadata = null
     )
     {
-      return RecordBasketLoadBegin(
-        mats,
-        new BasketLogIdentity.NumberedBasket { BasketId = basketId },
-        lulNum,
-        timeUTC,
-        foreignId,
-        originalMessage,
-        metadata
-      );
-    }
-
-    public LogEntry RecordBasketLoadBegin(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    )
-    {
       return AddEntryInTransaction(trans =>
       {
-        var recordedBasketId = RecordedBasketIdentity(basketIdentity);
+        var recordedBasketId = ValidateBasketId(basketId);
         var entry = new NewEventLogEntry()
         {
           Material = mats,
@@ -3740,30 +3707,9 @@ namespace BlackMaple.MachineFramework
       EventLogMetadata metadata = null
     )
     {
-      return RecordBasketUnloadBegin(
-        mats,
-        new BasketLogIdentity.NumberedBasket { BasketId = basketId },
-        lulNum,
-        timeUTC,
-        foreignId,
-        originalMessage,
-        metadata
-      );
-    }
-
-    public LogEntry RecordBasketUnloadBegin(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    )
-    {
       return AddEntryInTransaction(trans =>
       {
-        var recordedBasketId = RecordedBasketIdentity(basketIdentity);
+        var recordedBasketId = ValidateBasketId(basketId);
         // Create BasketLoadUnload event
         var entry = new NewEventLogEntry()
         {
@@ -3798,32 +3744,9 @@ namespace BlackMaple.MachineFramework
       EventLogMetadata metadata = null
     )
     {
-      return RecordBasketArriveLocation(
-        mats,
-        new BasketLogIdentity.NumberedBasket { BasketId = basketId },
-        locationName,
-        locationPosition,
-        timeUTC,
-        foreignId,
-        originalMessage,
-        metadata
-      );
-    }
-
-    public LogEntry RecordBasketArriveLocation(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    )
-    {
       return AddEntryInTransaction(trans =>
       {
-        var recordedBasketId = RecordedBasketIdentity(basketIdentity);
+        var recordedBasketId = ValidateBasketId(basketId);
         var entry = new NewEventLogEntry()
         {
           Material = mats,
@@ -3858,34 +3781,9 @@ namespace BlackMaple.MachineFramework
       EventLogMetadata metadata = null
     )
     {
-      return RecordBasketDepartLocation(
-        mats,
-        new BasketLogIdentity.NumberedBasket { BasketId = basketId },
-        locationName,
-        locationPosition,
-        timeUTC,
-        elapsed,
-        foreignId,
-        originalMessage,
-        metadata
-      );
-    }
-
-    public LogEntry RecordBasketDepartLocation(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      TimeSpan elapsed,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    )
-    {
       return AddEntryInTransaction(trans =>
       {
-        var recordedBasketId = RecordedBasketIdentity(basketIdentity);
+        var recordedBasketId = ValidateBasketId(basketId);
         var entry = new NewEventLogEntry()
         {
           Material = mats,
@@ -3908,15 +3806,13 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    private static int RecordedBasketIdentity(BasketLogIdentity identity) =>
-      identity switch
-      {
-        BasketLogIdentity.NumberedBasket numbered when numbered.BasketId > 0 => numbered.BasketId,
-        _ => throw new ArgumentException(
+    private static int ValidateBasketId(int basketId) =>
+      basketId > 0
+        ? basketId
+        : throw new ArgumentException(
           "A basket event requires a positive BasketId.",
-          nameof(identity)
-        ),
-      };
+          nameof(basketId)
+        );
 
     public LogEntry RecordSerialForMaterialID(
       long materialID,

@@ -325,7 +325,7 @@ public sealed class BasketContentsSpec : IDisposable
         [
           new PalletBasketTransfer.UnloadFromBasket
           {
-            BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 4 },
+            BasketId = 4,
             Material = [LogMaterial(materialId, process: 1, slot: 1)],
           },
         ],
@@ -966,10 +966,7 @@ public sealed class BasketContentsSpec : IDisposable
       [
         new BasketStationTransfer.LoadOntoBasket
         {
-          BasketIdentity = new BasketLogIdentity.NumberedBasket
-          {
-            BasketId = transferBasketId ?? result.BasketId,
-          },
+          BasketId = transferBasketId ?? result.BasketId,
           Material =
           [
             new EventLogMaterial
@@ -1039,7 +1036,7 @@ public sealed class BasketContentsSpec : IDisposable
       [
         new PalletBasketTransfer.LoadOntoBasket
         {
-          BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = result.BasketId },
+          BasketId = result.BasketId,
           Material = [LogMaterial(materialId, process: 1, slot: 1)],
         },
       ],

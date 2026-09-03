@@ -130,27 +130,9 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null,
       EventLogMetadata metadata = null
     );
-    LogEntry RecordBasketLoadBegin(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
     LogEntry RecordBasketUnloadBegin(
       IEnumerable<EventLogMaterial> mats,
       int basketId,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-    LogEntry RecordBasketUnloadBegin(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -332,30 +314,9 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null,
       EventLogMetadata metadata = null
     );
-    LogEntry RecordBasketArriveLocation(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
     LogEntry RecordBasketDepartLocation(
       IEnumerable<EventLogMaterial> mats,
       int basketId,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      TimeSpan elapsed,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-    LogEntry RecordBasketDepartLocation(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
       string locationName,
       int locationPosition,
       DateTime timeUTC,
@@ -855,14 +816,14 @@ namespace BlackMaple.MachineFramework
   }
 
   /// <summary>
-  /// Basket-side evidence for material transferred during a pallet load/unload. Timing is recorded
+  /// Basket-side manufacturing events for material transferred during a pallet load/unload. Timing is recorded
   /// on the corresponding pallet event.
   /// </summary>
   public abstract record PalletBasketTransfer
   {
     private PalletBasketTransfer() { }
 
-    public required BasketLogIdentity BasketIdentity { get; init; }
+    public required int BasketId { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
     public sealed record LoadOntoBasket : PalletBasketTransfer;
@@ -874,7 +835,7 @@ namespace BlackMaple.MachineFramework
   {
     private BasketCycleBoundary() { }
 
-    public required BasketLogIdentity BasketIdentity { get; init; }
+    public required int BasketId { get; init; }
 
     /// <summary>
     /// Slot-aware material associated with the boundary. An end declares the complete material
@@ -899,7 +860,7 @@ namespace BlackMaple.MachineFramework
   {
     private BasketStationTransfer() { }
 
-    public required BasketLogIdentity BasketIdentity { get; init; }
+    public required int BasketId { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
     /// <summary>
@@ -972,16 +933,5 @@ namespace BlackMaple.MachineFramework
   {
     public required HashSet<long> MaterialIds { get; init; }
     public required IReadOnlyList<LogEntry> Logs { get; init; }
-  }
-
-  /// <summary>A numbered physical basket identity used by basket manufacturing operations.</summary>
-  public abstract record BasketLogIdentity
-  {
-    private BasketLogIdentity() { }
-
-    public sealed record NumberedBasket : BasketLogIdentity
-    {
-      public required int BasketId { get; init; }
-    }
   }
 }
