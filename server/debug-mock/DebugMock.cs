@@ -879,27 +879,6 @@ namespace DebugMachineWatchApiServer
             );
           }
         }
-        else if (e.LogType == LogType.BasketInLocation && e.Program == "Arrive")
-        {
-          LogDB.RecordBasketArriveLocation(
-            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
-            basketId: e.Pallet,
-            locationName: e.LocationName,
-            locationPosition: e.LocationNum,
-            timeUTC: e.EndTimeUTC.Add(offset)
-          );
-        }
-        else if (e.LogType == LogType.BasketInLocation && e.Program == "Depart")
-        {
-          LogDB.RecordBasketDepartLocation(
-            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
-            basketId: e.Pallet,
-            locationName: e.LocationName,
-            locationPosition: e.LocationNum,
-            timeUTC: e.EndTimeUTC.Add(offset),
-            elapsed: e.ElapsedTime
-          );
-        }
         else if (e.LogType == LogType.BasketCycle)
         {
           // Basket cycle rows are derived from basket load/unload replay above.

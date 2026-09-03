@@ -110,13 +110,6 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
     case api.LogType.BasketCycle:
       return `${basketName} Cycle`;
 
-    case api.LogType.BasketInLocation:
-      if (entry.startofcycle) {
-        return "Arrive";
-      } else {
-        return "Depart";
-      }
-
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
         return "Start Cycle";
@@ -244,25 +237,6 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
     case api.LogType.BasketCycle: {
       const basketName = basketDisplayName(fmsInfo.basketName);
       return <span>{basketCycleDescription(entry, basketName)}</span>;
-    }
-
-    case api.LogType.BasketInLocation: {
-      const basketName = basketDisplayName(fmsInfo.basketName);
-      if (entry.startofcycle) {
-        return (
-          <span>
-            {basketContainerName(entry, basketName)} arrived at {entry.loc}
-            {entry.locnum > 0 ? ` position ${entry.locnum}` : ""}
-          </span>
-        );
-      } else {
-        return (
-          <span>
-            {basketContainerName(entry, basketName)} departed from {entry.loc}
-            {entry.locnum > 0 ? ` position ${entry.locnum}` : ""}
-          </span>
-        );
-      }
     }
 
     case api.LogType.MachineCycle:

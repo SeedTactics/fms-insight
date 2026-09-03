@@ -830,53 +830,6 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public LogEntry MostRecentNumberedBasketArrival(int basketId) =>
-      MostRecentNumberedBasketLocationEvent(basketId, "Arrive", null, null);
-
-    public LogEntry MostRecentNumberedBasketDeparture(
-      int basketId,
-      string locationName,
-      int locationNum
-    ) => MostRecentNumberedBasketLocationEvent(basketId, "Depart", locationName, locationNum);
-
-    private LogEntry MostRecentNumberedBasketLocationEvent(
-      int basketId,
-      string program,
-      string locationName,
-      int? locationNum
-    )
-    {
-      if (basketId <= 0)
-        throw new ArgumentOutOfRangeException(nameof(basketId));
-      if (string.IsNullOrWhiteSpace(program))
-        throw new ArgumentException("Program is required.", nameof(program));
-      if ((locationName is null) != (locationNum is null))
-        throw new ArgumentException("Location name and number must be supplied together.");
-
-      using var trans = _connection.BeginTransaction();
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = trans;
-      cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
-        + "FROM stations s WHERE Pallet = $basket AND StationLoc = $type AND Program = $program "
-        + (locationName is null ? "" : "AND StationName = $location AND StationNum = $num ")
-        + "AND "
-        + ignoreInvalidEventCondition
-        + " ORDER BY Counter DESC LIMIT 1";
-      cmd.Parameters.Add("basket", SqliteType.Integer).Value = basketId;
-      cmd.Parameters.Add("type", SqliteType.Integer).Value = (int)LogType.BasketInLocation;
-      cmd.Parameters.Add("program", SqliteType.Text).Value = program;
-      if (locationName is not null)
-      {
-        cmd.Parameters.Add("location", SqliteType.Text).Value = locationName;
-        cmd.Parameters.Add("num", SqliteType.Integer).Value = locationNum!.Value;
-      }
-      using var reader = cmd.ExecuteReader();
-      var log = LoadLog(reader, trans).FirstOrDefault();
-      trans.Commit();
-      return log;
-    }
-
     public IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter)
     {
       using (var cmd = _connection.CreateCommand())
@@ -3723,79 +3676,6 @@ namespace BlackMaple.MachineFramework
           EndTimeUTC = timeUTC,
           Result = "UNLOAD",
           ElapsedTime = TimeSpan.Zero,
-          ActiveOperationTime = TimeSpan.Zero,
-        };
-        return AddLogEntry(
-          trans,
-          entry,
-          MergeEventLogMetadata(metadata, foreignId, originalMessage)
-        );
-      });
-    }
-
-    public LogEntry RecordBasketArriveLocation(
-      IEnumerable<EventLogMaterial> mats,
-      int basketId,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    )
-    {
-      return AddEntryInTransaction(trans =>
-      {
-        var recordedBasketId = ValidateBasketId(basketId);
-        var entry = new NewEventLogEntry()
-        {
-          Material = mats,
-          Pallet = recordedBasketId,
-          LogType = LogType.BasketInLocation,
-          LocationName = locationName,
-          LocationNum = locationPosition,
-          Program = "Arrive",
-          StartOfCycle = true,
-          EndTimeUTC = timeUTC,
-          Result = "",
-          ElapsedTime = TimeSpan.Zero,
-          ActiveOperationTime = TimeSpan.Zero,
-        };
-        return AddLogEntry(
-          trans,
-          entry,
-          MergeEventLogMetadata(metadata, foreignId, originalMessage)
-        );
-      });
-    }
-
-    public LogEntry RecordBasketDepartLocation(
-      IEnumerable<EventLogMaterial> mats,
-      int basketId,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      TimeSpan elapsed,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    )
-    {
-      return AddEntryInTransaction(trans =>
-      {
-        var recordedBasketId = ValidateBasketId(basketId);
-        var entry = new NewEventLogEntry()
-        {
-          Material = mats,
-          Pallet = recordedBasketId,
-          LogType = LogType.BasketInLocation,
-          LocationName = locationName,
-          LocationNum = locationPosition,
-          Program = "Depart",
-          StartOfCycle = false,
-          EndTimeUTC = timeUTC,
-          Result = "",
-          ElapsedTime = elapsed,
           ActiveOperationTime = TimeSpan.Zero,
         };
         return AddLogEntry(

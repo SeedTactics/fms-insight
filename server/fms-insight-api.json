@@ -2495,8 +2495,7 @@
           "Rebooking",
           "CancelRebooking",
           "BasketLoadUnload",
-          "BasketCycle",
-          "BasketInLocation"
+          "BasketCycle"
         ],
         "enum": [
           "LoadUnloadCycle",
@@ -2520,8 +2519,7 @@
           "Rebooking",
           "CancelRebooking",
           "BasketLoadUnload",
-          "BasketCycle",
-          "BasketInLocation"
+          "BasketCycle"
         ]
       },
       "ToolUse": {

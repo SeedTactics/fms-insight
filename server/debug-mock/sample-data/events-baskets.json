@@ -201,30 +201,6 @@
     }
   },
   {
-    "counter": 2006,
-    "material": [
-      {
-        "id": 200905,
-        "uniq": "tray-offline-2018-01-01",
-        "part": "tray",
-        "proc": 1,
-        "path": 1,
-        "numproc": 2,
-        "face": 0
-      }
-    ],
-    "type": "BasketInLocation",
-    "startofcycle": true,
-    "endUTC": "2018-01-28T18:46:00Z",
-    "loc": "Tower A",
-    "locnum": 2,
-    "pal": 502,
-    "program": "Arrive",
-    "result": "",
-    "elapsed": "PT0S",
-    "active": "PT0S"
-  },
-  {
     "counter": 2007,
     "material": [
       {
@@ -250,30 +226,6 @@
     "details": {
       "Queue": "Queue2"
     }
-  },
-  {
-    "counter": 2008,
-    "material": [
-      {
-        "id": 200906,
-        "uniq": "tray-offline-2018-01-01",
-        "part": "tray",
-        "proc": 1,
-        "path": 1,
-        "numproc": 2,
-        "face": 0
-      }
-    ],
-    "type": "BasketInLocation",
-    "startofcycle": true,
-    "endUTC": "2018-01-28T19:21:00Z",
-    "loc": "Rack B",
-    "locnum": 2,
-    "pal": 504,
-    "program": "Arrive",
-    "result": "",
-    "elapsed": "PT0S",
-    "active": "PT0S"
   },
   {
     "counter": 2009,
@@ -328,30 +280,6 @@
     "details": {
       "Queue": "Queue2"
     }
-  },
-  {
-    "counter": 2011,
-    "material": [
-      {
-        "id": 200907,
-        "uniq": "tray-offline-2018-01-01",
-        "part": "tray",
-        "proc": 1,
-        "path": 1,
-        "numproc": 2,
-        "face": 0
-      }
-    ],
-    "type": "BasketInLocation",
-    "startofcycle": false,
-    "endUTC": "2018-01-28T20:40:00Z",
-    "loc": "Rack B",
-    "locnum": 2,
-    "pal": 401,
-    "program": "Depart",
-    "result": "",
-    "elapsed": "PT18M",
-    "active": "PT18M"
   },
   {
     "counter": 2012,

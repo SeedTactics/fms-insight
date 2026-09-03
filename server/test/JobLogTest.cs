@@ -6641,51 +6641,6 @@ namespace BlackMaple.FMSInsight.Tests
           TimeSpan.Zero
         )
       );
-
-      // Test BasketInLocation arrive
-      var basketArrive = _jobLog.RecordBasketArriveLocation(
-        mats: new[] { mat1 }.Select(EventLogMaterial.FromLogMat),
-        basketId: 3,
-        locationName: "Tower1",
-        locationPosition: 5,
-        timeUTC: start.AddMinutes(20)
-      );
-
-      basketArrive.Counter.ShouldBeGreaterThan(0);
-      basketArrive.Material.ShouldBe(new[] { mat1 });
-      basketArrive.Pallet.ShouldBe(3); // basketId
-      basketArrive.LogType.ShouldBe(LogType.BasketInLocation);
-      basketArrive.LocationName.ShouldBe("Tower1");
-      basketArrive.LocationNum.ShouldBe(5); // locationPosition
-      basketArrive.Program.ShouldBe("Arrive");
-      basketArrive.StartOfCycle.ShouldBe(true);
-      basketArrive.EndTimeUTC.ShouldBe(start.AddMinutes(20));
-      basketArrive.Result.ShouldBe("");
-      basketArrive.ElapsedTime.ShouldBe(TimeSpan.Zero);
-      basketArrive.ActiveOperationTime.ShouldBe(TimeSpan.Zero);
-
-      // Test BasketInLocation depart
-      var basketDepart = _jobLog.RecordBasketDepartLocation(
-        mats: new[] { mat1 }.Select(EventLogMaterial.FromLogMat),
-        basketId: 3,
-        locationName: "Tower1",
-        locationPosition: 5,
-        timeUTC: start.AddMinutes(30),
-        elapsed: TimeSpan.FromMinutes(10)
-      );
-
-      basketDepart.Counter.ShouldBeGreaterThan(0);
-      basketDepart.Material.ShouldBe(new[] { mat1 });
-      basketDepart.Pallet.ShouldBe(3); // basketId
-      basketDepart.LogType.ShouldBe(LogType.BasketInLocation);
-      basketDepart.LocationName.ShouldBe("Tower1");
-      basketDepart.LocationNum.ShouldBe(5); // locationPosition
-      basketDepart.Program.ShouldBe("Depart");
-      basketDepart.StartOfCycle.ShouldBe(false);
-      basketDepart.EndTimeUTC.ShouldBe(start.AddMinutes(30));
-      basketDepart.Result.ShouldBe("");
-      basketDepart.ElapsedTime.ShouldBe(TimeSpan.FromMinutes(10));
-      basketDepart.ActiveOperationTime.ShouldBe(TimeSpan.Zero);
     }
 
     [Test]
@@ -6803,22 +6758,12 @@ namespace BlackMaple.FMSInsight.Tests
         externalQueues: ImmutableDictionary<string, string>.Empty,
         idempotencyKey: "basket-repository-initial-load"
       );
-      // Also test BasketInLocation, but it's not included in CurrentBasketLog
-      var arriveEvt = _jobLog.RecordBasketArriveLocation(
-        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
-        basketId: 1,
-        locationName: "Tower1",
-        locationPosition: 3,
-        timeUTC: start.AddMinutes(5)
-      );
-      // The complete-content cycle start follows its grounding load, so only the later location
-      // evidence appears in the default current log.
-      _jobLog.CurrentBasketLog(1).EventsShouldBe([arriveEvt]);
+      // The complete-content cycle start follows its grounding load and is excluded by default.
+      _jobLog.CurrentBasketLog(1).ShouldBeEmpty();
       var currentLog = _jobLog.CurrentBasketLog(1, includeLastCycleEvt: true);
-      currentLog.Count.ShouldBe(2);
+      currentLog.Count.ShouldBe(1);
       currentLog[0].LogType.ShouldBe(LogType.BasketCycle);
       currentLog[0].StartOfCycle.ShouldBeTrue();
-      currentLog[1].Counter.ShouldBe(arriveEvt.Counter);
       _jobLog.CurrentBasketLog(2).ShouldBeEmpty();
 
       // Create the basket cycle end explicitly while unloading the basket to the queue.

@@ -3361,7 +3361,6 @@ export enum LogType {
   CancelRebooking = "CancelRebooking",
   BasketLoadUnload = "BasketLoadUnload",
   BasketCycle = "BasketCycle",
-  BasketInLocation = "BasketInLocation",
 }
 
 export class ToolUse implements IToolUse {

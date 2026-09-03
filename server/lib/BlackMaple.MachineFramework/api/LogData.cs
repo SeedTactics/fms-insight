@@ -111,8 +111,8 @@ namespace BlackMaple.MachineFramework
     CancelRebooking = 115,
     BasketLoadUnload = 116,
     BasketCycle = 117,
-    BasketInLocation = 118,
-    // 119 through 128 belonged to beta-only basket event types. Keep those values unused.
+    // 118 through 128 belonged to removed basket position and beta evidence event types.
+    // Keep those values unused.
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 

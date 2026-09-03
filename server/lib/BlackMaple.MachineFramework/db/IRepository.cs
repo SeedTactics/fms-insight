@@ -72,11 +72,6 @@ namespace BlackMaple.MachineFramework
     [return: MaybeNull]
     BasketContents GetBasketContents(int basketId);
 
-    [return: MaybeNull]
-    LogEntry MostRecentNumberedBasketArrival(int basketId);
-
-    [return: MaybeNull]
-    LogEntry MostRecentNumberedBasketDeparture(int basketId, string locationName, int locationNum);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -303,27 +298,6 @@ namespace BlackMaple.MachineFramework
       TimeSpan elapsed,
       string foreignId = null,
       string originalMessage = null
-    );
-    LogEntry RecordBasketArriveLocation(
-      IEnumerable<EventLogMaterial> mats,
-      int basketId,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-    LogEntry RecordBasketDepartLocation(
-      IEnumerable<EventLogMaterial> mats,
-      int basketId,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      TimeSpan elapsed,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
     );
     LogEntry RecordSerialForMaterialID(
       EventLogMaterial mat,

@@ -54,12 +54,12 @@ describe("basket material and job details", () => {
     await expect.element(dialog).toHaveTextContent("Workorder: WO-TRAY");
   });
 
-  test("log entries render basket cycle and location history text clearly", async () => {
+  test("log entries render basket cycle history text clearly", async () => {
     const fixture = createMixedBasketFixture();
     const screen = await renderInsightPage(
       <LogEntries
         entries={(fixture.data.last30Log ?? []).filter(
-          (entry) => entry.type === LogType.BasketCycle || entry.type === LogType.BasketInLocation,
+          (entry) => entry.type === LogType.BasketCycle,
         )}
       />,
       fixture.data,
@@ -67,14 +67,6 @@ describe("basket material and job details", () => {
 
     await expect.element(screen.locator).toHaveTextContent("Tray 21 completed cycle");
     await expect.element(screen.locator).toHaveTextContent("Tray Cycle");
-    await expect.element(screen.locator).toHaveTextContent("Arrive");
-    await expect.element(screen.locator).toHaveTextContent("Depart");
-    await expect
-      .element(screen.locator)
-      .toHaveTextContent("Tray 21 arrived at Load Station Staging position 2");
-    await expect
-      .element(screen.locator)
-      .toHaveTextContent("Tray 21 departed from Load Station Staging position 2");
   });
 
   test("job details shows basket load and unload sections with load station display names", async () => {
