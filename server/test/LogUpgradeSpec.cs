@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using Microsoft.Data.Sqlite;
 using Shouldly;
@@ -122,12 +121,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(44);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(43);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(44);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(43);
       }
 
       CheckSchema(conn1, memDb);
@@ -998,58 +997,6 @@ namespace BlackMaple.FMSInsight.Tests
     public void Schema()
     {
       SchemaUpgradeSpec.Check(_tempFile);
-    }
-  }
-
-  public sealed class Ver43BetaBasketStorageUpgradeSpec : IDisposable
-  {
-    private readonly string _tempFile = System.IO.Path.Combine(
-      System.IO.Path.GetTempPath(),
-      Guid.NewGuid().ToString("N") + ".db"
-    );
-    private readonly RepositoryConfig _repo;
-
-    public Ver43BetaBasketStorageUpgradeSpec()
-    {
-      using (RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false)) { }
-      using (var connection = new SqliteConnection("Data Source=" + _tempFile))
-      {
-        connection.Open();
-        using var command = connection.CreateCommand();
-        command.CommandText =
-          "DROP TABLE current_basket_slot_data; DROP TABLE current_basket_material; "
-          + "DROP TABLE current_baskets; "
-          + "CREATE TABLE basket_observations(ObservationId TEXT PRIMARY KEY, "
-          + "Fingerprint TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE, "
-          + "SupersededByCorrectionId TEXT); "
-          + "INSERT INTO basket_observations VALUES('legacy-observation', 'legacy', 1, NULL); "
-          + "UPDATE version SET ver = 43";
-        command.ExecuteNonQuery();
-      }
-
-      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
-    }
-
-    public void Dispose()
-    {
-      _repo.Dispose();
-      if (System.IO.File.Exists(_tempFile))
-        System.IO.File.Delete(_tempFile);
-    }
-
-    [Test]
-    public async Task LeavesLegacyBetaStorageUnusedWithoutMigratingProjectionAuthority()
-    {
-      using var repository = _repo.OpenConnection();
-      await Assert.That(repository.GetBasketContents(4)).IsNull();
-
-      using var connection = new SqliteConnection("Data Source=" + _tempFile);
-      connection.Open();
-      using var command = connection.CreateCommand();
-      command.CommandText = "SELECT COUNT(*) FROM basket_observations";
-      await Assert.That(Convert.ToInt32(command.ExecuteScalar())).IsEqualTo(1);
-      command.CommandText = "SELECT COUNT(*) FROM current_baskets";
-      await Assert.That(Convert.ToInt32(command.ExecuteScalar())).IsEqualTo(0);
     }
   }
 

@@ -43,21 +43,17 @@ namespace BlackMaple.MachineFramework
 
     public void RecordBasketContentsOperation(
       BasketContentsOperation operation,
-      int locationNum,
-      DateTime timeUTC,
       string idempotencyKey,
       EventLogMetadata metadata = null
     )
     {
       var normalized = NormalizeBasketContentsOperation(operation);
-      if (locationNum <= 0)
-        throw new ArgumentOutOfRangeException(nameof(locationNum));
       if (string.IsNullOrWhiteSpace(idempotencyKey))
         throw new ArgumentException(
           "A basket contents operation requires an idempotency key.",
           nameof(idempotencyKey)
         );
-      var fingerprint = BasketContentsFingerprint(normalized, locationNum);
+      var fingerprint = BasketContentsFingerprint(normalized);
       var eventMetadata = NormalizeEventLogMetadata(metadata);
       lock (_cfg)
       {
@@ -500,13 +496,9 @@ namespace BlackMaple.MachineFramework
       return BasketContentsFingerprint(left) == BasketContentsFingerprint(right);
     }
 
-    private static string BasketContentsFingerprint(
-      BasketContentsOperation operation,
-      int locationNum
-    )
+    private static string BasketContentsFingerprint(BasketContentsOperation operation)
     {
       var fingerprint = new StringBuilder();
-      AppendFingerprint(fingerprint, locationNum.ToString(CultureInfo.InvariantCulture));
       foreach (var change in operation.Changes)
       {
         AppendFingerprint(fingerprint, change.BasketId.ToString(CultureInfo.InvariantCulture));

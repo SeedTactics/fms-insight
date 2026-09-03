@@ -34,8 +34,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = result,
         }
       ),
-      locationNum: 1,
-      DateTime.UtcNow,
       idempotencyKey: "prepare-4"
     );
     var loaded = repository.GetBasketContents(4);
@@ -154,8 +152,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = before,
         }
       ),
-      1,
-      DateTime.UtcNow,
       "seed-4"
     );
     repository.RecordAddMaterialToQueue(
@@ -213,8 +209,6 @@ public sealed class BasketContentsSpec : IDisposable
             Result = Empty(4),
           }
         ),
-        1,
-        DateTime.UtcNow,
         "initialize-4"
       );
     repository.RecordAddMaterialToQueue(
@@ -268,8 +262,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = empty,
         }
       ),
-      1,
-      DateTime.UtcNow,
       "initialize-4"
     );
     LoadMaterialOntoPallet(repository, materialId);
@@ -369,8 +361,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = empty,
         }
       ),
-      1,
-      DateTime.UtcNow,
       "initialize-4"
     );
     LoadMaterialOntoPallet(repository, transferredMaterial);
@@ -429,8 +419,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = empty,
         }
       ),
-      1,
-      DateTime.UtcNow,
       "initialize-4"
     );
     LoadMaterialOntoPallet(repository, materialId);
@@ -549,13 +537,8 @@ public sealed class BasketContentsSpec : IDisposable
       }
     );
 
-    repository.RecordBasketContentsOperation(operation, 1, DateTime.UtcNow, "prepare-4");
-    repository.RecordBasketContentsOperation(
-      operation,
-      1,
-      DateTime.UtcNow.AddHours(1),
-      "prepare-4"
-    );
+    repository.RecordBasketContentsOperation(operation, "prepare-4");
+    repository.RecordBasketContentsOperation(operation, "prepare-4");
     await Assert
       .That(() =>
         repository.RecordBasketContentsOperation(
@@ -569,8 +552,6 @@ public sealed class BasketContentsSpec : IDisposable
               },
             ],
           },
-          1,
-          DateTime.UtcNow,
           "prepare-4"
         )
       )
@@ -599,8 +580,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = basketFive,
         }
       ),
-      1,
-      DateTime.UtcNow,
       "seed"
     );
 
@@ -619,8 +598,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = Contents(5, 2, materialId, "tp-101"),
         }
       ),
-      1,
-      DateTime.UtcNow,
       "exchange"
     );
 
@@ -652,8 +629,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = basketFive,
         }
       ),
-      1,
-      DateTime.UtcNow,
       "seed"
     );
 
@@ -672,8 +647,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = Empty(5),
         }
       ),
-      1,
-      DateTime.UtcNow,
       "reverse-transfer"
     );
 
@@ -706,8 +679,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = basketFive,
         }
       ),
-      1,
-      DateTime.UtcNow,
       "seed"
     );
 
@@ -726,8 +697,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = Contents(5, 1, materialA, "tp-a"),
         }
       ),
-      1,
-      DateTime.UtcNow,
       "exchange"
     );
 
@@ -762,8 +731,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = basketFive,
         }
       ),
-      1,
-      DateTime.UtcNow,
       "seed"
     );
 
@@ -784,8 +751,6 @@ public sealed class BasketContentsSpec : IDisposable
               Result = Empty(5),
             }
           ),
-          1,
-          DateTime.UtcNow,
           "conflict"
         )
       )
@@ -814,8 +779,6 @@ public sealed class BasketContentsSpec : IDisposable
             Result = Contents(4, 1, materialId, "tp-101"),
           }
         ),
-        1,
-        DateTime.UtcNow,
         "prepare-4"
       );
     }
@@ -840,8 +803,6 @@ public sealed class BasketContentsSpec : IDisposable
           Result = Contents(4, 1, materialId, "tp-101"),
         }
       ),
-      1,
-      DateTime.UtcNow,
       "seed"
     );
 
@@ -856,8 +817,6 @@ public sealed class BasketContentsSpec : IDisposable
               Result = Contents(5, 1, materialId, "tp-101"),
             }
           ),
-          1,
-          DateTime.UtcNow,
           "duplicate-owner"
         )
       )
@@ -873,8 +832,6 @@ public sealed class BasketContentsSpec : IDisposable
               Result = Contents(6, 1, MaterialId.MaxValue, "tp-unknown"),
             }
           ),
-          1,
-          DateTime.UtcNow,
           "unknown-material"
         )
       )
@@ -914,8 +871,6 @@ public sealed class BasketContentsSpec : IDisposable
               Result = invalid,
             }
           ),
-          1,
-          DateTime.UtcNow,
           "bad-process"
         )
       )

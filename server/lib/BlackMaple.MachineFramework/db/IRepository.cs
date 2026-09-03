@@ -199,8 +199,6 @@ namespace BlackMaple.MachineFramework
     /// </summary>
     void RecordBasketContentsOperation(
       BasketContentsOperation operation,
-      int locationNum,
-      DateTime timeUTC,
       string idempotencyKey,
       EventLogMetadata metadata = null
     );

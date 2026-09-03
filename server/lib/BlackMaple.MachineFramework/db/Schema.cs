@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 44;
+    private const int Version = 43;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -537,9 +537,6 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 43)
             Ver41ToVer43(trans);
-
-          if (curVersion < 44)
-            Ver43ToVer44(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1358,6 +1355,7 @@ namespace BlackMaple.MachineFramework
         "CREATE INDEX stations_correlation_id ON stations(CorrelationId, Counter) WHERE CorrelationId IS NOT NULL";
       cmd.ExecuteNonQuery();
       CreateBasketOperationTables(cmd);
+      CreateBasketContentsTables(cmd);
       CreateMaterialAllocationOperationTables(cmd);
     }
 
@@ -1369,17 +1367,6 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText =
         "CREATE TABLE basket_operation_events(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, Counter INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
       cmd.ExecuteNonQuery();
-    }
-
-    private static void Ver43ToVer44(IDbTransaction trans)
-    {
-      // Version 43 basket evidence was beta-only and has no authority in the replacement model.
-      // Do not migrate it into current_basket_*; legacy tables/columns may remain unused after an
-      // upgrade, and the retired beta log values 118-128 are not translated. Fresh deployments
-      // start without that unsupported legacy storage.
-      using var cmd = trans.Connection.CreateCommand();
-      cmd.Transaction = trans;
-      CreateBasketContentsTables(cmd);
     }
 
     private static void CreateBasketContentsTables(IDbCommand cmd)

@@ -7062,8 +7062,6 @@ namespace BlackMaple.FMSInsight.Tests
             },
           ],
         },
-        locationNum: 6,
-        timeUTC: start.AddMinutes(40),
         idempotencyKey: "basket-3-process-complete"
       );
 
@@ -8064,8 +8062,6 @@ namespace BlackMaple.FMSInsight.Tests
             },
           ],
         },
-        locationNum: 5,
-        timeUTC: start.AddMinutes(5),
         idempotencyKey: "basket-55-process-complete"
       );
 

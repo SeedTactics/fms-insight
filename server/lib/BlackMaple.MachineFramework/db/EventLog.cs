@@ -2948,7 +2948,7 @@ namespace BlackMaple.MachineFramework
       }
       AppendBasketLifecycleFingerprint(fingerprint, operation.CycleBoundaries);
       if (contentsOperation is not null)
-        AppendFingerprint(fingerprint, BasketContentsFingerprint(contentsOperation, lulNum));
+        AppendFingerprint(fingerprint, BasketContentsFingerprint(contentsOperation));
       return fingerprint.ToString();
     }
 
