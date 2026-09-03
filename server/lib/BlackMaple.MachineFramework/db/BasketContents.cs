@@ -122,11 +122,10 @@ namespace BlackMaple.MachineFramework
     {
       if (operation is null)
       {
-        foreach (var basketId in loads.Concat(unloads).Select(item => item.BasketId).Distinct())
-          if (LoadBasketContents(basketId, trans) is not null)
-            throw new ConflictRequestException(
-              $"Basket {basketId} has established contents and requires an exact contents change."
-            );
+        if (!loads.IsEmpty || !unloads.IsEmpty)
+          throw new ArgumentException(
+            "Every basket material transfer requires an exact contents change."
+          );
         return;
       }
 

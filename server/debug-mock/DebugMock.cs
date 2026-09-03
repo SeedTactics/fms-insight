@@ -827,6 +827,8 @@ namespace DebugMachineWatchApiServer
           var queue = EventDetail(e, "Queue");
           if (!string.IsNullOrEmpty(queue))
           {
+            var material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList();
+            var expected = LogDB.GetBasketContents(e.Pallet);
             LogDB.RecordBasketStationOperation(
               operation: new BasketStationOperation
               {
@@ -835,11 +837,20 @@ namespace DebugMachineWatchApiServer
                   new BasketStationTransfer.LoadOntoBasket
                   {
                     BasketId = e.Pallet,
-                    Material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+                    Material = material,
                     ActiveOperationTime = e.ActiveOperationTime,
                   },
                 ],
                 CycleBoundaries = [],
+                ContentsChanges =
+                [
+                  new BasketContentsChange
+                  {
+                    BasketId = e.Pallet,
+                    Expected = expected,
+                    Result = ApplyBasketTransfer(e.Pallet, expected, material, load: true),
+                  },
+                ],
               },
               lulNum: e.LocationNum,
               totalElapsed: e.ElapsedTime,
@@ -855,6 +866,8 @@ namespace DebugMachineWatchApiServer
           var queue = EventDetail(e, "Queue");
           if (!string.IsNullOrEmpty(queue))
           {
+            var material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList();
+            var expected = LogDB.GetBasketContents(e.Pallet);
             LogDB.RecordBasketStationOperation(
               operation: new BasketStationOperation
               {
@@ -863,12 +876,21 @@ namespace DebugMachineWatchApiServer
                   new BasketStationTransfer.UnloadFromBasket
                   {
                     BasketId = e.Pallet,
-                    Material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+                    Material = material,
                     ActiveOperationTime = e.ActiveOperationTime,
                     DestinationQueue = queue,
                   },
                 ],
                 CycleBoundaries = [],
+                ContentsChanges =
+                [
+                  new BasketContentsChange
+                  {
+                    BasketId = e.Pallet,
+                    Expected = expected,
+                    Result = ApplyBasketTransfer(e.Pallet, expected, material, load: false),
+                  },
+                ],
               },
               lulNum: e.LocationNum,
               totalElapsed: e.ElapsedTime,
@@ -888,6 +910,45 @@ namespace DebugMachineWatchApiServer
           throw new Exception("Invalid log type " + e.LogType);
         }
       }
+    }
+
+    private static BasketContents ApplyBasketTransfer(
+      int basketId,
+      BasketContents current,
+      ImmutableList<EventLogMaterial> transfer,
+      bool load
+    )
+    {
+      var slots = current?.Slots ?? ImmutableSortedDictionary<int, BasketSlotContents>.Empty;
+      foreach (var bySlot in transfer.GroupBy(mat => mat.Face))
+      {
+        var existing = slots.GetValueOrDefault(bySlot.Key);
+        var existingMaterial = existing?.Material ?? [];
+        var transferredIds = bySlot.Select(mat => mat.MaterialID).ToImmutableHashSet();
+        var resultMaterial = load
+          ? existingMaterial.AddRange(
+            bySlot.Select(mat => new BasketMaterial
+            {
+              MaterialID = mat.MaterialID,
+              Process = mat.Process,
+            })
+          )
+          : existingMaterial
+            .Where(mat => !transferredIds.Contains(mat.MaterialID))
+            .ToImmutableList();
+        var additionalData =
+          existing?.AdditionalData ?? ImmutableSortedDictionary<string, string>.Empty;
+
+        if (resultMaterial.IsEmpty && additionalData.IsEmpty)
+          slots = slots.Remove(bySlot.Key);
+        else
+          slots = slots.SetItem(
+            bySlot.Key,
+            new BasketSlotContents { Material = resultMaterial, AdditionalData = additionalData }
+          );
+      }
+
+      return new BasketContents { BasketId = basketId, Slots = slots };
     }
 
     private void LoadJobs(string sampleDataPath, TimeSpan offset)

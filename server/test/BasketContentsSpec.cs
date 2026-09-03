@@ -195,23 +195,28 @@ public sealed class BasketContentsSpec : IDisposable
   }
 
   [Test]
-  public async Task EstablishedBasketContentsRequireManufacturingProjectionChange()
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task EveryBasketTransferRequiresManufacturingProjectionChange(
+    bool initializeProjection
+  )
   {
     using var repository = _repositoryConfig.OpenConnection();
     var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
-    repository.RecordBasketContentsOperation(
-      Operation(
-        new BasketContentsChange
-        {
-          BasketId = 4,
-          Expected = null,
-          Result = Empty(4),
-        }
-      ),
-      1,
-      DateTime.UtcNow,
-      "initialize-4"
-    );
+    if (initializeProjection)
+      repository.RecordBasketContentsOperation(
+        Operation(
+          new BasketContentsChange
+          {
+            BasketId = 4,
+            Expected = null,
+            Result = Empty(4),
+          }
+        ),
+        1,
+        DateTime.UtcNow,
+        "initialize-4"
+      );
     repository.RecordAddMaterialToQueue(
       new EventLogMaterial
       {
@@ -240,8 +245,11 @@ public sealed class BasketContentsSpec : IDisposable
           idempotencyKey: "missing-projection-change"
         )
       )
-      .Throws<ConflictRequestException>();
-    await Assert.That(repository.GetBasketContents(4)).IsEqualTo(Empty(4));
+      .Throws<ArgumentException>();
+    if (initializeProjection)
+      await Assert.That(repository.GetBasketContents(4)).IsEqualTo(Empty(4));
+    else
+      await Assert.That(repository.GetBasketContents(4)).IsNull();
   }
 
   [Test]

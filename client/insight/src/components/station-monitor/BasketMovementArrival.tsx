@@ -384,9 +384,7 @@ export function BasketMovementArrival({
             {correctionSubmission?.state === "accepted" ? (
               <Alert severity="success">Correction recorded.</Alert>
             ) : correctionSubmission?.state === "conflict" ? (
-              <Alert severity="warning">
-                Basket evidence changed. Review the refreshed status.
-              </Alert>
+              <Alert severity="warning">Basket status changed. Review the refreshed status.</Alert>
             ) : correctionSubmission?.state === "error" ? (
               <Alert
                 action={

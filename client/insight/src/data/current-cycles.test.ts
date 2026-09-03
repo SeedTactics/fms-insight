@@ -452,6 +452,16 @@ it("calculates current basket load cycles", () => {
       ],
     },
   ]);
+
+  expect(
+    currentCycles(
+      {
+        ...curSt,
+        baskets: { 77: new BasketStatus({ basketId: 77 }) },
+      },
+      HashMap.empty(),
+    ),
+  ).toEqual([]);
 });
 
 it("calculates current cycles for queue-to-basket load", () => {

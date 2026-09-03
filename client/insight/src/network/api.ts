@@ -5731,7 +5731,7 @@ export enum WorkorderSerialCloseout {
 
 export class BasketStatus implements IBasketStatus {
   basketId!: number;
-  position!: BasketPosition;
+  position?: BasketPosition | undefined;
   emptySlots?: number[];
   unknownSlots?: number[];
 
@@ -5741,9 +5741,6 @@ export class BasketStatus implements IBasketStatus {
         if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
       }
     }
-    if (!data) {
-      this.position = new BasketPosition();
-    }
   }
 
   init(_data?: any) {
@@ -5751,7 +5748,7 @@ export class BasketStatus implements IBasketStatus {
       this.basketId = _data["BasketId"];
       this.position = _data["Position"]
         ? BasketPosition.fromJS(_data["Position"])
-        : new BasketPosition();
+        : (undefined as any);
       if (Array.isArray(_data["EmptySlots"])) {
         this.emptySlots = [] as any;
         for (let item of _data["EmptySlots"]) this.emptySlots!.push(item);
@@ -5788,7 +5785,7 @@ export class BasketStatus implements IBasketStatus {
 
 export interface IBasketStatus {
   basketId: number;
-  position: BasketPosition;
+  position?: BasketPosition | undefined;
   emptySlots?: number[];
   unknownSlots?: number[];
 }
@@ -5850,7 +5847,7 @@ export enum BasketLocationEnum {
 export class BasketMoveInstruction implements IBasketMoveInstruction {
   instructionId!: string;
   basketId!: number;
-  source!: BasketPosition;
+  source?: BasketPosition | undefined;
   destination!: BasketPosition;
   reason!: BasketMoveReason;
   displayText!: string;
@@ -5863,7 +5860,6 @@ export class BasketMoveInstruction implements IBasketMoveInstruction {
       }
     }
     if (!data) {
-      this.source = new BasketPosition();
       this.destination = new BasketPosition();
     }
   }
@@ -5872,7 +5868,7 @@ export class BasketMoveInstruction implements IBasketMoveInstruction {
     if (_data) {
       this.instructionId = _data["InstructionId"];
       this.basketId = _data["BasketId"];
-      this.source = _data["Source"] ? BasketPosition.fromJS(_data["Source"]) : new BasketPosition();
+      this.source = _data["Source"] ? BasketPosition.fromJS(_data["Source"]) : (undefined as any);
       this.destination = _data["Destination"]
         ? BasketPosition.fromJS(_data["Destination"])
         : new BasketPosition();
@@ -5905,7 +5901,7 @@ export class BasketMoveInstruction implements IBasketMoveInstruction {
 export interface IBasketMoveInstruction {
   instructionId: string;
   basketId: number;
-  source: BasketPosition;
+  source?: BasketPosition | undefined;
   destination: BasketPosition;
   reason: BasketMoveReason;
   displayText: string;

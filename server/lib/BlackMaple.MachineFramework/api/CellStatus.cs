@@ -69,9 +69,9 @@ namespace BlackMaple.MachineFramework
     /// Current integration-supplied position. FMS Insight does not persist or reconstruct normal
     /// basket position history.
     /// </summary>
-    public required BasketPosition Position { get; init; }
+    public BasketPosition? Position { get; init; }
 
-    // Material in the basket is reconstructed from the list of InProcessMaterial,
+    // Material in the basket is represented by the list of InProcessMaterial,
     // with BasketSlot indicating which one-based physical slot the material is in.
     // Unknown or empty slots are included below.
     /// <summary>One-based physical slot numbers known to be empty.</summary>
@@ -113,7 +113,7 @@ namespace BlackMaple.MachineFramework
     /// </summary>
     public required string InstructionId { get; init; }
     public required int BasketId { get; init; }
-    public required BasketPosition Source { get; init; }
+    public BasketPosition? Source { get; init; }
     public required BasketPosition Destination { get; init; }
     public required BasketMoveReason Reason { get; init; }
     public required string DisplayText { get; init; }

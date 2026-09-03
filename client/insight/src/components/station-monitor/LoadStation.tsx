@@ -196,11 +196,12 @@ function selectLoadStationAndQueueProps(
     }
 
     for (const basket of Object.values(curSt.baskets ?? {})) {
-      if (basket.position.locationNum !== loadNum) continue;
+      const position = basket.position;
+      if (position === undefined || position.locationNum !== loadNum) continue;
 
-      if (basket.position.location === api.BasketLocationEnum.LoadUnload) {
+      if (position.location === api.BasketLocationEnum.LoadUnload) {
         activeBasket = basket;
-      } else if (basket.position.location === api.BasketLocationEnum.LoadStationStaging) {
+      } else if (position.location === api.BasketLocationEnum.LoadStationStaging) {
         basketsToShow.add(basket.basketId);
       }
     }

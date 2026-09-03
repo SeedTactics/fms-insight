@@ -2302,7 +2302,7 @@ namespace BlackMaple.MachineFramework
     //   - Pallet to/from queue (material loaded from queue onto pallet, or unloaded from pallet to queue)
     //   - Pallet to/from basket (material transferred between pallet face and basket)
     // Basket events are never inferred from event history. Callers that know basket state
-    // synchronously provide an explicit palletBasketCompletion. Delayed evidence and basket-station
+    // synchronously provide an explicit palletBasketCompletion. Delayed basket transfers and basket-station
     // queue work are recorded with RecordBasketStationOperation.
     public IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,

@@ -1373,6 +1373,10 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver43ToVer44(IDbTransaction trans)
     {
+      // Version 43 basket evidence was beta-only and has no authority in the replacement model.
+      // Do not migrate it into current_basket_*; legacy tables/columns may remain unused after an
+      // upgrade, and the retired beta log values 118-128 are not translated. Fresh deployments
+      // start without that unsupported legacy storage.
       using var cmd = trans.Connection.CreateCommand();
       cmd.Transaction = trans;
       CreateBasketContentsTables(cmd);

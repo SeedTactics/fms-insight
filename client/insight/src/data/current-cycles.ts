@@ -51,11 +51,13 @@ type LoadLocation = {
 function basketsAtLoad(currentSt: ICurrentStatus): ReadonlyMap<number, LoadLocation> {
   return LazySeq.ofObject(currentSt.baskets ?? {})
     .collect(([, basket]) => {
+      const position = basket.position;
+      if (position === undefined) return null;
       if (
-        basket.position.location === BasketLocationEnum.LoadUnload ||
-        basket.position.location === BasketLocationEnum.LoadStationStaging
+        position.location === BasketLocationEnum.LoadUnload ||
+        position.location === BasketLocationEnum.LoadStationStaging
       ) {
-        return [basket.basketId, { group: "L/U", num: basket.position.locationNum }] as const;
+        return [basket.basketId, { group: "L/U", num: position.locationNum }] as const;
       }
       return null;
     })

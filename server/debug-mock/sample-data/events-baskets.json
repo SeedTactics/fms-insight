@@ -129,7 +129,7 @@
         "proc": 1,
         "path": 1,
         "numproc": 2,
-        "face": 0
+        "face": 1
       }
     ],
     "type": "BasketLoadUnload",
@@ -156,7 +156,7 @@
         "proc": 1,
         "path": 1,
         "numproc": 2,
-        "face": 0
+        "face": 1
       }
     ],
     "type": "BasketLoadUnload",
@@ -183,7 +183,7 @@
         "proc": 1,
         "path": 1,
         "numproc": 2,
-        "face": 0
+        "face": 1
       }
     ],
     "type": "BasketLoadUnload",
@@ -210,7 +210,7 @@
         "proc": 1,
         "path": 1,
         "numproc": 2,
-        "face": 0
+        "face": 1
       }
     ],
     "type": "BasketLoadUnload",
@@ -237,7 +237,7 @@
         "proc": 1,
         "path": 1,
         "numproc": 2,
-        "face": 0
+        "face": 1
       }
     ],
     "type": "BasketLoadUnload",
@@ -264,7 +264,7 @@
         "proc": 1,
         "path": 1,
         "numproc": 2,
-        "face": 0
+        "face": 1
       }
     ],
     "type": "BasketLoadUnload",
@@ -291,7 +291,7 @@
         "proc": 1,
         "path": 1,
         "numproc": 2,
-        "face": 0
+        "face": 1
       }
     ],
     "type": "BasketCycle",
@@ -315,7 +315,7 @@
         "proc": 1,
         "path": 1,
         "numproc": 2,
-        "face": 0
+        "face": 1
       }
     ],
     "type": "BasketCycle",

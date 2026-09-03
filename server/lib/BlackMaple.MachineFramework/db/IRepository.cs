@@ -152,7 +152,7 @@ namespace BlackMaple.MachineFramework
     // The main method for recording a completed pallet load/unload, which combines
     // pallet <-> queue and pallet <-> basket operations along with any previously
     // recorded partial options in calls to `RecordPartialLoadUnload`. This emits pallet cycle
-    // events. Basket transfer evidence and basket cycle boundaries are emitted only from the
+    // events. Basket transfer events and basket cycle boundaries are emitted only from the
     // optional explicit basket completion.
     IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
