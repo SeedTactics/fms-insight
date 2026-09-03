@@ -312,7 +312,7 @@ const RebookingDialog = memo(function RebookingDialog({
 
 const partNamesAtom = atom<ReadonlyArray<string>>((get) =>
   LazySeq.ofObject(get(currentStatus).jobs)
-    .map(([_, j]) => j.partName)
+    .map(([, j]) => j.partName)
     .concat(
       get(last30Jobs)
         .valuesToLazySeq()

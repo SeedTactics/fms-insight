@@ -35,14 +35,13 @@ import {
   AnimationEvent,
   HTMLAttributes,
   RefCallback,
-  ForwardedRef,
   ComponentType,
   PureComponent,
-  forwardRef,
   memo,
   useState,
   Suspense,
   ReactNode,
+  Ref,
 } from "react";
 import * as jdenticon from "jdenticon";
 import {
@@ -512,34 +511,51 @@ export interface MaterialSummaryProps {
   readonly showRawMaterial?: boolean;
 }
 
-const MatCard = forwardRef(function MatCard(
-  props: MaterialSummaryProps & MaterialDragProps,
-  ref: ForwardedRef<HTMLDivElement>,
-) {
+const MatCard = function MatCard({
+  mat,
+  inProcMat,
+  fsize,
+  focusInspectionType,
+  isDragOverlay,
+  isActiveDrag,
+  shake,
+  dragRootProps,
+  showDragHandle,
+  setDragHandleRef,
+  dragHandleProps,
+  displayJob,
+  hideEmptySerial,
+  showRawMaterial,
+  showJobComment,
+  displayActionForSinglePallet,
+  hideAvatar,
+  hideWarningIcon,
+  ref,
+}: MaterialSummaryProps & MaterialDragProps & { readonly ref?: Ref<HTMLDivElement> }) {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
-  const completed = props.mat.completedInspections || {};
+  const completed = mat.completedInspections || {};
 
   let completedMsg: ReactNode | undefined;
-  if (props.focusInspectionType && completed[props.focusInspectionType]) {
+  if (focusInspectionType && completed[focusInspectionType]) {
     completedMsg = (
-      <MatCardDetail fsize={props.fsize}>
+      <MatCardDetail fsize={fsize}>
         <span>Inspection completed </span>
-        <TimeAgo date={completed[props.focusInspectionType].time} />
+        <TimeAgo date={completed[focusInspectionType].time} />
       </MatCardDetail>
     );
-  } else if (props.focusInspectionType && props.mat.last_unload_time) {
+  } else if (focusInspectionType && mat.last_unload_time) {
     completedMsg = (
-      <MatCardDetail fsize={props.fsize}>
+      <MatCardDetail fsize={fsize}>
         <span>Unloaded </span>
-        <TimeAgo date={props.mat.last_unload_time} />
+        <TimeAgo date={mat.last_unload_time} />
       </MatCardDetail>
     );
-  } else if (props.mat.closeout_completed) {
+  } else if (mat.closeout_completed) {
     completedMsg = (
-      <MatCardDetail fsize={props.fsize}>
-        <span>{props.mat.closeout_failed ? "Failed " : ""}Closed Out </span>
-        <TimeAgo date={props.mat.closeout_completed} />
+      <MatCardDetail fsize={fsize}>
+        <span>{mat.closeout_failed ? "Failed " : ""}Closed Out </span>
+        <TimeAgo date={mat.closeout_completed} />
       </MatCardDetail>
     );
   }
@@ -552,29 +568,29 @@ const MatCard = forwardRef(function MatCard(
         display: "flex",
         minWidth: "10em",
         padding: "8px",
-        margin: props.isDragOverlay ? undefined : "8px",
-        opacity: props.isActiveDrag ? 0.2 : 1,
-        animation: props.shake ? shakeHorizAnimation : undefined,
+        margin: isDragOverlay ? undefined : "8px",
+        opacity: isActiveDrag ? 0.2 : 1,
+        animation: shake ? shakeHorizAnimation : undefined,
         "&:hover": {
           animationPlayState: "paused",
         },
       }}
       onAnimationIteration={shakeAnimationIteration}
-      {...props.dragRootProps}
+      {...dragRootProps}
     >
-      {props.showDragHandle ? (
+      {showDragHandle ? (
         <div
-          ref={props.setDragHandleRef}
+          ref={setDragHandleRef}
           role="button"
           tabIndex={0}
           style={{
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            cursor: props.isDragOverlay ? "grabbing" : "grab",
+            cursor: isDragOverlay ? "grabbing" : "grab",
             touchAction: "none",
           }}
-          {...props.dragHandleProps}
+          {...dragHandleProps}
         >
           <DragIndicator fontSize="large" color="action" />
         </div>
@@ -584,9 +600,9 @@ const MatCard = forwardRef(function MatCard(
         sx={{ width: "100%" }}
         onClick={() =>
           setMatToShow(
-            props.inProcMat
-              ? { type: "InProcMat", inproc: props.inProcMat }
-              : { type: "MatSummary", summary: props.mat },
+            inProcMat
+              ? { type: "InProcMat", inproc: inProcMat }
+              : { type: "MatSummary", summary: mat },
           )
         }
       >
@@ -598,7 +614,7 @@ const MatCard = forwardRef(function MatCard(
             width: "100%",
           }}
         >
-          <PartIdenticon part={props.mat.partName} />
+          <PartIdenticon part={mat.partName} />
           <Box
             sx={{
               marginLeft: "8px",
@@ -606,44 +622,44 @@ const MatCard = forwardRef(function MatCard(
               minWidth: 0,
             }}
           >
-            <MatCardHeader fsize={props.fsize}>{props.mat.partName}</MatCardHeader>
-            {props.displayJob ? (
-              <MatCardDetail fsize={props.fsize}>
-                {props.mat.jobUnique && props.mat.jobUnique !== ""
-                  ? "Assigned to " + props.mat.jobUnique
+            <MatCardHeader fsize={fsize}>{mat.partName}</MatCardHeader>
+            {displayJob ? (
+              <MatCardDetail fsize={fsize}>
+                {mat.jobUnique && mat.jobUnique !== ""
+                  ? "Assigned to " + mat.jobUnique
                   : "Unassigned material"}
               </MatCardDetail>
             ) : undefined}
-            {!props.hideEmptySerial || props.mat.serial ? (
-              <MatCardDetail fsize={props.fsize}>
-                Serial: {props.mat.serial ? props.mat.serial : "none"}
+            {!hideEmptySerial || mat.serial ? (
+              <MatCardDetail fsize={fsize}>
+                Serial: {mat.serial ? mat.serial : "none"}
               </MatCardDetail>
             ) : undefined}
-            {props.mat.workorderId === undefined ||
-            props.mat.workorderId === "" ||
-            props.mat.workorderId === props.mat.serial ? undefined : (
-              <MatCardDetail fsize={props.fsize}>Workorder: {props.mat.workorderId}</MatCardDetail>
+            {mat.workorderId === undefined ||
+            mat.workorderId === "" ||
+            mat.workorderId === mat.serial ? undefined : (
+              <MatCardDetail fsize={fsize}>Workorder: {mat.workorderId}</MatCardDetail>
             )}
-            {props.mat.jobUnique !== undefined &&
-            props.showRawMaterial &&
-            props.inProcMat &&
-            props.inProcMat.process === 0 ? (
-              <JobRawMaterial fsize={props.fsize} mat={props.inProcMat} />
+            {mat.jobUnique !== undefined &&
+            showRawMaterial &&
+            inProcMat &&
+            inProcMat.process === 0 ? (
+              <JobRawMaterial fsize={fsize} mat={inProcMat} />
             ) : undefined}
-            {props.showJobComment && props.mat.jobUnique && props.mat.jobUnique !== "" ? (
-              <RebookingNoteElipsis fsize={props.fsize} uniq={props.mat.jobUnique} />
+            {showJobComment && mat.jobUnique && mat.jobUnique !== "" ? (
+              <RebookingNoteElipsis fsize={fsize} uniq={mat.jobUnique} />
             ) : undefined}
-            {props.inProcMat ? (
+            {inProcMat ? (
               <MaterialAction
-                mat={props.inProcMat}
-                displayActionForSinglePallet={props.displayActionForSinglePallet}
-                fsize={props.fsize}
+                mat={inProcMat}
+                displayActionForSinglePallet={displayActionForSinglePallet}
+                fsize={fsize}
               />
             ) : undefined}
-            {props.inProcMat?.problem ? (
-              <MatCardDetail fsize={props.fsize}>
+            {inProcMat?.problem ? (
+              <MatCardDetail fsize={fsize}>
                 <Typography variant="body2" color="error" sx={{ fontWeight: "bold" }}>
-                  ⚠ {props.inProcMat.problem}
+                  ⚠ {inProcMat.problem}
                 </Typography>
               </MatCardDetail>
             ) : undefined}
@@ -660,16 +676,14 @@ const MatCard = forwardRef(function MatCard(
               flexShrink: 0,
             }}
           >
-            {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
+            {mat.serial && mat.serial.length >= 1 && !hideAvatar ? (
               <div>
-                <Avatar style={{ width: "30px", height: "30px" }}>
-                  {props.mat.serial.slice(-1)}
-                </Avatar>
+                <Avatar style={{ width: "30px", height: "30px" }}>{mat.serial.slice(-1)}</Avatar>
               </div>
             ) : undefined}
-            {props.hideWarningIcon ? undefined : (
+            {hideWarningIcon ? undefined : (
               <div>
-                <Warning mat={props.mat} />
+                <Warning mat={mat} />
               </div>
             )}
           </Box>
@@ -677,7 +691,7 @@ const MatCard = forwardRef(function MatCard(
       </ButtonBase>
     </Paper>
   );
-});
+};
 
 export const MatSummary: ComponentType<MaterialSummaryProps> = memo(MatCard);
 

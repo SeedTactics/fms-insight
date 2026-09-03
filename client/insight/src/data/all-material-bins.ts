@@ -210,7 +210,7 @@ export function selectAllMaterialIntoBins(
   }
 
   const activeQueues = LazySeq.ofObject(curSt.jobs)
-    .flatMap(([_, job]) => job.procsAndPaths)
+    .flatMap(([, job]) => job.procsAndPaths)
     .flatMap((proc) => proc.paths)
     .flatMap((path) => {
       const q: string[] = [];
@@ -225,12 +225,12 @@ export function selectAllMaterialIntoBins(
             info.role === api.QueueRole.RawMaterial ||
             info.role === api.QueueRole.InProcessTransfer,
         )
-        .map(([qname, _]) => qname),
+        .map(([qname]) => qname),
     )
     .toRSet((x) => x);
   const quarantineQueues = LazySeq.ofObject(curSt.queues)
-    .filter(([qname, _]) => !activeQueues.has(qname))
-    .toRSet(([qname, _]) => qname);
+    .filter(([qname]) => !activeQueues.has(qname))
+    .toRSet(([qname]) => qname);
 
   const bins = curBinOrder.filter(
     (b) =>

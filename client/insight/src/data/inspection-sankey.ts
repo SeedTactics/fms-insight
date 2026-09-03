@@ -162,7 +162,7 @@ export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyD
   // create a map from NodeR to index
   const nodesToIdx = nodes.toHashMap(
     (n) => [n.node, n.idx],
-    (i1, _) => i1,
+    (i1) => i1,
   );
 
   // create the sankey links to return by counting Edges between nodes

@@ -226,7 +226,7 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
       behavior: "smooth",
       block: "end",
     });
-  }, [boxRef, show]);
+  }, [boxRef]);
 
   if (!show) return <div />;
 

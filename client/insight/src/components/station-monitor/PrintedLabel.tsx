@@ -184,7 +184,7 @@ function OneJobPerPage(props: PrintedLabelProps) {
               },
             ] as const,
         )
-        .toSortedArray(([_, p]) => p.part),
+        .toSortedArray(([, p]) => p.part),
     [props.material, allJobs],
   );
 
@@ -236,7 +236,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
         .filter((m) => m.jobUnique !== null && m.jobUnique !== undefined && m.jobUnique !== "")
         .groupBy((m) => m.jobUnique)
         .map(([k, mats]) => [k, { length: mats.length, part: mats[0]?.partName ?? "" }] as const)
-        .toSortedArray(([_, p]) => p.part),
+        .toSortedArray(([, p]) => p.part),
     [props.material],
   );
 

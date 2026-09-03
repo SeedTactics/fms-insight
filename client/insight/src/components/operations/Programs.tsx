@@ -651,26 +651,32 @@ export function ProgramHistoryDialog(): ReactNode {
   const [error, setError] = useState<string | Error | null>(null);
 
   useEffect(() => {
-    if (program === null) {
-      setRevisions(null);
-      setPage(0);
-      setLastLoadedPage({ page: 0, hasMore: false });
-    } else if (program !== null && revisions === null) {
-      // load initial
-      setLoading(true);
-      setError(null);
-      MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(
-        program.programName,
-        revisionsPerPage,
-        undefined,
-      )
-        .then((revs) => {
+    const loadProgramDetails = async () => {
+      if (program === null) {
+        setRevisions(null);
+        setPage(0);
+        setLastLoadedPage({ page: 0, hasMore: false });
+      } else if (program !== null && revisions === null) {
+        // load initial
+        setLoading(true);
+        setError(null);
+        try {
+          const revs = await MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(
+            program.programName,
+            revisionsPerPage,
+            undefined,
+          );
           setRevisions(revs);
           setLastLoadedPage({ page: 0, hasMore: revs.length === revisionsPerPage });
-        })
-        .catch(setError)
-        .finally(() => setLoading(false));
-    }
+        } catch (err) {
+          setError(err instanceof Error ? err : String(err));
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProgramDetails().catch(console.error);
   }, [program, revisions]);
 
   function advancePage() {

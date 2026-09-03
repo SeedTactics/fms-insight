@@ -122,7 +122,7 @@ export function binCyclesByDayAndPart(
   return LazySeq.of(matsById)
     .flatMap(([matId, details]) =>
       LazySeq.ofObject(details.unloaded_processes ?? {})
-        .filter(([_, unloadTime]) => unloadTime >= start && unloadTime <= end)
+        .filter(([, unloadTime]) => unloadTime >= start && unloadTime <= end)
         .map(([proc, unloadTime]) => ({
           day: startOfDay(unloadTime),
           part: details.partName + "-" + proc,

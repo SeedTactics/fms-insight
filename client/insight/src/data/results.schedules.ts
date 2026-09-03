@@ -61,7 +61,7 @@ export function buildScheduledJobs(
 ): ReadonlyArray<ScheduledJobDisplay> {
   const completedMats = LazySeq.of(matIds)
     .flatMap(([matId, summary]) =>
-      LazySeq.ofObject(summary.unloaded_processes ?? {}).map(([proc, _]) => ({
+      LazySeq.ofObject(summary.unloaded_processes ?? {}).map(([proc]) => ({
         matId: matId,
         proc: parseInt(proc),
         uniq: summary.jobUnique,

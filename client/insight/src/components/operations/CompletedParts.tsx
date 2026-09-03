@@ -125,22 +125,22 @@ function sortPartSummary(
       sortCol = (j) =>
         j.stationMins
           .toAscLazySeq()
-          .filter(([_, stat]) => !stat.isLoadUnload)
+          .filter(([, stat]) => !stat.isLoadUnload)
           .sumBy(([, t]) => t.elapsed);
       break;
     case "Active":
       sortCol = (j) =>
         j.stationMins
           .toAscLazySeq()
-          .filter(([_, stat]) => !stat.isLoadUnload)
-          .sumBy(([_, t]) => t.active);
+          .filter(([, stat]) => !stat.isLoadUnload)
+          .sumBy(([, t]) => t.active);
       break;
     case "Median":
       sortCol = (j) =>
         j.stationMins
           .toAscLazySeq()
-          .filter(([_, stat]) => !stat.isLoadUnload)
-          .sumBy(([_, t]) => t.medianElapsed);
+          .filter(([, stat]) => !stat.isLoadUnload)
+          .sumBy(([, t]) => t.medianElapsed);
       break;
   }
   const sorted = [...parts];
@@ -495,15 +495,15 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
           {numFormat.format(
             part.stationMins
               .toAscLazySeq()
-              .filter(([_, stat]) => !stat.isLoadUnload)
-              .sumBy(([_, t]) => t.active) / 60,
+              .filter(([, stat]) => !stat.isLoadUnload)
+              .sumBy(([, t]) => t.active) / 60,
           )}
         </TableCell>
         <TableCell align="right">
           {numFormat.format(
             part.stationMins
               .toAscLazySeq()
-              .filter(([_, stat]) => !stat.isLoadUnload)
+              .filter(([, stat]) => !stat.isLoadUnload)
               .sumBy(([, t]) => t.elapsed) / 60,
           )}
         </TableCell>
@@ -511,7 +511,7 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
           {numFormat.format(
             part.stationMins
               .toAscLazySeq()
-              .filter(([_, stat]) => !stat.isLoadUnload)
+              .filter(([, stat]) => !stat.isLoadUnload)
               .sumBy(([, t]) => t.medianElapsed) / 60,
           )}
         </TableCell>
@@ -765,7 +765,7 @@ function copyPartsToClipboard(parts: ReadonlyArray<PartSummary>) {
     for (const lul of [false, true]) {
       const stats = p.stationMins
         .toAscLazySeq()
-        .filter(([_, stat]) => stat.isLoadUnload === lul)
+        .filter(([, stat]) => stat.isLoadUnload === lul)
         .toRArray();
 
       if (stats.length === 0) {

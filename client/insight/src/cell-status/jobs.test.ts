@@ -70,7 +70,7 @@ function jobsToHistory(newJs: Iterable<NewJobs>): IHistoricData {
           });
           return [j.unique, historicJob] as const;
         },
-        (a, _) => a,
+        (a) => a,
       ),
     stationUse: LazySeq.of(newJs)
       .flatMap((s) => s.stationUse ?? [])

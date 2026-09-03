@@ -145,7 +145,7 @@ export function RecentFailedInspectionsTable() {
   const inspections = useAtomValue(last30Inspections);
   const failed = useMemo(() => {
     const today = startOfToday();
-    const allEvts = LazySeq.of(inspections).flatMap(([_, evts]) => evts.valuesToLazySeq());
+    const allEvts = LazySeq.of(inspections).flatMap(([, evts]) => evts.valuesToLazySeq());
     return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));
   }, [inspections]);
   return (

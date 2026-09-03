@@ -470,7 +470,7 @@ export function buildCycleTable(
   table += "</tr></thead>\n<tbody>\n";
 
   const filteredCycles = LazySeq.of(cycles.data)
-    .flatMap(([_, c]) => c)
+    .flatMap(([, c]) => c)
     .filter((p) => (!startD || p.endTime >= startD) && (!endD || p.endTime < endD))
     .toSortedArray((a) => a.endTime.getTime());
   for (const cycle of filteredCycles) {
