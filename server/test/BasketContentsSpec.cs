@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
@@ -881,36 +880,26 @@ public sealed class BasketContentsSpec : IDisposable
   [Test]
   public async Task RequestedMaterialValidationUsesExistingPointLookupIndexes()
   {
-    var databaseFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
-    try
-    {
-      using var config = RepositoryConfig.InitializeEventDatabase(
-        null,
-        databaseFile,
-        pooling: false
-      );
-      using var connection = new SqliteConnection("Data Source=" + databaseFile);
-      connection.Open();
+    var databaseId = Guid.NewGuid();
+    using var config = RepositoryConfig.InitializeMemoryDB(null, databaseId);
+    using var connection = new SqliteConnection(
+      $"Data Source=file:${databaseId}?mode=memory&cache=shared"
+    );
+    connection.Open();
 
-      var allocationPlan = QueryPlan(
-        connection,
-        "SELECT NumProcesses FROM matdetails WHERE MaterialID = 42"
-      );
-      var ownershipPlan = QueryPlan(
-        connection,
-        "SELECT BasketId FROM current_basket_material WHERE MaterialID = 42"
-      );
+    var allocationPlan = QueryPlan(
+      connection,
+      "SELECT NumProcesses FROM matdetails WHERE MaterialID = 42"
+    );
+    var ownershipPlan = QueryPlan(
+      connection,
+      "SELECT BasketId FROM current_basket_material WHERE MaterialID = 42"
+    );
 
-      await Assert.That(allocationPlan).Contains("USING INTEGER PRIMARY KEY");
-      await Assert.That(ownershipPlan).Contains("sqlite_autoindex_current_basket_material_");
-      await Assert.That(ownershipPlan).Contains("(MaterialID=?)");
-      await Assert.That(ownershipPlan).DoesNotContain("SCAN current_basket_material");
-    }
-    finally
-    {
-      if (File.Exists(databaseFile))
-        File.Delete(databaseFile);
-    }
+    await Assert.That(allocationPlan).Contains("USING INTEGER PRIMARY KEY");
+    await Assert.That(ownershipPlan).Contains("sqlite_autoindex_current_basket_material_");
+    await Assert.That(ownershipPlan).Contains("(MaterialID=?)");
+    await Assert.That(ownershipPlan).DoesNotContain("SCAN current_basket_material");
   }
 
   private static BasketContentsOperation Operation(params BasketContentsChange[] changes) =>
