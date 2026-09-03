@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet INTEGER,"
           + "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER,"
-          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, BasketContentEpisodeId TEXT, CorrelationId TEXT)";
+          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, CorrelationId TEXT)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -101,23 +101,18 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE INDEX stations_basket_content_episode_id ON stations(BasketContentEpisodeId, StationLoc, Result, Counter) WHERE BasketContentEpisodeId IS NOT NULL";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
           "CREATE INDEX stations_basket_cycles ON stations(Pallet, Counter) WHERE StationLoc = 117 AND Result = 'BasketCycle'";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText =
-          "CREATE INDEX stations_pallet_counter ON stations(Pallet, Counter) WHERE BasketContentEpisodeId IS NULL";
+        cmd.CommandText = "CREATE INDEX stations_pallet_counter ON stations(Pallet, Counter)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE INDEX stations_numbered_basket_location_program_counter ON stations(Pallet, Program, Counter) WHERE StationLoc = 116 AND BasketContentEpisodeId IS NULL";
+          "CREATE INDEX stations_numbered_basket_location_program_counter ON stations(Pallet, Program, Counter) WHERE StationLoc = 116";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE INDEX stations_numbered_basket_location ON stations(Pallet, Program, StationName, StationNum, Counter) WHERE StationLoc = 116 AND BasketContentEpisodeId IS NULL";
+          "CREATE INDEX stations_numbered_basket_location ON stations(Pallet, Program, StationName, StationNum, Counter) WHERE StationLoc = 116";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -128,6 +123,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         CreateBasketOperationTables(cmd);
+        CreateBasketContentsTables(cmd);
         CreateMaterialAllocationOperationTables(cmd);
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
@@ -179,12 +175,6 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
         cmd.ExecuteNonQuery();
-
-        CreateBasketObservationTables(cmd);
-        CreateBasketCycleTables(cmd);
-
-        CreateBasketRegionSurveyTables(cmd);
-        CreateBasketMisloadTables(cmd);
 
         cmd.CommandText =
           "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, CurrentCount INTEGER, LifeCount INTEGER, Serial TEXT, "
@@ -1348,84 +1338,25 @@ namespace BlackMaple.MachineFramework
       using var cmd = trans.Connection.CreateCommand();
       cmd.Transaction = trans;
 
-      cmd.CommandText = "ALTER TABLE stations ADD BasketContentEpisodeId TEXT";
-      cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE stations ADD CorrelationId TEXT";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX stations_basket_content_episode_id ON stations(BasketContentEpisodeId, StationLoc, Result, Counter) WHERE BasketContentEpisodeId IS NOT NULL";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE INDEX stations_basket_cycles ON stations(Pallet, Counter) WHERE StationLoc = 117 AND Result = 'BasketCycle'";
       cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX stations_pallet_counter ON stations(Pallet, Counter) WHERE BasketContentEpisodeId IS NULL";
+      cmd.CommandText = "CREATE INDEX stations_pallet_counter ON stations(Pallet, Counter)";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
-        "CREATE INDEX stations_numbered_basket_location_program_counter ON stations(Pallet, Program, Counter) WHERE StationLoc = 116 AND BasketContentEpisodeId IS NULL";
+        "CREATE INDEX stations_numbered_basket_location_program_counter ON stations(Pallet, Program, Counter) WHERE StationLoc = 116";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
-        "CREATE INDEX stations_numbered_basket_location ON stations(Pallet, Program, StationName, StationNum, Counter) WHERE StationLoc = 116 AND BasketContentEpisodeId IS NULL";
+        "CREATE INDEX stations_numbered_basket_location ON stations(Pallet, Program, StationName, StationNum, Counter) WHERE StationLoc = 116";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE INDEX stations_correlation_id ON stations(CorrelationId, Counter) WHERE CorrelationId IS NOT NULL";
       cmd.ExecuteNonQuery();
-      CreateBasketObservationTables(cmd);
-      CreateBasketCycleTables(cmd);
       CreateBasketOperationTables(cmd);
+      CreateBasketContentsTables(cmd);
       CreateMaterialAllocationOperationTables(cmd);
-      CreateBasketRegionSurveyTables(cmd);
-      CreateBasketMisloadTables(cmd);
-    }
-
-    private static void CreateBasketObservationTables(IDbCommand cmd)
-    {
-      cmd.CommandText =
-        "CREATE TABLE basket_evidence_sources(Counter INTEGER PRIMARY KEY, SourceKind INTEGER NOT NULL, SourceName TEXT NOT NULL)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_observations(ObservationId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE, SupersededByCorrectionId TEXT)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_observation_details(Counter INTEGER PRIMARY KEY, PositionLocation INTEGER NOT NULL, PositionLocationNum INTEGER NOT NULL, PositionZone INTEGER, PositionLocationTitle TEXT, Note TEXT)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_observation_episodes(Counter INTEGER NOT NULL, ContentEpisodeId TEXT NOT NULL, PRIMARY KEY(Counter, ContentEpisodeId))";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX basket_observation_episodes_id ON basket_observation_episodes(ContentEpisodeId, Counter)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_observation_corrections(CorrectionId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, TargetObservationId TEXT NOT NULL UNIQUE, ReplacementObservationId TEXT, Counter INTEGER NOT NULL UNIQUE, Note TEXT)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE UNIQUE INDEX basket_observation_corrections_replacement ON basket_observation_corrections(ReplacementObservationId) WHERE ReplacementObservationId IS NOT NULL";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE current_basket_observation_episodes(ContentEpisodeId TEXT PRIMARY KEY, ObservationCounter INTEGER NOT NULL, BasketNum INTEGER NOT NULL)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX current_basket_observation_episodes_num ON current_basket_observation_episodes(BasketNum, ContentEpisodeId)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE current_basket_position_observations(BasketNum INTEGER PRIMARY KEY, ObservationCounter INTEGER NOT NULL UNIQUE)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_position_evidence_seen(BasketNum INTEGER PRIMARY KEY, FirstEvidenceCounter INTEGER NOT NULL)";
-      cmd.ExecuteNonQuery();
-    }
-
-    private static void CreateBasketCycleTables(IDbCommand cmd)
-    {
-      cmd.CommandText =
-        "CREATE TABLE basket_cycle_content_episode_ids(CycleCounter INTEGER NOT NULL, BasketContentEpisodeId TEXT PRIMARY KEY)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX basket_cycle_content_episode_ids_cycle ON basket_cycle_content_episode_ids(CycleCounter, BasketContentEpisodeId)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE open_basket_content_episodes(ContentEpisodeId TEXT PRIMARY KEY)";
-      cmd.ExecuteNonQuery();
     }
 
     private static void CreateBasketOperationTables(IDbCommand cmd)
@@ -1438,6 +1369,18 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
     }
 
+    private static void CreateBasketContentsTables(IDbCommand cmd)
+    {
+      cmd.CommandText = "CREATE TABLE current_baskets(BasketId INTEGER PRIMARY KEY)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE current_basket_material(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, MaterialID INTEGER NOT NULL UNIQUE, Process INTEGER NOT NULL, PRIMARY KEY(BasketId, Slot, MaterialID))";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE current_basket_slot_data(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, Key TEXT NOT NULL, Value TEXT NOT NULL, PRIMARY KEY(BasketId, Slot, Key))";
+      cmd.ExecuteNonQuery();
+    }
+
     private static void CreateMaterialAllocationOperationTables(IDbCommand cmd)
     {
       cmd.CommandText =
@@ -1445,43 +1388,6 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE material_allocation_material(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, MaterialID INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
-      cmd.ExecuteNonQuery();
-    }
-
-    private static void CreateBasketRegionSurveyTables(IDbCommand cmd)
-    {
-      cmd.CommandText =
-        "CREATE TABLE basket_region_surveys(SurveyId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_region_survey_details(Counter INTEGER PRIMARY KEY, RegionLocation INTEGER NOT NULL, RegionZone INTEGER, RegionTitle TEXT, UnidentifiedBasketCount INTEGER NOT NULL, Completeness INTEGER NOT NULL)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_region_survey_baskets(Counter INTEGER NOT NULL, BasketId INTEGER NOT NULL, PRIMARY KEY(Counter, BasketId))";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE current_basket_survey_positive(BasketNum INTEGER PRIMARY KEY, SurveyCounter INTEGER NOT NULL)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE current_basket_region_complete_survey(RegionLocation INTEGER NOT NULL, RegionLocationNum INTEGER NOT NULL, RegionZone INTEGER NOT NULL, SurveyCounter INTEGER NOT NULL UNIQUE, PRIMARY KEY(RegionLocation, RegionLocationNum, RegionZone))";
-      cmd.ExecuteNonQuery();
-    }
-
-    private static void CreateBasketMisloadTables(IDbCommand cmd)
-    {
-      cmd.CommandText =
-        "CREATE TABLE basket_misloads(MisloadId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, Counter INTEGER NOT NULL UNIQUE, ResolutionId TEXT)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_misload_details(Counter INTEGER PRIMARY KEY, BasketNum INTEGER, DetectedLocation INTEGER NOT NULL, DetectedLocationNum INTEGER NOT NULL, DetectedZone INTEGER, DetectedLocationTitle TEXT, Reason TEXT NOT NULL)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_misload_episodes(Counter INTEGER NOT NULL, ContentEpisodeId TEXT NOT NULL, PRIMARY KEY(Counter, ContentEpisodeId))";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE TABLE basket_misload_resolutions(ResolutionId TEXT PRIMARY KEY, Fingerprint TEXT NOT NULL, MisloadId TEXT NOT NULL UNIQUE, Counter INTEGER NOT NULL UNIQUE, ResolutionKind INTEGER NOT NULL, Note TEXT)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText = "CREATE TABLE active_basket_misloads(MisloadCounter INTEGER PRIMARY KEY)";
       cmd.ExecuteNonQuery();
     }
 

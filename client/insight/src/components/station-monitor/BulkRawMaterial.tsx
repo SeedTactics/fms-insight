@@ -384,7 +384,9 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
               onClick={addAndPrint}
             >
               {adding ? <CircularProgress size={10} /> : undefined}
-              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to{" "}
+              Add {enteredQty !== null && !isNaN(enteredQty)
+                ? enteredQty.toString() + " "
+                : ""}to{" "}
               {queue}
             </Button>
           ) : (
@@ -435,9 +437,12 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
   useEffect(() => {
     if (props.material === null) return;
     let isSubscribed = true;
-    setLoading(true);
-    loadRawMaterialEvents(props.material)
-      .then((loadedEvents) => {
+
+    const fetchData = async () => {
+      if (props.material === null) return;
+      setLoading(true);
+      try {
+        const loadedEvents = await loadRawMaterialEvents(props.material);
         if (isSubscribed) {
           setEvents(loadedEvents);
           let operator: string | undefined;
@@ -448,9 +453,14 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
           }
           setLastOperator(operator);
         }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData().catch(console.error);
     return () => {
       isSubscribed = false;
     };

@@ -130,48 +130,6 @@ namespace BlackMaple.FMSInsight.Tests
       }
 
       CheckSchema(conn1, memDb);
-      CheckFinalBasketObservationSchema(conn1);
-      CheckFinalBasketObservationSchema(memDb);
-    }
-
-    private static void CheckFinalBasketObservationSchema(SqliteConnection connection)
-    {
-      var expectedTables = new[]
-      {
-        "basket_observations",
-        "basket_observation_details",
-        "basket_observation_episodes",
-        "current_basket_observation_episodes",
-        "basket_observation_corrections",
-      };
-      var obsoleteTables = new[]
-      {
-        "basket_identity_associations",
-        "basket_identity_association_details",
-        "basket_identity_association_episodes",
-        "current_basket_identity_associations",
-        "basket_location_observations",
-        "basket_location_observation_details",
-        "basket_location_observation_corrections",
-      };
-      using var cmd = connection.CreateCommand();
-      cmd.CommandText = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name";
-      var tableParameter = cmd.Parameters.Add("name", SqliteType.Text);
-      foreach (var table in expectedTables)
-      {
-        tableParameter.Value = table;
-        cmd.ExecuteScalar().ShouldBe(1L, table);
-      }
-      foreach (var table in obsoleteTables)
-      {
-        tableParameter.Value = table;
-        cmd.ExecuteScalar().ShouldBeNull(table);
-      }
-
-      cmd.CommandText = "PRAGMA table_info(basket_observation_details)";
-      using var columns = cmd.ExecuteReader();
-      while (columns.Read())
-        columns.GetString(1).ShouldNotBe("Basis");
     }
   }
 

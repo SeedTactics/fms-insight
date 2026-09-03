@@ -111,136 +111,9 @@ namespace BlackMaple.MachineFramework
     CancelRebooking = 115,
     BasketLoadUnload = 116,
     BasketCycle = 117,
-    BasketInLocation = 118,
-    BasketContentSnapshot = 120,
-    BasketRegionSurvey = 124,
-    BasketMisload = 125,
-    BasketMisloadResolution = 126,
-
-    // 119, 121, 122, and 123 belonged to beta-only basket event types. Keep those values unused.
-    BasketObservation = 127,
-    BasketObservationCorrection = 128,
+    // 118 through 128 belonged to removed basket position and beta evidence event types.
+    // Keep those values unused.
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
-  }
-
-  public enum BasketEvidenceSourceKind
-  {
-    Operator,
-    Sensor,
-    Integration,
-  }
-
-  public sealed record BasketEvidenceSource
-  {
-    public required BasketEvidenceSourceKind Kind { get; init; }
-    public required string Name { get; init; }
-  }
-
-  /// <summary>
-  /// Direct evidence that a numbered basket was observed at a physical position. Content episode
-  /// IDs are included only when the recorder has direct physical continuity to one uniquely
-  /// tracked occupant; their absence makes no content-identity claim. Integration sources should
-  /// record an observation only when they possess the underlying physical or external evidence for
-  /// the claim. A calculated best-fit reconstruction is not itself an observation.
-  /// </summary>
-  public sealed record BasketObservation
-  {
-    public required Guid ObservationId { get; init; }
-    public required int BasketId { get; init; }
-    public required BasketPosition Position { get; init; }
-    public ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; } = [];
-    public required BasketEvidenceSource Source { get; init; }
-    public string? Note { get; init; }
-    public string? CorrelationId { get; init; }
-    public required DateTime TimeUTC { get; init; }
-    public required long EventCounter { get; init; }
-  }
-
-  /// <summary>
-  /// The active claims currently supported by one immutable basket observation. Position evidence
-  /// and content continuity can have different lifetimes, so an older observation may remain here
-  /// only because it still owns active content episode claims.
-  /// </summary>
-  public sealed record ActiveBasketObservationEvidence
-  {
-    /// <summary>The original immutable historical observation.</summary>
-    public required BasketObservation Observation { get; init; }
-
-    /// <summary>
-    /// Whether this observation is the currently effective positive position evidence for its
-    /// numbered basket. This describes the current evidence projection, not omniscient physical
-    /// truth.
-    /// </summary>
-    public required bool IsCurrentPositionEvidence { get; init; }
-
-    /// <summary>
-    /// The content episode claims from <see cref="Observation"/> that remain active through this
-    /// observation.
-    /// </summary>
-    public required ImmutableSortedSet<Guid> ActiveContentEpisodeIds { get; init; }
-  }
-
-  public sealed record BasketObservationCorrection
-  {
-    public required Guid CorrectionId { get; init; }
-    public required Guid TargetObservationId { get; init; }
-    public Guid? ReplacementObservationId { get; init; }
-    public required BasketEvidenceSource Source { get; init; }
-    public string? Note { get; init; }
-    public string? CorrelationId { get; init; }
-    public required DateTime TimeUTC { get; init; }
-    public required long EventCounter { get; init; }
-  }
-
-  public enum BasketRegionSurveyCompleteness
-  {
-    Partial,
-    Complete,
-  }
-
-  public sealed record BasketRegionSurvey
-  {
-    public required Guid SurveyId { get; init; }
-    public required BasketPosition Region { get; init; }
-    public required ImmutableSortedSet<int> ObservedBasketIds { get; init; }
-    public required int UnidentifiedBasketCount { get; init; }
-    public required BasketRegionSurveyCompleteness Completeness { get; init; }
-    public required BasketEvidenceSource Source { get; init; }
-    public string? CorrelationId { get; init; }
-    public required DateTime TimeUTC { get; init; }
-    public required long EventCounter { get; init; }
-  }
-
-  public sealed record BasketMisload
-  {
-    public required Guid MisloadId { get; init; }
-    public int? BasketId { get; init; }
-    public ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; } = [];
-    public required BasketPosition DetectedAt { get; init; }
-    public required BasketEvidenceSource Source { get; init; }
-    public required string Reason { get; init; }
-    public string? CorrelationId { get; init; }
-    public required DateTime TimeUTC { get; init; }
-    public required long EventCounter { get; init; }
-  }
-
-  public enum BasketMisloadResolutionKind
-  {
-    ClearedAfterCorrection,
-    ReportedInError,
-    Superseded,
-  }
-
-  public sealed record BasketMisloadResolution
-  {
-    public required Guid ResolutionId { get; init; }
-    public required Guid MisloadId { get; init; }
-    public required BasketMisloadResolutionKind Kind { get; init; }
-    public required BasketEvidenceSource Source { get; init; }
-    public string? Note { get; init; }
-    public string? CorrelationId { get; init; }
-    public required DateTime TimeUTC { get; init; }
-    public required long EventCounter { get; init; }
   }
 
   public sealed record EventLogMetadata
@@ -282,28 +155,9 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("locnum")]
     public required int LocationNum { get; init; }
 
-    /// <summary>
-    /// Historical pallet number field. Basket events also use this field for a known numbered
-    /// basket; unresolved basket content episodes use -1 with
-    /// <see cref="BasketContentEpisodeId"/>. Non-basket events retain their ordinary pallet
-    /// number here.
-    /// </summary>
+    /// <summary>Historical pallet number field. Basket events use it for BasketId.</summary>
     [JsonPropertyName("pal")]
     public required int Pallet { get; init; }
-
-    /// <summary>
-    /// For basket events whose numbered basket identity is unresolved, identifies the basket
-    /// content episode and <see cref="Pallet"/> is -1. Numbered basket events use a positive
-    /// <see cref="Pallet"/> and leave this null. Non-basket events leave this null.
-    /// </summary>
-    [JsonPropertyName("basketContentEpisodeId")]
-    public Guid? BasketContentEpisodeId { get; init; }
-
-    /// <summary>
-    /// Basket content episodes authoritatively finalized by this numbered cycle-end event.
-    /// </summary>
-    [JsonPropertyName("basketCycleEndContentEpisodeIds")]
-    public ImmutableList<Guid>? BasketCycleEndContentEpisodeIds { get; init; }
 
     [JsonPropertyName("program")]
     public required string Program { get; init; }
@@ -350,8 +204,6 @@ namespace BlackMaple.MachineFramework
       Counter = cntr;
       Material = mat.ToImmutableList();
       Pallet = pal;
-      BasketContentEpisodeId = null;
-      BasketCycleEndContentEpisodeIds = null;
       LogType = ty;
       LocationName = locName;
       LocationNum = locNum;

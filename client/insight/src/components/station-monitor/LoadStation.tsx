@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { useMemo, memo, useState, useCallback, useEffect, ReactNode } from "react";
 import { Box, useMediaQuery, Button, Typography } from "@mui/material";
-import { LazySeq, mkCompareByProperties, OrderedMap } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 
 import { FolderOpen as FolderOpenIcon } from "@mui/icons-material";
 
@@ -196,11 +196,12 @@ function selectLoadStationAndQueueProps(
     }
 
     for (const basket of Object.values(curSt.baskets ?? {})) {
-      if (basket.position.locationNum !== loadNum) continue;
+      const position = basket.position;
+      if (position === undefined || position.locationNum !== loadNum) continue;
 
-      if (basket.position.location === api.BasketLocationEnum.LoadUnload) {
+      if (position.location === api.BasketLocationEnum.LoadUnload) {
         activeBasket = basket;
-      } else if (basket.position.location === api.BasketLocationEnum.LoadStationStaging) {
+      } else if (position.location === api.BasketLocationEnum.LoadStationStaging) {
         basketsToShow.add(basket.basketId);
       }
     }
@@ -413,11 +414,27 @@ function selectLoadStationAndQueueProps(
     }
   }
 
-  queueMat.forEach((queue) =>
-    queue.mats.sort(mkCompareByProperties((mat) => mat.location.queuePosition ?? 0)),
+  const sortedQueueMat = new Map(
+    [...queueMat].map(([queueName, queue]) => [
+      queueName,
+      {
+        ...queue,
+        mats: LazySeq.of(queue.mats)
+          .sortBy((mat) => mat.location.queuePosition ?? 0)
+          .toRArray(),
+      },
+    ]),
   );
-  basketMat.forEach((basket) =>
-    basket.mats.sort(mkCompareByProperties((mat) => mat.location.basketSlot ?? 0)),
+  const sortedBasketMat = new Map(
+    [...basketMat].map(([basketId, basket]) => [
+      basketId,
+      {
+        ...basket,
+        mats: LazySeq.of(basket.mats)
+          .sortBy((mat) => mat.location.basketSlot ?? 0)
+          .toRArray(),
+      },
+    ]),
   );
 
   const matCount = freeLoading.length + palFaces.valuesToAscLazySeq().sumBy((x) => x.length);
@@ -450,8 +467,8 @@ function selectLoadStationAndQueueProps(
     allMaterial: curSt.material,
     face: palFaces,
     freeLoadingMaterial: freeLoading,
-    queues: queueMat,
-    baskets: basketMat,
+    queues: sortedQueueMat,
+    baskets: sortedBasketMat,
     elapsedLoadingTime,
     fsize: layoutCount <= 2 ? "x-large" : layoutCount <= 6 ? "large" : "normal",
   };
@@ -465,7 +482,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
     if (pal) {
       return LazySeq.of(loadData.face.values())
         .append(loadData.freeLoadingMaterial)
-        .concat(LazySeq.of(loadData.queues).collect(([_, v]) => v.mats))
+        .concat(LazySeq.of(loadData.queues).collect(([, v]) => v.mats))
         .flatMap((x) => x)
         .collect((mat) => {
           if (
@@ -1274,8 +1291,11 @@ export function LoadStation(props: LoadStationProps) {
       (recentArrivalReceipt.stationNumber !== props.loadNum ||
         (arrivalInstruction !== undefined &&
           arrivalInstruction.instructionId !== recentArrivalReceipt.instruction.instructionId))
-    )
+    ) {
+      // This state is an ephemeral receipt; discard it permanently when a new instruction supersedes it.
+      // oxlint-disable-next-line react/set-state-in-effect -- intentional invalidation of stale UI state.
       setRecentArrivalReceipt(undefined);
+    }
   }, [arrivalInstruction, props.loadNum, recentArrivalReceipt]);
   const displayedArrivalInstruction = arrivalInstruction ?? recentArrivalReceipt?.instruction;
   const displayedArrivalReceipt =
@@ -1285,7 +1305,7 @@ export function LoadStation(props: LoadStationProps) {
       : undefined;
 
   const queueCols = LazySeq.of(data.queues)
-    .sortBy(([q, _]) => q)
+    .sortBy(([q]) => q)
     .map(([q, mats]) => ({
       kind: "queue" as const,
       label: q,
@@ -1297,8 +1317,8 @@ export function LoadStation(props: LoadStationProps) {
 
   if (data.baskets.size > 0) {
     const baskets = LazySeq.of(data.baskets)
-      .filter(([b, _]) => b !== data.activeBasket?.basketId)
-      .sortBy(([b, _]) => b)
+      .filter(([b]) => b !== data.activeBasket?.basketId)
+      .sortBy(([b]) => b)
       .map(([b, mats]) => ({
         basketId: b,
         label: `${basketName} ${b}`,

@@ -112,16 +112,7 @@ export function loadStationArrivalInstruction(
   );
 }
 
-export function BasketMovementArrival({
-  stationNumber,
-  basketName,
-  instruction,
-  submitCommand,
-  submitCorrection,
-  receipt,
-  onAccepted,
-  onCorrected,
-}: {
+interface BasketMovementArrivalProps {
   readonly stationNumber: number;
   readonly basketName: string;
   readonly instruction: Readonly<api.IBasketMoveInstruction>;
@@ -130,40 +121,48 @@ export function BasketMovementArrival({
   readonly receipt?: BasketArrivalReceipt;
   readonly onAccepted?: (receipt: BasketArrivalReceipt) => void;
   readonly onCorrected?: (command: BasketLocationCorrectionCommand) => void;
-}) {
+}
+
+function basketMovementArrivalKey({
+  stationNumber,
+  instruction,
+  receipt,
+}: BasketMovementArrivalProps): string {
+  return [
+    stationNumber,
+    instruction.instructionId,
+    receipt?.status ?? "pending",
+    receipt?.receipt.observationId ?? "",
+  ].join(":");
+}
+
+export function BasketMovementArrival(props: BasketMovementArrivalProps) {
+  return <BasketMovementArrivalContent key={basketMovementArrivalKey(props)} {...props} />;
+}
+
+function BasketMovementArrivalContent({
+  stationNumber,
+  basketName,
+  instruction,
+  submitCommand,
+  submitCorrection,
+  receipt,
+  onAccepted,
+  onCorrected,
+}: BasketMovementArrivalProps) {
+  const mounted = useRef(true);
   const [chooseDifferent, setChooseDifferent] = useState(false);
   const [differentBasket, setDifferentBasket] = useState("");
   const [submission, setSubmission] = useState<Submission>();
   const [changingRecordedBasket, setChangingRecordedBasket] = useState(false);
   const [correctionSubmission, setCorrectionSubmission] = useState<CorrectionSubmission>();
-  const currentInstructionId = useRef(instruction.instructionId);
-  const currentStationNumber = useRef(stationNumber);
-  const currentCorrectionTargetId = useRef<string | undefined>(undefined);
-  currentInstructionId.current = instruction.instructionId;
-  currentStationNumber.current = stationNumber;
 
   useEffect(() => {
-    setChooseDifferent(false);
-    setDifferentBasket("");
-    setSubmission((current) =>
-      current?.state === "error" && current.command.instructionId === instruction.instructionId
-        ? current
-        : undefined,
-    );
-    setChangingRecordedBasket(false);
-    setCorrectionSubmission(undefined);
-  }, [instruction.instructionId, stationNumber]);
-  useEffect(() => {
-    setChangingRecordedBasket(false);
-    setDifferentBasket("");
-    setCorrectionSubmission((current) =>
-      current?.state === "error" &&
-      receipt?.status !== "retracted" &&
-      current.command.targetObservationId === receipt?.receipt.observationId
-        ? current
-        : undefined,
-    );
-  }, [receipt?.receipt.observationId, receipt?.status]);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const expectedBasketId = instruction.basketId;
   if (expectedBasketId === undefined) {
@@ -179,11 +178,7 @@ export function BasketMovementArrival({
     setSubmission({ state: "submitting", command });
     try {
       const result = await submitCommand(stationNumber, command);
-      if (
-        currentStationNumber.current !== stationNumber ||
-        currentInstructionId.current !== command.instructionId
-      )
-        return;
+      if (!mounted.current) return;
       if (result === "conflict") {
         setSubmission({ state: result, command });
       } else {
@@ -197,11 +192,7 @@ export function BasketMovementArrival({
         });
       }
     } catch (error: unknown) {
-      if (
-        currentStationNumber.current !== stationNumber ||
-        currentInstructionId.current !== command.instructionId
-      )
-        return;
+      if (!mounted.current) return;
       setSubmission({
         state: "error",
         command,
@@ -215,19 +206,11 @@ export function BasketMovementArrival({
     setCorrectionSubmission({ state: "submitting", command });
     try {
       const result = await submitCorrection(stationNumber, command);
-      if (
-        currentStationNumber.current !== stationNumber ||
-        currentCorrectionTargetId.current !== command.targetObservationId
-      )
-        return;
+      if (!mounted.current) return;
       setCorrectionSubmission({ state: result, command });
       if (result === "accepted") onCorrected?.(command);
     } catch {
-      if (
-        currentStationNumber.current !== stationNumber ||
-        currentCorrectionTargetId.current !== command.targetObservationId
-      )
-        return;
+      if (!mounted.current) return;
       setCorrectionSubmission({ state: "error", command });
     }
   }
@@ -254,7 +237,6 @@ export function BasketMovementArrival({
       ? undefined
       : (receipt?.receipt.observationId ??
         (submission?.state === "accepted" ? submission.receipt.observationId : undefined));
-  currentCorrectionTargetId.current = activeObservationId;
   function createCorrection(replacementBasketId: number | null): BasketLocationCorrectionCommand {
     return {
       correctionId: crypto.randomUUID(),
@@ -384,9 +366,7 @@ export function BasketMovementArrival({
             {correctionSubmission?.state === "accepted" ? (
               <Alert severity="success">Correction recorded.</Alert>
             ) : correctionSubmission?.state === "conflict" ? (
-              <Alert severity="warning">
-                Basket evidence changed. Review the refreshed status.
-              </Alert>
+              <Alert severity="warning">Basket status changed. Review the refreshed status.</Alert>
             ) : correctionSubmission?.state === "error" ? (
               <Alert
                 action={

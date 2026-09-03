@@ -39,37 +39,6 @@ function createLogMaterial({
   });
 }
 
-function createBasketLocationLog({
-  counter,
-  basket,
-  time,
-  startOfCycle,
-  location,
-  locationNum,
-}: {
-  readonly counter: number;
-  readonly basket: number;
-  readonly time: Date;
-  readonly startOfCycle: boolean;
-  readonly location: string;
-  readonly locationNum: number;
-}): api.LogEntry {
-  return new api.LogEntry({
-    counter,
-    material: [],
-    pal: basket,
-    type: api.LogType.BasketInLocation,
-    startofcycle: startOfCycle,
-    endUTC: time,
-    loc: location,
-    locnum: locationNum,
-    result: "",
-    program: "",
-    elapsed: "PT0S",
-    active: "PT0S",
-  });
-}
-
 function createRecentHistoricData(jobs: ReadonlyArray<api.ActiveJob>): api.RecentHistoricData {
   return new api.RecentHistoricData({
     jobs: Object.fromEntries(jobs.map((job) => [job.unique, job])),
@@ -509,22 +478,6 @@ export function createMixedBasketFixture(): MixedBasketFixture {
       time: recentLogTime(-1, 12, 30),
       elapsedMin: 18,
       activeMin: 15,
-    }),
-    createBasketLocationLog({
-      counter: 7030,
-      basket: 21,
-      time: recentLogTime(-1, 11, 55),
-      startOfCycle: false,
-      location: "Load Station Staging",
-      locationNum: 2,
-    }),
-    createBasketLocationLog({
-      counter: 7031,
-      basket: 21,
-      time: recentLogTime(-1, 12, 0),
-      startOfCycle: true,
-      location: "Load Station Staging",
-      locationNum: 2,
     }),
     ...fakeLoadOrUnload({
       counter: 7040,

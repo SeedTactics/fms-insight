@@ -114,15 +114,18 @@ export type MaterialBin =
     };
 
 function basketLocation(st: Readonly<api.IBasketStatus>): string {
+  const position = st.position;
+  if (position === undefined) return "Unknown";
+
   let loc: string;
-  if (st.position.locationTitle && st.position.locationTitle.length > 0) {
-    loc = st.position.locationTitle;
+  if (position.locationTitle && position.locationTitle.length > 0) {
+    loc = position.locationTitle;
   } else {
-    loc = st.position.location + " " + st.position.locationNum.toString();
+    loc = position.location + " " + position.locationNum.toString();
   }
 
-  if (st.position.zone) {
-    loc += `-${st.position.zone}`;
+  if (position.zone) {
+    loc += `-${position.zone}`;
   }
   return loc;
 }
@@ -184,8 +187,9 @@ export function selectAllMaterialIntoBins(
           }
           case api.ActionType.LoadingToBasket: {
             const basket = curSt.baskets?.[mat.action.loadToBasketId ?? 0];
-            if (basket?.position.location === api.BasketLocationEnum.LoadUnload) {
-              addToMap(loadStations, basket.position.locationNum, mat);
+            const position = basket?.position;
+            if (position?.location === api.BasketLocationEnum.LoadUnload) {
+              addToMap(loadStations, position.locationNum, mat);
             } else {
               addToMap(queues, "Free Material", mat);
             }
@@ -206,7 +210,7 @@ export function selectAllMaterialIntoBins(
   }
 
   const activeQueues = LazySeq.ofObject(curSt.jobs)
-    .flatMap(([_, job]) => job.procsAndPaths)
+    .flatMap(([, job]) => job.procsAndPaths)
     .flatMap((proc) => proc.paths)
     .flatMap((path) => {
       const q: string[] = [];
@@ -221,12 +225,12 @@ export function selectAllMaterialIntoBins(
             info.role === api.QueueRole.RawMaterial ||
             info.role === api.QueueRole.InProcessTransfer,
         )
-        .map(([qname, _]) => qname),
+        .map(([qname]) => qname),
     )
     .toRSet((x) => x);
   const quarantineQueues = LazySeq.ofObject(curSt.queues)
-    .filter(([qname, _]) => !activeQueues.has(qname))
-    .toRSet(([qname, _]) => qname);
+    .filter(([qname]) => !activeQueues.has(qname))
+    .toRSet(([qname]) => qname);
 
   const bins = curBinOrder.filter(
     (b) =>

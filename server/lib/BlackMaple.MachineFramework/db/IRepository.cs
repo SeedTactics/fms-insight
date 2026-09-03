@@ -68,56 +68,10 @@ namespace BlackMaple.MachineFramework
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     ImmutableList<LogEntry> CurrentAndPreviousPalletLog(int pallet);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
-    ImmutableList<LogEntry> CurrentBasketLog(
-      BasketLogIdentity basketIdentity,
-      bool includeLastCycleEvt = false
-    );
-    ImmutableList<LogEntry> GetBasketLogForCounterRange(
-      BasketLogIdentity basketIdentity,
-      long afterCounter,
-      long beforeCounter
-    );
-
-    /// <summary>
-    /// Returns the bounded active projection of basket observations. Each result contributes
-    /// current position evidence, active content continuity, or both; the nested observation is
-    /// unchanged historical data.
-    /// </summary>
-    ImmutableList<ActiveBasketObservationEvidence> GetActiveBasketObservationEvidence(
-      int? basketNum = null
-    );
 
     [return: MaybeNull]
-    BasketObservation GetBasketObservation(Guid observationId);
+    BasketContents GetBasketContents(int basketId);
 
-    [return: MaybeNull]
-    BasketObservationCorrection GetBasketObservationCorrection(Guid correctionId);
-    ImmutableList<BasketObservationCorrection> GetBasketObservationCorrections(
-      Guid? targetObservationId = null
-    );
-    ImmutableList<BasketObservationCorrection> GetBasketObservationCorrectionsAfter(long counter);
-    ImmutableList<BasketRegionSurvey> GetBasketRegionSurveys(
-      BasketPosition region = null,
-      long? afterCounter = null
-    );
-
-    [return: MaybeNull]
-    BasketRegionSurvey GetBasketRegionSurvey(Guid surveyId);
-    ImmutableList<BasketRegionSurvey> GetLatestBasketRegionSurveys();
-    ImmutableList<BasketRegionSurvey> GetCurrentBasketRegionSurveyEvidence();
-
-    [return: MaybeNull]
-    LogEntry MostRecentNumberedBasketArrival(int basketId);
-
-    [return: MaybeNull]
-    LogEntry MostRecentNumberedBasketDeparture(int basketId, string locationName, int locationNum);
-    ImmutableDictionary<int, long> GetBasketPositionEvidenceSeen(IEnumerable<int> basketIds);
-    ImmutableList<BasketMisload> GetActiveBasketMisloads();
-
-    [return: MaybeNull]
-    BasketMisload GetBasketMisload(Guid misloadId);
-    ImmutableList<BasketMisloadResolution> GetBasketMisloadResolutions(Guid? misloadId = null);
-    ImmutableList<Guid> GetUnresolvedOpenBasketContentEpisodeIds();
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
@@ -171,27 +125,9 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null,
       EventLogMetadata metadata = null
     );
-    LogEntry RecordBasketLoadBegin(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
     LogEntry RecordBasketUnloadBegin(
       IEnumerable<EventLogMaterial> mats,
       int basketId,
-      int lulNum,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-    LogEntry RecordBasketUnloadBegin(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -216,7 +152,7 @@ namespace BlackMaple.MachineFramework
     // The main method for recording a completed pallet load/unload, which combines
     // pallet <-> queue and pallet <-> basket operations along with any previously
     // recorded partial options in calls to `RecordPartialLoadUnload`. This emits pallet cycle
-    // events. Basket transfer evidence and basket cycle boundaries are emitted only from the
+    // events. Basket transfer events and basket cycle boundaries are emitted only from the
     // optional explicit basket completion.
     IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
@@ -231,9 +167,8 @@ namespace BlackMaple.MachineFramework
       PalletBasketLoadUnloadCompletion palletBasketCompletion = null
     );
 
-    // Atomically records one completed basket-station operation. Each transfer owns its basket
-    // identity so a physical turnover can unload one UUID episode and load another. Queue changes,
-    // operation timing, transfer evidence, and complete-content cycle boundaries are committed
+    // Atomically records one completed basket-station operation. Each transfer names the physical
+    // basket it changes. Queue changes, operation timing, transfer events, and basket contents are committed
     // under one idempotency key. An identical retry returns the original event group; changed
     // durable input throws ConflictRequestException. timeUTC and metadata.CorrelationId are
     // intentionally excluded from retry comparison. A retry with a different correlation ID returns
@@ -258,22 +193,13 @@ namespace BlackMaple.MachineFramework
     );
 
     /// <summary>
-    /// Atomically records one or more basket cycle boundaries and any directly evidenced basket
-    /// observations that accompany those lifecycle transitions. A lifecycle operation must contain
-    /// at least one boundary; standalone observations use <see cref="RecordBasketObservation"/>.
-    /// Identical retries return the original event group and changed reuse of the idempotency key
-    /// throws <see cref="ConflictRequestException"/>. <paramref name="timeUTC"/> and
-    /// <paramref name="metadata"/>'s correlation ID are intentionally excluded from retry
-    /// comparison. A retry with a different correlation ID returns the original event group with its
-    /// original metadata.
+    /// Atomically applies exact current-content changes to one or more numbered baskets. The
+    /// expected contents provide optimistic concurrency; identical retries under one idempotency
+    /// key have no additional effect and changed reuse throws <see cref="ConflictRequestException"/>.
     /// </summary>
-    IEnumerable<LogEntry> RecordBasketLifecycleOperation(
-      BasketLifecycleOperation operation,
-      int locationNum,
-      DateTime timeUTC,
+    void RecordBasketContentsOperation(
+      BasketContentsOperation operation,
       string idempotencyKey,
-      string foreignId = null,
-      string originalMessage = null,
       EventLogMetadata metadata = null
     );
 
@@ -371,112 +297,6 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
-    LogEntry RecordBasketArriveLocation(
-      IEnumerable<EventLogMaterial> mats,
-      int basketId,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-    LogEntry RecordBasketArriveLocation(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-    LogEntry RecordBasketDepartLocation(
-      IEnumerable<EventLogMaterial> mats,
-      int basketId,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      TimeSpan elapsed,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-    LogEntry RecordBasketDepartLocation(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      string locationName,
-      int locationPosition,
-      DateTime timeUTC,
-      TimeSpan elapsed,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
-    );
-    LogEntry RecordBasketContentSnapshot(
-      IEnumerable<EventLogMaterial> mats,
-      BasketLogIdentity basketIdentity,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null,
-      IReadOnlyDictionary<string, string> extraData = null
-    );
-
-    /// <summary>
-    /// Records one immutable direct basket observation. Integration sources must possess the
-    /// underlying physical or external evidence for the claim; a calculated best-fit
-    /// reconstruction is not itself an observation.
-    /// </summary>
-    BasketObservation RecordBasketObservation(
-      Guid observationId,
-      int basketId,
-      BasketPosition position,
-      ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketEvidenceSource source,
-      DateTime timeUTC,
-      EventLogMetadata metadata = null,
-      string note = null
-    );
-    BasketObservationCorrectionResult CorrectBasketObservation(
-      Guid correctionId,
-      Guid targetObservationId,
-      [AllowNull] BasketObservationReplacement replacement,
-      BasketEvidenceSource source,
-      DateTime timeUTC,
-      string note = null,
-      EventLogMetadata metadata = null
-    );
-    BasketRegionSurvey RecordBasketRegionSurvey(
-      Guid surveyId,
-      BasketPosition region,
-      ImmutableSortedSet<int> observedBasketIds,
-      int unidentifiedBasketCount,
-      BasketRegionSurveyCompleteness completeness,
-      DateTime timeUTC,
-      BasketEvidenceSource source,
-      EventLogMetadata metadata = null
-    );
-    BasketMisload RecordBasketMisload(
-      Guid misloadId,
-      int? basketId,
-      ImmutableSortedSet<Guid> contentEpisodeIds,
-      BasketPosition detectedAt,
-      BasketEvidenceSource source,
-      string reason,
-      DateTime timeUTC,
-      EventLogMetadata metadata = null
-    );
-    BasketMisloadResolution ResolveBasketMisload(
-      Guid resolutionId,
-      Guid misloadId,
-      BasketMisloadResolutionKind kind,
-      BasketEvidenceSource source,
-      DateTime timeUTC,
-      string note = null,
-      EventLogMetadata metadata = null
-    );
-
     LogEntry RecordSerialForMaterialID(
       EventLogMaterial mat,
       string serial,
@@ -890,6 +710,41 @@ namespace BlackMaple.MachineFramework
     }
   }
 
+  public sealed record BasketMaterial
+  {
+    public required long MaterialID { get; init; }
+    public required int Process { get; init; }
+  }
+
+  public sealed record BasketSlotContents
+  {
+    public required ImmutableList<BasketMaterial> Material { get; init; }
+    public ImmutableSortedDictionary<string, string> AdditionalData { get; init; } =
+      ImmutableSortedDictionary<string, string>.Empty;
+  }
+
+  public sealed record BasketContents
+  {
+    public required int BasketId { get; init; }
+    public required ImmutableSortedDictionary<int, BasketSlotContents> Slots { get; init; }
+  }
+
+  public sealed record BasketContentsChange
+  {
+    public required int BasketId { get; init; }
+
+    /// <summary>Null means the basket must not yet have a current projection.</summary>
+    [AllowNull]
+    public required BasketContents Expected { get; init; }
+
+    public required BasketContents Result { get; init; }
+  }
+
+  public sealed record BasketContentsOperation
+  {
+    public required ImmutableList<BasketContentsChange> Changes { get; init; }
+  }
+
   public record SwapMaterialResult
   {
     public required IEnumerable<LogEntry> ChangedLogEntries { get; init; }
@@ -933,14 +788,14 @@ namespace BlackMaple.MachineFramework
   }
 
   /// <summary>
-  /// Basket-side evidence for material transferred during a pallet load/unload. Timing is recorded
+  /// Basket-side manufacturing events for material transferred during a pallet load/unload. Timing is recorded
   /// on the corresponding pallet event.
   /// </summary>
   public abstract record PalletBasketTransfer
   {
     private PalletBasketTransfer() { }
 
-    public required BasketLogIdentity BasketIdentity { get; init; }
+    public required int BasketId { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
     public sealed record LoadOntoBasket : PalletBasketTransfer;
@@ -952,7 +807,7 @@ namespace BlackMaple.MachineFramework
   {
     private BasketCycleBoundary() { }
 
-    public required BasketLogIdentity BasketIdentity { get; init; }
+    public required int BasketId { get; init; }
 
     /// <summary>
     /// Slot-aware material associated with the boundary. An end declares the complete material
@@ -961,16 +816,7 @@ namespace BlackMaple.MachineFramework
     /// </summary>
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
-    public sealed record End : BasketCycleBoundary
-    {
-      /// <summary>
-      /// Durable UUID basket identities reconciled into this numbered cycle. Leave empty when every
-      /// event in the cycle was already recorded with the numbered identity. A numbered end with
-      /// empty material and no reconciled identities may also record a degenerate empty cycle when
-      /// there is no open numbered cycle; that boundary has zero elapsed time.
-      /// </summary>
-      public required ImmutableHashSet<Guid> ReconciledBasketIdentities { get; init; }
-    }
+    public sealed record End : BasketCycleBoundary;
 
     public sealed record Start : BasketCycleBoundary;
   }
@@ -979,13 +825,14 @@ namespace BlackMaple.MachineFramework
   {
     public required ImmutableList<PalletBasketTransfer> Transfers { get; init; }
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
+    public ImmutableList<BasketContentsChange> ContentsChanges { get; init; } = [];
   }
 
   public abstract record BasketStationTransfer
   {
     private BasketStationTransfer() { }
 
-    public required BasketLogIdentity BasketIdentity { get; init; }
+    public required int BasketId { get; init; }
     public required ImmutableList<EventLogMaterial> Material { get; init; }
 
     /// <summary>
@@ -1010,13 +857,7 @@ namespace BlackMaple.MachineFramework
   {
     public required ImmutableList<BasketStationTransfer> Transfers { get; init; }
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
-    public ImmutableList<BasketObservationInput> Observations { get; init; } = [];
-  }
-
-  public sealed record BasketLifecycleOperation
-  {
-    public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
-    public ImmutableList<BasketObservationInput> Observations { get; init; } = [];
+    public ImmutableList<BasketContentsChange> ContentsChanges { get; init; } = [];
   }
 
   public record MaterialToUnloadFromFace
@@ -1064,53 +905,5 @@ namespace BlackMaple.MachineFramework
   {
     public required HashSet<long> MaterialIds { get; init; }
     public required IReadOnlyList<LogEntry> Logs { get; init; }
-  }
-
-  public sealed record BasketObservationReplacement
-  {
-    public required Guid ObservationId { get; init; }
-    public required int BasketId { get; init; }
-    public required BasketPosition Position { get; init; }
-    public required ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; }
-    public required BasketEvidenceSource Source { get; init; }
-  }
-
-  /// <summary>
-  /// Direct physical evidence supplied as part of an atomic basket operation. Integrations must
-  /// not construct this input from calculated identity, candidate elimination, or workflow intent.
-  /// </summary>
-  public sealed record BasketObservationInput
-  {
-    public required Guid ObservationId { get; init; }
-    public required int BasketId { get; init; }
-    public required BasketPosition Position { get; init; }
-    public ImmutableSortedSet<Guid> ContentEpisodeIds { get; init; } = [];
-    public required BasketEvidenceSource Source { get; init; }
-    public string Note { get; init; }
-  }
-
-  public sealed record BasketObservationCorrectionResult
-  {
-    public required BasketObservationCorrection Correction { get; init; }
-    public BasketObservation Replacement { get; init; }
-  }
-
-  /// <summary>
-  /// An identity accepted by repository APIs that address basket event history. The numbered form
-  /// is stored in the historical pallet field; the content-episode form is stored with Pallet = -1.
-  /// </summary>
-  public abstract record BasketLogIdentity
-  {
-    private BasketLogIdentity() { }
-
-    public sealed record NumberedBasket : BasketLogIdentity
-    {
-      public required int BasketId { get; init; }
-    }
-
-    public sealed record ContentEpisode : BasketLogIdentity
-    {
-      public required Guid ContentEpisodeId { get; init; }
-    }
   }
 }

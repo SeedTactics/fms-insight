@@ -326,10 +326,9 @@ export function useIsDemo(): boolean {
 }
 
 export function useSetTitle(title: string): void {
-  const demo = useIsDemo();
   useEffect(() => {
     document.title = title + " - FMS Insight";
-  }, [demo, title]);
+  }, [title]);
 }
 
 export function helpUrl(r: RouteState): string {

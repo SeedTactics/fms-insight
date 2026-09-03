@@ -162,8 +162,8 @@ function useCellOverview(): CellOverview {
     .toRLookup((m) => m.location.basketId ?? m.action.loadToBasketId ?? 0);
 
   let loads: OrderedMap<number, LoadStatus> = LazySeq.ofObject(currentSt.pallets)
-    .filter(([_, p]) => p.currentPalletLocation.loc === PalletLocationEnum.LoadUnload)
-    .toOrderedMap(([_, p]) => [
+    .filter(([, p]) => p.currentPalletLocation.loc === PalletLocationEnum.LoadUnload)
+    .toOrderedMap(([, p]) => [
       p.currentPalletLocation.num,
       {
         lulNum: p.currentPalletLocation.num,
@@ -182,7 +182,7 @@ function useCellOverview(): CellOverview {
         p.currentPalletLocation.loc === PalletLocationEnum.Machine ||
         p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue,
     )
-    .map(([_, p]) => p)
+    .map(([, p]) => p)
     .groupBy(
       (p) => p.currentPalletLocation.group,
       (p) => p.currentPalletLocation.num,
@@ -236,11 +236,11 @@ function useCellOverview(): CellOverview {
 
   const stockerPals = LazySeq.ofObject(currentSt.pallets)
     .filter(
-      ([_, p]) =>
+      ([, p]) =>
         p.currentPalletLocation.loc === PalletLocationEnum.Buffer ||
         p.currentPalletLocation.loc === PalletLocationEnum.Cart,
     )
-    .collect(([_, p]) => {
+    .collect(([, p]) => {
       const mats = matByPal.get(p.palletNum);
       if (!mats || mats.length === 0) return null;
       return { pallet: p, mats };
@@ -256,7 +256,7 @@ function useCellOverview(): CellOverview {
   const allProcs = jobs
     .valuesToLazySeq()
     .filter((j) => j.routeEndUTC > cutoff)
-    .concat(LazySeq.ofObject(currentSt.jobs).map(([_, j]) => j))
+    .concat(LazySeq.ofObject(currentSt.jobs).map(([, j]) => j))
     .flatMap((j) => j.procsAndPaths)
     .toRArray();
 
@@ -383,14 +383,19 @@ function useCellOverview(): CellOverview {
   let storageFilled = 0;
 
   for (const basket of LazySeq.ofObject(currentSt.baskets ?? {})
-    .map(([_, b]) => b)
+    .map(([, b]) => b)
     .sortBy((b) => b.basketId)) {
     const basketWithMaterial: BasketAndMaterial = {
       basket,
       mats: matByBasket.get(basket.basketId) ?? [],
     };
+    const position = basket.position;
+    if (position === undefined) {
+      floatingBaskets.set(basket.basketId, basketWithMaterial);
+      continue;
+    }
 
-    switch (basket.position.location) {
+    switch (position.location) {
       case BasketLocationEnum.Storage:
         if (basketWithMaterial.mats.length > 0) {
           storageFilled += 1;
@@ -401,16 +406,14 @@ function useCellOverview(): CellOverview {
 
       case BasketLocationEnum.LoadUnload:
       case BasketLocationEnum.LoadStationStaging: {
-        const loadNum = basket.position.locationNum;
+        const loadNum = position.locationNum;
         if (loadNum === null) {
           floatingBaskets.set(basket.basketId, basketWithMaterial);
           break;
         }
 
         const byLoad =
-          basket.position.location === BasketLocationEnum.LoadUnload
-            ? activeBaskets
-            : stagedBaskets;
+          position.location === BasketLocationEnum.LoadUnload ? activeBaskets : stagedBaskets;
         const prev = byLoad.get(loadNum) ?? [];
         prev.push(basketWithMaterial);
         byLoad.set(loadNum, prev);
@@ -423,8 +426,6 @@ function useCellOverview(): CellOverview {
     }
   }
 
-  let maxNumStagingRows = 0;
-  let maxNumSourceRows = 0;
   loads = loads.mapValues((load) => {
     const sourceRows = new Map<
       string,
@@ -469,7 +470,7 @@ function useCellOverview(): CellOverview {
     }
 
     const currentBasket = LazySeq.of(activeBaskets.get(load.lulNum) ?? [])
-      .sortBy((b) => b.basket.position.locationNum)
+      .sortBy((b) => b.basket.position?.locationNum ?? 0)
       .toRArray();
     // Extras beyond the first active basket at this station fall back to floating
     for (const extra of currentBasket.slice(1)) {
@@ -482,14 +483,12 @@ function useCellOverview(): CellOverview {
     );
     const staging = LazySeq.of(stagedBaskets.get(load.lulNum) ?? [])
       .filter((basket) => !loadingFromBasketIds.has(basket.basket.basketId))
-      .sortBy((b) => b.basket.position.locationNum)
+      .sortBy((b) => b.basket.position?.locationNum ?? 0)
       .toRArray();
-    maxNumStagingRows = Math.max(maxNumStagingRows, staging.length);
     const sources = LazySeq.of(sourceRows)
       .map(([key, row]) => ({ key, label: row.label, mats: row.mats }))
       .sortBy((row) => row.label)
       .toRArray();
-    maxNumSourceRows = Math.max(maxNumSourceRows, sources.length);
     return {
       ...load,
       basket: currentBasket[0] ?? null,
@@ -507,16 +506,23 @@ function useCellOverview(): CellOverview {
       storageEmpty + storageFilled > 0 ? { empty: storageEmpty, filled: storageFilled } : null,
     machineAtLoad: machAtLoad.valuesToAscLazySeq().toRArray(),
     maxNumFacesOnPallet,
-    maxNumStagingRows,
-    maxNumSourceRows,
+    maxNumStagingRows:
+      loads
+        .valuesToAscLazySeq()
+        .map((l) => l.staging.length)
+        .maxBy((l) => l) ?? 0,
+    maxNumSourceRows:
+      loads
+        .valuesToAscLazySeq()
+        .map((l) => l.sources.length)
+        .maxBy((l) => l) ?? 0,
   };
 }
 
 function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
   const [open, setOpen] = useState(false);
   const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const btnRef = useRef<HTMLButtonElement | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
   const setMatToShow = useSetAtom(materialDialogOpen);
   const curSt = useAtomValue(currentStatus);
 
@@ -535,11 +541,11 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
     }, 200);
   }
 
-  function click() {
+  function click(evt: React.MouseEvent<HTMLButtonElement>) {
     if (mats.length === 1) {
       setMatToShow({ type: "MatDetails", details: mats[0] });
     } else {
-      setMenuOpen(true);
+      setMenuAnchorEl(evt.currentTarget);
     }
   }
 
@@ -569,7 +575,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
         }}
       >
         <Badge badgeContent={mats.length > 1 ? mats.length : 0} color="secondary">
-          <ButtonBase focusRipple onClick={click} ref={btnRef}>
+          <ButtonBase focusRipple onClick={click}>
             <Collapse orientation="horizontal" in={open} collapsedSize={CollapsedIconSize}>
               <Box
                 sx={{
@@ -620,16 +626,16 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
         </Badge>
       </Paper>
       <Menu
-        anchorEl={btnRef.current}
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={() => setMenuAnchorEl(null)}
         anchorOrigin={{ vertical: "top", horizontal: "left" }}
       >
         {LazySeq.of(mats).map((mat, idx) => (
           <MenuItem
             key={mat.materialID}
             onClick={() => {
-              setMenuOpen(false);
+              setMenuAnchorEl(null);
               setMatToShow({ type: "MatDetails", details: mat });
             }}
           >
