@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useMemo, memo, useState, useCallback, ReactNode } from "react";
+import { useMemo, memo, useState, useCallback, useEffect, ReactNode } from "react";
 import { Box, useMediaQuery, Button, Typography } from "@mui/material";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 
@@ -1285,20 +1285,23 @@ export function LoadStation(props: LoadStationProps) {
     props.loadNum,
   );
   const [recentArrivalReceipt, setRecentArrivalReceipt] = useState<BasketArrivalReceipt>();
-  const recentArrivalReceiptForStation =
-    recentArrivalReceipt !== undefined &&
-    recentArrivalReceipt.stationNumber === props.loadNum &&
-    (arrivalInstruction === undefined ||
-      arrivalInstruction.instructionId === recentArrivalReceipt.instruction.instructionId)
-      ? recentArrivalReceipt
-      : undefined;
-  const displayedArrivalInstruction =
-    arrivalInstruction ?? recentArrivalReceiptForStation?.instruction;
+  useEffect(() => {
+    if (
+      recentArrivalReceipt !== undefined &&
+      (recentArrivalReceipt.stationNumber !== props.loadNum ||
+        (arrivalInstruction !== undefined &&
+          arrivalInstruction.instructionId !== recentArrivalReceipt.instruction.instructionId))
+    ) {
+      // This state is an ephemeral receipt; discard it permanently when a new instruction supersedes it.
+      // oxlint-disable-next-line react/set-state-in-effect -- intentional invalidation of stale UI state.
+      setRecentArrivalReceipt(undefined);
+    }
+  }, [arrivalInstruction, props.loadNum, recentArrivalReceipt]);
+  const displayedArrivalInstruction = arrivalInstruction ?? recentArrivalReceipt?.instruction;
   const displayedArrivalReceipt =
-    recentArrivalReceiptForStation !== undefined &&
-    displayedArrivalInstruction?.instructionId ===
-      recentArrivalReceiptForStation.instruction.instructionId
-      ? recentArrivalReceiptForStation
+    recentArrivalReceipt?.stationNumber === props.loadNum &&
+    displayedArrivalInstruction?.instructionId === recentArrivalReceipt?.instruction.instructionId
+      ? recentArrivalReceipt
       : undefined;
 
   const queueCols = LazySeq.of(data.queues)

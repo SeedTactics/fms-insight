@@ -28,7 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 
 import * as api from "../../network/api.js";
@@ -150,11 +150,20 @@ function BasketMovementArrivalContent({
   onAccepted,
   onCorrected,
 }: BasketMovementArrivalProps) {
+  const mounted = useRef(true);
   const [chooseDifferent, setChooseDifferent] = useState(false);
   const [differentBasket, setDifferentBasket] = useState("");
   const [submission, setSubmission] = useState<Submission>();
   const [changingRecordedBasket, setChangingRecordedBasket] = useState(false);
   const [correctionSubmission, setCorrectionSubmission] = useState<CorrectionSubmission>();
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   const expectedBasketId = instruction.basketId;
   if (expectedBasketId === undefined) {
     return (
@@ -169,6 +178,7 @@ function BasketMovementArrivalContent({
     setSubmission({ state: "submitting", command });
     try {
       const result = await submitCommand(stationNumber, command);
+      if (!mounted.current) return;
       if (result === "conflict") {
         setSubmission({ state: result, command });
       } else {
@@ -182,6 +192,7 @@ function BasketMovementArrivalContent({
         });
       }
     } catch (error: unknown) {
+      if (!mounted.current) return;
       setSubmission({
         state: "error",
         command,
@@ -195,9 +206,11 @@ function BasketMovementArrivalContent({
     setCorrectionSubmission({ state: "submitting", command });
     try {
       const result = await submitCorrection(stationNumber, command);
+      if (!mounted.current) return;
       setCorrectionSubmission({ state: result, command });
       if (result === "accepted") onCorrected?.(command);
     } catch {
+      if (!mounted.current) return;
       setCorrectionSubmission({ state: "error", command });
     }
   }
