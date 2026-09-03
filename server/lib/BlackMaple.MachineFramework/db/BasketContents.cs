@@ -140,9 +140,14 @@ namespace BlackMaple.MachineFramework
         expectedUnloads.UnionWith(before.Except(after));
       }
 
+      var transferredBaskets = loads
+        .Concat(unloads)
+        .Select(item => item.BasketId)
+        .ToImmutableHashSet();
       if (
         loads.Count != loads.Distinct().Count()
         || unloads.Count != unloads.Distinct().Count()
+        || !transferredBaskets.SetEquals(operation.Changes.Select(change => change.BasketId))
         || !expectedLoads.SetEquals(loads)
         || !expectedUnloads.SetEquals(unloads)
       )

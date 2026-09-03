@@ -245,6 +245,240 @@ public sealed class BasketContentsSpec : IDisposable
   }
 
   [Test]
+  public async Task PalletTransfersUpdateBasketContentsInTheManufacturingTransaction()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var empty = Empty(4);
+    var occupied = Contents(4, 1, materialId, "tp-101", process: 1);
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = null,
+          Result = empty,
+        }
+      ),
+      1,
+      DateTime.UtcNow,
+      "initialize-4"
+    );
+    LoadMaterialOntoPallet(repository, materialId);
+
+    var loadEvents = repository
+      .RecordLoadUnloadComplete(
+        toLoad: null,
+        previouslyLoaded: null,
+        toUnload:
+        [
+          new MaterialToUnloadFromFace
+          {
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+              materialId,
+              new UnloadDestination()
+            ),
+            FaceNum = 1,
+            Process = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        previouslyUnloaded: null,
+        lulNum: 1,
+        pallet: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        palletBasketCompletion: PalletLoadOntoBasketCompletion(materialId, empty, occupied)
+      )
+      .ToImmutableList();
+
+    await Assert.That(repository.GetBasketContents(4)!.Slots.Keys).IsEquivalentTo([1]);
+    await Assert
+      .That(repository.GetBasketContents(4)!.Slots[1].Material.Single().MaterialID)
+      .IsEqualTo(materialId);
+    await Assert.That(loadEvents.Any(log => log.LogType == LogType.BasketLoadUnload)).IsTrue();
+
+    repository.RecordLoadUnloadComplete(
+      toLoad:
+      [
+        new MaterialToLoadOntoFace
+        {
+          MaterialIDs = [materialId],
+          Process = 1,
+          Path = null,
+          FaceNum = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+        },
+      ],
+      previouslyLoaded: null,
+      toUnload: null,
+      previouslyUnloaded: null,
+      lulNum: 1,
+      pallet: 2,
+      totalElapsed: TimeSpan.Zero,
+      timeUTC: DateTime.UtcNow,
+      externalQueues: ImmutableDictionary<string, string>.Empty,
+      palletBasketCompletion: new PalletBasketLoadUnloadCompletion
+      {
+        Transfers =
+        [
+          new PalletBasketTransfer.UnloadFromBasket
+          {
+            BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = 4 },
+            Material = [LogMaterial(materialId, process: 1, slot: 1)],
+          },
+        ],
+        CycleBoundaries = [],
+        ContentsChanges =
+        [
+          new BasketContentsChange
+          {
+            BasketId = 4,
+            Expected = occupied,
+            Result = empty,
+          },
+        ],
+      }
+    );
+
+    await Assert.That(repository.GetBasketContents(4)!.Slots).IsEmpty();
+  }
+
+  [Test]
+  public async Task PalletTransferRejectsContradictoryBasketContentsWithoutManufacturingEffects()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var transferredMaterial = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var otherMaterial = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var empty = Empty(4);
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = null,
+          Result = empty,
+        }
+      ),
+      1,
+      DateTime.UtcNow,
+      "initialize-4"
+    );
+    LoadMaterialOntoPallet(repository, transferredMaterial);
+
+    await Assert
+      .That(() =>
+        repository.RecordLoadUnloadComplete(
+          toLoad: null,
+          previouslyLoaded: null,
+          toUnload:
+          [
+            new MaterialToUnloadFromFace
+            {
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                transferredMaterial,
+                new UnloadDestination()
+              ),
+              FaceNum = 1,
+              Process = 1,
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          previouslyUnloaded: null,
+          lulNum: 1,
+          pallet: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: DateTime.UtcNow,
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          palletBasketCompletion: PalletLoadOntoBasketCompletion(
+            transferredMaterial,
+            empty,
+            Contents(4, 1, otherMaterial, "tp-202", process: 1)
+          )
+        )
+      )
+      .Throws<ArgumentException>();
+
+    await Assert.That(repository.GetBasketContents(4)!.Slots).IsEmpty();
+    await Assert
+      .That(repository.GetLogForMaterial(transferredMaterial).Any(log => log.Pallet == 4))
+      .IsFalse();
+  }
+
+  [Test]
+  public async Task PalletManufacturingEffectsRollBackWhenContentsUpdateFails()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var empty = Empty(4);
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = null,
+          Result = empty,
+        }
+      ),
+      1,
+      DateTime.UtcNow,
+      "initialize-4"
+    );
+    LoadMaterialOntoPallet(repository, materialId);
+    var eventCountBefore = repository.GetLogForMaterial(materialId).Count();
+    using (
+      var connection = new SqliteConnection(
+        $"Data Source=file:${_databaseId}?mode=memory&cache=shared"
+      )
+    )
+    {
+      connection.Open();
+      using var command = connection.CreateCommand();
+      command.CommandText =
+        "CREATE TRIGGER fail_pallet_contents BEFORE INSERT ON current_basket_material "
+        + "WHEN NEW.BasketId = 4 BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
+      command.ExecuteNonQuery();
+    }
+
+    await Assert
+      .That(() =>
+        repository.RecordLoadUnloadComplete(
+          toLoad: null,
+          previouslyLoaded: null,
+          toUnload:
+          [
+            new MaterialToUnloadFromFace
+            {
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                materialId,
+                new UnloadDestination()
+              ),
+              FaceNum = 1,
+              Process = 1,
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          previouslyUnloaded: null,
+          lulNum: 1,
+          pallet: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: DateTime.UtcNow,
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          palletBasketCompletion: PalletLoadOntoBasketCompletion(
+            materialId,
+            empty,
+            Contents(4, 1, materialId, "tp-101", process: 1)
+          )
+        )
+      )
+      .Throws<SqliteException>();
+
+    await Assert.That(repository.GetBasketContents(4)!.Slots).IsEmpty();
+    await Assert.That(repository.GetLogForMaterial(materialId).Count()).IsEqualTo(eventCountBefore);
+  }
+
+  [Test]
   public async Task BasketStationFailureRollsBackContentsChange()
   {
     using var repository = _repositoryConfig.OpenConnection();
@@ -767,7 +1001,8 @@ public sealed class BasketContentsSpec : IDisposable
     int basketId,
     int slot,
     long materialId,
-    string transferPlateRfid
+    string transferPlateRfid,
+    int process = 0
   ) =>
     new()
     {
@@ -776,7 +1011,7 @@ public sealed class BasketContentsSpec : IDisposable
         slot,
         new BasketSlotContents
         {
-          Material = [new BasketMaterial { MaterialID = materialId, Process = 0 }],
+          Material = [new BasketMaterial { MaterialID = materialId, Process = process }],
           AdditionalData = ImmutableSortedDictionary<string, string>.Empty.Add(
             "transfer-plate-rfid",
             transferPlateRfid
@@ -784,6 +1019,73 @@ public sealed class BasketContentsSpec : IDisposable
         }
       ),
     };
+
+  private static EventLogMaterial LogMaterial(long materialId, int process, int slot) =>
+    new()
+    {
+      MaterialID = materialId,
+      Process = process,
+      Face = slot,
+    };
+
+  private static PalletBasketLoadUnloadCompletion PalletLoadOntoBasketCompletion(
+    long materialId,
+    BasketContents expected,
+    BasketContents result
+  ) =>
+    new()
+    {
+      Transfers =
+      [
+        new PalletBasketTransfer.LoadOntoBasket
+        {
+          BasketIdentity = new BasketLogIdentity.NumberedBasket { BasketId = result.BasketId },
+          Material = [LogMaterial(materialId, process: 1, slot: 1)],
+        },
+      ],
+      CycleBoundaries = [],
+      ContentsChanges =
+      [
+        new BasketContentsChange
+        {
+          BasketId = result.BasketId,
+          Expected = expected,
+          Result = result,
+        },
+      ],
+    };
+
+  private static void LoadMaterialOntoPallet(IRepository repository, long materialId)
+  {
+    repository.RecordAddMaterialToQueue(
+      LogMaterial(materialId, process: 0, slot: 1),
+      "raw",
+      -1,
+      null,
+      null
+    );
+    repository.RecordLoadUnloadComplete(
+      toLoad:
+      [
+        new MaterialToLoadOntoFace
+        {
+          MaterialIDs = [materialId],
+          Process = 1,
+          Path = null,
+          FaceNum = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+        },
+      ],
+      previouslyLoaded: null,
+      toUnload: null,
+      previouslyUnloaded: null,
+      lulNum: 1,
+      pallet: 1,
+      totalElapsed: TimeSpan.Zero,
+      timeUTC: DateTime.UtcNow,
+      externalQueues: ImmutableDictionary<string, string>.Empty
+    );
+  }
 
   private static string QueryPlan(SqliteConnection connection, string sql)
   {

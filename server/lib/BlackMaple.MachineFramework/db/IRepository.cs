@@ -892,6 +892,7 @@ namespace BlackMaple.MachineFramework
   {
     public required ImmutableList<PalletBasketTransfer> Transfers { get; init; }
     public required ImmutableList<BasketCycleBoundary> CycleBoundaries { get; init; }
+    public ImmutableList<BasketContentsChange> ContentsChanges { get; init; } = [];
   }
 
   public abstract record BasketStationTransfer

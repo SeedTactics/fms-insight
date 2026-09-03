@@ -1839,10 +1839,27 @@ namespace BlackMaple.MachineFramework
     )
     {
       ValidatePalletBasketCompletion(palletBasketCompletion, toLoad, toUnload);
+      var contentsOperation = PalletBasketContentsOperation(palletBasketCompletion);
+      var basketLoads = BasketTransferMaterialPositions<PalletBasketTransfer.LoadOntoBasket>(
+        palletBasketCompletion?.Transfers
+      );
+      var basketUnloads = BasketTransferMaterialPositions<PalletBasketTransfer.UnloadFromBasket>(
+        palletBasketCompletion?.Transfers
+      );
       var sendToExternal = new List<MaterialToSendToExternalQueue>();
 
       var newLogs = AddEntryInTransaction(trans =>
       {
+        var basketTransaction = (SqliteTransaction)trans;
+        ValidateBasketTransferContents(
+          contentsOperation,
+          basketLoads,
+          basketUnloads,
+          basketTransaction
+        );
+        if (contentsOperation is not null)
+          ValidateBasketContentsChanges(contentsOperation, basketTransaction);
+
         var logs = new List<LogEntry>();
 
         // calculate total active time and total material count to be able
@@ -1924,6 +1941,9 @@ namespace BlackMaple.MachineFramework
           logs
         );
         RecordExplicitBasketCycleStarts(palletBasketCompletion, lulNum, timeUTC, logs, trans);
+
+        if (contentsOperation is not null)
+          ApplyBasketContentsChanges(contentsOperation, basketTransaction);
 
         return logs;
       });
@@ -2353,10 +2373,27 @@ namespace BlackMaple.MachineFramework
     )
     {
       ValidatePalletBasketCompletion(palletBasketCompletion, toLoad, toUnload);
+      var contentsOperation = PalletBasketContentsOperation(palletBasketCompletion);
+      var basketLoads = BasketTransferMaterialPositions<PalletBasketTransfer.LoadOntoBasket>(
+        palletBasketCompletion?.Transfers
+      );
+      var basketUnloads = BasketTransferMaterialPositions<PalletBasketTransfer.UnloadFromBasket>(
+        palletBasketCompletion?.Transfers
+      );
       var sendToExternal = new List<MaterialToSendToExternalQueue>();
 
       var newLogs = AddEntryInTransaction(trans =>
       {
+        var basketTransaction = (SqliteTransaction)trans;
+        ValidateBasketTransferContents(
+          contentsOperation,
+          basketLoads,
+          basketUnloads,
+          basketTransaction
+        );
+        if (contentsOperation is not null)
+          ValidateBasketContentsChanges(contentsOperation, basketTransaction);
+
         var logs = new List<LogEntry>();
 
         // calculate total active time and total material count to be able
@@ -2482,6 +2519,9 @@ namespace BlackMaple.MachineFramework
           logs
         );
         RecordExplicitBasketCycleStarts(palletBasketCompletion, lulNum, timeUTC, logs, trans);
+
+        if (contentsOperation is not null)
+          ApplyBasketContentsChanges(contentsOperation, basketTransaction);
 
         return logs;
       });
@@ -2811,6 +2851,31 @@ namespace BlackMaple.MachineFramework
           ));
         })
         .ToImmutableList();
+
+    private static ImmutableList<BasketMaterialPosition> BasketTransferMaterialPositions<TTransfer>(
+      ImmutableList<PalletBasketTransfer> transfers
+    )
+      where TTransfer : PalletBasketTransfer =>
+      (transfers ?? [])
+        .OfType<TTransfer>()
+        .SelectMany(transfer =>
+        {
+          var basketId = RecordedBasketIdentity(transfer.BasketIdentity);
+          return transfer.Material.Select(material => new BasketMaterialPosition(
+            basketId,
+            material.MaterialID,
+            material.Process,
+            material.Face
+          ));
+        })
+        .ToImmutableList();
+
+    private static BasketContentsOperation PalletBasketContentsOperation(
+      PalletBasketLoadUnloadCompletion completion
+    ) =>
+      completion?.ContentsChanges is { IsEmpty: false } changes
+        ? NormalizeBasketContentsOperation(new BasketContentsOperation { Changes = changes })
+        : null;
 
     private static PalletBasketLoadUnloadCompletion ToPalletBasketLoadUnloadCompletion(
       BasketStationOperation operation
