@@ -154,6 +154,11 @@ namespace BlackMaple.MachineFramework
     // recorded partial options in calls to `RecordPartialLoadUnload`. This emits pallet cycle
     // events. Basket transfer events and basket cycle boundaries are emitted only from the
     // optional explicit basket completion.
+    // Unload events include MaterialCompleted:<id> details, computed atomically for each material:
+    // True only for a final-process terminal exit, False for internal transfers or nonfinal exits.
+    // A null UnloadDestination value is a terminal exit; a destination object without a queue
+    // requires the matching explicit basket transfer. Queues and material reloaded in the same
+    // transaction remain internal. Partial unloads record the same facts when they occur.
     IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<EventLogMaterial> previouslyLoaded,
@@ -848,6 +853,9 @@ namespace BlackMaple.MachineFramework
       /// <summary>
       /// The local or configured external destination queue, or null when the material is
       /// transferred directly without entering a queue.
+      /// Material reloaded onto any basket in the same operation remains internal. Otherwise,
+      /// null is a terminal exit; final-process material is recorded as completed on the unload
+      /// event in the same transaction as contents and cycle changes.
       /// </summary>
       public string DestinationQueue { get; init; }
     }

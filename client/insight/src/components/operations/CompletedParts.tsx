@@ -174,7 +174,7 @@ function sortMaterial(
       sortCol = (j) => j.serial ?? null;
       break;
     case "CompletedDate":
-      sortCol = (j) => j.last_unload_time ?? null;
+      sortCol = (j) => j.completed_time ?? null;
       break;
     case "Workorder":
       sortCol = (j) => j.workorderId ?? null;
@@ -299,7 +299,7 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
             <TableRow key={s.materialID}>
               <TableCell>{s.serial ?? ""}</TableCell>
               <TableCell>
-                {s.last_unload_time ? completedDateFormat.format(s.last_unload_time) : ""}
+                {s.completed_time ? completedDateFormat.format(s.completed_time) : ""}
               </TableCell>
               <TableCell>
                 <WorkorderLink workorderId={s.workorderId} />

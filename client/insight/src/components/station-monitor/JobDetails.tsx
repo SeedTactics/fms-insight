@@ -208,7 +208,7 @@ function MaterialStatus(props: MaterialStatusProps) {
         In {basketName} {props.inProcMat.location.basketId ?? ""}
       </span>
     );
-  } else if (props.matSummary?.completed_last_proc_machining) {
+  } else if (props.matSummary?.completed_time) {
     return <span>Completed</span>;
   } else if (props.matSummary !== null && !props.matSummary.startedProcess1) {
     return <span>Not yet started</span>;

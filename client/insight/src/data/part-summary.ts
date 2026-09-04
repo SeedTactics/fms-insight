@@ -110,10 +110,9 @@ export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
     .valuesToLazySeq()
     .filter((m) =>
       Boolean(
-        m.numProcesses &&
-        m.unloaded_processes?.[m.numProcesses] &&
-        (range.startDate === null || m.unloaded_processes[m.numProcesses] >= range.startDate) &&
-        (range.endDate === null || m.unloaded_processes[m.numProcesses] <= range.endDate),
+        m.completed_time &&
+        (range.startDate === null || m.completed_time >= range.startDate) &&
+        (range.endDate === null || m.completed_time <= range.endDate),
       ),
     )
     .toOrderedLookup((m) => m.partName)

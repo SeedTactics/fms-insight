@@ -33,6 +33,7 @@ public static class CompareEvents
           // metadata. Dedicated metadata tests cover these fields.
           ForeignID = null,
           CorrelationId = null,
+          ProgramDetails = WithoutCompletionDetails(e.ProgramDetails),
         }
       )
       .ToList();
@@ -50,10 +51,23 @@ public static class CompareEvents
           Material = e.Material.OrderBy(m => m.MaterialID).ToImmutableList(),
           ForeignID = null,
           CorrelationId = null,
+          ProgramDetails = WithoutCompletionDetails(e.ProgramDetails),
         }
       )
       .ToList();
 
     sortedActual.ShouldBeEquivalentTo(sortedExpected);
+  }
+
+  // Adapter transition fixtures predate repository-generated disposition facts. Their exact
+  // per-material values and accounting effects are asserted in MaterialCompletionSpec.
+  public static ImmutableDictionary<string, string> WithoutCompletionDetails(
+    ImmutableDictionary<string, string> details
+  )
+  {
+    var remaining = details
+      ?.Where(pair => !pair.Key.StartsWith("MaterialCompleted:", StringComparison.Ordinal))
+      .ToImmutableDictionary();
+    return remaining is { Count: > 0 } ? remaining : null;
   }
 }

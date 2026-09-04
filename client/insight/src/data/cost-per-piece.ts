@@ -108,8 +108,7 @@ export function compute_monthly_cost_percentages(
   const completed = LazySeq.of(matsById)
     .filter(([, details]) => {
       if (partsToIgnore.has(details.partName)) return false;
-      if (details.numProcesses === undefined) return false;
-      const unload = details.unloaded_processes?.[details.numProcesses];
+      const unload = details.completed_time;
       return !!unload && unload >= start && unload <= end;
     })
     .toRMap(

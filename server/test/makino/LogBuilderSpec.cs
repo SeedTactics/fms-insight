@@ -1439,5 +1439,8 @@ public sealed class LogBuilderSpec : IDisposable
     {
       ForeignID = null,
       CorrelationId = null,
+      ProgramDetails = BlackMaple.FMSInsight.Tests.CompareEvents.WithoutCompletionDetails(
+        entry.ProgramDetails
+      ),
     };
 }

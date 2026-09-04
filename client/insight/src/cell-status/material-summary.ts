@@ -34,6 +34,7 @@ import {
   IEditMaterialInLogEvents,
   IInProcessMaterial,
   ILogEntry,
+  ILogMaterial,
   LogType,
 } from "../network/api.js";
 import type { ServerEventAndTime } from "./loading.js";
@@ -57,6 +58,8 @@ export interface MaterialSummaryAndCompletedData extends MaterialSummary {
   readonly numProcesses?: number;
   readonly unloaded_processes?: { [process: number]: Date };
   readonly last_unload_time?: Date;
+  /** Finished material's terminal exit; distinct from pallet/process unloading. */
+  readonly completed_time?: Date;
   readonly completed_last_proc_machining?: boolean;
   readonly completed_inspect_time?: Date;
   readonly closeout_completed?: Date;
@@ -97,6 +100,22 @@ export function inproc_mat_to_summary(mat: Readonly<IInProcessMaterial>): Materi
     signaledInspections: mat.signaledInspections,
     quarantineAfterUnload: mat.quarantineAfterUnload,
   };
+}
+
+function completesMaterial(e: Readonly<ILogEntry>, material: Readonly<ILogMaterial>): boolean {
+  if (
+    e.startofcycle ||
+    e.result !== "UNLOAD" ||
+    (e.type !== LogType.LoadUnloadCycle && e.type !== LogType.BasketLoadUnload)
+  )
+    return false;
+  const completion = e.details?.["MaterialCompleted:" + material.id];
+  return (
+    completion === "True" ||
+    (completion === undefined &&
+      e.type === LogType.LoadUnloadCycle &&
+      material.proc === material.numproc)
+  );
 }
 
 function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryState {
@@ -233,6 +252,10 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
         mat = { ...mat, quarantineAfterUnload: true };
     }
 
+    if (completesMaterial(e, logMat)) {
+      mat = { ...mat, completed_time: e.endUTC };
+    }
+
     mats = mats.set(logMat.id, mat);
   }
 
@@ -316,6 +339,14 @@ function process_swap(
         serial: newMatFromEvt.serial ?? newMat.serial,
         workorderId: newMatFromEvt.workorder ?? newMat.workorderId,
       };
+      if (completesMaterial(evt, newMatFromEvt)) {
+        if (oldMat.completed_time?.getTime() === evt.endUTC.getTime()) {
+          oldMat = { ...oldMat, completed_time: undefined };
+        }
+        if (!newMat.completed_time || newMat.completed_time < evt.endUTC) {
+          newMat = { ...newMat, completed_time: evt.endUTC };
+        }
+      }
     }
 
     switch (evt.type) {

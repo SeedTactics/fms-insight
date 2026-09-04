@@ -589,6 +589,18 @@ namespace BlackMaple.MachineFramework
       return entries;
     }
 
+    // New unloads carry one explicit fact per material. Only unmarked historical pallet
+    // unloads use the legacy final-process heuristic; internal transfers carry False.
+    private const string CompletedMaterialPredicate =
+      @"
+      ((stations.StationLoc IN ($loadty, $basketloadty) AND EXISTS (SELECT 1 FROM program_details d
+        WHERE d.Counter = stations.Counter
+          AND d.Key = 'MaterialCompleted:' || stations_mat.MaterialID AND d.Value = 'True'))
+       OR (stations.StationLoc = $loadty AND stations_mat.Process = matdetails.NumProcesses
+         AND NOT EXISTS (SELECT 1 FROM program_details d
+           WHERE d.Counter = stations.Counter
+             AND d.Key = 'MaterialCompleted:' || stations_mat.MaterialID)))";
+
     public IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC)
     {
       // This gets all logs between the start and end dates, but may include log events earlier than startUTC
@@ -602,7 +614,9 @@ namespace BlackMaple.MachineFramework
                             WHERE
                                 stations.Counter = stations_mat.Counter
                                 AND
-                                stations.StationLoc = $loadty
+                                "
+        + CompletedMaterialPredicate
+        + @"
                                 AND
                                 stations.Result = 'UNLOAD'
                                 AND
@@ -613,8 +627,6 @@ namespace BlackMaple.MachineFramework
                                 stations.TimeUTC >= $startUTC
                                 AND
                                 stations_mat.MaterialID = matdetails.MaterialID
-                                AND
-                                stations_mat.Process = matdetails.NumProcesses
                         )";
 
       using (var trans = _connection.BeginTransaction())
@@ -627,6 +639,8 @@ namespace BlackMaple.MachineFramework
           + searchCompleted
           + ") ORDER BY Counter ASC";
         cmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+        cmd.Parameters.Add("basketloadty", SqliteType.Integer).Value = (int)
+          LogType.BasketLoadUnload;
         cmd.Parameters.Add("endUTC", SqliteType.Integer).Value = endUTC.Ticks;
         cmd.Parameters.Add("startUTC", SqliteType.Integer).Value = startUTC.Ticks;
 
@@ -1018,13 +1032,11 @@ namespace BlackMaple.MachineFramework
             WHERE
             stations.Counter = stations_mat.Counter
             AND
-            stations.StationLoc = $loadty
+            {CompletedMaterialPredicate}
             AND
             stations.Result = 'UNLOAD'
             AND
             stations.Start = 0
-            AND
-            stations_mat.Process = matdetails.NumProcesses
             AND
             stations_mat.MaterialID = matdetails.MaterialID
             AND
@@ -1173,6 +1185,8 @@ namespace BlackMaple.MachineFramework
       workCmd.CommandText = workQry;
       workCmd.Parameters.Add("schid", SqliteType.Text).Value = lastSchId;
       workCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+      workCmd.Parameters.Add("basketloadty", SqliteType.Integer).Value = (int)
+        LogType.BasketLoadUnload;
       if (!string.IsNullOrEmpty(workorderToFilter))
       {
         workCmd.Parameters.Add("workorder", SqliteType.Text).Value = workorderToFilter;
@@ -1442,22 +1456,36 @@ namespace BlackMaple.MachineFramework
       IDbTransaction trans,
       NewEventLogEntry log,
       string foreignID,
-      string origMessage
+      string origMessage,
+      ImmutableHashSet<long> terminalMaterialIds = null
     ) =>
       AddLogEntry(
         trans,
         log,
-        new EventLogMetadata { ForeignId = foreignID, OriginalMessage = origMessage }
+        new EventLogMetadata { ForeignId = foreignID, OriginalMessage = origMessage },
+        terminalMaterialIds
       );
 
     private LogEntry AddLogEntry(
       IDbTransaction trans,
       NewEventLogEntry log,
-      EventLogMetadata metadata
+      EventLogMetadata metadata,
+      ImmutableHashSet<long> terminalMaterialIds = null
     )
     {
       metadata = NormalizeEventLogMetadata(metadata);
       log = log with { Metadata = metadata };
+      if (terminalMaterialIds is not null)
+      {
+        foreach (var material in log.Material)
+          log.ProgramDetails[
+            "MaterialCompleted:" + material.MaterialID.ToString(CultureInfo.InvariantCulture)
+          ] = (
+            material.Process > 0
+            && terminalMaterialIds.Contains(material.MaterialID)
+            && GetMaterialDetails(material.MaterialID, trans)?.NumProcesses == material.Process
+          ).ToString();
+      }
       ValidateLogEntry(log);
       using (var cmd = _connection.CreateCommand())
       {
@@ -1857,6 +1885,14 @@ namespace BlackMaple.MachineFramework
           logs: logs,
           externalQueues: externalQueues,
           sendToExternal: sendToExternal,
+          internalMaterialIds: (toLoad ?? [])
+            .SelectMany(face => face.MaterialIDs)
+            .Concat(
+              (palletBasketCompletion?.Transfers ?? [])
+                .OfType<PalletBasketTransfer.LoadOntoBasket>()
+                .SelectMany(transfer => transfer.Material.Select(material => material.MaterialID))
+            )
+            .ToImmutableHashSet(),
           trans: trans
         );
 
@@ -2146,7 +2182,8 @@ namespace BlackMaple.MachineFramework
               ActiveOperationTime = TimeSpan.Zero,
             },
             foreignId,
-            originalMessage
+            originalMessage,
+            terminalMaterialIds: loadOntoBasket ? null : ImmutableHashSet<long>.Empty
           )
         );
       }
@@ -2383,6 +2420,14 @@ namespace BlackMaple.MachineFramework
           logs: logs,
           externalQueues: externalQueues,
           sendToExternal: sendToExternal,
+          internalMaterialIds: (toLoad ?? [])
+            .SelectMany(face => face.MaterialIDs)
+            .Concat(
+              (palletBasketCompletion?.Transfers ?? [])
+                .OfType<PalletBasketTransfer.LoadOntoBasket>()
+                .SelectMany(transfer => transfer.Material.Select(material => material.MaterialID))
+            )
+            .ToImmutableHashSet(),
           trans: trans
         );
 
@@ -2574,7 +2619,17 @@ namespace BlackMaple.MachineFramework
               newLogs,
               eventMetadata.ForeignId,
               eventMetadata.OriginalMessage,
-              eventMetadata
+              eventMetadata,
+              terminalMaterialIds: transfer.DestinationQueue is null
+                ? transfer
+                  .Material.Select(material => material.MaterialID)
+                  .Except(
+                    operation
+                      .Transfers.OfType<BasketStationTransfer.LoadOntoBasket>()
+                      .SelectMany(load => load.Material.Select(material => material.MaterialID))
+                  )
+                  .ToImmutableHashSet()
+                : ImmutableHashSet<long>.Empty
             );
             if (transfer.DestinationQueue is null)
               continue;
@@ -2859,7 +2914,8 @@ namespace BlackMaple.MachineFramework
       List<LogEntry> logs,
       string foreignId,
       string originalMessage,
-      EventLogMetadata metadata = null
+      EventLogMetadata metadata = null,
+      ImmutableHashSet<long> terminalMaterialIds = null
     )
     {
       var recordedBasketId = ValidateBasketId(transfer.BasketId);
@@ -2880,7 +2936,8 @@ namespace BlackMaple.MachineFramework
             ElapsedTime = elapsed,
             ActiveOperationTime = transfer.ActiveOperationTime,
           },
-          MergeEventLogMetadata(metadata, foreignId, originalMessage)
+          MergeEventLogMetadata(metadata, foreignId, originalMessage),
+          terminalMaterialIds
         )
       );
     }
@@ -3052,6 +3109,7 @@ namespace BlackMaple.MachineFramework
       List<LogEntry> logs,
       IReadOnlyDictionary<string, string> externalQueues,
       List<MaterialToSendToExternalQueue> sendToExternal,
+      ImmutableHashSet<long> internalMaterialIds,
       IDbTransaction trans
     )
     {
@@ -3141,7 +3199,12 @@ namespace BlackMaple.MachineFramework
               Result = "UNLOAD",
             },
             face.ForeignID,
-            face.OriginalMessage
+            face.OriginalMessage,
+            terminalMaterialIds: face.MaterialIDToDestination.Where(pair =>
+                pair.Value?.Queue is null && !internalMaterialIds.Contains(pair.Key)
+              )
+              .Select(pair => pair.Key)
+              .ToImmutableHashSet()
           )
         );
       }
@@ -4460,9 +4523,29 @@ namespace BlackMaple.MachineFramework
               updateMatsCmd.Parameters[1].Value = evt.Counter;
               updateMatsCmd.ExecuteNonQuery();
 
+              var oldCompletionKey =
+                "MaterialCompleted:" + oldMatId.ToString(CultureInfo.InvariantCulture);
+              var newCompletionKey =
+                "MaterialCompleted:" + newMatId.ToString(CultureInfo.InvariantCulture);
+              using var completionCmd = _connection.CreateCommand();
+              completionCmd.Transaction = trans;
+              completionCmd.CommandText =
+                "UPDATE program_details SET Key = $new WHERE Counter = $counter AND Key = $old";
+              completionCmd.Parameters.AddWithValue("new", newCompletionKey);
+              completionCmd.Parameters.AddWithValue("old", oldCompletionKey);
+              completionCmd.Parameters.AddWithValue("counter", evt.Counter);
+              completionCmd.ExecuteNonQuery();
+
               changedLogEntries.Add(
                 evt with
                 {
+                  ProgramDetails =
+                    evt.ProgramDetails is not null
+                    && evt.ProgramDetails.TryGetValue(oldCompletionKey, out var completed)
+                      ? evt
+                        .ProgramDetails.Remove(oldCompletionKey)
+                        .SetItem(newCompletionKey, completed)
+                      : evt.ProgramDetails,
                   Material = evt
                     .Material.Select(m =>
                       m.MaterialID == oldMatId
