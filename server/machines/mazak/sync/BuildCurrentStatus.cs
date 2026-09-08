@@ -94,7 +94,15 @@ namespace MazakMachineInterface
         out var partNameToNumProc
       );
 
-      var currentLoads = new List<LoadAction>(mazakData.LoadActions);
+      // Raw controller data remains unchanged; all status comparisons use Insight coordinates.
+      var currentLoads = mazakData
+        .LoadActions.Select(a =>
+          a with
+          {
+            LoadStation = mazakCfg.TranslateLoadStationNumber(a.LoadStation),
+          }
+        )
+        .ToList();
 
       var jobUniqBySchID = new Dictionary<long, string>();
       var jobsByUniq = new Dictionary<string, CurrentJob>();

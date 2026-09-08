@@ -201,14 +201,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Test]
     [Arguments("basic-no-material")]
     [Arguments("basic-load-material")]
+    [Arguments("basic-load-material", true)]
     [Arguments("basic-cutting")]
     [Arguments("basic-load-queue")]
     [Arguments("basic-unload-queues")]
+    [Arguments("basic-unload-queues", true)]
     [Arguments("multiface-inital-load")]
     [Arguments("multiface-transfer-faces")]
     [Arguments("multiface-transfer-faces-and-unload")]
     [Arguments("multiface-transfer-user-jobs")]
-    public async Task StatusSnapshot(string scenario)
+    public async Task StatusSnapshot(string scenario, bool mappedActions = false)
     {
       IRepository repository;
       var existingLogPath = Path.Combine(
@@ -282,6 +284,39 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           null,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
         );
+        if (mappedActions)
+        {
+          var rawActions = allData.LoadActions.ToImmutableList();
+          var mapped = BuildCurrentStatus.Build(
+            repository,
+            _settings,
+            _mazakCfg with
+            {
+              LoadStationNumbers = [10, 30],
+            },
+            allData,
+            machineGroupName: "MC",
+            null,
+            new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+          );
+          await Assert.That(mapped.Pallets[5].CurrentPalletLocation.Num).IsEqualTo(10);
+          await Assert.That(mapped.Material).IsEquivalentTo(status.Material);
+          await Assert
+            .That(
+              mapped.Material.Any(m =>
+                m.Action.Type
+                == (
+                  scenario == "basic-load-material"
+                    ? InProcessMaterialAction.ActionType.Loading
+                    : InProcessMaterialAction.ActionType.UnloadToInProcess
+                )
+              )
+            )
+            .IsTrue();
+          await Assert.That(allData.LoadActions).IsEquivalentTo(rawActions);
+          await Assert.That(allData.LoadActions.All(a => a.LoadStation == 1)).IsTrue();
+          return;
+        }
       }
       finally
       {

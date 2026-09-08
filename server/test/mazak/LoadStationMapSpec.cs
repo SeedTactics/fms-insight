@@ -12,7 +12,7 @@ public class LoadStationMapSpec
   [Test]
   public async Task ConfigurationUsesListPositionAndRejectsRemovedOffset()
   {
-    var values = new Dictionary<string, string?>
+    var values = new Dictionary<string, string>
     {
       ["Mazak:Smooth Version"] = "true",
       ["Mazak:Proxy DB Url"] = "http://localhost:5200",
