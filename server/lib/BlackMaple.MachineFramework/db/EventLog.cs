@@ -3295,33 +3295,29 @@ namespace BlackMaple.MachineFramework
           );
         }
 
-        logs.Add(
-          AddLogEntry(
-            trans,
-            new NewEventLogEntry()
-            {
-              Material = face.MaterialIDs.Select(m => new EventLogMaterial()
-              {
-                MaterialID = m,
-                Face = face.FaceNum,
-                Process = face.Process,
-              }),
-              Pallet = pallet,
-              LogType = LogType.LoadUnloadCycle,
-              LocationName = "L/U",
-              LocationNum = lulNum,
-              Program = "LOAD",
-              StartOfCycle = false,
-              // Add 1 second to be after the pallet cycle
-              EndTimeUTC = timeUTC.AddSeconds(1),
-              Result = "LOAD",
-              ElapsedTime = elapsed,
-              ActiveOperationTime = face.ActiveOperationTime,
-            },
-            face.ForeignID,
-            face.OriginalMessage
-          )
-        );
+        var loadLog = new NewEventLogEntry()
+        {
+          Material = face.MaterialIDs.Select(m => new EventLogMaterial()
+          {
+            MaterialID = m,
+            Face = face.FaceNum,
+            Process = face.Process,
+          }),
+          Pallet = pallet,
+          LogType = LogType.LoadUnloadCycle,
+          LocationName = "L/U",
+          LocationNum = lulNum,
+          Program = "LOAD",
+          StartOfCycle = false,
+          // Add 1 second to be after the pallet cycle
+          EndTimeUTC = timeUTC.AddSeconds(1),
+          Result = "LOAD",
+          ElapsedTime = elapsed,
+          ActiveOperationTime = face.ActiveOperationTime,
+        };
+        foreach (var detail in face.AdditionalData ?? ImmutableDictionary<string, string>.Empty)
+          loadLog.ProgramDetails.Add(detail.Key, detail.Value);
+        logs.Add(AddLogEntry(trans, loadLog, face.ForeignID, face.OriginalMessage));
       }
     }
 

@@ -778,6 +778,10 @@ namespace BlackMaple.MachineFramework
     public required int Process { get; init; }
     public required int? Path { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }
+
+    /// <summary>Details for this specific LOAD event, persisted atomically as ProgramDetails.</summary>
+    public ImmutableDictionary<string, string> AdditionalData { get; init; } =
+      ImmutableDictionary<string, string>.Empty;
     public string ForeignID { get; init; } = null;
     public string OriginalMessage { get; init; } = null;
   }
