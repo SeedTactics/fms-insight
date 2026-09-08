@@ -293,6 +293,10 @@ namespace MazakMachineInterface
 
       var unarchived = jobDB.LoadUnarchivedJobs();
 
+      // Accepted jobs remain committed while controller delivery is pending, including
+      // jobs outside this pass's download window or selected schedule group.
+      current.UnionWith(unarchived.Where(j => !j.CopiedToSystem).Select(j => j.UniqueStr));
+
       var toArchive = unarchived
         .Where(j => !current.Contains(j.UniqueStr))
         .Select(j => j.UniqueStr);

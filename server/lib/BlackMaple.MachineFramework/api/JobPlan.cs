@@ -291,6 +291,8 @@ namespace BlackMaple.MachineFramework
   {
     public string? ScheduleId { get; init; }
 
+    // Controller delivery progress only. Acceptance into the repository commits the plan;
+    // slow or retried delivery does not make pending jobs provisional.
     public required bool CopiedToSystem { get; init; }
 
     public ImmutableList<DecrementQuantity>? Decrements { get; init; }
