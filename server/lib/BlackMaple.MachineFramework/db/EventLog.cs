@@ -225,7 +225,9 @@ namespace BlackMaple.MachineFramework
           {
             while (detailReader.Read())
             {
-              progDetails[detailReader.GetString(0)] = detailReader.GetString(1);
+              progDetails[detailReader.GetString(0)] = detailReader.IsDBNull(1)
+                ? ""
+                : detailReader.GetString(1);
             }
           }
 

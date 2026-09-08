@@ -779,7 +779,11 @@ namespace BlackMaple.MachineFramework
     public required int? Path { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }
 
-    /// <summary>Details for this specific LOAD event, persisted atomically as ProgramDetails.</summary>
+    /// <summary>
+    /// Details for this specific LOAD event, persisted atomically as ProgramDetails. Callers are
+    /// responsible for application-specific/namespaced keys and avoiding framework-reserved keys.
+    /// These details belong to the event; they are not copied to later pallet cycles for carried material.
+    /// </summary>
     public ImmutableDictionary<string, string> AdditionalData { get; init; } =
       ImmutableDictionary<string, string>.Empty;
     public string ForeignID { get; init; } = null;

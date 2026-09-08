@@ -67,6 +67,8 @@ namespace MazakMachineInterface
   public sealed record MazakResolvedLoad
   {
     public required ImmutableList<long> MaterialIds { get; init; }
+
+    // LOAD ProgramDetails: callers own key namespacing and must avoid framework-reserved keys.
     public ImmutableDictionary<string, string> AdditionalData { get; init; } =
       ImmutableDictionary<string, string>.Empty;
   }
