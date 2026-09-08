@@ -40,28 +40,53 @@ using Microsoft.Extensions.Configuration;
 
 namespace MazakMachineInterface
 {
-  public sealed record MazakLoadMaterialContext
+  // One normalized external face event. Face is the Mazak process/fixture face; Process is
+  // the FMS manufacturing process (which can differ for split schedules). Path is currently 1.
+  public sealed record MazakLoadUnloadFace
   {
-    public required int Pallet { get; init; }
-    public required int LoadStation { get; init; }
+    public required string ForeignId { get; init; }
+    public required string PartName { get; init; }
     public required string JobUnique { get; init; }
     public required int Process { get; init; }
     public required int Path { get; init; }
     public required int Face { get; init; }
     public required int Quantity { get; init; }
-    public required DateTime TimeUTC { get; init; }
-    public string? ForeignId { get; init; }
   }
 
-  public abstract record MazakLoadMaterialResolution
+  public sealed record MazakLoadUnloadContext
   {
-    private MazakLoadMaterialResolution() { }
+    public required int Pallet { get; init; }
+    public required int LoadStation { get; init; }
+    public required DateTime TimeUTC { get; init; }
+    public required ImmutableList<MazakLoadUnloadFace> Loads { get; init; }
+    public required ImmutableList<MazakLoadUnloadFace> Unloads { get; init; }
+    public required ImmutableList<BlackMaple.MachineFramework.LogEntry> CurrentPalletLog { get; init; }
+  }
 
-    public sealed record NotApplicable : MazakLoadMaterialResolution;
+  public abstract record MazakLoadUnloadResolution
+  {
+    private MazakLoadUnloadResolution() { }
 
-    public sealed record Resolved(ImmutableList<long> MaterialIds) : MazakLoadMaterialResolution;
+    public sealed record NotApplicable : MazakLoadUnloadResolution;
 
-    public sealed record Unresolved(string Reason) : MazakLoadMaterialResolution;
+    // Each dictionary must cover exactly the corresponding context's ForeignIds. The translator
+    // owns face/process/path, timestamps, foreign IDs and timing. A null unload destination means
+    // ordinary unload without a queue; a non-null destination with Queue=null requires a basket transfer.
+    public sealed record Resolved : MazakLoadUnloadResolution
+    {
+      public required ImmutableDictionary<
+        string,
+        ImmutableList<long>
+      > MaterialForLoads { get; init; }
+      public required ImmutableDictionary<
+        string,
+        ImmutableDictionary<long, UnloadDestination?>
+      > MaterialForUnloads { get; init; }
+      public PalletBasketLoadUnloadCompletion? BasketCompletion { get; init; }
+    }
+
+    // Exact details were expected but unavailable. Log the reason and translate ordinarily.
+    public sealed record UnableToResolve(string Reason) : MazakLoadUnloadResolution;
   }
 
   public record MazakConfig
@@ -97,15 +122,17 @@ namespace MazakMachineInterface
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
 
-    // Optionally claim exact FMS material identity for an individual Mazak load before ordinary
-    // queue and generic material selection. NotApplicable preserves ordinary selection; Resolved
-    // is authoritative. Unresolved records a durable data-quality error and uses ordinary
-    // selection so enrichment failures never block the Mazak event stream.
+    // Invoked once for a complete L/U chunk, before ordinary material selection can write anything.
+    // The callback must only read the repository and supply a resolution; it must not write FMS or
+    // close external occurrences. The translator commits; external reconciliation can observe it.
+    // NotApplicable preserves ordinary translation. UnableToResolve, exceptions and invalid
+    // resolutions log an error and fall back to ordinary translation so ingestion keeps moving.
+    // Basket transaction failures also fall back, unless the transaction already committed.
     public Func<
       IRepository,
-      MazakLoadMaterialContext,
-      MazakLoadMaterialResolution
-    >? ResolveMaterialForLoad { get; init; }
+      MazakLoadUnloadContext,
+      MazakLoadUnloadResolution
+    >? ResolveLoadUnloadTransaction { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
     public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
