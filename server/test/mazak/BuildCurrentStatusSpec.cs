@@ -609,6 +609,70 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    [Arguments(MazakDbType.MazakVersionE, "0000000001")]
+    [Arguments(MazakDbType.MazakSmooth, "512")]
+    public async Task TenthControllerStationUsesMaskPosition(MazakDbType type, string mask)
+    {
+      using var repository = _repoCfg.OpenConnection();
+      var jobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      repository.AddJobs(jobs, null, addAsCopiedToSystem: true);
+      var data = JsonSerializer.Deserialize<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-no-material.data.json")
+        ),
+        jsonSettings
+      );
+      data = data with
+      {
+        LoadActions = [],
+        PalletPositions = [],
+        Parts = data
+          .Parts.Select(part =>
+            part with
+            {
+              Processes = part
+                .Processes.Select(process =>
+                  process with
+                  {
+                    FixLDS = mask,
+                    RemoveLDS = mask,
+                    CutMc = type == MazakDbType.MazakVersionE ? "10000000" : "1",
+                  }
+                )
+                .ToList(),
+            }
+          )
+          .ToImmutableList(),
+      };
+      var status = BuildCurrentStatus.Build(
+        repository,
+        _settings,
+        _mazakCfg with
+        {
+          DBType = type,
+          LoadStationNumbers = Enumerable.Range(101, 10).ToImmutableList(),
+        },
+        data,
+        "MC",
+        null,
+        new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+      );
+      var paths = status
+        .Jobs.Values.SelectMany(j => j.Processes)
+        .SelectMany(p => p.Paths)
+        .ToImmutableList();
+      await Assert.That(paths.IsEmpty).IsFalse();
+      foreach (var path in paths)
+      {
+        await Assert.That(path.Load).IsEquivalentTo([110]);
+        await Assert.That(path.Unload).IsEquivalentTo([110]);
+      }
+    }
+
+    [Test]
     public async Task WithLoadStationNumbers()
     {
       using var repository = _repoCfg.OpenConnection();

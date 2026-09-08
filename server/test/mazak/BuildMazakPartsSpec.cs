@@ -54,13 +54,20 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
     [Test]
     [Arguments(MazakDbType.MazakSmooth, "2", "1")]
+    [Arguments(MazakDbType.MazakSmooth, "512", "1", 10)]
+    [Arguments(MazakDbType.MazakVersionE, "0000000001", "1000000000", 10)]
     [Arguments(MazakDbType.MazakVersionE, "0200000000", "1000000000")]
     public async System.Threading.Tasks.Task ExplicitLoadStationMapWritesControllerCoordinates(
       MazakDbType type,
       string loadMask,
-      string unloadMask
+      string unloadMask,
+      int localLoad = 2
     )
     {
+      var map =
+        localLoad == 10
+          ? Enumerable.Range(101, 10).ToImmutableList()
+          : ImmutableList.Create(10, 30);
       var job = CreateBasicStopsWithProg("mapped", "mapped-part", 1, new[] { new[] { 4 } });
       job = job with
       {
@@ -69,7 +76,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             p with
             {
               Paths = p
-                .Paths.Select(path => path with { Load = [30], Unload = [10] })
+                .Paths.Select(path => path with { Load = [map[localLoad - 1]], Unload = [map[0]] })
                 .ToImmutableList(),
             }
           )
@@ -87,7 +94,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           CellControllerProgramName = "1001",
         }
       );
-      var config = defaultMazakCfg with { DBType = type, LoadStationNumbers = [10, 30] };
+      var config = defaultMazakCfg with { DBType = type, LoadStationNumbers = map };
       var row = new MazakPartRow { PartName = part.PartName };
       writer.CreateDatabaseRow(row, "fixture", config);
       await Assert.That(row.Processes.Single().FixLDS).IsEqualTo(loadMask);
