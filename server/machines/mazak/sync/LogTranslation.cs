@@ -478,7 +478,10 @@ namespace MazakMachineInterface
       }
       foreach (var face in context.Loads)
       {
-        var ids = exact.MaterialForLoads[face.ForeignId];
+        var resolved =
+          exact.MaterialForLoads[face.ForeignId]
+          ?? throw new InvalidOperationException("Resolved load must not be null.");
+        var ids = resolved.MaterialIds;
         ValidateOwnedMaterial(face, ids);
         if (
           ids.Any(loaded.Contains)
@@ -493,6 +496,7 @@ namespace MazakMachineInterface
           new MaterialToLoadOntoFace
           {
             MaterialIDs = ids,
+            AdditionalData = resolved.AdditionalData,
             FaceNum = face.Face,
             Process = face.Process,
             Path = face.Path,
