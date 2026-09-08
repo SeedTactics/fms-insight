@@ -1561,319 +1561,584 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       load.Material.ShouldHaveSingleItem().MaterialID.ShouldBe(1);
     }
 
-    [Test]
-    public void ExactLoadResolverRunsBeforeQueueAndBasketStationMetadata()
-    {
-      AddTestJob(
-        unique: "basket-job",
-        part: "basket-part",
-        processes: [Process(), Process(inputQueue: "thequeue", basketLoadStations: [999])]
-      );
-      var materialId = jobLog.AllocateMaterialID("basket-job", "basket-part", numProc: 2);
-      var time = DateTime.UtcNow.AddHours(-1);
-      MazakLoadMaterialContext receivedContext = null;
+    private static MazakLoadUnloadResolution.Resolved ExactLoad(
+      string foreignId,
+      params long[] material
+    ) =>
+      new()
+      {
+        MaterialForLoads = ImmutableDictionary<string, ImmutableList<long>>.Empty.Add(
+          foreignId,
+          material.ToImmutableList()
+        ),
+        MaterialForUnloads = ImmutableDictionary<
+          string,
+          ImmutableDictionary<long, UnloadDestination>
+        >.Empty,
+      };
 
+    private LogTranslation.HandleEventResult TranslateChunk(
+      params MazakMachineInterface.LogEntry[] events
+    ) =>
+      LogTranslation.HandleEvents(
+        jobLog,
+        mazakData with
+        {
+          Logs = events,
+        },
+        "machinespec",
+        settings,
+        chunk => raisedByEvent.AddRange(chunk.LulEndChunk ?? [chunk.NonLulEndEvt]),
+        mazakCfg,
+        () => mazakDataTools
+      );
+
+    private static MazakMachineInterface.LogEntry FollowingEvent(DateTime time, int pallet = 1) =>
+      new()
+      {
+        ForeignID = "LG003",
+        TimeUTC = time.AddMinutes(1),
+        Pallet = pallet,
+        Code = LogCode.PalletMoveComplete,
+        TargetPosition = "S012",
+        FromPosition = "LS011",
+      };
+
+    [Test]
+    public async Task ExactTransactionUsesTranslatedContextAndTranslatorMetadataWithoutBaskets()
+    {
+      AddTestJob("owned-job", "owned-part", [Process(), Process(inputQueue: "thequeue")]);
+      var material = jobLog.AllocateMaterialID("owned-job", "owned-part", 2);
+      var time = DateTime.UtcNow.AddHours(-1);
+      MazakLoadUnloadContext received = null;
       mazakCfg = mazakCfg with
       {
         StartingPalletNumber = 100,
         StartingLoadStationNumber = 20,
-        ResolveMaterialForLoad = (repository, context) =>
+        ResolveLoadUnloadTransaction = (repository, context) =>
         {
-          repository.ShouldBe(jobLog);
-          receivedContext = context;
-          return new MazakLoadMaterialResolution.Resolved([materialId]);
+          if (repository != jobLog)
+            throw new InvalidOperationException("Wrong repository");
+          received = context;
+          return ExactLoad(context.Loads.Single().ForeignId, material);
         },
       };
-
-      CompleteLoad(LoadEndEvent(time, part: "basket-part", pallet: 2, station: 2, process: 2));
-
-      receivedContext.ShouldNotBeNull();
-      receivedContext.ShouldBe(
-        new MazakLoadMaterialContext()
+      var result = TranslateChunk(
+        LoadEndEvent(time, "owned-part", pallet: 2, station: 2, process: 2) with
         {
-          Pallet = 101,
-          LoadStation = 21,
-          JobUnique = "basket-job",
-          Process = 2,
-          Path = 1,
-          Face = 2,
-          Quantity = 1,
-          TimeUTC = time,
-          ForeignId = "load-end",
-        }
-      );
-
-      var logs = CurrentPalletLog(101);
-      logs.Where(log => log.LogType is LogType.PalletCycle or LogType.LoadUnloadCycle)
-        .SelectMany(log => log.Material)
-        .ShouldAllBe(m => m.MaterialID == materialId);
-      logs.Single(log => log.LogType == LogType.LoadUnloadCycle).ForeignID.ShouldBe("load-end");
-    }
-
-    [Test]
-    public void NotApplicableResolverRetainsOrdinaryLoadBehavior()
-    {
-      AddTestJob(unique: "ordinary-job", part: "ordinary-part", processes: [Process()]);
-      var resolverCalled = false;
-      mazakCfg = mazakCfg with
-      {
-        ResolveMaterialForLoad = (repository, context) =>
-        {
-          resolverCalled = true;
-          return new MazakLoadMaterialResolution.NotApplicable();
+          ForeignID = "LG002",
         },
-      };
-
-      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "ordinary-part"));
-
-      resolverCalled.ShouldBeTrue();
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(1);
+        FollowingEvent(time, pallet: 2)
+      );
+      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsFalse();
+      await Assert.That(received.Pallet).IsEqualTo(101);
+      await Assert.That(received.LoadStation).IsEqualTo(21);
+      await Assert.That(received.TimeUTC).IsEqualTo(time);
+      await Assert.That(received.Unloads).IsEmpty();
+      await Assert.That(received.CurrentPalletLog).IsEmpty();
+      await Assert
+        .That(received.Loads.Single())
+        .IsEqualTo(
+          new MazakLoadUnloadFace
+          {
+            ForeignId = "LG002",
+            PartName = "owned-part",
+            JobUnique = "owned-job",
+            Process = 2,
+            Path = 1,
+            Face = 2,
+            Quantity = 1,
+          }
+        );
+      var load = CurrentPalletLog(101).Single(l => l.LogType == LogType.LoadUnloadCycle);
+      await Assert.That(load.Material.Single().MaterialID).IsEqualTo(material);
+      await Assert.That(load.ForeignID).IsEqualTo("LG002");
+      await Assert.That(load.EndTimeUTC).IsEqualTo(time.AddSeconds(1));
+      await Assert.That(load.LocationNum).IsEqualTo(21);
+      await Assert.That(jobLog.GetMaterialDetails(material + 1)).IsNull();
     }
 
     [Test]
-    public void NotApplicableResolverRetainsInputQueueBehavior()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task NotApplicableRetainsOrdinaryAllocationAndQueueSelection(bool queued)
     {
-      AddTestJob(
-        unique: "queue-job",
-        part: "queue-part",
-        processes: [Process(), Process(inputQueue: "thequeue")]
-      );
-      var materialId = jobLog.AllocateMaterialID("queue-job", "queue-part", numProc: 2);
-      jobLog.RecordAddMaterialToQueue(
-        matID: materialId,
-        process: 1,
-        queue: "thequeue",
-        position: -1,
-        operatorName: null,
-        reason: "Test"
-      );
-      var resolverCalled = false;
+      AddTestJob("ordinary-job", "ordinary-part", [Process(), Process(inputQueue: "thequeue")]);
+      var material = queued ? jobLog.AllocateMaterialID("ordinary-job", "ordinary-part", 2) : 1;
+      if (queued)
+        jobLog.RecordAddMaterialToQueue(material, 1, "thequeue", -1, null, "Test");
       mazakCfg = mazakCfg with
       {
-        ResolveMaterialForLoad = (repository, context) =>
-        {
-          resolverCalled = true;
-          return new MazakLoadMaterialResolution.NotApplicable();
-        },
-      };
-
-      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "queue-part", process: 2));
-
-      resolverCalled.ShouldBeTrue();
-      jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(materialId);
-    }
-
-    [Test]
-    public void InvalidResolvedMaterialRecordsErrorAndFallsBack()
-    {
-      AddTestJob(
-        unique: "basket-job",
-        part: "basket-part",
-        processes: [Process(basketLoadStations: [1])]
-      );
-      mazakCfg = mazakCfg with
-      {
-        ResolveMaterialForLoad = (repository, context) =>
-          new MazakLoadMaterialResolution.Resolved([0]),
-      };
-
-      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
-
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(1);
-      jobLog
-        .GetRecentLog(0)
-        .Single(log => log.Program == "MazakLoadMaterialResolution")
-        .Result.ShouldContain("invalid material ID 0");
-    }
-
-    [Test]
-    public void ExplicitUnresolvedRecordsErrorAndFallsBack()
-    {
-      AddTestJob(
-        unique: "basket-job",
-        part: "basket-part",
-        processes: [Process(basketLoadStations: [1])]
-      );
-      mazakCfg = mazakCfg with
-      {
-        ResolveMaterialForLoad = (repository, context) =>
-          new MazakLoadMaterialResolution.Unresolved("Robot-send evidence is missing."),
-      };
-
-      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
-
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(1);
-      jobLog
-        .GetRecentLog(0)
-        .Single(log => log.Program == "MazakLoadMaterialResolution")
-        .Result.ShouldContain("Robot-send evidence is missing.");
-    }
-
-    [Test]
-    public void ResolverExceptionRecordsErrorAndFallsBack()
-    {
-      AddTestJob(
-        unique: "basket-job",
-        part: "basket-part",
-        processes: [Process(basketLoadStations: [1])]
-      );
-      mazakCfg = mazakCfg with
-      {
-        ResolveMaterialForLoad = (repository, context) =>
-        {
-          throw new InvalidOperationException("The basket material could not be resolved.");
-        },
-      };
-
-      CompleteLoad(LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part"));
-
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(1);
-      jobLog
-        .GetRecentLog(0)
-        .Single(log => log.Program == "MazakLoadMaterialResolution")
-        .Result.ShouldContain("InvalidOperationException");
-    }
-
-    [Test]
-    public void ExactLoadResolverTakesPrecedenceOverInputQueue()
-    {
-      AddTestJob(
-        unique: "queue-basket-job",
-        part: "queue-basket-part",
-        processes: [Process(), Process(basketLoadStations: [1], inputQueue: "thequeue")]
-      );
-      var materialId = jobLog.AllocateMaterialID(
-        "queue-basket-job",
-        "queue-basket-part",
-        numProc: 2
-      );
-      jobLog.RecordAddMaterialToQueue(
-        matID: materialId,
-        process: 1,
-        queue: "thequeue",
-        position: -1,
-        operatorName: null,
-        reason: "Test"
-      );
-      mazakCfg = mazakCfg with
-      {
-        ResolveMaterialForLoad = (repository, context) =>
-          new MazakLoadMaterialResolution.Resolved([materialId]),
-      };
-
-      CompleteLoad(
-        LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "queue-basket-part", process: 2)
-      );
-
-      jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(materialId);
-    }
-
-    [Test]
-    public void UnresolvedLoadDoesNotBlockLaterMazakEvents()
-    {
-      AddTestJob(
-        unique: "basket-job",
-        part: "basket-part",
-        processes: [Process(basketLoadStations: [999])]
-      );
-      mazakCfg = mazakCfg with
-      {
-        ResolveMaterialForLoad = (repository, context) =>
-          new MazakLoadMaterialResolution.Unresolved("Robot-send evidence is not available."),
+        ResolveLoadUnloadTransaction = (_, _) => new MazakLoadUnloadResolution.NotApplicable(),
       };
       var time = DateTime.UtcNow.AddHours(-1);
-      var processedForeignIds = new List<string>();
-      var result = LogTranslation.HandleEvents(
-        repo: jobLog,
-        mazakData: mazakData with
+      var result = TranslateChunk(
+        LoadEndEvent(time, "ordinary-part", process: queued ? 2 : 1) with
         {
-          Logs =
+          ForeignID = "LG002",
+        },
+        FollowingEvent(time)
+      );
+      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsFalse();
+      await Assert
+        .That(
+          CurrentPalletLog(1)
+            .Single(l => l.LogType == LogType.LoadUnloadCycle)
+            .Material.Single()
+            .MaterialID
+        )
+        .IsEqualTo(material);
+      await Assert.That(jobLog.GetMaterialInAllQueues()).IsEmpty();
+    }
+
+    [Test]
+    [Arguments("deferred")]
+    [Arguments("exception")]
+    [Arguments("null")]
+    [Arguments("missing-event")]
+    [Arguments("extra-event")]
+    [Arguments("wrong-count")]
+    [Arguments("unknown-material")]
+    [Arguments("wrong-job")]
+    [Arguments("wrong-path")]
+    public async Task UnavailableOrInvalidResolutionWithholdsAllEffectsAndLaterEvents(
+      string failure
+    )
+    {
+      AddTestJob("owned-job", "owned-part", [Process()]);
+      var material = jobLog.AllocateMaterialID("owned-job", "owned-part", 1);
+      var other = jobLog.AllocateMaterialID("other-job", "owned-part", 1);
+      if (failure == "wrong-path")
+        jobLog.RecordPathForProcess(material, 1, 2);
+      mazakCfg = mazakCfg with
+      {
+        ResolveLoadUnloadTransaction = (_, _) =>
+          failure switch
+          {
+            "deferred" => new MazakLoadUnloadResolution.Deferred(
+              "External evidence is not settled"
+            ),
+            "exception" => throw new InvalidOperationException("Unavailable"),
+            "null" => null,
+            "missing-event" => ExactLoad("different-event", material),
+            "extra-event" => ExactLoad("LG002", material) with
+            {
+              MaterialForLoads = ExactLoad("LG002", material)
+                .MaterialForLoads.Add("extra", [material]),
+            },
+            "wrong-count" => ExactLoad("LG002", material, material),
+            "unknown-material" => ExactLoad("LG002", 90000),
+            "wrong-job" => ExactLoad("LG002", other),
+            _ => ExactLoad("LG002", material),
+          },
+      };
+      var before = jobLog.GetRecentLog(0).ToImmutableList();
+      var time = DateTime.UtcNow.AddHours(-1);
+      var load = LoadEndEvent(time, "owned-part") with { ForeignID = "LG002" };
+      var result = TranslateChunk(load, FollowingEvent(time));
+      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsTrue();
+      await Assert.That(result.PalletStatusChanged).IsFalse();
+      await Assert.That(raisedByEvent).IsEmpty();
+      await Assert.That(jobLog.GetRecentLog(0)).IsEquivalentTo(before);
+      await Assert.That(jobLog.GetMaterialDetails(other + 1)).IsNull();
+      await Assert.That(CurrentPalletLog(1)).IsEmpty();
+      await Assert.That(jobLog.MaxForeignIDInRange("LG", "LH")).IsEqualTo("");
+    }
+
+    [Test]
+    public async Task DeferredChunkRetriesExactlyOnceWithoutSkippingItsSourceWatermark()
+    {
+      AddTestJob("owned-job", "owned-part", [Process()]);
+      var material = jobLog.AllocateMaterialID("owned-job", "owned-part", 1);
+      var time = DateTime.UtcNow.AddHours(-1);
+      var load = LoadEndEvent(time, "owned-part") with { ForeignID = "LG002" };
+      mazakCfg = mazakCfg with
+      {
+        ResolveLoadUnloadTransaction = (_, _) => new MazakLoadUnloadResolution.Deferred("Wait"),
+      };
+      var first = load with
+      {
+        Code = LogCode.LoadBegin,
+        ForeignID = "LG001",
+        TimeUTC = time.AddMinutes(-1),
+      };
+      var blocked = TranslateChunk(first, load, FollowingEvent(time));
+      await Assert.That(blocked.StoppedBecauseLoadUnloadDeferred).IsTrue();
+      await Assert.That(raisedByEvent.Select(e => e.ForeignID)).IsEquivalentTo(["LG001"]);
+      await Assert.That(jobLog.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG001");
+      mazakCfg = mazakCfg with
+      {
+        ResolveLoadUnloadTransaction = (_, _) => ExactLoad("LG002", material),
+      };
+      var resolved = TranslateChunk(load, FollowingEvent(time));
+      await Assert.That(resolved.StoppedBecauseLoadUnloadDeferred).IsFalse();
+      await Assert
+        .That(raisedByEvent.Select(e => e.ForeignID))
+        .IsEquivalentTo(["LG001", "LG002", "LG003"]);
+      await Assert
+        .That(
+          jobLog
+            .GetRecentLog(0)
+            .Count(e =>
+              e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD"
+            )
+        )
+        .IsEqualTo(1);
+      await Assert.That(jobLog.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG003");
+    }
+
+    [Test]
+    [Arguments("resolved")]
+    [Arguments("shared-face")]
+    [Arguments("omit-load")]
+    [Arguments("omit-unload")]
+    [Arguments("wrong-unload-material")]
+    [Arguments("duplicate-load-material")]
+    [Arguments("wrong-unload-face")]
+    public async Task WholeChunkCoversEveryLoadAndUnloadBeforeCommitting(string mode)
+    {
+      AddTestJob("owned-job", "owned-part", [Process(), Process()]);
+      var time = DateTime.UtcNow.AddHours(-1);
+      TranslateChunk(
+        LoadEndEvent(time, "owned-part") with
+        {
+          ForeignID = "LG000",
+        },
+        FollowingEvent(time) with
+        {
+          ForeignID = "LG001",
+        }
+      );
+      var oldMaterial = CurrentPalletLog(1)
+        .Single(e => e.LogType == LogType.LoadUnloadCycle)
+        .Material.Single()
+        .MaterialID;
+      var firstLoad = jobLog.AllocateMaterialID("owned-job", "owned-part", 2);
+      var secondLoad = jobLog.AllocateMaterialID("owned-job", "owned-part", 2);
+      var succeeds = mode is "resolved" or "shared-face";
+      if (!succeeds)
+        mazakData = mazakData with
+        {
+          // Without deferral, ordinary status repair would quarantine the old pallet material.
+          PalletPositions =
           [
-            new MazakMachineInterface.LogEntry
+            new MazakPalletPositionRow { PalletNumber = 1, PalletPosition = "S001" },
+          ],
+          PalletSubStatuses = [],
+        };
+      var before = jobLog.GetRecentLog(0).ToImmutableList();
+      raisedByEvent.Clear();
+      MazakLoadUnloadContext received = null;
+      mazakCfg = mazakCfg with
+      {
+        ResolveLoadUnloadTransaction = (_, context) =>
+        {
+          received = context;
+          var loads = ImmutableDictionary<string, ImmutableList<long>>.Empty.Add(
+            "LG002",
+            [firstLoad]
+          );
+          if (mode != "omit-load")
+            loads = loads.Add(
+              "LG004",
+              [mode == "duplicate-load-material" ? firstLoad : secondLoad]
+            );
+          var unloads = ImmutableDictionary<
+            string,
+            ImmutableDictionary<long, UnloadDestination>
+          >.Empty;
+          if (mode != "omit-unload")
+            unloads = unloads.Add(
+              "LG003",
+              ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                mode == "wrong-unload-material" ? secondLoad : oldMaterial,
+                new UnloadDestination { Queue = "thequeue" }
+              )
+            );
+          return new MazakLoadUnloadResolution.Resolved
+          {
+            MaterialForLoads = loads,
+            MaterialForUnloads = unloads,
+          };
+        },
+      };
+      var result = TranslateChunk(
+        LoadEndEvent(time.AddMinutes(2), "owned-part") with
+        {
+          ForeignID = "LG002",
+        },
+        LoadEndEvent(
+          time.AddMinutes(2),
+          "owned-part",
+          process: mode == "wrong-unload-face" ? 2 : 1
+        ) with
+        {
+          ForeignID = "LG003",
+          Code = LogCode.UnloadEnd,
+        },
+        LoadEndEvent(time.AddMinutes(2), "owned-part", process: mode == "shared-face" ? 1 : 2) with
+        {
+          ForeignID = "LG004",
+        },
+        FollowingEvent(time.AddMinutes(2)) with
+        {
+          ForeignID = "LG005",
+        }
+      );
+      await Assert.That(received.Loads.Count).IsEqualTo(2);
+      await Assert.That(received.Unloads.Count).IsEqualTo(1);
+      await Assert
+        .That(received.CurrentPalletLog.Any(e => e.Material.Any(m => m.MaterialID == oldMaterial)))
+        .IsTrue();
+      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsEqualTo(!succeeds);
+      if (succeeds)
+      {
+        await Assert
+          .That(
+            CurrentPalletLog(1)
+              .Where(e => e.LogType == LogType.LoadUnloadCycle)
+              .SelectMany(e => e.Material)
+              .Select(m => m.MaterialID)
+          )
+          .IsEquivalentTo([firstLoad, secondLoad]);
+        await Assert
+          .That(jobLog.GetMaterialInAllQueues().Single().MaterialID)
+          .IsEqualTo(oldMaterial);
+        await Assert
+          .That(raisedByEvent.Select(e => e.ForeignID))
+          .IsEquivalentTo(["LG002", "LG003", "LG004", "LG005"]);
+      }
+      else
+      {
+        await Assert.That(jobLog.GetRecentLog(0)).IsEquivalentTo(before);
+        await Assert.That(jobLog.GetMaterialInAllQueues()).IsEmpty();
+        await Assert.That(raisedByEvent).IsEmpty();
+      }
+    }
+
+    private static BasketContents EmptyBasket() =>
+      new() { BasketId = 4, Slots = ImmutableSortedDictionary<int, BasketSlotContents>.Empty };
+
+    private static BasketContents OccupiedBasket(long material) =>
+      EmptyBasket() with
+      {
+        Slots = ImmutableSortedDictionary<int, BasketSlotContents>.Empty.Add(
+          1,
+          new BasketSlotContents
+          {
+            Material = [new BasketMaterial { MaterialID = material, Process = 1 }],
+          }
+        ),
+      };
+
+    private void InitializeBasket(BasketContents contents) =>
+      jobLog.RecordBasketContentsOperation(
+        new BasketContentsOperation
+        {
+          Changes =
+          [
+            new BasketContentsChange
             {
-              TimeUTC = time,
-              Code = LogCode.PalletMoving,
-              ForeignID = "LG001",
-              Pallet = 1,
-              TargetPosition = "S011",
-              FromPosition = "M001",
-            },
-            LoadEndEvent(time.AddSeconds(1), part: "basket-part") with
-            {
-              ForeignID = "LG002",
-            },
-            new MazakMachineInterface.LogEntry
-            {
-              TimeUTC = time.AddSeconds(2),
-              Code = LogCode.PalletMoving,
-              ForeignID = "LG003",
-              Pallet = 1,
-              TargetPosition = "S012",
-              FromPosition = "LS011",
+              BasketId = 4,
+              Expected = null,
+              Result = contents,
             },
           ],
         },
-        machGroupName: "machinespec",
-        fmsSettings: settings,
-        chunk =>
-        {
-          if (chunk.LulEndChunk is not null)
-            processedForeignIds.AddRange(chunk.LulEndChunk.Select(entry => entry.ForeignID));
-          else if (chunk.NonLulEndEvt is not null)
-            processedForeignIds.Add(chunk.NonLulEndEvt.ForeignID);
-        },
-        mazakConfig: mazakCfg,
-        loadTools: () => mazakDataTools
+        "initialize-basket"
       );
 
-      result.StoppedBecauseRecentMachineEvent.ShouldBeFalse();
-      result.PalletWithMostRecentEventAsLoadUnloadEnd.ShouldBeNull();
-      processedForeignIds.ShouldBe(["LG001", "LG002", "LG003"]);
-      CurrentPalletLog(1)
-        .Single(log => log.LogType == LogType.LoadUnloadCycle)
-        .Material.ShouldHaveSingleItem()
-        .MaterialID.ShouldBe(1);
-      jobLog
-        .GetRecentLog(0)
-        .Single(log => log.Program == "MazakLoadMaterialResolution")
-        .Result.ShouldContain("Robot-send evidence is not available.");
+    private static PalletBasketLoadUnloadCompletion BasketHandoff(long material, bool ontoBasket) =>
+      new()
+      {
+        Transfers = ontoBasket
+          ?
+          [
+            new PalletBasketTransfer.LoadOntoBasket
+            {
+              BasketId = 4,
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = material,
+                  Process = 1,
+                  Face = 1,
+                },
+              ],
+            },
+          ]
+          :
+          [
+            new PalletBasketTransfer.UnloadFromBasket
+            {
+              BasketId = 4,
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = material,
+                  Process = 1,
+                  Face = 1,
+                },
+              ],
+            },
+          ],
+        CycleBoundaries = [],
+        ContentsChanges =
+        [
+          new BasketContentsChange
+          {
+            BasketId = 4,
+            Expected = ontoBasket ? EmptyBasket() : OccupiedBasket(material),
+            Result = ontoBasket ? OccupiedBasket(material) : EmptyBasket(),
+          },
+        ],
+      };
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task ExactBasketLoadCommitsAtomicallyOrWithholdsOnContentsConflict(bool conflict)
+    {
+      AddTestJob("owned-job", "owned-part", [Process()]);
+      var material = jobLog.AllocateMaterialID("owned-job", "owned-part", 1);
+      InitializeBasket(conflict ? EmptyBasket() : OccupiedBasket(material));
+      var before = jobLog.GetRecentLog(0).ToImmutableList();
+      mazakCfg = mazakCfg with
+      {
+        ResolveLoadUnloadTransaction = (_, _) =>
+          ExactLoad("LG002", material) with
+          {
+            BasketCompletion = BasketHandoff(material, false),
+          },
+      };
+      var time = DateTime.UtcNow.AddHours(-1);
+      var result = TranslateChunk(
+        LoadEndEvent(time, "owned-part") with
+        {
+          ForeignID = "LG002",
+        },
+        FollowingEvent(time)
+      );
+      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsEqualTo(conflict);
+      await Assert.That(jobLog.GetBasketContents(4).Slots).IsEmpty();
+      if (conflict)
+      {
+        await Assert.That(jobLog.GetRecentLog(0)).IsEquivalentTo(before);
+        await Assert.That(raisedByEvent).IsEmpty();
+        await Assert.That(jobLog.GetMaterialDetails(material).Paths).IsNull();
+      }
+      else
+      {
+        await Assert
+          .That(
+            CurrentPalletLog(1)
+              .Single(l => l.LogType == LogType.LoadUnloadCycle)
+              .Material.Single()
+              .MaterialID
+          )
+          .IsEqualTo(material);
+        await Assert
+          .That(jobLog.GetRecentLog(0).Count(l => l.LogType == LogType.BasketLoadUnload))
+          .IsEqualTo(1);
+      }
     }
 
     [Test]
-    public void UnresolvedMaterialErrorEvidenceIsIdempotent()
+    [Arguments(false, 1)]
+    [Arguments(false, 2)]
+    [Arguments(true, 2)]
+    public async Task ExactBasketUnloadBypassesOutputQueueAndPreservesAtomicity(
+      bool conflict,
+      int processes
+    )
     {
-      AddTestJob(unique: "basket-job", part: "basket-part", processes: [Process()]);
+      var firstProcess = new ProcessInfo
+      {
+        Paths = [JobLogTest.EmptyPath with { OutputQueue = "thequeue" }],
+      };
+      AddTestJob(
+        "owned-job",
+        "owned-part",
+        processes == 1 ? [firstProcess] : [firstProcess, Process()]
+      );
+      var time = DateTime.UtcNow.AddHours(-1);
+      TranslateChunk(
+        LoadEndEvent(time, "owned-part") with
+        {
+          ForeignID = "LG000",
+        },
+        FollowingEvent(time) with
+        {
+          ForeignID = "LG001",
+        }
+      );
+      var material = CurrentPalletLog(1)
+        .Single(l => l.LogType == LogType.LoadUnloadCycle)
+        .Material.Single()
+        .MaterialID;
+      InitializeBasket(conflict ? OccupiedBasket(material) : EmptyBasket());
+      var before = jobLog.GetRecentLog(0).ToImmutableList();
+      raisedByEvent.Clear();
       mazakCfg = mazakCfg with
       {
-        ResolveMaterialForLoad = (repository, context) =>
-          new MazakLoadMaterialResolution.Unresolved("Robot-send evidence is unavailable."),
+        ResolveLoadUnloadTransaction = (_, _) =>
+          new MazakLoadUnloadResolution.Resolved
+          {
+            MaterialForLoads = ImmutableDictionary<string, ImmutableList<long>>.Empty,
+            MaterialForUnloads = ImmutableDictionary<
+              string,
+              ImmutableDictionary<long, UnloadDestination>
+            >.Empty.Add(
+              "LG002",
+              ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                material,
+                new UnloadDestination()
+              )
+            ),
+            BasketCompletion = BasketHandoff(material, true),
+          },
       };
-      var loadEnd = LoadEndEvent(DateTime.UtcNow.AddHours(-1), part: "basket-part");
-
-      CompleteLoad(loadEnd);
-      CompleteLoad(loadEnd);
-
-      jobLog.GetRecentLog(0).Count(log => log.Program == "MazakLoadMaterialResolution").ShouldBe(1);
+      var result = TranslateChunk(
+        LoadEndEvent(time.AddMinutes(2), "owned-part") with
+        {
+          ForeignID = "LG002",
+          Code = LogCode.UnloadEnd,
+        },
+        FollowingEvent(time.AddMinutes(2))
+      );
+      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsEqualTo(conflict);
+      await Assert.That(jobLog.GetMaterialInAllQueues()).IsEmpty();
+      if (conflict)
+      {
+        await Assert.That(jobLog.GetRecentLog(0)).IsEquivalentTo(before);
+        await Assert.That(raisedByEvent).IsEmpty();
+      }
+      else
+      {
+        await Assert
+          .That(jobLog.GetBasketContents(4).Slots[1].Material.Single().MaterialID)
+          .IsEqualTo(material);
+        await Assert
+          .That(
+            jobLog
+              .GetRecentLog(0)
+              .Count(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+          )
+          .IsEqualTo(1);
+        await Assert
+          .That(
+            jobLog
+              .GetLogOfAllCompletedParts(time.AddMinutes(-1), time.AddMinutes(5))
+              .Where(e =>
+                e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "UNLOAD"
+              )
+              .SelectMany(e => e.Material)
+              .Count()
+          )
+          .IsEqualTo(processes == 1 ? 1 : 0);
+      }
     }
 
     [Test]

@@ -355,7 +355,7 @@ public sealed class MazakSyncSpec : IDisposable
   }
 
   [Test]
-  public async Task MaterialResolutionErrorStaysOutsideMazakCsvWatermark()
+  public async Task DeferredTransactionRetainsSourceAndStopsSynchronizationActions()
   {
     using var db = repo.OpenConnection();
     var newJobs = JsonSerializer.Deserialize<NewJobs>(
@@ -409,20 +409,22 @@ public sealed class MazakSyncSpec : IDisposable
         LogCSVPath = _tempDir,
         ProgramDirectory = "not used",
         LoadCSVPath = "not used",
-        ResolveMaterialForLoad = (repository, context) =>
-          new MazakLoadMaterialResolution.Unresolved("Missing exact test evidence."),
+        ResolveLoadUnloadTransaction = (repository, context) =>
+          new MazakLoadUnloadResolution.Deferred("Missing exact test evidence."),
       }
     );
 
-    sync.CalculateCellState(db);
+    var state = sync.CalculateCellState(db);
 
-    var resolutionForeignId = db.MaxForeignID();
-    var resolutionError = db.MostRecentLogEntryForForeignID(resolutionForeignId);
-    await Assert.That(resolutionForeignId).StartsWith("mazak-material-resolution:");
-    await Assert.That(resolutionForeignId.StartsWith("LG")).IsFalse();
-    await Assert.That(resolutionError.Program).IsEqualTo("MazakLoadMaterialResolution");
-    await Assert.That(db.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG20240611-040509-002.csv");
-    _mazakDB.Received().DeleteLogs("LG20240611-040509-002.csv");
+    await Assert.That(state.StoppedBecauseRecentLogEvent).IsTrue();
+    await Assert.That(state.TimeUntilNextRefresh).IsEqualTo(TimeSpan.FromSeconds(15));
+    await Assert.That(sync.ApplyActions(db, state)).IsFalse();
+    await Assert.That(db.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG20240611-040506-001.csv");
+    _mazakDB.Received().DeleteLogs("LG20240611-040506-001.csv");
+    await Assert.That(db.GetMaterialInAllQueues().Single().MaterialID).IsEqualTo(materialId);
+    await Assert
+      .That(db.GetRecentLog(0).Any(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle))
+      .IsFalse();
   }
 
   [Test]

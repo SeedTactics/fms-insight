@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using MWI = BlackMaple.MachineFramework;
@@ -94,6 +93,7 @@ namespace MazakMachineInterface
     public record HandleEventResult
     {
       public required bool StoppedBecauseRecentMachineEvent { get; init; }
+      public bool StoppedBecauseLoadUnloadDeferred { get; init; }
       public required int? PalletWithMostRecentEventAsLoadUnloadEnd { get; init; }
       public required bool PalletStatusChanged { get; init; }
     }
@@ -184,6 +184,7 @@ namespace MazakMachineInterface
     private HandleEventResult Process()
     {
       var stoppedFromMcEvt = false;
+      var loadUnloadDeferred = false;
       int? palForFinalEvts = null;
 
       foreach (var e in ChunkLulEvents(mazakData.Logs))
@@ -192,7 +193,11 @@ namespace MazakMachineInterface
         {
           try
           {
-            HandleLoadEnd(e.LulEndChunk);
+            if (!HandleLoadEnd(e.LulEndChunk))
+            {
+              loadUnloadDeferred = true;
+              break;
+            }
             onMazakLog(e);
           }
           catch (Exception ex)
@@ -227,7 +232,7 @@ namespace MazakMachineInterface
       }
 
       bool palStChanged = false;
-      if (!stoppedFromMcEvt && !palForFinalEvts.HasValue)
+      if (!stoppedFromMcEvt && !loadUnloadDeferred && !palForFinalEvts.HasValue)
       {
         palStChanged = CheckPalletStatusMatchesLogs();
       }
@@ -235,12 +240,13 @@ namespace MazakMachineInterface
       return new HandleEventResult()
       {
         StoppedBecauseRecentMachineEvent = stoppedFromMcEvt,
+        StoppedBecauseLoadUnloadDeferred = loadUnloadDeferred,
         PalletWithMostRecentEventAsLoadUnloadEnd = palForFinalEvts,
         PalletStatusChanged = palStChanged,
       };
     }
 
-    private void HandleLoadEnd(IReadOnlyList<LogEntry> es)
+    private bool HandleLoadEnd(IReadOnlyList<LogEntry> es)
     {
       int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
       int loadStation = mazakConfig.TranslateLoadStationNumber(es[0].StationNumber);
@@ -249,7 +255,42 @@ namespace MazakMachineInterface
       if (pallet >= 1)
         cycle = repo.CurrentPalletLog(pallet);
 
-      var toLoad = FindMatToLoad(es, cycle, pallet);
+      if (mazakConfig.ResolveLoadUnloadTransaction is { } resolve)
+      {
+        // All context construction is read-only. In particular, do not call GetMaterialOnPallet:
+        // the ordinary translator can allocate material and write paths while reconstructing it.
+        try
+        {
+          var context = LoadUnloadContext(es, cycle, pallet, loadStation);
+          var resolution = resolve(repo, context);
+          if (resolution is MazakLoadUnloadResolution.Resolved exact)
+          {
+            RecordResolvedLoadUnload(context, exact, cycle);
+            return true;
+          }
+          if (resolution is not MazakLoadUnloadResolution.NotApplicable)
+          {
+            Log.Information(
+              "Deferring Mazak L/U {ForeignId}: {Reason}",
+              es[0].ForeignID,
+              (resolution as MazakLoadUnloadResolution.Deferred)?.Reason ?? "Missing resolution"
+            );
+            return false;
+          }
+        }
+        catch (Exception ex)
+        {
+          // Never write a diagnostic FMS event here: its foreign ID could consume the source.
+          Log.Error(
+            ex,
+            "Deferring Mazak L/U {ForeignId} after resolution or commit failure",
+            es[0].ForeignID
+          );
+          return false;
+        }
+      }
+
+      var toLoad = FindMatToLoad(es, cycle);
       var toUnload = FindMatToUnload(es, cycle);
 
       repo.RecordLoadUnloadComplete(
@@ -263,6 +304,215 @@ namespace MazakMachineInterface
         timeUTC: es[0].TimeUTC,
         externalQueues: fmsSettings.ExternalQueues
       );
+      return true;
+    }
+
+    private MazakLoadUnloadContext LoadUnloadContext(
+      IReadOnlyList<LogEntry> events,
+      List<MWI.LogEntry> cycle,
+      int pallet,
+      int station
+    )
+    {
+      if (
+        events.Any(e => e.Pallet != events[0].Pallet || e.StationNumber != events[0].StationNumber)
+      )
+        throw new InvalidOperationException("A L/U chunk must have one pallet and station.");
+      MazakLoadUnloadFace Face(LogEntry e)
+      {
+        FindSchedule(e.FullPartName, e.Process, out var unique, out _, out var process);
+        return new MazakLoadUnloadFace
+        {
+          ForeignId = e.ForeignID,
+          PartName = e.JobPartName,
+          JobUnique = unique,
+          Process = process,
+          Path = 1,
+          Face = e.Process,
+          Quantity = e.FixedQuantity,
+        };
+      }
+      return new MazakLoadUnloadContext
+      {
+        Pallet = pallet,
+        LoadStation = station,
+        TimeUTC = events[0].TimeUTC,
+        Loads = events.Where(e => e.Code == LogCode.LoadEnd).Select(Face).ToImmutableList(),
+        Unloads = events.Where(e => e.Code == LogCode.UnloadEnd).Select(Face).ToImmutableList(),
+        CurrentPalletLog = cycle.ToImmutableList(),
+      };
+    }
+
+    private void RecordResolvedLoadUnload(
+      MazakLoadUnloadContext context,
+      MazakLoadUnloadResolution.Resolved exact,
+      List<MWI.LogEntry> cycle
+    )
+    {
+      var faces = context.Loads.Concat(context.Unloads).ToImmutableList();
+      if (
+        faces.Any(f => string.IsNullOrEmpty(f.ForeignId) || f.Quantity <= 0 || f.Face <= 0)
+        || faces.Select(f => f.ForeignId).Distinct().Count() != faces.Count
+        || exact.MaterialForLoads == null
+        || exact.MaterialForUnloads == null
+        || !exact
+          .MaterialForLoads.Keys.ToImmutableHashSet()
+          .SetEquals(context.Loads.Select(f => f.ForeignId))
+        || !exact
+          .MaterialForUnloads.Keys.ToImmutableHashSet()
+          .SetEquals(context.Unloads.Select(f => f.ForeignId))
+      )
+        throw new InvalidOperationException(
+          "Resolution must cover every raw L/U event exactly once."
+        );
+
+      // Current-cycle completed load/unload records are manufacturing facts; do not reconstruct
+      // identities from machining, raw Mazak history or the ordinary allocation fallback.
+      var onPallet = cycle
+        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
+        .OrderBy(e => e.Counter)
+        .Aggregate(
+          ImmutableDictionary<long, LogMaterial>.Empty,
+          (current, e) =>
+            e.Result == "LOAD"
+              ? current.SetItems(e.Material.Select(m => KeyValuePair.Create(m.MaterialID, m)))
+            : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
+            : current
+        );
+      var loaded = ImmutableHashSet<long>.Empty;
+      var unloaded = ImmutableHashSet<long>.Empty;
+      var toLoad = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
+      var toUnload = ImmutableList.CreateBuilder<MaterialToUnloadFromFace>();
+
+      foreach (var face in context.Unloads)
+      {
+        var destinations = exact.MaterialForUnloads[face.ForeignId];
+        ValidateOwnedMaterial(face, destinations?.Keys.ToImmutableList());
+        if (
+          destinations.Keys.Any(id =>
+            !onPallet.TryGetValue(id, out var mat)
+            || mat.Face != face.Face
+            || mat.Process != face.Process
+            || repo.IsMaterialInQueue(id)
+          ) || destinations.Keys.Any(unloaded.Contains)
+        )
+          throw new InvalidOperationException(
+            "Resolved unload material must belong to the current pallet face and process."
+          );
+        unloaded = unloaded.Union(destinations.Keys);
+        var job = GetJob(face.JobUnique);
+        toUnload.Add(
+          new MaterialToUnloadFromFace
+          {
+            MaterialIDToDestination = destinations,
+            FaceNum = face.Face,
+            Process = face.Process,
+            ForeignID = face.ForeignId,
+            ActiveOperationTime = TimeSpan.FromTicks(
+              job.Processes[face.Process - 1].Paths[face.Path - 1].ExpectedUnloadTime.Ticks
+                * face.Quantity
+            ),
+          }
+        );
+      }
+      foreach (
+        var group in context.Unloads.GroupBy(f => (f.Face, f.Process, f.JobUnique, f.PartName))
+      )
+      {
+        var expected = onPallet
+          .Values.Where(m =>
+            m.Face == group.Key.Face
+            && m.Process == group.Key.Process
+            && m.JobUniqueStr == group.Key.JobUnique
+            && m.PartName == group.Key.PartName
+          )
+          .Select(m => m.MaterialID)
+          .ToImmutableHashSet();
+        var supplied = group.SelectMany(f => exact.MaterialForUnloads[f.ForeignId].Keys);
+        if (!expected.SetEquals(supplied))
+          throw new InvalidOperationException(
+            "Resolved unload quantity must match the current pallet material for each job and face."
+          );
+      }
+      foreach (var face in context.Loads)
+      {
+        var ids = exact.MaterialForLoads[face.ForeignId];
+        ValidateOwnedMaterial(face, ids);
+        if (
+          ids.Any(loaded.Contains)
+          || ids.Any(id => onPallet.ContainsKey(id) && !unloaded.Contains(id))
+          || onPallet.Values.Any(m => m.Face == face.Face && !unloaded.Contains(m.MaterialID))
+        )
+          throw new InvalidOperationException(
+            "Resolved load duplicates material or overwrites occupied pallet material."
+          );
+        loaded = loaded.Union(ids);
+        toLoad.Add(
+          new MaterialToLoadOntoFace
+          {
+            MaterialIDs = ids,
+            FaceNum = face.Face,
+            Process = face.Process,
+            Path = face.Path,
+            ForeignID = face.ForeignId,
+            ActiveOperationTime = CalculateActiveLoadTime(
+              GetJob(face.JobUnique),
+              face.Process,
+              face.Quantity
+            ),
+          }
+        );
+      }
+      repo.RecordLoadUnloadComplete(
+        toLoad: toLoad.ToImmutable(),
+        previouslyLoaded: null,
+        toUnload: toUnload.ToImmutable(),
+        previouslyUnloaded: null,
+        pallet: context.Pallet,
+        lulNum: context.LoadStation,
+        totalElapsed: CalculateElapsed(
+          context.TimeUTC,
+          LogType.LoadUnloadCycle,
+          cycle,
+          context.LoadStation
+        ),
+        timeUTC: context.TimeUTC,
+        externalQueues: fmsSettings.ExternalQueues,
+        palletBasketCompletion: exact.BasketCompletion
+      );
+    }
+
+    private void ValidateOwnedMaterial(MazakLoadUnloadFace face, ImmutableList<long> ids)
+    {
+      var job = string.IsNullOrEmpty(face.JobUnique) ? null : GetJob(face.JobUnique);
+      if (
+        job == null
+        || job.PartName != face.PartName
+        || face.Process <= 0
+        || face.Process > job.Processes.Count
+        || face.Path <= 0
+        || face.Path > job.Processes[face.Process - 1].Paths.Count
+        || ids == null
+        || ids.Count != face.Quantity
+        || ids.Distinct().Count() != ids.Count
+      )
+        throw new InvalidOperationException(
+          "Resolved material must match the raw face quantity and a known job route."
+        );
+      foreach (var id in ids)
+      {
+        var details = id > 0 && id <= MaterialId.MaxValue ? repo.GetMaterialDetails(id) : null;
+        if (
+          details == null
+          || details.JobUnique != face.JobUnique
+          || details.PartName != face.PartName
+          || details.NumProcesses != job.Processes.Count
+          || (details.Paths?.TryGetValue(face.Process, out var path) == true && path != face.Path)
+        )
+          throw new InvalidOperationException(
+            $"Resolved material {id} does not match the raw job/process/path."
+          );
+      }
     }
 
     private bool HandleNonLulEndEvent(LogEntry e)
@@ -702,8 +952,7 @@ namespace MazakMachineInterface
 
     private List<MaterialToLoadOntoFace> FindMatToLoad(
       IEnumerable<LogEntry> events,
-      List<MWI.LogEntry> oldPalEvents,
-      int pallet
+      List<MWI.LogEntry> oldPalEvents
     )
     {
       var toLoad = new List<MaterialToLoadOntoFace>();
@@ -737,35 +986,13 @@ namespace MazakMachineInterface
         }
 
         var mats = ImmutableList.CreateBuilder<long>();
-        var loadStation = mazakConfig.TranslateLoadStationNumber(e.StationNumber);
         var processInfo =
           job != null && jobProc > 0 && jobProc <= job.Processes.Count
             ? job.Processes[jobProc - 1]
             : null;
         var pathInfo = processInfo?.Paths.Count > 0 ? processInfo.Paths[0] : null;
         var inputQueue = pathInfo?.InputQueue;
-        var resolvedMaterial = ResolveMaterialForLoad(
-          new MazakLoadMaterialContext()
-          {
-            Pallet = pallet,
-            LoadStation = loadStation,
-            JobUnique = unique,
-            Process = jobProc,
-            Path = 1,
-            Face = e.Process,
-            Quantity = fixQty,
-            TimeUTC = e.TimeUTC,
-            ForeignId = e.ForeignID,
-          },
-          e.JobPartName,
-          numProc
-        );
-
-        if (resolvedMaterial is not null)
-        {
-          mats.AddRange(resolvedMaterial);
-        }
-        else if (!string.IsNullOrEmpty(inputQueue))
+        if (!string.IsNullOrEmpty(inputQueue))
         {
           var info = job.Processes[jobProc - 1].Paths[0];
           // search input queue for material
@@ -921,162 +1148,6 @@ namespace MazakMachineInterface
       }
 
       return toLoad;
-    }
-
-    private ImmutableList<long> ResolveMaterialForLoad(
-      MazakLoadMaterialContext context,
-      string part,
-      int numProc
-    )
-    {
-      if (mazakConfig.ResolveMaterialForLoad is not { } resolveMaterial)
-        return null;
-
-      MazakLoadMaterialResolution resolution;
-      try
-      {
-        resolution = resolveMaterial(repo, context);
-      }
-      catch (Exception ex)
-      {
-        RecordMaterialResolutionFailure(
-          context,
-          $"The configured resolver threw {ex.GetType().Name}: {ex.Message}",
-          ex
-        );
-        return null;
-      }
-
-      if (resolution is MazakLoadMaterialResolution.NotApplicable)
-        return null;
-      if (resolution is MazakLoadMaterialResolution.Unresolved unresolved)
-      {
-        RecordMaterialResolutionFailure(context, unresolved.Reason);
-        return null;
-      }
-      if (resolution is not MazakLoadMaterialResolution.Resolved resolved)
-      {
-        RecordMaterialResolutionFailure(
-          context,
-          "The resolver returned null or an unknown result."
-        );
-        return null;
-      }
-      if (
-        !TryValidateResolvedMaterial(
-          resolved.MaterialIds,
-          context,
-          part,
-          numProc,
-          out var validationFailure
-        )
-      )
-      {
-        RecordMaterialResolutionFailure(context, validationFailure);
-        return null;
-      }
-
-      return resolved.MaterialIds;
-    }
-
-    private void RecordMaterialResolutionFailure(
-      MazakLoadMaterialContext context,
-      string failure,
-      Exception exception = null
-    )
-    {
-      const string program = "MazakLoadMaterialResolution";
-      var message =
-        $"Exact material resolution failed for pallet {context.Pallet}, load station {context.LoadStation}, job {context.JobUnique}, process {context.Process}, path {context.Path}, face {context.Face}: {failure}";
-      Log.Error(exception, "{Message} Falling back to ordinary Mazak material selection.", message);
-      var foreignId =
-        $"mazak-material-resolution:{context.ForeignId}:{context.Pallet}:{context.LoadStation}:{context.Process}:{context.Path}:{context.Face}:{context.TimeUTC:O}";
-      if (repo.MostRecentLogEntryForForeignID(foreignId) is null)
-      {
-        var extraData = new Dictionary<string, string>
-        {
-          ["loadStation"] = context.LoadStation.ToString(CultureInfo.InvariantCulture),
-          ["process"] = context.Process.ToString(CultureInfo.InvariantCulture),
-          ["path"] = context.Path.ToString(CultureInfo.InvariantCulture),
-          ["face"] = context.Face.ToString(CultureInfo.InvariantCulture),
-          ["quantity"] = context.Quantity.ToString(CultureInfo.InvariantCulture),
-        };
-        if (!string.IsNullOrEmpty(context.JobUnique))
-          extraData["jobUnique"] = context.JobUnique;
-        repo.RecordGeneralMessage(
-          mat: null,
-          program: program,
-          result: message,
-          pallet: context.Pallet,
-          timeUTC: context.TimeUTC,
-          foreignId: foreignId,
-          originalMessage: context.ForeignId,
-          extraData: extraData
-        );
-      }
-    }
-
-    private bool TryValidateResolvedMaterial(
-      ImmutableList<long> materialIds,
-      MazakLoadMaterialContext context,
-      string part,
-      int numProc,
-      out string failure
-    )
-    {
-      failure = null;
-
-      if (materialIds is null)
-      {
-        failure = "the resolver returned null";
-        return false;
-      }
-
-      if (materialIds.Count != context.Quantity)
-      {
-        failure =
-          $"the resolver returned {materialIds.Count} material IDs for a load of {context.Quantity}";
-        return false;
-      }
-
-      if (materialIds.Distinct().Count() != materialIds.Count)
-      {
-        failure = "the resolver returned duplicate material IDs";
-        return false;
-      }
-
-      foreach (var materialId in materialIds)
-      {
-        if (materialId <= 0 || materialId > MaterialId.MaxValue)
-        {
-          failure = $"the resolver returned invalid material ID {materialId}";
-          return false;
-        }
-
-        var details = repo.GetMaterialDetails(materialId);
-        if (details is null)
-        {
-          failure = $"material ID {materialId} is not registered";
-          return false;
-        }
-
-        if (
-          details.JobUnique != context.JobUnique
-          || details.PartName != part
-          || details.NumProcesses != numProc
-          || (
-            details.Paths?.TryGetValue(context.Process, out var path) == true
-            && path != context.Path
-          )
-        )
-        {
-          failure =
-            $"material ID {materialId} is incompatible with job {context.JobUnique} process {context.Process} path {context.Path}";
-          return false;
-        }
-      }
-
-      return true;
     }
 
     private List<MaterialToUnloadFromFace> FindMatToUnload(
