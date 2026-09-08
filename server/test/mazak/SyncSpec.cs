@@ -355,7 +355,7 @@ public sealed class MazakSyncSpec : IDisposable
   }
 
   [Test]
-  public async Task DeferredTransactionRetainsSourceAndStopsSynchronizationActions()
+  public async Task UnableToResolveTransactionConsumesSourceAndContinuesSynchronization()
   {
     using var db = repo.OpenConnection();
     var newJobs = JsonSerializer.Deserialize<NewJobs>(
@@ -410,21 +410,33 @@ public sealed class MazakSyncSpec : IDisposable
         ProgramDirectory = "not used",
         LoadCSVPath = "not used",
         ResolveLoadUnloadTransaction = (repository, context) =>
-          new MazakLoadUnloadResolution.Deferred("Missing exact test evidence."),
+          new MazakLoadUnloadResolution.UnableToResolve("Missing exact test evidence."),
       }
     );
 
     var state = sync.CalculateCellState(db);
 
-    await Assert.That(state.StoppedBecauseRecentLogEvent).IsTrue();
-    await Assert.That(state.TimeUntilNextRefresh).IsEqualTo(TimeSpan.FromSeconds(15));
-    await Assert.That(sync.ApplyActions(db, state)).IsFalse();
-    await Assert.That(db.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG20240611-040506-001.csv");
-    _mazakDB.Received().DeleteLogs("LG20240611-040506-001.csv");
+    await Assert.That(state.StoppedBecauseRecentLogEvent).IsFalse();
+    await Assert.That(state.TimeUntilNextRefresh).IsEqualTo(TimeSpan.FromMinutes(2));
+    await Assert.That(db.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG20240611-040509-002.csv");
+    _mazakDB.Received().DeleteLogs("LG20240611-040509-002.csv");
+    // This CSV has no matching job identity; ordinary translation allocates its material
+    // and leaves the unrelated queued casting alone.
     await Assert.That(db.GetMaterialInAllQueues().Single().MaterialID).IsEqualTo(materialId);
     await Assert
-      .That(db.GetRecentLog(0).Any(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle))
-      .IsFalse();
+      .That(
+        db.GetRecentLog(0)
+          .Single(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
+          .Material.Select(m => m.MaterialID)
+      )
+      .IsEquivalentTo([
+        materialId + 1,
+        materialId + 2,
+        materialId + 3,
+        materialId + 4,
+        materialId + 5,
+        materialId + 6,
+      ]);
   }
 
   [Test]

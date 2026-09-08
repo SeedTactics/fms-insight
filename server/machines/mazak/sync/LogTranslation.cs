@@ -93,7 +93,6 @@ namespace MazakMachineInterface
     public record HandleEventResult
     {
       public required bool StoppedBecauseRecentMachineEvent { get; init; }
-      public bool StoppedBecauseLoadUnloadDeferred { get; init; }
       public required int? PalletWithMostRecentEventAsLoadUnloadEnd { get; init; }
       public required bool PalletStatusChanged { get; init; }
     }
@@ -184,7 +183,6 @@ namespace MazakMachineInterface
     private HandleEventResult Process()
     {
       var stoppedFromMcEvt = false;
-      var loadUnloadDeferred = false;
       int? palForFinalEvts = null;
 
       foreach (var e in ChunkLulEvents(mazakData.Logs))
@@ -193,11 +191,7 @@ namespace MazakMachineInterface
         {
           try
           {
-            if (!HandleLoadEnd(e.LulEndChunk))
-            {
-              loadUnloadDeferred = true;
-              break;
-            }
+            HandleLoadEnd(e.LulEndChunk);
             onMazakLog(e);
           }
           catch (Exception ex)
@@ -232,7 +226,7 @@ namespace MazakMachineInterface
       }
 
       bool palStChanged = false;
-      if (!stoppedFromMcEvt && !loadUnloadDeferred && !palForFinalEvts.HasValue)
+      if (!stoppedFromMcEvt && !palForFinalEvts.HasValue)
       {
         palStChanged = CheckPalletStatusMatchesLogs();
       }
@@ -240,71 +234,116 @@ namespace MazakMachineInterface
       return new HandleEventResult()
       {
         StoppedBecauseRecentMachineEvent = stoppedFromMcEvt,
-        StoppedBecauseLoadUnloadDeferred = loadUnloadDeferred,
         PalletWithMostRecentEventAsLoadUnloadEnd = palForFinalEvts,
         PalletStatusChanged = palStChanged,
       };
     }
 
-    private bool HandleLoadEnd(IReadOnlyList<LogEntry> es)
+    private void HandleLoadEnd(IReadOnlyList<LogEntry> es)
     {
       int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
       int loadStation = mazakConfig.TranslateLoadStationNumber(es[0].StationNumber);
-
-      var cycle = new List<MWI.LogEntry>();
-      if (pallet >= 1)
-        cycle = repo.CurrentPalletLog(pallet);
+      var cycle = pallet >= 1 ? repo.CurrentPalletLog(pallet) : [];
+      ImmutableList<MaterialToLoadOntoFace> exactLoads = null;
+      ImmutableList<MaterialToUnloadFromFace> exactUnloads = null;
+      PalletBasketLoadUnloadCompletion basketCompletion = null;
 
       if (mazakConfig.ResolveLoadUnloadTransaction is { } resolve)
       {
-        // All context construction is read-only. In particular, do not call GetMaterialOnPallet:
-        // the ordinary translator can allocate material and write paths while reconstructing it.
+        // Context and validation only read facts. Ordinary material selection below may allocate
+        // material and write paths, so it must run only after choosing the fallback path.
         try
         {
           var context = LoadUnloadContext(es, cycle, pallet, loadStation);
           var resolution = resolve(repo, context);
           if (resolution is MazakLoadUnloadResolution.Resolved exact)
           {
-            RecordResolvedLoadUnload(context, exact, cycle);
-            return true;
+            (exactLoads, exactUnloads) = BuildResolvedLoadUnload(context, exact, cycle);
+            basketCompletion = exact.BasketCompletion;
           }
-          if (resolution is not MazakLoadUnloadResolution.NotApplicable)
+          else if (resolution is not MazakLoadUnloadResolution.NotApplicable)
           {
-            Log.Information(
-              "Deferring Mazak L/U {ForeignId}: {Reason}",
+            Log.Error(
+              "Unable to resolve exact Mazak L/U {ForeignId}: {Reason}. Using ordinary translation.",
               es[0].ForeignID,
-              (resolution as MazakLoadUnloadResolution.Deferred)?.Reason ?? "Missing resolution"
+              (resolution as MazakLoadUnloadResolution.UnableToResolve)?.Reason
+                ?? "Missing resolution"
             );
-            return false;
           }
         }
         catch (Exception ex)
         {
-          // Never write a diagnostic FMS event here: its foreign ID could consume the source.
           Log.Error(
             ex,
-            "Deferring Mazak L/U {ForeignId} after resolution or commit failure",
+            "Unable to resolve exact Mazak L/U {ForeignId}. Using ordinary translation.",
             es[0].ForeignID
           );
-          return false;
         }
       }
 
-      var toLoad = FindMatToLoad(es, cycle);
-      var toUnload = FindMatToUnload(es, cycle);
+      if (exactLoads != null)
+      {
+        try
+        {
+          RecordLoadUnload(exactLoads, exactUnloads, basketCompletion);
+          return;
+        }
+        catch (Exception ex)
+        {
+          // Repository notifications run AFTER SQLite commits. Probe durable face events before
+          // falling back: a notification failure must never record a second pallet operation.
+          // If this read itself fails, let Process log/continue rather than risk a duplicate write.
+          if (
+            es.All(e =>
+              repo.MostRecentLogEntryForForeignID(e.ForeignID) is { } log
+              && log.LogType == LogType.LoadUnloadCycle
+              && !log.StartOfCycle
+              && log.Pallet == pallet
+              && log.Result == (e.Code == LogCode.LoadEnd ? "LOAD" : "UNLOAD")
+            )
+          )
+          {
+            Log.Error(
+              ex,
+              "Exact Mazak L/U {ForeignId} committed but notification failed. Consuming without replay.",
+              es[0].ForeignID
+            );
+            return;
+          }
+          Log.Error(
+            ex,
+            "Exact Mazak L/U {ForeignId} did not commit. Using ordinary translation.",
+            es[0].ForeignID
+          );
+        }
+      }
 
-      repo.RecordLoadUnloadComplete(
-        toLoad: toLoad,
-        previouslyLoaded: null,
-        toUnload: toUnload,
-        previouslyUnloaded: null,
-        pallet: pallet,
-        lulNum: loadStation,
-        totalElapsed: CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, loadStation),
-        timeUTC: es[0].TimeUTC,
-        externalQueues: fmsSettings.ExternalQueues
-      );
-      return true;
+      RecordLoadUnload(FindMatToLoad(es, cycle), FindMatToUnload(es, cycle), null);
+
+      void RecordLoadUnload(
+        IReadOnlyList<MaterialToLoadOntoFace> loads,
+        IReadOnlyList<MaterialToUnloadFromFace> unloads,
+        PalletBasketLoadUnloadCompletion baskets
+      )
+      {
+        repo.RecordLoadUnloadComplete(
+          toLoad: loads,
+          previouslyLoaded: null,
+          toUnload: unloads,
+          previouslyUnloaded: null,
+          pallet: pallet,
+          lulNum: loadStation,
+          totalElapsed: CalculateElapsed(
+            es[0].TimeUTC,
+            LogType.LoadUnloadCycle,
+            cycle,
+            loadStation
+          ),
+          timeUTC: es[0].TimeUTC,
+          externalQueues: fmsSettings.ExternalQueues,
+          palletBasketCompletion: baskets
+        );
+      }
     }
 
     private MazakLoadUnloadContext LoadUnloadContext(
@@ -343,7 +382,10 @@ namespace MazakMachineInterface
       };
     }
 
-    private void RecordResolvedLoadUnload(
+    private (
+      ImmutableList<MaterialToLoadOntoFace>,
+      ImmutableList<MaterialToUnloadFromFace>
+    ) BuildResolvedLoadUnload(
       MazakLoadUnloadContext context,
       MazakLoadUnloadResolution.Resolved exact,
       List<MWI.LogEntry> cycle
@@ -463,23 +505,7 @@ namespace MazakMachineInterface
           }
         );
       }
-      repo.RecordLoadUnloadComplete(
-        toLoad: toLoad.ToImmutable(),
-        previouslyLoaded: null,
-        toUnload: toUnload.ToImmutable(),
-        previouslyUnloaded: null,
-        pallet: context.Pallet,
-        lulNum: context.LoadStation,
-        totalElapsed: CalculateElapsed(
-          context.TimeUTC,
-          LogType.LoadUnloadCycle,
-          cycle,
-          context.LoadStation
-        ),
-        timeUTC: context.TimeUTC,
-        externalQueues: fmsSettings.ExternalQueues,
-        palletBasketCompletion: exact.BasketCompletion
-      );
+      return (toLoad.ToImmutable(), toUnload.ToImmutable());
     }
 
     private void ValidateOwnedMaterial(MazakLoadUnloadFace face, ImmutableList<long> ids)

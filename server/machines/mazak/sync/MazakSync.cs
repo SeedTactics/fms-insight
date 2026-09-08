@@ -227,14 +227,12 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       StateUpdated = mazakData.Logs.Count > 0 || evtResults.PalletStatusChanged,
       TimeUntilNextRefresh =
         mazakConfig?.DBType == MazakDbType.MazakVersionE
-        || evtResults.StoppedBecauseLoadUnloadDeferred
         || evtResults.StoppedBecauseRecentMachineEvent
         || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue
           ? TimeSpan.FromSeconds(15)
           : TimeSpan.FromMinutes(2),
       StoppedBecauseRecentLogEvent =
-        evtResults.StoppedBecauseLoadUnloadDeferred
-        || evtResults.StoppedBecauseRecentMachineEvent
+        evtResults.StoppedBecauseRecentMachineEvent
         || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue,
       CurrentStatus = st,
       AllData = mazakData,

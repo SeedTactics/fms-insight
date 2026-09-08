@@ -85,8 +85,8 @@ namespace MazakMachineInterface
       public PalletBasketLoadUnloadCompletion? BasketCompletion { get; init; }
     }
 
-    // No fallback, FMS writes, event callback or later log processing. Retry the same source chunk.
-    public sealed record Deferred(string Reason) : MazakLoadUnloadResolution;
+    // Exact details were expected but unavailable. Log the reason and translate ordinarily.
+    public sealed record UnableToResolve(string Reason) : MazakLoadUnloadResolution;
   }
 
   public record MazakConfig
@@ -125,8 +125,9 @@ namespace MazakMachineInterface
     // Invoked once for a complete L/U chunk, before ordinary material selection can write anything.
     // The callback must only read the repository and supply a resolution; it must not write FMS or
     // close external occurrences. The translator commits; external reconciliation can observe it.
-    // NotApplicable preserves ordinary translation. Deferred, exceptions and invalid resolutions
-    // stop the stream without consuming the chunk. No callback preserves ordinary behavior.
+    // NotApplicable preserves ordinary translation. UnableToResolve, exceptions and invalid
+    // resolutions log an error and fall back to ordinary translation so ingestion keeps moving.
+    // Basket transaction failures also fall back, unless the transaction already committed.
     public Func<
       IRepository,
       MazakLoadUnloadContext,

@@ -1623,14 +1623,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           return ExactLoad(context.Loads.Single().ForeignId, material);
         },
       };
-      var result = TranslateChunk(
+      TranslateChunk(
         LoadEndEvent(time, "owned-part", pallet: 2, station: 2, process: 2) with
         {
           ForeignID = "LG002",
         },
         FollowingEvent(time, pallet: 2)
       );
-      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsFalse();
       await Assert.That(received.Pallet).IsEqualTo(101);
       await Assert.That(received.LoadStation).IsEqualTo(21);
       await Assert.That(received.TimeUTC).IsEqualTo(time);
@@ -1672,14 +1671,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         ResolveLoadUnloadTransaction = (_, _) => new MazakLoadUnloadResolution.NotApplicable(),
       };
       var time = DateTime.UtcNow.AddHours(-1);
-      var result = TranslateChunk(
+      TranslateChunk(
         LoadEndEvent(time, "ordinary-part", process: queued ? 2 : 1) with
         {
           ForeignID = "LG002",
         },
         FollowingEvent(time)
       );
-      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsFalse();
       await Assert
         .That(
           CurrentPalletLog(1)
@@ -1692,7 +1690,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    [Arguments("deferred")]
+    [Arguments("unable")]
     [Arguments("exception")]
     [Arguments("null")]
     [Arguments("missing-event")]
@@ -1701,7 +1699,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Arguments("unknown-material")]
     [Arguments("wrong-job")]
     [Arguments("wrong-path")]
-    public async Task UnavailableOrInvalidResolutionWithholdsAllEffectsAndLaterEvents(
+    public async Task UnavailableOrInvalidResolutionUsesOrdinaryTranslationAndContinues(
       string failure
     )
     {
@@ -1715,7 +1713,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         ResolveLoadUnloadTransaction = (_, _) =>
           failure switch
           {
-            "deferred" => new MazakLoadUnloadResolution.Deferred(
+            "unable" => new MazakLoadUnloadResolution.UnableToResolve(
               "External evidence is not settled"
             ),
             "exception" => throw new InvalidOperationException("Unavailable"),
@@ -1732,64 +1730,80 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             _ => ExactLoad("LG002", material),
           },
       };
-      var before = jobLog.GetRecentLog(0).ToImmutableList();
       var time = DateTime.UtcNow.AddHours(-1);
       var load = LoadEndEvent(time, "owned-part") with { ForeignID = "LG002" };
       var result = TranslateChunk(load, FollowingEvent(time));
-      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsTrue();
-      await Assert.That(result.PalletStatusChanged).IsFalse();
-      await Assert.That(raisedByEvent).IsEmpty();
-      await Assert.That(jobLog.GetRecentLog(0)).IsEquivalentTo(before);
-      await Assert.That(jobLog.GetMaterialDetails(other + 1)).IsNull();
-      await Assert.That(CurrentPalletLog(1)).IsEmpty();
-      await Assert.That(jobLog.MaxForeignIDInRange("LG", "LH")).IsEqualTo("");
+      await Assert.That(result.StoppedBecauseRecentMachineEvent).IsFalse();
+      await Assert.That(result.PalletWithMostRecentEventAsLoadUnloadEnd).IsNull();
+      await Assert.That(raisedByEvent.Select(e => e.ForeignID)).IsEquivalentTo(["LG002", "LG003"]);
+      var loaded = CurrentPalletLog(1).Single(e => e.LogType == LogType.LoadUnloadCycle);
+      await Assert.That(loaded.Material.Single().MaterialID).IsEqualTo(other + 1);
+      await Assert.That(loaded.ForeignID).IsEqualTo("LG002");
+      await Assert.That(jobLog.GetMaterialDetails(other + 2)).IsNull();
+      await Assert.That(jobLog.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG003");
     }
 
     [Test]
-    public async Task DeferredChunkRetriesExactlyOnceWithoutSkippingItsSourceWatermark()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task CommittedExactLoadIsNotRepeatedWhenRepositoryNotificationThrows(
+      bool withBasket
+    )
     {
       AddTestJob("owned-job", "owned-part", [Process()]);
       var material = jobLog.AllocateMaterialID("owned-job", "owned-part", 1);
+      if (withBasket)
+        InitializeBasket(OccupiedBasket(material));
+      mazakCfg = mazakCfg with
+      {
+        ResolveLoadUnloadTransaction = (_, _) =>
+          ExactLoad("LG002", material) with
+          {
+            BasketCompletion = withBasket ? BasketHandoff(material, false) : null,
+          },
+      };
+      var threw = false;
+      _repoCfg.NewLogEntry += (log, _, _) =>
+      {
+        if (!threw)
+        {
+          threw = true;
+          throw new InvalidOperationException("Post-commit notification failure");
+        }
+      };
       var time = DateTime.UtcNow.AddHours(-1);
-      var load = LoadEndEvent(time, "owned-part") with { ForeignID = "LG002" };
-      mazakCfg = mazakCfg with
-      {
-        ResolveLoadUnloadTransaction = (_, _) => new MazakLoadUnloadResolution.Deferred("Wait"),
-      };
-      var first = load with
-      {
-        Code = LogCode.LoadBegin,
-        ForeignID = "LG001",
-        TimeUTC = time.AddMinutes(-1),
-      };
-      var blocked = TranslateChunk(first, load, FollowingEvent(time));
-      await Assert.That(blocked.StoppedBecauseLoadUnloadDeferred).IsTrue();
-      await Assert.That(raisedByEvent.Select(e => e.ForeignID)).IsEquivalentTo(["LG001"]);
-      await Assert.That(jobLog.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG001");
-      mazakCfg = mazakCfg with
-      {
-        ResolveLoadUnloadTransaction = (_, _) => ExactLoad("LG002", material),
-      };
-      var resolved = TranslateChunk(load, FollowingEvent(time));
-      await Assert.That(resolved.StoppedBecauseLoadUnloadDeferred).IsFalse();
-      await Assert
-        .That(raisedByEvent.Select(e => e.ForeignID))
-        .IsEquivalentTo(["LG001", "LG002", "LG003"]);
+      TranslateChunk(
+        LoadEndEvent(time, "owned-part") with
+        {
+          ForeignID = "LG002",
+        },
+        FollowingEvent(time)
+      );
+      await Assert.That(threw).IsTrue();
       await Assert
         .That(
-          jobLog
-            .GetRecentLog(0)
-            .Count(e =>
-              e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD"
-            )
+          jobLog.GetRecentLog(0).Count(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
         )
         .IsEqualTo(1);
+      await Assert.That(jobLog.GetMaterialDetails(material + 1)).IsNull();
+      await Assert
+        .That(
+          CurrentPalletLog(1)
+            .Single(e => e.LogType == LogType.LoadUnloadCycle)
+            .Material.Single()
+            .MaterialID
+        )
+        .IsEqualTo(material);
+      await Assert.That(raisedByEvent.Select(e => e.ForeignID)).IsEquivalentTo(["LG002", "LG003"]);
       await Assert.That(jobLog.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG003");
+      if (withBasket)
+        await Assert.That(jobLog.GetBasketContents(4).Slots).IsEmpty();
     }
 
     [Test]
     [Arguments("resolved")]
     [Arguments("shared-face")]
+    [Arguments("post-commit")]
     [Arguments("omit-load")]
     [Arguments("omit-unload")]
     [Arguments("wrong-unload-material")]
@@ -1815,18 +1829,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .MaterialID;
       var firstLoad = jobLog.AllocateMaterialID("owned-job", "owned-part", 2);
       var secondLoad = jobLog.AllocateMaterialID("owned-job", "owned-part", 2);
-      var succeeds = mode is "resolved" or "shared-face";
-      if (!succeeds)
-        mazakData = mazakData with
-        {
-          // Without deferral, ordinary status repair would quarantine the old pallet material.
-          PalletPositions =
-          [
-            new MazakPalletPositionRow { PalletNumber = 1, PalletPosition = "S001" },
-          ],
-          PalletSubStatuses = [],
-        };
-      var before = jobLog.GetRecentLog(0).ToImmutableList();
+      var succeeds = mode is "resolved" or "shared-face" or "post-commit";
       raisedByEvent.Clear();
       MazakLoadUnloadContext received = null;
       mazakCfg = mazakCfg with
@@ -1862,7 +1865,19 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           };
         },
       };
-      var result = TranslateChunk(
+      var notificationThrew = false;
+      if (mode == "post-commit")
+        _repoCfg.NewLogEntry += (_, _, _) =>
+        {
+          if (!notificationThrew)
+          {
+            notificationThrew = true;
+            throw new InvalidOperationException(
+              "Mixed transaction committed before notification failed"
+            );
+          }
+        };
+      TranslateChunk(
         LoadEndEvent(time.AddMinutes(2), "owned-part") with
         {
           ForeignID = "LG002",
@@ -1885,12 +1900,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           ForeignID = "LG005",
         }
       );
+      await Assert.That(notificationThrew).IsEqualTo(mode == "post-commit");
       await Assert.That(received.Loads.Count).IsEqualTo(2);
       await Assert.That(received.Unloads.Count).IsEqualTo(1);
       await Assert
         .That(received.CurrentPalletLog.Any(e => e.Material.Any(m => m.MaterialID == oldMaterial)))
         .IsTrue();
-      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsEqualTo(!succeeds);
       if (succeeds)
       {
         await Assert
@@ -1910,9 +1925,21 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
       else
       {
-        await Assert.That(jobLog.GetRecentLog(0)).IsEquivalentTo(before);
-        await Assert.That(jobLog.GetMaterialInAllQueues()).IsEmpty();
-        await Assert.That(raisedByEvent).IsEmpty();
+        // Invalid exact details are discarded as a unit; ordinary translation supplies the
+        // actual pallet cycle instead of silently committing a partial exact result.
+        await Assert
+          .That(
+            jobLog
+              .GetRecentLog(0)
+              .Where(e => e.LogType == LogType.LoadUnloadCycle)
+              .SelectMany(e => e.Material)
+              .Any(m => m.MaterialID == firstLoad || m.MaterialID == secondLoad)
+          )
+          .IsFalse();
+        await Assert
+          .That(raisedByEvent.Select(e => e.ForeignID))
+          .IsEquivalentTo(["LG002", "LG003", "LG004", "LG005"]);
+        await Assert.That(jobLog.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG005");
       }
     }
 
@@ -1999,12 +2026,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task ExactBasketLoadCommitsAtomicallyOrWithholdsOnContentsConflict(bool conflict)
+    public async Task ExactBasketLoadCommitsAtomicallyOrFallsBackOnContentsConflict(bool conflict)
     {
       AddTestJob("owned-job", "owned-part", [Process()]);
       var material = jobLog.AllocateMaterialID("owned-job", "owned-part", 1);
       InitializeBasket(conflict ? EmptyBasket() : OccupiedBasket(material));
-      var before = jobLog.GetRecentLog(0).ToImmutableList();
       mazakCfg = mazakCfg with
       {
         ResolveLoadUnloadTransaction = (_, _) =>
@@ -2014,19 +2040,30 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           },
       };
       var time = DateTime.UtcNow.AddHours(-1);
-      var result = TranslateChunk(
+      TranslateChunk(
         LoadEndEvent(time, "owned-part") with
         {
           ForeignID = "LG002",
         },
         FollowingEvent(time)
       );
-      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsEqualTo(conflict);
       await Assert.That(jobLog.GetBasketContents(4).Slots).IsEmpty();
       if (conflict)
       {
-        await Assert.That(jobLog.GetRecentLog(0)).IsEquivalentTo(before);
-        await Assert.That(raisedByEvent).IsEmpty();
+        await Assert
+          .That(
+            CurrentPalletLog(1)
+              .Single(e => e.LogType == LogType.LoadUnloadCycle)
+              .Material.Single()
+              .MaterialID
+          )
+          .IsEqualTo(material + 1);
+        await Assert
+          .That(jobLog.GetRecentLog(0).Any(e => e.LogType == LogType.BasketLoadUnload))
+          .IsFalse();
+        await Assert
+          .That(raisedByEvent.Select(e => e.ForeignID))
+          .IsEquivalentTo(["LG002", "LG003"]);
         await Assert.That(jobLog.GetMaterialDetails(material).Paths).IsNull();
       }
       else
@@ -2079,7 +2116,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .Material.Single()
         .MaterialID;
       InitializeBasket(conflict ? OccupiedBasket(material) : EmptyBasket());
-      var before = jobLog.GetRecentLog(0).ToImmutableList();
       raisedByEvent.Clear();
       mazakCfg = mazakCfg with
       {
@@ -2100,7 +2136,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             BasketCompletion = BasketHandoff(material, true),
           },
       };
-      var result = TranslateChunk(
+      TranslateChunk(
         LoadEndEvent(time.AddMinutes(2), "owned-part") with
         {
           ForeignID = "LG002",
@@ -2108,15 +2144,31 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         },
         FollowingEvent(time.AddMinutes(2))
       );
-      await Assert.That(result.StoppedBecauseLoadUnloadDeferred).IsEqualTo(conflict);
-      await Assert.That(jobLog.GetMaterialInAllQueues()).IsEmpty();
       if (conflict)
       {
-        await Assert.That(jobLog.GetRecentLog(0)).IsEquivalentTo(before);
-        await Assert.That(raisedByEvent).IsEmpty();
+        await Assert.That(jobLog.GetMaterialInAllQueues().Single().MaterialID).IsEqualTo(material);
+        await Assert
+          .That(jobLog.GetBasketContents(4).Slots[1].Material.Single().MaterialID)
+          .IsEqualTo(material);
+        await Assert
+          .That(jobLog.GetRecentLog(0).Any(e => e.LogType == LogType.BasketLoadUnload))
+          .IsFalse();
+        await Assert
+          .That(
+            jobLog
+              .GetRecentLog(0)
+              .Count(e =>
+                e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "UNLOAD"
+              )
+          )
+          .IsEqualTo(1);
+        await Assert
+          .That(raisedByEvent.Select(e => e.ForeignID))
+          .IsEquivalentTo(["LG002", "LG003"]);
       }
       else
       {
+        await Assert.That(jobLog.GetMaterialInAllQueues()).IsEmpty();
         await Assert
           .That(jobLog.GetBasketContents(4).Slots[1].Material.Single().MaterialID)
           .IsEqualTo(material);
