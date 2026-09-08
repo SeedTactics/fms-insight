@@ -22,7 +22,14 @@ public sealed class PalletLoadMetadataSpec
     {
       using (var config = RepositoryConfig.InitializeEventDatabase(null, file, pooling: false))
       using (var repo = config.OpenConnection())
-        Load(repo, [Face(repo.AllocateMaterialID("job", "part", 1), 1, value)]);
+      {
+        var recorded = Load(repo, [Face(repo.AllocateMaterialID("job", "part", 1), 1, value)]);
+        await Assert
+          .That(
+            recorded.Single(e => e.LogType == LogType.LoadUnloadCycle).ProgramDetails["carrier-id"]
+          )
+          .IsEqualTo(value ?? "");
+      }
       using var restarted = RepositoryConfig.InitializeEventDatabase(null, file, pooling: false);
       using var reopened = restarted.OpenConnection();
       await Assert
@@ -199,20 +206,21 @@ public sealed class PalletLoadMetadataSpec
       AdditionalData = ImmutableDictionary<string, string>.Empty.Add("carrier-id", carrier),
     };
 
-  private static void Load(
+  private static ImmutableList<LogEntry> Load(
     IRepository repo,
     ImmutableList<MaterialToLoadOntoFace> faces,
     DateTime? time = null
   ) =>
     repo.RecordLoadUnloadComplete(
-      toLoad: faces,
-      previouslyLoaded: null,
-      toUnload: null,
-      previouslyUnloaded: null,
-      lulNum: 1,
-      pallet: 5,
-      totalElapsed: TimeSpan.Zero,
-      timeUTC: time ?? DateTime.UtcNow,
-      externalQueues: null
-    );
+        toLoad: faces,
+        previouslyLoaded: null,
+        toUnload: null,
+        previouslyUnloaded: null,
+        lulNum: 1,
+        pallet: 5,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: time ?? DateTime.UtcNow,
+        externalQueues: null
+      )
+      .ToImmutableList();
 }

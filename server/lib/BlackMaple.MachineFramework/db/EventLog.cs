@@ -3318,7 +3318,7 @@ namespace BlackMaple.MachineFramework
           ActiveOperationTime = face.ActiveOperationTime,
         };
         foreach (var detail in face.AdditionalData ?? ImmutableDictionary<string, string>.Empty)
-          loadLog.ProgramDetails.Add(detail.Key, detail.Value);
+          loadLog.ProgramDetails.Add(detail.Key, detail.Value ?? "");
         logs.Add(AddLogEntry(trans, loadLog, face.ForeignID, face.OriginalMessage));
       }
     }
