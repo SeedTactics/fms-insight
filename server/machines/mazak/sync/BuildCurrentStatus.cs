@@ -94,7 +94,15 @@ namespace MazakMachineInterface
         out var partNameToNumProc
       );
 
-      var currentLoads = new List<LoadAction>(mazakData.LoadActions);
+      // Raw controller data remains unchanged; all status comparisons use Insight coordinates.
+      var currentLoads = mazakData
+        .LoadActions.Select(a =>
+          a with
+          {
+            LoadStation = mazakCfg.TranslateLoadStationNumber(a.LoadStation),
+          }
+        )
+        .ToList();
 
       var jobUniqBySchID = new Dictionary<long, string>();
       var jobsByUniq = new Dictionary<string, CurrentJob>();
@@ -630,12 +638,12 @@ namespace MazakMachineInterface
         var loads = ImmutableSortedSet.CreateBuilder<int>();
         var unloads = ImmutableSortedSet.CreateBuilder<int>();
         var machines = ImmutableSortedSet.CreateBuilder<int>();
-        foreach (char c in fixStr)
-          if (c != '0')
-            loads.Add(int.Parse(c.ToString()));
-        foreach (char c in removeStr)
-          if (c != '0')
-            unloads.Add(int.Parse(c.ToString()));
+        for (var i = 0; i < fixStr.Length; i++)
+          if (fixStr[i] != '0')
+            loads.Add(mazakCfg.TranslateLoadStationNumber(i + 1));
+        for (var i = 0; i < removeStr.Length; i++)
+          if (removeStr[i] != '0')
+            unloads.Add(mazakCfg.TranslateLoadStationNumber(i + 1));
         foreach (char c in cutStr)
         {
           if (c != '0')

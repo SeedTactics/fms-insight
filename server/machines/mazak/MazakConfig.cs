@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
@@ -112,7 +113,30 @@ namespace MazakMachineInterface
 
     public ImmutableList<int>? MachineNumbers { get; init; } = null;
     public int StartingPalletNumber { get; init; } = 1;
-    public int StartingLoadStationNumber { get; init; } = 1;
+
+    // List position is the one-based controller station; values are Insight job/log station IDs.
+    // Null preserves identity numbering. Explicit maps must cover every controller station used.
+    private ImmutableList<int>? _loadStationNumbers;
+    public ImmutableList<int>? LoadStationNumbers
+    {
+      get => _loadStationNumbers;
+      init
+      {
+        if (
+          value != null
+          && (
+            value.Count == 0
+            || value.Count > 10
+            || value.Any(n => n <= 0)
+            || value.Distinct().Count() != value.Count
+          )
+        )
+          throw new ArgumentException(
+            "Load station numbers must contain 1–10 unique positive station IDs."
+          );
+        _loadStationNumbers = value;
+      }
+    }
 
     // When a robot is configured in the Mazak software, it can jump ahead when searching
     // for the next part to load, which can cause parts to run out of sequence (because
@@ -148,14 +172,33 @@ namespace MazakMachineInterface
     public int InversePalletNumber(int fmsPallet) => fmsPallet - StartingPalletNumber + 1;
 
     // Convert Mazak-internal load station number to FMS Insight load station number
-    public int TranslateLoadStationNumber(int mazakLul) => mazakLul - 1 + StartingLoadStationNumber;
+    public int TranslateLoadStationNumber(int mazakLul) =>
+      LoadStationNumbers == null ? mazakLul
+      : mazakLul > 0 && mazakLul <= LoadStationNumbers.Count ? LoadStationNumbers[mazakLul - 1]
+      : throw new ArgumentOutOfRangeException(
+        nameof(mazakLul),
+        "Unmapped controller load station."
+      );
 
     // Convert FMS Insight load station number back to Mazak-internal number
-    public int InverseLoadStationNumber(int fmsLul) => fmsLul - StartingLoadStationNumber + 1;
+    public int InverseLoadStationNumber(int fmsLul)
+    {
+      var local = LoadStationNumbers == null ? fmsLul : LoadStationNumbers.IndexOf(fmsLul) + 1;
+      return local > 0 && local <= 10
+        ? local
+        : throw new ArgumentOutOfRangeException(nameof(fmsLul), "Unmapped Insight load station.");
+    }
 
     public static MazakConfig Load(IConfiguration configuration)
     {
       var cfg = configuration.GetSection("Mazak");
+      if (cfg["Starting Load Station Number"] != null)
+        throw new InvalidOperationException(
+          "Starting Load Station Number was removed. Configure Load Station Numbers instead."
+        );
+      var loadStationNumbers = cfg["Load Station Numbers"] is string configuredStations
+        ? configuredStations.Split(',').Select(s => int.Parse(s.Trim())).ToImmutableList()
+        : null;
       var localDbPath = cfg.GetValue<string>("Database Path") ?? "c:\\Mazak\\NFMS\\DB";
       var proxyDBUrl = cfg.GetValue<string?>("Proxy DB Url");
       var dbtype = DetectMazakType(cfg, localDbPath, proxyDBUrl);
@@ -257,7 +300,7 @@ namespace MazakMachineInterface
         ),
         WaitForAllCastings = cfg.GetValue<bool>("Wait For All Castings", false),
         StartingPalletNumber = cfg.GetValue<int>("Starting Pallet Number", 1),
-        StartingLoadStationNumber = cfg.GetValue<int>("Starting Load Station Number", 1),
+        LoadStationNumbers = loadStationNumbers,
       };
     }
 

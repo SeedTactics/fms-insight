@@ -92,19 +92,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Test]
     public void TestLoadStationNumberTranslation()
     {
-      var cfg = new MazakConfig()
-      {
-        DBType = MazakDbType.MazakSmooth,
-        StartingLoadStationNumber = 1,
-      };
+      var cfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth, LoadStationNumbers = null };
       cfg.TranslateLoadStationNumber(1).ShouldBe(1);
       cfg.InverseLoadStationNumber(1).ShouldBe(1);
 
-      cfg = cfg with { StartingLoadStationNumber = 201 };
+      cfg = cfg with { LoadStationNumbers = [201, 230] };
       cfg.TranslateLoadStationNumber(1).ShouldBe(201);
-      cfg.TranslateLoadStationNumber(2).ShouldBe(202);
+      cfg.TranslateLoadStationNumber(2).ShouldBe(230);
       cfg.InverseLoadStationNumber(201).ShouldBe(1);
-      cfg.InverseLoadStationNumber(202).ShouldBe(2);
+      cfg.InverseLoadStationNumber(230).ShouldBe(2);
     }
 
     [Test]
@@ -205,14 +201,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Test]
     [Arguments("basic-no-material")]
     [Arguments("basic-load-material")]
+    [Arguments("basic-load-material", true)]
     [Arguments("basic-cutting")]
     [Arguments("basic-load-queue")]
     [Arguments("basic-unload-queues")]
+    [Arguments("basic-unload-queues", true)]
     [Arguments("multiface-inital-load")]
     [Arguments("multiface-transfer-faces")]
     [Arguments("multiface-transfer-faces-and-unload")]
     [Arguments("multiface-transfer-user-jobs")]
-    public async Task StatusSnapshot(string scenario)
+    public async Task StatusSnapshot(string scenario, bool mappedActions = false)
     {
       IRepository repository;
       var existingLogPath = Path.Combine(
@@ -286,6 +284,39 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           null,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
         );
+        if (mappedActions)
+        {
+          var rawActions = allData.LoadActions.ToImmutableList();
+          var mapped = BuildCurrentStatus.Build(
+            repository,
+            _settings,
+            _mazakCfg with
+            {
+              LoadStationNumbers = [10, 30],
+            },
+            allData,
+            machineGroupName: "MC",
+            null,
+            new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+          );
+          await Assert.That(mapped.Pallets[5].CurrentPalletLocation.Num).IsEqualTo(10);
+          await Assert.That(mapped.Material).IsEquivalentTo(status.Material);
+          await Assert
+            .That(
+              mapped.Material.Any(m =>
+                m.Action.Type
+                == (
+                  scenario == "basic-load-material"
+                    ? InProcessMaterialAction.ActionType.Loading
+                    : InProcessMaterialAction.ActionType.UnloadToInProcess
+                )
+              )
+            )
+            .IsTrue();
+          await Assert.That(allData.LoadActions).IsEquivalentTo(rawActions);
+          await Assert.That(allData.LoadActions.All(a => a.LoadStation == 1)).IsTrue();
+          return;
+        }
       }
       finally
       {
@@ -578,6 +609,70 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    [Arguments(MazakDbType.MazakVersionE, "0000000001")]
+    [Arguments(MazakDbType.MazakSmooth, "512")]
+    public async Task TenthControllerStationUsesMaskPosition(MazakDbType type, string mask)
+    {
+      using var repository = _repoCfg.OpenConnection();
+      var jobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      repository.AddJobs(jobs, null, addAsCopiedToSystem: true);
+      var data = JsonSerializer.Deserialize<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-no-material.data.json")
+        ),
+        jsonSettings
+      );
+      data = data with
+      {
+        LoadActions = [],
+        PalletPositions = [],
+        Parts = data
+          .Parts.Select(part =>
+            part with
+            {
+              Processes = part
+                .Processes.Select(process =>
+                  process with
+                  {
+                    FixLDS = mask,
+                    RemoveLDS = mask,
+                    CutMc = type == MazakDbType.MazakVersionE ? "10000000" : "1",
+                  }
+                )
+                .ToList(),
+            }
+          )
+          .ToImmutableList(),
+      };
+      var status = BuildCurrentStatus.Build(
+        repository,
+        _settings,
+        _mazakCfg with
+        {
+          DBType = type,
+          LoadStationNumbers = Enumerable.Range(101, 10).ToImmutableList(),
+        },
+        data,
+        "MC",
+        null,
+        new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+      );
+      var paths = status
+        .Jobs.Values.SelectMany(j => j.Processes)
+        .SelectMany(p => p.Paths)
+        .ToImmutableList();
+      await Assert.That(paths.IsEmpty).IsFalse();
+      foreach (var path in paths)
+      {
+        await Assert.That(path.Load).IsEquivalentTo([110]);
+        await Assert.That(path.Unload).IsEquivalentTo([110]);
+      }
+    }
+
+    [Test]
     public async Task WithLoadStationNumbers()
     {
       using var repository = _repoCfg.OpenConnection();
@@ -600,7 +695,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         _settings,
         _mazakCfg with
         {
-          StartingLoadStationNumber = 201,
+          LoadStationNumbers = [201, 230],
         },
         allData,
         machineGroupName: "MC",

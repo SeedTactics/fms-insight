@@ -1621,7 +1621,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       mazakCfg = mazakCfg with
       {
         StartingPalletNumber = 100,
-        StartingLoadStationNumber = 20,
+        LoadStationNumbers = [20, 21],
         ResolveLoadUnloadTransaction = (repository, context) =>
         {
           if (repository != jobLog)

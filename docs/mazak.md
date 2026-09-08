@@ -13,6 +13,19 @@ FMS Insight works with all Palletech cell controller versions from Mazak: Versio
 and Smooth PMC. FMS Insight can read all events from the cell controller and can also edit almost
 all the data in the cell controller.
 
+## Load station numbering
+
+In the Mazak configuration section, Load Station Numbers = 10,30 maps controller L/U 1 to Insight
+station 10 and controller L/U 2 to Insight station 30. This works like Machine Numbers: list
+positions identify controller equipment, while values identify equipment in jobs, logs and APIs.
+Both job downloads and status/event reads translate through the same map. Station display names are
+maintained separately.
+
+Omitting the list preserves identity numbering. Explicit lists must contain unique positive IDs and
+cover every controller L/U station used. Job routes outside the map are rejected. The old Starting
+Load Station Number setting has been removed and is rejected; replace it with an explicit list when
+updating configuration.
+
 ## Open Database Kit
 
 To facilitate the communication between FMS Insight and the Mazak cell controller, you must acquire
