@@ -630,12 +630,12 @@ namespace MazakMachineInterface
         var loads = ImmutableSortedSet.CreateBuilder<int>();
         var unloads = ImmutableSortedSet.CreateBuilder<int>();
         var machines = ImmutableSortedSet.CreateBuilder<int>();
-        foreach (char c in fixStr)
-          if (c != '0')
-            loads.Add(int.Parse(c.ToString()));
-        foreach (char c in removeStr)
-          if (c != '0')
-            unloads.Add(int.Parse(c.ToString()));
+        for (var i = 0; i < fixStr.Length; i++)
+          if (fixStr[i] != '0')
+            loads.Add(mazakCfg.TranslateLoadStationNumber(i + 1));
+        for (var i = 0; i < removeStr.Length; i++)
+          if (removeStr[i] != '0')
+            unloads.Add(mazakCfg.TranslateLoadStationNumber(i + 1));
         foreach (char c in cutStr)
         {
           if (c != '0')

@@ -53,6 +53,60 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     };
 
     [Test]
+    [Arguments(MazakDbType.MazakSmooth, "2", "1")]
+    [Arguments(MazakDbType.MazakVersionE, "0200000000", "1000000000")]
+    public async System.Threading.Tasks.Task ExplicitLoadStationMapWritesControllerCoordinates(
+      MazakDbType type,
+      string loadMask,
+      string unloadMask
+    )
+    {
+      var job = CreateBasicStopsWithProg("mapped", "mapped-part", 1, new[] { new[] { 4 } });
+      job = job with
+      {
+        Processes = job
+          .Processes.Select(p =>
+            p with
+            {
+              Paths = p
+                .Paths.Select(path => path with { Load = [30], Unload = [10] })
+                .ToImmutableList(),
+            }
+          )
+          .ToImmutableList(),
+      };
+      var part = new MazakPart(job, 1, 1);
+      var writer = new MazakProcessFromJob(
+        part,
+        1,
+        1,
+        new ProgramRevision
+        {
+          ProgramName = "program",
+          Revision = 1,
+          CellControllerProgramName = "1001",
+        }
+      );
+      var config = defaultMazakCfg with { DBType = type, LoadStationNumbers = [10, 30] };
+      var row = new MazakPartRow { PartName = part.PartName };
+      writer.CreateDatabaseRow(row, "fixture", config);
+      await Assert.That(row.Processes.Single().FixLDS).IsEqualTo(loadMask);
+      await Assert.That(row.Processes.Single().RemoveLDS).IsEqualTo(unloadMask);
+      await Assert
+        .That(() =>
+          writer.CreateDatabaseRow(
+            new MazakPartRow { PartName = part.PartName },
+            "fixture",
+            config with
+            {
+              LoadStationNumbers = [10, 40],
+            }
+          )
+        )
+        .Throws<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
     [Arguments(true)]
     [Arguments(false)]
     public void BasicFromJob(bool useStartingOffset)

@@ -92,19 +92,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Test]
     public void TestLoadStationNumberTranslation()
     {
-      var cfg = new MazakConfig()
-      {
-        DBType = MazakDbType.MazakSmooth,
-        StartingLoadStationNumber = 1,
-      };
+      var cfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth, LoadStationNumbers = null };
       cfg.TranslateLoadStationNumber(1).ShouldBe(1);
       cfg.InverseLoadStationNumber(1).ShouldBe(1);
 
-      cfg = cfg with { StartingLoadStationNumber = 201 };
+      cfg = cfg with { LoadStationNumbers = [201, 230] };
       cfg.TranslateLoadStationNumber(1).ShouldBe(201);
-      cfg.TranslateLoadStationNumber(2).ShouldBe(202);
+      cfg.TranslateLoadStationNumber(2).ShouldBe(230);
       cfg.InverseLoadStationNumber(201).ShouldBe(1);
-      cfg.InverseLoadStationNumber(202).ShouldBe(2);
+      cfg.InverseLoadStationNumber(230).ShouldBe(2);
     }
 
     [Test]
@@ -600,7 +596,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         _settings,
         _mazakCfg with
         {
-          StartingLoadStationNumber = 201,
+          LoadStationNumbers = [201, 230],
         },
         allData,
         machineGroupName: "MC",

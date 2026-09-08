@@ -38,13 +38,13 @@
               Fixture: fixtureAA1,
               Face: 1,
               Load: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedLoadTime: 00:05:00,
               Unload: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedUnloadTime: 00:05:00,
               Stops: [
@@ -123,13 +123,13 @@
               Fixture: fixtureAA2,
               Face: 2,
               Load: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedLoadTime: 00:05:00,
               Unload: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedUnloadTime: 00:05:00,
               Stops: [
@@ -238,13 +238,13 @@
               Fixture: fixtureBB,
               Face: 1,
               Load: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedLoadTime: 00:05:00,
               Unload: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedUnloadTime: 00:05:00,
               Stops: [
@@ -359,13 +359,13 @@
               Fixture: fixtureBB,
               Face: 1,
               Load: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedLoadTime: 00:05:00,
               Unload: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedUnloadTime: 00:05:00,
               Stops: [
@@ -510,13 +510,13 @@
               Fixture: fixtureCC5,
               Face: 1,
               Load: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedLoadTime: 00:05:00,
               Unload: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedUnloadTime: 00:05:00,
               Stops: [
@@ -626,13 +626,13 @@
               Fixture: fixtureCC6,
               Face: 2,
               Load: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedLoadTime: 00:05:00,
               Unload: [
-                1,
-                2
+                201,
+                230
               ],
               ExpectedUnloadTime: 00:05:00,
               Stops: [

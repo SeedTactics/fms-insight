@@ -394,10 +394,16 @@ namespace MazakMachineInterface
       }
 
       foreach (int statNum in PathInfo.Load)
-        FixLDS[statNum - 1] = statNum.ToString()[0];
+      {
+        var local = mazakCfg.InverseLoadStationNumber(statNum);
+        FixLDS[local - 1] = local.ToString()[0];
+      }
 
       foreach (int statNum in PathInfo.Unload)
-        UnfixLDS[statNum - 1] = statNum.ToString()[0];
+      {
+        var local = mazakCfg.InverseLoadStationNumber(statNum);
+        UnfixLDS[local - 1] = local.ToString()[0];
+      }
 
       var newPartProcRow = new MazakPartProcessRow()
       {
@@ -1073,6 +1079,19 @@ namespace MazakMachineInterface
       {
         // checked above that only a single path
         var info = job.Processes[proc - 1].Paths[0];
+
+        foreach (var station in info.Load.Concat(info.Unload))
+        {
+          try
+          {
+            mazakCfg.InverseLoadStationNumber(station);
+          }
+          catch (ArgumentOutOfRangeException)
+          {
+            ErrorDuringCreate = "Part " + job.PartName + " has an unmapped load station " + station;
+            return;
+          }
+        }
 
         //Check this proc and path has a program
         bool has1Stop = false;
