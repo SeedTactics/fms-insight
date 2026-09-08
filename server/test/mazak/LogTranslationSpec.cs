@@ -1567,9 +1567,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     ) =>
       new()
       {
-        MaterialForLoads = ImmutableDictionary<string, ImmutableList<long>>.Empty.Add(
+        MaterialForLoads = ImmutableDictionary<string, MazakResolvedLoad>.Empty.Add(
           foreignId,
-          material.ToImmutableList()
+          new MazakResolvedLoad
+          {
+            MaterialIds = material.ToImmutableList(),
+            AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+              "carrier-id",
+              "carrier-a"
+            ),
+          }
         ),
         MaterialForUnloads = ImmutableDictionary<
           string,
@@ -1722,7 +1729,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             "extra-event" => ExactLoad("LG002", material) with
             {
               MaterialForLoads = ExactLoad("LG002", material)
-                .MaterialForLoads.Add("extra", [material]),
+                .MaterialForLoads.Add("extra", new MazakResolvedLoad { MaterialIds = [material] }),
             },
             "wrong-count" => ExactLoad("LG002", material, material),
             "unknown-material" => ExactLoad("LG002", 90000),
@@ -1837,14 +1844,25 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         ResolveLoadUnloadTransaction = (_, context) =>
         {
           received = context;
-          var loads = ImmutableDictionary<string, ImmutableList<long>>.Empty.Add(
+          var loads = ImmutableDictionary<string, MazakResolvedLoad>.Empty.Add(
             "LG002",
-            [firstLoad]
+            new MazakResolvedLoad
+            {
+              MaterialIds = [firstLoad],
+              AdditionalData = ImmutableDictionary<string, string>.Empty.Add("carrier-id", "first"),
+            }
           );
           if (mode != "omit-load")
             loads = loads.Add(
               "LG004",
-              [mode == "duplicate-load-material" ? firstLoad : secondLoad]
+              new MazakResolvedLoad
+              {
+                MaterialIds = [mode == "duplicate-load-material" ? firstLoad : secondLoad],
+                AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+                  "carrier-id",
+                  "second"
+                ),
+              }
             );
           var unloads = ImmutableDictionary<
             string,
@@ -1908,6 +1926,23 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .IsTrue();
       if (succeeds)
       {
+        await Assert
+          .That(
+            jobLog
+              .GetLogForForeignID("LG002")
+              .Single(e => e.LogType == LogType.LoadUnloadCycle)
+              .ProgramDetails["carrier-id"]
+          )
+          .IsEqualTo("first");
+        await Assert
+          .That(
+            jobLog
+              .GetLogForForeignID("LG004")
+              .Single(e => e.LogType == LogType.LoadUnloadCycle)
+              .ProgramDetails["carrier-id"]
+          )
+          .IsEqualTo("second");
+
         await Assert
           .That(
             CurrentPalletLog(1)
@@ -2047,6 +2082,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         },
         FollowingEvent(time)
       );
+      var metadata = CurrentPalletLog(1)
+        .Single(e => e.LogType == LogType.LoadUnloadCycle)
+        .ProgramDetails;
+      if (conflict)
+        await Assert.That(metadata).IsNull();
+      else
+        await Assert.That(metadata["carrier-id"]).IsEqualTo("carrier-a");
       await Assert.That(jobLog.GetBasketContents(4).Slots).IsEmpty();
       if (conflict)
       {
@@ -2122,7 +2164,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         ResolveLoadUnloadTransaction = (_, _) =>
           new MazakLoadUnloadResolution.Resolved
           {
-            MaterialForLoads = ImmutableDictionary<string, ImmutableList<long>>.Empty,
+            MaterialForLoads = ImmutableDictionary<string, MazakResolvedLoad>.Empty,
             MaterialForUnloads = ImmutableDictionary<
               string,
               ImmutableDictionary<long, UnloadDestination>

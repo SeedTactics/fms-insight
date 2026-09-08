@@ -9,6 +9,35 @@ namespace BlackMaple.FMSInsight.Tests;
 public sealed class PalletLoadMetadataSpec
 {
   [Test]
+  public async Task LoadMetadataSurvivesDatabaseRestart()
+  {
+    var file = System.IO.Path.Combine(
+      System.IO.Path.GetTempPath(),
+      Guid.NewGuid().ToString("N") + ".db"
+    );
+    try
+    {
+      using (var config = RepositoryConfig.InitializeEventDatabase(null, file, pooling: false))
+      using (var repo = config.OpenConnection())
+        Load(repo, [Face(repo.AllocateMaterialID("job", "part", 1), 1, "carrier-a")]);
+      using var restarted = RepositoryConfig.InitializeEventDatabase(null, file, pooling: false);
+      using var reopened = restarted.OpenConnection();
+      await Assert
+        .That(
+          reopened
+            .CurrentPalletLog(5, true)
+            .Single(e => e.LogType == LogType.LoadUnloadCycle)
+            .ProgramDetails["carrier-id"]
+        )
+        .IsEqualTo("carrier-a");
+    }
+    finally
+    {
+      System.IO.File.Delete(file);
+    }
+  }
+
+  [Test]
   public async Task PerFaceMetadataSurvivesReopeningAndSameMaterialReload()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());

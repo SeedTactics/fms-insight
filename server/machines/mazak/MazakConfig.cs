@@ -63,6 +63,14 @@ namespace MazakMachineInterface
     public required ImmutableList<BlackMaple.MachineFramework.LogEntry> CurrentPalletLog { get; init; }
   }
 
+  // Exact material and optional details belong to one source LOAD event.
+  public sealed record MazakResolvedLoad
+  {
+    public required ImmutableList<long> MaterialIds { get; init; }
+    public ImmutableDictionary<string, string> AdditionalData { get; init; } =
+      ImmutableDictionary<string, string>.Empty;
+  }
+
   public abstract record MazakLoadUnloadResolution
   {
     private MazakLoadUnloadResolution() { }
@@ -74,10 +82,7 @@ namespace MazakMachineInterface
     // ordinary unload without a queue; a non-null destination with Queue=null requires a basket transfer.
     public sealed record Resolved : MazakLoadUnloadResolution
     {
-      public required ImmutableDictionary<
-        string,
-        ImmutableList<long>
-      > MaterialForLoads { get; init; }
+      public required ImmutableDictionary<string, MazakResolvedLoad> MaterialForLoads { get; init; }
       public required ImmutableDictionary<
         string,
         ImmutableDictionary<long, UnloadDestination?>
