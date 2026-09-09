@@ -635,6 +635,59 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task ArchivesDecrementedUncopiedJobs(bool fullDecrement)
+    {
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
+
+      var pending = newJobs.Jobs.First() with { UniqueStr = "pending-delivery" };
+      var backedOut = pending with { UniqueStr = "backed-out" };
+      _jobDB.AddJobs(
+        newJobs with
+        {
+          ScheduleId = "zzzzzzzzzzzzz",
+          Jobs = ImmutableList.Create(pending, backedOut),
+        },
+        expectedPreviousScheduleId: newJobs.ScheduleId,
+        addAsCopiedToSystem: false
+      );
+      _jobDB.AddNewDecrement(
+        [
+          new NewDecrementQuantity()
+          {
+            JobUnique = backedOut.UniqueStr,
+            Part = backedOut.PartName,
+            Quantity = fullDecrement ? backedOut.Cycles : 1,
+          },
+        ],
+        fixtureQueueTime
+      );
+
+      await Assert
+        .That(
+          WriteJobs.SyncFromDatabase(
+            _initialAllData,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg,
+            fixtureQueueTime
+          )
+        )
+        .IsTrue();
+
+      await Assert.That(_jobDB.LoadJob(pending.UniqueStr).CopiedToSystem).IsFalse();
+      await Assert.That(_jobDB.LoadJob(pending.UniqueStr).Archived).IsFalse();
+      await Assert.That(_jobDB.LoadJob(backedOut.UniqueStr).CopiedToSystem).IsFalse();
+      await Assert.That(_jobDB.LoadJob(backedOut.UniqueStr).Archived).IsTrue();
+    }
+
+    [Test]
     public async Task ErrorDuringPartsPallets()
     {
       _mazakDbMock

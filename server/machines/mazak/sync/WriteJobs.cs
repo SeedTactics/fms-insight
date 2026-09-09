@@ -295,7 +295,12 @@ namespace MazakMachineInterface
 
       // Accepted jobs remain committed while controller delivery is pending, including
       // jobs outside this pass's download window or selected schedule group.
-      current.UnionWith(unarchived.Where(j => !j.CopiedToSystem).Select(j => j.UniqueStr));
+      // Any decrement makes an uncopied job ineligible for delivery.
+      current.UnionWith(
+        unarchived
+          .Where(j => !j.CopiedToSystem && (j.Decrements == null || j.Decrements.Count == 0))
+          .Select(j => j.UniqueStr)
+      );
 
       var toArchive = unarchived
         .Where(j => !current.Contains(j.UniqueStr))
