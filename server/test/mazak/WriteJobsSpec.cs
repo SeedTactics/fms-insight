@@ -547,7 +547,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public async Task OnlyDownloadsOneScheduleAtATime()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task OnlyDownloadsOneScheduleAtATime(bool lostAcknowledgement)
     {
       var newJ1 = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
@@ -555,12 +557,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       _jobDB.AddJobs(newJ1, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
-      var newJ2 = JsonSerializer.Deserialize<NewJobs>(
-        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "singleproc.json")),
-        jsonSettings
-      ) with
+      var newJ2 = newJ1 with
       {
         ScheduleId = "zzzzzzzzzzzzz",
+        Jobs = newJ1
+          .Jobs.Select(j => j with { UniqueStr = j.UniqueStr + "-next" })
+          .ToImmutableList(),
       };
       _jobDB.AddJobs(
         newJ2,
@@ -568,24 +570,121 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         addAsCopiedToSystem: false
       );
 
-      WriteJobs
-        .SyncFromDatabase(
-          _initialAllData,
+      var failNextSave = lostAcknowledgement;
+      _mazakDbMock
+        .When(x => x.Save(Arg.Is<MazakWriteData>(w => w.Prefix == "Add Schedules")))
+        .Do(_ =>
+        {
+          if (failNextSave)
+          {
+            failNextSave = false;
+            throw new IOException("Schedules accepted, acknowledgement lost.");
+          }
+        });
+      bool Copy(MazakAllData data) =>
+        WriteJobs.SyncFromDatabase(
+          data,
           _jobDB,
           _mazakDbMock,
           _settings,
           _mazakCfg,
           fixtureQueueTime
-        )
-        .ShouldBeTrue();
+        );
+      if (lostAcknowledgement)
+      {
+        await Assert.That(() => Copy(_initialAllData)).Throws<IOException>();
+        foreach (var job in newJ1.Jobs.Concat(newJ2.Jobs))
+        {
+          await Assert.That(_jobDB.LoadJob(job.UniqueStr).CopiedToSystem).IsFalse();
+          await Assert.That(_jobDB.LoadJob(job.UniqueStr).Archived).IsFalse();
+        }
+      }
+      else
+      {
+        await Assert.That(Copy(_initialAllData)).IsTrue();
+        await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
+      }
+      // The next literal controller observation contains the actual accepted first-group rows.
+      var controllerA = _mazakDbMock.LoadAllData() with
+      {
+        Schedules = FindWrite("Add Schedules").Schedules.ToImmutableList(),
+        Fixtures = FindWrite("Add Fixtures").Fixtures.ToImmutableList(),
+      };
+      _mazakDbMock.ClearReceivedCalls();
+      if (lostAcknowledgement)
+      {
+        await Assert.That(Copy(controllerA)).IsTrue();
+        _mazakDbMock.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+      }
+      foreach (var job in newJ1.Jobs)
+      {
+        await Assert.That(_jobDB.LoadJob(job.UniqueStr).CopiedToSystem).IsTrue();
+        await Assert.That(_jobDB.LoadJob(job.UniqueStr).Archived).IsFalse();
+      }
+      foreach (var job in newJ2.Jobs)
+      {
+        await Assert.That(_jobDB.LoadJob(job.UniqueStr).CopiedToSystem).IsFalse();
+        await Assert.That(_jobDB.LoadJob(job.UniqueStr).Archived).IsFalse();
+      }
+      await Assert.That(Copy(controllerA)).IsTrue();
+      foreach (var job in newJ1.Jobs.Concat(newJ2.Jobs))
+      {
+        await Assert.That(_jobDB.LoadJob(job.UniqueStr).CopiedToSystem).IsTrue();
+        await Assert.That(_jobDB.LoadJob(job.UniqueStr).Archived).IsFalse();
+      }
+    }
 
-      await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
-      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts");
-      FindWrite("Delete Pallets")?.Pallets.ShouldBeEmpty();
-      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures");
-      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures");
-      await ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts");
-      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task ArchivesDecrementedUncopiedJobs(bool fullDecrement)
+    {
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
+
+      var pending = newJobs.Jobs.First() with { UniqueStr = "pending-delivery" };
+      var backedOut = pending with { UniqueStr = "backed-out" };
+      _jobDB.AddJobs(
+        newJobs with
+        {
+          ScheduleId = "zzzzzzzzzzzzz",
+          Jobs = ImmutableList.Create(pending, backedOut),
+        },
+        expectedPreviousScheduleId: newJobs.ScheduleId,
+        addAsCopiedToSystem: false
+      );
+      _jobDB.AddNewDecrement(
+        [
+          new NewDecrementQuantity()
+          {
+            JobUnique = backedOut.UniqueStr,
+            Part = backedOut.PartName,
+            Quantity = fullDecrement ? backedOut.Cycles : 1,
+          },
+        ],
+        fixtureQueueTime
+      );
+
+      await Assert
+        .That(
+          WriteJobs.SyncFromDatabase(
+            _initialAllData,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg,
+            fixtureQueueTime
+          )
+        )
+        .IsTrue();
+
+      await Assert.That(_jobDB.LoadJob(pending.UniqueStr).CopiedToSystem).IsFalse();
+      await Assert.That(_jobDB.LoadJob(pending.UniqueStr).Archived).IsFalse();
+      await Assert.That(_jobDB.LoadJob(backedOut.UniqueStr).CopiedToSystem).IsFalse();
+      await Assert.That(_jobDB.LoadJob(backedOut.UniqueStr).Archived).IsTrue();
     }
 
     [Test]
