@@ -4012,6 +4012,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "LoadStationWork": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BasketLoadStationWork"
+              }
+            ]
+          },
           "Position": {
             "nullable": true,
             "oneOf": [
@@ -4035,6 +4043,35 @@
             }
           }
         }
+      },
+      "BasketLoadStationWork": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["WorkId", "Type", "ReadyToConfirm", "WorkId", "Type", "ReadyToConfirm"],
+        "properties": {
+          "WorkId": {
+            "type": "string"
+          },
+          "Type": {
+            "$ref": "#/components/schemas/BasketLoadStationWorkType"
+          },
+          "ReadyToConfirm": {
+            "type": "boolean"
+          },
+          "AwaitingMaterialSlots": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "BasketLoadStationWorkType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": ["Material", "ConfirmEmptyBasket"],
+        "enum": ["Material", "ConfirmEmptyBasket"]
       },
       "BasketPosition": {
         "type": "object",

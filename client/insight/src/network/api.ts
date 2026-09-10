@@ -5731,6 +5731,7 @@ export enum WorkorderSerialCloseout {
 
 export class BasketStatus implements IBasketStatus {
   basketId!: number;
+  loadStationWork?: BasketLoadStationWork | undefined;
   position?: BasketPosition | undefined;
   emptySlots?: number[];
   unknownSlots?: number[];
@@ -5746,6 +5747,9 @@ export class BasketStatus implements IBasketStatus {
   init(_data?: any) {
     if (_data) {
       this.basketId = _data["BasketId"];
+      this.loadStationWork = _data["LoadStationWork"]
+        ? BasketLoadStationWork.fromJS(_data["LoadStationWork"])
+        : (undefined as any);
       this.position = _data["Position"]
         ? BasketPosition.fromJS(_data["Position"])
         : (undefined as any);
@@ -5770,6 +5774,9 @@ export class BasketStatus implements IBasketStatus {
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
     data["BasketId"] = this.basketId;
+    data["LoadStationWork"] = this.loadStationWork
+      ? this.loadStationWork.toJSON()
+      : (undefined as any);
     data["Position"] = this.position ? this.position.toJSON() : (undefined as any);
     if (Array.isArray(this.emptySlots)) {
       data["EmptySlots"] = [];
@@ -5785,9 +5792,68 @@ export class BasketStatus implements IBasketStatus {
 
 export interface IBasketStatus {
   basketId: number;
+  loadStationWork?: BasketLoadStationWork | undefined;
   position?: BasketPosition | undefined;
   emptySlots?: number[];
   unknownSlots?: number[];
+}
+
+export class BasketLoadStationWork implements IBasketLoadStationWork {
+  workId!: string;
+  type!: BasketLoadStationWorkType;
+  readyToConfirm!: boolean;
+  awaitingMaterialSlots?: number[];
+
+  constructor(data?: IBasketLoadStationWork) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
+      }
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.workId = _data["WorkId"];
+      this.type = _data["Type"];
+      this.readyToConfirm = _data["ReadyToConfirm"];
+      if (Array.isArray(_data["AwaitingMaterialSlots"])) {
+        this.awaitingMaterialSlots = [] as any;
+        for (let item of _data["AwaitingMaterialSlots"]) this.awaitingMaterialSlots!.push(item);
+      }
+    }
+  }
+
+  static fromJS(data: any): BasketLoadStationWork {
+    data = typeof data === "object" ? data : {};
+    let result = new BasketLoadStationWork();
+    result.init(data);
+    return result;
+  }
+
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["WorkId"] = this.workId;
+    data["Type"] = this.type;
+    data["ReadyToConfirm"] = this.readyToConfirm;
+    if (Array.isArray(this.awaitingMaterialSlots)) {
+      data["AwaitingMaterialSlots"] = [];
+      for (let item of this.awaitingMaterialSlots) data["AwaitingMaterialSlots"].push(item);
+    }
+    return data;
+  }
+}
+
+export interface IBasketLoadStationWork {
+  workId: string;
+  type: BasketLoadStationWorkType;
+  readyToConfirm: boolean;
+  awaitingMaterialSlots?: number[];
+}
+
+export enum BasketLoadStationWorkType {
+  Material = "Material",
+  ConfirmEmptyBasket = "ConfirmEmptyBasket",
 }
 
 export class BasketPosition implements IBasketPosition {

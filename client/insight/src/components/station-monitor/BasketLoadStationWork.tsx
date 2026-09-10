@@ -57,6 +57,8 @@ interface BasketLoadStationWorkflowProps {
 type SubmissionState = "idle" | "submitting" | "accepted" | "conflict" | "error";
 interface Submission {
   readonly workId: string;
+  readonly basket: Readonly<api.IBasketStatus>;
+  readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   readonly state: Exclude<SubmissionState, "idle">;
 }
 
@@ -64,13 +66,16 @@ type BasketAction =
   | { readonly type: "valid"; readonly workId: string | undefined }
   | { readonly type: "invalid" };
 
-type ConfirmableWork = {
+type StationWork = {
   readonly workId: string;
+  readonly ready: boolean;
+  readonly confirmEmpty: boolean;
+  readonly awaitingSlots: ReadonlyArray<number>;
 };
 
 type WorkState =
   | { readonly type: "none" }
-  | { readonly type: "confirmable"; readonly work: ConfirmableWork }
+  | { readonly type: "active"; readonly work: StationWork }
   | { readonly type: "inconsistent" };
 
 function isPositiveInteger(value: number | undefined): value is number {
@@ -116,12 +121,12 @@ function basketAction(
   return undefined;
 }
 
-function confirmableWork(
+function stationWork(
   material: ReadonlyArray<Readonly<api.IInProcessMaterial>>,
-  basketId: number,
+  basket: Readonly<api.IBasketStatus>,
 ): WorkState {
   const classifiedActions = LazySeq.of(material)
-    .collect((mat) => basketAction(mat, basketId))
+    .collect((mat) => basketAction(mat, basket.basketId))
     .toRArray();
   if (classifiedActions.some((action) => action.type === "invalid")) {
     return { type: "inconsistent" };
@@ -130,6 +135,50 @@ function confirmableWork(
     (action): action is Extract<BasketAction, { readonly type: "valid" }> =>
       action.type === "valid",
   );
+  const descriptor = basket.loadStationWork;
+  if (descriptor !== undefined) {
+    if (
+      !descriptor ||
+      !isNonBlank(descriptor.workId) ||
+      typeof descriptor.readyToConfirm !== "boolean"
+    )
+      return { type: "inconsistent" };
+    const awaiting = descriptor.awaitingMaterialSlots ?? [];
+    if (
+      !Array.isArray(awaiting) ||
+      !awaiting.every(isPositiveInteger) ||
+      new Set(awaiting).size !== awaiting.length ||
+      (descriptor.readyToConfirm && awaiting.length > 0) ||
+      validActions.some((action) => action.workId !== descriptor.workId)
+    )
+      return { type: "inconsistent" };
+    const empty = descriptor.type === api.BasketLoadStationWorkType.ConfirmEmptyBasket;
+    if (empty) {
+      if (
+        validActions.length > 0 ||
+        awaiting.length > 0 ||
+        material.some(
+          (mat) =>
+            mat.location.type === api.LocType.InBasket && mat.location.basketId === basket.basketId,
+        )
+      )
+        return { type: "inconsistent" };
+    } else if (
+      descriptor.type !== api.BasketLoadStationWorkType.Material ||
+      (descriptor.readyToConfirm && validActions.length === 0)
+    ) {
+      return { type: "inconsistent" };
+    }
+    return {
+      type: "active",
+      work: {
+        workId: descriptor.workId,
+        ready: descriptor.readyToConfirm,
+        confirmEmpty: empty,
+        awaitingSlots: awaiting,
+      },
+    };
+  }
   if (validActions.length === 0) return { type: "none" };
   const tagged = validActions.filter(
     (action): action is { readonly type: "valid"; readonly workId: string } =>
@@ -140,8 +189,8 @@ function confirmableWork(
     return { type: "inconsistent" };
   }
   return {
-    type: "confirmable",
-    work: { workId: tagged[0].workId },
+    type: "active",
+    work: { workId: tagged[0].workId, ready: true, confirmEmpty: false, awaitingSlots: [] },
   };
 }
 
@@ -184,13 +233,17 @@ export function BasketLoadStationWorkflow({
   submitCommand,
 }: BasketLoadStationWorkflowProps) {
   const [submission, setSubmission] = useState<Submission | undefined>();
-  const workState = useMemo(
-    () => confirmableWork(material, basket.basketId),
-    [basket.basketId, material],
-  );
-  const work = workState.type === "confirmable" ? workState.work : undefined;
+  const workState = useMemo(() => stationWork(material, basket), [basket, material]);
+  const work = workState.type === "active" ? workState.work : undefined;
   const submissionState =
-    submission !== undefined && submission.workId === work?.workId ? submission.state : "idle";
+    submission !== undefined &&
+    submission.workId === work?.workId &&
+    // A conflict rejects the submitted status snapshot, not the preserved occurrence.
+    // Compare the captured snapshot even when refresh precedes the response.
+    (submission.state !== "conflict" ||
+      (submission.basket === basket && submission.material === material))
+      ? submission.state
+      : "idle";
 
   const materialBySlot = useMemo(
     () =>
@@ -203,7 +256,7 @@ export function BasketLoadStationWorkflow({
         )
         .groupBy((mat) => mat.location.basketSlot ?? 0)
         .toHashMap((entry) => entry),
-    [basket.basketId, material],
+    [basket, material],
   );
   const loadsBySlot = useMemo(
     () =>
@@ -216,7 +269,7 @@ export function BasketLoadStationWorkflow({
         )
         .groupBy((mat) => mat.action.loadToBasketSlot ?? 0)
         .toHashMap((entry) => entry),
-    [basket.basketId, material],
+    [basket, material],
   );
   const slots = useMemo(
     () =>
@@ -230,22 +283,20 @@ export function BasketLoadStationWorkflow({
   );
 
   async function submit(): Promise<void> {
-    if (work === undefined || submitCommand === undefined) return;
+    if (work === undefined || !work.ready || submitCommand === undefined) return;
     const submittedWorkId = work.workId;
-    setSubmission({ workId: submittedWorkId, state: "submitting" });
+    const pending: Submission = { workId: submittedWorkId, basket, material, state: "submitting" };
+    setSubmission(pending);
     try {
       const state = await submitCommand(stationNumber, { workId: submittedWorkId });
-      setSubmission((current) =>
-        current?.workId === submittedWorkId ? { workId: submittedWorkId, state } : current,
-      );
+      setSubmission((current) => (current === pending ? { ...pending, state } : current));
     } catch {
-      setSubmission((current) =>
-        current?.workId === submittedWorkId ? { workId: submittedWorkId, state: "error" } : current,
-      );
+      setSubmission((current) => (current === pending ? { ...pending, state: "error" } : current));
     }
   }
 
   const submissionDisabled =
+    !work?.ready ||
     submissionState === "submitting" ||
     submissionState === "accepted" ||
     submissionState === "conflict";
@@ -299,6 +350,14 @@ export function BasketLoadStationWorkflow({
           );
         })}
       </Box>
+      {work?.confirmEmpty && <Typography>Confirm basket {basket.basketId} is empty.</Typography>}
+      {work && !work.ready && (
+        <Alert severity="info">
+          {work.awaitingSlots.length > 0
+            ? `Waiting for material for slots ${work.awaitingSlots.join(", ")}.`
+            : "Basket work is not ready for confirmation."}
+        </Alert>
+      )}
       {work && submitCommand ? (
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <Button variant="contained" disabled={submissionDisabled} onClick={() => void submit()}>
