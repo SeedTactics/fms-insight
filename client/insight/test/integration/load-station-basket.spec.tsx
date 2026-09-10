@@ -54,6 +54,155 @@ function confirmableBasketStatus(workId: string, partName: string): Readonly<api
   });
 }
 
+function explicitBasketWork(
+  work: api.BasketLoadStationWork,
+  withMaterial = true,
+): Readonly<api.ICurrentStatus> {
+  const status = confirmableBasketStatus("load-1", "Retained part");
+  return {
+    ...status,
+    baskets: {
+      "7": new api.BasketStatus({
+        ...status.baskets!["7"],
+        loadStationWork: work,
+      }),
+    },
+    material: withMaterial ? status.material : [],
+  };
+}
+
+describe("explicit basket station work", () => {
+  test("confirms an empty basket without material and retries the same occurrence after a lost response", async () => {
+    const work = new api.BasketLoadStationWork({
+      workId: "empty-1",
+      type: api.BasketLoadStationWorkType.ConfirmEmptyBasket,
+      readyToConfirm: true,
+    });
+    const submit = vi
+      .fn<SubmitBasketLoadStationCommand>()
+      .mockRejectedValueOnce(new Error("Lost response"))
+      .mockResolvedValue("accepted");
+    const status = explicitBasketWork(work, false);
+    expect(status.material).toHaveLength(0);
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
+      { currentStatus: status },
+    );
+    await expect.element(screen.getByText("Confirm basket 7 is empty.")).toBeVisible();
+    const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await confirm.click();
+    await expect.element(confirm).toBeEnabled();
+    await confirm.click();
+    expect(submit.mock.calls).toEqual([
+      [1, { workId: "empty-1" }],
+      [1, { workId: "empty-1" }],
+    ]);
+    await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
+    await expect.element(confirm).toBeDisabled();
+  });
+
+  test("keeps valid material visible while waiting and only confirms after readiness arrives", async () => {
+    const pending = new api.BasketLoadStationWork({
+      workId: "load-1",
+      type: api.BasketLoadStationWorkType.Material,
+      readyToConfirm: false,
+      awaitingMaterialSlots: [2, 3],
+    });
+    const submit = vi.fn<SubmitBasketLoadStationCommand>(async () => "accepted");
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
+      { currentStatus: explicitBasketWork(pending) },
+    );
+    await expect.element(screen.getByText("Retained part", { exact: true })).toBeVisible();
+    await expect.element(screen.getByText("Waiting for material for slots 2, 3.")).toBeVisible();
+    const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await expect.element(confirm).toBeDisabled();
+    expect(submit).not.toHaveBeenCalled();
+    screen.store.set(
+      onLoadCurrentSt,
+      explicitBasketWork(
+        new api.BasketLoadStationWork({
+          ...pending,
+          readyToConfirm: true,
+          awaitingMaterialSlots: [],
+        }),
+      ),
+    );
+    await expect.element(confirm).toBeEnabled();
+    await confirm.click();
+    expect(submit).toHaveBeenCalledWith(1, { workId: "load-1" });
+  });
+
+  test.for([
+    ["mismatched occurrence", { workId: "another-work" }],
+    ["blank occurrence", { workId: " " }],
+    ["missing readiness", { readyToConfirm: undefined }],
+    ["unknown type", { type: "Unknown" as api.BasketLoadStationWorkType }],
+    ["ready with missing slots", { awaitingMaterialSlots: [2] }],
+    ["invalid missing slot", { readyToConfirm: false, awaitingMaterialSlots: [0] }],
+    ["duplicate missing slot", { readyToConfirm: false, awaitingMaterialSlots: [2, 2] }],
+    [
+      "empty assertion with material actions",
+      { type: api.BasketLoadStationWorkType.ConfirmEmptyBasket },
+    ],
+  ] as const)(
+    "rejects %s without falling back to action-derived confirmation",
+    async ([, overrides]) => {
+      const fields = {
+        workId: "load-1",
+        type: api.BasketLoadStationWorkType.Material,
+        readyToConfirm: true,
+        awaitingMaterialSlots: [],
+        ...overrides,
+      };
+      const work = api.BasketLoadStationWork.fromJS({
+        WorkId: fields.workId,
+        Type: fields.type,
+        ReadyToConfirm: fields.readyToConfirm,
+        AwaitingMaterialSlots: fields.awaitingMaterialSlots,
+      });
+      const submit = vi.fn<SubmitBasketLoadStationCommand>(async () => "accepted");
+      const screen = await renderInsightPage(
+        <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
+        { currentStatus: explicitBasketWork(work) },
+      );
+      await expect.element(screen.getByText(/Basket work is inconsistent/)).toBeVisible();
+      await expect
+        .element(screen.getByRole("button", { name: "Confirm", exact: true }))
+        .not.toBeInTheDocument();
+      expect(submit).not.toHaveBeenCalled();
+    },
+  );
+
+  test("does not apply an old empty confirmation response to a new occurrence", async () => {
+    let finish: ((result: "accepted") => void) | undefined;
+    const submit = vi.fn<SubmitBasketLoadStationCommand>(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const work = new api.BasketLoadStationWork({
+      workId: "empty-old",
+      type: api.BasketLoadStationWorkType.ConfirmEmptyBasket,
+      readyToConfirm: true,
+    });
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
+      { currentStatus: explicitBasketWork(work, false) },
+    );
+    const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await confirm.click();
+    screen.store.set(
+      onLoadCurrentSt,
+      explicitBasketWork(new api.BasketLoadStationWork({ ...work, workId: "empty-new" }), false),
+    );
+    finish!("accepted");
+    await expect.element(confirm).toBeEnabled();
+    await expect.element(screen.getByText(/Confirmation accepted/)).not.toBeInTheDocument();
+  });
+});
+
 describe("basket arrival", () => {
   test("completes the current load-station instruction with the visible basket", async () => {
     const submit = vi.fn<SubmitBasketMovementCompletion>(async (stationNumber, command) =>

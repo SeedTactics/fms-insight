@@ -61,9 +61,48 @@ namespace BlackMaple.MachineFramework
     InTransit,
   }
 
+  public enum BasketLoadStationWorkType
+  {
+    /// <summary>Material instructions describe the operation; ready work requires matching actions.</summary>
+    Material,
+
+    /// <summary>Assert physical emptiness without material or material operations in this basket.</summary>
+    ConfirmEmptyBasket,
+  }
+
+  /// <summary>
+  /// Current integration-supplied basket station intent, not persisted or reconstructed history.
+  /// Material actions carry the detailed instructions and must agree with this occurrence.
+  /// </summary>
+  public record BasketLoadStationWork
+  {
+    public required string WorkId { get; init; }
+    public required BasketLoadStationWorkType Type { get; init; }
+
+    /// <summary>
+    /// Whether the whole occurrence can be confirmed. False withholds confirmation even when
+    /// matching material actions are present. The integration must also validate completion.
+    /// </summary>
+    public required bool ReadyToConfirm { get; init; }
+
+    /// <summary>
+    /// One-based slots awaiting material. Must be empty for ready work and empty-basket assertions.
+    /// Material instructions for other slots can remain visible while these slots are pending.
+    /// </summary>
+    public ImmutableSortedSet<int> AwaitingMaterialSlots { get; init; } =
+      ImmutableSortedSet<int>.Empty;
+  }
+
   public record BasketStatus
   {
     public required int BasketId { get; init; }
+
+    /// <summary>
+    /// Optional current station-work occurrence. When present it governs confirmability;
+    /// clients must not fall back to action-derived confirmation if it is inconsistent.
+    /// This intent is integration-supplied and is not durable manufacturing or position evidence.
+    /// </summary>
+    public BasketLoadStationWork? LoadStationWork { get; init; }
 
     /// <summary>
     /// Current integration-supplied position. FMS Insight does not persist or reconstruct normal
