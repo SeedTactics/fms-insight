@@ -72,6 +72,67 @@ function explicitBasketWork(
 }
 
 describe("explicit basket station work", () => {
+  test.for([false, true])(
+    "permits the same work after a transient conflict (refresh before response: %s)",
+    async (refreshBeforeResponse) => {
+      let resolveResponse: ((result: "conflict") => void) | undefined;
+      const response = new Promise<"conflict">((resolve) => {
+        resolveResponse = resolve;
+      });
+      const submit = vi
+        .fn<SubmitBasketLoadStationCommand>()
+        .mockImplementationOnce(() => response)
+        .mockResolvedValue("accepted");
+      const ready = new api.BasketLoadStationWork({
+        workId: "load-1",
+        type: api.BasketLoadStationWorkType.Material,
+        readyToConfirm: true,
+      });
+      const screen = await renderInsightPage(
+        <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
+        { currentStatus: explicitBasketWork(ready) },
+      );
+      const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+      await confirm.click();
+      await expect.element(confirm).toBeDisabled();
+      if (!refreshBeforeResponse) {
+        resolveResponse!("conflict");
+        await expect
+          .element(screen.getByText(/Basket work changed before confirmation/))
+          .toBeVisible();
+        await expect.element(confirm).toBeDisabled();
+      }
+      screen.store.set(
+        onLoadCurrentSt,
+        explicitBasketWork(
+          new api.BasketLoadStationWork({
+            ...ready,
+            readyToConfirm: false,
+          }),
+        ),
+      );
+      await expect
+        .element(screen.getByText("Basket work is not ready for confirmation."))
+        .toBeVisible();
+      if (refreshBeforeResponse) resolveResponse!("conflict");
+      await expect.element(confirm).toBeDisabled();
+      await expect
+        .element(screen.getByText(/Basket work changed before confirmation/))
+        .not.toBeInTheDocument();
+      screen.store.set(onLoadCurrentSt, explicitBasketWork(ready));
+      await expect.element(confirm).toBeEnabled();
+      await confirm.click();
+      expect(submit.mock.calls).toEqual([
+        [1, { workId: "load-1" }],
+        [1, { workId: "load-1" }],
+      ]);
+      await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
+      screen.store.set(onLoadCurrentSt, explicitBasketWork(ready));
+      await expect.element(confirm).toBeDisabled();
+      await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
+    },
+  );
+
   test("confirms an empty basket without material and retries the same occurrence after a lost response", async () => {
     const work = new api.BasketLoadStationWork({
       workId: "empty-1",

@@ -57,6 +57,8 @@ interface BasketLoadStationWorkflowProps {
 type SubmissionState = "idle" | "submitting" | "accepted" | "conflict" | "error";
 interface Submission {
   readonly workId: string;
+  readonly basket: Readonly<api.IBasketStatus>;
+  readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   readonly state: Exclude<SubmissionState, "idle">;
 }
 
@@ -234,7 +236,14 @@ export function BasketLoadStationWorkflow({
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
   const work = workState.type === "active" ? workState.work : undefined;
   const submissionState =
-    submission !== undefined && submission.workId === work?.workId ? submission.state : "idle";
+    submission !== undefined &&
+    submission.workId === work?.workId &&
+    // A conflict rejects the submitted status snapshot, not the preserved occurrence.
+    // Compare the captured snapshot even when refresh precedes the response.
+    (submission.state !== "conflict" ||
+      (submission.basket === basket && submission.material === material))
+      ? submission.state
+      : "idle";
 
   const materialBySlot = useMemo(
     () =>
@@ -276,16 +285,13 @@ export function BasketLoadStationWorkflow({
   async function submit(): Promise<void> {
     if (work === undefined || !work.ready || submitCommand === undefined) return;
     const submittedWorkId = work.workId;
-    setSubmission({ workId: submittedWorkId, state: "submitting" });
+    const pending: Submission = { workId: submittedWorkId, basket, material, state: "submitting" };
+    setSubmission(pending);
     try {
       const state = await submitCommand(stationNumber, { workId: submittedWorkId });
-      setSubmission((current) =>
-        current?.workId === submittedWorkId ? { workId: submittedWorkId, state } : current,
-      );
+      setSubmission((current) => (current === pending ? { ...pending, state } : current));
     } catch {
-      setSubmission((current) =>
-        current?.workId === submittedWorkId ? { workId: submittedWorkId, state: "error" } : current,
-      );
+      setSubmission((current) => (current === pending ? { ...pending, state: "error" } : current));
     }
   }
 
