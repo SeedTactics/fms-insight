@@ -73,9 +73,9 @@
     "@types/d3-shape": "^3.2.0",
     "@types/node": "^26.4.1",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
+    "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
-    "@vitest/browser-playwright": "^4.1.11",
+    "@vitest/browser-playwright": "^5.0.0",
     "jsdom": "^30.0.1",
     "nswag": "^14.7.1",
     "oxfmt": "^0.66.0",
@@ -84,8 +84,8 @@
     "playwright": "^1.62.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
-    "vitest": "^4.1.11",
-    "vitest-browser-react": "^2.2.0"
+    "vitest": "^5.0.0",
+    "vitest-browser-react": "^2.3.0"
   },
   "packageManager": "pnpm@11.3.0"
 }
