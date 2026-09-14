@@ -126,20 +126,20 @@ jobs:
 
       - name: Build MachineFramework
         run:
-          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" /p:FileVersion="${{ env.FILE_VERSION }}"
-          server/lib/BlackMaple.MachineFramework
+          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
+          /p:FileVersion="${{ env.FILE_VERSION }}" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
         run:
-          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" /p:FileVersion="${{ env.FILE_VERSION }}"
-          server/machines/mazak
+          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
+          /p:FileVersion="${{ env.FILE_VERSION }}" server/machines/mazak
       - name: Build Makino
         run:
-          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" /p:FileVersion="${{ env.FILE_VERSION }}"
-          server/machines/makino
+          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
+          /p:FileVersion="${{ env.FILE_VERSION }}" server/machines/makino
       - name: Build Niigata
         run:
-          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" /p:FileVersion="${{ env.FILE_VERSION }}"
-          server/machines/niigata
+          dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
+          /p:FileVersion="${{ env.FILE_VERSION }}" server/machines/niigata
 
       # ----------------------------------------------------------
       # Publish
