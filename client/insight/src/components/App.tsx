@@ -103,7 +103,6 @@ import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
 import { CloseoutReport } from "./operations/CloseoutReport.js";
 import { RebookingsPage } from "./operations/Rebookings.js";
 import { RecentCompletedPartsPage } from "./operations/CompletedParts.js";
-import { BasketSlotLabels } from "./BasketSlotLabels.js";
 import { basketDisplayName } from "../cell-status/station-cycles.js";
 import {
   last30HasBasketCycleData,
@@ -386,8 +385,6 @@ function SalesTabs() {
 }
 
 export interface AppProps {
-  /** Display names for basket slots 1, 2, ...; unspecified slots retain their number. */
-  readonly basketSlotLabels?: ReadonlyArray<string>;
   readonly renderCustomPage?: (custom: ReadonlyArray<string>) => {
     readonly nav: ComponentType | undefined;
     readonly page: ReactNode;
@@ -732,26 +729,24 @@ const App = memo(function App(props: AppProps) {
     }
   }
   return (
-    <BasketSlotLabels value={props.basketSlotLabels}>
-      <div id="App">
-        <Header
-          showAlarms={showAlarms}
-          showSearch={showSearch}
-          showLogout={showLogout}
-          showOperator={showOperator}
-          Nav1={nav1}
-          Nav2={nav2}
-          menuNavs={menuNavItems}
-        />
-        <div style={{ display: "flex" }}>
-          <SideMenu menuItems={menuNavItems} />
-          <div style={{ flexGrow: 1 }}>{page}</div>
-        </div>
-        {addBasicMaterialDialog ? <MaterialDialog /> : undefined}
-        <WebsocketConnection />
-        <BarcodeListener />
+    <div id="App">
+      <Header
+        showAlarms={showAlarms}
+        showSearch={showSearch}
+        showLogout={showLogout}
+        showOperator={showOperator}
+        Nav1={nav1}
+        Nav2={nav2}
+        menuNavs={menuNavItems}
+      />
+      <div style={{ display: "flex" }}>
+        <SideMenu menuItems={menuNavItems} />
+        <div style={{ flexGrow: 1 }}>{page}</div>
       </div>
-    </BasketSlotLabels>
+      {addBasicMaterialDialog ? <MaterialDialog /> : undefined}
+      <WebsocketConnection />
+      <BarcodeListener />
+    </div>
   );
 });
 

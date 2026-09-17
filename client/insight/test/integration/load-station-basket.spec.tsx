@@ -178,7 +178,7 @@ describe("explicit basket station work", () => {
       { currentStatus: explicitBasketWork(pending) },
     );
     await expect.element(screen.getByText("Retained part", { exact: true })).toBeVisible();
-    await expect.element(screen.getByText("Waiting for material for slots 2, 3.")).toBeVisible();
+    await expect.element(screen.getByText("Waiting for material for slots B, C.")).toBeVisible();
     const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
     await expect.element(confirm).toBeDisabled();
     expect(submit).not.toHaveBeenCalled();
@@ -828,7 +828,7 @@ describe("load station with active basket", () => {
     await expect.element(activeBasket).toHaveTextContent("Load from Queue A");
 
     await expect.element(queueA).toHaveTextContent("Queue To Basket");
-    await expect.element(queueA).toHaveTextContent("Load into Basket 7 slot 2");
+    await expect.element(queueA).toHaveTextContent("Load into Basket 7 slot B");
     await expect.element(legacyQueue).toHaveTextContent("Legacy Queue To Basket");
     await expect.element(legacyQueue).toHaveTextContent("Load into Basket 7");
     await expect.element(queueB).toHaveTextContent("Queue Existing");
@@ -953,7 +953,7 @@ describe("load station with active basket", () => {
       .toHaveTextContent("Unload, re-plate, and reload this slot");
     await expect
       .element(region(screen, "load-station-material"))
-      .toHaveTextContent("Load into Basket 7 slot 3");
+      .toHaveTextContent("Load into Basket 7 slot C");
 
     await screen.getByRole("button", { name: "Confirm" }).click();
 

@@ -123,7 +123,7 @@ describe("load station with active pallet", () => {
 
     await expect.element(face1).not.toHaveTextContent("Basket Load");
     await expect.element(face2).toHaveTextContent("Basket Unload");
-    await expect.element(face2).toHaveTextContent("Unload to Basket 10 slot 2");
+    await expect.element(face2).toHaveTextContent("Unload to Basket 10 slot B");
     await expect.element(face2).not.toHaveTextContent("Basket Load");
 
     await expect.element(basketsColumn).toHaveTextContent("Baskets");

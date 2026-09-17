@@ -5,6 +5,7 @@ import { onLoadLast30Log, onLoadSpecificMonthLog } from "./loading.js";
 import { fmsInformation } from "../network/server-settings.js";
 import {
   basketDisplayName,
+  basketSlotLabel,
   last30HasBasketCycles,
   last30StationCycles,
   loadStationDisplayName,
@@ -103,4 +104,19 @@ it("drops zero-elapsed basket companion events from station cycles", () => {
 
   expect(store.get(last30HasBasketCycles)).toBe(false);
   expect(store.get(last30StationCycles).has(500)).toBe(false);
+});
+
+it("displays one-based basket slots alphabetically while preserving invalid values", () => {
+  expect([1, 2, 3, 26, 27, 52, 53, 702, 703].map(basketSlotLabel)).toEqual([
+    "A",
+    "B",
+    "C",
+    "Z",
+    "AA",
+    "AZ",
+    "BA",
+    "ZZ",
+    "AAA",
+  ]);
+  expect([0, -1, 1.5, Infinity].map(basketSlotLabel)).toEqual(["0", "-1", "1.5", "Infinity"]);
 });
