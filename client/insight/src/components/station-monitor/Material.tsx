@@ -80,6 +80,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
 import { fmsInformation } from "../../network/server-settings.js";
+import { useBasketSlotLabel } from "../BasketSlotLabels.js";
 import { basketDisplayName } from "../../cell-status/station-cycles.js";
 import { materialOperationState } from "../../data/material-operation-policy.js";
 
@@ -234,6 +235,7 @@ export function MaterialAction({
   const curSt = useAtomValue(currentStatus);
   const fmsInfo = useAtomValue(fmsInformation);
   const basketName = basketDisplayName(fmsInfo.basketName);
+  const slotLabel = useBasketSlotLabel();
 
   switch (mat.action.type) {
     case api.ActionType.Loading:
@@ -326,7 +328,9 @@ export function MaterialAction({
       return (
         <MatCardDetail fsize={fsize}>
           Load into {basketName} {mat.action.loadToBasketId ?? ""}
-          {mat.action.loadToBasketSlot !== undefined ? ` slot ${mat.action.loadToBasketSlot}` : ""}
+          {mat.action.loadToBasketSlot !== undefined
+            ? ` slot ${slotLabel(mat.action.loadToBasketSlot)}`
+            : ""}
         </MatCardDetail>
       );
 
@@ -337,7 +341,7 @@ export function MaterialAction({
           <MatCardDetail fsize={fsize}>
             Unload to {basketName} {mat.action.unloadToBasketId}
             {mat.action.unloadToBasketSlot !== undefined
-              ? ` slot ${mat.action.unloadToBasketSlot}`
+              ? ` slot ${slotLabel(mat.action.unloadToBasketSlot)}`
               : ""}
           </MatCardDetail>
         );

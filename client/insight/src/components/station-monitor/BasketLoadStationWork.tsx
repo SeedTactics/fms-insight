@@ -28,6 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+import { useBasketSlotLabel } from "../BasketSlotLabels.js";
 import { useMemo, useState } from "react";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
@@ -232,6 +233,7 @@ export function BasketLoadStationWorkflow({
   fsize,
   submitCommand,
 }: BasketLoadStationWorkflowProps) {
+  const slotLabel = useBasketSlotLabel();
   const [submission, setSubmission] = useState<Submission | undefined>();
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
   const work = workState.type === "active" ? workState.work : undefined;
@@ -329,7 +331,7 @@ export function BasketLoadStationWorkflow({
                 data-testid={`basket-load-station-slot-${slot}`}
                 sx={{ border: "1px solid", borderColor: "text.primary", p: 2 }}
               >
-                <Typography variant="h6">Slot {slot}</Typography>
+                <Typography variant="h6">Slot {slotLabel(slot)}</Typography>
                 {slotMaterial.length > 0 ? (
                   <SlotMaterial material={slotMaterial} fsize={fsize} />
                 ) : (
@@ -355,7 +357,7 @@ export function BasketLoadStationWorkflow({
         <Alert severity="info">
           {basket.loadStationWork?.confirmationBlockedReason ??
             (work.awaitingSlots.length > 0
-              ? `Waiting for material for slots ${work.awaitingSlots.join(", ")}.`
+              ? `Waiting for material for slots ${work.awaitingSlots.map(slotLabel).join(", ")}.`
               : "Basket work is not ready for confirmation.")}
         </Alert>
       )}
