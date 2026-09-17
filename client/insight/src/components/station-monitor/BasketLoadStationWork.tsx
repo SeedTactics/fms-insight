@@ -235,6 +235,7 @@ export function BasketLoadStationWorkflow({
 }: BasketLoadStationWorkflowProps) {
   const [submission, setSubmission] = useState<Submission | undefined>();
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
+  const blockedReason = basket.loadStationWork?.confirmationBlockedReason?.trim();
   const work = workState.type === "active" ? workState.work : undefined;
   const submissionState =
     submission !== undefined &&
@@ -354,7 +355,7 @@ export function BasketLoadStationWorkflow({
       {work?.confirmEmpty && <Typography>Confirm basket {basket.basketId} is empty.</Typography>}
       {work && !work.ready && (
         <Alert severity="info">
-          {basket.loadStationWork?.confirmationBlockedReason ??
+          {blockedReason ||
             (work.awaitingSlots.length > 0
               ? `Waiting for material for slots ${work.awaitingSlots.map(basketSlotLabel).join(", ")}.`
               : "Basket work is not ready for confirmation.")}

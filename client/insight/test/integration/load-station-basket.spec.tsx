@@ -110,7 +110,7 @@ describe("explicit basket station work", () => {
           new api.BasketLoadStationWork({
             ...ready,
             readyToConfirm: false,
-            confirmationBlockedReason: "Basket 4 is still sensed at the robot.",
+            confirmationBlockedReason: "  Basket 4 is still sensed at the robot.  ",
           }),
         ),
       );
@@ -163,6 +163,39 @@ describe("explicit basket station work", () => {
     ]);
     await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
     await expect.element(confirm).toBeDisabled();
+  });
+
+  test.for(["", " \t "])("falls back for a blank confirmation reason (%j)", async (reason) => {
+    const pending: Readonly<api.IBasketLoadStationWork> = {
+      workId: "load-1",
+      type: api.BasketLoadStationWorkType.Material,
+      readyToConfirm: false,
+      awaitingMaterialSlots: [2, 3],
+      confirmationBlockedReason: reason,
+    };
+    const screen = await renderInsightPage(
+      <LoadStation
+        loadNum={1}
+        queues={[]}
+        completed
+        submitBasketLoadStationCommand={async () => "accepted"}
+      />,
+      { currentStatus: explicitBasketWork(pending) },
+    );
+    await expect.element(screen.getByText("Waiting for material for slots B, C.")).toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Confirm", exact: true }))
+      .toBeDisabled();
+    screen.store.set(
+      onLoadCurrentSt,
+      explicitBasketWork({ ...pending, awaitingMaterialSlots: [] }),
+    );
+    await expect
+      .element(screen.getByText("Basket work is not ready for confirmation."))
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Confirm", exact: true }))
+      .toBeDisabled();
   });
 
   test("keeps valid material visible while waiting and only confirms after readiness arrives", async () => {
