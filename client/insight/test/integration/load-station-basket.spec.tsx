@@ -55,7 +55,7 @@ function confirmableBasketStatus(workId: string, partName: string): Readonly<api
 }
 
 function explicitBasketWork(
-  work: api.BasketLoadStationWork,
+  work: Readonly<api.IBasketLoadStationWork>,
   withMaterial = true,
 ): Readonly<api.ICurrentStatus> {
   const status = confirmableBasketStatus("load-1", "Retained part");
@@ -63,8 +63,10 @@ function explicitBasketWork(
     ...status,
     baskets: {
       "7": new api.BasketStatus({
-        ...status.baskets!["7"],
-        loadStationWork: work,
+        basketId: status.baskets!["7"].basketId,
+        position: status.baskets!["7"].position,
+        emptySlots: status.baskets!["7"].emptySlots,
+        loadStationWork: new api.BasketLoadStationWork(work),
       }),
     },
     material: withMaterial ? status.material : [],
@@ -83,11 +85,11 @@ describe("explicit basket station work", () => {
         .fn<SubmitBasketLoadStationCommand>()
         .mockImplementationOnce(() => response)
         .mockResolvedValue("accepted");
-      const ready = new api.BasketLoadStationWork({
+      const ready: Readonly<api.IBasketLoadStationWork> = {
         workId: "load-1",
         type: api.BasketLoadStationWorkType.Material,
         readyToConfirm: true,
-      });
+      };
       const screen = await renderInsightPage(
         <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
         { currentStatus: explicitBasketWork(ready) },
@@ -108,11 +110,12 @@ describe("explicit basket station work", () => {
           new api.BasketLoadStationWork({
             ...ready,
             readyToConfirm: false,
+            confirmationBlockedReason: "Basket 4 is still sensed at the robot.",
           }),
         ),
       );
       await expect
-        .element(screen.getByText("Basket work is not ready for confirmation."))
+        .element(screen.getByText("Basket 4 is still sensed at the robot."))
         .toBeVisible();
       if (refreshBeforeResponse) resolveResponse!("conflict");
       await expect.element(confirm).toBeDisabled();
@@ -163,12 +166,12 @@ describe("explicit basket station work", () => {
   });
 
   test("keeps valid material visible while waiting and only confirms after readiness arrives", async () => {
-    const pending = new api.BasketLoadStationWork({
+    const pending: Readonly<api.IBasketLoadStationWork> = {
       workId: "load-1",
       type: api.BasketLoadStationWorkType.Material,
       readyToConfirm: false,
       awaitingMaterialSlots: [2, 3],
-    });
+    };
     const submit = vi.fn<SubmitBasketLoadStationCommand>(async () => "accepted");
     const screen = await renderInsightPage(
       <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
@@ -198,7 +201,7 @@ describe("explicit basket station work", () => {
     ["mismatched occurrence", { workId: "another-work" }],
     ["blank occurrence", { workId: " " }],
     ["missing readiness", { readyToConfirm: undefined }],
-    ["unknown type", { type: "Unknown" as api.BasketLoadStationWorkType }],
+    ["unknown type", { type: "Unknown" }],
     ["ready with missing slots", { awaitingMaterialSlots: [2] }],
     ["invalid missing slot", { readyToConfirm: false, awaitingMaterialSlots: [0] }],
     ["duplicate missing slot", { readyToConfirm: false, awaitingMaterialSlots: [2, 2] }],
@@ -243,11 +246,11 @@ describe("explicit basket station work", () => {
           finish = resolve;
         }),
     );
-    const work = new api.BasketLoadStationWork({
+    const work: Readonly<api.IBasketLoadStationWork> = {
       workId: "empty-old",
       type: api.BasketLoadStationWorkType.ConfirmEmptyBasket,
       readyToConfirm: true,
-    });
+    };
     const screen = await renderInsightPage(
       <LoadStation loadNum={1} queues={[]} completed submitBasketLoadStationCommand={submit} />,
       { currentStatus: explicitBasketWork(work, false) },

@@ -5802,6 +5802,7 @@ export class BasketLoadStationWork implements IBasketLoadStationWork {
   workId!: string;
   type!: BasketLoadStationWorkType;
   readyToConfirm!: boolean;
+  confirmationBlockedReason?: string | undefined;
   awaitingMaterialSlots?: number[];
 
   constructor(data?: IBasketLoadStationWork) {
@@ -5817,6 +5818,7 @@ export class BasketLoadStationWork implements IBasketLoadStationWork {
       this.workId = _data["WorkId"];
       this.type = _data["Type"];
       this.readyToConfirm = _data["ReadyToConfirm"];
+      this.confirmationBlockedReason = _data["ConfirmationBlockedReason"];
       if (Array.isArray(_data["AwaitingMaterialSlots"])) {
         this.awaitingMaterialSlots = [] as any;
         for (let item of _data["AwaitingMaterialSlots"]) this.awaitingMaterialSlots!.push(item);
@@ -5836,6 +5838,7 @@ export class BasketLoadStationWork implements IBasketLoadStationWork {
     data["WorkId"] = this.workId;
     data["Type"] = this.type;
     data["ReadyToConfirm"] = this.readyToConfirm;
+    data["ConfirmationBlockedReason"] = this.confirmationBlockedReason;
     if (Array.isArray(this.awaitingMaterialSlots)) {
       data["AwaitingMaterialSlots"] = [];
       for (let item of this.awaitingMaterialSlots) data["AwaitingMaterialSlots"].push(item);
@@ -5848,6 +5851,7 @@ export interface IBasketLoadStationWork {
   workId: string;
   type: BasketLoadStationWorkType;
   readyToConfirm: boolean;
+  confirmationBlockedReason?: string | undefined;
   awaitingMaterialSlots?: number[];
 }
 
