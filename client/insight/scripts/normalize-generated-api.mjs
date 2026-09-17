@@ -21,8 +21,5 @@ const utcFormatDate = [
 }, originalFormatDate);
 
 if (utcFormatDate !== originalFormatDate) {
-  writeFileSync(
-    apiPath,
-    api.slice(0, functionStart) + utcFormatDate + api.slice(functionEnd),
-  );
+  writeFileSync(apiPath, api.slice(0, functionStart) + utcFormatDate + api.slice(functionEnd));
 }

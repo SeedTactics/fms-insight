@@ -86,6 +86,12 @@ namespace BlackMaple.MachineFramework
     public required bool ReadyToConfirm { get; init; }
 
     /// <summary>
+    /// Current reason confirmation is blocked, while the saved material targets remain visible.
+    /// Omit when ready; this explanation does not replace server-side completion validation.
+    /// </summary>
+    public string? ConfirmationBlockedReason { get; init; }
+
+    /// <summary>
     /// One-based slots awaiting material. Must be empty for ready work and empty-basket assertions.
     /// Material instructions for other slots can remain visible while these slots are pending.
     /// </summary>

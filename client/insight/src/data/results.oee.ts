@@ -216,7 +216,7 @@ export function binSimStationUseByDayAndStat(
       const sorted = mergeSortedIntervals(uses.valuesToAscLazySeq());
       const down = downtimes.get(station) ?? [];
 
-      for (let downIdx = 0, sortedIdx = 0; sortedIdx < sorted.length; ) {
+      for (let downIdx = 0, sortedIdx = 0; sortedIdx < sorted.length;) {
         if (downIdx < down.length && down[downIdx].end <= sorted[sortedIdx].start) {
           downIdx++;
         } else if (downIdx < down.length && down[downIdx].start < sorted[sortedIdx].end) {

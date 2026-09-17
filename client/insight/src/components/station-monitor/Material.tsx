@@ -80,7 +80,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
 import { fmsInformation } from "../../network/server-settings.js";
-import { basketDisplayName } from "../../cell-status/station-cycles.js";
+import { basketDisplayName, basketSlotLabel } from "../../cell-status/station-cycles.js";
 import { materialOperationState } from "../../data/material-operation-policy.js";
 
 export class PartIdenticon extends PureComponent<{
@@ -326,7 +326,9 @@ export function MaterialAction({
       return (
         <MatCardDetail fsize={fsize}>
           Load into {basketName} {mat.action.loadToBasketId ?? ""}
-          {mat.action.loadToBasketSlot !== undefined ? ` slot ${mat.action.loadToBasketSlot}` : ""}
+          {mat.action.loadToBasketSlot !== undefined
+            ? ` slot ${basketSlotLabel(mat.action.loadToBasketSlot)}`
+            : ""}
         </MatCardDetail>
       );
 
@@ -337,7 +339,7 @@ export function MaterialAction({
           <MatCardDetail fsize={fsize}>
             Unload to {basketName} {mat.action.unloadToBasketId}
             {mat.action.unloadToBasketSlot !== undefined
-              ? ` slot ${mat.action.unloadToBasketSlot}`
+              ? ` slot ${basketSlotLabel(mat.action.unloadToBasketSlot)}`
               : ""}
           </MatCardDetail>
         );

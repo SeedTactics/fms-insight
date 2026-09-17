@@ -122,6 +122,17 @@ export function displayStationName(
     : stat_name_and_num(stationGroup, stationNumber);
 }
 
+// Basket slots retain one-based numeric identities in the API and persistence. The operator UI
+// displays them alphabetically: 1=A, 2=B, ..., 26=Z, 27=AA.
+export function basketSlotLabel(slot: number): string {
+  if (!Number.isSafeInteger(slot) || slot <= 0) return String(slot);
+  let label = "";
+  for (let remaining = slot; remaining > 0; remaining = Math.floor((remaining - 1) / 26)) {
+    label = String.fromCharCode(65 + ((remaining - 1) % 26)) + label;
+  }
+  return label;
+}
+
 export function basketDisplayName(basketName: string | null | undefined): string {
   return basketName && basketName.trim().length > 0 ? basketName : "Basket";
 }
