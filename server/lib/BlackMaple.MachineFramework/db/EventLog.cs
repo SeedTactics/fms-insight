@@ -4692,7 +4692,14 @@ namespace BlackMaple.MachineFramework
       updateEvtCmd.Transaction = trans;
 
       removePathDetailsCmd.CommandText =
-        "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process >= $proc";
+        "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process >= $proc "
+        + "AND NOT EXISTS (SELECT 1 FROM stations s JOIN stations_mat m ON m.Counter = s.Counter "
+        + "WHERE m.MaterialID = mat_path_details.MaterialID AND m.Process = mat_path_details.Process "
+        + "AND s.StationLoc IN ("
+        + LogTypesToCheckForNextProcess
+        + ") "
+        + "AND NOT EXISTS (SELECT 1 FROM program_details d WHERE d.Counter = s.Counter "
+        + "AND d.Key = 'PalletCycleInvalidated'))";
       removePathDetailsCmd.Parameters.Add("mid", SqliteType.Integer);
       removePathDetailsCmd.Parameters.Add("proc", SqliteType.Integer);
       removePathDetailsCmd.Transaction = trans;
@@ -4825,7 +4832,8 @@ namespace BlackMaple.MachineFramework
       }
 
       // Later preparation may have assigned a path without a manufacturing event. Clear those
-      // superseded paths too, without invalidating truthful basket handling history.
+      // superseded paths too, but preserve paths supported by surviving manufacturing events.
+      // Another member may have independently advanced beyond the selected machining group.
       foreach (var (affectedMatId, affectedProcess) in affectedFromProcess)
       {
         removePathDetailsCmd.Parameters[0].Value = affectedMatId;

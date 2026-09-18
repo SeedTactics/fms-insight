@@ -261,6 +261,79 @@ public sealed class BasketPreparationSpec
       .IsTrue();
   }
 
+  [Test]
+  [Arguments(true)]
+  [Arguments(false)]
+  public async Task PathCleanupPreservesSurvivingManufacturing(bool separateLaterExecution)
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = config.OpenConnection();
+    var time = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+    var a = new EventLogMaterial
+    {
+      MaterialID = db.AllocateMaterialID("job", "part", 3),
+      Process = 1,
+      Face = 1,
+    };
+    var b = new EventLogMaterial
+    {
+      MaterialID = db.AllocateMaterialID("job", "part", 3),
+      Process = 1,
+      Face = 1,
+    };
+    foreach (var mat in new[] { a, b })
+      for (var process = 1; process <= 3; process++)
+        db.RecordPathForProcess(mat.MaterialID, process, process + 10);
+    db.RecordMachineEnd(
+      [a, b],
+      1,
+      "MC",
+      1,
+      "p1",
+      "",
+      time,
+      TimeSpan.FromMinutes(1),
+      TimeSpan.FromMinutes(1)
+    );
+    var p2 = separateLaterExecution
+      ? ImmutableList.Create(b with { Process = 2 })
+      : ImmutableList.Create(a with { Process = 2 }, b with { Process = 2 });
+    db.RecordMachineEnd(
+      p2,
+      2,
+      "MC",
+      1,
+      "p2",
+      "",
+      time.AddMinutes(1),
+      TimeSpan.FromMinutes(1),
+      TimeSpan.FromMinutes(1)
+    );
+    db.InvalidatePalletCycle(a.MaterialID, separateLaterExecution ? 1 : 2, null);
+    if (separateLaterExecution)
+    {
+      await Assert.That((db.GetMaterialDetails(a.MaterialID)!.Paths?.Count ?? 0)).IsEqualTo(0);
+      await Assert.That(db.GetMaterialDetails(b.MaterialID)!.Paths.Count).IsEqualTo(1);
+      await Assert.That(db.GetMaterialDetails(b.MaterialID)!.Paths[2]).IsEqualTo(12);
+      await Assert.That(db.NextProcessForQueuedMaterial(b.MaterialID)).IsEqualTo(3);
+      await Assert
+        .That(
+          db.GetLogForMaterial(b.MaterialID, includeInvalidatedCycles: false)
+            .Any(e => e.LogType == LogType.MachineCycle && e.Program == "p2")
+        )
+        .IsTrue();
+    }
+    else
+    {
+      foreach (var mat in new[] { a, b })
+      {
+        await Assert.That(db.GetMaterialDetails(mat.MaterialID)!.Paths.Count).IsEqualTo(1);
+        await Assert.That(db.GetMaterialDetails(mat.MaterialID)!.Paths[1]).IsEqualTo(11);
+        await Assert.That(db.NextProcessForQueuedMaterial(mat.MaterialID)).IsEqualTo(2);
+      }
+    }
+  }
+
   private static ImmutableList<EventLogMaterial> AllocateGroup(IRepository db, int slot) =>
     Enumerable
       .Range(0, 3)
