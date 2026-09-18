@@ -1188,11 +1188,20 @@ namespace MazakMachineInterface
       }
       else
       {
-        // no pending loads, search on pallet for current process
+        // With no pending load, a completed unload ends the older assignment even if
+        // its machine/load history remains in this pallet cycle. A later assignment wins.
+        var unloadedAt = oldCycles
+          .Where(c =>
+            c.LogType == LogType.LoadUnloadCycle && !c.StartOfCycle && c.Result == "UNLOAD"
+          )
+          .SelectMany(c => c.Material.Select(m => (m.MaterialID, c.Counter)))
+          .GroupBy(m => m.MaterialID)
+          .ToDictionary(g => g.Key, g => g.Max(m => m.Counter));
         return oldCycles
           .SelectMany(c =>
             (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
-              !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter)
+              (!unloadedAt.TryGetValue(m.MaterialID, out var counter) || c.Counter > counter)
+              && !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter)
             )
           )
           .Where(m =>

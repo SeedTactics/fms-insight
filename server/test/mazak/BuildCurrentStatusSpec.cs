@@ -134,6 +134,123 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task PartialUnloadDoesNotReuseUnloadedIdentityInStatus(bool withLoad)
+    {
+      using var repository = _repoCfg.OpenConnection();
+      var jobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      )!;
+      repository.AddJobs(jobs, null, addAsCopiedToSystem: true);
+      var data = JsonSerializer.Deserialize<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting.data.json")
+        ),
+        jsonSettings
+      )!;
+      var assignment = data.PalletSubStatuses.Single();
+      var schedule = data.Schedules.Single(s => s.Id == assignment.ScheduleID);
+      var unique = MazakPart.ParseCommentInfo(schedule.Comment).Unique;
+      var job = jobs.Jobs.Single(j => j.UniqueStr == unique);
+      var first = repository.AllocateMaterialID(unique, job.PartName, job.Processes.Count);
+      var second = repository.AllocateMaterialID(unique, job.PartName, job.Processes.Count);
+      var now = DateTime.UtcNow;
+      if (withLoad)
+        repository.RecordLoadUnloadComplete(
+          toLoad:
+          [
+            new MaterialToLoadOntoFace
+            {
+              MaterialIDs = [first, second],
+              Process = 1,
+              Path = 1,
+              FaceNum = 1,
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          toUnload: [],
+          previouslyLoaded: [],
+          previouslyUnloaded: [],
+          pallet: assignment.PalletNumber,
+          lulNum: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: now.AddMinutes(-10),
+          externalQueues: ImmutableDictionary<string, string>.Empty
+        );
+      repository.RecordMachineEnd(
+        new[] { first, second }.Select(id => new EventLogMaterial
+        {
+          MaterialID = id,
+          Process = 1,
+          Face = 1,
+        }),
+        assignment.PalletNumber,
+        "MC",
+        1,
+        "program",
+        "complete",
+        now.AddMinutes(-5),
+        TimeSpan.FromMinutes(1),
+        TimeSpan.FromMinutes(1)
+      );
+      ImmutableList<long> Visible() =>
+        BuildCurrentStatus
+          .Build(repository, _settings, _mazakCfg, data, "MC", null, now)
+          .Material.Where(m => m.Location.PalletNum == assignment.PalletNumber)
+          .Select(m => m.MaterialID)
+          .ToImmutableList();
+      await Assert.That(Visible()).IsEquivalentTo([first, second]);
+      repository.RecordPartialLoadUnload(
+        toLoad: [],
+        toUnload:
+        [
+          new MaterialToUnloadFromFace
+          {
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+              first,
+              new UnloadDestination { Queue = "queueCCC" }
+            ),
+            FaceNum = 1,
+            Process = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        pallet: assignment.PalletNumber,
+        lulNum: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: now.AddMinutes(-1),
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      );
+      // Queue exit must not make the earlier machine participant current again.
+      repository.RecordRemoveMaterialFromAllQueues(first, 1);
+      data = data with { PalletSubStatuses = [assignment with { FixQuantity = 1 }] };
+      await Assert.That(Visible()).IsEquivalentTo([second]);
+      repository.RecordPartialLoadUnload(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace
+          {
+            MaterialIDs = [first],
+            Process = 1,
+            Path = 1,
+            FaceNum = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        toUnload: [],
+        pallet: assignment.PalletNumber,
+        lulNum: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: now,
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      );
+      data = data with { PalletSubStatuses = [assignment] };
+      await Assert.That(Visible()).IsEquivalentTo([first, second]);
+    }
+
+    [Test]
     public void TestPalletNumberTranslation()
     {
       var cfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth, StartingPalletNumber = 1 };
