@@ -874,6 +874,8 @@ namespace BlackMaple.MachineFramework
       long,
       UnloadDestination
     > MaterialIDToDestination { get; init; }
+    public ImmutableDictionary<string, string> AdditionalData { get; init; } =
+      ImmutableDictionary<string, string>.Empty;
     public required int FaceNum { get; init; }
     public required int Process { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }

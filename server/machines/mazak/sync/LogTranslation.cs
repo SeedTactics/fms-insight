@@ -428,7 +428,10 @@ namespace MazakMachineInterface
 
       foreach (var face in context.Unloads)
       {
-        var destinations = exact.MaterialForUnloads[face.ForeignId];
+        var resolved =
+          exact.MaterialForUnloads[face.ForeignId]
+          ?? throw new InvalidOperationException("Resolved unload must not be null.");
+        var destinations = resolved.MaterialIDToDestination;
         ValidateOwnedMaterial(face, destinations?.Keys.ToImmutableList());
         if (
           destinations.Keys.Any(id =>
@@ -447,6 +450,7 @@ namespace MazakMachineInterface
           new MaterialToUnloadFromFace
           {
             MaterialIDToDestination = destinations,
+            AdditionalData = resolved.AdditionalData,
             FaceNum = face.Face,
             Process = face.Process,
             ForeignID = face.ForeignId,
@@ -470,7 +474,9 @@ namespace MazakMachineInterface
           )
           .Select(m => m.MaterialID)
           .ToImmutableHashSet();
-        var supplied = group.SelectMany(f => exact.MaterialForUnloads[f.ForeignId].Keys);
+        var supplied = group.SelectMany(f =>
+          exact.MaterialForUnloads[f.ForeignId].MaterialIDToDestination.Keys
+        );
         if (!expected.SetEquals(supplied))
           throw new InvalidOperationException(
             "Resolved unload quantity must match the current pallet material for each job and face."

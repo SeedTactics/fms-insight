@@ -74,6 +74,18 @@ namespace MazakMachineInterface
       ImmutableDictionary<string, string>.Empty;
   }
 
+  public sealed record MazakResolvedUnload
+  {
+    public required ImmutableDictionary<
+      long,
+      UnloadDestination?
+    > MaterialIDToDestination { get; init; }
+
+    // UNLOAD ProgramDetails: callers own key namespacing and must avoid framework-reserved keys.
+    public ImmutableDictionary<string, string> AdditionalData { get; init; } =
+      ImmutableDictionary<string, string>.Empty;
+  }
+
   public abstract record MazakLoadUnloadResolution
   {
     private MazakLoadUnloadResolution() { }
@@ -88,7 +100,7 @@ namespace MazakMachineInterface
       public required ImmutableDictionary<string, MazakResolvedLoad> MaterialForLoads { get; init; }
       public required ImmutableDictionary<
         string,
-        ImmutableDictionary<long, UnloadDestination?>
+        MazakResolvedUnload
       > MaterialForUnloads { get; init; }
       public PalletBasketLoadUnloadCompletion? BasketCompletion { get; init; }
     }

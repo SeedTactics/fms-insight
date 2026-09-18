@@ -1578,10 +1578,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             ),
           }
         ),
-        MaterialForUnloads = ImmutableDictionary<
-          string,
-          ImmutableDictionary<long, UnloadDestination>
-        >.Empty,
+        MaterialForUnloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty,
       };
 
     private LogTranslation.HandleEventResult TranslateChunk(
@@ -1864,17 +1861,21 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                 ),
               }
             );
-          var unloads = ImmutableDictionary<
-            string,
-            ImmutableDictionary<long, UnloadDestination>
-          >.Empty;
+          var unloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty;
           if (mode != "omit-unload")
             unloads = unloads.Add(
               "LG003",
-              ImmutableDictionary<long, UnloadDestination>.Empty.Add(
-                mode == "wrong-unload-material" ? secondLoad : oldMaterial,
-                new UnloadDestination { Queue = "thequeue" }
-              )
+              new MazakResolvedUnload
+              {
+                MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                  mode == "wrong-unload-material" ? secondLoad : oldMaterial,
+                  new UnloadDestination { Queue = "thequeue" }
+                ),
+                AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+                  "transfer-id",
+                  "unload-1"
+                ),
+              }
             );
           return new MazakLoadUnloadResolution.Resolved
           {
@@ -1951,6 +1952,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               .Select(m => m.MaterialID)
           )
           .IsEquivalentTo([firstLoad, secondLoad]);
+        await Assert
+          .That(
+            jobLog
+              .GetLogForForeignID("LG003")
+              .Single(e => e.LogType == LogType.LoadUnloadCycle)
+              .ProgramDetails["transfer-id"]
+          )
+          .IsEqualTo("unload-1");
         await Assert
           .That(jobLog.GetMaterialInAllQueues().Single().MaterialID)
           .IsEqualTo(oldMaterial);
@@ -2165,15 +2174,19 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           new MazakLoadUnloadResolution.Resolved
           {
             MaterialForLoads = ImmutableDictionary<string, MazakResolvedLoad>.Empty,
-            MaterialForUnloads = ImmutableDictionary<
-              string,
-              ImmutableDictionary<long, UnloadDestination>
-            >.Empty.Add(
+            MaterialForUnloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty.Add(
               "LG002",
-              ImmutableDictionary<long, UnloadDestination>.Empty.Add(
-                material,
-                new UnloadDestination()
-              )
+              new MazakResolvedUnload
+              {
+                MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                  material,
+                  new UnloadDestination()
+                ),
+                AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+                  "transfer-id",
+                  "unload-1"
+                ),
+              }
             ),
             BasketCompletion = BasketHandoff(material, true),
           },
