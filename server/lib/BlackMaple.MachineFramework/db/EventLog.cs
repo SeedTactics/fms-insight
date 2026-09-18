@@ -2602,7 +2602,11 @@ namespace BlackMaple.MachineFramework
               {
                 AddToQueue(
                   trans,
-                  material,
+                  // Basket process describes its tooling/preparation, not completed machining.
+                  material with
+                  {
+                    Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
+                  },
                   transfer.DestinationQueue,
                   position: -1,
                   operatorName: null,
@@ -2619,8 +2623,18 @@ namespace BlackMaple.MachineFramework
             var transfer in operation.Transfers.OfType<BasketStationTransfer.LoadOntoBasket>()
           )
           {
+            // Taking prepared material out of a queue must not advance its manufacturing process.
             foreach (var material in transfer.Material)
-              RemoveFromAllQueues(trans, material, operatorName: null, reason: null, timeUTC);
+              RemoveFromAllQueues(
+                trans,
+                material with
+                {
+                  Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
+                },
+                operatorName: null,
+                reason: null,
+                timeUTC
+              );
             RecordBasketStationTransfer(
               transfer,
               loadOntoBasket: true,
@@ -4622,6 +4636,8 @@ namespace BlackMaple.MachineFramework
       };
     }
 
+    // Basket handling and lifecycle rows may combine independent machining groups and may
+    // describe preparation for a process that has not run. Neither advances manufacturing.
     private static readonly string LogTypesToCheckForNextProcess = string.Join(
       ",",
       new int[]
@@ -4630,8 +4646,6 @@ namespace BlackMaple.MachineFramework
         (int)LogType.RemoveFromQueue,
         (int)LogType.LoadUnloadCycle,
         (int)LogType.MachineCycle,
-        (int)LogType.BasketLoadUnload,
-        (int)LogType.BasketCycle,
       }
     );
 
@@ -4687,9 +4701,6 @@ namespace BlackMaple.MachineFramework
       removePathDetailsCmd.Parameters.Add("proc", SqliteType.Integer);
       removePathDetailsCmd.Transaction = trans;
 
-      // Note: 'PalletCycleInvalidated' is used for both pallet and basket
-      // invalidations. The name includes "Pallet" for backwards compatibility with existing
-      // databases, but this key marks invalidation of any cycle (pallet or basket).
       addMessageCmd.CommandText =
         "INSERT OR REPLACE INTO program_details(Counter, Key, Value) VALUES ($cntr,'PalletCycleInvalidated','1')";
       addMessageCmd.Parameters.Add("cntr", SqliteType.Integer);
