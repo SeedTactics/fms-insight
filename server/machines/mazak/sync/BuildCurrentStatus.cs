@@ -1169,7 +1169,11 @@ namespace MazakMachineInterface
         {
           // search on pallet for previous process
           return oldCycles
-            .SelectMany(c => c.Material ?? Enumerable.Empty<LogMaterial>())
+            .SelectMany(c =>
+              (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
+                !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter, c.Pallet)
+              )
+            )
             .Where(m =>
               m != null
               && m.MaterialID >= 0
@@ -1186,7 +1190,11 @@ namespace MazakMachineInterface
       {
         // no pending loads, search on pallet for current process
         return oldCycles
-          .SelectMany(c => c.Material ?? Enumerable.Empty<LogMaterial>())
+          .SelectMany(c =>
+            (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
+              !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter, c.Pallet)
+            )
+          )
           .Where(m =>
             m != null && m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc
           )
