@@ -301,29 +301,6 @@ namespace BlackMaple.MachineFramework.Controllers
       );
     }
 
-    public record MatToPutOnPallet
-    {
-      public required int Pallet { get; init; }
-
-      public required long MaterialIDToSetOnPallet { get; init; }
-    }
-
-    [HttpPut("material/{materialId}/swap-off-pallet")]
-    [ProducesResponseType(typeof(void), 200)]
-    public void SwapMaterialOnPallet(
-      long materialId,
-      [FromBody] MatToPutOnPallet mat,
-      [FromQuery] string? operName = null
-    )
-    {
-      jobAndQueue.SwapMaterialOnPallet(
-        oldMatId: materialId,
-        newMatId: mat.MaterialIDToSetOnPallet,
-        pallet: mat.Pallet,
-        operatorName: operName
-      );
-    }
-
     [HttpDelete("material")]
     [ProducesResponseType(typeof(void), 200)]
     public void BulkRemoveMaterialFromQueues(

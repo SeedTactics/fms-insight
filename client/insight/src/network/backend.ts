@@ -83,11 +83,6 @@ export interface JobAPI {
     operName: string | null,
     request: Readonly<api.ICancelLoadRequest>,
   ): Promise<void>;
-  swapMaterialOnPallet(
-    materialId: number,
-    operName: string | null,
-    mat: Readonly<api.IMatToPutOnPallet>,
-  ): Promise<void>;
   invalidatePalletCycle(
     materialId: number,
     operName: string | null | undefined,

@@ -74,8 +74,6 @@ namespace BlackMaple.MachineFramework.Controllers
     // LoadStation Options
     public bool? AllowChangeWorkorderAtLoadStation { get; init; }
 
-    public bool? AllowSwapSerialAtLoadStation { get; init; }
-
     public bool? AllowInvalidateMaterialAtLoadStation { get; init; }
 
     public ImmutableDictionary<int, string>? LoadStationNames { get; init; }
@@ -183,7 +181,6 @@ namespace BlackMaple.MachineFramework.Controllers
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
         AllowInvalidateMaterialAtLoadStation = _cfg.AllowInvalidateMaterialAtLoadStation,
         AllowInvalidateMaterialOnQueuesPage = _cfg.AllowInvalidateMaterialOnQueuesPage,
-        AllowSwapSerialAtLoadStation = _cfg.AllowSwapSerialAtLoadStation,
         LicenseExpires = _checkLicense?.LicenseExpires(),
         CustomStationMonitorDialogUrl = _cfg.CustomStationMonitorDialogUrl,
         LoadStationNames = _cfg.LoadStationNames,

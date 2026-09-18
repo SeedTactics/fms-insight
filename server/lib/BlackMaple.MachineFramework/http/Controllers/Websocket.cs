@@ -48,8 +48,6 @@ namespace BlackMaple.MachineFramework.Controllers
     public NewJobs? NewJobs { get; init; }
 
     public CurrentStatus? NewCurrentStatus { get; init; }
-
-    public EditMaterialInLogEvents? EditMaterialInLog { get; init; }
   }
 
   public sealed class WebsocketManager : IAsyncDisposable
@@ -135,7 +133,6 @@ namespace BlackMaple.MachineFramework.Controllers
         Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
       jobAndQueue.OnNewCurrentStatus += (status) =>
         Send(new ServerEvent() { NewCurrentStatus = status });
-      jobAndQueue.OnEditMaterialInLog += (o) => Send(new ServerEvent() { EditMaterialInLog = o });
     }
 
     private void Send(ServerEvent val)

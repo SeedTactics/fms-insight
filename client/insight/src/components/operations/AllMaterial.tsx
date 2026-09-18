@@ -70,9 +70,6 @@ import {
   InvalidateCycleDialogButton,
   InvalidateCycleDialogContent,
   InvalidateCycleState,
-  SwapMaterialButtons,
-  SwapMaterialDialogContent,
-  SwapMaterialState,
 } from "../station-monitor/InvalidateCycle.js";
 import {
   horizontalListSortingStrategy,
@@ -374,11 +371,9 @@ function MaterialBinColumn({
 }
 
 const AllMatDialog = memo(function AllMatDialog() {
-  const [swapSt, setSwapSt] = useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = useState<InvalidateCycleState | null>(null);
 
   function onClose() {
-    setSwapSt(null);
     setInvalidateSt(null);
   }
 
@@ -389,7 +384,6 @@ const AllMatDialog = memo(function AllMatDialog() {
       highlightProcsGreaterOrEqualTo={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
-          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
           {invalidateSt !== null ? (
             <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
           ) : null}
@@ -399,7 +393,6 @@ const AllMatDialog = memo(function AllMatDialog() {
         <>
           <QuarantineMatButton onClose={onClose} ignoreOperator />
           <CancelLoadButton onClose={onClose} ignoreOperator />
-          <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} ignoreOperator />
           <InvalidateCycleDialogButton
             st={invalidateSt}
             setState={setInvalidateSt}

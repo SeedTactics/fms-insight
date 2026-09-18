@@ -1319,59 +1319,6 @@ export class JobsClient {
     return Promise.resolve<MaterialDetails>(null as any);
   }
 
-  swapMaterialOnPallet(
-    materialId: number,
-    operName: string | null | undefined,
-    mat: MatToPutOnPallet,
-    signal?: AbortSignal,
-  ): Promise<void> {
-    let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/swap-off-pallet?";
-    if (materialId === undefined || materialId === null)
-      throw new globalThis.Error("The parameter 'materialId' must be defined.");
-    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
-    if (operName !== undefined && operName !== null)
-      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-    url_ = url_.replace(/[?&]$/, "");
-
-    const content_ = JSON.stringify(mat);
-
-    let options_: RequestInit = {
-      body: content_,
-      method: "PUT",
-      signal,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    return this.http.fetch(url_, options_).then((_response: Response) => {
-      return this.processSwapMaterialOnPallet(_response);
-    });
-  }
-
-  protected processSwapMaterialOnPallet(response: Response): Promise<void> {
-    const status = response.status;
-    let _headers: any = {};
-    if (response.headers && response.headers.forEach) {
-      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
-    }
-    if (status === 200) {
-      return response.text().then((_responseText) => {
-        return;
-      });
-    } else if (status !== 200 && status !== 204) {
-      return response.text().then((_responseText) => {
-        return throwException(
-          "An unexpected server error occurred.",
-          status,
-          _responseText,
-          _headers,
-        );
-      });
-    }
-    return Promise.resolve<void>(null as any);
-  }
-
   bulkRemoveMaterialFromQueues(
     operName: string | null | undefined,
     id: number[],
@@ -2958,7 +2905,6 @@ export class FMSInfo implements IFMSInfo {
   customStationMonitorDialogUrl?: string | undefined;
   supportsRebookings?: string | undefined;
   allowChangeWorkorderAtLoadStation?: boolean | undefined;
-  allowSwapSerialAtLoadStation?: boolean | undefined;
   allowInvalidateMaterialAtLoadStation?: boolean | undefined;
   loadStationNames?: { [key: string]: string } | undefined;
   requireScanAtCloseout?: boolean | undefined;
@@ -2997,7 +2943,6 @@ export class FMSInfo implements IFMSInfo {
       this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
       this.supportsRebookings = _data["SupportsRebookings"];
       this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
-      this.allowSwapSerialAtLoadStation = _data["AllowSwapSerialAtLoadStation"];
       this.allowInvalidateMaterialAtLoadStation = _data["AllowInvalidateMaterialAtLoadStation"];
       if (_data["LoadStationNames"]) {
         this.loadStationNames = {} as any;
@@ -3045,7 +2990,6 @@ export class FMSInfo implements IFMSInfo {
     data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
     data["SupportsRebookings"] = this.supportsRebookings;
     data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
-    data["AllowSwapSerialAtLoadStation"] = this.allowSwapSerialAtLoadStation;
     data["AllowInvalidateMaterialAtLoadStation"] = this.allowInvalidateMaterialAtLoadStation;
     if (this.loadStationNames) {
       data["LoadStationNames"] = {};
@@ -3081,7 +3025,6 @@ export interface IFMSInfo {
   customStationMonitorDialogUrl?: string | undefined;
   supportsRebookings?: string | undefined;
   allowChangeWorkorderAtLoadStation?: boolean | undefined;
-  allowSwapSerialAtLoadStation?: boolean | undefined;
   allowInvalidateMaterialAtLoadStation?: boolean | undefined;
   loadStationNames?: { [key: string]: string } | undefined;
   requireScanAtCloseout?: boolean | undefined;
@@ -3104,7 +3047,6 @@ export class ServerEvent implements IServerEvent {
   logEntry?: LogEntry | undefined;
   newJobs?: NewJobs | undefined;
   newCurrentStatus?: CurrentStatus | undefined;
-  editMaterialInLog?: EditMaterialInLogEvents | undefined;
 
   constructor(data?: IServerEvent) {
     if (data) {
@@ -3120,9 +3062,6 @@ export class ServerEvent implements IServerEvent {
       this.newJobs = _data["NewJobs"] ? NewJobs.fromJS(_data["NewJobs"]) : (undefined as any);
       this.newCurrentStatus = _data["NewCurrentStatus"]
         ? CurrentStatus.fromJS(_data["NewCurrentStatus"])
-        : (undefined as any);
-      this.editMaterialInLog = _data["EditMaterialInLog"]
-        ? EditMaterialInLogEvents.fromJS(_data["EditMaterialInLog"])
         : (undefined as any);
     }
   }
@@ -3141,9 +3080,6 @@ export class ServerEvent implements IServerEvent {
     data["NewCurrentStatus"] = this.newCurrentStatus
       ? this.newCurrentStatus.toJSON()
       : (undefined as any);
-    data["EditMaterialInLog"] = this.editMaterialInLog
-      ? this.editMaterialInLog.toJSON()
-      : (undefined as any);
     return data;
   }
 }
@@ -3152,7 +3088,6 @@ export interface IServerEvent {
   logEntry?: LogEntry | undefined;
   newJobs?: NewJobs | undefined;
   newCurrentStatus?: CurrentStatus | undefined;
-  editMaterialInLog?: EditMaterialInLogEvents | undefined;
 }
 
 export class LogEntry implements ILogEntry {
@@ -5989,59 +5924,6 @@ export enum BasketMoveReason {
   Other = "Other",
 }
 
-export class EditMaterialInLogEvents implements IEditMaterialInLogEvents {
-  oldMaterialID!: number;
-  newMaterialID!: number;
-  editedEvents!: LogEntry[];
-
-  constructor(data?: IEditMaterialInLogEvents) {
-    if (data) {
-      for (var property in data) {
-        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
-      }
-    }
-    if (!data) {
-      this.editedEvents = [];
-    }
-  }
-
-  init(_data?: any) {
-    if (_data) {
-      this.oldMaterialID = _data["OldMaterialID"];
-      this.newMaterialID = _data["NewMaterialID"];
-      if (Array.isArray(_data["EditedEvents"])) {
-        this.editedEvents = [] as any;
-        for (let item of _data["EditedEvents"]) this.editedEvents!.push(LogEntry.fromJS(item));
-      }
-    }
-  }
-
-  static fromJS(data: any): EditMaterialInLogEvents {
-    data = typeof data === "object" ? data : {};
-    let result = new EditMaterialInLogEvents();
-    result.init(data);
-    return result;
-  }
-
-  toJSON(data?: any) {
-    data = typeof data === "object" ? data : {};
-    data["OldMaterialID"] = this.oldMaterialID;
-    data["NewMaterialID"] = this.newMaterialID;
-    if (Array.isArray(this.editedEvents)) {
-      data["EditedEvents"] = [];
-      for (let item of this.editedEvents)
-        data["EditedEvents"].push(item ? item.toJSON() : (undefined as any));
-    }
-    return data;
-  }
-}
-
-export interface IEditMaterialInLogEvents {
-  oldMaterialID: number;
-  newMaterialID: number;
-  editedEvents: LogEntry[];
-}
-
 export class ProblemDetails implements IProblemDetails {
   type?: string | undefined;
   title?: string | undefined;
@@ -6854,45 +6736,6 @@ export class CancelLoadRequest implements ICancelLoadRequest {
 export interface ICancelLoadRequest {
   expectedLoadCancellationId: string;
   reason?: string | undefined;
-}
-
-export class MatToPutOnPallet implements IMatToPutOnPallet {
-  pallet!: number;
-  materialIDToSetOnPallet!: number;
-
-  constructor(data?: IMatToPutOnPallet) {
-    if (data) {
-      for (var property in data) {
-        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
-      }
-    }
-  }
-
-  init(_data?: any) {
-    if (_data) {
-      this.pallet = _data["Pallet"];
-      this.materialIDToSetOnPallet = _data["MaterialIDToSetOnPallet"];
-    }
-  }
-
-  static fromJS(data: any): MatToPutOnPallet {
-    data = typeof data === "object" ? data : {};
-    let result = new MatToPutOnPallet();
-    result.init(data);
-    return result;
-  }
-
-  toJSON(data?: any) {
-    data = typeof data === "object" ? data : {};
-    data["Pallet"] = this.pallet;
-    data["MaterialIDToSetOnPallet"] = this.materialIDToSetOnPallet;
-    return data;
-  }
-}
-
-export interface IMatToPutOnPallet {
-  pallet: number;
-  materialIDToSetOnPallet: number;
 }
 
 export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {

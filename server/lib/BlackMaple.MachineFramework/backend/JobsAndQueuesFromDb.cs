@@ -57,7 +57,6 @@ namespace BlackMaple.MachineFramework
 
   public delegate void NewCurrentStatus(CurrentStatus status);
   public delegate void NewJobsDelegate(NewJobs j);
-  public delegate void EditMaterialInLogDelegate(EditMaterialInLogEvents o);
 
   public interface IJobAndQueueControl
   {
@@ -156,14 +155,6 @@ namespace BlackMaple.MachineFramework
 
     /// Remove material only from a human-controlled waiting queue.
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName = null);
-
-    void SwapMaterialOnPallet(
-      int pallet,
-      long oldMatId,
-      long newMatId,
-      string? operatorName = null
-    );
-    event EditMaterialInLogDelegate? OnEditMaterialInLog;
 
     /// Reject a current add-to-queue proposal by invalidating its latest process or all processes.
     MaterialDetails? InvalidatePalletCycle(
@@ -611,7 +602,6 @@ namespace BlackMaple.MachineFramework
 
 
     #region Queues
-    public event EditMaterialInLogDelegate? OnEditMaterialInLog;
 
     public List<InProcessMaterial> AddUnallocatedCastingToQueue(
       string casting,
@@ -1058,38 +1048,6 @@ namespace BlackMaple.MachineFramework
           reason
         );
         _consumedLoadCancellationIds = _consumedLoadCancellationIds.Add(expectedLoadCancellationId);
-      }
-
-      RecalculateCellState();
-    }
-
-    public void SwapMaterialOnPallet(
-      int pallet,
-      long oldMatId,
-      long newMatId,
-      string? operatorName = null
-    )
-    {
-      Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
-
-      using (var logDb = _repo.OpenConnection())
-      {
-        var o = logDb.SwapMaterialInCurrentPalletCycle(
-          pallet: pallet,
-          oldMatId: oldMatId,
-          newMatId: newMatId,
-          operatorName: operatorName,
-          quarantineQueue: _settings.QuarantineQueue
-        );
-
-        OnEditMaterialInLog?.Invoke(
-          new EditMaterialInLogEvents()
-          {
-            OldMaterialID = oldMatId,
-            NewMaterialID = newMatId,
-            EditedEvents = o.ChangedLogEntries,
-          }
-        );
       }
 
       RecalculateCellState();

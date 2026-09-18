@@ -94,9 +94,9 @@ quarantine queue. That material can then be re-introduced back into the queue so
 FMS Insight matches the material on the shop floor. In addition, FMS Insight allows the ability to
 invalidate the inadvertent load events that were created.
 
-Finally, in certain situations depending on the specific configuration of the jobs and queues, FMS
-Insight supports a serial swap. FMS Insight assumes the material that is loaded is the first
-material in the queue which matches the job the cell controller expects. If the serial actually
-loaded is different but the job and details match, the supervisor can swap the two serials on the
-supervisor's material page. This is a data-only change and no change is made to the cell controller.
-If a swap cannot be performed, the material must be quarantined and invalidated as described above.
+Insight does not reassign recorded pallet manufacturing history from one material identity to
+another. If machining was attributed to the wrong identity, record an explanatory operator note and
+use the installation's traceability exception procedure. Quarantine, invalidation, and readmission
+do not transfer that manufacturing result to a different identity. Do not repeat machining solely to
+repair the record. Ordinary serial-label assignment remains available when the tracked material
+identity is correct and only its label needs correction.

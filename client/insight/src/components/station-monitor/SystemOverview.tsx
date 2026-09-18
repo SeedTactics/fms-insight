@@ -72,9 +72,6 @@ import {
   InvalidateCycleDialogButton,
   InvalidateCycleDialogContent,
   InvalidateCycleState,
-  SwapMaterialButtons,
-  SwapMaterialDialogContent,
-  SwapMaterialState,
 } from "./InvalidateCycle.js";
 import { CancelLoadButton } from "./CancelLoadButton.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
@@ -1555,11 +1552,9 @@ const SystemOverviewMaterialDialog = memo(function SystemOverviewMaterialDialog(
 }: {
   ignoreOperator?: boolean;
 }) {
-  const [swapSt, setSwapSt] = useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = useState<InvalidateCycleState | null>(null);
 
   function onClose() {
-    setSwapSt(null);
     setInvalidateSt(null);
   }
 
@@ -1570,7 +1565,6 @@ const SystemOverviewMaterialDialog = memo(function SystemOverviewMaterialDialog(
       highlightProcsGreaterOrEqualTo={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
-          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
           {invalidateSt !== null ? (
             <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
           ) : null}
@@ -1581,12 +1575,6 @@ const SystemOverviewMaterialDialog = memo(function SystemOverviewMaterialDialog(
           <QuarantineMatButton ignoreOperator={ignoreOperator} />
           <CancelLoadButton onClose={onClose} ignoreOperator={ignoreOperator} />
           <SignalInspectionButton />
-          <SwapMaterialButtons
-            st={swapSt}
-            setState={setSwapSt}
-            onClose={onClose}
-            ignoreOperator={ignoreOperator}
-          />
           <InvalidateCycleDialogButton
             st={invalidateSt}
             setState={setInvalidateSt}
