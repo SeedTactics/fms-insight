@@ -258,6 +258,10 @@ namespace MazakMachineInterface
           );
 
           var oldCycles = jobDB.CurrentPalletLog(palName);
+          var removals = MazakMaterialHistory.LoadRemovalCounters(
+            jobDB,
+            oldCycles.SelectMany(e => e.Material).Select(m => m.MaterialID)
+          );
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -288,7 +292,8 @@ namespace MazakMachineInterface
                 palletWithUnprocessedUnloads == palName,
                 job,
                 palFmsProc,
-                jobDB
+                jobDB,
+                removals
               )
             );
 
@@ -428,6 +433,7 @@ namespace MazakMachineInterface
               material,
               jobsByUniq,
               oldCycles,
+              removals,
               partNameToNumProc,
               fmsSettings
             );
@@ -829,6 +835,7 @@ namespace MazakMachineInterface
       IList<InProcessMaterial> material,
       IReadOnlyDictionary<string, CurrentJob> jobsByUniq,
       List<BlackMaple.MachineFramework.LogEntry> oldCycles,
+      IReadOnlyDictionary<long, long> removals,
       IReadOnlyDictionary<string, int> partNameToNumProc,
       FMSSettings fmsSettings
     )
@@ -860,7 +867,7 @@ namespace MazakMachineInterface
         var fmsUnloadProc = unloadComment.JobProcessForMazakProcess(unload.Process);
 
         var matIDs = new Queue<long>(
-          FindMatIDsFromOldCycles(oldCycles, false, job, fmsUnloadProc, log)
+          FindMatIDsFromOldCycles(oldCycles, false, job, fmsUnloadProc, log, removals)
         );
 
         InProcessMaterialAction loadAction = null;
@@ -1133,7 +1140,8 @@ namespace MazakMachineInterface
       bool hasPendingLoads,
       CurrentJob job,
       int proc,
-      IRepository log
+      IRepository log,
+      IReadOnlyDictionary<long, long> removals
     )
     {
       if (job == null)
@@ -1169,7 +1177,11 @@ namespace MazakMachineInterface
         {
           // search on pallet for previous process
           return oldCycles
-            .SelectMany(c => c.Material ?? Enumerable.Empty<LogMaterial>())
+            .SelectMany(c =>
+              (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
+                !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, c.Counter)
+              )
+            )
             .Where(m =>
               m != null
               && m.MaterialID >= 0
@@ -1184,9 +1196,22 @@ namespace MazakMachineInterface
       }
       else
       {
-        // no pending loads, search on pallet for current process
+        // With no pending load, a completed unload ends the older assignment even if
+        // its machine/load history remains in this pallet cycle. A later assignment wins.
+        var unloadedAt = oldCycles
+          .Where(c =>
+            c.LogType == LogType.LoadUnloadCycle && !c.StartOfCycle && c.Result == "UNLOAD"
+          )
+          .SelectMany(c => c.Material.Select(m => (m.MaterialID, c.Counter)))
+          .GroupBy(m => m.MaterialID)
+          .ToDictionary(g => g.Key, g => g.Max(m => m.Counter));
         return oldCycles
-          .SelectMany(c => c.Material ?? Enumerable.Empty<LogMaterial>())
+          .SelectMany(c =>
+            (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
+              (!unloadedAt.TryGetValue(m.MaterialID, out var counter) || c.Counter > counter)
+              && !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, c.Counter)
+            )
+          )
           .Where(m =>
             m != null && m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc
           )

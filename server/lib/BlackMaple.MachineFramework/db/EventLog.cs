@@ -2577,7 +2577,11 @@ namespace BlackMaple.MachineFramework
               {
                 AddToQueue(
                   trans,
-                  material,
+                  // Basket process describes its tooling/preparation, not completed machining.
+                  material with
+                  {
+                    Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
+                  },
                   transfer.DestinationQueue,
                   position: -1,
                   operatorName: null,
@@ -2594,8 +2598,18 @@ namespace BlackMaple.MachineFramework
             var transfer in operation.Transfers.OfType<BasketStationTransfer.LoadOntoBasket>()
           )
           {
+            // Taking prepared material out of a queue must not advance its manufacturing process.
             foreach (var material in transfer.Material)
-              RemoveFromAllQueues(trans, material, operatorName: null, reason: null, timeUTC);
+              RemoveFromAllQueues(
+                trans,
+                material with
+                {
+                  Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
+                },
+                operatorName: null,
+                reason: null,
+                timeUTC
+              );
             RecordBasketStationTransfer(
               transfer,
               loadOntoBasket: true,
@@ -3095,32 +3109,28 @@ namespace BlackMaple.MachineFramework
           );
         }
 
-        logs.Add(
-          AddLogEntry(
-            trans,
-            new NewEventLogEntry()
-            {
-              Material = face.MaterialIDToDestination.Keys.Select(m => new EventLogMaterial()
-              {
-                MaterialID = m,
-                Face = face.FaceNum,
-                Process = face.Process,
-              }),
-              Pallet = pallet,
-              LogType = LogType.LoadUnloadCycle,
-              LocationName = "L/U",
-              LocationNum = lulNum,
-              Program = "UNLOAD",
-              StartOfCycle = false,
-              EndTimeUTC = timeUTC,
-              ElapsedTime = elapsed,
-              ActiveOperationTime = face.ActiveOperationTime,
-              Result = "UNLOAD",
-            },
-            face.ForeignID,
-            face.OriginalMessage
-          )
-        );
+        var unloadLog = new NewEventLogEntry()
+        {
+          Material = face.MaterialIDToDestination.Keys.Select(m => new EventLogMaterial()
+          {
+            MaterialID = m,
+            Face = face.FaceNum,
+            Process = face.Process,
+          }),
+          Pallet = pallet,
+          LogType = LogType.LoadUnloadCycle,
+          LocationName = "L/U",
+          LocationNum = lulNum,
+          Program = "UNLOAD",
+          StartOfCycle = false,
+          EndTimeUTC = timeUTC,
+          ElapsedTime = elapsed,
+          ActiveOperationTime = face.ActiveOperationTime,
+          Result = "UNLOAD",
+        };
+        foreach (var detail in face.AdditionalData ?? ImmutableDictionary<string, string>.Empty)
+          unloadLog.ProgramDetails.Add(detail.Key, detail.Value ?? "");
+        logs.Add(AddLogEntry(trans, unloadLog, face.ForeignID, face.OriginalMessage));
       }
     }
 
@@ -4322,6 +4332,8 @@ namespace BlackMaple.MachineFramework
       return AddLogEntry(trans, log, null, null);
     }
 
+    // Basket handling and lifecycle rows may combine independent machining groups and may
+    // describe preparation for a process that has not run. Neither advances manufacturing.
     private static readonly string LogTypesToCheckForNextProcess = string.Join(
       ",",
       new int[]
@@ -4330,8 +4342,6 @@ namespace BlackMaple.MachineFramework
         (int)LogType.RemoveFromQueue,
         (int)LogType.LoadUnloadCycle,
         (int)LogType.MachineCycle,
-        (int)LogType.BasketLoadUnload,
-        (int)LogType.BasketCycle,
       }
     );
 
@@ -4382,14 +4392,18 @@ namespace BlackMaple.MachineFramework
       updateEvtCmd.Transaction = trans;
 
       removePathDetailsCmd.CommandText =
-        "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
+        "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process >= $proc "
+        + "AND NOT EXISTS (SELECT 1 FROM stations s JOIN stations_mat m ON m.Counter = s.Counter "
+        + "WHERE m.MaterialID = mat_path_details.MaterialID AND m.Process = mat_path_details.Process "
+        + "AND s.StationLoc IN ("
+        + LogTypesToCheckForNextProcess
+        + ") "
+        + "AND NOT EXISTS (SELECT 1 FROM program_details d WHERE d.Counter = s.Counter "
+        + "AND d.Key = 'PalletCycleInvalidated'))";
       removePathDetailsCmd.Parameters.Add("mid", SqliteType.Integer);
       removePathDetailsCmd.Parameters.Add("proc", SqliteType.Integer);
       removePathDetailsCmd.Transaction = trans;
 
-      // Note: 'PalletCycleInvalidated' is used for both pallet and basket
-      // invalidations. The name includes "Pallet" for backwards compatibility with existing
-      // databases, but this key marks invalidation of any cycle (pallet or basket).
       addMessageCmd.CommandText =
         "INSERT OR REPLACE INTO program_details(Counter, Key, Value) VALUES ($cntr,'PalletCycleInvalidated','1')";
       addMessageCmd.Parameters.Add("cntr", SqliteType.Integer);
@@ -4476,6 +4490,38 @@ namespace BlackMaple.MachineFramework
         .ToImmutableList();
       validateAffectedMaterials?.Invoke(affectedMaterials);
 
+      // Manufacturing events establish the affected group. Its members also have individual
+      // queue records; leaving those valid would retain progress for every member except the
+      // selected identity. Include those records without expanding manufacturing membership.
+      using var getQueueEvents = _connection.CreateCommand();
+      getQueueEvents.Transaction = trans;
+      getQueueEvents.CommandText =
+        "SELECT s.Counter FROM stations s JOIN stations_mat m ON m.Counter = s.Counter "
+        + "WHERE m.MaterialID = $mid AND m.Process >= $proc "
+        + "AND s.StationLoc IN ($add, $remove) AND NOT EXISTS ("
+        + "SELECT 1 FROM program_details d WHERE d.Counter = s.Counter AND d.Key = 'PalletCycleInvalidated')";
+      getQueueEvents.Parameters.Add("mid", SqliteType.Integer);
+      getQueueEvents.Parameters.Add("proc", SqliteType.Integer);
+      getQueueEvents.Parameters.Add("add", SqliteType.Integer).Value = (int)LogType.AddToQueue;
+      getQueueEvents.Parameters.Add("remove", SqliteType.Integer).Value = (int)
+        LogType.RemoveFromQueue;
+      var affectedFromProcess = allMatIds
+        .GroupBy(m => m.matId)
+        .ToImmutableDictionary(g => g.Key, g => g.Min(m => m.proc));
+      foreach (var (id, firstProcess) in affectedFromProcess)
+      {
+        getQueueEvents.Parameters[0].Value = id;
+        getQueueEvents.Parameters[1].Value = firstProcess;
+        using var reader = getQueueEvents.ExecuteReader();
+        while (reader.Read())
+        {
+          var counter = reader.GetInt64(0);
+          if (!invalidatedCntrs.Contains(counter))
+            invalidatedCntrs.Add(counter);
+        }
+      }
+      invalidatedCntrs.Sort();
+
       foreach (var cntr in invalidatedCntrs)
       {
         updateEvtCmd.Parameters[0].Value = cntr;
@@ -4485,7 +4531,10 @@ namespace BlackMaple.MachineFramework
         addMessageCmd.ExecuteNonQuery();
       }
 
-      foreach (var (affectedMatId, affectedProcess) in allMatIds)
+      // Later preparation may have assigned a path without a manufacturing event. Clear those
+      // superseded paths too, but preserve paths supported by surviving manufacturing events.
+      // Another member may have independently advanced beyond the selected machining group.
+      foreach (var (affectedMatId, affectedProcess) in affectedFromProcess)
       {
         removePathDetailsCmd.Parameters[0].Value = affectedMatId;
         removePathDetailsCmd.Parameters[1].Value = affectedProcess;

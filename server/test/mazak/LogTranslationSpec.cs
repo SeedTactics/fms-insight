@@ -1511,10 +1511,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             ),
           }
         ),
-        MaterialForUnloads = ImmutableDictionary<
-          string,
-          ImmutableDictionary<long, UnloadDestination>
-        >.Empty,
+        MaterialForUnloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty,
       };
 
     private LogTranslation.HandleEventResult TranslateChunk(
@@ -1797,17 +1794,21 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                 ),
               }
             );
-          var unloads = ImmutableDictionary<
-            string,
-            ImmutableDictionary<long, UnloadDestination>
-          >.Empty;
+          var unloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty;
           if (mode != "omit-unload")
             unloads = unloads.Add(
               "LG003",
-              ImmutableDictionary<long, UnloadDestination>.Empty.Add(
-                mode == "wrong-unload-material" ? secondLoad : oldMaterial,
-                new UnloadDestination { Queue = "thequeue" }
-              )
+              new MazakResolvedUnload
+              {
+                MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                  mode == "wrong-unload-material" ? secondLoad : oldMaterial,
+                  new UnloadDestination { Queue = "thequeue" }
+                ),
+                AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+                  "transfer-id",
+                  "unload-1"
+                ),
+              }
             );
           return new MazakLoadUnloadResolution.Resolved
           {
@@ -1884,6 +1885,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               .Select(m => m.MaterialID)
           )
           .IsEquivalentTo([firstLoad, secondLoad]);
+        await Assert
+          .That(
+            jobLog
+              .GetLogForForeignID("LG003")
+              .Single(e => e.LogType == LogType.LoadUnloadCycle)
+              .ProgramDetails["transfer-id"]
+          )
+          .IsEqualTo("unload-1");
         await Assert
           .That(jobLog.GetMaterialInAllQueues().Single().MaterialID)
           .IsEqualTo(oldMaterial);
@@ -2058,12 +2067,131 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    [Arguments(false, 1)]
-    [Arguments(false, 2)]
-    [Arguments(true, 2)]
+    public async Task StockerArrivalReusesMachiningIdentityWithoutLoadHistory()
+    {
+      AddTestJob("owned-job", "owned-part", [Process(), Process()]);
+      var time = DateTime.UtcNow.AddHours(-1);
+      TranslateChunk(
+        LoadEndEvent(time, "owned-part") with
+        {
+          Code = LogCode.MachineCycleStart,
+          ForeignID = "MC001",
+        }
+      );
+      TranslateChunk(
+        LoadEndEvent(time.AddMinutes(2), "owned-part") with
+        {
+          Code = LogCode.MachineCycleEnd,
+          ForeignID = "MC002",
+        },
+        FollowingEvent(time.AddMinutes(2))
+      );
+      var machined = CurrentPalletLog(1)
+        .Single(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle)
+        .Material;
+      TranslateChunk(
+        new MazakMachineInterface.LogEntry
+        {
+          TimeUTC = time.AddMinutes(3),
+          Code = LogCode.PalletMoveComplete,
+          ForeignID = "ST003",
+          Pallet = 1,
+          FromPosition = "M012",
+          TargetPosition = "S003",
+        }
+      );
+      var stocker = CurrentPalletLog(1)
+        .Single(e => e.LogType == LogType.PalletInStocker && e.StartOfCycle && e.LocationNum == 3);
+      await Assert
+        .That(stocker.Material.Select(m => m.MaterialID))
+        .IsEquivalentTo(machined.Select(m => m.MaterialID));
+      await Assert.That(stocker.StartOfCycle).IsTrue();
+      await Assert.That(stocker.LocationNum).IsEqualTo(3);
+      await Assert
+        .That(
+          jobLog
+            .GetLogForMaterial(machined.Single().MaterialID)
+            .Any(e => e.LogType == LogType.LoadUnloadCycle)
+        )
+        .IsFalse();
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task RemovalUsesMachiningIdentityUnlessItWasAlreadyUnloaded(bool unloaded)
+    {
+      AddTestJob("owned-job", "owned-part", [Process(), Process()]);
+      var time = DateTime.UtcNow.AddHours(-1);
+      TranslateChunk(
+        LoadEndEvent(time, "owned-part") with
+        {
+          Code = LogCode.MachineCycleStart,
+          ForeignID = "MC001",
+        }
+      );
+      TranslateChunk(
+        LoadEndEvent(time.AddMinutes(2), "owned-part") with
+        {
+          Code = LogCode.MachineCycleEnd,
+          ForeignID = "MC002",
+        },
+        FollowingEvent(time.AddMinutes(2))
+      );
+      var id = CurrentPalletLog(1)
+        .Single(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle)
+        .Material.Single()
+        .MaterialID;
+      await Assert
+        .That(jobLog.GetLogForMaterial(id).Any(e => e.LogType == LogType.LoadUnloadCycle))
+        .IsFalse();
+      if (unloaded)
+      {
+        // A completed face UNLOAD can precede the final pallet-cycle boundary. Its old machining
+        // event remains in current-cycle history, but no longer establishes that face's ownership.
+        jobLog.RecordPartialLoadUnload(
+          toLoad: [],
+          toUnload:
+          [
+            new MaterialToUnloadFromFace
+            {
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                id,
+                new UnloadDestination { Queue = "output" }
+              ),
+              Process = 1,
+              FaceNum = 1,
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          pallet: 1,
+          lulNum: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: time.AddMinutes(3),
+          externalQueues: ImmutableDictionary<string, string>.Empty
+        );
+        jobLog.RecordRemoveMaterialFromAllQueues(id, 1);
+      }
+      SetPallet(1, atLoadStation: false);
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsEqualTo(!unloaded);
+      await Assert
+        .That(jobLog.GetLogForMaterial(id).Count(e => e.Program == "MaterialMissingOnPallet"))
+        .IsEqualTo(unloaded ? 0 : 1);
+      jobLog.RecordRemoveMaterialFromAllQueues(id, 1);
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsFalse();
+      await Assert.That(jobLog.IsMaterialInQueue(id)).IsFalse();
+    }
+
+    [Test]
+    [Arguments(false, 1, false)]
+    [Arguments(false, 2, false)]
+    [Arguments(true, 2, false)]
+    [Arguments(false, 2, true)]
+    [Arguments(true, 2, true)]
     public async Task ExactBasketUnloadBypassesOutputQueueAndPreservesAtomicity(
       bool conflict,
-      int processes
+      int processes,
+      bool missingLoad
     )
     {
       var firstProcess = new ProcessInfo
@@ -2076,10 +2204,19 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         processes == 1 ? [firstProcess] : [firstProcess, Process()]
       );
       var time = DateTime.UtcNow.AddHours(-1);
+      if (missingLoad)
+        TranslateChunk(
+          LoadEndEvent(time.AddMinutes(-2), "owned-part") with
+          {
+            ForeignID = "LF000",
+            Code = LogCode.MachineCycleStart,
+          }
+        );
       TranslateChunk(
         LoadEndEvent(time, "owned-part") with
         {
           ForeignID = "LG000",
+          Code = missingLoad ? LogCode.MachineCycleEnd : LogCode.LoadEnd,
         },
         FollowingEvent(time) with
         {
@@ -2087,7 +2224,10 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         }
       );
       var material = CurrentPalletLog(1)
-        .Single(l => l.LogType == LogType.LoadUnloadCycle)
+        .Single(l =>
+          !l.StartOfCycle
+          && l.LogType == (missingLoad ? LogType.MachineCycle : LogType.LoadUnloadCycle)
+        )
         .Material.Single()
         .MaterialID;
       InitializeBasket(conflict ? OccupiedBasket(material) : EmptyBasket());
@@ -2098,15 +2238,19 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           new MazakLoadUnloadResolution.Resolved
           {
             MaterialForLoads = ImmutableDictionary<string, MazakResolvedLoad>.Empty,
-            MaterialForUnloads = ImmutableDictionary<
-              string,
-              ImmutableDictionary<long, UnloadDestination>
-            >.Empty.Add(
+            MaterialForUnloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty.Add(
               "LG002",
-              ImmutableDictionary<long, UnloadDestination>.Empty.Add(
-                material,
-                new UnloadDestination()
-              )
+              new MazakResolvedUnload
+              {
+                MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                  material,
+                  new UnloadDestination()
+                ),
+                AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+                  "transfer-id",
+                  "unload-1"
+                ),
+              }
             ),
             BasketCompletion = BasketHandoff(material, true),
           },
@@ -5007,6 +5151,109 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       StockerEnd(new[] { m1proc2 }, offset: 30, stocker: 3, waitForMachine: true, elapMin: 5);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Test]
+    [Arguments(1, false)]
+    [Arguments(100, false)]
+    [Arguments(1, true)]
+    [Arguments(100, true)]
+    public async Task RemovedMaterialStaysReleasedAfterQueueExit(
+      int startingPallet,
+      bool missingLoad
+    )
+    {
+      var allowed = false;
+      mazakCfg = mazakCfg with
+      {
+        StartingPalletNumber = startingPallet,
+        CanQuarantineMissingMaterial = pallet => pallet == startingPallet + 2 && allowed,
+      };
+      var mat = new EventLogMaterial
+      {
+        MaterialID = jobLog.AllocateMaterialID("job", "part", 2),
+        Process = 2,
+        Face = 1,
+      };
+      if (missingLoad)
+        jobLog.RecordMachineEnd(
+          [mat],
+          startingPallet + 2,
+          "MC",
+          1,
+          "P2",
+          "complete",
+          DateTime.UtcNow.AddMinutes(-10),
+          TimeSpan.FromMinutes(2),
+          TimeSpan.FromMinutes(2)
+        );
+      else
+        jobLog.RecordLoadUnloadComplete(
+          toLoad:
+          [
+            new MaterialToLoadOntoFace
+            {
+              MaterialIDs = [mat.MaterialID],
+              Process = 2,
+              FaceNum = 1,
+              Path = 1,
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          toUnload: [],
+          previouslyLoaded: [],
+          previouslyUnloaded: [],
+          pallet: startingPallet + 2,
+          lulNum: 1,
+          timeUTC: DateTime.UtcNow.AddMinutes(-10),
+          totalElapsed: TimeSpan.Zero,
+          externalQueues: ImmutableDictionary<string, string>.Empty
+        );
+      SetPallet(3, atLoadStation: false);
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsFalse();
+      allowed = true;
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsTrue();
+      await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsTrue();
+      jobLog.RecordRemoveMaterialFromAllQueues(mat);
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsFalse();
+      await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsFalse();
+      jobLog.InvalidatePalletCycle(mat.MaterialID, 2, null);
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsFalse();
+      await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsFalse();
+      // A new actual load establishes a new assignment; its later removal is detected again.
+      jobLog.RecordLoadUnloadComplete(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace
+          {
+            MaterialIDs = [mat.MaterialID],
+            Process = 2,
+            FaceNum = 1,
+            Path = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        toUnload: [],
+        previouslyLoaded: [],
+        previouslyUnloaded: [],
+        pallet: startingPallet + 2,
+        lulNum: 1,
+        timeUTC: DateTime.UtcNow,
+        totalElapsed: TimeSpan.Zero,
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      );
+      var latest = jobLog.GetLogForMaterial(mat.MaterialID).Max(e => e.Counter);
+      await Assert
+        .That(
+          MazakMaterialHistory.WasRemovedAfter(
+            MazakMaterialHistory.LoadRemovalCounters(jobLog, [mat.MaterialID]),
+            mat.MaterialID,
+            latest
+          )
+        )
+        .IsFalse();
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsTrue();
+      await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsTrue();
     }
 
     [Test]

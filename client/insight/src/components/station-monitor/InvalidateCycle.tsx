@@ -74,8 +74,6 @@ const invalidatableEventTypes = LazySeq.of([
   LogType.RemoveFromQueue,
   LogType.LoadUnloadCycle,
   LogType.MachineCycle,
-  LogType.BasketLoadUnload,
-  LogType.BasketCycle,
 ]).toRSet((eventType) => eventType);
 
 export function affectedMaterialForInvalidation(

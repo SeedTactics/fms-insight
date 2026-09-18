@@ -408,19 +408,8 @@ namespace MazakMachineInterface
           "Resolution must cover every raw L/U event exactly once."
         );
 
-      // Current-cycle completed load/unload records are manufacturing facts; do not reconstruct
-      // identities from machining, raw Mazak history or the ordinary allocation fallback.
-      var onPallet = cycle
-        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
-        .OrderBy(e => e.Counter)
-        .Aggregate(
-          ImmutableDictionary<long, LogMaterial>.Empty,
-          (current, e) =>
-            e.Result == "LOAD"
-              ? current.SetItems(e.Material.Select(m => KeyValuePair.Create(m.MaterialID, m)))
-            : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
-            : current
-        );
+      // The same committed placement evidence drives exact transfers and missing-material cleanup.
+      var onPallet = GetAllMaterialOnPallet(cycle).ToImmutableDictionary(m => m.MaterialID);
       var loaded = ImmutableHashSet<long>.Empty;
       var unloaded = ImmutableHashSet<long>.Empty;
       var toLoad = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
@@ -428,7 +417,10 @@ namespace MazakMachineInterface
 
       foreach (var face in context.Unloads)
       {
-        var destinations = exact.MaterialForUnloads[face.ForeignId];
+        var resolved =
+          exact.MaterialForUnloads[face.ForeignId]
+          ?? throw new InvalidOperationException("Resolved unload must not be null.");
+        var destinations = resolved.MaterialIDToDestination;
         ValidateOwnedMaterial(face, destinations?.Keys.ToImmutableList());
         if (
           destinations.Keys.Any(id =>
@@ -447,6 +439,7 @@ namespace MazakMachineInterface
           new MaterialToUnloadFromFace
           {
             MaterialIDToDestination = destinations,
+            AdditionalData = resolved.AdditionalData,
             FaceNum = face.Face,
             Process = face.Process,
             ForeignID = face.ForeignId,
@@ -470,7 +463,9 @@ namespace MazakMachineInterface
           )
           .Select(m => m.MaterialID)
           .ToImmutableHashSet();
-        var supplied = group.SelectMany(f => exact.MaterialForUnloads[f.ForeignId].Keys);
+        var supplied = group.SelectMany(f =>
+          exact.MaterialForUnloads[f.ForeignId].MaterialIDToDestination.Keys
+        );
         if (!expected.SetEquals(supplied))
           throw new InvalidOperationException(
             "Resolved unload quantity must match the current pallet material for each job and face."
@@ -847,11 +842,33 @@ namespace MazakMachineInterface
     #region Material
     private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents)
     {
+      var removals = MazakMaterialHistory.LoadRemovalCounters(
+        repo,
+        oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
+      );
+      // Actual machining can establish identity when the LOAD was unavailable. It fills only
+      // missing identities: an existing LOAD retains its raw face/addressing information.
       return oldEvents
-        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
-        .SelectMany(e => e.Material)
-        .Where(m => !repo.IsMaterialInQueue(m.MaterialID))
-        .DistinctBy(m => m.MaterialID)
+        .Where(e => !e.StartOfCycle && e.LogType is LogType.LoadUnloadCycle or LogType.MachineCycle)
+        .OrderBy(e => e.Counter)
+        .Aggregate(
+          ImmutableDictionary<long, LogMaterial>.Empty,
+          (current, e) =>
+            e.Result == "LOAD" || e.LogType == LogType.MachineCycle
+              ? current.SetItems(
+                e.Material.Where(m =>
+                    e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
+                  )
+                  .Where(m =>
+                    !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, e.Counter)
+                  )
+                  .Select(m => KeyValuePair.Create(m.MaterialID, m))
+              )
+            : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
+            : current
+        )
+        .Values.Where(m => !repo.IsMaterialInQueue(m.MaterialID))
+        .OrderBy(m => m.MaterialID)
         .ToList();
     }
 
@@ -941,6 +958,10 @@ namespace MazakMachineInterface
     )
     {
       var byMatId = new SortedList<long, EventLogMaterial>();
+      var removals = MazakMaterialHistory.LoadRemovalCounters(
+        repo,
+        oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
+      );
 
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
@@ -964,6 +985,7 @@ namespace MazakMachineInterface
             mat.PartName == jobPartName
             && mat.Process == proc
             && mat.MaterialID >= 0
+            && !MazakMaterialHistory.WasRemovedAfter(removals, mat.MaterialID, oldEvents[i].Counter)
             && !byMatId.ContainsKey(mat.MaterialID)
           )
           {
@@ -1303,7 +1325,10 @@ namespace MazakMachineInterface
       bool matMovedToQueue = false;
       foreach (var pal in mazakData.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
       {
-        var oldEvts = repo.CurrentPalletLog(pal.PalletNumber);
+        var pallet = mazakConfig.TranslatePalletNumber(pal.PalletNumber);
+        if (mazakConfig.CanQuarantineMissingMaterial?.Invoke(pallet) == false)
+          continue;
+        var oldEvts = repo.CurrentPalletLog(pallet);
 
         // start with everything on the pallet
         List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
@@ -1350,7 +1375,7 @@ namespace MazakMachineInterface
             queue: fmsSettings.QuarantineQueue,
             position: -1,
             operatorName: null,
-            reason: "MaterialMissingOnPallet"
+            reason: MazakMaterialHistory.MissingMaterialReason
           );
           matMovedToQueue = true;
         }

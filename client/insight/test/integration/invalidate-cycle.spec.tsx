@@ -134,12 +134,14 @@ function logEvent({
   peerId,
   peerSerial,
   invalidated = false,
+  type = api.LogType.MachineCycle,
 }: {
   readonly counter: number;
   readonly process: number;
   readonly peerId: number;
   readonly peerSerial?: string;
   readonly invalidated?: boolean;
+  readonly type?: api.LogType;
 }): api.LogEntry {
   return new api.LogEntry({
     counter,
@@ -167,7 +169,7 @@ function logEvent({
         workorder: "",
       }),
     ],
-    type: api.LogType.MachineCycle,
+    type,
     startofcycle: false,
     endUTC: new Date(`2026-04-24T12:0${counter}:00Z`),
     loc: "MC",
@@ -223,6 +225,20 @@ describe("cycle invalidation workflow", () => {
         invalidated: true,
       }),
       logEvent({ counter: 3, process: 2, peerId: 102 }),
+      logEvent({
+        counter: 5,
+        process: 2,
+        peerId: 104,
+        peerSerial: "OTHER-BASKET-SET",
+        type: api.LogType.BasketLoadUnload,
+      }),
+      logEvent({
+        counter: 6,
+        process: 2,
+        peerId: 104,
+        peerSerial: "OTHER-BASKET-SET",
+        type: api.LogType.BasketCycle,
+      }),
     ];
     const fetch = vi.spyOn(window, "fetch").mockImplementation(async (input) => {
       const url = requestUrl(input);
@@ -260,6 +276,7 @@ describe("cycle invalidation workflow", () => {
     await expect.element(screen.getByText("EARLIER")).not.toBeInTheDocument();
     await expect.element(screen.getByText("INVALID-PEER", { exact: true })).not.toBeInTheDocument();
     await expect.element(screen.getByText("FOREIGN")).not.toBeInTheDocument();
+    await expect.element(screen.getByText("OTHER-BASKET-SET")).not.toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith("/api/v1/log/events/for-material/101", expect.anything());
   });
 

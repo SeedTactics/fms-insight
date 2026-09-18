@@ -6950,7 +6950,7 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
-    public void BasketCycleInvalidation()
+    public void BasketPreparationDoesNotEstablishManufacturingToInvalidate()
     {
       using var _jobLog = _repoCfg.OpenConnection();
       var start = DateTime.UtcNow.AddHours(-5);
@@ -7038,66 +7038,18 @@ namespace BlackMaple.FMSInsight.Tests
 
       // Material should not be in queue now
       _jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
-      // NextProcessForQueuedMaterial returns the material's NEXT process from log events
-      // After loading to process 1, it should return 2 (process + 1)
-      _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).ShouldBe(2);
-
-      // Get log before invalidation
-      var logBeforeInvalidate = _jobLog.GetLogForMaterial(
-        mat1.MaterialID,
-        includeInvalidatedCycles: false
+      // Preparation preserves raw queue progress; it does not establish machining.
+      _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).ShouldBe(1);
+      var before = _jobLog.GetLogForMaterial(mat1.MaterialID).ToList();
+      Should.Throw<ConflictRequestException>(() =>
+        _jobLog.InvalidatePalletCycle(mat1.MaterialID, 1, "operator")
       );
-      var basketEventsBeforeInvalidateCount = logBeforeInvalidate.Count(e =>
-        e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle
-      );
-      basketEventsBeforeInvalidateCount.ShouldBeGreaterThan(0);
-
-      // Invalidate the cycle
-      var invalidateResults = _jobLog.InvalidatePalletCycle(
-        matId: mat1.MaterialID,
-        process: 1,
-        operatorName: "operator"
-      );
-      invalidateResults.ShouldNotBeNull();
-
-      // After invalidation, basket events should be excluded from queries that don't include invalidated cycles
-      var logAfterInvalidate = _jobLog.GetLogForMaterial(
-        mat1.MaterialID,
-        includeInvalidatedCycles: false
-      );
-      var basketEventsAfterInvalidate = logAfterInvalidate.Count(e =>
-        e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle
-      );
-      basketEventsAfterInvalidate.ShouldBe(0);
-
-      // But should be included when we explicitly ask for invalidated cycles
-      var logWithInvalidated = _jobLog.GetLogForMaterial(
-        mat1.MaterialID,
-        includeInvalidatedCycles: true
-      );
-      var invalidatedBasketEvents = logWithInvalidated.Count(e =>
-        (e.LogType == LogType.BasketLoadUnload || e.LogType == LogType.BasketCycle)
-        && e.ProgramDetails.ContainsKey("PalletCycleInvalidated")
-      );
-      invalidatedBasketEvents.ShouldBeGreaterThan(0);
-
-      // Material should NOT be returned to basket (can't put it back), should go to quarantine queue
-      var queuedMats = _jobLog.GetMaterialInAllQueues();
-      if (queuedMats.Any())
-      {
-        // Should be in quarantine queue
-        queuedMats.ShouldHaveSingleItem().Queue.ShouldContain("quarantine", Case.Insensitive);
-      }
-
-      // Should have an InvalidateCycle event
-      var invalidateEvt = logWithInvalidated.FirstOrDefault(e =>
-        e.LogType == LogType.InvalidateCycle
-      );
-      invalidateEvt.ShouldNotBeNull();
+      _jobLog.GetLogForMaterial(mat1.MaterialID).ToList().ShouldBeEquivalentTo(before);
+      _jobLog.GetBasketContents(5).Slots[1].Material.ShouldBe(basketContents.Slots[1].Material);
     }
 
     [Test]
-    public void CurrentBasketLogHandlesInvalidation()
+    public void PreparationOnlyBasketLogSurvivesRejectedMachiningInvalidation()
     {
       var start = new DateTime(2018, 01, 15, 17, 30, 0, DateTimeKind.Utc);
       using var _jobLog = _repoCfg.OpenConnection();
@@ -7170,12 +7122,10 @@ namespace BlackMaple.FMSInsight.Tests
       var logBefore = _jobLog.CurrentBasketLog(55, includeLastCycleEvt: true);
       logBefore.ShouldNotBeEmpty();
 
-      // Invalidate the cycle
-      _jobLog.InvalidatePalletCycle(m1, 1, "test-operator");
-
-      // Verify CurrentBasketLog is now empty
-      var logAfter = _jobLog.CurrentBasketLog(55);
-      logAfter.ShouldBeEmpty();
+      Should.Throw<ConflictRequestException>(() =>
+        _jobLog.InvalidatePalletCycle(m1, 1, "test-operator")
+      );
+      _jobLog.CurrentBasketLog(55, includeLastCycleEvt: true).ShouldBeEquivalentTo(logBefore);
     }
 
     [Test]
@@ -7492,7 +7442,7 @@ namespace BlackMaple.FMSInsight.Tests
       basketUnload.ShouldNotBeNull();
       basketUnload.Pallet.ShouldBe(55);
 
-      // Create separate invalidated basket history.
+      // Create separate basket preparation history.
       var mat2 = MkLogMat.Mk(2, "uniq2", 1, "part2", 2, "", "", "");
       _jobLog.CreateMaterialID(2, "uniq2", "part2", 2);
       var basket66Contents = BasketContentsFor(
@@ -7559,8 +7509,8 @@ namespace BlackMaple.FMSInsight.Tests
         idempotencyKey: "load-end-invalidated-basket-start"
       );
 
-      // Invalidate the basket cycle
-      _jobLog.InvalidatePalletCycle(mat2.MaterialID, 1, "test-operator");
+      // Preparation is not manufacturing; neither current nor historical basket membership
+      // authorizes inferring a transfer in the following ordinary pallet operation.
 
       // Without an explicit completion, pallet load recording must not infer a basket transfer from
       // historical cycles.
@@ -7594,7 +7544,7 @@ namespace BlackMaple.FMSInsight.Tests
     }
 
     [Test]
-    public void InvalidatePalletCycleDetectsBasketCycleStart()
+    public void RejectingPreparationInvalidationDoesNotRestoreQueueMembership()
     {
       var start = new DateTime(2018, 01, 15, 17, 30, 0, DateTimeKind.Utc);
       using var _jobLog = _repoCfg.OpenConnection();
@@ -7687,18 +7637,15 @@ namespace BlackMaple.FMSInsight.Tests
       );
       basketCycleStart.ShouldNotBeNull();
 
-      // Invalidate the cycle - should detect wasOnBasket=true because we're invalidating a basket cycle START
-      _jobLog.InvalidatePalletCycle(mat1.MaterialID, 1, "test-operator");
-
-      // Material should NOT be returned to the basket
-      // It should NOT be in QUEUE1 either (since wasOnBasket=true)
-      var queuedMats = _jobLog.GetMaterialInAllQueues();
-      queuedMats.Any(m => m.Queue == "QUEUE1" && m.MaterialID == mat1.MaterialID).ShouldBeFalse();
-
-      // Should have an InvalidateCycle event
-      var logAfter = _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: true);
-      var invalidateEvt = logAfter.FirstOrDefault(e => e.LogType == LogType.InvalidateCycle);
-      invalidateEvt.ShouldNotBeNull();
+      Should.Throw<ConflictRequestException>(() =>
+        _jobLog.InvalidatePalletCycle(mat1.MaterialID, 1, "test-operator")
+      );
+      _jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
+      _jobLog
+        .GetLogForMaterial(mat1.MaterialID)
+        .Any(e => e.LogType == LogType.InvalidateCycle)
+        .ShouldBeFalse();
+      _jobLog.GetBasketContents(55).Slots[1].Material.ShouldBe(basketContents.Slots[1].Material);
     }
 
     private static BasketContents BasketContentsFor(

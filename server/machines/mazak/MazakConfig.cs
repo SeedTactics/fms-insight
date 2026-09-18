@@ -74,6 +74,18 @@ namespace MazakMachineInterface
       ImmutableDictionary<string, string>.Empty;
   }
 
+  public sealed record MazakResolvedUnload
+  {
+    public required ImmutableDictionary<
+      long,
+      UnloadDestination?
+    > MaterialIDToDestination { get; init; }
+
+    // UNLOAD ProgramDetails: callers own key namespacing and must avoid framework-reserved keys.
+    public ImmutableDictionary<string, string> AdditionalData { get; init; } =
+      ImmutableDictionary<string, string>.Empty;
+  }
+
   public abstract record MazakLoadUnloadResolution
   {
     private MazakLoadUnloadResolution() { }
@@ -88,7 +100,7 @@ namespace MazakMachineInterface
       public required ImmutableDictionary<string, MazakResolvedLoad> MaterialForLoads { get; init; }
       public required ImmutableDictionary<
         string,
-        ImmutableDictionary<long, UnloadDestination?>
+        MazakResolvedUnload
       > MaterialForUnloads { get; init; }
       public PalletBasketLoadUnloadCompletion? BasketCompletion { get; init; }
     }
@@ -164,6 +176,12 @@ namespace MazakMachineInterface
       MazakLoadUnloadContext,
       MazakLoadUnloadResolution
     >? ResolveLoadUnloadTransaction { get; init; }
+
+    // Optional integration guard while material handling still owns this pallet's outcome.
+    // Receives the mapped Insight pallet number; null preserves normal reconciliation.
+    // Must be a fast, deterministic, local/read-only predicate. Do not perform remote
+    // equipment I/O here: this runs inside ordinary event processing/reconciliation.
+    public Func<int, bool>? CanQuarantineMissingMaterial { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
     public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
