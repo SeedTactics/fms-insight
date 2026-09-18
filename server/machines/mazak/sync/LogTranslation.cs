@@ -408,16 +408,24 @@ namespace MazakMachineInterface
           "Resolution must cover every raw L/U event exactly once."
         );
 
-      // Current-cycle completed load/unload records are manufacturing facts; do not reconstruct
-      // identities from machining, raw Mazak history or the ordinary allocation fallback.
+      // Actual recorded machining can establish identity when LOAD history was unavailable.
+      // Use only committed current-cycle evidence, never allocate during exact validation.
       var onPallet = cycle
-        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
+        .Where(e => !e.StartOfCycle && e.LogType is LogType.LoadUnloadCycle or LogType.MachineCycle)
         .OrderBy(e => e.Counter)
         .Aggregate(
           ImmutableDictionary<long, LogMaterial>.Empty,
           (current, e) =>
-            e.Result == "LOAD"
-              ? current.SetItems(e.Material.Select(m => KeyValuePair.Create(m.MaterialID, m)))
+            e.Result == "LOAD" || e.LogType == LogType.MachineCycle
+              ? current.SetItems(
+                e.Material.Where(m =>
+                    e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
+                  )
+                  .Where(m =>
+                    !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter, e.Pallet)
+                  )
+                  .Select(m => KeyValuePair.Create(m.MaterialID, m))
+              )
             : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
             : current
         );

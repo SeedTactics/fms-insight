@@ -2134,12 +2134,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    [Arguments(false, 1)]
-    [Arguments(false, 2)]
-    [Arguments(true, 2)]
+    [Arguments(false, 1, false)]
+    [Arguments(false, 2, false)]
+    [Arguments(true, 2, false)]
+    [Arguments(false, 2, true)]
+    [Arguments(true, 2, true)]
     public async Task ExactBasketUnloadBypassesOutputQueueAndPreservesAtomicity(
       bool conflict,
-      int processes
+      int processes,
+      bool missingLoad
     )
     {
       var firstProcess = new ProcessInfo
@@ -2152,10 +2155,19 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         processes == 1 ? [firstProcess] : [firstProcess, Process()]
       );
       var time = DateTime.UtcNow.AddHours(-1);
+      if (missingLoad)
+        TranslateChunk(
+          LoadEndEvent(time.AddMinutes(-2), "owned-part") with
+          {
+            ForeignID = "LF000",
+            Code = LogCode.MachineCycleStart,
+          }
+        );
       TranslateChunk(
         LoadEndEvent(time, "owned-part") with
         {
           ForeignID = "LG000",
+          Code = missingLoad ? LogCode.MachineCycleEnd : LogCode.LoadEnd,
         },
         FollowingEvent(time) with
         {
@@ -2163,7 +2175,10 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         }
       );
       var material = CurrentPalletLog(1)
-        .Single(l => l.LogType == LogType.LoadUnloadCycle)
+        .Single(l =>
+          !l.StartOfCycle
+          && l.LogType == (missingLoad ? LogType.MachineCycle : LogType.LoadUnloadCycle)
+        )
         .Material.Single()
         .MaterialID;
       InitializeBasket(conflict ? OccupiedBasket(material) : EmptyBasket());
