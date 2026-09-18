@@ -258,6 +258,10 @@ namespace MazakMachineInterface
           );
 
           var oldCycles = jobDB.CurrentPalletLog(palName);
+          var removals = MazakMaterialHistory.LoadRemovalCounters(
+            jobDB,
+            oldCycles.SelectMany(e => e.Material).Select(m => m.MaterialID)
+          );
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -288,7 +292,8 @@ namespace MazakMachineInterface
                 palletWithUnprocessedUnloads == palName,
                 job,
                 palFmsProc,
-                jobDB
+                jobDB,
+                removals
               )
             );
 
@@ -428,6 +433,7 @@ namespace MazakMachineInterface
               material,
               jobsByUniq,
               oldCycles,
+              removals,
               partNameToNumProc,
               fmsSettings
             );
@@ -829,6 +835,7 @@ namespace MazakMachineInterface
       IList<InProcessMaterial> material,
       IReadOnlyDictionary<string, CurrentJob> jobsByUniq,
       List<BlackMaple.MachineFramework.LogEntry> oldCycles,
+      IReadOnlyDictionary<long, long> removals,
       IReadOnlyDictionary<string, int> partNameToNumProc,
       FMSSettings fmsSettings
     )
@@ -860,7 +867,7 @@ namespace MazakMachineInterface
         var fmsUnloadProc = unloadComment.JobProcessForMazakProcess(unload.Process);
 
         var matIDs = new Queue<long>(
-          FindMatIDsFromOldCycles(oldCycles, false, job, fmsUnloadProc, log)
+          FindMatIDsFromOldCycles(oldCycles, false, job, fmsUnloadProc, log, removals)
         );
 
         InProcessMaterialAction loadAction = null;
@@ -1133,7 +1140,8 @@ namespace MazakMachineInterface
       bool hasPendingLoads,
       CurrentJob job,
       int proc,
-      IRepository log
+      IRepository log,
+      IReadOnlyDictionary<long, long> removals
     )
     {
       if (job == null)
@@ -1171,7 +1179,7 @@ namespace MazakMachineInterface
           return oldCycles
             .SelectMany(c =>
               (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
-                !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter)
+                !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, c.Counter)
               )
             )
             .Where(m =>
@@ -1201,7 +1209,7 @@ namespace MazakMachineInterface
           .SelectMany(c =>
             (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
               (!unloadedAt.TryGetValue(m.MaterialID, out var counter) || c.Counter > counter)
-              && !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter)
+              && !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, c.Counter)
             )
           )
           .Where(m =>

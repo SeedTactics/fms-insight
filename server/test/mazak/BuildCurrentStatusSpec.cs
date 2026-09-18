@@ -76,14 +76,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public async Task RemovedIdentityIsNotReusedByStatusUntilAnotherLoad()
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task RemovedIdentityIsNotReusedByStatusUntilAnotherLoad(bool pendingNextProcess)
     {
       using var repository = _repoCfg.OpenConnection();
       var jobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       )!;
-      repository.AddJobs(jobs, null, addAsCopiedToSystem: true);
       var data = JsonSerializer.Deserialize<MazakAllData>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting.data.json")
@@ -94,6 +95,28 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var schedule = data.Schedules.Single(s => s.Id == assignment.ScheduleID);
       var unique = MazakPart.ParseCommentInfo(schedule.Comment).Unique;
       var job = jobs.Jobs.Single(j => j.UniqueStr == unique);
+      if (pendingNextProcess)
+      {
+        // Exercise the distinct pending-load interpretation: the next face assignment can
+        // reuse previous-process material on this pallet, but not a removed identity.
+        job = job with
+        {
+          Processes = job
+            .Processes.Select(p =>
+              p with
+              {
+                Paths = p.Paths.Select(path => path with { InputQueue = null }).ToImmutableList(),
+              }
+            )
+            .ToImmutableList(),
+        };
+        jobs = jobs with
+        {
+          Jobs = jobs.Jobs.Select(j => j.UniqueStr == unique ? job : j).ToImmutableList(),
+        };
+        data = data with { PalletSubStatuses = [assignment with { PartProcessNumber = 2 }] };
+      }
+      repository.AddJobs(jobs, null, addAsCopiedToSystem: true);
       var id = repository.AllocateMaterialID(unique, job.PartName, job.Processes.Count);
       void Load() =>
         repository.RecordLoadUnloadComplete(
@@ -119,7 +142,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
       bool Visible() =>
         BuildCurrentStatus
-          .Build(repository, _settings, _mazakCfg, data, "MC", null, DateTime.UtcNow)
+          .Build(
+            repository,
+            _settings,
+            _mazakCfg,
+            data,
+            "MC",
+            pendingNextProcess ? assignment.PalletNumber : null,
+            DateTime.UtcNow
+          )
           .Material.Any(m =>
             m.MaterialID == id && m.Location.Type == InProcessMaterialLocation.LocType.OnPallet
           );

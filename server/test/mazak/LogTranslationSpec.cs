@@ -2067,6 +2067,56 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public async Task StockerArrivalReusesMachiningIdentityWithoutLoadHistory()
+    {
+      AddTestJob("owned-job", "owned-part", [Process(), Process()]);
+      var time = DateTime.UtcNow.AddHours(-1);
+      TranslateChunk(
+        LoadEndEvent(time, "owned-part") with
+        {
+          Code = LogCode.MachineCycleStart,
+          ForeignID = "MC001",
+        }
+      );
+      TranslateChunk(
+        LoadEndEvent(time.AddMinutes(2), "owned-part") with
+        {
+          Code = LogCode.MachineCycleEnd,
+          ForeignID = "MC002",
+        },
+        FollowingEvent(time.AddMinutes(2))
+      );
+      var machined = CurrentPalletLog(1)
+        .Single(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle)
+        .Material;
+      TranslateChunk(
+        new MazakMachineInterface.LogEntry
+        {
+          TimeUTC = time.AddMinutes(3),
+          Code = LogCode.PalletMoveComplete,
+          ForeignID = "ST003",
+          Pallet = 1,
+          FromPosition = "M012",
+          TargetPosition = "S003",
+        }
+      );
+      var stocker = CurrentPalletLog(1)
+        .Single(e => e.LogType == LogType.PalletInStocker && e.StartOfCycle && e.LocationNum == 3);
+      await Assert
+        .That(stocker.Material.Select(m => m.MaterialID))
+        .IsEquivalentTo(machined.Select(m => m.MaterialID));
+      await Assert.That(stocker.StartOfCycle).IsTrue();
+      await Assert.That(stocker.LocationNum).IsEqualTo(3);
+      await Assert
+        .That(
+          jobLog
+            .GetLogForMaterial(machined.Single().MaterialID)
+            .Any(e => e.LogType == LogType.LoadUnloadCycle)
+        )
+        .IsFalse();
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task RemovalUsesMachiningIdentityUnlessItWasAlreadyUnloaded(bool unloaded)
@@ -5194,7 +5244,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       var latest = jobLog.GetLogForMaterial(mat.MaterialID).Max(e => e.Counter);
       await Assert
-        .That(MazakMaterialHistory.WasRemovedAfter(jobLog, mat.MaterialID, latest))
+        .That(
+          MazakMaterialHistory.WasRemovedAfter(
+            MazakMaterialHistory.LoadRemovalCounters(jobLog, [mat.MaterialID]),
+            mat.MaterialID,
+            latest
+          )
+        )
         .IsFalse();
       await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsTrue();
       await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsTrue();

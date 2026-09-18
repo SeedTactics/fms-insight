@@ -842,6 +842,10 @@ namespace MazakMachineInterface
     #region Material
     private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents)
     {
+      var removals = MazakMaterialHistory.LoadRemovalCounters(
+        repo,
+        oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
+      );
       // Actual machining can establish identity when the LOAD was unavailable. It fills only
       // missing identities: an existing LOAD retains its raw face/addressing information.
       return oldEvents
@@ -855,7 +859,9 @@ namespace MazakMachineInterface
                 e.Material.Where(m =>
                     e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
                   )
-                  .Where(m => !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter))
+                  .Where(m =>
+                    !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, e.Counter)
+                  )
                   .Select(m => KeyValuePair.Create(m.MaterialID, m))
               )
             : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
@@ -952,6 +958,10 @@ namespace MazakMachineInterface
     )
     {
       var byMatId = new SortedList<long, EventLogMaterial>();
+      var removals = MazakMaterialHistory.LoadRemovalCounters(
+        repo,
+        oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
+      );
 
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
@@ -975,7 +985,7 @@ namespace MazakMachineInterface
             mat.PartName == jobPartName
             && mat.Process == proc
             && mat.MaterialID >= 0
-            && !MazakMaterialHistory.WasRemovedAfter(repo, mat.MaterialID, oldEvents[i].Counter)
+            && !MazakMaterialHistory.WasRemovedAfter(removals, mat.MaterialID, oldEvents[i].Counter)
             && !byMatId.ContainsKey(mat.MaterialID)
           )
           {
@@ -1365,7 +1375,7 @@ namespace MazakMachineInterface
             queue: fmsSettings.QuarantineQueue,
             position: -1,
             operatorName: null,
-            reason: "MaterialMissingOnPallet"
+            reason: MazakMaterialHistory.MissingMaterialReason
           );
           matMovedToQueue = true;
         }
