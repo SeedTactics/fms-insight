@@ -8,8 +8,6 @@ import { AddToQueueButton } from "../../src/components/station-monitor/QueuesAdd
 import {
   InvalidateCycleDialogButton,
   type InvalidateCycleState,
-  SwapMaterialButtons,
-  type SwapMaterialState,
 } from "../../src/components/station-monitor/InvalidateCycle.js";
 import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
 import { materialDialogOpen } from "../../src/cell-status/material-details.js";
@@ -64,7 +62,6 @@ async function renderCancelLoadButton(
 }
 
 function MutatingMaterialActions() {
-  const [swapState, setSwapState] = useState<SwapMaterialState>(null);
   const [invalidateState, setInvalidateState] = useState<InvalidateCycleState | null>(null);
 
   return (
@@ -78,7 +75,6 @@ function MutatingMaterialActions() {
             queueNames={["Queue B"]}
             onClose={() => {}}
           />
-          <SwapMaterialButtons st={swapState} setState={setSwapState} onClose={() => {}} />
           <InvalidateCycleDialogButton
             st={invalidateState}
             setState={setInvalidateState}
@@ -109,7 +105,6 @@ describe("cancel load", () => {
       currentStatus: createCurrentStatus({ material: [material] }),
       fmsInfo: {
         allowInvalidateMaterialOnQueuesPage: true,
-        allowSwapSerialAtLoadStation: true,
       },
       seedStore: (store) => store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
     });

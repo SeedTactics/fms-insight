@@ -140,9 +140,6 @@ const jobBackend: JobAPI = {
   cancelLoad() {
     return unexpectedCall("JobAPI.cancelLoad");
   },
-  swapMaterialOnPallet() {
-    return unexpectedCall("JobAPI.swapMaterialOnPallet");
-  },
   invalidatePalletCycle() {
     return unexpectedCall("JobAPI.invalidatePalletCycle");
   },

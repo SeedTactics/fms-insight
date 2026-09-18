@@ -105,6 +105,7 @@ namespace BlackMaple.MachineFramework
 
     InvalidateCycle = 112,
 
+    // Retired operation; keep this value for reading existing audit history.
     SwapMaterialOnPallet = 113,
 
     Rebooking = 114,
@@ -241,14 +242,5 @@ namespace BlackMaple.MachineFramework
     public required ImmutableList<Stop> Stops { get; init; }
 
     public required int UnloadStation { get; init; }
-  }
-
-  public record EditMaterialInLogEvents
-  {
-    public required long OldMaterialID { get; init; }
-
-    public required long NewMaterialID { get; init; }
-
-    public required IEnumerable<LogEntry> EditedEvents { get; init; }
   }
 }

@@ -180,7 +180,6 @@ public record FMSSettings
   public bool RequireOperatorNamePromptWhenAddingMaterial { get; init; }
   public bool AllowChangeWorkorderAtLoadStation { get; init; }
   public string? AllowEditJobPlanQuantityFromQueuesPage { get; init; } = null;
-  public bool AllowSwapSerialAtLoadStation { get; init; }
   public bool AllowInvalidateMaterialAtLoadStation { get; init; }
   public bool AllowInvalidateMaterialOnQueuesPage { get; init; }
   public bool UsingLabelPrinterForSerials { get; init; }
@@ -241,10 +240,6 @@ public record FMSSettings
       AllowEditJobPlanQuantityFromQueuesPage = fmsSection.GetValue<string?>(
         "AllowEditJobPlanQuantityFromQueuesPage",
         null
-      ),
-      AllowSwapSerialAtLoadStation = fmsSection.GetValue<bool>(
-        "AllowSwapSerialAtLoadStation",
-        false
       ),
       AllowInvalidateMaterialAtLoadStation = fmsSection.GetValue<bool>(
         "AllowInvalidateMaterialAtLoadStation",

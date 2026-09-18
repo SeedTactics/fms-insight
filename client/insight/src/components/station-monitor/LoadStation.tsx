@@ -71,9 +71,6 @@ import {
   InvalidateCycleDialogButton,
   InvalidateCycleDialogContent,
   InvalidateCycleState,
-  SwapMaterialButtons,
-  SwapMaterialDialogContent,
-  SwapMaterialState,
 } from "./InvalidateCycle.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { addHours } from "date-fns";
@@ -1148,7 +1145,6 @@ function AssignWorkorderButton() {
 }
 
 const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
-  const [swapSt, setSwapSt] = useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = useState<InvalidateCycleState | null>(null);
 
   // add material state
@@ -1157,12 +1153,11 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
 
   const onClose = useCallback(
     function onClose() {
-      setSwapSt(null);
       setInvalidateSt(null);
       setShowAddMaterial(false);
       setSelectedQueue(null);
     },
-    [setSwapSt, setInvalidateSt],
+    [setInvalidateSt],
   );
 
   return (
@@ -1172,7 +1167,6 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
       highlightProcsGreaterOrEqualTo={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
-          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
           {invalidateSt !== null ? (
             <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
           ) : null}
@@ -1199,7 +1193,6 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
             showAddToQueue={showAddMaterial}
             setShowAddToQueue={setShowAddMaterial}
           />
-          <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} />
           <InvalidateCycleDialogButton
             st={invalidateSt}
             setState={setInvalidateSt}

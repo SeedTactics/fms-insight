@@ -1012,50 +1012,6 @@
         }
       }
     },
-    "/api/v1/jobs/material/{materialId}/swap-off-pallet": {
-      "put": {
-        "tags": ["Jobs"],
-        "operationId": "Jobs_SwapMaterialOnPallet",
-        "parameters": [
-          {
-            "name": "materialId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "operName",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 3
-          }
-        ],
-        "requestBody": {
-          "x-name": "mat",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MatToPutOnPallet"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/jobs/material": {
       "delete": {
         "tags": ["Jobs"],
@@ -2226,10 +2182,6 @@
             "type": "boolean",
             "nullable": true
           },
-          "AllowSwapSerialAtLoadStation": {
-            "type": "boolean",
-            "nullable": true
-          },
           "AllowInvalidateMaterialAtLoadStation": {
             "type": "boolean",
             "nullable": true
@@ -2311,14 +2263,6 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/CurrentStatus"
-              }
-            ]
-          },
-          "EditMaterialInLog": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/EditMaterialInLogEvents"
               }
             ]
           }
@@ -4176,34 +4120,6 @@
           "Other"
         ]
       },
-      "EditMaterialInLogEvents": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "OldMaterialID",
-          "NewMaterialID",
-          "EditedEvents",
-          "OldMaterialID",
-          "NewMaterialID",
-          "EditedEvents"
-        ],
-        "properties": {
-          "OldMaterialID": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "NewMaterialID": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "EditedEvents": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LogEntry"
-            }
-          }
-        }
-      },
       "ProblemDetails": {
         "type": "object",
         "additionalProperties": {
@@ -4588,21 +4504,6 @@
           "Reason": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "MatToPutOnPallet": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["Pallet", "MaterialIDToSetOnPallet", "Pallet", "MaterialIDToSetOnPallet"],
-        "properties": {
-          "Pallet": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "MaterialIDToSetOnPallet": {
-            "type": "integer",
-            "format": "int64"
           }
         }
       },
