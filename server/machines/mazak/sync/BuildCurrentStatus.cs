@@ -1171,7 +1171,7 @@ namespace MazakMachineInterface
           return oldCycles
             .SelectMany(c =>
               (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
-                !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter, c.Pallet)
+                !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter)
               )
             )
             .Where(m =>
@@ -1192,7 +1192,7 @@ namespace MazakMachineInterface
         return oldCycles
           .SelectMany(c =>
             (c.Material ?? Enumerable.Empty<LogMaterial>()).Where(m =>
-              !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter, c.Pallet)
+              !MazakMaterialHistory.WasRemovedAfter(log, m.MaterialID, c.Counter)
             )
           )
           .Where(m =>

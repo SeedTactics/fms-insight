@@ -421,9 +421,7 @@ namespace MazakMachineInterface
                 e.Material.Where(m =>
                     e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
                   )
-                  .Where(m =>
-                    !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter, e.Pallet)
-                  )
+                  .Where(m => !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter))
                   .Select(m => KeyValuePair.Create(m.MaterialID, m))
               )
             : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
@@ -865,7 +863,7 @@ namespace MazakMachineInterface
         .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
         .SelectMany(e =>
           e.Material.Where(m =>
-            !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter, e.Pallet)
+            !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter)
           )
         )
         .Where(m => !repo.IsMaterialInQueue(m.MaterialID))
@@ -982,12 +980,7 @@ namespace MazakMachineInterface
             mat.PartName == jobPartName
             && mat.Process == proc
             && mat.MaterialID >= 0
-            && !MazakMaterialHistory.WasRemovedAfter(
-              repo,
-              mat.MaterialID,
-              oldEvents[i].Counter,
-              oldEvents[i].Pallet
-            )
+            && !MazakMaterialHistory.WasRemovedAfter(repo, mat.MaterialID, oldEvents[i].Counter)
             && !byMatId.ContainsKey(mat.MaterialID)
           )
           {

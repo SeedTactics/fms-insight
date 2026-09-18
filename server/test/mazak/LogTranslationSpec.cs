@@ -4637,9 +4637,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    [Arguments(false)]
-    [Arguments(true)]
-    public void SwapsRawMaterial(bool previouslyRemoved)
+    public void SwapsRawMaterial()
     {
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
@@ -4730,19 +4728,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       StockerStart(mat1, offset: 8, stocker: 8, waitForMachine: true);
 
       CheckMatInQueue("rawmat", new[] { mat2, mat3, AdjUnique(mat4, "", 1) });
-
-      if (previouslyRemoved)
-        expected.AddRange(
-          jobLog.RecordAddMaterialToQueue(
-            mat2.MaterialID,
-            0,
-            "rawmat",
-            -1,
-            null,
-            "MaterialMissingOnPallet",
-            t.AddMinutes(9)
-          )
-        );
 
       SwapMaterial(mat1, mat2, offset: 10, unassigned: false);
 
@@ -5377,76 +5362,10 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       var latest = jobLog.GetLogForMaterial(mat.MaterialID).Max(e => e.Counter);
       await Assert
-        .That(
-          MazakMaterialHistory.WasRemovedAfter(jobLog, mat.MaterialID, latest, startingPallet + 2)
-        )
+        .That(MazakMaterialHistory.WasRemovedAfter(jobLog, mat.MaterialID, latest))
         .IsFalse();
       await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsTrue();
       await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsTrue();
-    }
-
-    [Test]
-    [Arguments(2)]
-    [Arguments(3)]
-    public async Task LaterSwapOnlyRestoresItsOwnAssignment(int correctionPallet)
-    {
-      var removed = jobLog.AllocateMaterialID("job", "part", 1);
-      var original = jobLog.AllocateMaterialID("job", "part", 1);
-      long Load(long id, int pallet) =>
-        jobLog
-          .RecordLoadUnloadComplete(
-            toLoad:
-            [
-              new MaterialToLoadOntoFace
-              {
-                MaterialIDs = [id],
-                Process = 1,
-                Path = 1,
-                FaceNum = 1,
-                ActiveOperationTime = TimeSpan.Zero,
-              },
-            ],
-            toUnload: [],
-            previouslyLoaded: [],
-            previouslyUnloaded: [],
-            pallet: pallet,
-            lulNum: 1,
-            totalElapsed: TimeSpan.Zero,
-            timeUTC: DateTime.UtcNow,
-            externalQueues: ImmutableDictionary<string, string>.Empty
-          )
-          .Single(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD")
-          .Counter;
-      var oldAssignment = Load(removed, 2);
-      jobLog.RecordAddMaterialToQueue(
-        removed,
-        1,
-        "quarantineQ",
-        -1,
-        null,
-        "MaterialMissingOnPallet"
-      );
-      var correctedAssignment = Load(original, correctionPallet);
-      jobLog.SwapMaterialInCurrentPalletCycle(
-        correctionPallet,
-        original,
-        removed,
-        null,
-        "quarantineQ"
-      );
-      await Assert
-        .That(MazakMaterialHistory.WasRemovedAfter(jobLog, removed, oldAssignment, 2))
-        .IsTrue();
-      await Assert
-        .That(
-          MazakMaterialHistory.WasRemovedAfter(
-            jobLog,
-            removed,
-            correctedAssignment,
-            correctionPallet
-          )
-        )
-        .IsFalse();
     }
 
     [Test]
