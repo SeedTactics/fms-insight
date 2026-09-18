@@ -5275,6 +5275,85 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    [Arguments(1)]
+    [Arguments(100)]
+    public async Task RemovedMaterialStaysReleasedAfterQueueExit(int startingPallet)
+    {
+      var allowed = false;
+      mazakCfg = mazakCfg with
+      {
+        StartingPalletNumber = startingPallet,
+        CanQuarantineMissingMaterial = pallet => pallet == startingPallet + 2 && allowed,
+      };
+      var mat = new EventLogMaterial
+      {
+        MaterialID = jobLog.AllocateMaterialID("job", "part", 2),
+        Process = 2,
+        Face = 1,
+      };
+      jobLog.RecordLoadUnloadComplete(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace
+          {
+            MaterialIDs = [mat.MaterialID],
+            Process = 2,
+            FaceNum = 1,
+            Path = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        toUnload: [],
+        previouslyLoaded: [],
+        previouslyUnloaded: [],
+        pallet: startingPallet + 2,
+        lulNum: 1,
+        timeUTC: DateTime.UtcNow.AddMinutes(-10),
+        totalElapsed: TimeSpan.Zero,
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      );
+      SetPallet(3, atLoadStation: false);
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsFalse();
+      allowed = true;
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsTrue();
+      await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsTrue();
+      jobLog.RecordRemoveMaterialFromAllQueues(mat);
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsFalse();
+      await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsFalse();
+      jobLog.InvalidatePalletCycle(mat.MaterialID, 2, null);
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsFalse();
+      await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsFalse();
+      // A new actual load establishes a new assignment; its later removal is detected again.
+      jobLog.RecordLoadUnloadComplete(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace
+          {
+            MaterialIDs = [mat.MaterialID],
+            Process = 2,
+            FaceNum = 1,
+            Path = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        toUnload: [],
+        previouslyLoaded: [],
+        previouslyUnloaded: [],
+        pallet: startingPallet + 2,
+        lulNum: 1,
+        timeUTC: DateTime.UtcNow,
+        totalElapsed: TimeSpan.Zero,
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      );
+      var latest = jobLog.GetLogForMaterial(mat.MaterialID).Max(e => e.Counter);
+      await Assert
+        .That(MazakMaterialHistory.WasRemovedAfter(jobLog, mat.MaterialID, latest))
+        .IsFalse();
+      await Assert.That(CheckPalletStatusMatchesLogs().PalletStatusChanged).IsTrue();
+      await Assert.That(jobLog.IsMaterialInQueue(mat.MaterialID)).IsTrue();
+    }
+
+    [Test]
     public void SkipsRecentMachineEnd()
     {
       var e = new MazakMachineInterface.LogEntry()

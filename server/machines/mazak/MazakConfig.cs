@@ -178,6 +178,10 @@ namespace MazakMachineInterface
     >? ResolveLoadUnloadTransaction { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
+    // Optional integration guard while material handling still owns this pallet's outcome.
+    // Receives the mapped Insight pallet number; null preserves normal reconciliation.
+    public Func<int, bool>? CanQuarantineMissingMaterial { get; init; }
+
     public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
 
     // Convert FMS Insight pallet number back to Mazak-internal number

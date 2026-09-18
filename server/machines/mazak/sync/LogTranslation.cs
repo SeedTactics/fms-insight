@@ -855,7 +855,11 @@ namespace MazakMachineInterface
     {
       return oldEvents
         .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
-        .SelectMany(e => e.Material)
+        .SelectMany(e =>
+          e.Material.Where(m =>
+            !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter)
+          )
+        )
         .Where(m => !repo.IsMaterialInQueue(m.MaterialID))
         .DistinctBy(m => m.MaterialID)
         .ToList();
@@ -970,6 +974,7 @@ namespace MazakMachineInterface
             mat.PartName == jobPartName
             && mat.Process == proc
             && mat.MaterialID >= 0
+            && !MazakMaterialHistory.WasRemovedAfter(repo, mat.MaterialID, oldEvents[i].Counter)
             && !byMatId.ContainsKey(mat.MaterialID)
           )
           {
@@ -1309,7 +1314,10 @@ namespace MazakMachineInterface
       bool matMovedToQueue = false;
       foreach (var pal in mazakData.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
       {
-        var oldEvts = repo.CurrentPalletLog(pal.PalletNumber);
+        var pallet = mazakConfig.TranslatePalletNumber(pal.PalletNumber);
+        if (mazakConfig.CanQuarantineMissingMaterial?.Invoke(pallet) == false)
+          continue;
+        var oldEvts = repo.CurrentPalletLog(pallet);
 
         // start with everything on the pallet
         List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
