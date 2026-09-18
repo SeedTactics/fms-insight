@@ -96,7 +96,13 @@ public sealed class BasketPreparationSpec
   }
 
   [Test]
-  public async Task CancelPreparationPreservesSeparateMachiningGroupsThroughBasketClosure()
+  [Arguments(true, false)]
+  [Arguments(false, false)]
+  [Arguments(false, true)]
+  public async Task CancelPreparationPreservesSeparateMachiningGroupsThroughBasketClosure(
+    bool loadAForProcessTwo,
+    bool changeToCasting
+  )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
     using var db = config.OpenConnection();
@@ -105,6 +111,11 @@ public sealed class BasketPreparationSpec
     var b = AllocateGroup(db, 2);
     foreach (var group in new[] { a, b })
     {
+      foreach (var mat in group)
+      {
+        db.RecordPathForProcess(mat.MaterialID, 1, 1);
+        db.RecordPathForProcess(mat.MaterialID, 2, 1);
+      }
       db.RecordMachineEnd(
         group,
         group[0].Face,
@@ -156,9 +167,28 @@ public sealed class BasketPreparationSpec
     var aPrepared = a.Select(m => m with { Process = 2 }).ToImmutableList();
     var empty = Contents([]);
     Prepare(db, aPrepared, empty, Contents(aPrepared), time.AddMinutes(5), "prepare-a");
-    Load(db, a, Contents(aPrepared), aPrepared, time.AddMinutes(6));
+    if (loadAForProcessTwo)
+      Load(db, a, Contents(aPrepared), aPrepared, time.AddMinutes(6));
+    else
+      db.RecordBasketContentsOperation(
+        new BasketContentsOperation
+        {
+          Changes =
+          [
+            new BasketContentsChange
+            {
+              BasketId = 1,
+              Expected = Contents(aPrepared),
+              Result = empty,
+            },
+          ],
+        },
+        "release-a-before-machining"
+      );
     foreach (var mat in a)
-      await Assert.That(db.NextProcessForQueuedMaterial(mat.MaterialID)).IsEqualTo(3);
+      await Assert
+        .That(db.NextProcessForQueuedMaterial(mat.MaterialID))
+        .IsEqualTo(loadAForProcessTwo ? 3 : 2);
 
     // Invalidating real process-1 manufacturing still acts on the whole execution, while
     // shared basket handling cannot pull B into that group. Keep the repository queue guard.
@@ -174,12 +204,43 @@ public sealed class BasketPreparationSpec
         null,
         time.AddMinutes(7)
       );
-    var invalidation = db.InvalidatePalletCycle(a[0].MaterialID, 1, "operator").Single();
+    var invalidation = (
+      changeToCasting
+        ? db.InvalidateAndChangeAssignment(a[0].MaterialID, "operator", null, "casting", 1)
+        : db.InvalidatePalletCycle(a[0].MaterialID, 1, "operator")
+    ).Single();
     await Assert
       .That(invalidation.Material.Select(m => m.MaterialID).Distinct().Order().ToArray())
       .IsEquivalentTo(a.Select(m => m.MaterialID).Order().ToArray());
+    foreach (var mat in a)
+    {
+      await Assert.That(db.NextProcessForQueuedMaterial(mat.MaterialID)).IsNull();
+      await Assert.That(db.GetMaterialDetails(mat.MaterialID).Paths?.Count ?? 0).IsEqualTo(0);
+      db.RecordAddMaterialToQueue(
+        mat with
+        {
+          Process = 0,
+        },
+        "raw",
+        -1,
+        "operator",
+        null,
+        time.AddMinutes(8)
+      );
+      await Assert
+        .That(db.GetMaterialInAllQueues().Single(q => q.MaterialID == mat.MaterialID).NextProcess)
+        .IsEqualTo(1);
+    }
+    if (changeToCasting)
+    {
+      await Assert.That(db.GetMaterialDetails(a[0].MaterialID).NumProcesses).IsEqualTo(1);
+      await Assert.That(db.GetMaterialDetails(a[0].MaterialID).PartName).IsEqualTo("casting");
+    }
     foreach (var mat in b)
     {
+      await Assert
+        .That(db.GetMaterialDetails(mat.MaterialID).Paths.Keys.Order().ToArray())
+        .IsEquivalentTo(new[] { 1, 2 });
       await Assert.That(db.NextProcessForQueuedMaterial(mat.MaterialID)).IsEqualTo(3);
       await Assert
         .That(

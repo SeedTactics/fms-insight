@@ -4696,7 +4696,7 @@ namespace BlackMaple.MachineFramework
       updateEvtCmd.Transaction = trans;
 
       removePathDetailsCmd.CommandText =
-        "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
+        "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process >= $proc";
       removePathDetailsCmd.Parameters.Add("mid", SqliteType.Integer);
       removePathDetailsCmd.Parameters.Add("proc", SqliteType.Integer);
       removePathDetailsCmd.Transaction = trans;
@@ -4787,6 +4787,38 @@ namespace BlackMaple.MachineFramework
         .ToImmutableList();
       validateAffectedMaterials?.Invoke(affectedMaterials);
 
+      // Manufacturing events establish the affected group. Its members also have individual
+      // queue records; leaving those valid would retain progress for every member except the
+      // selected identity. Include those records without expanding manufacturing membership.
+      using var getQueueEvents = _connection.CreateCommand();
+      getQueueEvents.Transaction = trans;
+      getQueueEvents.CommandText =
+        "SELECT s.Counter FROM stations s JOIN stations_mat m ON m.Counter = s.Counter "
+        + "WHERE m.MaterialID = $mid AND m.Process >= $proc "
+        + "AND s.StationLoc IN ($add, $remove) AND NOT EXISTS ("
+        + "SELECT 1 FROM program_details d WHERE d.Counter = s.Counter AND d.Key = 'PalletCycleInvalidated')";
+      getQueueEvents.Parameters.Add("mid", SqliteType.Integer);
+      getQueueEvents.Parameters.Add("proc", SqliteType.Integer);
+      getQueueEvents.Parameters.Add("add", SqliteType.Integer).Value = (int)LogType.AddToQueue;
+      getQueueEvents.Parameters.Add("remove", SqliteType.Integer).Value = (int)
+        LogType.RemoveFromQueue;
+      var affectedFromProcess = allMatIds
+        .GroupBy(m => m.matId)
+        .ToImmutableDictionary(g => g.Key, g => g.Min(m => m.proc));
+      foreach (var (id, firstProcess) in affectedFromProcess)
+      {
+        getQueueEvents.Parameters[0].Value = id;
+        getQueueEvents.Parameters[1].Value = firstProcess;
+        using var reader = getQueueEvents.ExecuteReader();
+        while (reader.Read())
+        {
+          var counter = reader.GetInt64(0);
+          if (!invalidatedCntrs.Contains(counter))
+            invalidatedCntrs.Add(counter);
+        }
+      }
+      invalidatedCntrs.Sort();
+
       foreach (var cntr in invalidatedCntrs)
       {
         updateEvtCmd.Parameters[0].Value = cntr;
@@ -4796,7 +4828,9 @@ namespace BlackMaple.MachineFramework
         addMessageCmd.ExecuteNonQuery();
       }
 
-      foreach (var (affectedMatId, affectedProcess) in allMatIds)
+      // Later preparation may have assigned a path without a manufacturing event. Clear those
+      // superseded paths too, without invalidating truthful basket handling history.
+      foreach (var (affectedMatId, affectedProcess) in affectedFromProcess)
       {
         removePathDetailsCmd.Parameters[0].Value = affectedMatId;
         removePathDetailsCmd.Parameters[1].Value = affectedProcess;
