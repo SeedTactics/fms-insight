@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { IEditMaterialInLogEvents, ILogEntry, ILogMaterial, LogType } from "../network/api.js";
+import { ILogEntry, ILogMaterial, LogType } from "../network/api.js";
 import type { ServerEventAndTime } from "./loading.js";
 import {
   calcElapsedForCycles,
@@ -251,20 +251,6 @@ function convertOldLogsToCycles(
     .buildHashMap((c) => c.cntr);
 }
 
-function process_swap(
-  swap: Readonly<IEditMaterialInLogEvents>,
-  partCycles: StationCyclesByCntr,
-): StationCyclesByCntr {
-  for (const changed of swap.editedEvents) {
-    const c = partCycles.get(changed.counter);
-    if (c !== undefined) {
-      const newC = { ...c, material: changed.material };
-      partCycles = partCycles.set(changed.counter, newC);
-    }
-  }
-  return partCycles;
-}
-
 export const setLast30StationCycles = atom(
   null,
   (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
@@ -325,9 +311,6 @@ export const updateLast30StationCycles = atom(
 
         return cycles;
       });
-    } else if (evt.editMaterialInLog) {
-      const edit = evt.editMaterialInLog;
-      set(last30StationCyclesRW, (oldCycles) => process_swap(edit, oldCycles));
     }
   },
 );

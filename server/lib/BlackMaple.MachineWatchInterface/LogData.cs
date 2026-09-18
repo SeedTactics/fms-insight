@@ -144,6 +144,7 @@ namespace BlackMaple.MachineWatchInterface
     [EnumMember]
     InvalidateCycle = 112,
 
+    // Retired operation; keep this value for reading existing audit history.
     [EnumMember]
     SwapMaterialOnPallet = 113,
   }

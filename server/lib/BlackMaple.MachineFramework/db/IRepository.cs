@@ -464,14 +464,6 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
-    SwapMaterialResult SwapMaterialInCurrentPalletCycle(
-      int pallet,
-      long oldMatId,
-      long newMatId,
-      string operatorName,
-      string quarantineQueue,
-      DateTime? timeUTC = null
-    );
     IEnumerable<LogEntry> InvalidatePalletCycle(
       long matId,
       int process,
@@ -743,12 +735,6 @@ namespace BlackMaple.MachineFramework
   public sealed record BasketContentsOperation
   {
     public required ImmutableList<BasketContentsChange> Changes { get; init; }
-  }
-
-  public record SwapMaterialResult
-  {
-    public required IEnumerable<LogEntry> ChangedLogEntries { get; init; }
-    public required IEnumerable<LogEntry> NewLogEntries { get; init; }
   }
 
   public record Decision

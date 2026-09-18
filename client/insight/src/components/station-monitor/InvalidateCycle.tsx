@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { Box, Button, ListItemIcon, ListItemText, ListSubheader, Stack } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
-import { IActiveJob, IInProcessMaterial, ILogEntry, LocType, LogType } from "../../network/api.js";
+import { ILogEntry, LocType, LogType } from "../../network/api.js";
 import { JobsBackend } from "../../network/backend.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -49,15 +49,12 @@ import {
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
-import { ReactNode, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { PartIdenticon } from "./Material.js";
 import { isLogEntryInvalidated } from "../LogEntry.js";
 import { ApiException } from "../../network/api.js";
-import {
-  canInvalidateMaterial,
-  isActiveLoadStationOperation,
-} from "../../data/material-operation-policy.js";
+import { canInvalidateMaterial } from "../../data/material-operation-policy.js";
 
 export type InvalidateCycleState = {
   readonly process: number | null;
@@ -381,171 +378,6 @@ export function InvalidateCycleDialogButton(
                     : "Invalidate Process 1"
                   : "Invalidate Process " + props.st.process.toString()
                 : "Invalidate Cycle"}
-        </Button>
-      ) : undefined}
-    </>
-  );
-}
-
-// ----------------------------------------------------------------------------------
-// Swap
-// ----------------------------------------------------------------------------------
-
-interface SwapMaterial {
-  readonly selectedMatToSwap: Readonly<IInProcessMaterial> | null;
-  readonly updating: boolean;
-}
-
-export type SwapMaterialState = SwapMaterial | null;
-
-function isNullOrEmpty(s: string | null | undefined): boolean {
-  return s === undefined || s === null || s == "";
-}
-
-function matCanSwap(
-  curMat: Readonly<IInProcessMaterial>,
-  job: Readonly<IActiveJob> | undefined,
-): (m: Readonly<IInProcessMaterial>) => boolean {
-  return (newMat) => {
-    if (isNullOrEmpty(newMat.serial)) return false;
-    if (newMat.location.type === LocType.OnPallet) return false;
-    if (newMat.process !== curMat.process - 1) return false;
-    if (isNullOrEmpty(newMat.jobUnique)) {
-      // if part name is wrong, check casting
-      if (isNullOrEmpty(newMat.partName)) return false;
-      if (newMat.partName !== curMat.partName) {
-        if (!job) return false;
-        if (
-          !LazySeq.of(job.procsAndPaths)
-            .flatMap((p) => p.paths)
-            .some((p) => p.casting === newMat.partName)
-        ) {
-          return false;
-        }
-      }
-    } else {
-      // check path
-      if (newMat.jobUnique !== curMat.jobUnique) return false;
-      if (newMat.path !== curMat.path) return false;
-    }
-    return true;
-  };
-}
-
-export interface SwapMaterialProps {
-  readonly st: SwapMaterialState;
-  readonly setState: (s: SwapMaterialState) => void;
-}
-
-export function SwapMaterialDialogContent(props: SwapMaterialProps): ReactNode {
-  const status = useAtomValue(currentStatus);
-  const curMat = useAtomValue(inProcessMaterialInDialog);
-
-  if (curMat === null || props.st === null) return <div />;
-  const curMatJob = status.jobs[curMat.jobUnique];
-
-  const availMats = status.material.filter(matCanSwap(curMat, curMatJob));
-  if (availMats.length === 0) {
-    return (
-      <p style={{ margin: "2em" }}>
-        No material with the same job is available for swapping. You must edit the pallet using the
-        cell controller software to remove the material from the pallet. Insight will automatically
-        refresh once the cell controller software is updated.
-      </p>
-    );
-  } else {
-    return (
-      <div style={{ margin: "2em" }}>
-        <p>Swap serial on pallet with material from the same job.</p>
-        <p>
-          If material on the pallet is from a different job, you cannot use this screen. Instead,
-          the material must first be removed from the pallet using the cell controller software.
-          Insight will automatically refresh when this occurs.
-        </p>
-        <TextField
-          value={props.st?.selectedMatToSwap?.serial ?? ""}
-          select
-          onChange={(e) =>
-            props.st &&
-            props.setState({
-              ...props.st,
-              selectedMatToSwap: availMats.find((m) => m.serial === e.target.value) ?? null,
-            })
-          }
-          style={{ width: "20em" }}
-          variant="outlined"
-          label={"Select serial to swap with " + (curMat.serial ?? "")}
-        >
-          {availMats.map((m) => (
-            <MenuItem key={m.materialID} value={m.serial}>
-              {m.serial}
-            </MenuItem>
-          ))}
-        </TextField>
-      </div>
-    );
-  }
-}
-
-export function SwapMaterialButtons(
-  props: SwapMaterialProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean },
-) {
-  const fmsInfo = useAtomValue(fmsInformation);
-  const curMat = useAtomValue(inProcessMaterialInDialog);
-  const closeMatDialog = useSetAtom(materialDialogOpen);
-  let operator = useAtomValue(currentOperator);
-
-  if (!fmsInfo.allowSwapSerialAtLoadStation) return null;
-
-  if (props.ignoreOperator) operator = null;
-
-  if (
-    !curMat ||
-    curMat.location.type !== LocType.OnPallet ||
-    isActiveLoadStationOperation(curMat)
-  ) {
-    return null;
-  }
-
-  function swapMats() {
-    if (
-      curMat &&
-      props.st &&
-      props.st.selectedMatToSwap &&
-      curMat.location.type === LocType.OnPallet
-    ) {
-      props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
-      JobsBackend.swapMaterialOnPallet(curMat.materialID, operator, {
-        pallet: curMat.location.palletNum ?? 0,
-        materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
-      })
-        .catch(console.log)
-        .finally(() => {
-          closeMatDialog(null);
-          props.onClose();
-        });
-    }
-  }
-
-  return (
-    <>
-      {props.st === null ? (
-        <Button
-          color="primary"
-          onClick={() => props.setState({ selectedMatToSwap: null, updating: false })}
-        >
-          Swap Serial
-        </Button>
-      ) : undefined}
-      {props.st !== null ? (
-        <Button
-          color="primary"
-          onClick={swapMats}
-          disabled={props.st.selectedMatToSwap === null || props.st.updating}
-        >
-          {props.st.selectedMatToSwap === null
-            ? "Swap Serial"
-            : "Swap with " + (props.st.selectedMatToSwap.serial ?? "")}
         </Button>
       ) : undefined}
     </>

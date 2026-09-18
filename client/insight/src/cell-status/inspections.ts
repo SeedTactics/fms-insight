@@ -251,28 +251,6 @@ export const updateLast30Inspections = atom(
           (e1, e2) => e1.union(e2),
         );
       });
-    } else if (evt.editMaterialInLog) {
-      const changedByCntr = evt.editMaterialInLog.editedEvents;
-
-      set(last30InspectionsRW, (parts) =>
-        parts.collectValues((entries) => {
-          for (const changed of changedByCntr) {
-            // inspection logs have only a single material
-            const mat = changed?.material[0];
-            const old = entries.get(changed.counter);
-            if (old !== undefined && mat) {
-              const newEntry = {
-                ...old,
-                materialID: mat.id,
-                serial: mat.serial,
-                workorder: mat.workorder,
-              };
-              entries = entries.set(changed.counter, newEntry);
-            }
-          }
-          return entries;
-        }),
-      );
     }
   },
 );

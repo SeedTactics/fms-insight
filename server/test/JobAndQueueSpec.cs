@@ -1563,7 +1563,7 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
-  public async Task AllowsSwapOfLoadingMaterial()
+  public async Task AllowsReorderingLoadingMaterialWithinItsQueue()
   {
     await StartSyncThread();
     using var db = _repo.OpenConnection();

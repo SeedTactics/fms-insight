@@ -30,12 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import {
-  IEditMaterialInLogEvents,
-  IInProcessMaterial,
-  ILogEntry,
-  LogType,
-} from "../network/api.js";
+import { IInProcessMaterial, ILogEntry, LogType } from "../network/api.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { addDays } from "date-fns";
 import { HashMap, LazySeq, HashSet } from "@seedtactics/immutable-collections";
@@ -261,98 +256,6 @@ function filter_old(expire: Date, { matIdsForJob, matsById }: MatSummaryState): 
   return { matIdsForJob, matsById };
 }
 
-function process_swap(
-  swap: Readonly<IEditMaterialInLogEvents>,
-  st: MatSummaryState,
-): MatSummaryState {
-  let jobs = st.matIdsForJob;
-  const oldMatFromState = st.matsById.get(swap.oldMaterialID) ?? null;
-  const newMatFromState = st.matsById.get(swap.newMaterialID) ?? null;
-
-  if (oldMatFromState === null) return st;
-  let oldMat = oldMatFromState;
-
-  let newMat: MaterialSummaryFromEvents;
-  if (newMatFromState === null) {
-    newMat = {
-      materialID: swap.newMaterialID,
-      jobUnique: oldMat.jobUnique,
-      partName: oldMat.partName,
-      last_event: oldMat.last_event,
-      numProcesses: oldMat.numProcesses,
-      startedProcess1: true,
-      unloaded_processes: {},
-      signaledInspections: [],
-      quarantineAfterUnload: null,
-      completedInspections: {},
-    };
-  } else {
-    newMat = newMatFromState;
-  }
-
-  if (
-    oldMat.jobUnique &&
-    oldMat.jobUnique !== "" &&
-    (!newMat.jobUnique || newMat.jobUnique === "")
-  ) {
-    // Swap newMat from raw material
-    const forJob = jobs.get(oldMat.jobUnique);
-    if (forJob !== undefined) {
-      jobs = jobs.set(oldMat.jobUnique, forJob.delete(oldMat.materialID).add(newMat.materialID));
-    }
-    newMat = { ...newMat, jobUnique: oldMat.jobUnique };
-    oldMat = { ...oldMat, jobUnique: "" };
-  }
-
-  const oldMatUnloads = oldMat.unloaded_processes;
-  oldMat = { ...oldMat, unloaded_processes: newMat.unloaded_processes };
-  newMat = { ...newMat, unloaded_processes: oldMatUnloads };
-
-  for (const evt of swap.editedEvents) {
-    const newMatFromEvt = evt.material.find((m) => m.id === swap.newMaterialID);
-    if (newMatFromEvt) {
-      newMat = {
-        ...newMat,
-        serial: newMatFromEvt.serial ?? newMat.serial,
-        workorderId: newMatFromEvt.workorder ?? newMat.workorderId,
-      };
-    }
-
-    switch (evt.type) {
-      case LogType.Inspection:
-      case LogType.InspectionForce: {
-        const inspType = evt.program;
-        let inspect: boolean;
-        if (evt.result.toLowerCase() === "true" || evt.result === "1") {
-          inspect = true;
-        } else {
-          inspect = false;
-        }
-        if (inspect) {
-          // remove from oldMat, add to newMat
-          oldMat = {
-            ...oldMat,
-            signaledInspections: LazySeq.of(oldMat.signaledInspections)
-              .filter((i) => i !== inspType)
-              .toRArray(),
-          };
-          newMat = {
-            ...newMat,
-            signaledInspections: LazySeq.of([...newMat.signaledInspections, inspType])
-              .distinct()
-              .toSortedArray((x) => x),
-          };
-        }
-      }
-    }
-  }
-
-  return {
-    matsById: st.matsById.set(oldMat.materialID, oldMat).set(newMat.materialID, newMat),
-    matIdsForJob: jobs,
-  };
-}
-
 export const setLast30MatSummary = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
   set(last30MaterialSummaryRW, (st) => log.reduce(process_event, st));
 });
@@ -370,9 +273,6 @@ export const updateLast30MatSummary = atom(
           return filter_old(addDays(now, -30), newSt);
         }
       });
-    } else if (evt.editMaterialInLog) {
-      const edit = evt.editMaterialInLog;
-      set(last30MaterialSummaryRW, (st) => process_swap(edit, st));
     }
   },
 );
