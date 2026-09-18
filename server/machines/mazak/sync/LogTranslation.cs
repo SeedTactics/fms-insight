@@ -408,25 +408,8 @@ namespace MazakMachineInterface
           "Resolution must cover every raw L/U event exactly once."
         );
 
-      // Actual recorded machining can establish identity when LOAD history was unavailable.
-      // Use only committed current-cycle evidence, never allocate during exact validation.
-      var onPallet = cycle
-        .Where(e => !e.StartOfCycle && e.LogType is LogType.LoadUnloadCycle or LogType.MachineCycle)
-        .OrderBy(e => e.Counter)
-        .Aggregate(
-          ImmutableDictionary<long, LogMaterial>.Empty,
-          (current, e) =>
-            e.Result == "LOAD" || e.LogType == LogType.MachineCycle
-              ? current.SetItems(
-                e.Material.Where(m =>
-                    e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
-                  )
-                  .Where(m => !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter))
-                  .Select(m => KeyValuePair.Create(m.MaterialID, m))
-              )
-            : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
-            : current
-        );
+      // The same committed placement evidence drives exact transfers and missing-material cleanup.
+      var onPallet = GetAllMaterialOnPallet(cycle).ToImmutableDictionary(m => m.MaterialID);
       var loaded = ImmutableHashSet<long>.Empty;
       var unloaded = ImmutableHashSet<long>.Empty;
       var toLoad = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
@@ -859,15 +842,27 @@ namespace MazakMachineInterface
     #region Material
     private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents)
     {
+      // Actual machining can establish identity when the LOAD was unavailable. It fills only
+      // missing identities: an existing LOAD retains its raw face/addressing information.
       return oldEvents
-        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
-        .SelectMany(e =>
-          e.Material.Where(m =>
-            !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter)
-          )
+        .Where(e => !e.StartOfCycle && e.LogType is LogType.LoadUnloadCycle or LogType.MachineCycle)
+        .OrderBy(e => e.Counter)
+        .Aggregate(
+          ImmutableDictionary<long, LogMaterial>.Empty,
+          (current, e) =>
+            e.Result == "LOAD" || e.LogType == LogType.MachineCycle
+              ? current.SetItems(
+                e.Material.Where(m =>
+                    e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
+                  )
+                  .Where(m => !MazakMaterialHistory.WasRemovedAfter(repo, m.MaterialID, e.Counter))
+                  .Select(m => KeyValuePair.Create(m.MaterialID, m))
+              )
+            : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
+            : current
         )
-        .Where(m => !repo.IsMaterialInQueue(m.MaterialID))
-        .DistinctBy(m => m.MaterialID)
+        .Values.Where(m => !repo.IsMaterialInQueue(m.MaterialID))
+        .OrderBy(m => m.MaterialID)
         .ToList();
     }
 
