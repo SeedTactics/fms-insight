@@ -99,7 +99,15 @@ public sealed class ProxyDBspec : IDisposable
           }
         )
         .ToArray(),
-      LoadActions = _fixture.Create<LoadAction[]>(),
+      LoadActions = _fixture
+        .Create<LoadAction[]>()
+        .Select(a =>
+          a with
+          {
+            StationPallet = a.StationPallet with { Material = a.StationPallet.Material.ToArray() },
+          }
+        )
+        .ToArray(),
       PalletStatuses = _fixture.Create<MazakPalletStatusRow[]>(),
       PalletSubStatuses = _fixture.Create<MazakPalletSubStatusRow[]>(),
       PalletPositions = _fixture.Create<MazakPalletPositionRow[]>(),
