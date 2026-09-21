@@ -128,7 +128,8 @@ namespace MazakMachineInterface
 
   public class LoadOperationsFromDB : ICurrentLoadActions
   {
-    private string _connStr;
+    private readonly string _connStr;
+    private bool _loggedDatabaseSettings;
 
     public LoadOperationsFromDB(MazakConfig cfg)
     {
@@ -140,27 +141,26 @@ namespace MazakMachineInterface
       using (var conn = new SqlConnection(_connStr))
       {
         conn.Open();
-        // Prefer retrying our observation over aborting a controller update on lock contention.
+        // Prefer failing our observation over aborting a controller update if a deadlock occurs.
         using (var priority = conn.CreateCommand())
         {
-          priority.CommandText = "SET DEADLOCK_PRIORITY LOW";
+          priority.CommandText =
+            "SET DEADLOCK_PRIORITY LOW; SET TRANSACTION ISOLATION LEVEL READ COMMITTED";
           priority.ExecuteNonQuery();
         }
-        using var trans = conn.BeginTransaction(System.Data.IsolationLevel.Serializable);
-        var stations = ReadStations(conn, trans);
-        // Materialize all results before releasing read locks. Reader failure propagates normally.
-        var result = LoadActions(conn, trans, stations)
-          .Concat(RemoveActions(conn, trans, stations))
-          .ToList();
-        trans.Commit();
-        return result;
+        LogDatabaseSettings(conn);
+        // One statement, ordinary READ COMMITTED: no range locks held across several reads.
+        // This is not a point-in-time snapshot on a lock-based READ COMMITTED database.
+        // The controller must still publish a serviceable request/station/assignment together.
+        return BuildActions(conn.Query<ActionRow>(RequestQuery, transaction: null).ToList());
       }
     }
 
-    internal sealed class StationRow
+    internal class StationRow
     {
       public int OperationID { get; set; }
       public int Station { get; set; }
+      public int StationOperationCount { get; set; }
       public int? Pallet { get; set; }
       public int? Held { get; set; }
       public int PositionCount { get; set; }
@@ -178,30 +178,97 @@ namespace MazakMachineInterface
       public MazakStationPallet Pallet { get; init; }
     }
 
-    private static Dictionary<int, StationContext> ReadStations(
-      SqlConnection connection,
-      SqlTransaction transaction
-    )
+    internal sealed class ActionRow : StationRow
     {
-      var rows = connection
-        .Query<StationRow>(
-          @"
-        SELECT o.OperationID, o.a7_ldsnum AS Station, p.a6_pltnum AS Pallet,
-          s.a3_hold AS Held,
-          (SELECT COUNT(*) FROM A6_PositionData p2 WHERE p2.a6_pltnum=p.a6_pltnum) AS PositionCount,
-          (SELECT COUNT(*) FROM A3_PalletStatus s2 WHERE s2.a3_pltnum=p.a6_pltnum) AS PalletCount,
-          w.ID AS AssignmentID, w.a4_ptnam AS Part, j.a1_schcom AS Comment,
-          w.a4_prcnum AS Process, w.a4_fixqty AS Quantity
-        FROM A7_IndicateOperation o
-        LEFT JOIN A6_PositionData p ON p.a6_pos='LS'+RIGHT('00'+CAST(o.a7_ldsnum AS varchar(2)),2)+'1'
-        LEFT JOIN A3_PalletStatus s ON s.a3_pltnum=p.a6_pltnum
-        LEFT JOIN A4_WorkInformation w ON w.PalletID=s.PalletID
-        LEFT JOIN A1_Schedule j ON j.ScheduleID=w.a4_ScheduleID
-        ",
-          transaction: transaction
-        )
-        .ToList();
-      return BuildStationContexts(rows);
+      public int ActionID { get; set; }
+      public bool LoadEvent { get; set; }
+      public string ActionPart { get; set; }
+      public string ActionComment { get; set; }
+      public int ActionProcess { get; set; }
+      public int ActionQuantity { get; set; }
+    }
+
+    internal const string RequestQuery =
+      @"
+      WITH Actions AS (
+        SELECT ID AS ActionID, CAST(1 AS bit) AS LoadEvent, OperationID,
+          a9_ptnam AS ActionPart, a9_prcnum AS ActionProcess,
+          a9_fixqty AS ActionQuantity, a9_ScheduleID AS ScheduleID
+        FROM A9_FixWork
+        UNION ALL
+        SELECT ID, CAST(0 AS bit), OperationID, a8_ptnam, a8_prcnum,
+          a8_fixqty, a8_ScheduleID
+        FROM A8_RemoveWork
+      )
+      SELECT a.ActionID, a.LoadEvent, a.OperationID, a.ActionPart,
+        a.ActionProcess, a.ActionQuantity, aj.a1_schcom AS ActionComment,
+        COALESCE(o.a7_ldsnum, a.OperationID) AS Station,
+        (SELECT COUNT(*) FROM A7_IndicateOperation o2 WHERE o2.a7_ldsnum=o.a7_ldsnum) AS StationOperationCount,
+        p.a6_pltnum AS Pallet, s.a3_hold AS Held,
+        (SELECT COUNT(*) FROM A6_PositionData p2 WHERE p2.a6_pltnum=p.a6_pltnum) AS PositionCount,
+        (SELECT COUNT(*) FROM A3_PalletStatus s2 WHERE s2.a3_pltnum=p.a6_pltnum) AS PalletCount,
+        w.ID AS AssignmentID, w.a4_ptnam AS Part, j.a1_schcom AS Comment,
+        w.a4_prcnum AS Process, w.a4_fixqty AS Quantity
+      FROM Actions a
+      LEFT JOIN A1_Schedule aj ON aj.ScheduleID=a.ScheduleID
+      LEFT JOIN A7_IndicateOperation o ON o.OperationID=a.OperationID
+      LEFT JOIN A6_PositionData p ON p.a6_pos='LS'+RIGHT('00'+CAST(o.a7_ldsnum AS varchar(2)),2)+'1'
+      LEFT JOIN A3_PalletStatus s ON s.a3_pltnum=p.a6_pltnum
+      LEFT JOIN A4_WorkInformation w ON w.PalletID=s.PalletID
+      LEFT JOIN A1_Schedule j ON j.ScheduleID=w.a4_ScheduleID
+      ORDER BY a.LoadEvent DESC, a.ActionID, w.ID";
+
+    internal static List<LoadAction> BuildActions(IEnumerable<ActionRow> rows)
+    {
+      var result = new List<LoadAction>();
+      // A combined request repeats its station assignments once for each action. Validate each
+      // action's join independently; do not mistake this legitimate fan-out for duplicate data.
+      foreach (var action in rows.GroupBy(r => new { r.LoadEvent, r.ActionID }))
+      {
+        var first = action.First();
+        if (string.IsNullOrEmpty(first.ActionPart))
+          continue;
+        var context = BuildStationContexts(action.Cast<StationRow>())[first.OperationID];
+        var colon = first.ActionPart.IndexOf(':');
+        result.Add(
+          new LoadAction
+          {
+            LoadEvent = first.LoadEvent,
+            LoadStation = context.Station,
+            StationPallet = context.Pallet,
+            Part = colon < 0 ? first.ActionPart : first.ActionPart.Substring(0, colon),
+            Comment = first.ActionComment,
+            Process = first.ActionProcess,
+            Qty = first.ActionQuantity,
+          }
+        );
+      }
+      return result;
+    }
+
+    private void LogDatabaseSettings(SqlConnection connection)
+    {
+      if (_loggedDatabaseSettings)
+        return;
+      _loggedDatabaseSettings = true;
+      try
+      {
+        using var command = connection.CreateCommand();
+        command.CommandText =
+          @"SELECT CAST(SERVERPROPERTY('ProductVersion') AS nvarchar(128)),
+          snapshot_isolation_state_desc, is_read_committed_snapshot_on
+          FROM sys.databases WHERE name=DB_NAME()";
+        using var reader = command.ExecuteReader();
+        if (reader.Read())
+          Serilog.Log.Information(
+            $"PMC database: SQL Server {reader.GetValue(0)}, snapshot isolation {reader.GetValue(1)}, read committed snapshot {reader.GetValue(2)}"
+          );
+      }
+      catch (SqlException ex)
+      {
+        // Optional diagnostics must not prevent the operational read if metadata is restricted.
+        Serilog.Log.Debug(ex, "Unable to read PMC database isolation settings");
+      }
     }
 
     internal static Dictionary<int, StationContext> BuildStationContexts(
@@ -220,7 +287,16 @@ namespace MazakMachineInterface
               && first.Held.HasValue
               && first.PositionCount == 1
               && first.PalletCount == 1
-              && g.All(r => r.Pallet == first.Pallet && r.Station == first.Station)
+              && first.Station > 0
+              && first.StationOperationCount == 1
+              && g.All(r =>
+                r.Pallet == first.Pallet
+                && r.Station == first.Station
+                && r.Held == first.Held
+                && r.PositionCount == 1
+                && r.PalletCount == 1
+                && r.StationOperationCount == 1
+              )
               && g.Select(r => r.AssignmentID).Distinct().Count() == g.Count()
               && rows.Where(r => r.Station == first.Station)
                 .All(r => r.OperationID == first.OperationID);
@@ -246,114 +322,6 @@ namespace MazakMachineInterface
             };
           }
         );
-    }
-
-    private class FixWork
-    {
-      public int OperationID { get; set; }
-      public int a9_prcnum { get; set; }
-      public string a9_ptnam { get; set; }
-      public int a9_fixqty { get; set; }
-      public string a1_schcom { get; set; }
-    }
-
-    private IEnumerable<LoadAction> LoadActions(
-      SqlConnection conn,
-      SqlTransaction trans,
-      Dictionary<int, StationContext> stations
-    )
-    {
-      var qry =
-        "SELECT OperationID, a9_prcnum, a9_ptnam, a9_fixqty, a1_schcom "
-        + " FROM A9_FixWork "
-        + " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
-      var ret = new List<LoadAction>();
-      foreach (var e in conn.Query<FixWork>(qry, transaction: trans))
-      {
-        if (string.IsNullOrEmpty(e.a9_ptnam))
-        {
-          continue;
-        }
-
-        int stat = e.OperationID;
-        string part = e.a9_ptnam;
-        string comment = e.a1_schcom;
-        int idx = part.IndexOf(':');
-        if (idx >= 0)
-        {
-          part = part.Substring(0, idx);
-        }
-        int proc = e.a9_prcnum;
-        int qty = e.a9_fixqty;
-
-        ret.Add(
-          new LoadAction()
-          {
-            LoadEvent = true,
-            LoadStation = stations.TryGetValue(stat, out var station) ? station.Station : stat,
-            StationPallet = station?.Pallet,
-            Part = part,
-            Comment = comment,
-            Process = proc,
-            Qty = qty,
-          }
-        );
-      }
-      return ret;
-    }
-
-    private class RemoveWork
-    {
-      public int OperationID { get; set; }
-      public int a8_prcnum { get; set; }
-      public string a8_ptnam { get; set; }
-      public int a8_fixqty { get; set; }
-      public string a1_schcom { get; set; }
-    }
-
-    private IEnumerable<LoadAction> RemoveActions(
-      SqlConnection conn,
-      SqlTransaction trans,
-      Dictionary<int, StationContext> stations
-    )
-    {
-      var qry =
-        "SELECT OperationID,a8_prcnum,a8_ptnam,a8_fixqty,a1_schcom "
-        + " FROM A8_RemoveWork "
-        + " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
-      var ret = new List<LoadAction>();
-      foreach (var e in conn.Query<RemoveWork>(qry, transaction: trans))
-      {
-        if (string.IsNullOrEmpty(e.a8_ptnam))
-        {
-          continue;
-        }
-
-        int stat = e.OperationID;
-        string part = e.a8_ptnam;
-        string comment = e.a1_schcom;
-        int idx = part.IndexOf(':');
-        if (idx >= 0)
-        {
-          part = part.Substring(0, idx);
-        }
-        int proc = e.a8_prcnum;
-        int qty = e.a8_fixqty;
-
-        ret.Add(
-          new LoadAction()
-          {
-            LoadEvent = false,
-            LoadStation = stations.TryGetValue(stat, out var station) ? station.Station : stat,
-            StationPallet = station?.Pallet,
-            Part = part,
-            Comment = comment,
-            Process = proc,
-            Qty = qty,
-          }
-        );
-      }
-      return ret;
     }
   }
 }
