@@ -534,6 +534,45 @@ namespace MazakMachineInterface
     public string GroupNo { get; init; }
   }
 
+  // Optional live PMC context, acquired with the request in one serializable read.
+  // Raw controller numbers. Null context means unavailable/ambiguous, never ODK fallback.
+  [DataContract]
+#if NET35
+  public class MazakStationPallet
+#else
+  public record MazakStationPallet
+#endif
+  {
+    [DataMember]
+    public int PalletNumber { get; init; }
+
+    [DataMember]
+    public bool OnHold { get; init; }
+
+    [DataMember]
+    public IEnumerable<MazakStationMaterial> Material { get; init; }
+  }
+
+  [DataContract]
+#if NET35
+  public class MazakStationMaterial
+#else
+  public record MazakStationMaterial
+#endif
+  {
+    [DataMember]
+    public string PartName { get; init; }
+
+    [DataMember]
+    public string Comment { get; init; }
+
+    [DataMember]
+    public int Process { get; init; }
+
+    [DataMember]
+    public int Quantity { get; init; }
+  }
+
   [DataContract]
 #if NET35
   public class LoadAction
@@ -541,6 +580,9 @@ namespace MazakMachineInterface
   public record LoadAction
 #endif
   {
+    [DataMember]
+    public MazakStationPallet StationPallet { get; init; }
+
     [DataMember]
     public int LoadStation { get; init; }
 

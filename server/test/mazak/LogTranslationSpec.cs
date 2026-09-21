@@ -2183,19 +2183,152 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    [Arguments(false, 1, false)]
-    [Arguments(false, 2, false)]
-    [Arguments(true, 2, false)]
-    [Arguments(false, 2, true)]
-    [Arguments(true, 2, true)]
+    [Arguments(true, true, "absent", false, false)]
+    [Arguments(true, false, "absent", false, false)]
+    [Arguments(false, true, "absent", false, false)]
+    [Arguments(true, true, "declined", false, false)]
+    [Arguments(true, true, "unresolved", false, false)]
+    [Arguments(true, true, "throws", false, false)]
+    [Arguments(true, true, "invalid", false, false)]
+    [Arguments(true, true, "absent", true, false)]
+    [Arguments(true, true, "absent", false, true)]
+    public async Task UnresolvedBasketUnloadDoesNotCreateProductionSupply(
+      bool basket,
+      bool quarantine,
+      string resolution,
+      bool split,
+      bool signal
+    )
+    {
+      settings = settings with { QuarantineQueue = quarantine ? "quarantineQ" : null };
+      var process = new ProcessInfo
+      {
+        BasketUnloadStations = basket ? [12] : null,
+        Paths = [JobLogTest.EmptyPath with { OutputQueue = "thequeue" }],
+      };
+      AddTestJob(
+        "owned-job",
+        "owned-part",
+        split ? [Process(), process, Process()] : [process, Process()]
+      );
+      if (split)
+        mazakData = mazakData with
+        {
+          Schedules = mazakData
+            .Schedules.Select(s => s with { Comment = "owned-job-2-1-InsightS" })
+            .ToList(),
+        };
+      var time = DateTime.UtcNow.AddHours(-1);
+      TranslateChunk(
+        LoadEndEvent(time, "owned-part") with
+        {
+          ForeignID = "LG000",
+        },
+        FollowingEvent(time)
+      );
+      var id = CurrentPalletLog(1)
+        .Single(e => e.Result == "LOAD" && !e.StartOfCycle)
+        .Material.Single()
+        .MaterialID;
+      if (signal)
+        jobLog.SignalMaterialForQuarantine(
+          new EventLogMaterial
+          {
+            MaterialID = id,
+            Process = 1,
+            Face = 1,
+          },
+          pallet: 1,
+          queue: "operator-exception",
+          operatorName: null,
+          reason: null,
+          timeUTC: time.AddMinutes(1)
+        );
+      if (resolution != "absent")
+        mazakCfg = mazakCfg with
+        {
+          ResolveLoadUnloadTransaction = (_, _) =>
+            resolution switch
+            {
+              "declined" => new MazakLoadUnloadResolution.NotApplicable(),
+              "unresolved" => new MazakLoadUnloadResolution.UnableToResolve("No exact destination"),
+              "throws" => throw new InvalidOperationException("Resolver failure"),
+              _ => new MazakLoadUnloadResolution.Resolved
+              {
+                MaterialForLoads = ImmutableDictionary<string, MazakResolvedLoad>.Empty,
+                MaterialForUnloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty,
+              },
+            },
+        };
+      TranslateChunk(
+        LoadEndEvent(time.AddMinutes(2), "owned-part") with
+        {
+          ForeignID = "LG002",
+          Code = LogCode.UnloadEnd,
+        },
+        FollowingEvent(time.AddMinutes(2))
+      );
+      var queues = jobLog.GetMaterialInAllQueues();
+      if (basket && !quarantine)
+        await Assert.That(queues).IsEmpty();
+      else
+      {
+        await Assert.That(queues.Single().MaterialID).IsEqualTo(id);
+        await Assert
+          .That(queues.Single().Queue)
+          .IsEqualTo(
+            signal ? "operator-exception"
+            : basket ? "quarantineQ"
+            : "thequeue"
+          );
+      }
+      var unload = jobLog
+        .GetLogForMaterial(id)
+        .Single(e => e.Result == "UNLOAD" && !e.StartOfCycle);
+      await Assert.That(unload.Material.Single().Process).IsEqualTo(split ? 2 : 1);
+      await Assert
+        .That(unload.ProgramDetails?.ContainsKey("unresolved-basket-handoff") == true)
+        .IsEqualTo(basket && !signal);
+      await Assert.That(jobLog.GetMaterialDetails(id).JobUnique).IsEqualTo("owned-job");
+      // Deliberate operator admission can make the same identity available afterward. No repeat
+      // machining or replacement identity is required solely because its destination was unknown.
+      jobLog.RecordRemoveMaterialFromAllQueues(id, 1);
+      jobLog.RecordAddMaterialToQueue(
+        new EventLogMaterial
+        {
+          MaterialID = id,
+          Process = split ? 2 : 1,
+          Face = 0,
+        },
+        "thequeue",
+        -1,
+        operatorName: "operator",
+        reason: "readmission",
+        timeUTC: time.AddMinutes(5)
+      );
+      await Assert.That(jobLog.GetMaterialInAllQueues().Single().MaterialID).IsEqualTo(id);
+      await Assert
+        .That(jobLog.GetLogForMaterial(id).Count(e => e.Result == "UNLOAD" && !e.StartOfCycle))
+        .IsEqualTo(1);
+    }
+
+    [Test]
+    [Arguments(false, 1, false, false)]
+    [Arguments(false, 2, false, false)]
+    [Arguments(true, 2, false, false)]
+    [Arguments(false, 2, true, false)]
+    [Arguments(true, 2, true, false)]
+    [Arguments(false, 2, false, true)]
     public async Task ExactBasketUnloadBypassesOutputQueueAndPreservesAtomicity(
       bool conflict,
       int processes,
-      bool missingLoad
+      bool missingLoad,
+      bool notificationFailure
     )
     {
       var firstProcess = new ProcessInfo
       {
+        BasketUnloadStations = [12],
         Paths = [JobLogTest.EmptyPath with { OutputQueue = "thequeue" }],
       };
       AddTestJob(
@@ -2255,6 +2388,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             BasketCompletion = BasketHandoff(material, true),
           },
       };
+      var notificationThrew = false;
+      _repoCfg.NewLogEntry += (_, _, _) =>
+      {
+        if (notificationFailure && !notificationThrew)
+        {
+          notificationThrew = true;
+          throw new InvalidOperationException("Committed basket return notification failure");
+        }
+      };
       TranslateChunk(
         LoadEndEvent(time.AddMinutes(2), "owned-part") with
         {
@@ -2263,9 +2405,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         },
         FollowingEvent(time.AddMinutes(2))
       );
+      await Assert.That(notificationThrew).IsEqualTo(notificationFailure);
       if (conflict)
       {
         await Assert.That(jobLog.GetMaterialInAllQueues().Single().MaterialID).IsEqualTo(material);
+        await Assert.That(jobLog.GetMaterialInAllQueues().Single().Queue).IsEqualTo("quarantineQ");
         await Assert
           .That(jobLog.GetBasketContents(4).Slots[1].Material.Single().MaterialID)
           .IsEqualTo(material);
