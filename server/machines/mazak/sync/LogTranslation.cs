@@ -1218,6 +1218,7 @@ namespace MazakMachineInterface
         var unloadProcess = mats.Count > 0 ? mats[0].Mat.Process : e.Process;
 
         var matToQueue = ImmutableDictionary.CreateBuilder<long, UnloadDestination>();
+        var unresolvedBasketMaterial = new List<long>();
 
         foreach (var mat in mats)
         {
@@ -1239,10 +1240,20 @@ namespace MazakMachineInterface
 
             if (job != null)
             {
-              var q = job.Processes[mat.Mat.Process - 1].Paths[0].OutputQueue;
+              var process = job.Processes[mat.Mat.Process - 1];
+              // An output queue is downstream of basket handling, not a substitute for an
+              // unresolved basket destination. Keep the real unload without inventing supply.
+              var basketUnload = process.BasketUnloadStations?.Count > 0;
+              var q = basketUnload ? fmsSettings.QuarantineQueue : process.Paths[0].OutputQueue;
+              if (basketUnload)
+                unresolvedBasketMaterial.Add(mat.Mat.MaterialID);
               if (
                 !string.IsNullOrEmpty(q)
-                && (fmsSettings.Queues.ContainsKey(q) || fmsSettings.ExternalQueues.ContainsKey(q))
+                && (
+                  basketUnload
+                  || fmsSettings.Queues.ContainsKey(q)
+                  || fmsSettings.ExternalQueues.ContainsKey(q)
+                )
               )
               {
                 matToQueue[mat.Mat.MaterialID] = new UnloadDestination() { Queue = q };
@@ -1259,6 +1270,16 @@ namespace MazakMachineInterface
           }
         }
 
+        if (unresolvedBasketMaterial.Count > 0)
+          Log.Warning(
+            "Unresolved basket handoff for Mazak unload {ForeignID}, pallet {Pallet}, process {Process}, material {@MaterialIDs}; using exception queue {Queue} (no destination if unconfigured)",
+            e.ForeignID,
+            mazakConfig.TranslatePalletNumber(e.Pallet),
+            unloadProcess,
+            unresolvedBasketMaterial,
+            fmsSettings.QuarantineQueue
+          );
+
         ret.Add(
           new MaterialToUnloadFromFace()
           {
@@ -1267,6 +1288,10 @@ namespace MazakMachineInterface
             FaceNum = e.Process,
             ActiveOperationTime = CalculateActiveUnloadTime(mats),
             ForeignID = e.ForeignID,
+            AdditionalData =
+              unresolvedBasketMaterial.Count > 0
+                ? ImmutableDictionary<string, string>.Empty.Add("unresolved-basket-handoff", "true")
+                : null,
           }
         );
       }
