@@ -104,9 +104,11 @@ export function CancelLoadButton({
         <DialogContent>
           <p>The displayed load instruction will be cancelled and recalculated for:</p>
           <ul>
-            {snapshot?.group.map((candidate) => (
-              <li key={candidate.materialID}>
-                {candidate.serial || `Material ID ${candidate.materialID}`}
+            {snapshot?.group.map((candidate, index) => (
+              <li key={candidate.materialID >= 0 ? candidate.materialID : `raw-${index}`}>
+                {candidate.materialID < 0
+                  ? `${candidate.partName} raw material`
+                  : candidate.serial || `Material ID ${candidate.materialID}`}
               </li>
             ))}
           </ul>
