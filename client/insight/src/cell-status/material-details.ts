@@ -174,7 +174,18 @@ export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>
   const toShow = get(matToShow);
   if (toShow === null) return null;
   if (toShow.type === "InProcMat") {
-    return status.material.find((m) => m.materialID === toShow.inproc.materialID) ?? null;
+    return (
+      status.material.find(
+        (m) =>
+          m.materialID === toShow.inproc.materialID &&
+          (m.materialID >= 0 ||
+            (m.action.loadCancellationId === toShow.inproc.action.loadCancellationId &&
+              m.action.workId === toShow.inproc.action.workId &&
+              m.action.loadToBasketSlot === toShow.inproc.action.loadToBasketSlot &&
+              m.action.loadToBasketId === toShow.inproc.action.loadToBasketId &&
+              m.jobUnique === toShow.inproc.jobUnique)),
+      ) ?? null
+    );
   }
   const matId = (await get(materialInDialogInfo))?.materialID ?? null;
   return matId !== null && matId >= 0

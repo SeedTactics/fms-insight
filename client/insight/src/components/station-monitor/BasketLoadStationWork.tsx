@@ -332,6 +332,16 @@ export function BasketLoadStationWorkflow({
                 sx={{ border: "1px solid", borderColor: "text.primary", p: 2 }}
               >
                 <Typography variant="h6">Slot {basketSlotLabel(slot)}</Typography>
+                {loads.length > 0 &&
+                  slotMaterial.some(
+                    (mat) =>
+                      mat.action.type === api.ActionType.UnloadToInProcess ||
+                      mat.action.type === api.ActionType.UnloadToCompletedMaterial,
+                  ) && (
+                    <Typography>
+                      Unload the current material before preparing the replacement.
+                    </Typography>
+                  )}
                 {slotMaterial.length > 0 ? (
                   <SlotMaterial material={slotMaterial} fsize={fsize} />
                 ) : (

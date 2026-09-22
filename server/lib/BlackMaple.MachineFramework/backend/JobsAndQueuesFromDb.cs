@@ -1002,11 +1002,9 @@ namespace BlackMaple.MachineFramework
         }
 
         var selected = state?.CurrentStatus.Material.FirstOrDefault(m =>
-          m.MaterialID == materialId
+          m.MaterialID == materialId && m.Action.LoadCancellationId == expectedLoadCancellationId
         );
         if (selected == null)
-          throw new ConflictRequestException("Material not found in the current cell state.");
-        if (selected.Action.LoadCancellationId != expectedLoadCancellationId)
           throw new ConflictRequestException(
             "The displayed load cancellation is no longer current."
           );

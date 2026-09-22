@@ -86,6 +86,24 @@ function MutatingMaterialActions() {
   );
 }
 
+const raw = (slot: number) =>
+  createMaterial({
+    materialID: -1,
+    jobUnique: "JOB-1",
+    partName: "Raw Part",
+    process: 0,
+    path: 1,
+    location: { type: api.LocType.Free },
+    action: {
+      type: api.ActionType.LoadingToBasket,
+      workId: "station-work",
+      loadToBasketId: 4,
+      loadToBasketSlot: slot,
+      processAfterLoad: 1,
+      loadCancellationId: `raw-slot-${slot}`,
+    },
+  });
+
 describe("cancel load", () => {
   test("is only available for an instruction with a cancellation ID", async () => {
     const material = loadingMaterial({ materialId: 101, serial: "SERIAL-101" });
@@ -170,6 +188,25 @@ describe("cancel load", () => {
       expect.objectContaining({
         method: "PUT",
         body: '{"ExpectedLoadCancellationId":"load-instruction-1","Reason":"Changed schedule"}',
+      }),
+    );
+  });
+
+  test("anonymous raw cancellation resolves the selected slot rather than the first placeholder", async () => {
+    const selected = raw(2);
+    const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+    registerNetworkBackend();
+    const screen = await renderCancelLoadButton(selected, [raw(1), raw(1), selected, raw(2)]);
+    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    const dialog = screen.getByRole("dialog");
+    await expect.element(dialog).not.toHaveTextContent("Material ID -1");
+    expect(dialog.getByRole("listitem").all()).toHaveLength(2);
+    await dialog.getByRole("button", { name: "Cancel Load" }).click();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/jobs/material/-1/cancel-load?operName=Operator%20A",
+      expect.objectContaining({
+        method: "PUT",
+        body: '{"ExpectedLoadCancellationId":"raw-slot-2"}',
       }),
     );
   });

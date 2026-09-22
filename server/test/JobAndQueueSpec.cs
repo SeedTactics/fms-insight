@@ -291,6 +291,8 @@ public sealed class JobAndQueueSpec
   private sealed class RecordingLoadCancel : ILoadCancel<MockCellState>
   {
     public ImmutableList<long> MaterialIds { get; private set; } = [];
+    public InProcessMaterial Selected { get; private set; }
+    public ImmutableList<InProcessMaterial> Group { get; private set; } = [];
     public string Reason { get; private set; }
     public int Calls { get; private set; }
     public Action OnCancel { get; set; }
@@ -307,6 +309,8 @@ public sealed class JobAndQueueSpec
     )
     {
       Calls++;
+      Selected = selectedMaterial;
+      Group = cancellationGroup;
       OnCancel?.Invoke();
       if (Failure != null)
       {
@@ -315,6 +319,34 @@ public sealed class JobAndQueueSpec
       MaterialIds = cancellationGroup.Select(m => m.MaterialID).ToImmutableList();
       Reason = reason;
     }
+  }
+
+  [Test]
+  public async Task AnonymousLoadCancellationSelectsTheRequestedGroupRatherThanFirstPlaceholder()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandler = handler;
+    await StartSyncThread();
+    var first = QueuedMat(-1, null, "part", 0, 1, "", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction
+      {
+        Type = InProcessMaterialAction.ActionType.LoadingToBasket,
+        LoadToBasketId = 4,
+        LoadToBasketSlot = 1,
+        LoadCancellationId = "cancel-a",
+      },
+    };
+    var second = first with
+    {
+      Action = first.Action with { LoadToBasketSlot = 2, LoadCancellationId = "cancel-b" },
+    };
+    await SetCurrentMaterial([first, first, second, second]);
+    _jq.CancelLoad(-1, "cancel-b", "operator", "reason");
+    await Assert.That(handler.Calls).IsEqualTo(1);
+    await Assert.That(handler.Selected).IsEqualTo(second);
+    await Assert.That(handler.Group.Count).IsEqualTo(2);
+    await Assert.That(handler.Group.All(m => m.Action.LoadCancellationId == "cancel-b")).IsTrue();
   }
 
   [Test]
@@ -450,7 +482,7 @@ public sealed class JobAndQueueSpec
       .Throw<ConflictRequestException>(() =>
         _jq.CancelLoad(material.MaterialID, "current", null, null)
       )
-      .Message.ShouldContain("Material not found");
+      .Message.ShouldContain("no longer current");
   }
 
   [Test]
