@@ -5666,6 +5666,7 @@ export enum WorkorderSerialCloseout {
 
 export class BasketStatus implements IBasketStatus {
   basketId!: number;
+  slotCount?: number | undefined;
   loadStationWork?: BasketLoadStationWork | undefined;
   position?: BasketPosition | undefined;
   emptySlots?: number[];
@@ -5682,6 +5683,7 @@ export class BasketStatus implements IBasketStatus {
   init(_data?: any) {
     if (_data) {
       this.basketId = _data["BasketId"];
+      this.slotCount = _data["SlotCount"];
       this.loadStationWork = _data["LoadStationWork"]
         ? BasketLoadStationWork.fromJS(_data["LoadStationWork"])
         : (undefined as any);
@@ -5709,6 +5711,7 @@ export class BasketStatus implements IBasketStatus {
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
     data["BasketId"] = this.basketId;
+    data["SlotCount"] = this.slotCount;
     data["LoadStationWork"] = this.loadStationWork
       ? this.loadStationWork.toJSON()
       : (undefined as any);
@@ -5727,6 +5730,7 @@ export class BasketStatus implements IBasketStatus {
 
 export interface IBasketStatus {
   basketId: number;
+  slotCount?: number | undefined;
   loadStationWork?: BasketLoadStationWork | undefined;
   position?: BasketPosition | undefined;
   emptySlots?: number[];
