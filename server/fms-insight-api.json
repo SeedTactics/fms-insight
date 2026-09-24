@@ -3956,6 +3956,11 @@
             "type": "integer",
             "format": "int32"
           },
+          "SlotCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
           "LoadStationWork": {
             "nullable": true,
             "oneOf": [

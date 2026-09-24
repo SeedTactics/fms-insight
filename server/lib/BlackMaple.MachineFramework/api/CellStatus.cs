@@ -103,6 +103,9 @@ namespace BlackMaple.MachineFramework
   {
     public required int BasketId { get; init; }
 
+    /// <summary>Number of numbered physical positions in this basket.</summary>
+    public int? SlotCount { get; init; }
+
     /// <summary>
     /// Optional current station-work occurrence. When present it governs confirmability;
     /// clients must not fall back to action-derived confirmation if it is inconsistent.
