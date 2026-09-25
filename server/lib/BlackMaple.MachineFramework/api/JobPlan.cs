@@ -308,6 +308,12 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableSortedSet<string>? AssignedWorkorders { get; init; }
 
+    /// <summary>
+    /// Planned quantity not yet committed to the route's first automation entry: a process-1
+    /// basket load when baskets precede pallets, otherwise a process-1 pallet load. An active
+    /// entry instruction reserves that quantity, completion makes the commitment durable, and
+    /// cancellation releases it. Null means the integration cannot determine the count.
+    /// </summary>
     public long? RemainingToStart { get; init; }
   }
 

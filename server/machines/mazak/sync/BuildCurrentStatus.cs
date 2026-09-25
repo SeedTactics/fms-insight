@@ -543,7 +543,27 @@ namespace MazakMachineInterface
             .ToImmutableList(),
           CopiedToSystem = true,
           Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),
-          RemainingToStart = Math.Max(job.Cycles - job.Started, 0),
+          // Controller machining starts plus active process-1 loads remain a lower bound when
+          // Insight history is incomplete.
+          RemainingToStart = Math.Max(
+            job.Cycles
+              - (
+                job.DbJob == null
+                  ? job.Started
+                  : Math.Max(
+                    job.Started,
+                    JobHelpers.CountCommittedToAutomation(
+                      job.DbJob,
+                      JobHelpers.InitialAutomationLoadIds(
+                        jobDB.GetLogForJobUnique(job.UniqueStr),
+                        job.UniqueStr
+                      ),
+                      material
+                    )
+                  )
+              ),
+            0
+          ),
           Decrements = EmptyToNull(jobDB.LoadDecrementsForJob(job.UniqueStr)),
           AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(job.UniqueStr)),
           Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList(),

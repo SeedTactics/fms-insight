@@ -188,6 +188,63 @@ public class JobCache : IJobCache
 
 public static class JobHelpers
 {
+  // Preserve completed pallet LOAD events as entry evidence, including later-process loads
+  // when an earlier event is unavailable. Basket entry is only a process-1 station LOAD.
+  // The material ID set prevents a later basket-to-pallet transfer from counting twice.
+  public static bool IsInitialAutomationLoad(
+    LogEntry entry,
+    LogMaterial material,
+    string jobUnique
+  ) =>
+    !entry.StartOfCycle
+    && entry.Result == "LOAD"
+    && material.JobUniqueStr == jobUnique
+    && (
+      entry.LogType == LogType.LoadUnloadCycle
+      || entry.LogType == LogType.BasketLoadUnload && material.Process == 1
+    );
+
+  public static ImmutableHashSet<long> InitialAutomationLoadIds(
+    IEnumerable<LogEntry> jobLog,
+    string jobUnique
+  ) =>
+    jobLog
+      .SelectMany(entry =>
+        entry.Material.Where(material => IsInitialAutomationLoad(entry, material, jobUnique))
+      )
+      .Select(material => material.MaterialID)
+      .ToImmutableHashSet();
+
+  public static bool EntersThroughBasket(Job job) =>
+    job.Processes.Count > 0 && job.Processes[0].BasketLoadStations?.Count > 0;
+
+  // The route's first automation entry: a process-1 load onto a basket when baskets precede
+  // pallets, otherwise onto a pallet. An active entry reserves its material until the load
+  // completes or is canceled.
+  public static bool IsActiveAutomationEntry(Job job, InProcessMaterial material) =>
+    material.JobUnique == job.UniqueStr
+    && material.Action.ProcessAfterLoad == 1
+    && material.Action.Type
+      == (
+        EntersThroughBasket(job)
+          ? InProcessMaterialAction.ActionType.LoadingToBasket
+          : InProcessMaterialAction.ActionType.Loading
+      );
+
+  // Quantity committed to automation: durable first-entry evidence plus active first entries.
+  // Identified material counts once across both; anonymous active entries count by quantity.
+  public static long CountCommittedToAutomation(
+    Job job,
+    IReadOnlySet<long> loadedMaterialIds,
+    IEnumerable<InProcessMaterial> allMaterial
+  )
+  {
+    var active = allMaterial.Where(m => IsActiveAutomationEntry(job, m)).ToList();
+    return loadedMaterialIds
+        .Union(active.Where(m => m.MaterialID >= 0).Select(m => m.MaterialID))
+        .LongCount() + active.Count(m => m.MaterialID < 0);
+  }
+
   public static ImmutableDictionary<string, ActiveJob> BuildActiveJobs(
     this IJobCache cache,
     IEnumerable<InProcessMaterial> allMaterial,
@@ -206,14 +263,6 @@ public static class JobHelpers
     return cache
       .AllJobs.SelectMany(j =>
       {
-        var loadingCnt = allMaterial
-          .Where(m =>
-            m.JobUnique == j.UniqueStr
-            && m.Action.Type == InProcessMaterialAction.ActionType.Loading
-            && m.Action.ProcessAfterLoad == 1
-          )
-          .Count();
-
         // loaded and completed
         var loadedMats = new HashSet<long>();
         var completed = j
@@ -226,9 +275,19 @@ public static class JobHelpers
 
         foreach (var e in db.GetLogForJobUnique(j.UniqueStr))
         {
-          if (e.LogType != LogType.LoadUnloadCycle)
-            continue;
           if (e.StartOfCycle)
+            continue;
+
+          if (e.Result == "LOAD")
+          {
+            foreach (var mat in e.Material)
+            {
+              if (IsInitialAutomationLoad(e, mat, j.UniqueStr))
+                loadedMats.Add(mat.MaterialID);
+            }
+          }
+
+          if (e.LogType != LogType.LoadUnloadCycle)
             continue;
 
           if (e.EndTimeUTC > maxLULTime)
@@ -236,17 +295,7 @@ public static class JobHelpers
             maxLULTime = e.EndTimeUTC;
           }
 
-          if (e.Result == "LOAD")
-          {
-            foreach (var mat in e.Material)
-            {
-              if (mat.JobUniqueStr == j.UniqueStr)
-              {
-                loadedMats.Add(mat.MaterialID);
-              }
-            }
-          }
-          else if (e.Result == "UNLOAD")
+          if (e.Result == "UNLOAD")
           {
             if (e.EndTimeUTC > maxUnloadTime)
             {
@@ -266,7 +315,9 @@ public static class JobHelpers
         int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
         var newPlanned = j.Cycles - decrQty;
         var remainingToStart =
-          decrQty > 0 ? 0 : Math.Max(newPlanned - loadedMats.Count - loadingCnt, 0);
+          decrQty > 0
+            ? 0
+            : Math.Max(newPlanned - CountCommittedToAutomation(j, loadedMats, allMaterial), 0);
 
         // archive old completed jobs
         if (
