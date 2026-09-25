@@ -204,31 +204,46 @@ public static class JobHelpers
       || entry.LogType == LogType.BasketLoadUnload && material.Process == 1
     );
 
-  // Pieces committed to automation: completed initial loads plus active process-1 load
-  // instructions, so a canceled load returns its piece to RemainingToStart. When baskets precede
-  // pallets, a process-1 pallet load moves material already counted by its basket load; the ID set
-  // covers identified material and anonymous loading of such a job is not a new entry.
+  public static ImmutableHashSet<long> InitialAutomationLoadIds(
+    IEnumerable<LogEntry> jobLog,
+    string jobUnique
+  ) =>
+    jobLog
+      .SelectMany(entry =>
+        entry.Material.Where(material => IsInitialAutomationLoad(entry, material, jobUnique))
+      )
+      .Select(material => material.MaterialID)
+      .ToImmutableHashSet();
+
+  public static bool EntersThroughBasket(Job job) =>
+    job.Processes.Count > 0 && job.Processes[0].BasketLoadStations?.Count > 0;
+
+  // The route's first automation entry: a process-1 load onto a basket when baskets precede
+  // pallets, otherwise onto a pallet. An active entry reserves its material until the load
+  // completes or is canceled.
+  public static bool IsActiveAutomationEntry(Job job, InProcessMaterial material) =>
+    material.JobUnique == job.UniqueStr
+    && material.Action.ProcessAfterLoad == 1
+    && material.Action.Type
+      == (
+        EntersThroughBasket(job)
+          ? InProcessMaterialAction.ActionType.LoadingToBasket
+          : InProcessMaterialAction.ActionType.Loading
+      );
+
+  // Quantity committed to automation: durable first-entry evidence plus active first entries.
+  // Identified material counts once across both; anonymous active entries count by quantity.
   public static long CountCommittedToAutomation(
-    string jobUnique,
-    bool entersThroughBasket,
+    Job job,
     IReadOnlySet<long> loadedMaterialIds,
     IEnumerable<InProcessMaterial> allMaterial
   )
   {
-    var loading = allMaterial
-      .Where(m =>
-        m.JobUnique == jobUnique
-        && m.Action.Type == InProcessMaterialAction.ActionType.Loading
-        && m.Action.ProcessAfterLoad == 1
-      )
-      .ToList();
+    var active = allMaterial.Where(m => IsActiveAutomationEntry(job, m)).ToList();
     return loadedMaterialIds
-        .Union(loading.Where(m => m.MaterialID >= 0).Select(m => m.MaterialID))
-        .LongCount() + (entersThroughBasket ? 0 : loading.Count(m => m.MaterialID < 0));
+        .Union(active.Where(m => m.MaterialID >= 0).Select(m => m.MaterialID))
+        .LongCount() + active.Count(m => m.MaterialID < 0);
   }
-
-  public static bool EntersThroughBasket(Job job) =>
-    job.Processes.Count > 0 && job.Processes[0].BasketLoadStations?.Count > 0;
 
   public static ImmutableDictionary<string, ActiveJob> BuildActiveJobs(
     this IJobCache cache,
@@ -302,16 +317,7 @@ public static class JobHelpers
         var remainingToStart =
           decrQty > 0
             ? 0
-            : Math.Max(
-              newPlanned
-                - CountCommittedToAutomation(
-                  j.UniqueStr,
-                  EntersThroughBasket(j),
-                  loadedMats,
-                  allMaterial
-                ),
-              0
-            );
+            : Math.Max(newPlanned - CountCommittedToAutomation(j, loadedMats, allMaterial), 0);
 
         // archive old completed jobs
         if (

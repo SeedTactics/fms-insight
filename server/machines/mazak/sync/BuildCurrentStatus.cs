@@ -547,22 +547,20 @@ namespace MazakMachineInterface
           // Insight history is incomplete.
           RemainingToStart = Math.Max(
             job.Cycles
-              - Math.Max(
-                job.Started,
-                JobHelpers.CountCommittedToAutomation(
-                  job.UniqueStr,
-                  job.DbJob != null && JobHelpers.EntersThroughBasket(job.DbJob),
-                  jobDB
-                    .GetLogForJobUnique(job.UniqueStr)
-                    .SelectMany(entry =>
-                      entry.Material.Where(material =>
-                        JobHelpers.IsInitialAutomationLoad(entry, material, job.UniqueStr)
-                      )
+              - (
+                job.DbJob == null
+                  ? job.Started
+                  : Math.Max(
+                    job.Started,
+                    JobHelpers.CountCommittedToAutomation(
+                      job.DbJob,
+                      JobHelpers.InitialAutomationLoadIds(
+                        jobDB.GetLogForJobUnique(job.UniqueStr),
+                        job.UniqueStr
+                      ),
+                      material
                     )
-                    .Select(material => material.MaterialID)
-                    .ToHashSet(),
-                  material
-                )
+                  )
               ),
             0
           ),
