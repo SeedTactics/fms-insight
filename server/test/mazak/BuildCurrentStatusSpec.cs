@@ -1350,6 +1350,374 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       await Assert.That(status.Jobs["split-late-uniq"].Completed[0][0]).IsEqualTo(0);
       await Assert.That(status.Jobs["split-late-uniq"].Completed[1][0]).IsEqualTo(4);
       await Assert.That(status.Jobs["split-late-uniq"].RemainingToStart).IsEqualTo(7);
+
+      // A controller schedule can leave process-1 loads out of its started quantity until
+      // machining begins. Count committed entry into automation, including basket loading.
+      var palletIds = Enumerable
+        .Range(0, 6)
+        .Select(_ => repository.AllocateMaterialID("split-late-uniq", splitJob.PartName, 2))
+        .ToImmutableList();
+      repository.RecordLoadUnloadComplete(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace
+          {
+            MaterialIDs = palletIds,
+            Process = 1,
+            Path = 1,
+            FaceNum = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        toUnload: [],
+        previouslyLoaded: [],
+        previouslyUnloaded: [],
+        pallet: 1,
+        lulNum: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: new DateTime(2026, 4, 28, 11, 0, 0, DateTimeKind.Utc),
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      );
+      var basketId = repository.AllocateMaterialID("split-late-uniq", splitJob.PartName, 2);
+      repository.RecordBasketStationOperation(
+        new BasketStationOperation
+        {
+          Transfers =
+          [
+            new BasketStationTransfer.LoadOntoBasket
+            {
+              BasketId = 4,
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = basketId,
+                  Process = 1,
+                  Face = 1,
+                },
+              ],
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          CycleBoundaries = [],
+          ContentsChanges =
+          [
+            new BasketContentsChange
+            {
+              BasketId = 4,
+              Expected = null,
+              Result = new BasketContents
+              {
+                BasketId = 4,
+                Slots = ImmutableSortedDictionary<int, BasketSlotContents>.Empty.Add(
+                  1,
+                  new BasketSlotContents
+                  {
+                    Material = [new BasketMaterial { MaterialID = basketId, Process = 1 }],
+                  }
+                ),
+              },
+            },
+          ],
+        },
+        lulNum: 2,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: new DateTime(2026, 4, 28, 11, 1, 0, DateTimeKind.Utc),
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        idempotencyKey: "initial-basket-load"
+      );
+      var afterInitialLoads = BuildCurrentStatus.Build(
+        repository,
+        _settings,
+        _mazakCfg,
+        allData,
+        machineGroupName: "MC",
+        null,
+        new DateTime(2026, 4, 28, 12, 0, 0, DateTimeKind.Utc)
+      );
+      await Assert.That(afterInitialLoads.Jobs["split-late-uniq"].RemainingToStart).IsEqualTo(5);
+      var genericJobs = new JobCache(repository).BuildActiveJobs([], repository);
+      await Assert.That(genericJobs["split-late-uniq"].RemainingToStart).IsEqualTo(5);
+
+      // The later basket-to-pallet transfer is the same piece entering a second carrier.
+      repository.RecordLoadUnloadComplete(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace
+          {
+            MaterialIDs = [basketId],
+            Process = 1,
+            Path = 1,
+            FaceNum = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        toUnload: [],
+        previouslyLoaded: [],
+        previouslyUnloaded: [],
+        pallet: 2,
+        lulNum: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: new DateTime(2026, 4, 28, 11, 2, 0, DateTimeKind.Utc),
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      );
+      var afterTransfer = BuildCurrentStatus.Build(
+        repository,
+        _settings,
+        _mazakCfg,
+        allData,
+        machineGroupName: "MC",
+        null,
+        new DateTime(2026, 4, 28, 12, 0, 0, DateTimeKind.Utc)
+      );
+      await Assert.That(afterTransfer.Jobs["split-late-uniq"].RemainingToStart).IsEqualTo(5);
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task RemainingToStartCountsCommittedMaterialIncludingActiveLoads(bool basketEntry)
+    {
+      using var repository = _repoCfg.OpenConnection();
+      var job = new Job()
+      {
+        UniqueStr = "commit-uniq",
+        PartName = "CommitPart",
+        Cycles = 10,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes =
+        [
+          new ProcessInfo()
+          {
+            BasketLoadStations = basketEntry ? [2] : null,
+            BasketUnloadStations = basketEntry ? [2] : null,
+            Paths =
+            [
+              new ProcPathInfo()
+              {
+                PalletNums = [1, 3],
+                Load = [1],
+                Unload = [1],
+                Fixture = "FixCommit",
+                Face = 1,
+                PartsPerPallet = 1,
+                ExpectedLoadTime = TimeSpan.Zero,
+                ExpectedUnloadTime = TimeSpan.Zero,
+                SimulatedStartingUTC = DateTime.MinValue,
+                SimulatedAverageFlowTime = TimeSpan.Zero,
+                Stops =
+                [
+                  new MachiningStop()
+                  {
+                    StationGroup = "machine",
+                    Stations = [1],
+                    Program = "progCommit",
+                    ExpectedCycleTime = TimeSpan.Zero,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      repository.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = "sch-commit",
+          Jobs = [job],
+          ExtraParts = [],
+        },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      // Two pieces were loaded onto pallet 1 and wait there; the controller reports one started.
+      var palletIds = Enumerable
+        .Range(0, 2)
+        .Select(_ => repository.AllocateMaterialID("commit-uniq", "CommitPart", 1))
+        .ToImmutableList();
+      repository.RecordLoadUnloadComplete(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace
+          {
+            MaterialIDs = palletIds,
+            Process = 1,
+            Path = 1,
+            FaceNum = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        toUnload: [],
+        previouslyLoaded: [],
+        previouslyUnloaded: [],
+        pallet: 1,
+        lulNum: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: new DateTime(2026, 4, 28, 11, 0, 0, DateTimeKind.Utc),
+        externalQueues: ImmutableDictionary<string, string>.Empty
+      );
+      if (basketEntry)
+      {
+        // The three pieces loading onto pallet 3 already entered automation in a basket.
+        var basketIds = Enumerable
+          .Range(0, 3)
+          .Select(_ => repository.AllocateMaterialID("commit-uniq", "CommitPart", 1))
+          .ToImmutableList();
+        repository.RecordBasketStationOperation(
+          new BasketStationOperation
+          {
+            Transfers =
+            [
+              new BasketStationTransfer.LoadOntoBasket
+              {
+                BasketId = 4,
+                Material = basketIds
+                  .Select(id => new EventLogMaterial
+                  {
+                    MaterialID = id,
+                    Process = 1,
+                    Face = 1,
+                  })
+                  .ToImmutableList(),
+                ActiveOperationTime = TimeSpan.Zero,
+              },
+            ],
+            CycleBoundaries = [],
+            ContentsChanges =
+            [
+              new BasketContentsChange
+              {
+                BasketId = 4,
+                Expected = null,
+                Result = new BasketContents
+                {
+                  BasketId = 4,
+                  Slots = ImmutableSortedDictionary<int, BasketSlotContents>.Empty.Add(
+                    1,
+                    new BasketSlotContents
+                    {
+                      Material = basketIds
+                        .Select(id => new BasketMaterial { MaterialID = id, Process = 1 })
+                        .ToImmutableList(),
+                    }
+                  ),
+                },
+              },
+            ],
+          },
+          lulNum: 2,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: new DateTime(2026, 4, 28, 11, 1, 0, DateTimeKind.Utc),
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          idempotencyKey: "commit-basket-load"
+        );
+      }
+
+      MazakAllData Data(bool loading) =>
+        new()
+        {
+          Parts =
+          [
+            new MazakPartRow()
+            {
+              PartName = "CommitPart:1:1",
+              Comment = "commit-uniq-1-1-InsightS",
+              Processes =
+              [
+                new MazakPartProcessRow()
+                {
+                  PartName = "CommitPart:1:1",
+                  ProcessNumber = 1,
+                  Fixture = "FixCommit",
+                  MainProgram = "progCommit",
+                  FixLDS = "1",
+                  RemoveLDS = "1",
+                  CutMc = "1",
+                  FixQuantity = 1,
+                },
+              ],
+            },
+          ],
+          Schedules =
+          [
+            new MazakScheduleRow()
+            {
+              Id = 30,
+              PartName = "CommitPart:1:1",
+              Comment = "commit-uniq-1-1-InsightS",
+              PlanQuantity = 10,
+              CompleteQuantity = 0,
+              Priority = 1,
+              DueDate = new DateTime(2026, 4, 28, 0, 0, 0, DateTimeKind.Utc),
+              Processes =
+              {
+                new MazakScheduleProcessRow()
+                {
+                  MazakScheduleRowId = 30,
+                  ProcessNumber = 1,
+                  ProcessMaterialQuantity = 0,
+                  ProcessExecuteQuantity = 1,
+                  ProcessBadQuantity = 0,
+                  FixQuantity = 1,
+                },
+              },
+            },
+          ],
+          LoadActions = loading
+            ?
+            [
+              new LoadAction()
+              {
+                Comment = "commit-uniq-1-1-InsightS",
+                LoadEvent = true,
+                LoadStation = 1,
+                Part = "CommitPart",
+                Process = 1,
+                Qty = 3,
+              },
+            ]
+            : [],
+          Pallets =
+          [
+            new MazakPalletRow()
+            {
+              PalletNumber = 3,
+              Fixture = "FixCommit",
+              FixtureGroupV2 = 0,
+            },
+          ],
+          PalletSubStatuses = [],
+          PalletStatuses = [],
+          PalletPositions =
+          [
+            new MazakPalletPositionRow() { PalletNumber = 3, PalletPosition = "LS011" },
+          ],
+          Alarms = [],
+          MainPrograms = [],
+          Fixtures = [],
+        };
+      long? Remaining(bool loading) =>
+        BuildCurrentStatus
+          .Build(
+            repository,
+            _settings,
+            _mazakCfg,
+            Data(loading),
+            machineGroupName: "MC",
+            null,
+            new DateTime(2026, 4, 28, 12, 0, 0, DateTimeKind.Utc)
+          )
+          .Jobs["commit-uniq"]
+          .RemainingToStart;
+
+      // Waiting pallet material and the active load both count; a basket-routed load is the
+      // same material its basket load already counted.
+      await Assert.That(Remaining(loading: true)).IsEqualTo(5);
+      // Canceling the load returns its pieces unless they had already entered in a basket.
+      await Assert.That(Remaining(loading: false)).IsEqualTo(basketEntry ? 5 : 8);
     }
 
     [Test]

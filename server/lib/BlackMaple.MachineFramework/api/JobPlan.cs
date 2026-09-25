@@ -308,6 +308,13 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableSortedSet<string>? AssignedWorkorders { get; init; }
 
+    /// <summary>
+    /// Pieces not yet committed to entering automation. A completed pallet load, a completed
+    /// process-1 basket load when baskets precede pallets, or an active process-1 pallet load
+    /// instruction removes a piece from this count; canceling that instruction returns it.
+    /// Basket preparation tracked only in an integration's own station work is not reflected
+    /// here; that integration reserves it. Null means the integration cannot determine the count.
+    /// </summary>
     public long? RemainingToStart { get; init; }
   }
 
