@@ -41,6 +41,14 @@ using System.Linq;
 
 namespace BlackMaple.MachineFramework
 {
+  public sealed record JobProductionSummary
+  {
+    public required ImmutableHashSet<long> AutomationEntryMaterialIds { get; init; }
+    public required ImmutableDictionary<(int Process, int Path), int> Completed { get; init; }
+    public required DateTime? LastLoadUnloadTime { get; init; }
+    public required DateTime? LastUnloadTime { get; init; }
+  }
+
   public interface IRepository : IDisposable
   {
     RepositoryConfig RepoConfig { get; }
@@ -55,6 +63,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
+    JobProductionSummary GetJobProductionSummary(string jobUnique);
     IEnumerable<LogEntry> CompletedUnloadsSince(long counter);
     IEnumerable<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true);
     IEnumerable<LogEntry> GetLogForMaterial(

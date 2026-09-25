@@ -554,10 +554,7 @@ namespace MazakMachineInterface
                     job.Started,
                     JobHelpers.CountCommittedToAutomation(
                       job.DbJob,
-                      JobHelpers.InitialAutomationLoadIds(
-                        jobDB.GetLogForJobUnique(job.UniqueStr),
-                        job.UniqueStr
-                      ),
+                      jobDB.GetJobProductionSummary(job.UniqueStr).AutomationEntryMaterialIds,
                       material
                     )
                   )

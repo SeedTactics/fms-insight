@@ -549,6 +549,66 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public JobProductionSummary GetJobProductionSummary(string jobUnique)
+    {
+      // Read the same job material and event facts as GetLogForJobUnique without loading
+      // unrelated event metadata. Current material paths match LoadLog's path lookup.
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path "
+        + "FROM matdetails m "
+        + "JOIN stations_mat sm ON sm.MaterialID = m.MaterialID "
+        + "JOIN stations s ON s.Counter = sm.Counter "
+        + "LEFT JOIN mat_path_details mp ON mp.MaterialID = sm.MaterialID AND mp.Process = sm.Process "
+        + "WHERE m.UniqueStr = $uniq AND s.Start = 0 "
+        + "AND s.StationLoc IN ($pallet, $basket)";
+      cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
+      cmd.Parameters.Add("pallet", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+      cmd.Parameters.Add("basket", SqliteType.Integer).Value = (int)LogType.BasketLoadUnload;
+
+      var entryIds = ImmutableHashSet.CreateBuilder<long>();
+      var completed = ImmutableDictionary.CreateBuilder<(int Process, int Path), int>();
+      DateTime? lastLoadUnload = null;
+      DateTime? lastUnload = null;
+      using var reader = cmd.ExecuteReader();
+      while (reader.Read())
+      {
+        var type = (LogType)reader.GetInt32(0);
+        var time = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
+        var result = reader.GetString(2);
+        var materialId = reader.GetInt64(3);
+        var process = reader.GetInt32(4);
+
+        if (result == "LOAD" && (type == LogType.LoadUnloadCycle || process == 1))
+          entryIds.Add(materialId);
+
+        if (type != LogType.LoadUnloadCycle)
+          continue;
+
+        if (lastLoadUnload == null || time > lastLoadUnload.Value)
+          lastLoadUnload = time;
+
+        if (result == "UNLOAD")
+        {
+          if (lastUnload == null || time > lastUnload.Value)
+            lastUnload = time;
+          var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
+          var key = (Process: process, Path: path);
+          completed[key] = completed.GetValueOrDefault(key) + 1;
+        }
+      }
+
+      return new JobProductionSummary
+      {
+        AutomationEntryMaterialIds = entryIds.ToImmutable(),
+        Completed = completed.ToImmutable(),
+        LastLoadUnloadTime = lastLoadUnload,
+        LastUnloadTime = lastUnload,
+      };
+    }
+
     public IEnumerable<LogEntry> GetLogForWorkorder(string workorder)
     {
       using (var trans = _connection.BeginTransaction())
