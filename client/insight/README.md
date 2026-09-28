@@ -25,6 +25,9 @@ The supported entry point for embedding a customized FMS Insight application is
 - `AppProps` to add custom routes, change the mode chooser, or replace the basket load-station
   command.
 - `customState`, a read-only Jotai atom containing the server's opaque custom state.
+- `currentStatusIsLive`, a read-only Jotai atom that is true while the websocket is connected and
+  the retained current status (including `customState`) reflects the server. Pages that must not act
+  on stale status can hide it when this is false.
 - `authenticatedFetch` for extension requests which should use the current Insight user's bearer
   token.
 - `defaultChooseModes` and `RouteLocation` for composing custom navigation.

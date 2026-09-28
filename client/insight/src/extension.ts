@@ -23,6 +23,7 @@ export async function bootstrapInsight(
 }
 
 export { customState } from "./cell-status/custom-state.js";
+export { currentStatusIsLive } from "./network/websocket.js";
 export type { AppProps };
 export { defaultChooseModes } from "./components/ChooseMode.js";
 export type { ChooseModeItem } from "./components/ChooseMode.js";

@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { ServerEvent } from "./api.js";
 import { JobsBackend, LogBackend } from "./backend.js";
 import { fmsInformation } from "./server-settings.js";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   lastEventCounter,
   onLoadCurrentSt,
@@ -50,37 +50,65 @@ import { Atom, Setter, atom, useAtomValue, useSetAtom } from "jotai";
 const websocketReconnectingAtom = atom<boolean>(false);
 export const websocketReconnecting: Atom<boolean> = websocketReconnectingAtom;
 
+// True while the websocket is open and this connection has loaded or received a current status, so
+// the retained current status reflects the server. Loading the historical jobs and log does not
+// affect it.
+const currentStatusIsLiveRW = atom<boolean>(false);
+export const currentStatusIsLive: Atom<boolean> = currentStatusIsLiveRW;
+
+// Changes on every open and close so late results from an earlier connection are ignored.
+const websocketSessionAtom = atom<number>(0);
+
 const errorLoadingLast30RW = atom<string | null>(null);
 export const errorLoadingLast30: Atom<string | null> = errorLoadingLast30RW;
 
-function loadInitial(set: Setter): void {
+function loadCurrentStatus(set: Setter, isCurrentSession: () => boolean): Promise<void> {
+  return JobsBackend.currentStatus().then((st) => {
+    if (!isCurrentSession()) return;
+    set(onLoadCurrentSt, st);
+    set(currentStatusIsLiveRW, true);
+  });
+}
+
+function loadInitial(set: Setter, isCurrentSession: () => boolean): void {
   const now = new Date();
   const thirtyDaysAgo = addDays(now, -30);
 
-  const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
+  const curStProm = loadCurrentStatus(set, isCurrentSession);
   const jobsProm = JobsBackend.recent(thirtyDaysAgo, []).then((j) => set(onLoadLast30Jobs, j));
   const logProm = LogBackend.get(thirtyDaysAgo, now).then((log) => set(onLoadLast30Log, log));
 
-  Promise.all([curStProm, jobsProm, logProm])
-    .catch((e: Record<string, string | undefined>) =>
-      set(errorLoadingLast30RW, e.message ?? "Error"),
-    )
-    .finally(() => set(websocketReconnectingAtom, false));
+  finishLoading([curStProm, jobsProm, logProm], set, isCurrentSession);
 }
 
-function loadMissed(lastCntr: number, schIds: HashSet<string> | undefined, set: Setter): void {
+function loadMissed(
+  lastCntr: number,
+  schIds: HashSet<string> | undefined,
+  set: Setter,
+  isCurrentSession: () => boolean,
+): void {
   const now = new Date();
-  const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
+  const curStProm = loadCurrentStatus(set, isCurrentSession);
   const jobsProm = JobsBackend.recent(addDays(now, -30), schIds ? Array.from(schIds) : []).then(
     (j) => set(onLoadLast30Jobs, j),
   );
   const logProm = LogBackend.recent(lastCntr, undefined).then((log) => set(onLoadLast30Log, log));
 
-  Promise.all([curStProm, jobsProm, logProm])
-    .catch((e: Record<string, string | undefined>) =>
-      set(errorLoadingLast30RW, e.message ?? "Error"),
-    )
-    .finally(() => set(websocketReconnectingAtom, false));
+  finishLoading([curStProm, jobsProm, logProm], set, isCurrentSession);
+}
+
+function finishLoading(
+  loads: ReadonlyArray<Promise<void>>,
+  set: Setter,
+  isCurrentSession: () => boolean,
+): void {
+  Promise.all(loads)
+    .catch((e: Record<string, string | undefined>) => {
+      if (isCurrentSession()) set(errorLoadingLast30RW, e.message ?? "Error");
+    })
+    .finally(() => {
+      if (isCurrentSession()) set(websocketReconnectingAtom, false);
+    });
 }
 
 class ReconnectingWebsocket {
@@ -147,24 +175,35 @@ class ReconnectingWebsocket {
 const onOpenAtom = atom(null, (get, set) => {
   const lastSeenCntr = get(lastEventCounter);
   const schIds = get(last30SchIds);
+  const session = get(websocketSessionAtom) + 1;
+  const isCurrentSession = () => get(websocketSessionAtom) === session;
+  set(websocketSessionAtom, session);
   set(websocketReconnectingAtom, true);
+  set(currentStatusIsLiveRW, false);
   set(errorLoadingLast30RW, null);
   if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
-    loadMissed(lastSeenCntr, schIds, set);
+    loadMissed(lastSeenCntr, schIds, set, isCurrentSession);
   } else {
-    loadInitial(set);
+    loadInitial(set, isCurrentSession);
   }
+});
+
+const onReconnectingAtom = atom(null, (get, set) => {
+  set(websocketSessionAtom, get(websocketSessionAtom) + 1);
+  set(websocketReconnectingAtom, true);
+  set(currentStatusIsLiveRW, false);
 });
 
 const onMessageAtom = atom(null, (_, set, evt: MessageEvent<string>) => {
   const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
   set(onServerEvent, { evt: serverEvt, now: new Date(), expire: true });
+  // Messages arrive only on the open connection, so a status received here is live.
+  if (serverEvt.newCurrentStatus) set(currentStatusIsLiveRW, true);
 });
 
 export function WebsocketConnection(): null {
   const onOpen = useSetAtom(onOpenAtom);
-  const setReconnecting = useSetAtom(websocketReconnectingAtom);
-  const onReconnecting = useCallback(() => setReconnecting(true), [setReconnecting]);
+  const onReconnecting = useSetAtom(onReconnectingAtom);
   const onMessage = useSetAtom(onMessageAtom);
   const fmsInfoLoadable = useAtomValue(fmsInformation);
   const websocketRef = useRef<ReconnectingWebsocket | null>(null);
