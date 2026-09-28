@@ -48,7 +48,7 @@ import {
 } from "../network/api.js";
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
-import { atom, useSetAtom, type Atom } from "jotai";
+import { atom, useSetAtom, type Atom, type Getter } from "jotai";
 import { unwrap } from "jotai/utils";
 import { isLogEntryInvalidated } from "../components/LogEntry.js";
 import { currentRoute, RouteLocation } from "../components/routes.js";
@@ -169,10 +169,31 @@ function asyncAtomState<T>(source: Atom<Promise<T>>): Atom<AsyncAtomState<T>> {
 
 export const materialInDialogInfoState = asyncAtomState(materialInDialogInfo);
 
-export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>>(async (get) => {
-  const status = get(currentStatus);
+// Some cells publish current status every second. Dialog atoms that combine current status with the
+// dialog material must not suspend on each status update, since that hides the dialog content behind
+// its loading fallback. They compute synchronously once the dialog material is known and suspend
+// only while it is still loading (e.g., a barcode or serial lookup).
+function withDialogMaterial<T>(
+  get: Getter,
+  compute: (mat: MaterialToShowInfo | null) => T,
+): T | Promise<T> {
+  const info = get(materialInDialogInfoState);
+  switch (info.state) {
+    case "hasData":
+      return compute(info.data);
+    case "hasError":
+      throw info.error;
+    case "loading":
+      return get(materialInDialogInfo).then(compute);
+  }
+}
+
+export const inProcessMaterialInDialog = atom<
+  IInProcessMaterial | null | Promise<IInProcessMaterial | null>
+>((get) => {
   const toShow = get(matToShow);
   if (toShow === null) return null;
+  const status = get(currentStatus);
   if (toShow.type === "InProcMat") {
     return (
       status.material.find(
@@ -187,10 +208,11 @@ export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>
       ) ?? null
     );
   }
-  const matId = (await get(materialInDialogInfo))?.materialID ?? null;
-  return matId !== null && matId >= 0
-    ? (status.material.find((m) => m.materialID === matId) ?? null)
-    : null;
+  return withDialogMaterial(get, (mat) =>
+    mat !== null && mat.materialID >= 0
+      ? (status.material.find((m) => m.materialID === mat.materialID) ?? null)
+      : null,
+  );
 });
 
 export const serialInMaterialDialog = atom<Promise<string | null>>(async (get) => {
@@ -390,21 +412,21 @@ export const materialInDialogInspections = atom<MaterialToShowInspections>((get)
 // Workorders
 //--------------------------------------------------------------------------------
 
-export const possibleWorkordersForMaterialInDialog = atom<Promise<ReadonlyArray<IActiveWorkorder>>>(
-  async (get) => {
-    const mat = await get(materialInDialogInfo);
-    if (mat === null || mat.partName === "") return [];
-
-    const works = get(currentStatus)?.workorders ?? [];
-
-    return LazySeq.of(works)
-      .filter((w) => w.part === mat.partName)
-      .toSortedArray(
-        (w) => w.dueDate.getTime(),
-        (w) => -w.priority,
-      );
-  },
-);
+export const possibleWorkordersForMaterialInDialog = atom<
+  ReadonlyArray<IActiveWorkorder> | Promise<ReadonlyArray<IActiveWorkorder>>
+>((get) => {
+  const works = get(currentStatus)?.workorders ?? [];
+  return withDialogMaterial(get, (mat) =>
+    mat === null || mat.partName === ""
+      ? []
+      : LazySeq.of(works)
+          .filter((w) => w.part === mat.partName)
+          .toSortedArray(
+            (w) => w.dueDate.getTime(),
+            (w) => -w.priority,
+          ),
+  );
+});
 
 //--------------------------------------------------------------------------------
 // Updates

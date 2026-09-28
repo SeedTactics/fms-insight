@@ -70,6 +70,8 @@ export function CancelLoadButton({
           reason: reason || undefined,
         }),
       );
+      setOpen(false);
+      setSnapshot(null);
       setMaterialDialogOpen(null);
       onClose?.();
     } catch (e) {
