@@ -62,6 +62,11 @@ export const currentStatusIsLive: Atom<boolean> = currentStatusIsLiveRW;
 type WebsocketSession = { readonly id: number; readonly statusFromSocket: boolean };
 const websocketSessionAtom = atom<WebsocketSession>({ id: 0, statusFromSocket: false });
 
+// The event counter from which the log history still has to be caught up. Live events advance
+// lastEventCounter while a catch-up is pending, so an interrupted catch-up resumes from here
+// rather than leaving a gap; it is cleared once a catch-up is applied.
+const historyCatchUpFromAtom = atom<number | null>(null);
+
 const errorLoadingLast30RW = atom<string | null>(null);
 export const errorLoadingLast30: Atom<string | null> = errorLoadingLast30RW;
 
@@ -108,7 +113,9 @@ function loadMissed(
     },
   );
   const logProm = LogBackend.recent(lastCntr, undefined).then((log) => {
-    if (isCurrentSession(get, session)) set(onLoadLast30Log, log);
+    if (!isCurrentSession(get, session)) return;
+    set(onLoadLast30Log, log);
+    set(historyCatchUpFromAtom, null);
   });
 
   finishLoading([curStProm, jobsProm, logProm], get, set, session);
@@ -200,15 +207,16 @@ class ReconnectingWebsocket {
 }
 
 const onOpenAtom = atom(null, (get, set): number => {
-  const lastSeenCntr = get(lastEventCounter);
+  const catchUpFrom = get(historyCatchUpFromAtom) ?? get(lastEventCounter);
   const schIds = get(last30SchIds);
   const session = get(websocketSessionAtom).id + 1;
   set(websocketSessionAtom, { id: session, statusFromSocket: false });
   set(websocketReconnectingAtom, true);
   set(currentStatusIsLiveRW, false);
   set(errorLoadingLast30RW, null);
-  if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
-    loadMissed(lastSeenCntr, schIds, get, set, session);
+  if (catchUpFrom !== null) {
+    set(historyCatchUpFromAtom, catchUpFrom);
+    loadMissed(catchUpFrom, schIds, get, set, session);
   } else {
     loadInitial(get, set, session);
   }

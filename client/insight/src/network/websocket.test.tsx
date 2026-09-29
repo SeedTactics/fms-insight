@@ -136,6 +136,7 @@ function only<T extends object>(calls: Partial<T>): T {
 
 let statusLoads: Deferred<Readonly<ICurrentStatus>>[];
 let logLoads: Deferred<ReadonlyArray<Readonly<ILogEntry>>>[];
+let recentFrom: number[];
 let root: Root;
 let mounted: boolean;
 
@@ -145,13 +146,20 @@ beforeEach(() => {
   vi.stubGlobal("WebSocket", FakeSocket);
   statusLoads = [];
   logLoads = [];
+  recentFrom = [];
   const logLoad = () => {
     const load = deferred<ReadonlyArray<Readonly<ILogEntry>>>();
     logLoads.push(load);
     return load.promise;
   };
   registerBackend(
-    only<LogAPI>({ get: logLoad, recent: logLoad }),
+    only<LogAPI>({
+      get: logLoad,
+      recent: (from: number) => {
+        recentFrom.push(from);
+        return logLoad();
+      },
+    }),
     only<JobAPI>({
       currentStatus: () => {
         const load = deferred<Readonly<ICurrentStatus>>();
@@ -302,4 +310,29 @@ test("a replaced connection cannot change the new connection's state", async () 
   });
   expect(installed()).toEqual({ alarms: ["current"], custom: { label: "current" } });
   expect(live().live).toBe(true);
+});
+
+test("an interrupted history catch-up resumes from where it started", async () => {
+  const { store } = await connect();
+  const reconnect = async (socket: number) => {
+    await settle(() => FakeSocket.sockets[socket - 1]?.close());
+    await settle(() => vi.advanceTimersByTime(1000));
+    expect(FakeSocket.sockets).toHaveLength(socket + 1);
+    await settle(() => FakeSocket.sockets[socket]?.emit("open"));
+  };
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => logLoads[0]?.resolve([machined(100)]));
+  await reconnect(1);
+  // A live event arrives while the catch-up from 100 is still pending.
+  const live = new ServerEvent({ logEntry: new LogEntry(machined(120)) });
+  await settle(() =>
+    FakeSocket.sockets[1]?.emit("message", { data: JSON.stringify(live.toJSON()) }),
+  );
+  await reconnect(2);
+  expect(recentFrom).toEqual([100, 100]);
+  await settle(() => logLoads[1]?.resolve([machined(110), machined(120)]));
+  await settle(() => logLoads[2]?.resolve([machined(110), machined(120)]));
+  expect(store.get(last30MaterialSummary).matsById.has(110)).toBe(true);
+  await reconnect(3);
+  expect(recentFrom).toEqual([100, 100, 120]);
 });
