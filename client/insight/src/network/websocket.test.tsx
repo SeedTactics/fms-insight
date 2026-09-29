@@ -180,15 +180,16 @@ async function reconnect(socket: number) {
 // Backend calls not listed fail the test.
 function only<T extends object>(calls: Partial<T>): T {
   // The proxy supplies a throwing implementation for every omitted backend method.
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-  return new Proxy(calls, {
+  const backend = new Proxy(calls, {
     get: (target, prop) =>
       prop in target
         ? (target as Record<string | symbol, unknown>)[prop]
         : () => {
             throw new Error(`Unexpected backend call ${String(prop)}`);
           },
-  }) as T;
+  });
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  return backend as T;
 }
 
 let statusLoads: Deferred<Readonly<ICurrentStatus>>[];

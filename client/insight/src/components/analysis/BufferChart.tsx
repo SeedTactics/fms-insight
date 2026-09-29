@@ -117,6 +117,7 @@ function BufferChartSVG({
   series: ReadonlyArray<BufferChartSeries>;
   disabled: HashSet<string>;
 }) {
+  const [emptyDate] = useState(() => new Date());
   const [dateMin, dateMax] = useMemo(() => {
     let min: Date | null = null;
     let max: Date | null = null;
@@ -130,8 +131,8 @@ function BufferChartSVG({
         }
       }
     }
-    return [min ?? new Date(), max ?? new Date()];
-  }, [series]);
+    return [min ?? emptyDate, max ?? emptyDate];
+  }, [series, emptyDate]);
 
   const xScale = useMemo(
     () =>

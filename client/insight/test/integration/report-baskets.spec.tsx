@@ -98,7 +98,7 @@ describe("basket reports", () => {
 
     await expect.element(screen.getByText("Tray Cycles")).toBeVisible();
     await expect.element(screen.getByText("Any Tray")).toBeVisible();
-    await expect.element(screen.locator).not.toHaveTextContent("Pallet Cycles");
+    await expect.element(screen.locator).not.toMatchTextContent("Pallet Cycles");
   });
 
   test("shows the carrier filter on load cycle reports when basket events exist", async () => {
@@ -130,7 +130,7 @@ describe("basket reports", () => {
     });
 
     await screen.getByRole("combobox").first().click();
-    await expect.element(screen.locator).not.toHaveTextContent("Basket Cycles");
+    await expect.element(screen.locator).not.toMatchTextContent("Basket Cycles");
   });
 
   test("shows the basket cycles navigation item with fallback basket naming", async () => {
@@ -186,7 +186,7 @@ describe("basket reports", () => {
     const fixture = createPalletOnlyFixture();
     const screen = await renderInsightPage(<RecentStationCycleChart ty="labor" />, fixture.data);
 
-    await expect.element(screen.locator).not.toHaveTextContent("Any Carrier");
+    await expect.element(screen.locator).not.toMatchTextContent("Any Carrier");
   });
 
   test("filters recent load cycles by basket carrier and uses display names", async () => {
@@ -199,9 +199,9 @@ describe("basket reports", () => {
     await screen.getByRole("combobox").nth(2).click();
     await screen.getByRole("option", { name: "Tray" }).click();
 
-    await expect.element(screen.locator).toHaveTextContent("Tray Cell");
-    await expect.element(screen.locator).toHaveTextContent("Tray 21");
-    await expect.element(screen.locator).not.toHaveTextContent("Pallet 1");
+    await expect.element(screen.locator).toMatchTextContent("Tray Cell");
+    await expect.element(screen.locator).toMatchTextContent("Tray 21");
+    await expect.element(screen.locator).not.toMatchTextContent("Pallet 1");
   });
 
   test("shows only the basket outlier in the outlier report", async () => {
@@ -213,8 +213,8 @@ describe("basket reports", () => {
       last30Log: outlierBasketLogs(),
     });
 
-    await expect.element(screen.locator).toHaveTextContent("OUTLIER-1");
-    await expect.element(screen.locator).toHaveTextContent("Tray Cell");
-    await expect.element(screen.locator).not.toHaveTextContent("INLIER-1");
+    await expect.element(screen.locator).toMatchTextContent("OUTLIER-1");
+    await expect.element(screen.locator).toMatchTextContent("Tray Cell");
+    await expect.element(screen.locator).not.toMatchTextContent("INLIER-1");
   });
 });

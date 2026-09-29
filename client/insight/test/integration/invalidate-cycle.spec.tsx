@@ -209,76 +209,98 @@ describe("cycle invalidation workflow", () => {
       .not.toBeInTheDocument();
   });
 
-  test("previews only current local events in the selected process range", async () => {
-    const selected = material({ materialId: 101 });
-    const queuedPeer = material({
-      materialId: 102,
-      location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
-    });
-    const localEvents = [
-      logEvent({ counter: 1, process: 0, peerId: 100, peerSerial: "EARLIER" }),
-      logEvent({
-        counter: 2,
-        process: 1,
-        peerId: 103,
-        peerSerial: "INVALID-PEER",
-        invalidated: true,
-      }),
-      logEvent({ counter: 3, process: 2, peerId: 102 }),
-      logEvent({
-        counter: 5,
-        process: 2,
-        peerId: 104,
-        peerSerial: "OTHER-BASKET-SET",
-        type: api.LogType.BasketLoadUnload,
-      }),
-      logEvent({
-        counter: 6,
-        process: 2,
-        peerId: 104,
-        peerSerial: "OTHER-BASKET-SET",
-        type: api.LogType.BasketCycle,
-      }),
-    ];
-    const fetch = vi.spyOn(window, "fetch").mockImplementation(async (input) => {
-      const url = requestUrl(input);
-      if (url === "/api/v1/log/events/for-material/101") return eventResponse(localEvents);
-      if (url.startsWith("https://additional.test")) {
-        return eventResponse([
-          logEvent({ counter: 4, process: 2, peerId: 999, peerSerial: "FOREIGN" }),
-        ]);
+  test.each(["immediate", "after mount"] as const)(
+    "previews only current local events in the selected process range (%s history response)",
+    async (historyResponse) => {
+      const selected = material({ materialId: 101 });
+      const queuedPeer = material({
+        materialId: 102,
+        location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
+      });
+      const localEvents = [
+        logEvent({ counter: 1, process: 0, peerId: 100, peerSerial: "EARLIER" }),
+        logEvent({
+          counter: 2,
+          process: 1,
+          peerId: 103,
+          peerSerial: "INVALID-PEER",
+          invalidated: true,
+        }),
+        logEvent({ counter: 3, process: 2, peerId: 102 }),
+        logEvent({
+          counter: 5,
+          process: 2,
+          peerId: 104,
+          peerSerial: "OTHER-BASKET-SET",
+          type: api.LogType.BasketLoadUnload,
+        }),
+        logEvent({
+          counter: 6,
+          process: 2,
+          peerId: 104,
+          peerSerial: "OTHER-BASKET-SET",
+          type: api.LogType.BasketCycle,
+        }),
+      ];
+      let resolveHistory!: (response: Response) => void;
+      const history = new Promise<Response>((resolve) => {
+        resolveHistory = resolve;
+      });
+      if (historyResponse === "immediate") resolveHistory(eventResponse(localEvents));
+      const fetch = vi.spyOn(window, "fetch").mockImplementation(async (input) => {
+        const url = requestUrl(input);
+        if (url === "/api/v1/log/events/for-material/101") return history;
+        if (url.startsWith("https://additional.test")) {
+          return eventResponse([
+            logEvent({ counter: 4, process: 2, peerId: 999, peerSerial: "FOREIGN" }),
+          ]);
+        }
+        throw new Error(`Unexpected request: ${url}`);
+      });
+      registerNetworkBackend();
+      setOtherLogBackends(["https://additional.test"]);
+
+      const screen = await renderInsightPage(
+        <Suspense fallback={<div>Loading</div>}>
+          <InvalidateCycleDialogContent
+            st={{
+              process: 1,
+              changeRawMat: null,
+              changeJobUnique: null,
+              updating: false,
+              error: null,
+            }}
+            setState={() => {}}
+          />
+        </Suspense>,
+        {
+          currentStatus: statusWithMaterial([selected, queuedPeer]),
+          ...dialogData(selected),
+        },
+      );
+
+      if (historyResponse === "after mount") {
+        await expect
+          .element(screen.getByRole("combobox", { name: "Invalidate Process" }))
+          .toBeVisible();
+        await expect
+          .element(screen.getByText("Material ID 102 (currently in a queue)"))
+          .not.toBeInTheDocument();
+        resolveHistory(eventResponse(localEvents));
       }
-      throw new Error(`Unexpected request: ${url}`);
-    });
-    registerNetworkBackend();
-    setOtherLogBackends(["https://additional.test"]);
 
-    const screen = await renderInsightPage(
-      <Suspense fallback={<div>Loading</div>}>
-        <InvalidateCycleDialogContent
-          st={{
-            process: 1,
-            changeRawMat: null,
-            changeJobUnique: null,
-            updating: false,
-            error: null,
-          }}
-          setState={() => {}}
-        />
-      </Suspense>,
-      {
-        currentStatus: statusWithMaterial([selected, queuedPeer]),
-        ...dialogData(selected),
-      },
-    );
-
-    await expect.element(screen.getByText("Material ID 102 (currently in a queue)")).toBeVisible();
-    await expect.element(screen.getByText("EARLIER")).not.toBeInTheDocument();
-    await expect.element(screen.getByText("INVALID-PEER", { exact: true })).not.toBeInTheDocument();
-    await expect.element(screen.getByText("FOREIGN")).not.toBeInTheDocument();
-    await expect.element(screen.getByText("OTHER-BASKET-SET")).not.toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith("/api/v1/log/events/for-material/101", expect.anything());
-  });
+      await expect
+        .element(screen.getByText("Material ID 102 (currently in a queue)"))
+        .toBeVisible();
+      await expect.element(screen.getByText("EARLIER")).not.toBeInTheDocument();
+      await expect
+        .element(screen.getByText("INVALID-PEER", { exact: true }))
+        .not.toBeInTheDocument();
+      await expect.element(screen.getByText("FOREIGN")).not.toBeInTheDocument();
+      await expect.element(screen.getByText("OTHER-BASKET-SET")).not.toBeInTheDocument();
+      expect(fetch).toHaveBeenCalledWith("/api/v1/log/events/for-material/101", expect.anything());
+    },
+  );
 
   test("previews process-zero events for an assignment change", async () => {
     const selected = material({ materialId: 101 });
@@ -452,7 +474,7 @@ describe("cycle invalidation workflow", () => {
     screen.store.set(onLoadCurrentSt, statusWithMaterial([refreshed]));
 
     await expect.element(dialog).toBeVisible();
-    await expect.element(dialog).toHaveTextContent("Move to Quarantine");
+    await expect.element(dialog).toMatchTextContent("Move to Quarantine");
     await dialog.getByRole("button", { name: "Quarantine" }).click();
 
     expect(fetch).toHaveBeenCalledWith(
@@ -483,7 +505,7 @@ describe("cycle invalidation workflow", () => {
     await dialog.getByRole("button", { name: "Remove from Queue" }).click();
 
     await expect.element(dialog).toBeVisible();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+    await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
   });
 
   test("clears quarantine errors and reason when reopened", async () => {
@@ -505,12 +527,12 @@ describe("cycle invalidation workflow", () => {
     let dialog = screen.getByRole("dialog");
     await dialog.getByRole("textbox", { name: "Reason" }).fill("bad material");
     await dialog.getByRole("button", { name: "Scrap" }).click();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+    await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await screen.getByRole("button", { name: "Remove from queue and treat as scrap" }).click();
     dialog = screen.getByRole("dialog");
-    await expect.element(dialog).not.toHaveTextContent("Queue changed");
+    await expect.element(dialog).not.toMatchTextContent("Queue changed");
     await expect.element(dialog.getByRole("textbox", { name: "Reason" })).toHaveValue("");
   });
 
@@ -534,14 +556,14 @@ describe("cycle invalidation workflow", () => {
       .click();
     let dialog = screen.getByRole("dialog");
     await dialog.getByRole("button", { name: "Remove from Queue" }).click();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+    await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await screen
       .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
       .click();
     dialog = screen.getByRole("dialog");
-    await expect.element(dialog).not.toHaveTextContent("Queue changed");
+    await expect.element(dialog).not.toMatchTextContent("Queue changed");
   });
 
   test("retains the dialog context after a successful invalidation", async () => {
@@ -603,7 +625,7 @@ describe("cycle invalidation workflow", () => {
 
     await screen.getByRole("button", { name: "Invalidate Process 1" }).click();
 
-    await expect.element(screen.getByRole("alert")).toHaveTextContent("Material is queued");
+    await expect.element(screen.getByRole("alert")).toMatchTextContent("Material is queued");
     expect(screen.store.get(materialDialogOpen)).not.toBeNull();
   });
 
@@ -662,9 +684,9 @@ describe("cycle invalidation workflow", () => {
     );
 
     await expect
-      .element(screen.getByRole("button", { name: "Move From Queue A To Queue B" }))
+      .element(screen.getByRole("button", { name: /Move From Queue A To Queue B/ }))
       .toBeVisible();
-    await screen.getByRole("button", { name: "Move From Queue A To Queue B" }).click();
+    await screen.getByRole("button", { name: /Move From Queue A To Queue B/ }).click();
 
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/jobs/material/101/queue",
@@ -698,7 +720,7 @@ describe("cycle invalidation workflow", () => {
 
     await screen.getByRole("button", { name: /Add To Queue A/ }).click();
 
-    await expect.element(screen.getByRole("alert")).toHaveTextContent("Queue is full");
+    await expect.element(screen.getByRole("alert")).toMatchTextContent("Queue is full");
     expect(closed).not.toHaveBeenCalled();
     expect(screen.store.get(materialDialogOpen)).not.toBeNull();
   });

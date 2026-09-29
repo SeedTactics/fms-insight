@@ -48,7 +48,7 @@ import {
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useAtomValueRawSync, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { PartIdenticon } from "./Material.js";
@@ -211,7 +211,8 @@ function InvalidateSelect(props: InvalidateCycleProps) {
 
 export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
   const curMat = useAtomValue(materialInDialogInfo);
-  const events = useAtomValue(materialInDialogLocalEvents);
+  // History can resolve while InvalidateSelect suspends, before this component subscribes.
+  const events = useAtomValueRawSync(materialInDialogLocalEvents);
   const status = useAtomValue(currentStatus);
   const show = props.st !== null && curMat !== null;
   const boxRef = useRef<HTMLDivElement>(null);

@@ -31,16 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import {
-  PointerEvent,
-  useMemo,
-  useCallback,
-  useState,
-  useRef,
-  useEffect,
-  ReactNode,
-  RefObject,
-} from "react";
+import { PointerEvent, useMemo, useCallback, useRef, ReactNode, RefObject } from "react";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
@@ -52,7 +43,7 @@ import { localPoint } from "../../util/chart-helpers.js";
 import { Stack } from "@mui/material";
 import { Tooltip } from "../ChartTooltip.js";
 import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
-import { currentStatus } from "../../cell-status/current-status.js";
+import { currentStatus, minutesSinceEpochAtom } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -67,6 +58,8 @@ const occupiedOutlierColor = red[700];
 const simColor = grey[400];
 const downtimeColor = grey[100];
 
+const chartTime = atom((get) => Math.floor(get(minutesSinceEpochAtom) / 5) * 5 * 60000);
+
 type SimCycle = {
   readonly station: string;
   readonly start: Date;
@@ -75,11 +68,11 @@ type SimCycle = {
   readonly parts: ReadonlyArray<string>;
 };
 
-function useSimCycles(): ReadonlyArray<SimCycle> {
+function useSimCycles(now: Date): ReadonlyArray<SimCycle> {
   const jobs = useAtomValue(last30Jobs);
   const statUse = useAtomValue(last30SimStationUse);
   return useMemo(() => {
-    const cutoff = addHours(new Date(), -12);
+    const cutoff = addHours(now, -12);
     return (
       LazySeq.of(statUse)
         .filter((s) => s.end >= cutoff)
@@ -101,7 +94,7 @@ function useSimCycles(): ReadonlyArray<SimCycle> {
         }))
         .toRArray()
     );
-  }, [jobs, statUse]);
+  }, [jobs, statUse, now]);
 }
 
 interface TooltipData {
@@ -474,37 +467,31 @@ function NowLine({
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
   const last30Cycles = useAtomValue(last30StationCycles);
   const estimated = useAtomValue(last30EstimatedCycleTimes);
-  const sim = useSimCycles();
   const currentSt = useAtomValue(currentStatus);
+  const time = useAtomValue(chartTime);
+  // Keep history filtering independent of frequent status updates.
+  const historyNow = useMemo(() => new Date(time), [time]);
+  // Align the axis and now marker with cycles started after the chart's last clock tick.
+  const displayNow = useMemo(
+    () => new Date(Math.max(time, currentSt.timeOfCurrentStatusUTC.getTime())),
+    [time, currentSt.timeOfCurrentStatusUTC],
+  );
+  const sim = useSimCycles(historyNow);
   const fmsInfo = useAtomValue(fmsInformation);
 
   const cycles = useMemo(() => {
-    const cutoff = addHours(new Date(), -12);
+    const cutoff = addHours(historyNow, -12);
     return recentCycles(last30Cycles.valuesToLazySeq().filter((e) => e.endTime >= cutoff));
-  }, [last30Cycles]);
+  }, [last30Cycles, historyNow]);
 
   const current = useMemo(() => {
     return currentCycles(currentSt, estimated, fmsInfo.loadStationNames);
   }, [currentSt, estimated, fmsInfo.loadStationNames]);
 
-  // ensure a re-render at least every 5 minutes, but reset the timer if the data changes
-  const now = new Date();
-  const [, forceRerender] = useState<number>(0);
-  const refreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (refreshRef.current !== null) clearTimeout(refreshRef.current);
-    refreshRef.current = setTimeout(
-      () => {
-        forceRerender((x) => x + 1);
-      },
-      5 * 60 * 1000,
-    );
-  });
-
   const { xScale, yScale, actualPlannedScale, marginLeft } = useScales(
     cycles,
     current,
-    now,
+    displayNow,
     width,
     height,
   );
@@ -534,7 +521,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
               actualPlannedScale={actualPlannedScale}
             />
             <CurrentSeries
-              now={now}
+              now={displayNow}
               cycles={current}
               xScale={xScale}
               yScale={yScale}
@@ -549,7 +536,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
               hideTooltipRef={hideTooltipRef}
             />
           </g>
-          <NowLine now={now} xScale={xScale} yScale={yScale} />
+          <NowLine now={displayNow} xScale={xScale} yScale={yScale} />
         </g>
       </svg>
       <Tooltip

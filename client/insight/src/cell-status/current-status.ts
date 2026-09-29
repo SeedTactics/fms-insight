@@ -68,6 +68,9 @@ secondsSinceEpochAtom.onMount = (setSelf) => {
   return () => clearInterval(interval);
 };
 
+// Minute precision keeps report time windows current without redrawing charts every second.
+export const minutesSinceEpochAtom = atom((get) => Math.floor(get(secondsSinceEpochAtom) / 60));
+
 export const setJobComment = atom(null, (_, set, uniq: string, newVal: string | null) => {
   const newComment = newVal === null ? "" : newVal;
 

@@ -43,8 +43,32 @@ import {
   fakeInProcMaterial,
 } from "../../test/events.fake.js";
 import { onLoadCurrentSt, onServerEvent } from "./loading.js";
-import { it, expect } from "vitest";
+import { it, expect, vi } from "vitest";
 import { createStore } from "jotai";
+import { minutesSinceEpochAtom, secondsSinceEpochAtom } from "./current-status.js";
+
+it("updates report time once per minute and stops the clock when no longer observed", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-09-29T12:00:58Z"));
+  const store = createStore();
+  store.set(secondsSinceEpochAtom, Math.floor(Date.now() / 1000));
+  const changed = vi.fn();
+  const unsubscribe = store.sub(minutesSinceEpochAtom, changed);
+  try {
+    const initial = store.get(minutesSinceEpochAtom);
+    vi.advanceTimersByTime(1000);
+    expect(store.get(minutesSinceEpochAtom)).toBe(initial);
+    expect(changed).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1000);
+    expect(store.get(minutesSinceEpochAtom)).toBe(initial + 1);
+    expect(changed).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    unsubscribe();
+    vi.useRealTimers();
+  }
+});
 
 const statusWithMat: api.ICurrentStatus = {
   timeOfCurrentStatusUTC: new Date(),

@@ -19,8 +19,8 @@ describe("basket shop-floor screens", () => {
 
     await expect.element(screen.getByText("Prep Cell")).toBeVisible();
     await expect.element(screen.getByText("Tray Cell")).toBeVisible();
-    await expect.element(screen.locator).toHaveTextContent(/Tray\s*21/);
-    await expect.element(screen.locator).toHaveTextContent(/Tray\s*22/);
+    await expect.element(screen.locator).toMatchTextContent(/Tray\s*21/);
+    await expect.element(screen.locator).toMatchTextContent(/Tray\s*22/);
     await expect.element(screen.getByRole("heading", { name: "Tray 25" })).toBeVisible();
     await expect.element(screen.getByText("Tray Storage")).toBeVisible();
     await expect.element(screen.getByText("Empty: 1")).toBeVisible();
@@ -35,9 +35,9 @@ describe("basket shop-floor screens", () => {
     );
 
     await expect.element(screen.getByText("Prep Cell")).toBeVisible();
-    await expect.element(screen.locator).not.toHaveTextContent("Basket Storage");
-    await expect.element(screen.locator).not.toHaveTextContent("Tray Storage");
-    await expect.element(screen.locator).not.toHaveTextContent("Basket ");
+    await expect.element(screen.locator).not.toMatchTextContent("Basket Storage");
+    await expect.element(screen.locator).not.toMatchTextContent("Tray Storage");
+    await expect.element(screen.locator).not.toMatchTextContent("Basket ");
   });
 
   test("system overview shows elapsed time for basket loading", async () => {
@@ -90,7 +90,7 @@ describe("basket shop-floor screens", () => {
     await expect.element(screen.getByText("Prep Cell")).toBeVisible();
     await expect.element(screen.getByText("Trays")).toBeVisible();
     await expect.element(screen.getByText("Tray 21 (LoadUnload 2)")).toBeVisible();
-    await expect.element(screen.getByText("Load into Tray 21")).toBeVisible();
+    await expect.element(screen.getByText("Load into Tray 21 slot B")).toBeVisible();
     await expect.element(screen.getByText("Unload into queue Queue Beta")).toBeVisible();
     await expect.element(screen.getByText("In Tray 22")).toBeVisible();
     await expect.element(screen.getByText("In Tray 25")).toBeVisible();
@@ -104,8 +104,8 @@ describe("basket shop-floor screens", () => {
 
     await expect.element(screen.getByText("Pallets")).toBeVisible();
     await expect.element(screen.getByText("Queues")).toBeVisible();
-    await expect.element(screen.locator).not.toHaveTextContent("Baskets");
-    await expect.element(screen.locator).not.toHaveTextContent("Trays");
+    await expect.element(screen.locator).not.toMatchTextContent("Baskets");
+    await expect.element(screen.locator).not.toMatchTextContent("Trays");
   });
 
   test("load station does not render basket headings on pallet-only sites", async () => {
@@ -117,7 +117,7 @@ describe("basket shop-floor screens", () => {
 
     await expect.element(screen.getByText("Pallet 11")).toBeVisible();
     await expect.element(screen.getByText("Queue Alpha")).toBeVisible();
-    await expect.element(screen.locator).not.toHaveTextContent("Baskets");
-    await expect.element(screen.locator).not.toHaveTextContent("Trays");
+    await expect.element(screen.locator).not.toMatchTextContent("Baskets");
+    await expect.element(screen.locator).not.toMatchTextContent("Trays");
   });
 });

@@ -121,20 +121,20 @@ describe("load station with active pallet", () => {
     const sourceBasket = region(screen, basketRegionTestId(9));
     const targetBasket = region(screen, basketRegionTestId(10));
 
-    await expect.element(face1).not.toHaveTextContent("Basket Load");
-    await expect.element(face2).toHaveTextContent("Basket Unload");
-    await expect.element(face2).toHaveTextContent("Unload to Basket 10 slot B");
-    await expect.element(face2).not.toHaveTextContent("Basket Load");
+    await expect.element(face1).not.toMatchTextContent("Basket Load");
+    await expect.element(face2).toMatchTextContent("Basket Unload");
+    await expect.element(face2).toMatchTextContent("Unload to Basket 10 slot B");
+    await expect.element(face2).not.toMatchTextContent("Basket Load");
 
-    await expect.element(basketsColumn).toHaveTextContent("Baskets");
-    await expect.element(sourceBasket).toHaveTextContent("Basket 9");
-    await expect.element(sourceBasket).toHaveTextContent("Basket Load");
-    await expect.element(sourceBasket).toHaveTextContent("Load from Basket 9 to Face 1");
-    await expect.element(sourceBasket).not.toHaveTextContent("Basket Unload");
+    await expect.element(basketsColumn).toMatchTextContent("Baskets");
+    await expect.element(sourceBasket).toMatchTextContent("Basket 9");
+    await expect.element(sourceBasket).toMatchTextContent("Basket Load");
+    await expect.element(sourceBasket).toMatchTextContent("Load from Basket 9 to Face 1");
+    await expect.element(sourceBasket).not.toMatchTextContent("Basket Unload");
 
-    await expect.element(targetBasket).toHaveTextContent("Basket 10");
-    await expect.element(targetBasket).toHaveTextContent("Target Basket Existing");
-    await expect.element(targetBasket).not.toHaveTextContent("Basket Unload");
+    await expect.element(targetBasket).toMatchTextContent("Basket 10");
+    await expect.element(targetBasket).toMatchTextContent("Target Basket Existing");
+    await expect.element(targetBasket).not.toMatchTextContent("Basket Unload");
   });
 
   test("places queued, pallet-face, and explicit queue material in the correct regions", async () => {
@@ -238,28 +238,28 @@ describe("load station with active pallet", () => {
     const queueB = region(screen, queueRegionTestId("Queue B"));
     const queueC = region(screen, queueRegionTestId("Queue C"));
 
-    await expect.element(face1).toHaveTextContent("Face Transfer");
-    await expect.element(face1).toHaveTextContent("Transfer to Face 2");
-    await expect.element(face1).not.toHaveTextContent("Queue Load");
-    await expect.element(face1).not.toHaveTextContent("Unload Queue");
+    await expect.element(face1).toMatchTextContent("Face Transfer");
+    await expect.element(face1).toMatchTextContent("Transfer to Face 2");
+    await expect.element(face1).not.toMatchTextContent("Queue Load");
+    await expect.element(face1).not.toMatchTextContent("Unload Queue");
 
-    await expect.element(face2).toHaveTextContent("Unload Queue");
-    await expect.element(face2).toHaveTextContent("Unload into queue Queue B");
-    await expect.element(face2).not.toHaveTextContent("Face Transfer");
-    await expect.element(face2).not.toHaveTextContent("Queued Existing");
+    await expect.element(face2).toMatchTextContent("Unload Queue");
+    await expect.element(face2).toMatchTextContent("Unload into queue Queue B");
+    await expect.element(face2).not.toMatchTextContent("Face Transfer");
+    await expect.element(face2).not.toMatchTextContent("Queued Existing");
 
-    await expect.element(queueA).toHaveTextContent("Queue A");
-    await expect.element(queueA).toHaveTextContent("Queue Load");
-    await expect.element(queueA).toHaveTextContent("Load to Face 1");
-    await expect.element(queueA).not.toHaveTextContent("Face Transfer");
+    await expect.element(queueA).toMatchTextContent("Queue A");
+    await expect.element(queueA).toMatchTextContent("Queue Load");
+    await expect.element(queueA).toMatchTextContent("Load to Face 1");
+    await expect.element(queueA).not.toMatchTextContent("Face Transfer");
 
-    await expect.element(queueB).toHaveTextContent("Queue B");
-    await expect.element(queueB).toHaveTextContent("Queued Existing");
-    await expect.element(queueB).not.toHaveTextContent("Unload Queue");
+    await expect.element(queueB).toMatchTextContent("Queue B");
+    await expect.element(queueB).toMatchTextContent("Queued Existing");
+    await expect.element(queueB).not.toMatchTextContent("Unload Queue");
 
-    await expect.element(queueC).toHaveTextContent("Queue C");
-    await expect.element(queueC).not.toHaveTextContent("Queue Load");
-    await expect.element(queueC).not.toHaveTextContent("Queued Existing");
+    await expect.element(queueC).toMatchTextContent("Queue C");
+    await expect.element(queueC).not.toMatchTextContent("Queue Load");
+    await expect.element(queueC).not.toMatchTextContent("Queued Existing");
   });
 
   test("keeps completed material hidden when the completed column is collapsed", async () => {
@@ -297,8 +297,8 @@ describe("load station with active pallet", () => {
 
     const completed = region(screen, completedRegionTestId);
 
-    await expect.element(completed).toHaveTextContent("Completed");
-    await expect.element(completed).not.toHaveTextContent("Completed Hidden");
+    await expect.element(completed).toMatchTextContent("Completed");
+    await expect.element(completed).not.toMatchTextContent("Completed Hidden");
   });
 
   test("shows recently completed material when the completed column is expanded", async () => {
@@ -336,9 +336,9 @@ describe("load station with active pallet", () => {
 
     const completed = region(screen, completedRegionTestId);
 
-    await expect.element(completed).toHaveTextContent("Completed");
-    await expect.element(completed).toHaveTextContent("Completed Visible");
-    await expect.element(completed).not.toHaveTextContent("Queue Load");
-    await expect.element(completed).not.toHaveTextContent("Face Transfer");
+    await expect.element(completed).toMatchTextContent("Completed");
+    await expect.element(completed).toMatchTextContent("Completed Visible");
+    await expect.element(completed).not.toMatchTextContent("Queue Load");
+    await expect.element(completed).not.toMatchTextContent("Face Transfer");
   });
 });

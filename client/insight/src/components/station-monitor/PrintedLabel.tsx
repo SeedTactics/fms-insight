@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { useRef, useCallback, useEffect, useMemo, Fragment } from "react";
 import JsBarcode from "jsbarcode";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { currentStatus } from "../../cell-status/current-status.js";
+import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { useAtomValue } from "jotai";
 import { useReactToPrint } from "react-to-print";
 import { Button } from "@mui/material";
@@ -99,6 +99,19 @@ export interface SinglePageProps {
   readonly serial2: string | undefined;
 }
 
+function LabelDate() {
+  const seconds = useAtomValue(secondsSinceEpochAtom);
+  return new Date(seconds * 1000).toLocaleString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 function SinglePage(props: SinglePageProps) {
   return (
     <div>
@@ -107,15 +120,7 @@ function SinglePage(props: SinglePageProps) {
       </div>
       <div style={{ display: "flex", justifyContent: "center" }}>
         <p style={{ fontSize: "x-large" }}>
-          {new Date().toLocaleString(undefined, {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-          })}
+          <LabelDate />
         </p>
       </div>
       <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
@@ -261,15 +266,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
       </div>
       <div style={{ display: "flex", justifyContent: "center" }}>
         <p style={{ fontSize: "x-large" }}>
-          {new Date().toLocaleString(undefined, {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-          })}
+          <LabelDate />
         </p>
       </div>
       <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
