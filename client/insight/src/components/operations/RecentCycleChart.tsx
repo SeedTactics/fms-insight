@@ -58,6 +58,8 @@ const occupiedOutlierColor = red[700];
 const simColor = grey[400];
 const downtimeColor = grey[100];
 
+const chartTime = atom((get) => Math.floor(get(minutesSinceEpochAtom) / 5) * 5 * 60000);
+
 type SimCycle = {
   readonly station: string;
   readonly start: Date;
@@ -466,11 +468,13 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   const last30Cycles = useAtomValue(last30StationCycles);
   const estimated = useAtomValue(last30EstimatedCycleTimes);
   const currentSt = useAtomValue(currentStatus);
-  const minutes = useAtomValue(minutesSinceEpochAtom);
-  // A newly published cycle can start after the clock's most recent minute tick.
-  const now = useMemo(
-    () => new Date(Math.max(minutes * 60000, currentSt.timeOfCurrentStatusUTC.getTime())),
-    [minutes, currentSt.timeOfCurrentStatusUTC],
+  const time = useAtomValue(chartTime);
+  // Keep the chart window and history filtering independent of frequent status updates.
+  const now = useMemo(() => new Date(time), [time]);
+  // Current bars must still include cycles that started after the chart's last clock tick.
+  const currentNow = useMemo(
+    () => new Date(Math.max(time, currentSt.timeOfCurrentStatusUTC.getTime())),
+    [time, currentSt.timeOfCurrentStatusUTC],
   );
   const sim = useSimCycles(now);
   const fmsInfo = useAtomValue(fmsInformation);
@@ -517,7 +521,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
               actualPlannedScale={actualPlannedScale}
             />
             <CurrentSeries
-              now={now}
+              now={currentNow}
               cycles={current}
               xScale={xScale}
               yScale={yScale}
