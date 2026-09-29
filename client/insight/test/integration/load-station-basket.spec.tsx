@@ -855,19 +855,19 @@ describe("load station with active basket", () => {
     const basketsColumn = region(screen, basketsColumnTestId);
     const stagingBasket = region(screen, basketRegionTestId(8));
 
-    await expect.element(activeBasket).toHaveTextContent("Basket 7");
-    await expect.element(activeBasket).toHaveTextContent("Basket To Queue");
-    await expect.element(activeBasket).toHaveTextContent("Unload into queue Queue B");
-    await expect.element(activeBasket).toHaveTextContent("Load from Queue A");
+    await expect.element(activeBasket).toMatchTextContent("Basket 7");
+    await expect.element(activeBasket).toMatchTextContent("Basket To Queue");
+    await expect.element(activeBasket).toMatchTextContent("Unload into queue Queue B");
+    await expect.element(activeBasket).toMatchTextContent("Load from Queue A");
 
-    await expect.element(queueA).toHaveTextContent("Queue To Basket");
-    await expect.element(queueA).toHaveTextContent("Load into Basket 7 slot B");
-    await expect.element(legacyQueue).toHaveTextContent("Legacy Queue To Basket");
-    await expect.element(legacyQueue).toHaveTextContent("Load into Basket 7");
-    await expect.element(queueB).toHaveTextContent("Queue Existing");
-    await expect.element(queueC).not.toHaveTextContent("Queue Existing");
-    await expect.element(basketsColumn).toHaveTextContent("Baskets");
-    await expect.element(stagingBasket).toHaveTextContent("Staging Basket");
+    await expect.element(queueA).toMatchTextContent("Queue To Basket");
+    await expect.element(queueA).toMatchTextContent("Load into Basket 7 slot B");
+    await expect.element(legacyQueue).toMatchTextContent("Legacy Queue To Basket");
+    await expect.element(legacyQueue).toMatchTextContent("Load into Basket 7");
+    await expect.element(queueB).toMatchTextContent("Queue Existing");
+    await expect.element(queueC).not.toMatchTextContent("Queue Existing");
+    await expect.element(basketsColumn).toMatchTextContent("Baskets");
+    await expect.element(stagingBasket).toMatchTextContent("Staging Basket");
   });
 
   test("confirms all unload and load work with one button press", async () => {
@@ -971,22 +971,22 @@ describe("load station with active basket", () => {
 
     await expect
       .element(region(screen, "basket-load-station-slot-1"))
-      .toHaveTextContent("Unload into queue Transfer Queue");
+      .toMatchTextContent("Unload into queue Transfer Queue");
     await expect
       .element(region(screen, "basket-load-station-slot-1"))
-      .toHaveTextContent("Load from Transfer Queue");
+      .toMatchTextContent("Load from Transfer Queue");
     await expect
       .element(region(screen, "basket-load-station-slot-2"))
-      .toHaveTextContent("Unload from Basket 7 to completed material");
+      .toMatchTextContent("Unload from Basket 7 to completed material");
     await expect
       .element(region(screen, "basket-load-station-slot-3"))
-      .toHaveTextContent("Load from raw material");
+      .toMatchTextContent("Load from raw material");
     await expect
       .element(region(screen, "basket-load-station-slot-4"))
-      .toHaveTextContent("Unload, re-plate, and reload this slot");
+      .toMatchTextContent("Unload, re-plate, and reload this slot");
     await expect
       .element(region(screen, "load-station-material"))
-      .toHaveTextContent("Load into Basket 7 slot C");
+      .toMatchTextContent("Load into Basket 7 slot C");
 
     await screen.getByRole("button", { name: "Confirm" }).click();
 

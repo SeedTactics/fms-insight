@@ -21,7 +21,7 @@ describe("basket material and job details", () => {
       fixture.data,
     );
 
-    await expect.element(screen.getByText("Load into Tray 21")).toBeVisible();
+    await expect.element(screen.getByText("Load into Tray 21 slot B")).toBeVisible();
     await expect.element(screen.getByText("Unload into queue Queue Beta")).toBeVisible();
     await expect.element(screen.getByText("Load from Tray 22 to pal 1")).toBeVisible();
     await expect.element(screen.getByText("Unload to Tray 22 slot B")).toBeVisible();
@@ -33,7 +33,7 @@ describe("basket material and job details", () => {
         fmsInfo: { loadStationNames: fixture.data.fmsInfo?.loadStationNames },
       },
     );
-    await expect.element(fallback.getByText("Unload to basket 22 slot B")).toBeVisible();
+    await expect.element(fallback.getByText("Unload to Basket 22 slot B")).toBeVisible();
   });
 
   test("material dialog opens for basket-backed material cards", async () => {
@@ -50,8 +50,8 @@ describe("basket material and job details", () => {
 
     const dialog = screen.getByRole("dialog");
     await expect.element(dialog).toBeVisible();
-    await expect.element(dialog).toHaveTextContent("Tray Part - TQ-1");
-    await expect.element(dialog).toHaveTextContent("Workorder: WO-TRAY");
+    await expect.element(dialog).toMatchTextContent("Tray Part - TQ-1");
+    await expect.element(dialog).toMatchTextContent("Workorder: WO-TRAY");
   });
 
   test("log entries render basket cycle history text clearly", async () => {
@@ -65,8 +65,8 @@ describe("basket material and job details", () => {
       fixture.data,
     );
 
-    await expect.element(screen.locator).toHaveTextContent("Tray 21 completed cycle");
-    await expect.element(screen.locator).toHaveTextContent("Tray Cycle");
+    await expect.element(screen.locator).toMatchTextContent("Tray 21 completed cycle");
+    await expect.element(screen.locator).toMatchTextContent("Tray Cycle");
   });
 
   test("job details shows basket load and unload sections with load station display names", async () => {
@@ -94,7 +94,7 @@ describe("basket material and job details", () => {
     );
 
     await expect.element(screen.getByText("Load Stations: Prep Cell | 5.0 mins")).toBeVisible();
-    await expect.element(screen.locator).not.toHaveTextContent("Basket Load Stations");
-    await expect.element(screen.locator).not.toHaveTextContent("Basket Unload Stations");
+    await expect.element(screen.locator).not.toMatchTextContent("Basket Load Stations");
+    await expect.element(screen.locator).not.toMatchTextContent("Basket Unload Stations");
   });
 });

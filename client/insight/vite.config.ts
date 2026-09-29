@@ -30,6 +30,7 @@ export default defineConfig({
   test: {
     projects: [
       {
+        extends: false,
         test: {
           include: ["src/**/*.{test,spec}.ts", "src/**/*.{test,spec}.tsx"],
           name: "unit",
@@ -45,6 +46,7 @@ export default defineConfig({
         },
       },
       {
+        extends: false,
         test: {
           include: ["test/integration/**/*.{test,spec}.tsx"],
           name: "integration",

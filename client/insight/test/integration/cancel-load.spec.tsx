@@ -175,9 +175,9 @@ describe("cancel load", () => {
 
     await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
     const dialog = screen.getByRole("dialog");
-    await expect.element(dialog).toHaveTextContent("SERIAL-101");
-    await expect.element(dialog).toHaveTextContent("Material ID 102");
-    await expect.element(dialog).not.toHaveTextContent("SERIAL-103");
+    await expect.element(dialog).toMatchTextContent("SERIAL-101");
+    await expect.element(dialog).toMatchTextContent("Material ID 102");
+    await expect.element(dialog).not.toMatchTextContent("SERIAL-103");
     await dialog.getByRole("textbox", { name: "Reason (optional)" }).fill("Changed schedule");
     await dialog.getByRole("button", { name: "Cancel Load" }).click();
 
@@ -199,7 +199,7 @@ describe("cancel load", () => {
     const screen = await renderCancelLoadButton(selected, [raw(1), raw(1), selected, raw(2)]);
     await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
     const dialog = screen.getByRole("dialog");
-    await expect.element(dialog).not.toHaveTextContent("Material ID -1");
+    await expect.element(dialog).not.toMatchTextContent("Material ID -1");
     expect(dialog.getByRole("listitem").all()).toHaveLength(2);
     await dialog.getByRole("button", { name: "Cancel Load" }).click();
     expect(fetch).toHaveBeenCalledWith(
@@ -228,7 +228,7 @@ describe("cancel load", () => {
     await dialog.getByRole("button", { name: "Cancel Load" }).click();
 
     await expect.element(dialog).toBeVisible();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Stale load instruction");
+    await expect.element(dialog.getByRole("alert")).toMatchTextContent("Stale load instruction");
   });
 
   test("uses the selected material, token, and group that were current when confirmation opened", async () => {
@@ -244,11 +244,11 @@ describe("cancel load", () => {
     const screen = await renderCancelLoadButton(selected, [selected, peer]);
     await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
     const dialog = screen.getByRole("dialog");
-    await expect.element(dialog).toHaveTextContent("Material ID 102");
+    await expect.element(dialog).toMatchTextContent("Material ID 102");
 
     screen.store.set(onLoadCurrentSt, createCurrentStatus());
 
-    await expect.element(dialog).toHaveTextContent("Material ID 102");
+    await expect.element(dialog).toMatchTextContent("Material ID 102");
     await dialog.getByRole("button", { name: "Cancel Load" }).click();
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/jobs/material/101/cancel-load?operName=Operator%20A",

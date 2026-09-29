@@ -61,7 +61,11 @@ import { instructionUrl } from "../../network/backend.js";
 import { Tooltip } from "@mui/material";
 import { Fab } from "@mui/material";
 import { fmsInformation } from "../../network/server-settings.js";
-import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
+import {
+  currentStatus,
+  secondsSinceEpochAtom,
+  minutesSinceEpochAtom,
+} from "../../cell-status/current-status.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { CancelLoadButton } from "./CancelLoadButton.js";
@@ -893,9 +897,10 @@ function MaterialColumn({
 }
 
 function RecentCompletedMaterial() {
+  const minutes = useAtomValue(minutesSinceEpochAtom);
   const matSummary = useAtomValue(last30MaterialSummary);
   const recentCompleted = useMemo(() => {
-    const cutoff = addHours(new Date(), -5);
+    const cutoff = addHours(new Date(minutes * 60000), -5);
     return matSummary.matsById
       .valuesToLazySeq()
       .filter(
@@ -905,7 +910,7 @@ function RecentCompletedMaterial() {
           e.last_unload_time >= cutoff,
       )
       .toSortedArray({ desc: (e) => e.last_unload_time?.getTime() ?? 0 });
-  }, [matSummary]);
+  }, [matSummary, minutes]);
 
   return (
     <div>

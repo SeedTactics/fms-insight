@@ -452,7 +452,7 @@ describe("cycle invalidation workflow", () => {
     screen.store.set(onLoadCurrentSt, statusWithMaterial([refreshed]));
 
     await expect.element(dialog).toBeVisible();
-    await expect.element(dialog).toHaveTextContent("Move to Quarantine");
+    await expect.element(dialog).toMatchTextContent("Move to Quarantine");
     await dialog.getByRole("button", { name: "Quarantine" }).click();
 
     expect(fetch).toHaveBeenCalledWith(
@@ -483,7 +483,7 @@ describe("cycle invalidation workflow", () => {
     await dialog.getByRole("button", { name: "Remove from Queue" }).click();
 
     await expect.element(dialog).toBeVisible();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+    await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
   });
 
   test("clears quarantine errors and reason when reopened", async () => {
@@ -505,12 +505,12 @@ describe("cycle invalidation workflow", () => {
     let dialog = screen.getByRole("dialog");
     await dialog.getByRole("textbox", { name: "Reason" }).fill("bad material");
     await dialog.getByRole("button", { name: "Scrap" }).click();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+    await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await screen.getByRole("button", { name: "Remove from queue and treat as scrap" }).click();
     dialog = screen.getByRole("dialog");
-    await expect.element(dialog).not.toHaveTextContent("Queue changed");
+    await expect.element(dialog).not.toMatchTextContent("Queue changed");
     await expect.element(dialog.getByRole("textbox", { name: "Reason" })).toHaveValue("");
   });
 
@@ -534,14 +534,14 @@ describe("cycle invalidation workflow", () => {
       .click();
     let dialog = screen.getByRole("dialog");
     await dialog.getByRole("button", { name: "Remove from Queue" }).click();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Queue changed");
+    await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await screen
       .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
       .click();
     dialog = screen.getByRole("dialog");
-    await expect.element(dialog).not.toHaveTextContent("Queue changed");
+    await expect.element(dialog).not.toMatchTextContent("Queue changed");
   });
 
   test("retains the dialog context after a successful invalidation", async () => {
@@ -603,7 +603,7 @@ describe("cycle invalidation workflow", () => {
 
     await screen.getByRole("button", { name: "Invalidate Process 1" }).click();
 
-    await expect.element(screen.getByRole("alert")).toHaveTextContent("Material is queued");
+    await expect.element(screen.getByRole("alert")).toMatchTextContent("Material is queued");
     expect(screen.store.get(materialDialogOpen)).not.toBeNull();
   });
 
@@ -662,9 +662,9 @@ describe("cycle invalidation workflow", () => {
     );
 
     await expect
-      .element(screen.getByRole("button", { name: "Move From Queue A To Queue B" }))
+      .element(screen.getByRole("button", { name: /Move From Queue A To Queue B/ }))
       .toBeVisible();
-    await screen.getByRole("button", { name: "Move From Queue A To Queue B" }).click();
+    await screen.getByRole("button", { name: /Move From Queue A To Queue B/ }).click();
 
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/jobs/material/101/queue",
@@ -698,7 +698,7 @@ describe("cycle invalidation workflow", () => {
 
     await screen.getByRole("button", { name: /Add To Queue A/ }).click();
 
-    await expect.element(screen.getByRole("alert")).toHaveTextContent("Queue is full");
+    await expect.element(screen.getByRole("alert")).toMatchTextContent("Queue is full");
     expect(closed).not.toHaveBeenCalled();
     expect(screen.store.get(materialDialogOpen)).not.toBeNull();
   });

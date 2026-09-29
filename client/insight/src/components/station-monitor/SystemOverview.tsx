@@ -62,7 +62,11 @@ import {
   LocType,
   PalletLocationEnum,
 } from "../../network/api.js";
-import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
+import {
+  currentStatus,
+  secondsSinceEpochAtom,
+  minutesSinceEpochAtom,
+} from "../../cell-status/current-status.js";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
@@ -138,6 +142,7 @@ type CellOverview = {
 };
 
 function useCellOverview(): CellOverview {
+  const minutes = useAtomValue(minutesSinceEpochAtom);
   const currentSt = useAtomValue(currentStatus);
   const jobs = useAtomValue(last30Jobs);
   const fmsInfo = useAtomValue(fmsInformation);
@@ -246,7 +251,7 @@ function useCellOverview(): CellOverview {
 
   let maxLoadNum = 1;
   let maxNumFacesOnPallet = 1;
-  const cutoff = addDays(new Date(), -7);
+  const cutoff = addDays(new Date(minutes * 60000), -7);
 
   // now add empty locations
   // Materialize ProcessInfo so we can iterate it at two levels (proc for basket stations, paths for the rest)

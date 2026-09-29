@@ -6,6 +6,7 @@ node_modules/
 client/insight/dist/
 client/insight/docs/
 client/insight/projdist/
+client/insight/.vitest/
 client/insight/.vitest-attachments/
 client/insight/test/integration/__screenshots__/
 client/backup-viewer/.tsbuildinfo

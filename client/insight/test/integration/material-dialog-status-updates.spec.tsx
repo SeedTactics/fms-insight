@@ -22,7 +22,7 @@ describe("material dialog during current status updates", () => {
     screen.store.set(materialDialogOpen, toShow);
 
     const dialog = screen.getByRole("dialog");
-    await expect.element(dialog).toHaveTextContent("Workorder: WO-TRAY");
+    await expect.element(dialog).toMatchTextContent("Workorder: WO-TRAY");
 
     let fallbacks = 0;
     const observer = new MutationObserver(() => {
@@ -47,6 +47,6 @@ describe("material dialog during current status updates", () => {
     }
 
     expect(fallbacks).toBe(0);
-    await expect.element(dialog).toHaveTextContent("Workorder: WO-TRAY");
+    await expect.element(dialog).toMatchTextContent("Workorder: WO-TRAY");
   });
 });
