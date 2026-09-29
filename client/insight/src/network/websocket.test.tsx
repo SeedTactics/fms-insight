@@ -44,7 +44,19 @@ import {
   type LogAPI,
   type MachineAPI,
 } from "./backend.js";
-import { CurrentStatus, ServerEvent, type ICurrentStatus } from "./api.js";
+import {
+  CurrentStatus,
+  LogEntry,
+  LogMaterial,
+  LogType,
+  ServerEvent,
+  type ICurrentStatus,
+  type ILogEntry,
+} from "./api.js";
+import { fmsInformation } from "./server-settings.js";
+import { currentStatus } from "../cell-status/current-status.js";
+import { customState } from "../cell-status/custom-state.js";
+import { last30MaterialSummary } from "../cell-status/material-summary.js";
 
 class FakeSocket {
   static readonly sockets: FakeSocket[] = [];
@@ -74,14 +86,39 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-function status(): ICurrentStatus {
+function status(label = "status"): ICurrentStatus {
   return new CurrentStatus({
     timeOfCurrentStatusUTC: new Date(),
     jobs: {},
     pallets: {},
     material: [],
-    alarms: [],
+    alarms: [label],
     queues: {},
+    customState: { label },
+  });
+}
+
+function statusMessage(label: string) {
+  const evt = new ServerEvent({ newCurrentStatus: new CurrentStatus(status(label)) });
+  return { data: JSON.stringify(evt.toJSON()) };
+}
+
+function machined(materialID: number): ILogEntry {
+  return new LogEntry({
+    counter: materialID,
+    material: [
+      new LogMaterial({ id: materialID, uniq: "u", part: "p", proc: 1, numproc: 1, face: 1 }),
+    ],
+    type: LogType.MachineCycle,
+    startofcycle: false,
+    endUTC: new Date(),
+    loc: "MC",
+    locnum: 1,
+    pal: 1,
+    program: "prog",
+    result: "",
+    elapsed: "00:10:00",
+    active: "00:10:00",
   });
 }
 
@@ -98,17 +135,23 @@ function only<T extends object>(calls: Partial<T>): T {
 }
 
 let statusLoads: Deferred<Readonly<ICurrentStatus>>[];
-let logLoad: Deferred<[]>;
+let logLoads: Deferred<ReadonlyArray<Readonly<ILogEntry>>>[];
 let root: Root;
+let mounted: boolean;
 
 beforeEach(() => {
   vi.useFakeTimers();
   FakeSocket.sockets.length = 0;
   vi.stubGlobal("WebSocket", FakeSocket);
   statusLoads = [];
-  logLoad = deferred();
+  logLoads = [];
+  const logLoad = () => {
+    const load = deferred<ReadonlyArray<Readonly<ILogEntry>>>();
+    logLoads.push(load);
+    return load.promise;
+  };
   registerBackend(
-    only<LogAPI>({ get: () => logLoad.promise, recent: () => logLoad.promise }),
+    only<LogAPI>({ get: logLoad, recent: logLoad }),
     only<JobAPI>({
       currentStatus: () => {
         const load = deferred<Readonly<ICurrentStatus>>();
@@ -123,7 +166,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  await act(async () => root.unmount());
+  if (mounted) await act(async () => root.unmount());
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
@@ -131,6 +174,7 @@ afterEach(async () => {
 async function connect() {
   const store = createStore();
   root = createRoot(document.createElement("div"));
+  mounted = true;
   await act(async () => {
     root.render(
       <Provider store={store}>
@@ -142,7 +186,16 @@ async function connect() {
     live: store.get(currentStatusIsLive),
     reconnecting: store.get(websocketReconnecting),
   });
-  return { live };
+  const installed = () => ({
+    alarms: store.get(currentStatus).alarms,
+    custom: store.get(customState),
+  });
+  const unmount = () =>
+    act(async () => {
+      root.unmount();
+      mounted = false;
+    });
+  return { store, live, installed, unmount };
 }
 
 async function settle(action: () => void = () => {}) {
@@ -158,7 +211,7 @@ test("a status load from a closed connection does not mark the retained status l
   await settle(() => FakeSocket.sockets[0]?.close());
   await settle(() => {
     statusLoads[0]?.resolve(status());
-    logLoad.resolve([]);
+    logLoads[0]?.resolve([]);
   });
   expect(live()).toEqual({ live: false, reconnecting: true });
 });
@@ -168,13 +221,10 @@ test("a failed status load does not certify the retained status", async () => {
   await settle(() => FakeSocket.sockets[0]?.emit("open"));
   await settle(() => {
     statusLoads[0]?.reject(new Error("status unavailable"));
-    logLoad.resolve([]);
+    logLoads[0]?.resolve([]);
   });
   expect(live()).toEqual({ live: false, reconnecting: false });
-  const evt = new ServerEvent({ newCurrentStatus: new CurrentStatus(status()) });
-  await settle(() =>
-    FakeSocket.sockets[0]?.emit("message", { data: JSON.stringify(evt.toJSON()) }),
-  );
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("pushed")));
   expect(live().live).toBe(true);
 });
 
@@ -183,7 +233,73 @@ test("a failed history load does not affect a live status", async () => {
   await settle(() => FakeSocket.sockets[0]?.emit("open"));
   await settle(() => {
     statusLoads[0]?.resolve(status());
-    logLoad.reject(new Error("log unavailable"));
+    logLoads[0]?.reject(new Error("log unavailable"));
   });
   expect(live()).toEqual({ live: true, reconnecting: false });
+});
+
+test("a bootstrap status response does not replace a newer status from the socket", async () => {
+  const { live, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("pushed")));
+  await settle(() => {
+    statusLoads[0]?.resolve(status("bootstrap"));
+    logLoads[0]?.resolve([]);
+  });
+  expect(installed()).toEqual({ alarms: ["pushed"], custom: { label: "pushed" } });
+  expect(live().live).toBe(true);
+});
+
+test("a failed bootstrap status after a socket status keeps it live", async () => {
+  const { live, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("pushed")));
+  await settle(() => {
+    statusLoads[0]?.reject(new Error("status unavailable"));
+    logLoads[0]?.resolve([]);
+  });
+  expect(installed()).toEqual({ alarms: ["pushed"], custom: { label: "pushed" } });
+  expect(live().live).toBe(true);
+});
+
+test("history from an earlier connection cannot replace a later connection's", async () => {
+  const { store } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => FakeSocket.sockets[0]?.close());
+  await settle(() => vi.advanceTimersByTime(1000));
+  await settle(() => FakeSocket.sockets[1]?.emit("open"));
+  await settle(() => logLoads[1]?.resolve([machined(1)]));
+  await settle(() => logLoads[0]?.resolve([machined(99)]));
+  const matsById = store.get(last30MaterialSummary).matsById;
+  expect(matsById.has(1)).toBe(true);
+  expect(matsById.has(99)).toBe(false);
+});
+
+test("disposing the connection ends its session", async () => {
+  const { live, installed, unmount } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("pushed")));
+  expect(live().live).toBe(true);
+  await unmount();
+  expect(live().live).toBe(false);
+  await settle(() => statusLoads[0]?.resolve(status("disposed")));
+  expect(live().live).toBe(false);
+  expect(installed().alarms).toEqual(["pushed"]);
+});
+
+test("a replaced connection cannot change the new connection's state", async () => {
+  const { store, live, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => store.set(fmsInformation, { name: "FMS Insight", version: "replaced" }));
+  await settle(() => FakeSocket.sockets[1]?.emit("open"));
+  await settle(() => statusLoads[1]?.resolve(status("current")));
+  expect(installed().alarms).toEqual(["current"]);
+  expect(live().live).toBe(true);
+  await settle(() => {
+    FakeSocket.sockets[0]?.emit("message", statusMessage("stale"));
+    statusLoads[0]?.resolve(status("stale"));
+    FakeSocket.sockets[0]?.emit("close");
+  });
+  expect(installed()).toEqual({ alarms: ["current"], custom: { label: "current" } });
+  expect(live().live).toBe(true);
 });
