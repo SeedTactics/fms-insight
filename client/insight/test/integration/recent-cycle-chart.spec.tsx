@@ -24,7 +24,7 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers());
 
-test("a cycle starting after the five-minute tick has visible elapsed and remaining bars", async () => {
+test("current bars stay visible and aligned with Now between five-minute ticks", async () => {
   const statusTime = new Date("2030-01-01T12:00:45Z");
   const status: Readonly<ICurrentStatus> = createCurrentStatus({
     pallets: [
@@ -63,6 +63,26 @@ test("a cycle starting after the five-minute tick has visible elapsed and remain
       ),
     )
     .toEqual([true, true]);
+
+  for (const time of ["12:00:45", "12:04:59"]) {
+    const timestamp = new Date(`2030-01-01T${time}Z`);
+    vi.setSystemTime(timestamp);
+    await act(async () => {
+      screen.store.set(onLoadCurrentSt, { ...status, timeOfCurrentStatusUTC: timestamp });
+    });
+    await expect
+      .poll(() => {
+        const elapsedBar = screen.container.querySelector("svg rect[fill]");
+        const nowLine = screen.container.querySelector('svg line[stroke="black"]');
+        if (!elapsedBar || !nowLine) return NaN;
+        return (
+          Number(elapsedBar.getAttribute("x")) +
+          Number(elapsedBar.getAttribute("width")) -
+          Number(nowLine.getAttribute("x1"))
+        );
+      })
+      .toBeCloseTo(0, 8);
+  }
 });
 
 test("status updates and minute ticks keep history cached until the five-minute tick", async () => {

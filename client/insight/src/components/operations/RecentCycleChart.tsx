@@ -469,20 +469,20 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   const estimated = useAtomValue(last30EstimatedCycleTimes);
   const currentSt = useAtomValue(currentStatus);
   const time = useAtomValue(chartTime);
-  // Keep the chart window and history filtering independent of frequent status updates.
-  const now = useMemo(() => new Date(time), [time]);
-  // Current bars must still include cycles that started after the chart's last clock tick.
-  const currentNow = useMemo(
+  // Keep history filtering independent of frequent status updates.
+  const historyNow = useMemo(() => new Date(time), [time]);
+  // Align the axis and now marker with cycles started after the chart's last clock tick.
+  const displayNow = useMemo(
     () => new Date(Math.max(time, currentSt.timeOfCurrentStatusUTC.getTime())),
     [time, currentSt.timeOfCurrentStatusUTC],
   );
-  const sim = useSimCycles(now);
+  const sim = useSimCycles(historyNow);
   const fmsInfo = useAtomValue(fmsInformation);
 
   const cycles = useMemo(() => {
-    const cutoff = addHours(now, -12);
+    const cutoff = addHours(historyNow, -12);
     return recentCycles(last30Cycles.valuesToLazySeq().filter((e) => e.endTime >= cutoff));
-  }, [last30Cycles, now]);
+  }, [last30Cycles, historyNow]);
 
   const current = useMemo(() => {
     return currentCycles(currentSt, estimated, fmsInfo.loadStationNames);
@@ -491,7 +491,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   const { xScale, yScale, actualPlannedScale, marginLeft } = useScales(
     cycles,
     current,
-    now,
+    displayNow,
     width,
     height,
   );
@@ -521,7 +521,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
               actualPlannedScale={actualPlannedScale}
             />
             <CurrentSeries
-              now={currentNow}
+              now={displayNow}
               cycles={current}
               xScale={xScale}
               yScale={yScale}
@@ -536,7 +536,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
               hideTooltipRef={hideTooltipRef}
             />
           </g>
-          <NowLine now={now} xScale={xScale} yScale={yScale} />
+          <NowLine now={displayNow} xScale={xScale} yScale={yScale} />
         </g>
       </svg>
       <Tooltip
