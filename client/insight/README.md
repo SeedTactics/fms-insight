@@ -25,6 +25,9 @@ The supported entry point for embedding a customized FMS Insight application is
 - `AppProps` to add custom routes, change the mode chooser, or replace the basket load-station
   command.
 - `customState`, a read-only Jotai atom containing the server's opaque custom state.
+- `currentStatusIsLive`, a read-only Jotai atom that is true while the websocket is connected and
+  the retained current status (including `customState`) reflects the server. Pages that must not act
+  on stale status can hide it when this is false.
 - `authenticatedFetch` for extension requests which should use the current Insight user's bearer
   token.
 - `defaultChooseModes` and `RouteLocation` for composing custom navigation.
@@ -44,6 +47,14 @@ stores updated as new events occur. Most of the reports and pages are then gener
 typically using jotai atoms. The atoms storing the information about the cell are in the
 `src/cell-status` directory. The code in the `src/network` directory handles the initial data load
 and the websocket connection to keep the jotai stores updated.
+
+Initial loads and reconnects buffer the historical effects of websocket log entries until HTTP
+history arrives, then merge by counter and apply the distinct entries in counter order. Current
+status, its live log patches, and new jobs continue immediately. Failed history requests retry
+without interrupting current status; interrupted sessions reload from the last applied history
+counter. Entries included in the latest history response are also recognized if their websocket
+messages arrive afterward. This reconciles overlapping history loads; it does not impose counter
+order on ordinary live websocket publication, which the server does not currently guarantee.
 
 The `src/data` directory contains a large amout of the client-side business logic and report
 generating typescript code. It takes the raw event data from the cell status and turns it into a

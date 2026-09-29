@@ -31,65 +31,135 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ServerEvent } from "./api.js";
+import { ServerEvent, type ILogEntry } from "./api.js";
 import { JobsBackend, LogBackend } from "./backend.js";
 import { fmsInformation } from "./server-settings.js";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   lastEventCounter,
   onLoadCurrentSt,
   onLoadLast30Jobs,
   onLoadLast30Log,
-  onServerEvent,
+  onLiveServerEvent,
+  onHistoricalServerEvent,
 } from "../cell-status/loading.js";
 import { addDays } from "date-fns";
 import { last30SchIds } from "../cell-status/scheduled-jobs.js";
-import { HashSet } from "@seedtactics/immutable-collections";
-import { Atom, Setter, atom, useAtomValue, useSetAtom } from "jotai";
+import { HashSet, OrderedMap } from "@seedtactics/immutable-collections";
+import { Atom, Getter, Setter, atom, useAtomValue, useSetAtom } from "jotai";
 
 const websocketReconnectingAtom = atom<boolean>(false);
 export const websocketReconnecting: Atom<boolean> = websocketReconnectingAtom;
 
+// True while the websocket is open and this connection has loaded or received a current status, so
+// the retained current status reflects the server. Loading the historical jobs and log does not
+// affect it.
+const currentStatusIsLiveRW = atom<boolean>(false);
+export const currentStatusIsLive: Atom<boolean> = currentStatusIsLiveRW;
+
+// A session is one open socket; it ends when that socket closes or is disposed, so late results
+// from an earlier connection are ignored. statusFromSocket records that the socket has delivered a
+// current status, which is newer than the session's bootstrap current-status request.
+type WebsocketSession = { readonly id: number; readonly statusFromSocket: boolean };
+const websocketSessionAtom = atom<WebsocketSession>({ id: 0, statusFromSocket: false });
+
+// Only historical effects wait for HTTP catch-up. A fresh session discards its predecessor's
+// unapplied buffer and reloads from lastEventCounter, which has not advanced past that history.
+const bufferedLogAtom = atom<OrderedMap<number, Readonly<ILogEntry>> | null>(null);
+// HTTP can include entries whose socket messages arrive after the response. Suppress those exact
+// identities, never all counters below a maximum: live publication is not guaranteed to be ordered.
+const loadedLogCountersAtom = atom(HashSet.empty<number>());
+
 const errorLoadingLast30RW = atom<string | null>(null);
-export const errorLoadingLast30: Atom<string | null> = errorLoadingLast30RW;
+const errorLoadingLogRW = atom<string | null>(null);
+export const errorLoadingLast30: Atom<string | null> = atom(
+  (get) => get(errorLoadingLast30RW) ?? get(errorLoadingLogRW),
+);
 
-function loadInitial(set: Setter): void {
-  const now = new Date();
-  const thirtyDaysAgo = addDays(now, -30);
-
-  const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
-  const jobsProm = JobsBackend.recent(thirtyDaysAgo, []).then((j) => set(onLoadLast30Jobs, j));
-  const logProm = LogBackend.get(thirtyDaysAgo, now).then((log) => set(onLoadLast30Log, log));
-
-  Promise.all([curStProm, jobsProm, logProm])
-    .catch((e: Record<string, string | undefined>) =>
-      set(errorLoadingLast30RW, e.message ?? "Error"),
-    )
-    .finally(() => set(websocketReconnectingAtom, false));
+function isCurrentSession(get: Getter, session: number): boolean {
+  return get(websocketSessionAtom).id === session;
 }
 
-function loadMissed(lastCntr: number, schIds: HashSet<string> | undefined, set: Setter): void {
-  const now = new Date();
-  const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
-  const jobsProm = JobsBackend.recent(addDays(now, -30), schIds ? Array.from(schIds) : []).then(
-    (j) => set(onLoadLast30Jobs, j),
-  );
-  const logProm = LogBackend.recent(lastCntr, undefined).then((log) => set(onLoadLast30Log, log));
+function loadCurrentStatus(get: Getter, set: Setter, session: number): Promise<void> {
+  return JobsBackend.currentStatus().then((st) => {
+    const current = get(websocketSessionAtom);
+    if (current.id !== session || current.statusFromSocket) return;
+    set(onLoadCurrentSt, st);
+    set(currentStatusIsLiveRW, true);
+  });
+}
 
-  Promise.all([curStProm, jobsProm, logProm])
-    .catch((e: Record<string, string | undefined>) =>
-      set(errorLoadingLast30RW, e.message ?? "Error"),
-    )
-    .finally(() => set(websocketReconnectingAtom, false));
+function loadHistory(
+  get: Getter,
+  set: Setter,
+  session: number,
+  from: number | null,
+  retryDelay = 1000,
+): Promise<void> {
+  const now = new Date();
+  const request =
+    from === null ? LogBackend.get(addDays(now, -30), now) : LogBackend.recent(from, undefined);
+  return request.then(
+    (log) => {
+      if (!isCurrentSession(get, session)) return;
+      const buffered = get(bufferedLogAtom) ?? OrderedMap.empty<number, Readonly<ILogEntry>>();
+      const merged = log.reduce((entries, entry) => entries.set(entry.counter, entry), buffered);
+      set(onLoadLast30Log, merged.valuesToAscLazySeq().toRArray());
+      set(loadedLogCountersAtom, HashSet.from(merged.keys()));
+      set(bufferedLogAtom, null);
+      set(errorLoadingLogRW, null);
+    },
+    (e: Error) => {
+      if (!isCurrentSession(get, session)) return;
+      set(errorLoadingLogRW, e.message ?? "Error loading log history");
+      // Keep buffering and retry from the same applied position without interrupting live status.
+      setTimeout(() => {
+        if (isCurrentSession(get, session)) {
+          void loadHistory(get, set, session, from, Math.min(retryDelay * 2, 30000));
+        }
+      }, retryDelay);
+    },
+  );
+}
+
+function loadConnection(get: Getter, set: Setter, session: number): void {
+  const from = get(lastEventCounter);
+  const schIds = get(last30SchIds);
+  const curStProm = loadCurrentStatus(get, set, session);
+  const jobsProm = JobsBackend.recent(
+    addDays(new Date(), -30),
+    from !== null && schIds ? Array.from(schIds) : [],
+  ).then((j) => {
+    if (isCurrentSession(get, session)) set(onLoadLast30Jobs, j);
+  });
+  const logProm = loadHistory(get, set, session, from);
+  finishLoading([curStProm, jobsProm, logProm], get, set, session);
+}
+
+function finishLoading(
+  loads: ReadonlyArray<Promise<void>>,
+  get: Getter,
+  set: Setter,
+  session: number,
+): void {
+  Promise.all(loads)
+    .catch((e: Record<string, string | undefined>) => {
+      if (isCurrentSession(get, session)) set(errorLoadingLast30RW, e.message ?? "Error");
+    })
+    .finally(() => {
+      if (isCurrentSession(get, session)) set(websocketReconnectingAtom, false);
+    });
 }
 
 class ReconnectingWebsocket {
-  public handleOpen?: () => void;
-  public handleMessage?: (evt: MessageEvent<string>) => void;
-  public handleReconnecting?: () => void;
+  // Callbacks receive the session their socket opened, or null before it opened.
+  public handleOpen?: () => number;
+  public handleMessage?: (evt: MessageEvent<string>, session: number | null) => void;
+  public handleClose?: (session: number | null, reconnecting: boolean) => void;
 
   private readonly url: string;
   private ws?: WebSocket;
+  private session: number | null = null;
   private userCalledClose = false;
   private reconnectAttempts = 0;
 
@@ -101,6 +171,13 @@ class ReconnectingWebsocket {
   public close() {
     this.userCalledClose = true;
     this.ws?.close();
+    this.endSession(false);
+  }
+
+  private endSession(reconnecting: boolean) {
+    const session = this.session;
+    this.session = null;
+    this.handleClose?.(session, reconnecting);
   }
 
   private connect() {
@@ -116,7 +193,7 @@ class ReconnectingWebsocket {
     localWs.addEventListener("open", () => {
       clearTimeout(connectTimeout);
       this.reconnectAttempts = 0;
-      this.handleOpen?.();
+      this.session = this.handleOpen?.() ?? null;
     });
 
     localWs.addEventListener("close", () => {
@@ -126,7 +203,7 @@ class ReconnectingWebsocket {
         return;
       }
 
-      this.handleReconnecting?.();
+      this.endSession(true);
       const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 30000);
       setTimeout(() => {
         this.reconnectAttempts++;
@@ -135,7 +212,7 @@ class ReconnectingWebsocket {
     });
 
     localWs.addEventListener("message", (evt: MessageEvent<string>) => {
-      this.handleMessage?.(evt);
+      this.handleMessage?.(evt, this.session);
     });
 
     // Browsers expose websocket failures as opaque events with no useful detail.
@@ -144,27 +221,51 @@ class ReconnectingWebsocket {
   }
 }
 
-const onOpenAtom = atom(null, (get, set) => {
-  const lastSeenCntr = get(lastEventCounter);
-  const schIds = get(last30SchIds);
+const onOpenAtom = atom(null, (get, set): number => {
+  const session = get(websocketSessionAtom).id + 1;
+  set(websocketSessionAtom, { id: session, statusFromSocket: false });
   set(websocketReconnectingAtom, true);
+  set(currentStatusIsLiveRW, false);
   set(errorLoadingLast30RW, null);
-  if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
-    loadMissed(lastSeenCntr, schIds, set);
-  } else {
-    loadInitial(set);
-  }
+  set(errorLoadingLogRW, null);
+  set(bufferedLogAtom, OrderedMap.empty());
+  loadConnection(get, set, session);
+  return session;
 });
 
-const onMessageAtom = atom(null, (_, set, evt: MessageEvent<string>) => {
+// Every close, including disposal, ends the socket's own session; only an unexpected close
+// reconnects. A connection cannot end a newer connection's session.
+const onCloseAtom = atom(null, (get, set, session: number | null, reconnecting: boolean) => {
+  if (reconnecting) set(websocketReconnectingAtom, true);
+  if (session === null || !isCurrentSession(get, session)) return;
+  set(websocketSessionAtom, { id: session + 1, statusFromSocket: false });
+  set(currentStatusIsLiveRW, false);
+  set(bufferedLogAtom, null);
+});
+
+const onMessageAtom = atom(null, (get, set, evt: MessageEvent<string>, session: number | null) => {
+  if (session === null || !isCurrentSession(get, session)) return;
   const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
-  set(onServerEvent, { evt: serverEvt, now: new Date(), expire: true });
+  const eventAndTime = { evt: serverEvt, now: new Date(), expire: true };
+  set(onLiveServerEvent, eventAndTime);
+  const log = serverEvt.logEntry;
+  const buffered = get(bufferedLogAtom);
+  if (!log || !get(loadedLogCountersAtom).has(log.counter)) {
+    if (log && buffered !== null) {
+      set(bufferedLogAtom, buffered.set(log.counter, log));
+    } else {
+      set(onHistoricalServerEvent, eventAndTime);
+    }
+  }
+  if (serverEvt.newCurrentStatus) {
+    set(websocketSessionAtom, { id: session, statusFromSocket: true });
+    set(currentStatusIsLiveRW, true);
+  }
 });
 
 export function WebsocketConnection(): null {
   const onOpen = useSetAtom(onOpenAtom);
-  const setReconnecting = useSetAtom(websocketReconnectingAtom);
-  const onReconnecting = useCallback(() => setReconnecting(true), [setReconnecting]);
+  const onClose = useSetAtom(onCloseAtom);
   const onMessage = useSetAtom(onMessageAtom);
   const fmsInfoLoadable = useAtomValue(fmsInformation);
   const websocketRef = useRef<ReconnectingWebsocket | null>(null);
@@ -192,7 +293,7 @@ export function WebsocketConnection(): null {
 
     const websocket = new ReconnectingWebsocket(uri);
     websocket.handleOpen = onOpen;
-    websocket.handleReconnecting = onReconnecting;
+    websocket.handleClose = onClose;
     websocket.handleMessage = onMessage;
     websocketRef.current = websocket;
 
@@ -202,7 +303,7 @@ export function WebsocketConnection(): null {
         websocketRef.current = null;
       }
     };
-  }, [fmsInfoLoadable, onMessage, onOpen, onReconnecting]);
+  }, [fmsInfoLoadable, onMessage, onOpen, onClose]);
 
   return null;
 }
