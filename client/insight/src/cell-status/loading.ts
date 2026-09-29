@@ -66,17 +66,22 @@ export interface ServerEventAndTime {
 }
 
 const lastEventCounterRW = atom<number | null>(null);
+// Highest counter applied to historical projections. Buffered websocket events do not advance it.
+// This is a reconnect cursor, not proof that lower counters cannot arrive later on the socket.
 export const lastEventCounter: Atom<number | null> = lastEventCounterRW;
 
-export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
+export const onLiveServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   if (evt.evt.newCurrentStatus) {
     set(customSt.replaceCustomState, evt.evt.newCurrentStatus.customState ?? null);
   }
+  set(currentSt.updateCurrentStatus, evt);
+});
+
+export const onHistoricalServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   set(simProd.updateLast30JobProduction, evt);
   set(simUse.updateLast30SimStatUse, evt);
   set(schJobs.updateLast30Jobs, evt);
   set(buffers.updateLast30Buffer, evt);
-  set(currentSt.updateCurrentStatus, evt);
   set(mats.updateLast30MatSummary, evt);
   set(insp.updateLast30Inspections, evt);
   set(names.updateNames, evt);
@@ -90,8 +95,13 @@ export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
 
   if (evt.evt.logEntry) {
     const newCntr = evt.evt.logEntry.counter;
-    set(lastEventCounterRW, (old) => (old === null ? old : Math.max(old, newCntr)));
+    set(lastEventCounterRW, (old) => Math.max(old ?? newCntr, newCntr));
   }
+});
+
+export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
+  set(onLiveServerEvent, evt);
+  set(onHistoricalServerEvent, evt);
 });
 
 export const onLoadLast30Jobs = atom(

@@ -48,6 +48,14 @@ typically using jotai atoms. The atoms storing the information about the cell ar
 `src/cell-status` directory. The code in the `src/network` directory handles the initial data load
 and the websocket connection to keep the jotai stores updated.
 
+Initial loads and reconnects buffer the historical effects of websocket log entries until HTTP
+history arrives, then merge by counter and apply the distinct entries in counter order. Current
+status, its live log patches, and new jobs continue immediately. Failed history requests retry
+without interrupting current status; interrupted sessions reload from the last applied history
+counter. Entries included in the latest history response are also recognized if their websocket
+messages arrive afterward. This reconciles overlapping history loads; it does not impose counter
+order on ordinary live websocket publication, which the server does not currently guarantee.
+
 The `src/data` directory contains a large amout of the client-side business logic and report
 generating typescript code. It takes the raw event data from the cell status and turns it into a
 format suitable for display. Finally, the `src/components` directory contains the React components

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ServerEvent } from "./api.js";
+import { ServerEvent, type ILogEntry } from "./api.js";
 import { JobsBackend, LogBackend } from "./backend.js";
 import { fmsInformation } from "./server-settings.js";
 import { useEffect, useRef } from "react";
@@ -40,11 +40,12 @@ import {
   onLoadCurrentSt,
   onLoadLast30Jobs,
   onLoadLast30Log,
-  onServerEvent,
+  onLiveServerEvent,
+  onHistoricalServerEvent,
 } from "../cell-status/loading.js";
 import { addDays } from "date-fns";
 import { last30SchIds } from "../cell-status/scheduled-jobs.js";
-import { HashSet } from "@seedtactics/immutable-collections";
+import { HashSet, OrderedMap } from "@seedtactics/immutable-collections";
 import { Atom, Getter, Setter, atom, useAtomValue, useSetAtom } from "jotai";
 
 const websocketReconnectingAtom = atom<boolean>(false);
@@ -62,13 +63,18 @@ export const currentStatusIsLive: Atom<boolean> = currentStatusIsLiveRW;
 type WebsocketSession = { readonly id: number; readonly statusFromSocket: boolean };
 const websocketSessionAtom = atom<WebsocketSession>({ id: 0, statusFromSocket: false });
 
-// The event counter from which the log history still has to be caught up. Live events advance
-// lastEventCounter while a catch-up is pending, so an interrupted catch-up resumes from here
-// rather than leaving a gap; it is cleared once a catch-up is applied.
-const historyCatchUpFromAtom = atom<number | null>(null);
+// Only historical effects wait for HTTP catch-up. A fresh session discards its predecessor's
+// unapplied buffer and reloads from lastEventCounter, which has not advanced past that history.
+const bufferedLogAtom = atom<OrderedMap<number, Readonly<ILogEntry>> | null>(null);
+// HTTP can include entries whose socket messages arrive after the response. Suppress those exact
+// identities, never all counters below a maximum: live publication is not guaranteed to be ordered.
+const loadedLogCountersAtom = atom(HashSet.empty<number>());
 
 const errorLoadingLast30RW = atom<string | null>(null);
-export const errorLoadingLast30: Atom<string | null> = errorLoadingLast30RW;
+const errorLoadingLogRW = atom<string | null>(null);
+export const errorLoadingLast30: Atom<string | null> = atom(
+  (get) => get(errorLoadingLast30RW) ?? get(errorLoadingLogRW),
+);
 
 function isCurrentSession(get: Getter, session: number): boolean {
   return get(websocketSessionAtom).id === session;
@@ -83,41 +89,50 @@ function loadCurrentStatus(get: Getter, set: Setter, session: number): Promise<v
   });
 }
 
-function loadInitial(get: Getter, set: Setter, session: number): void {
-  const now = new Date();
-  const thirtyDaysAgo = addDays(now, -30);
-
-  const curStProm = loadCurrentStatus(get, set, session);
-  const jobsProm = JobsBackend.recent(thirtyDaysAgo, []).then((j) => {
-    if (isCurrentSession(get, session)) set(onLoadLast30Jobs, j);
-  });
-  const logProm = LogBackend.get(thirtyDaysAgo, now).then((log) => {
-    if (isCurrentSession(get, session)) set(onLoadLast30Log, log);
-  });
-
-  finishLoading([curStProm, jobsProm, logProm], get, set, session);
-}
-
-function loadMissed(
-  lastCntr: number,
-  schIds: HashSet<string> | undefined,
+function loadHistory(
   get: Getter,
   set: Setter,
   session: number,
-): void {
+  from: number | null,
+  retryDelay = 1000,
+): Promise<void> {
   const now = new Date();
-  const curStProm = loadCurrentStatus(get, set, session);
-  const jobsProm = JobsBackend.recent(addDays(now, -30), schIds ? Array.from(schIds) : []).then(
-    (j) => {
-      if (isCurrentSession(get, session)) set(onLoadLast30Jobs, j);
+  const request =
+    from === null ? LogBackend.get(addDays(now, -30), now) : LogBackend.recent(from, undefined);
+  return request.then(
+    (log) => {
+      if (!isCurrentSession(get, session)) return;
+      const buffered = get(bufferedLogAtom) ?? OrderedMap.empty<number, Readonly<ILogEntry>>();
+      const merged = log.reduce((entries, entry) => entries.set(entry.counter, entry), buffered);
+      set(onLoadLast30Log, merged.valuesToAscLazySeq().toRArray());
+      set(loadedLogCountersAtom, HashSet.from(merged.keys()));
+      set(bufferedLogAtom, null);
+      set(errorLoadingLogRW, null);
+    },
+    (e: Error) => {
+      if (!isCurrentSession(get, session)) return;
+      set(errorLoadingLogRW, e.message ?? "Error loading log history");
+      // Keep buffering and retry from the same applied position without interrupting live status.
+      setTimeout(() => {
+        if (isCurrentSession(get, session)) {
+          void loadHistory(get, set, session, from, Math.min(retryDelay * 2, 30000));
+        }
+      }, retryDelay);
     },
   );
-  const logProm = LogBackend.recent(lastCntr, undefined).then((log) => {
-    if (!isCurrentSession(get, session)) return;
-    set(onLoadLast30Log, log);
-    set(historyCatchUpFromAtom, null);
-  });
+}
 
+function loadConnection(get: Getter, set: Setter, session: number): void {
+  const from = get(lastEventCounter);
+  const schIds = get(last30SchIds);
+  const curStProm = loadCurrentStatus(get, set, session);
+  const jobsProm = JobsBackend.recent(
+    addDays(new Date(), -30),
+    from !== null && schIds ? Array.from(schIds) : [],
+  ).then((j) => {
+    if (isCurrentSession(get, session)) set(onLoadLast30Jobs, j);
+  });
+  const logProm = loadHistory(get, set, session, from);
   finishLoading([curStProm, jobsProm, logProm], get, set, session);
 }
 
@@ -207,19 +222,14 @@ class ReconnectingWebsocket {
 }
 
 const onOpenAtom = atom(null, (get, set): number => {
-  const catchUpFrom = get(historyCatchUpFromAtom) ?? get(lastEventCounter);
-  const schIds = get(last30SchIds);
   const session = get(websocketSessionAtom).id + 1;
   set(websocketSessionAtom, { id: session, statusFromSocket: false });
   set(websocketReconnectingAtom, true);
   set(currentStatusIsLiveRW, false);
   set(errorLoadingLast30RW, null);
-  if (catchUpFrom !== null) {
-    set(historyCatchUpFromAtom, catchUpFrom);
-    loadMissed(catchUpFrom, schIds, get, set, session);
-  } else {
-    loadInitial(get, set, session);
-  }
+  set(errorLoadingLogRW, null);
+  set(bufferedLogAtom, OrderedMap.empty());
+  loadConnection(get, set, session);
   return session;
 });
 
@@ -230,12 +240,23 @@ const onCloseAtom = atom(null, (get, set, session: number | null, reconnecting: 
   if (session === null || !isCurrentSession(get, session)) return;
   set(websocketSessionAtom, { id: session + 1, statusFromSocket: false });
   set(currentStatusIsLiveRW, false);
+  set(bufferedLogAtom, null);
 });
 
 const onMessageAtom = atom(null, (get, set, evt: MessageEvent<string>, session: number | null) => {
   if (session === null || !isCurrentSession(get, session)) return;
   const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
-  set(onServerEvent, { evt: serverEvt, now: new Date(), expire: true });
+  const eventAndTime = { evt: serverEvt, now: new Date(), expire: true };
+  set(onLiveServerEvent, eventAndTime);
+  const log = serverEvt.logEntry;
+  const buffered = get(bufferedLogAtom);
+  if (!log || !get(loadedLogCountersAtom).has(log.counter)) {
+    if (log && buffered !== null) {
+      set(bufferedLogAtom, buffered.set(log.counter, log));
+    } else {
+      set(onHistoricalServerEvent, eventAndTime);
+    }
+  }
   if (serverEvt.newCurrentStatus) {
     set(websocketSessionAtom, { id: session, statusFromSocket: true });
     set(currentStatusIsLiveRW, true);
