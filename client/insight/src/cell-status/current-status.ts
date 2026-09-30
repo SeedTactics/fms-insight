@@ -44,6 +44,7 @@ import {
   ActiveWorkorder,
   IActiveWorkorder,
   InProcessMaterialLocation,
+  QueuePosition,
 } from "../network/api.js";
 import { last30JobComment } from "./scheduled-jobs.js";
 import type { ServerEventAndTime } from "./loading.js";
@@ -263,5 +264,28 @@ export const reorderQueuedMatInCurrentStatus = atom(
 
       return { ...curSt, material: newMats };
     });
+  },
+);
+
+export interface QueuedMatMove extends QueueReordering {
+  readonly operator: string | null;
+}
+
+// Queue drags show their result immediately. A rejected move restores the server's current
+// status rather than a local snapshot, which could discard newer websocket updates.
+export const moveQueuedMatInCurrentStatus = atom(
+  null,
+  async (_, set, { operator, ...move }: QueuedMatMove): Promise<void> => {
+    set(reorderQueuedMatInCurrentStatus, move);
+    try {
+      await JobsBackend.setMaterialInQueue(
+        move.matId,
+        operator,
+        new QueuePosition({ queue: move.queue, position: move.newIdx }),
+      );
+    } catch (e) {
+      set(currentStatusRW, await JobsBackend.currentStatus());
+      throw e;
+    }
   },
 );

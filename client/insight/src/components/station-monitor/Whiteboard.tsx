@@ -49,8 +49,7 @@ import {
 } from "@dnd-kit/sortable";
 import { IInProcessMaterial } from "../../network/api.js";
 import { SortableMatData } from "./Material.js";
-import { useAddExistingMaterialToQueue } from "../../cell-status/material-details.js";
-import { reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status.js";
+import { moveQueuedMatInCurrentStatus } from "../../cell-status/current-status.js";
 import { currentOperator } from "../../data/operators.js";
 import { canSetMaterialInQueue } from "../../data/material-operation-policy.js";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -73,8 +72,7 @@ function numericId(id: string | number): number | null {
 
 export const SortableRegion = memo(function SortableRegion(props: SortableRegionProps) {
   const [activeMat, setActiveMat] = useState<Readonly<IInProcessMaterial> | undefined>(undefined);
-  const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
-  const reorderQueuedMat = useSetAtom(reorderQueuedMatInCurrentStatus);
+  const moveQueuedMat = useSetAtom(moveQueuedMatInCurrentStatus);
   const operator = useAtomValue(currentOperator);
   const sortableItemIds = useMemo(() => props.matIds.slice(), [props.matIds]);
   const sensors = useSensors(
@@ -104,21 +102,12 @@ export const SortableRegion = memo(function SortableRegion(props: SortableRegion
           mat !== null &&
           canSetMaterialInQueue(mat, props.queueName)
         ) {
-          const overIdx = props.matIds.indexOf(overMatId);
-          void addExistingMatToQueue({
-            materialId: activeMatId,
+          moveQueuedMat({
             queue: props.queueName,
-            queuePosition: overIdx,
-            operator: operator,
-          })
-            .then(() =>
-              reorderQueuedMat({
-                queue: props.queueName,
-                matId: activeMatId,
-                newIdx: overIdx,
-              }),
-            )
-            .catch(console.error);
+            matId: activeMatId,
+            newIdx: props.matIds.indexOf(overMatId),
+            operator,
+          }).catch(console.error);
         }
         setActiveMat(undefined);
       }}

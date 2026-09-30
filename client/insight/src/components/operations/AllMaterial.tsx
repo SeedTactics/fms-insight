@@ -54,7 +54,6 @@ import {
   findMaterialInQuarantineQueues,
   findQueueInQuarantineQueues,
 } from "../../data/all-material-bins.js";
-import * as matDetails from "../../cell-status/material-details.js";
 import * as currentSt from "../../cell-status/current-status.js";
 import { Box } from "@mui/material";
 import { Typography } from "@mui/material";
@@ -466,8 +465,7 @@ export function AllMaterial(props: AllMaterialProps) {
   useSetTitle("All Material");
   const st = useAtomValue(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useAtom(currentMaterialBinOrder);
-  const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
-  const reorderQueuedMat = useSetAtom(currentSt.reorderQueuedMatInCurrentStatus);
+  const moveQueuedMat = useSetAtom(currentSt.moveQueuedMatInCurrentStatus);
   const [activeDrag, setActiveDrag] = useState<CurActiveDrag | null>(null);
 
   const allBins = useMemo(() => {
@@ -561,21 +559,12 @@ export function AllMaterial(props: AllMaterialProps) {
               ? findQueueInQuarantineQueues(over.id, allBins)
               : findMaterialInQuarantineQueues(over.id, allBins);
           if (overCol && canSetMaterialInQueue(activeDrag.mat, overCol.bin.queueName)) {
-            const matId = activeDrag.mat.materialID;
-            void addExistingMatToQueue({
-              materialId: matId,
+            moveQueuedMat({
               queue: overCol.bin.queueName,
-              queuePosition: overCol.idx,
+              matId: activeDrag.mat.materialID,
+              newIdx: overCol.idx,
               operator: null,
-            })
-              .then(() =>
-                reorderQueuedMat({
-                  queue: overCol.bin.queueName,
-                  matId,
-                  newIdx: overCol.idx,
-                }),
-              )
-              .catch(console.error);
+            }).catch(console.error);
           }
         }
 

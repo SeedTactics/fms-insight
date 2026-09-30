@@ -36,7 +36,7 @@ function QueueWhiteboard() {
   );
 }
 
-function queueStatus(action: api.ActionType, automatedTransfer = false) {
+function queueStatus(action: api.ActionType, automatedTransfer = false, serialPrefix = "SERIAL") {
   return createCurrentStatus({
     queues: { "Queue A": new api.QueueInfo({}), "Queue B": new api.QueueInfo({}) },
     material: [1, 2].map((id) =>
@@ -44,7 +44,7 @@ function queueStatus(action: api.ActionType, automatedTransfer = false) {
         materialID: id,
         jobUnique: "JOB",
         partName: "Part",
-        serial: `SERIAL-${id}`,
+        serial: `${serialPrefix}-${id}`,
         process: 1,
         path: 1,
         location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: id - 1 },
@@ -54,26 +54,40 @@ function queueStatus(action: api.ActionType, automatedTransfer = false) {
   });
 }
 
+// The queue move stays pending until the test responds. A rejected move reloads the server's
+// current status, which the tests distinguish from the initial status by its serials.
+function mockQueueMove(serverStatus: api.CurrentStatus) {
+  let respond!: (response: Response) => void;
+  const response = new Promise<Response>((resolve) => {
+    respond = resolve;
+  });
+  const fetch = vi
+    .spyOn(window, "fetch")
+    .mockImplementation((input) =>
+      String(input).endsWith("/api/v1/jobs/status")
+        ? Promise.resolve(new Response(JSON.stringify(serverStatus.toJSON())))
+        : response,
+    );
+  const reject = () => respond(new Response("Material is now automated", { status: 409 }));
+  const accept = () => respond(new Response(null, { status: 204 }));
+  return { fetch, reject, accept };
+}
+
 describe.each(["all material", "whiteboard"])("%s queue drag", (view) => {
   test.each([
-    { action: api.ActionType.Waiting, responseStatus: 204 },
-    { action: api.ActionType.Waiting, responseStatus: 409 },
-    { action: api.ActionType.Loading, responseStatus: 204 },
-    { action: api.ActionType.Loading, responseStatus: 409 },
+    { action: api.ActionType.Waiting, accepted: true },
+    { action: api.ActionType.Waiting, accepted: false },
+    { action: api.ActionType.Loading, accepted: true },
+    { action: api.ActionType.Loading, accepted: false },
   ])(
-    "updates $action order only after a $responseStatus response",
-    async ({ action, responseStatus }) => {
-      let respond!: (response: Response) => void;
-      const response = new Promise<Response>((resolve) => {
-        respond = resolve;
-      });
-      const fetch = vi.spyOn(window, "fetch").mockReturnValue(response);
+    "shows $action reorder immediately and keeps it when accepted=$accepted",
+    async ({ action, accepted }) => {
+      const { fetch, reject, accept } = mockQueueMove(queueStatus(action, false, "SERVER"));
       const error = vi.spyOn(console, "error").mockImplementation(() => {});
       registerNetworkBackend();
-      const initial = queueStatus(action);
       const screen = await renderInsightPage(
         view === "all material" ? <AllMaterial displaySystemBins={false} /> : <QueueWhiteboard />,
-        { currentStatus: initial },
+        { currentStatus: queueStatus(action) },
       );
 
       screen.getByRole("button", { name: "", exact: true }).first().element().focus();
@@ -92,21 +106,25 @@ describe.each(["all material", "whiteboard"])("%s queue drag", (view) => {
           body: JSON.stringify({ Queue: "Queue A", Position: 1 }),
         }),
       );
-      expect(screen.store.get(currentStatus)).toBe(initial);
-
-      respond(
-        new Response(responseStatus === 409 ? "Material is now automated" : null, {
-          status: responseStatus,
-        }),
+      expect(screen.store.get(currentStatus).material.map((m) => m.location.queuePosition)).toEqual(
+        [1, 0],
       );
-      if (responseStatus === 409) {
-        await expect.poll(() => error.mock.calls.length).toBe(1);
-        expect(screen.store.get(currentStatus)).toBe(initial);
-      } else {
-        await expect
-          .poll(() => screen.store.get(currentStatus).material.map((m) => m.location.queuePosition))
-          .toEqual([1, 0]);
+
+      if (accepted) {
+        accept();
+        await new Promise<void>((resolve) => setTimeout(resolve, 50));
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(
+          screen.store.get(currentStatus).material.map((m) => m.location.queuePosition),
+        ).toEqual([1, 0]);
         expect(error).not.toHaveBeenCalled();
+      } else {
+        reject();
+        await expect.poll(() => error.mock.calls.length).toBe(1);
+        expect(fetch).toHaveBeenCalledTimes(2);
+        const restored = screen.store.get(currentStatus).material;
+        expect(restored.map((m) => m.serial)).toEqual(["SERVER-1", "SERVER-2"]);
+        expect(restored.map((m) => m.location.queuePosition)).toEqual([0, 1]);
       }
     },
   );
@@ -128,17 +146,13 @@ describe.each(["all material", "whiteboard"])("%s queue drag", (view) => {
 });
 
 test.each([
-  { action: api.ActionType.Waiting, responseStatus: 204 },
-  { action: api.ActionType.Waiting, responseStatus: 409 },
-  { action: api.ActionType.Loading, responseStatus: 204 },
+  { action: api.ActionType.Waiting, accepted: true },
+  { action: api.ActionType.Waiting, accepted: false },
+  { action: api.ActionType.Loading, accepted: true },
 ])(
-  "all material cross-queue drag for $action with $responseStatus response",
-  async ({ action, responseStatus }) => {
-    let respond!: (response: Response) => void;
-    const response = new Promise<Response>((resolve) => {
-      respond = resolve;
-    });
-    const fetch = vi.spyOn(window, "fetch").mockReturnValue(response);
+  "all material cross-queue drag for $action with accepted=$accepted",
+  async ({ action, accepted }) => {
+    const { fetch, reject, accept } = mockQueueMove(queueStatus(action, false, "SERVER"));
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     registerNetworkBackend();
     const initial = queueStatus(action);
@@ -154,9 +168,9 @@ test.each([
     }
     await userEvent.keyboard("{Space}");
 
-    expect(screen.store.get(currentStatus)).toBe(initial);
     if (action === api.ActionType.Loading) {
       expect(fetch).not.toHaveBeenCalled();
+      expect(screen.store.get(currentStatus)).toBe(initial);
       return;
     }
     await expect.poll(() => fetch.mock.calls.length).toBe(1);
@@ -167,19 +181,26 @@ test.each([
         body: JSON.stringify({ Queue: "Queue B", Position: 0 }),
       }),
     );
-    respond(
-      new Response(responseStatus === 409 ? "Material is now automated" : null, {
-        status: responseStatus,
-      }),
-    );
-    if (responseStatus === 409) {
-      await expect.poll(() => error.mock.calls.length).toBe(1);
-      expect(screen.store.get(currentStatus)).toBe(initial);
-    } else {
-      await expect
-        .poll(() => screen.store.get(currentStatus).material.map((m) => m.location.currentQueue))
-        .toEqual(["Queue B", "Queue A"]);
+    expect(screen.store.get(currentStatus).material.map((m) => m.location.currentQueue)).toEqual([
+      "Queue B",
+      "Queue A",
+    ]);
+
+    if (accepted) {
+      accept();
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(screen.store.get(currentStatus).material.map((m) => m.location.currentQueue)).toEqual([
+        "Queue B",
+        "Queue A",
+      ]);
       expect(error).not.toHaveBeenCalled();
+    } else {
+      reject();
+      await expect.poll(() => error.mock.calls.length).toBe(1);
+      const restored = screen.store.get(currentStatus).material;
+      expect(restored.map((m) => m.serial)).toEqual(["SERVER-1", "SERVER-2"]);
+      expect(restored.map((m) => m.location.currentQueue)).toEqual(["Queue A", "Queue A"]);
     }
   },
 );
