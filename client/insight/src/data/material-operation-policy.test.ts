@@ -54,7 +54,8 @@ describe("materialOperationState", () => {
 
   it("does not treat a blank cancellation id as cancellation capability", () => {
     expect(materialOperationState(material(LocType.OnPallet, ActionType.Waiting, "  "))).toEqual({
-      kind: "AutomationControlled",
+      kind: "ActiveLoadStationOperation",
+      cancellationId: null,
     });
     expect(canCancelLoad(material(LocType.OnPallet, ActionType.Waiting, "  "))).toBe(false);
   });
@@ -132,4 +133,30 @@ describe("material operation permissions", () => {
       expect(canAddOrMoveMaterialToQueue(controlled)).toBe(false);
     }
   });
+});
+
+describe("transfer quarantine policy", () => {
+  it.each([
+    ActionType.Loading,
+    ActionType.LoadingToBasket,
+    ActionType.UnloadToInProcess,
+    ActionType.UnloadToCompletedMaterial,
+  ])("protects automated %s with cancellation tokens", (action) => {
+    const m = material(LocType.InQueue, action, "operator-token");
+    m.action.automatedTransfer = true;
+    expect(canSignalQuarantine(m)).toBe(true);
+    expect(canCancelLoad(m)).toBe(false);
+    expect(canDirectlyQuarantine(m)).toBe(false);
+    expect(canAddOrMoveMaterialToQueue(m)).toBe(false);
+    expect(canInvalidateMaterial(m)).toBe(false);
+  });
+  it.each([ActionType.UnloadToInProcess, ActionType.UnloadToCompletedMaterial])(
+    "permits signals during human %s in mixed work",
+    (action) => {
+      const m = material(LocType.InBasket, action, "mixed-token");
+      expect(canSignalQuarantine(m)).toBe(true);
+      expect(canRemoveFromQueue(m)).toBe(false);
+      expect(canInvalidateMaterial(m)).toBe(false);
+    },
+  );
 });

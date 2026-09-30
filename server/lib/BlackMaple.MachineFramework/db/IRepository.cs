@@ -471,7 +471,8 @@ namespace BlackMaple.MachineFramework
       string reason,
       DateTime? timeUTC = null,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      ImmutableDictionary<string, string> extraData = null
     );
 
     /// Invalidates the selected material's latest valid process and its machining group. Earlier

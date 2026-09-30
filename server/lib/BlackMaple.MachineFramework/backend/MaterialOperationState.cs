@@ -27,10 +27,13 @@ internal enum MaterialOperationKind
 /// Classifies the current owner of material-changing operations. Callers must hold the
 /// <c>JobsAndQueuesFromDb</c> change lock while using the classification with current status.
 /// </summary>
-internal static class MaterialOperationState
+public static class MaterialOperationState
 {
-  public static MaterialOperationKind Classify(InProcessMaterial material)
+  internal static MaterialOperationKind Classify(InProcessMaterial material)
   {
+    if (material.Action.AutomatedTransfer)
+      return MaterialOperationKind.AutomationControlled;
+
     // A cancellation ID is authoritative even when a backend uses an unusual action or location
     // representation. A non-null blank ID is invalid backend state, but remains protected here so
     // a direct caller cannot accidentally bypass station-operation exclusivity.
@@ -53,6 +56,39 @@ internal static class MaterialOperationState
 
     return MaterialOperationKind.EligibleAddToQueueProposal;
   }
+
+  public static bool CanSignalQuarantine(InProcessMaterial material) =>
+    material.MaterialID >= 0
+    && (
+      Classify(material) == MaterialOperationKind.AutomationControlled
+      || material.Action.Type
+        is InProcessMaterialAction.ActionType.UnloadToInProcess
+          or InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+    );
+
+  public static bool CanCancelLoad(InProcessMaterial material) =>
+    !material.Action.AutomatedTransfer
+    && Classify(material) == MaterialOperationKind.ActiveLoadStationOperation
+    && !string.IsNullOrWhiteSpace(material.Action.LoadCancellationId);
+
+  public static bool CanDirectlyQuarantine(InProcessMaterial material) =>
+    Classify(material) == MaterialOperationKind.HumanControlledQueuedMaterial;
+
+  public static bool CanAddOrMoveToQueue(InProcessMaterial material) =>
+    Classify(material)
+      is MaterialOperationKind.HumanControlledQueuedMaterial
+        or MaterialOperationKind.EligibleAddToQueueProposal;
+
+  public static bool CanInvalidate(InProcessMaterial material) =>
+    Classify(material) == MaterialOperationKind.EligibleAddToQueueProposal;
+
+  public static (int Process, int Path) QuarantineRoute(InProcessMaterial material) =>
+    material.Action.AutomatedTransfer
+    && material.Action.Type
+      is InProcessMaterialAction.ActionType.Loading
+        or InProcessMaterialAction.ActionType.LoadingToBasket
+      ? (material.Action.ProcessAfterLoad ?? 0, material.Action.PathAfterLoad ?? 0)
+      : (material.Process, material.Path);
 
   private static bool IsLoadStationAction(InProcessMaterialAction.ActionType action) =>
     action

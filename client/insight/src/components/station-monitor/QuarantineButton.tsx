@@ -64,7 +64,7 @@ import {
   canDirectlyQuarantine,
   canRemoveFromQueue,
   canSignalQuarantine,
-  isActiveLoadStationOperation,
+  quarantineRoute,
 } from "../../data/material-operation-policy.js";
 
 type QuarantineMaterialTypes = "Remove" | "Scrap" | "SignalForScrap";
@@ -93,10 +93,11 @@ function hasSupportedQuarantineExit(
   const job = status.jobs[material.jobUnique];
   if (!job) return false;
 
-  const path = job.procsAndPaths[material.process - 1]?.paths[material.path - 1];
+  const route = quarantineRoute(material);
+  const path = job.procsAndPaths[route.process - 1]?.paths[route.path - 1];
   if (!path) return false;
 
-  return material.process === job.procsAndPaths.length || Boolean(path.outputQueue);
+  return route.process === job.procsAndPaths.length || Boolean(path.outputQueue);
 }
 
 function useQuarantineMaterial(): QuarantineMaterialData | null {
@@ -105,8 +106,6 @@ function useQuarantineMaterial(): QuarantineMaterialData | null {
   const curSt = useAtomValue(currentStatus);
 
   if (inProcMat === null || inProcMat.materialID < 0) return null;
-
-  if (isActiveLoadStationOperation(inProcMat)) return null;
 
   if (inProcMat.quarantineAfterUnload) return null;
 
@@ -135,6 +134,7 @@ function useQuarantineMaterial(): QuarantineMaterialData | null {
     .toRSet(([qname]) => qname);
   // If in a quarantine queue, allow removal from system
   if (
+    canRemoveFromQueue(inProcMat) &&
     inProcMat.location.type === LocType.InQueue &&
     inProcMat.location.currentQueue &&
     quarantineQueues.has(inProcMat.location.currentQueue)
@@ -149,28 +149,16 @@ function useQuarantineMaterial(): QuarantineMaterialData | null {
 
   let type: QuarantineMaterialTypes | null = null;
 
-  switch (inProcMat.location.type) {
-    case LocType.OnPallet:
-    case LocType.InBasket:
-      if (!canSignalQuarantine(inProcMat) || !hasSupportedQuarantineExit(inProcMat, curSt)) {
-        return null;
-      }
-      type = "SignalForScrap";
-      break;
-
-    case LocType.InQueue:
-      if (!canDirectlyQuarantine(inProcMat)) return null;
-      if (
-        inProcMat.location.currentQueue === undefined ||
-        quarantineQueues.has(inProcMat.location.currentQueue)
-      ) {
-        return null;
-      }
-      type = "Scrap";
-      break;
-
-    case LocType.Free:
+  if (canSignalQuarantine(inProcMat)) {
+    if (!hasSupportedQuarantineExit(inProcMat, curSt)) return null;
+    type = "SignalForScrap";
+  } else if (canDirectlyQuarantine(inProcMat)) {
+    if (
+      inProcMat.location.currentQueue === undefined ||
+      quarantineQueues.has(inProcMat.location.currentQueue)
+    )
       return null;
+    type = "Scrap";
   }
 
   if (type) {
@@ -328,7 +316,7 @@ export function QuarantineMatButton({
       title = displayedSnapshot.destination
         ? `The current automated operation will continue. When the material leaves automation control, move it to ${displayedSnapshot.destination}`
         : "The current automated operation will continue. When the material leaves automation control, remove it from normal production flow as scrap";
-      btnTxt = displayedSnapshot.destination ? "Quarantine" : "Scrap";
+      btnTxt = "Signal for quarantine";
       break;
   }
 
@@ -386,7 +374,7 @@ export function QuarantineMatButton({
   return (
     <>
       {q ? (
-        <Tooltip title={title}>
+        <Tooltip title={title} describeChild={displayedSnapshot.operation === "DeferredQuarantine"}>
           <Button color="primary" disabled={removing} onClick={openQuarantine}>
             {btnTxt}
           </Button>

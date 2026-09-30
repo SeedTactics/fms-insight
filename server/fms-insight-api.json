@@ -3649,6 +3649,9 @@
           "Type": {
             "$ref": "#/components/schemas/ActionType"
           },
+          "AutomatedTransfer": {
+            "type": "boolean"
+          },
           "WorkId": {
             "type": "string",
             "nullable": true

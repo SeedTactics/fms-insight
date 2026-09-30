@@ -62,6 +62,13 @@ namespace BlackMaple.MachineFramework
     public required ActionType Type { get; init; }
 
     /// <summary>
+    /// The backend declares that automation controls this transfer. Defaults to false for human
+    /// loading/unloading. A declaring backend must retain quarantine signals through completion,
+    /// delayed manufacturing events and restart, until disposition and fresh readmission.
+    /// </summary>
+    public bool AutomatedTransfer { get; init; }
+
+    /// <summary>
     /// An opaque identifier shared by every material action in one operator-confirmable load/unload
     /// phase. The command handler uses it to reject confirmation of stale work.
     /// </summary>
@@ -120,7 +127,7 @@ namespace BlackMaple.MachineFramework
     //Again, this should be a sum type.
     public enum LocType
     {
-      Free = 0,
+      Free = 0, // No cell-tracked location; this does not establish operator ownership.
       OnPallet,
       InQueue,
       InBasket,

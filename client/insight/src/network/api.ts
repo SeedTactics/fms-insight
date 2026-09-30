@@ -5227,6 +5227,7 @@ export enum LocType {
 
 export class InProcessMaterialAction implements IInProcessMaterialAction {
   type!: ActionType;
+  automatedTransfer?: boolean;
   workId?: string | undefined;
   loadCancellationId?: string | undefined;
   loadOntoPalletNum?: number | undefined;
@@ -5255,6 +5256,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
   init(_data?: any) {
     if (_data) {
       this.type = _data["Type"];
+      this.automatedTransfer = _data["AutomatedTransfer"];
       this.workId = _data["WorkId"];
       this.loadCancellationId = _data["LoadCancellationId"];
       this.loadOntoPalletNum = _data["LoadOntoPalletNum"];
@@ -5284,6 +5286,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
     data["Type"] = this.type;
+    data["AutomatedTransfer"] = this.automatedTransfer;
     data["WorkId"] = this.workId;
     data["LoadCancellationId"] = this.loadCancellationId;
     data["LoadOntoPalletNum"] = this.loadOntoPalletNum;
@@ -5306,6 +5309,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
 
 export interface IInProcessMaterialAction {
   type: ActionType;
+  automatedTransfer?: boolean;
   workId?: string | undefined;
   loadCancellationId?: string | undefined;
   loadOntoPalletNum?: number | undefined;

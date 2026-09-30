@@ -896,34 +896,36 @@ namespace BlackMaple.MachineFramework
 
           if (mat == null)
             throw new ConflictRequestException("Material not found in the current cell state.");
-          if (MaterialOperationState.Classify(mat) != MaterialOperationKind.AutomationControlled)
+          if (!MaterialOperationState.CanSignalQuarantine(mat))
             throw new ConflictRequestException(
               "Material is not eligible for deferred quarantine in its current state."
             );
           if (
-            mat.Location.Type
-            is not (
-              InProcessMaterialLocation.LocType.OnPallet
-              or InProcessMaterialLocation.LocType.InBasket
-            )
+            !mat.Action.AutomatedTransfer
+            && mat.Location.Type
+              is not (
+                InProcessMaterialLocation.LocType.OnPallet
+                or InProcessMaterialLocation.LocType.InBasket
+              )
           )
             throw new ConflictRequestException(
               "Material does not have a supported path out of automation control."
             );
 
+          var (process, pathNumber) = MaterialOperationState.QuarantineRoute(mat);
           var job = st?.Jobs.GetValueOrDefault(mat.JobUnique);
           if (job == null)
             throw new ConflictRequestException("Material job is no longer current.");
           if (
-            mat.Process < 1
-            || mat.Process > job.Processes.Count
-            || mat.Path < 1
-            || mat.Path > job.Processes[mat.Process - 1].Paths.Count
+            process < 1
+            || process > job.Processes.Count
+            || pathNumber < 1
+            || pathNumber > job.Processes[process - 1].Paths.Count
           )
             throw new ConflictRequestException("Material routing is no longer current.");
 
-          var path = job.Processes[mat.Process - 1].Paths[mat.Path - 1];
-          if (mat.Process != job.Processes.Count && string.IsNullOrEmpty(path.OutputQueue))
+          var path = job.Processes[process - 1].Paths[pathNumber - 1];
+          if (process != job.Processes.Count && string.IsNullOrEmpty(path.OutputQueue))
             throw new ConflictRequestException(
               "Material does not have a supported path out of automation control."
             );
@@ -932,12 +934,13 @@ namespace BlackMaple.MachineFramework
             mat: new EventLogMaterial()
             {
               MaterialID = materialId,
-              Process = mat.Process,
+              Process = process,
               Face = 0,
             },
-            pallet: mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet
-              ? mat.Location.PalletNum ?? 0
-              : 0,
+            pallet: mat.Action.AutomatedTransfer
+            && mat.Action.Type == InProcessMaterialAction.ActionType.Loading
+              ? mat.Action.LoadOntoPalletNum ?? 0
+              : mat.Location.PalletNum ?? 0,
             queue: _settings.QuarantineQueue ?? "",
             timeUTC: null,
             operatorName: operatorName,

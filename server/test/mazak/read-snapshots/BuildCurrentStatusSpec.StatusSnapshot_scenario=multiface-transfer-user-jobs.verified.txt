@@ -58,6 +58,7 @@
       },
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 1,
         LoadOntoFace: 2,
         ProcessAfterLoad: 2,
@@ -76,7 +77,8 @@
         Face: 2
       },
       Action: {
-        Type: UnloadToCompletedMaterial
+        Type: UnloadToCompletedMaterial,
+        AutomatedTransfer: false
       }
     },
     {
@@ -87,6 +89,7 @@
       Location: {},
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 1,
         LoadOntoFace: 1,
         ProcessAfterLoad: 1,

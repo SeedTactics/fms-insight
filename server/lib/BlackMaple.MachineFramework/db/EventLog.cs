@@ -4218,7 +4218,8 @@ namespace BlackMaple.MachineFramework
       string reason,
       DateTime? timeUTC = null,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      ImmutableDictionary<string, string> extraData = null
     )
     {
       var log = new NewEventLogEntry()
@@ -4234,6 +4235,8 @@ namespace BlackMaple.MachineFramework
         Result = "QuarantineAfterUnload",
       };
 
+      foreach (var (key, value) in extraData ?? ImmutableDictionary<string, string>.Empty)
+        log.ProgramDetails[key] = value;
       if (!string.IsNullOrEmpty(operatorName))
       {
         log.ProgramDetails["operator"] = operatorName;

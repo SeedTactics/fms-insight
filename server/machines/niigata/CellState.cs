@@ -293,7 +293,7 @@ namespace BlackMaple.FMSInsight.Niigata
             .ToImmutableList(),
           QuarantineAfterUnload = log.Any(e =>
             e.LogType == LogType.SignalQuarantine
-            && e.Material.Any(m => m.MaterialID == m.MaterialID)
+            && e.Material.Any(signaled => signaled.MaterialID == m.MaterialID)
           )
             ? true
             : null,

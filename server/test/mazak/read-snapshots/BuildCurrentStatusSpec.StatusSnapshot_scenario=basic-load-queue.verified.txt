@@ -794,7 +794,9 @@
         PalletNum: 5,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: 2426324,
@@ -808,7 +810,9 @@
         PalletNum: 5,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: 2426321,
@@ -824,6 +828,7 @@
       },
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 6,
         LoadOntoFace: 2,
         ProcessAfterLoad: 2,
@@ -845,6 +850,7 @@
       },
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 6,
         LoadOntoFace: 2,
         ProcessAfterLoad: 2,
@@ -862,7 +868,9 @@
         CurrentQueue: castings,
         QueuePosition: 0
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     }
   ],
   Queues: {

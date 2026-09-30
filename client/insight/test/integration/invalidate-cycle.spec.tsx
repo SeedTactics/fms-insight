@@ -481,7 +481,7 @@ describe("cycle invalidation workflow", () => {
     );
 
     await expect
-      .element(screen.getByRole("button", { name: /current automated operation/ }))
+      .element(screen.getByRole("button", { name: "Signal for quarantine" }))
       .not.toBeInTheDocument();
   });
 
@@ -504,14 +504,93 @@ describe("cycle invalidation workflow", () => {
       },
     );
 
-    await screen.getByRole("button", { name: /current automated operation/ }).click();
-    await screen.getByRole("dialog").getByRole("button", { name: "Quarantine" }).click();
+    await screen.getByRole("button", { name: "Signal for quarantine" }).click();
+    await screen.getByRole("dialog").getByRole("button", { name: "Signal for quarantine" }).click();
 
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/jobs/material/201/signal-quarantine",
       expect.objectContaining({ method: "PUT" }),
     );
   });
+
+  test.each([
+    { source: api.LocType.Free, process: 0, target: 1 },
+    { source: api.LocType.InQueue, process: 1, target: 2 },
+  ])(
+    "signals an accepted automated load from $source using the target route",
+    async ({ source, process, target }) => {
+      const selected = createMaterial({
+        materialID: 201,
+        jobUnique: "JOB-1",
+        partName: "Part",
+        process,
+        path: 1,
+        location: { type: source, currentQueue: "Queue A" },
+        action: {
+          type: api.ActionType.Loading,
+          automatedTransfer: true,
+          processAfterLoad: target,
+          pathAfterLoad: 1,
+          loadCancellationId: "not-cancellable",
+        },
+      });
+      const fetch = vi
+        .spyOn(window, "fetch")
+        .mockResolvedValue(new Response(null, { status: 204 }));
+      registerNetworkBackend();
+      const job = quarantineJob("Queue A");
+      const twoProcessJob = api.ActiveJob.fromJS({
+        ...job.toJSON(),
+        ProcsAndPaths: [job.procsAndPaths[0].toJSON(), job.procsAndPaths[0].toJSON()],
+      });
+      const screen = await renderInsightPage(
+        <Suspense fallback={<div>Loading</div>}>
+          <QuarantineMatButton />
+        </Suspense>,
+        {
+          currentStatus: statusWithMaterial([selected], { "JOB-1": twoProcessJob }),
+          fmsInfo: { quarantineQueue: "Quarantine" },
+          ...dialogData(selected),
+        },
+      );
+      await screen.getByRole("button", { name: "Signal for quarantine" }).click();
+      await screen
+        .getByRole("dialog")
+        .getByRole("button", { name: "Signal for quarantine" })
+        .click();
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/v1/jobs/material/201/signal-quarantine",
+        expect.objectContaining({ method: "PUT" }),
+      );
+    },
+  );
+
+  test.each([api.ActionType.UnloadToInProcess, api.ActionType.UnloadToCompletedMaterial])(
+    "signals human unload %s without offering direct disposition",
+    async (type) => {
+      const selected = material({
+        materialId: 201,
+        location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
+        action: { type, workId: "mixed-work", loadCancellationId: "mixed-work" },
+      });
+      const screen = await renderInsightPage(
+        <Suspense fallback={<div>Loading</div>}>
+          <QuarantineMatButton />
+        </Suspense>,
+        {
+          currentStatus: statusWithMaterial([selected], { "JOB-1": quarantineJob("Queue A") }),
+          fmsInfo: { quarantineQueue: "Quarantine" },
+          ...dialogData(selected),
+        },
+      );
+      await expect
+        .element(screen.getByRole("button", { name: "Signal for quarantine" }))
+        .toBeVisible();
+      await expect
+        .element(screen.getByRole("button", { name: "Remove from Queue" }))
+        .not.toBeInTheDocument();
+    },
+  );
 
   test("removes waiting queued material without losing the scanned dialog context", async () => {
     const selected = material({

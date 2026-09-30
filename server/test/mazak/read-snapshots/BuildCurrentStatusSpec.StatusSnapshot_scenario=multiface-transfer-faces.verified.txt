@@ -1141,6 +1141,7 @@
       },
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 1,
         LoadOntoFace: 2,
         ProcessAfterLoad: 2,
@@ -1155,6 +1156,7 @@
       Location: {},
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 1,
         LoadOntoFace: 1,
         ProcessAfterLoad: 1,
@@ -1172,7 +1174,9 @@
         PalletNum: 2,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: -1,
@@ -1185,7 +1189,9 @@
         PalletNum: 3,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: -1,
@@ -1198,7 +1204,9 @@
         PalletNum: 4,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     }
   ],
   Queues: {

@@ -1138,7 +1138,9 @@
         PalletNum: 1,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: -1,
@@ -1151,7 +1153,9 @@
         PalletNum: 2,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: -1,
@@ -1164,7 +1168,9 @@
         PalletNum: 3,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: -1,
@@ -1174,6 +1180,7 @@
       Location: {},
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 4,
         LoadOntoFace: 1,
         ProcessAfterLoad: 1,

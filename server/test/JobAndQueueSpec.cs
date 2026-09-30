@@ -1670,11 +1670,49 @@ public sealed class JobAndQueueSpec
     public int Pallet { get; set; } = 4;
     public string Error { get; set; } = null;
     public int Process { get; set; } = 0;
+    public bool AutomatedTransfer { get; init; }
+    public int? ProcessAfterLoad { get; init; }
     public string JobTransferQeuue { get; set; } = "q1";
   }
 
   public readonly ImmutableList<SignalQuarantineTheoryData> SignalTheoryData =
   [
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.Free,
+      QuarantineQueue = "quarqqq",
+      Process = 0,
+      AutomatedTransfer = true,
+      ProcessAfterLoad = 1,
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.InQueue,
+      QuarantineQueue = "quarqqq",
+      Process = 1,
+      AutomatedTransfer = true,
+      ProcessAfterLoad = 2,
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.Free,
+      QuarantineQueue = "quarqqq",
+      Process = 0,
+      AutomatedTransfer = true,
+      ProcessAfterLoad = 1,
+      JobTransferQeuue = null,
+      Error = "Material does not have a supported path out of automation control.",
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 2,
+    },
     new SignalQuarantineTheoryData
     {
       ActionType = InProcessMaterialAction.ActionType.Waiting,
@@ -1712,7 +1750,6 @@ public sealed class JobAndQueueSpec
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = "q1",
-      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
     new SignalQuarantineTheoryData
     {
@@ -1893,7 +1930,14 @@ public sealed class JobAndQueueSpec
     await SetCurrentMaterial([
       queuedMat with
       {
-        Action = new InProcessMaterialAction() { Type = data.ActionType },
+        Action = new InProcessMaterialAction()
+        {
+          Type = data.ActionType,
+          AutomatedTransfer = data.AutomatedTransfer,
+          ProcessAfterLoad = data.ProcessAfterLoad,
+          PathAfterLoad = data.ProcessAfterLoad is null ? null : 1,
+          LoadOntoPalletNum = data.Pallet,
+        },
         Location = new InProcessMaterialLocation()
         {
           Type = data.LocType,
@@ -1921,7 +1965,10 @@ public sealed class JobAndQueueSpec
 
       expectedLog.Add(
         SignalQuarantineExpectedEntry(
-          logMat,
+          logMat with
+          {
+            Process = data.ProcessAfterLoad ?? data.Process,
+          },
           cntr: expectedLog.Count + 1,
           pal: data.Pallet,
           queue: data.QuarantineQueue ?? "",
@@ -1930,7 +1977,8 @@ public sealed class JobAndQueueSpec
           timeUTC: now
         )
       );
-      db.GetMaterialInAllQueues().ShouldBeEmpty();
+      if (!data.AutomatedTransfer || data.LocType != InProcessMaterialLocation.LocType.InQueue)
+        db.GetMaterialInAllQueues().ShouldBeEmpty();
     }
 
     var mat1Log = db.GetLogForMaterial(materialID: 1).ToList();
@@ -2373,7 +2421,13 @@ public sealed class JobAndQueueSpec
         .Throw<ConflictRequestException>(() =>
           _jq.SignalMaterialForQuarantine(material.MaterialID, null, null)
         )
-        .Message.ShouldBe("Material is not eligible for deferred quarantine in its current state.");
+        .Message.ShouldBe(
+          actionType
+            is InProcessMaterialAction.ActionType.UnloadToInProcess
+              or InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+            ? "Material does not have a supported path out of automation control."
+            : "Material is not eligible for deferred quarantine in its current state."
+        );
       Should
         .Throw<ConflictRequestException>(() =>
           _jq.QuarantineQueuedMaterial(material.MaterialID, null, null)

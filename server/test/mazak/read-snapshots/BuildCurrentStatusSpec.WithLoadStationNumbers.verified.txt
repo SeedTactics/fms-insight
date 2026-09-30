@@ -793,7 +793,9 @@
         PalletNum: 5,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: -1,
@@ -806,7 +808,9 @@
         PalletNum: 5,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     }
   ],
   Queues: {

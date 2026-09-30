@@ -792,7 +792,9 @@
         PalletNum: 1,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     }
   ],
   Queues: {

@@ -789,6 +789,7 @@
       Location: {},
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 5,
         LoadOntoFace: 1,
         ProcessAfterLoad: 1,
@@ -803,6 +804,7 @@
       Location: {},
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 5,
         LoadOntoFace: 1,
         ProcessAfterLoad: 1,
