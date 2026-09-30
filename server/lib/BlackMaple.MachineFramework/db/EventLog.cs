@@ -2948,8 +2948,13 @@ namespace BlackMaple.MachineFramework
     )
     {
       var fingerprint = new StringBuilder();
+      AppendFingerprint(fingerprint, "station-operation");
       AppendFingerprint(fingerprint, lulNum.ToString(CultureInfo.InvariantCulture));
       AppendFingerprint(fingerprint, totalElapsed.Ticks.ToString(CultureInfo.InvariantCulture));
+      AppendFingerprint(
+        fingerprint,
+        operation.Transfers.Count.ToString(CultureInfo.InvariantCulture)
+      );
       foreach (var transfer in operation.Transfers)
       {
         AppendFingerprint(
@@ -2972,6 +2977,10 @@ namespace BlackMaple.MachineFramework
           AppendFingerprint(fingerprint, externalServer);
         else
           AppendFingerprint(fingerprint, null);
+        AppendFingerprint(
+          fingerprint,
+          transfer.Material.Count.ToString(CultureInfo.InvariantCulture)
+        );
         foreach (
           var material in transfer
             .Material.OrderBy(material => material.MaterialID)
@@ -2988,19 +2997,10 @@ namespace BlackMaple.MachineFramework
         }
       }
       AppendBasketLifecycleFingerprint(fingerprint, operation.CycleBoundaries);
-      if (contentsOperation is not null)
-        AppendFingerprint(fingerprint, BasketContentsFingerprint(contentsOperation));
-      return fingerprint.ToString();
-    }
-
-    private static string BasketLifecycleFingerprint(
-      ImmutableList<BasketCycleBoundary> cycleBoundaries,
-      int locationNum
-    )
-    {
-      var fingerprint = new StringBuilder();
-      AppendFingerprint(fingerprint, locationNum.ToString(CultureInfo.InvariantCulture));
-      AppendBasketLifecycleFingerprint(fingerprint, cycleBoundaries);
+      AppendFingerprint(
+        fingerprint,
+        contentsOperation is null ? "missing" : BasketContentsFingerprint(contentsOperation)
+      );
       return fingerprint.ToString();
     }
 
@@ -3009,10 +3009,16 @@ namespace BlackMaple.MachineFramework
       ImmutableList<BasketCycleBoundary> cycleBoundaries
     )
     {
+      AppendFingerprint(fingerprint, "cycles");
+      AppendFingerprint(fingerprint, cycleBoundaries.Count.ToString(CultureInfo.InvariantCulture));
       foreach (var boundary in cycleBoundaries)
       {
         AppendFingerprint(fingerprint, boundary is BasketCycleBoundary.Start ? "start" : "end");
         AppendFingerprint(fingerprint, BasketStationIdentity(boundary.BasketId));
+        AppendFingerprint(
+          fingerprint,
+          boundary.Material.Count.ToString(CultureInfo.InvariantCulture)
+        );
         foreach (
           var material in boundary
             .Material.OrderBy(material => material.MaterialID)

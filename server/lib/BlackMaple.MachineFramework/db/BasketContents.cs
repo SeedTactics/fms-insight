@@ -336,7 +336,12 @@ namespace BlackMaple.MachineFramework
           command.Parameters.Add("process", SqliteType.Integer).Value = material.Process;
           command.ExecuteNonQuery();
         }
-        foreach (var (key, value) in slotContents.AdditionalData)
+        foreach (
+          var (key, value) in slotContents.AdditionalData.OrderBy(
+            p => p.Key,
+            StringComparer.Ordinal
+          )
+        )
         {
           command.CommandText =
             "INSERT INTO current_basket_slot_data(BasketId, Slot, Key, Value) "
@@ -493,14 +498,31 @@ namespace BlackMaple.MachineFramework
     {
       if (left is null || right is null)
         return left is null && right is null;
-      return BasketContentsFingerprint(left) == BasketContentsFingerprint(right);
+      return left.BasketId == right.BasketId
+        && left.Slots.Count == right.Slots.Count
+        && left.Slots.All(pair =>
+          right.Slots.TryGetValue(pair.Key, out var slot)
+          && pair.Value.Material.OrderBy(m => m.MaterialID)
+            .ThenBy(m => m.Process)
+            .SequenceEqual(slot.Material.OrderBy(m => m.MaterialID).ThenBy(m => m.Process))
+          && pair.Value.AdditionalData.Count == slot.AdditionalData.Count
+          && pair.Value.AdditionalData.All(data =>
+            slot.AdditionalData.TryGetValue(data.Key, out var value) && data.Value == value
+          )
+        );
     }
 
     private static string BasketContentsFingerprint(BasketContentsOperation operation)
     {
       var fingerprint = new StringBuilder();
-      foreach (var change in operation.Changes)
+      AppendFingerprint(fingerprint, "contents-operation");
+      AppendFingerprint(
+        fingerprint,
+        operation.Changes.Count.ToString(CultureInfo.InvariantCulture)
+      );
+      foreach (var change in operation.Changes.OrderBy(c => c.BasketId))
       {
+        AppendFingerprint(fingerprint, "change");
         AppendFingerprint(fingerprint, change.BasketId.ToString(CultureInfo.InvariantCulture));
         AppendFingerprint(
           fingerprint,
@@ -514,10 +536,17 @@ namespace BlackMaple.MachineFramework
     private static string BasketContentsFingerprint(BasketContents contents)
     {
       var fingerprint = new StringBuilder();
+      AppendFingerprint(fingerprint, "contents");
       AppendFingerprint(fingerprint, contents.BasketId.ToString(CultureInfo.InvariantCulture));
-      foreach (var (slot, slotContents) in contents.Slots)
+      AppendFingerprint(fingerprint, contents.Slots.Count.ToString(CultureInfo.InvariantCulture));
+      foreach (var (slot, slotContents) in contents.Slots.OrderBy(p => p.Key))
       {
+        AppendFingerprint(fingerprint, "slot");
         AppendFingerprint(fingerprint, slot.ToString(CultureInfo.InvariantCulture));
+        AppendFingerprint(
+          fingerprint,
+          slotContents.Material.Count.ToString(CultureInfo.InvariantCulture)
+        );
         foreach (
           var material in slotContents.Material.OrderBy(m => m.MaterialID).ThenBy(m => m.Process)
         )
@@ -528,7 +557,16 @@ namespace BlackMaple.MachineFramework
           );
           AppendFingerprint(fingerprint, material.Process.ToString(CultureInfo.InvariantCulture));
         }
-        foreach (var (key, value) in slotContents.AdditionalData)
+        AppendFingerprint(
+          fingerprint,
+          slotContents.AdditionalData.Count.ToString(CultureInfo.InvariantCulture)
+        );
+        foreach (
+          var (key, value) in slotContents.AdditionalData.OrderBy(
+            p => p.Key,
+            StringComparer.Ordinal
+          )
+        )
         {
           AppendFingerprint(fingerprint, key);
           AppendFingerprint(fingerprint, value);
