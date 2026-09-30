@@ -172,12 +172,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   public MazakState CalculateCellState(IRepository db)
   {
     var now = DateTime.UtcNow;
-    // The repository also contains foreign IDs from other event sources, such as robot
-    // commands. Mazak's CSV reader compares its filenames to this watermark, so use only
-    // foreign IDs produced by the Mazak CSV source. Mazak's CSV filenames begin with LG.
-    var mazakData = mazakDB.LoadAllDataAndLogs(
-      db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound)
-    );
+    var mazakData = mazakDB.LoadAllDataAndLogs(MazakLogWatermark(db));
     var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
     var evtResults = LogTranslation.HandleEvents(
@@ -203,9 +198,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       loadTools: mazakDB.LoadTools
     );
 
-    mazakDB.DeleteLogs(
-      db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound)
-    );
+    mazakDB.DeleteLogs(MazakLogWatermark(db));
 
     var st = BuildCurrentStatus.Build(
       db,
@@ -238,6 +231,13 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       AllData = mazakData,
     };
   }
+
+  private string MazakLogWatermark(IRepository db) =>
+    // Version E uses its existing epoch-ID-timestamp cursor, not CSV filenames.
+    // Web/Smooth CSV names begin with LG; exclude other producers such as robot events.
+    mazakConfig.DBType == MazakDbType.MazakVersionE
+      ? db.MaxForeignID()
+      : db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound);
 
   public bool ApplyActions(IRepository db, MazakState st)
   {

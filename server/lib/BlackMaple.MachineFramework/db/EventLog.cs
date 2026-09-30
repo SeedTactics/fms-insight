@@ -4495,7 +4495,6 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      if (process is > 1)
       {
         using var getLatestProcess = _connection.CreateCommand();
         getLatestProcess.CommandText =
@@ -4517,9 +4516,17 @@ namespace BlackMaple.MachineFramework
         }
 
         var latestProcessNumber = Convert.ToInt32(latestProcess);
-        if (latestProcessNumber != process.Value)
+        if (
+          process is { } requestedProcess
+            ? latestProcessNumber != requestedProcess
+            : latestProcessNumber > 1
+        )
         {
-          throw new ConflictRequestException("The requested process is no longer current.");
+          throw new ConflictRequestException(
+            process.HasValue
+              ? "The requested process is no longer current."
+              : "Later processes must be invalidated before changing the material assignment."
+          );
         }
       }
 

@@ -156,7 +156,8 @@ namespace BlackMaple.MachineFramework
     /// Remove material only from a human-controlled waiting queue.
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName = null);
 
-    /// Reject a current add-to-queue proposal by invalidating its latest process or all processes.
+    /// Reject a current add-to-queue proposal by invalidating its latest process. Assignment changes
+    /// are allowed only after later processes have been invalidated in separate actions.
     MaterialDetails? InvalidatePalletCycle(
       long matId,
       int process,
@@ -1084,12 +1085,12 @@ namespace BlackMaple.MachineFramework
 
         if (!string.IsNullOrEmpty(changeCastingTo) && process != 1)
         {
-          throw new BadRequestException("Can only change casting when invalidating all processes");
+          throw new BadRequestException("Can only change casting when invalidating process 1");
         }
 
         if (!string.IsNullOrEmpty(changeJobUniqueTo) && process != 1)
         {
-          throw new BadRequestException("Can only change job when invalidating all processes");
+          throw new BadRequestException("Can only change job when invalidating process 1");
         }
 
         CurrentStatus? st;

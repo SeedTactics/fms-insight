@@ -204,6 +204,12 @@ public sealed class BasketPreparationSpec
         null,
         time.AddMinutes(7)
       );
+    if (loadAForProcessTwo)
+    {
+      db.InvalidatePalletCycle(a[0].MaterialID, 2, "operator");
+      foreach (var mat in a)
+        await Assert.That(db.NextProcessForQueuedMaterial(mat.MaterialID)).IsEqualTo(2);
+    }
     var invalidation = (
       changeToCasting
         ? db.InvalidateAndChangeAssignment(a[0].MaterialID, "operator", null, "casting", 1)

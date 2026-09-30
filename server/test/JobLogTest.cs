@@ -4639,6 +4639,12 @@ namespace BlackMaple.FMSInsight.Tests
       // Invalidate
       // ------------------------------------------------------
 
+      var processTwoInvalidation = _jobLog
+        .InvalidatePalletCycle(matProc1.MaterialID, 2, "theoper", now)
+        .Single();
+      processTwoInvalidation.Material.Single().Process.ShouldBe(2);
+      _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).ShouldBe(2);
+
       var result = _jobLog.InvalidatePalletCycle(
         matId: matProc1.MaterialID,
         process: 1,
@@ -4652,19 +4658,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       var expectedInvalidateMsg = new LogEntry(
         cntr: 0,
-        mat:
-        [
-          logMatProc0 with
-          {
-            Process = 1,
-            Path = null,
-          },
-          logMatProc0 with
-          {
-            Process = 2,
-            Path = null,
-          },
-        ],
+        mat: [logMatProc0 with { Process = 1, Path = null }],
         pal: 0,
         ty: LogType.InvalidateCycle,
         locName: "InvalidateCycle",
@@ -4677,7 +4671,13 @@ namespace BlackMaple.FMSInsight.Tests
       expectedInvalidateMsg = expectedInvalidateMsg with
       {
         ProgramDetails = ImmutableDictionary<string, string>
-          .Empty.Add("EditedCounters", string.Join(",", origMatLog.Select(e => e.Counter)))
+          .Empty.Add(
+            "EditedCounters",
+            string.Join(
+              ",",
+              origMatLog.Where(e => e.Material.Any(m => m.Process == 1)).Select(e => e.Counter)
+            )
+          )
           .Add("operator", "theoper"),
       };
 
@@ -4712,7 +4712,11 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog
         .GetLogForMaterial(matProc0.MaterialID)
         .EventsShouldBe(
-          newMatLog.Concat(newPalLog).Concat(proc0Evts).Append(expectedInvalidateMsg)
+          newMatLog
+            .Concat(newPalLog)
+            .Concat(proc0Evts)
+            .Append(processTwoInvalidation)
+            .Append(expectedInvalidateMsg)
         );
     }
 
@@ -4995,11 +4999,23 @@ namespace BlackMaple.FMSInsight.Tests
       db.GetLogForMaterial(matProc1.MaterialID)
         .EventsShouldBe(noChangingLog.Concat(logToInvalidate));
 
-      // now invalidate
+      // Step back through process 2 before changing the process-1 assignment.
+      var processTwoInvalidation = db.InvalidatePalletCycle(
+          matProc1.MaterialID,
+          2,
+          "theoper",
+          now.AddMinutes(5)
+        )
+        .Single();
+      processTwoInvalidation.Material.Single().Process.ShouldBe(2);
+      db.NextProcessForQueuedMaterial(matProc1.MaterialID).ShouldBe(2);
+      db.GetMaterialDetails(matProc1.MaterialID).Paths.Count.ShouldBe(1);
+      noChangingLog.Add(processTwoInvalidation);
+
       var expectedInvalidate = new LogEntry()
       {
         Counter = 0,
-        Material = new[] { 1, 2 }
+        Material = new[] { 1 }
           .Select(proc =>
             MkLogMat.Mk(
               matID: matProc1.MaterialID,
@@ -5027,7 +5043,13 @@ namespace BlackMaple.FMSInsight.Tests
         ActiveOperationTime = TimeSpan.Zero,
         Result = "Invalidate all events on cycles",
         ProgramDetails = ImmutableDictionary<string, string>
-          .Empty.Add("EditedCounters", string.Join(",", logToInvalidate.Select(e => e.Counter)))
+          .Empty.Add(
+            "EditedCounters",
+            string.Join(
+              ",",
+              logToInvalidate.Where(e => e.Material.Any(m => m.Process == 1)).Select(e => e.Counter)
+            )
+          )
           .Add("operator", "theoper"),
       };
 

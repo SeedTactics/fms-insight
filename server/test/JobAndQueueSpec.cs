@@ -2198,13 +2198,13 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
-  public async Task InvalidationAllowsOnlyMostRecentPartialProcess()
+  public async Task InvalidationStepsBackThroughOnlyTheLatestProcess()
   {
     await StartSyncThread();
     using var db = _repo.OpenConnection();
     await SetCurrentState(stateUpdated: false, executeAction: false);
 
-    var materialId = db.AllocateMaterialID("job", "part", 3);
+    var materialId = db.AllocateMaterialID("job", "part", 5);
     for (var process = 1; process <= 3; process++)
     {
       db.RecordMachineStart(
@@ -2234,11 +2234,40 @@ public sealed class JobAndQueueSpec
     Should
       .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 2))
       .Message.ShouldBe("The requested process is no longer current.");
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 1))
+      .Message.ShouldBe("The requested process is no longer current.");
+    var logBefore = db.GetLogForMaterial(materialId).ToImmutableList();
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.InvalidatePalletCycle(materialId, 1, changeCastingTo: "new-casting")
+      )
+      .Message.ShouldBe(
+        "Later processes must be invalidated before changing the material assignment."
+      );
+    db.GetLogForMaterial(materialId).EventsShouldBe(logBefore);
+    db.GetMaterialDetails(materialId).JobUnique.ShouldBe("job");
+    db.GetMaterialDetails(materialId).PartName.ShouldBe("part");
 
     var newStatusTask = CreateTaskToWaitForNewStatus();
     _jq.InvalidatePalletCycle(materialId, 3);
     (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
-    db.GetLogForMaterial(materialId).ShouldContain(e => e.LogType == LogType.InvalidateCycle);
+    db.NextProcessForQueuedMaterial(materialId).ShouldBe(3);
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 1))
+      .Message.ShouldBe("The requested process is no longer current.");
+
+    newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.InvalidatePalletCycle(materialId, 2);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
+    db.NextProcessForQueuedMaterial(materialId).ShouldBe(2);
+
+    newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.InvalidatePalletCycle(materialId, 1, changeCastingTo: "new-casting");
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
+    db.NextProcessForQueuedMaterial(materialId).ShouldBeNull();
+    db.GetMaterialDetails(materialId).JobUnique.ShouldBeNull();
+    db.GetMaterialDetails(materialId).PartName.ShouldBe("new-casting");
   }
 
   [Test]
@@ -2391,12 +2420,12 @@ public sealed class JobAndQueueSpec
       .Throw<BadRequestException>(() =>
         _jq.InvalidatePalletCycle(materialId, 2, changeCastingTo: "new-casting")
       )
-      .Message.ShouldBe("Can only change casting when invalidating all processes");
+      .Message.ShouldBe("Can only change casting when invalidating process 1");
     Should
       .Throw<BadRequestException>(() =>
         _jq.InvalidatePalletCycle(materialId, 2, changeJobUniqueTo: "new-job")
       )
-      .Message.ShouldBe("Can only change job when invalidating all processes");
+      .Message.ShouldBe("Can only change job when invalidating process 1");
     Should
       .Throw<BadRequestException>(() =>
         _jq.InvalidatePalletCycle(

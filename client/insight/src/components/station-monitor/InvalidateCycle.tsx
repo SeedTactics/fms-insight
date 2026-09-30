@@ -115,14 +115,17 @@ function InvalidateSelect(props: InvalidateCycleProps) {
     }));
 
   const hasProc = lastMat !== null && lastMat.process >= 1;
-  const hasChangeMat = castings.length > 0 || jobs.length > 0;
+  const canChangeAssignment = lastMat === null || lastMat.process <= 1;
+  const hasChangeMat = canChangeAssignment && (castings.length > 0 || jobs.length > 0);
   const selectedCasting =
     props.st?.changeRawMat !== null &&
     props.st?.changeRawMat !== undefined &&
+    canChangeAssignment &&
     castings.includes(props.st.changeRawMat);
   const selectedJob =
     props.st?.changeJobUnique !== null &&
     props.st?.changeJobUnique !== undefined &&
+    canChangeAssignment &&
     jobs.some((job) => job.jobUnique === props.st?.changeJobUnique);
 
   function change(e: string) {
@@ -142,7 +145,7 @@ function InvalidateSelect(props: InvalidateCycleProps) {
           ? "rawMat" + props.st.changeRawMat
           : selectedJob
             ? "job" + props.st.changeJobUnique
-            : props.st?.process && hasProc
+            : props.st?.process && hasProc && props.st.process === lastMat.process
               ? "proc" + props.st.process.toString()
               : ""
       }
@@ -170,13 +173,6 @@ function InvalidateSelect(props: InvalidateCycleProps) {
               <MenuItem key={lastMat.process} value={"proc" + lastMat.process.toString()}>
                 Invalidate Process {lastMat.process}
               </MenuItem>,
-              ...(lastMat.process > 1
-                ? [
-                    <MenuItem key="all" value="proc1">
-                      Invalidate All Processes
-                    </MenuItem>,
-                  ]
-                : []),
             ]
           : [],
         hasProc && hasChangeMat
@@ -186,7 +182,8 @@ function InvalidateSelect(props: InvalidateCycleProps) {
           ? [
               ...castings.map((c) => (
                 <MenuItem key={"rawMat" + c} value={"rawMat" + c}>
-                  Invalidate Everything and Change to {c}
+                  {hasProc ? "Invalidate Process 1 and Change to " : "Change to "}
+                  {c}
                 </MenuItem>
               )),
               ...jobs.map(({ jobUnique, job }) => (
@@ -197,7 +194,10 @@ function InvalidateSelect(props: InvalidateCycleProps) {
                     </ListItemIcon>
                   ) : undefined}
                   <ListItemText
-                    primary={"Invalidate Everything and Change to Job " + jobUnique}
+                    primary={
+                      (hasProc ? "Invalidate Process 1 and Change to Job " : "Change to Job ") +
+                      jobUnique
+                    }
                     secondary={job?.partName}
                   />
                 </MenuItem>
@@ -295,12 +295,16 @@ export function InvalidateCycleDialogButton(
   if (!canInvalidateMaterial(inProcMat)) return null;
 
   const allowChange =
+    (lastMat === null || lastMat.process <= 1) &&
     possibleNew !== null &&
     (!LazySeq.ofObject(possibleNew.possibleCastingsByQueue ?? {}).isEmpty() ||
       !LazySeq.ofObject(possibleNew.possibleJobsByQueue ?? {}).isEmpty());
   if (!allowChange && (lastMat === null || lastMat.process < 1)) return null;
 
   if (props.ignoreOperator) operator = null;
+
+  const changingAssignment =
+    props.st !== null && (props.st.changeRawMat !== null || props.st.changeJobUnique !== null);
 
   function showInvalidate() {
     props.setState({
@@ -361,21 +365,24 @@ export function InvalidateCycleDialogButton(
           onClick={invalidateCycle}
           disabled={
             props.st.updating ||
+            (changingAssignment && !allowChange) ||
+            (!changingAssignment &&
+              props.st.process !== null &&
+              props.st.process !== lastMat?.process) ||
             (props.st.process === null &&
               props.st.changeRawMat === null &&
               props.st.changeJobUnique === null)
           }
         >
           {props.st.changeJobUnique !== null
-            ? "Invalidate Everything and Change to Job " + props.st.changeJobUnique
+            ? (lastMat?.process === 1
+                ? "Invalidate Process 1 and Change to Job "
+                : "Change to Job ") + props.st.changeJobUnique
             : props.st.changeRawMat !== null
-              ? "Invalidate Everything and Change to " + props.st.changeRawMat
+              ? (lastMat?.process === 1 ? "Invalidate Process 1 and Change to " : "Change to ") +
+                props.st.changeRawMat
               : props.st.process !== null
-                ? props.st.process === 1
-                  ? lastMat && lastMat.process > 1
-                    ? "Invalidate All Processes"
-                    : "Invalidate Process 1"
-                  : "Invalidate Process " + props.st.process.toString()
+                ? "Invalidate Process " + props.st.process.toString()
                 : "Invalidate Cycle"}
         </Button>
       ) : undefined}

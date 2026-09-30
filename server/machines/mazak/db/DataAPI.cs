@@ -534,7 +534,8 @@ namespace MazakMachineInterface
     public string GroupNo { get; init; }
   }
 
-  // Optional live PMC context, acquired with the request in one serializable read.
+  // Optional live PMC context, acquired with the request in one READ COMMITTED statement.
+  // This is not a guaranteed point-in-time snapshot.
   // Raw controller numbers. Null context means unavailable/ambiguous, never ODK fallback.
   [DataContract]
 #if NET35
