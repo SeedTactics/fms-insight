@@ -8,7 +8,8 @@ not preserve old CLR method signatures.
 
 Quarantine has two commands: `signal-quarantine` records deferred disposition for material
 controlled by automation or being unloaded by an operator, while `quarantine-queued` moves eligible
-queued material directly. The operator signal button is labeled **Signal for quarantine**. Human
+queued material directly. The operator signal button is labeled **Signal for quarantine** when a
+quarantine queue is configured, or **Scrap** otherwise; both record deferred disposition. Human
 loading uses explicit `cancel-load`, validated against its current `LoadCancellationId`, before
 direct material edits. Automated transfers are declared by the backend's default-false
 `AutomatedTransfer` field and remain protected from cancellation and direct edits. Declaring

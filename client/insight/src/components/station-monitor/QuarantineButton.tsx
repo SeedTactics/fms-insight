@@ -316,7 +316,7 @@ export function QuarantineMatButton({
       title = displayedSnapshot.destination
         ? `The current automated operation will continue. When the material leaves automation control, move it to ${displayedSnapshot.destination}`
         : "The current automated operation will continue. When the material leaves automation control, remove it from normal production flow as scrap";
-      btnTxt = "Signal for quarantine";
+      btnTxt = displayedSnapshot.destination ? "Signal for quarantine" : "Scrap";
       break;
   }
 

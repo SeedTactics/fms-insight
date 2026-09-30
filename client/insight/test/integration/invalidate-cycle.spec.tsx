@@ -485,33 +485,60 @@ describe("cycle invalidation workflow", () => {
       .not.toBeInTheDocument();
   });
 
-  test("signals quarantine for a basket with a supported exit", async () => {
-    const selected = material({
-      materialId: 201,
-      location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
-    });
-    const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
-    registerNetworkBackend();
+  test.each([
+    { location: api.LocType.InBasket, quarantineQueue: "Quarantine" },
+    { location: api.LocType.InBasket, quarantineQueue: undefined },
+    { location: api.LocType.InBasket, quarantineQueue: "" },
+    { location: api.LocType.OnPallet, quarantineQueue: "Quarantine" },
+    { location: api.LocType.OnPallet, quarantineQueue: undefined },
+    { location: api.LocType.OnPallet, quarantineQueue: "" },
+  ])(
+    "signals deferred disposition from $location with queue '$quarantineQueue'",
+    async ({ location, quarantineQueue }) => {
+      const selected = material({
+        materialId: 201,
+        location:
+          location === api.LocType.InBasket
+            ? { type: location, basketId: 7, basketSlot: 1 }
+            : { type: location, palletNum: 1, face: 1 },
+      });
+      const fetch = vi
+        .spyOn(window, "fetch")
+        .mockResolvedValue(new Response(null, { status: 204 }));
+      registerNetworkBackend();
 
-    const screen = await renderInsightPage(
-      <Suspense fallback={<div>Loading</div>}>
-        <QuarantineMatButton />
-      </Suspense>,
-      {
-        currentStatus: statusWithMaterial([selected], { "JOB-1": quarantineJob("Queue A") }),
-        fmsInfo: { quarantineQueue: "Quarantine" },
-        ...dialogData(selected),
-      },
-    );
+      const screen = await renderInsightPage(
+        <Suspense fallback={<div>Loading</div>}>
+          <QuarantineMatButton />
+        </Suspense>,
+        {
+          currentStatus: statusWithMaterial([selected], { "JOB-1": quarantineJob("Queue A") }),
+          fmsInfo: { quarantineQueue },
+          ...dialogData(selected),
+        },
+      );
 
-    await screen.getByRole("button", { name: "Signal for quarantine" }).click();
-    await screen.getByRole("dialog").getByRole("button", { name: "Signal for quarantine" }).click();
+      const buttonLabel = quarantineQueue ? "Signal for quarantine" : "Scrap";
+      await screen.getByRole("button", { name: buttonLabel }).click();
+      const dialog = screen.getByRole("dialog");
+      await expect
+        .element(dialog)
+        .toMatchTextContent("The current automated operation will continue.");
+      await expect
+        .element(dialog)
+        .toMatchTextContent(
+          quarantineQueue
+            ? `When the material leaves automation control, move it to ${quarantineQueue}`
+            : "When the material leaves automation control, remove it from normal production flow as scrap",
+        );
+      await dialog.getByRole("button", { name: buttonLabel }).click();
 
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/jobs/material/201/signal-quarantine",
-      expect.objectContaining({ method: "PUT" }),
-    );
-  });
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/v1/jobs/material/201/signal-quarantine",
+        expect.objectContaining({ method: "PUT" }),
+      );
+    },
+  );
 
   test.each([
     { source: api.LocType.Free, process: 0, target: 1 },

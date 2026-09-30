@@ -67,8 +67,7 @@ public static class MaterialOperationState
     );
 
   public static bool CanCancelLoad(InProcessMaterial material) =>
-    !material.Action.AutomatedTransfer
-    && Classify(material) == MaterialOperationKind.ActiveLoadStationOperation
+    Classify(material) == MaterialOperationKind.ActiveLoadStationOperation
     && !string.IsNullOrWhiteSpace(material.Action.LoadCancellationId);
 
   public static bool CanDirectlyQuarantine(InProcessMaterial material) =>
