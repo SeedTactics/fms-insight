@@ -1,0 +1,116 @@
+{
+  "Alarms": [],
+  "Jobs": {},
+  "Material": [
+    {
+      "Action": {
+        "AutomatedTransfer": false,
+        "LoadOntoFace": 2,
+        "LoadOntoPalletNum": 1,
+        "PathAfterLoad": 1,
+        "ProcessAfterLoad": 2,
+        "Type": "Loading"
+      },
+      "JobUnique": "",
+      "Location": {
+        "Face": 1,
+        "PalletNum": 1,
+        "Type": "OnPallet"
+      },
+      "MaterialID": -1,
+      "PartName": "zzz",
+      "Path": 1,
+      "Process": 1,
+      "SignaledInspections": []
+    },
+    {
+      "Action": {
+        "AutomatedTransfer": false,
+        "Type": "UnloadToCompletedMaterial"
+      },
+      "JobUnique": "",
+      "Location": {
+        "Face": 2,
+        "PalletNum": 1,
+        "Type": "OnPallet"
+      },
+      "MaterialID": -1,
+      "PartName": "zzz",
+      "Path": 1,
+      "Process": 2,
+      "SignaledInspections": []
+    },
+    {
+      "Action": {
+        "AutomatedTransfer": false,
+        "LoadOntoFace": 1,
+        "LoadOntoPalletNum": 1,
+        "PathAfterLoad": 1,
+        "ProcessAfterLoad": 1,
+        "Type": "Loading"
+      },
+      "JobUnique": "",
+      "Location": {
+        "Type": "Free"
+      },
+      "MaterialID": -1,
+      "PartName": "zzz",
+      "Path": 1,
+      "Process": 0,
+      "SignaledInspections": []
+    }
+  ],
+  "Pallets": {
+    "1": {
+      "CurrentPalletLocation": {
+        "group": "L/U",
+        "loc": "LoadUnload",
+        "num": 2
+      },
+      "FixtureOnPallet": "F:1:abfix:1",
+      "NumFaces": 1,
+      "OnHold": false,
+      "PalletNum": 1
+    },
+    "2": {
+      "CurrentPalletLocation": {
+        "group": "Buffer",
+        "loc": "Buffer",
+        "num": 2
+      },
+      "FixtureOnPallet": "F:1:abfix:1",
+      "NumFaces": 1,
+      "OnHold": false,
+      "PalletNum": 2
+    },
+    "3": {
+      "CurrentPalletLocation": {
+        "group": "MC",
+        "loc": "Machine",
+        "num": 3
+      },
+      "FixtureOnPallet": "F:1:abfix:1",
+      "NumFaces": 1,
+      "OnHold": false,
+      "PalletNum": 3
+    },
+    "4": {
+      "CurrentPalletLocation": {
+        "group": "MC",
+        "loc": "MachineQueue",
+        "num": 4
+      },
+      "FixtureOnPallet": "F:1:abfix:1",
+      "NumFaces": 1,
+      "OnHold": false,
+      "PalletNum": 4
+    }
+  },
+  "Queues": {
+    "castings": {},
+    "queueAAA": {},
+    "queueBBB": {},
+    "queueCCC": {}
+  },
+  "TimeOfCurrentStatusUTC": "2018-07-19T20:42:03Z"
+}

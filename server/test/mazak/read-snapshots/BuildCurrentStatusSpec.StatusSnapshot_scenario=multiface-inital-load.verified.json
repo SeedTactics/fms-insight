@@ -1,0 +1,1064 @@
+{
+  "Alarms": [],
+  "Jobs": {
+    "aaa-schId1234": {
+      "Archived": false,
+      "Bookings": ["book1", "book2"],
+      "Comment": "",
+      "Completed": [[0], [0]],
+      "CopiedToSystem": true,
+      "Cycles": 30,
+      "ManuallyCreated": false,
+      "PartName": "aaa",
+      "Precedence": [[1], [1]],
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "ExpectedLoadTime": "PT5M",
+              "ExpectedUnloadTime": "PT5M",
+              "Load": [1, 2],
+              "PalletNums": [1, 2, 3, 4],
+              "PartsPerPallet": 1,
+              "SimulatedAverageFlowTime": "PT1H3M58S",
+              "SimulatedProduction": [
+                {
+                  "Quantity": 1,
+                  "TimeUTC": "2018-07-21T20:16:09.89949Z"
+                },
+                {
+                  "Quantity": 2,
+                  "TimeUTC": "2018-07-21T20:17:25.89949Z"
+                },
+                {
+                  "Quantity": 3,
+                  "TimeUTC": "2018-07-21T20:34:57.89949Z"
+                },
+                {
+                  "Quantity": 4,
+                  "TimeUTC": "2018-07-21T20:36:13.89949Z"
+                },
+                {
+                  "Quantity": 5,
+                  "TimeUTC": "2018-07-21T21:00:31.89949Z"
+                },
+                {
+                  "Quantity": 6,
+                  "TimeUTC": "2018-07-21T21:01:47.89949Z"
+                },
+                {
+                  "Quantity": 7,
+                  "TimeUTC": "2018-07-21T21:24:23.89949Z"
+                },
+                {
+                  "Quantity": 8,
+                  "TimeUTC": "2018-07-21T21:25:39.89949Z"
+                },
+                {
+                  "Quantity": 9,
+                  "TimeUTC": "2018-07-21T21:48:45.89949Z"
+                },
+                {
+                  "Quantity": 10,
+                  "TimeUTC": "2018-07-21T21:50:01.89949Z"
+                },
+                {
+                  "Quantity": 11,
+                  "TimeUTC": "2018-07-21T22:13:07.89949Z"
+                },
+                {
+                  "Quantity": 12,
+                  "TimeUTC": "2018-07-21T22:14:23.89949Z"
+                },
+                {
+                  "Quantity": 13,
+                  "TimeUTC": "2018-07-21T22:37:29.89949Z"
+                },
+                {
+                  "Quantity": 14,
+                  "TimeUTC": "2018-07-21T22:38:45.89949Z"
+                },
+                {
+                  "Quantity": 15,
+                  "TimeUTC": "2018-07-21T23:01:51.89949Z"
+                },
+                {
+                  "Quantity": 16,
+                  "TimeUTC": "2018-07-21T23:03:07.89949Z"
+                },
+                {
+                  "Quantity": 17,
+                  "TimeUTC": "2018-07-21T23:26:13.89949Z"
+                },
+                {
+                  "Quantity": 18,
+                  "TimeUTC": "2018-07-21T23:27:29.89949Z"
+                },
+                {
+                  "Quantity": 19,
+                  "TimeUTC": "2018-07-21T23:50:35.89949Z"
+                },
+                {
+                  "Quantity": 20,
+                  "TimeUTC": "2018-07-21T23:51:51.89949Z"
+                },
+                {
+                  "Quantity": 21,
+                  "TimeUTC": "2018-07-22T00:14:57.89949Z"
+                },
+                {
+                  "Quantity": 22,
+                  "TimeUTC": "2018-07-22T00:16:13.89949Z"
+                },
+                {
+                  "Quantity": 23,
+                  "TimeUTC": "2018-07-22T00:39:19.89949Z"
+                },
+                {
+                  "Quantity": 24,
+                  "TimeUTC": "2018-07-22T00:40:35.89949Z"
+                },
+                {
+                  "Quantity": 25,
+                  "TimeUTC": "2018-07-22T01:03:41.89949Z"
+                },
+                {
+                  "Quantity": 26,
+                  "TimeUTC": "2018-07-22T01:04:57.89949Z"
+                },
+                {
+                  "Quantity": 27,
+                  "TimeUTC": "2018-07-22T01:28:03.89949Z"
+                },
+                {
+                  "Quantity": 28,
+                  "TimeUTC": "2018-07-22T01:29:19.89949Z"
+                },
+                {
+                  "Quantity": 29,
+                  "TimeUTC": "2018-07-22T01:52:25.89949Z"
+                },
+                {
+                  "Quantity": 30,
+                  "TimeUTC": "2018-07-22T01:53:41.89949Z"
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-21T20:16:09.89949Z",
+              "Stops": [
+                {
+                  "ExpectedCycleTime": "PT12M12S",
+                  "Program": "1001",
+                  "StationGroup": "MC",
+                  "StationNums": [1, 2, 3, 4]
+                }
+              ],
+              "Unload": [1, 2]
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "ExpectedLoadTime": "PT5M",
+              "ExpectedUnloadTime": "PT5M",
+              "Load": [1, 2],
+              "PalletNums": [1, 2, 3, 4],
+              "PartsPerPallet": 1,
+              "SimulatedAverageFlowTime": "PT1H7M40.5333333S",
+              "SimulatedProduction": [
+                {
+                  "Quantity": 1,
+                  "TimeUTC": "2018-07-21T21:00:31.89949Z"
+                },
+                {
+                  "Quantity": 2,
+                  "TimeUTC": "2018-07-21T21:01:47.89949Z"
+                },
+                {
+                  "Quantity": 3,
+                  "TimeUTC": "2018-07-21T21:24:23.89949Z"
+                },
+                {
+                  "Quantity": 4,
+                  "TimeUTC": "2018-07-21T21:25:39.89949Z"
+                },
+                {
+                  "Quantity": 5,
+                  "TimeUTC": "2018-07-21T21:48:45.89949Z"
+                },
+                {
+                  "Quantity": 6,
+                  "TimeUTC": "2018-07-21T21:50:01.89949Z"
+                },
+                {
+                  "Quantity": 7,
+                  "TimeUTC": "2018-07-21T22:13:07.89949Z"
+                },
+                {
+                  "Quantity": 8,
+                  "TimeUTC": "2018-07-21T22:14:23.89949Z"
+                },
+                {
+                  "Quantity": 9,
+                  "TimeUTC": "2018-07-21T22:37:29.89949Z"
+                },
+                {
+                  "Quantity": 10,
+                  "TimeUTC": "2018-07-21T22:38:45.89949Z"
+                },
+                {
+                  "Quantity": 11,
+                  "TimeUTC": "2018-07-21T23:01:51.89949Z"
+                },
+                {
+                  "Quantity": 12,
+                  "TimeUTC": "2018-07-21T23:03:07.89949Z"
+                },
+                {
+                  "Quantity": 13,
+                  "TimeUTC": "2018-07-21T23:26:13.89949Z"
+                },
+                {
+                  "Quantity": 14,
+                  "TimeUTC": "2018-07-21T23:27:29.89949Z"
+                },
+                {
+                  "Quantity": 15,
+                  "TimeUTC": "2018-07-21T23:50:35.89949Z"
+                },
+                {
+                  "Quantity": 16,
+                  "TimeUTC": "2018-07-21T23:51:51.89949Z"
+                },
+                {
+                  "Quantity": 17,
+                  "TimeUTC": "2018-07-22T00:14:57.89949Z"
+                },
+                {
+                  "Quantity": 18,
+                  "TimeUTC": "2018-07-22T00:16:13.89949Z"
+                },
+                {
+                  "Quantity": 19,
+                  "TimeUTC": "2018-07-22T00:39:19.89949Z"
+                },
+                {
+                  "Quantity": 20,
+                  "TimeUTC": "2018-07-22T00:40:35.89949Z"
+                },
+                {
+                  "Quantity": 21,
+                  "TimeUTC": "2018-07-22T01:03:41.89949Z"
+                },
+                {
+                  "Quantity": 22,
+                  "TimeUTC": "2018-07-22T01:04:57.89949Z"
+                },
+                {
+                  "Quantity": 23,
+                  "TimeUTC": "2018-07-22T01:28:03.89949Z"
+                },
+                {
+                  "Quantity": 24,
+                  "TimeUTC": "2018-07-22T01:29:19.89949Z"
+                },
+                {
+                  "Quantity": 25,
+                  "TimeUTC": "2018-07-22T01:52:25.89949Z"
+                },
+                {
+                  "Quantity": 26,
+                  "TimeUTC": "2018-07-22T01:53:41.89949Z"
+                },
+                {
+                  "Quantity": 27,
+                  "TimeUTC": "2018-07-22T02:16:13.89949Z"
+                },
+                {
+                  "Quantity": 28,
+                  "TimeUTC": "2018-07-22T02:17:29.89949Z"
+                },
+                {
+                  "Quantity": 29,
+                  "TimeUTC": "2018-07-22T02:40:01.89949Z"
+                },
+                {
+                  "Quantity": 30,
+                  "TimeUTC": "2018-07-22T02:41:17.89949Z"
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-21T21:00:31.89949Z",
+              "Stops": [
+                {
+                  "ExpectedCycleTime": "PT9M18S",
+                  "Program": "1002",
+                  "StationGroup": "MC",
+                  "StationNums": [1, 2, 3, 4]
+                }
+              ],
+              "Unload": [1, 2]
+            }
+          ]
+        }
+      ],
+      "RemainingToStart": 26,
+      "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
+      "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
+      "ScheduleId": "schId1234",
+      "Unique": "aaa-schId1234"
+    },
+    "bbb-schId1234": {
+      "Archived": false,
+      "Bookings": ["book1", "book2"],
+      "Comment": "",
+      "Completed": [[0], [0]],
+      "CopiedToSystem": true,
+      "Cycles": 40,
+      "ManuallyCreated": false,
+      "PartName": "bbb",
+      "Precedence": [[2], [2]],
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "ExpectedLoadTime": "PT5M",
+              "ExpectedUnloadTime": "PT5M",
+              "Load": [1, 2],
+              "PalletNums": [1, 2, 3, 4],
+              "PartsPerPallet": 1,
+              "SimulatedAverageFlowTime": "PT1H7M5.5S",
+              "SimulatedProduction": [
+                {
+                  "Quantity": 1,
+                  "TimeUTC": "2018-07-22T02:16:13.89949Z"
+                },
+                {
+                  "Quantity": 2,
+                  "TimeUTC": "2018-07-22T02:17:29.89949Z"
+                },
+                {
+                  "Quantity": 3,
+                  "TimeUTC": "2018-07-22T02:40:01.89949Z"
+                },
+                {
+                  "Quantity": 4,
+                  "TimeUTC": "2018-07-22T02:41:17.89949Z"
+                },
+                {
+                  "Quantity": 5,
+                  "TimeUTC": "2018-07-22T03:03:49.89949Z"
+                },
+                {
+                  "Quantity": 6,
+                  "TimeUTC": "2018-07-22T03:05:05.89949Z"
+                },
+                {
+                  "Quantity": 7,
+                  "TimeUTC": "2018-07-22T03:27:37.89949Z"
+                },
+                {
+                  "Quantity": 8,
+                  "TimeUTC": "2018-07-22T03:28:53.89949Z"
+                },
+                {
+                  "Quantity": 9,
+                  "TimeUTC": "2018-07-22T03:51:25.89949Z"
+                },
+                {
+                  "Quantity": 10,
+                  "TimeUTC": "2018-07-22T03:52:41.89949Z"
+                },
+                {
+                  "Quantity": 11,
+                  "TimeUTC": "2018-07-22T04:15:13.89949Z"
+                },
+                {
+                  "Quantity": 12,
+                  "TimeUTC": "2018-07-22T04:16:29.89949Z"
+                },
+                {
+                  "Quantity": 13,
+                  "TimeUTC": "2018-07-22T04:39:01.89949Z"
+                },
+                {
+                  "Quantity": 14,
+                  "TimeUTC": "2018-07-22T04:40:17.89949Z"
+                },
+                {
+                  "Quantity": 15,
+                  "TimeUTC": "2018-07-22T05:02:49.89949Z"
+                },
+                {
+                  "Quantity": 16,
+                  "TimeUTC": "2018-07-22T05:04:05.89949Z"
+                },
+                {
+                  "Quantity": 17,
+                  "TimeUTC": "2018-07-22T05:26:37.89949Z"
+                },
+                {
+                  "Quantity": 18,
+                  "TimeUTC": "2018-07-22T05:27:53.89949Z"
+                },
+                {
+                  "Quantity": 19,
+                  "TimeUTC": "2018-07-22T05:50:25.89949Z"
+                },
+                {
+                  "Quantity": 20,
+                  "TimeUTC": "2018-07-22T05:51:41.89949Z"
+                },
+                {
+                  "Quantity": 21,
+                  "TimeUTC": "2018-07-22T06:14:13.89949Z"
+                },
+                {
+                  "Quantity": 22,
+                  "TimeUTC": "2018-07-22T06:15:29.89949Z"
+                },
+                {
+                  "Quantity": 23,
+                  "TimeUTC": "2018-07-22T06:38:01.89949Z"
+                },
+                {
+                  "Quantity": 24,
+                  "TimeUTC": "2018-07-22T06:39:17.89949Z"
+                },
+                {
+                  "Quantity": 25,
+                  "TimeUTC": "2018-07-22T07:01:49.89949Z"
+                },
+                {
+                  "Quantity": 26,
+                  "TimeUTC": "2018-07-22T07:03:05.89949Z"
+                },
+                {
+                  "Quantity": 27,
+                  "TimeUTC": "2018-07-22T07:25:37.89949Z"
+                },
+                {
+                  "Quantity": 28,
+                  "TimeUTC": "2018-07-22T07:26:53.89949Z"
+                },
+                {
+                  "Quantity": 29,
+                  "TimeUTC": "2018-07-22T07:49:25.89949Z"
+                },
+                {
+                  "Quantity": 30,
+                  "TimeUTC": "2018-07-22T07:50:41.89949Z"
+                },
+                {
+                  "Quantity": 31,
+                  "TimeUTC": "2018-07-22T08:13:13.89949Z"
+                },
+                {
+                  "Quantity": 32,
+                  "TimeUTC": "2018-07-22T08:14:29.89949Z"
+                },
+                {
+                  "Quantity": 33,
+                  "TimeUTC": "2018-07-22T08:37:01.89949Z"
+                },
+                {
+                  "Quantity": 34,
+                  "TimeUTC": "2018-07-22T08:38:17.89949Z"
+                },
+                {
+                  "Quantity": 35,
+                  "TimeUTC": "2018-07-22T09:00:49.89949Z"
+                },
+                {
+                  "Quantity": 36,
+                  "TimeUTC": "2018-07-22T09:02:05.89949Z"
+                },
+                {
+                  "Quantity": 37,
+                  "TimeUTC": "2018-07-22T09:19:37.89949Z"
+                },
+                {
+                  "Quantity": 38,
+                  "TimeUTC": "2018-07-22T09:20:53.89949Z"
+                },
+                {
+                  "Quantity": 39,
+                  "TimeUTC": "2018-07-22T09:42:41.89949Z"
+                },
+                {
+                  "Quantity": 40,
+                  "TimeUTC": "2018-07-22T09:43:57.89949Z"
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-22T02:16:13.89949Z",
+              "Stops": [
+                {
+                  "ExpectedCycleTime": "PT4M",
+                  "Program": "1001",
+                  "StationGroup": "MC",
+                  "StationNums": [1, 2, 3, 4]
+                }
+              ],
+              "Unload": [1, 2]
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "ExpectedLoadTime": "PT5M",
+              "ExpectedUnloadTime": "PT5M",
+              "Load": [1, 2],
+              "PalletNums": [1, 2, 3, 4],
+              "PartsPerPallet": 1,
+              "SimulatedAverageFlowTime": "PT1H5M23.8S",
+              "SimulatedProduction": [
+                {
+                  "Quantity": 1,
+                  "TimeUTC": "2018-07-22T03:03:49.89949Z"
+                },
+                {
+                  "Quantity": 2,
+                  "TimeUTC": "2018-07-22T03:05:05.89949Z"
+                },
+                {
+                  "Quantity": 3,
+                  "TimeUTC": "2018-07-22T03:27:37.89949Z"
+                },
+                {
+                  "Quantity": 4,
+                  "TimeUTC": "2018-07-22T03:28:53.89949Z"
+                },
+                {
+                  "Quantity": 5,
+                  "TimeUTC": "2018-07-22T03:51:25.89949Z"
+                },
+                {
+                  "Quantity": 6,
+                  "TimeUTC": "2018-07-22T03:52:41.89949Z"
+                },
+                {
+                  "Quantity": 7,
+                  "TimeUTC": "2018-07-22T04:15:13.89949Z"
+                },
+                {
+                  "Quantity": 8,
+                  "TimeUTC": "2018-07-22T04:16:29.89949Z"
+                },
+                {
+                  "Quantity": 9,
+                  "TimeUTC": "2018-07-22T04:39:01.89949Z"
+                },
+                {
+                  "Quantity": 10,
+                  "TimeUTC": "2018-07-22T04:40:17.89949Z"
+                },
+                {
+                  "Quantity": 11,
+                  "TimeUTC": "2018-07-22T05:02:49.89949Z"
+                },
+                {
+                  "Quantity": 12,
+                  "TimeUTC": "2018-07-22T05:04:05.89949Z"
+                },
+                {
+                  "Quantity": 13,
+                  "TimeUTC": "2018-07-22T05:26:37.89949Z"
+                },
+                {
+                  "Quantity": 14,
+                  "TimeUTC": "2018-07-22T05:27:53.89949Z"
+                },
+                {
+                  "Quantity": 15,
+                  "TimeUTC": "2018-07-22T05:50:25.89949Z"
+                },
+                {
+                  "Quantity": 16,
+                  "TimeUTC": "2018-07-22T05:51:41.89949Z"
+                },
+                {
+                  "Quantity": 17,
+                  "TimeUTC": "2018-07-22T06:14:13.89949Z"
+                },
+                {
+                  "Quantity": 18,
+                  "TimeUTC": "2018-07-22T06:15:29.89949Z"
+                },
+                {
+                  "Quantity": 19,
+                  "TimeUTC": "2018-07-22T06:38:01.89949Z"
+                },
+                {
+                  "Quantity": 20,
+                  "TimeUTC": "2018-07-22T06:39:17.89949Z"
+                },
+                {
+                  "Quantity": 21,
+                  "TimeUTC": "2018-07-22T07:01:49.89949Z"
+                },
+                {
+                  "Quantity": 22,
+                  "TimeUTC": "2018-07-22T07:03:05.89949Z"
+                },
+                {
+                  "Quantity": 23,
+                  "TimeUTC": "2018-07-22T07:25:37.89949Z"
+                },
+                {
+                  "Quantity": 24,
+                  "TimeUTC": "2018-07-22T07:26:53.89949Z"
+                },
+                {
+                  "Quantity": 25,
+                  "TimeUTC": "2018-07-22T07:49:25.89949Z"
+                },
+                {
+                  "Quantity": 26,
+                  "TimeUTC": "2018-07-22T07:50:41.89949Z"
+                },
+                {
+                  "Quantity": 27,
+                  "TimeUTC": "2018-07-22T08:13:13.89949Z"
+                },
+                {
+                  "Quantity": 28,
+                  "TimeUTC": "2018-07-22T08:14:29.89949Z"
+                },
+                {
+                  "Quantity": 29,
+                  "TimeUTC": "2018-07-22T08:37:01.89949Z"
+                },
+                {
+                  "Quantity": 30,
+                  "TimeUTC": "2018-07-22T08:38:17.89949Z"
+                },
+                {
+                  "Quantity": 31,
+                  "TimeUTC": "2018-07-22T09:00:49.89949Z"
+                },
+                {
+                  "Quantity": 32,
+                  "TimeUTC": "2018-07-22T09:02:05.89949Z"
+                },
+                {
+                  "Quantity": 33,
+                  "TimeUTC": "2018-07-22T09:19:37.89949Z"
+                },
+                {
+                  "Quantity": 34,
+                  "TimeUTC": "2018-07-22T09:20:53.89949Z"
+                },
+                {
+                  "Quantity": 35,
+                  "TimeUTC": "2018-07-22T09:42:41.89949Z"
+                },
+                {
+                  "Quantity": 36,
+                  "TimeUTC": "2018-07-22T09:43:57.89949Z"
+                },
+                {
+                  "Quantity": 37,
+                  "TimeUTC": "2018-07-22T09:57:33.89949Z"
+                },
+                {
+                  "Quantity": 38,
+                  "TimeUTC": "2018-07-22T09:58:49.89949Z"
+                },
+                {
+                  "Quantity": 39,
+                  "TimeUTC": "2018-07-22T10:16:37.89949Z"
+                },
+                {
+                  "Quantity": 40,
+                  "TimeUTC": "2018-07-22T10:17:53.89949Z"
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-22T03:03:49.89949Z",
+              "Stops": [
+                {
+                  "ExpectedCycleTime": "PT20M",
+                  "Program": "1002",
+                  "StationGroup": "MC",
+                  "StationNums": [1, 2, 3, 4]
+                }
+              ],
+              "Unload": [1, 2]
+            }
+          ]
+        }
+      ],
+      "RemainingToStart": 40,
+      "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
+      "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
+      "ScheduleId": "schId1234",
+      "Unique": "bbb-schId1234"
+    },
+    "ccc-schId1234": {
+      "Archived": false,
+      "Bookings": ["book1", "book2"],
+      "Comment": "",
+      "Completed": [[0], [0]],
+      "CopiedToSystem": true,
+      "Cycles": 22,
+      "ManuallyCreated": false,
+      "PartName": "ccc",
+      "Precedence": [[3], [3]],
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "ExpectedLoadTime": "PT5M",
+              "ExpectedUnloadTime": "PT5M",
+              "Load": [1, 2],
+              "PalletNums": [1, 2, 3, 4],
+              "PartsPerPallet": 1,
+              "SimulatedAverageFlowTime": "PT1H31M29.6363636S",
+              "SimulatedProduction": [
+                {
+                  "Quantity": 1,
+                  "TimeUTC": "2018-07-22T10:55:25.89949Z"
+                },
+                {
+                  "Quantity": 2,
+                  "TimeUTC": "2018-07-22T10:56:41.89949Z"
+                },
+                {
+                  "Quantity": 3,
+                  "TimeUTC": "2018-07-22T11:14:29.89949Z"
+                },
+                {
+                  "Quantity": 4,
+                  "TimeUTC": "2018-07-22T11:15:45.89949Z"
+                },
+                {
+                  "Quantity": 5,
+                  "TimeUTC": "2018-07-22T12:13:47.89949Z"
+                },
+                {
+                  "Quantity": 6,
+                  "TimeUTC": "2018-07-22T12:15:03.89949Z"
+                },
+                {
+                  "Quantity": 7,
+                  "TimeUTC": "2018-07-22T12:37:55.89949Z"
+                },
+                {
+                  "Quantity": 8,
+                  "TimeUTC": "2018-07-22T12:39:11.89949Z"
+                },
+                {
+                  "Quantity": 9,
+                  "TimeUTC": "2018-07-22T13:32:29.89949Z"
+                },
+                {
+                  "Quantity": 10,
+                  "TimeUTC": "2018-07-22T13:33:45.89949Z"
+                },
+                {
+                  "Quantity": 11,
+                  "TimeUTC": "2018-07-22T13:56:17.89949Z"
+                },
+                {
+                  "Quantity": 12,
+                  "TimeUTC": "2018-07-22T13:57:33.89949Z"
+                },
+                {
+                  "Quantity": 13,
+                  "TimeUTC": "2018-07-22T14:50:51.89949Z"
+                },
+                {
+                  "Quantity": 14,
+                  "TimeUTC": "2018-07-22T14:52:07.89949Z"
+                },
+                {
+                  "Quantity": 15,
+                  "TimeUTC": "2018-07-22T15:14:39.89949Z"
+                },
+                {
+                  "Quantity": 16,
+                  "TimeUTC": "2018-07-22T15:15:55.89949Z"
+                },
+                {
+                  "Quantity": 17,
+                  "TimeUTC": "2018-07-22T16:09:13.89949Z"
+                },
+                {
+                  "Quantity": 18,
+                  "TimeUTC": "2018-07-22T16:10:29.89949Z"
+                },
+                {
+                  "Quantity": 19,
+                  "TimeUTC": "2018-07-22T16:28:01.89949Z"
+                },
+                {
+                  "Quantity": 20,
+                  "TimeUTC": "2018-07-22T16:29:17.89949Z"
+                },
+                {
+                  "Quantity": 21,
+                  "TimeUTC": "2018-07-22T17:22:35.89949Z"
+                },
+                {
+                  "Quantity": 22,
+                  "TimeUTC": "2018-07-22T17:23:51.89949Z"
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-22T10:55:25.89949Z",
+              "Stops": [
+                {
+                  "ExpectedCycleTime": "PT40M",
+                  "Program": "1003",
+                  "StationGroup": "MC",
+                  "StationNums": [1, 2, 3, 4]
+                }
+              ],
+              "Unload": [1, 2]
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "ExpectedLoadTime": "PT5M",
+              "ExpectedUnloadTime": "PT5M",
+              "Load": [1, 2],
+              "PalletNums": [1, 2, 3, 4],
+              "PartsPerPallet": 1,
+              "SimulatedAverageFlowTime": "PT1H26M7.8181818S",
+              "SimulatedProduction": [
+                {
+                  "Quantity": 1,
+                  "TimeUTC": "2018-07-22T12:13:47.89949Z"
+                },
+                {
+                  "Quantity": 2,
+                  "TimeUTC": "2018-07-22T12:15:03.89949Z"
+                },
+                {
+                  "Quantity": 3,
+                  "TimeUTC": "2018-07-22T12:37:55.89949Z"
+                },
+                {
+                  "Quantity": 4,
+                  "TimeUTC": "2018-07-22T12:39:11.89949Z"
+                },
+                {
+                  "Quantity": 5,
+                  "TimeUTC": "2018-07-22T13:32:29.89949Z"
+                },
+                {
+                  "Quantity": 6,
+                  "TimeUTC": "2018-07-22T13:33:45.89949Z"
+                },
+                {
+                  "Quantity": 7,
+                  "TimeUTC": "2018-07-22T13:56:17.89949Z"
+                },
+                {
+                  "Quantity": 8,
+                  "TimeUTC": "2018-07-22T13:57:33.89949Z"
+                },
+                {
+                  "Quantity": 9,
+                  "TimeUTC": "2018-07-22T14:50:51.89949Z"
+                },
+                {
+                  "Quantity": 10,
+                  "TimeUTC": "2018-07-22T14:52:07.89949Z"
+                },
+                {
+                  "Quantity": 11,
+                  "TimeUTC": "2018-07-22T15:14:39.89949Z"
+                },
+                {
+                  "Quantity": 12,
+                  "TimeUTC": "2018-07-22T15:15:55.89949Z"
+                },
+                {
+                  "Quantity": 13,
+                  "TimeUTC": "2018-07-22T16:09:13.89949Z"
+                },
+                {
+                  "Quantity": 14,
+                  "TimeUTC": "2018-07-22T16:10:29.89949Z"
+                },
+                {
+                  "Quantity": 15,
+                  "TimeUTC": "2018-07-22T16:28:01.89949Z"
+                },
+                {
+                  "Quantity": 16,
+                  "TimeUTC": "2018-07-22T16:29:17.89949Z"
+                },
+                {
+                  "Quantity": 17,
+                  "TimeUTC": "2018-07-22T16:51:23.89949Z"
+                },
+                {
+                  "Quantity": 18,
+                  "TimeUTC": "2018-07-22T16:52:39.89949Z"
+                },
+                {
+                  "Quantity": 19,
+                  "TimeUTC": "2018-07-22T17:22:35.89949Z"
+                },
+                {
+                  "Quantity": 20,
+                  "TimeUTC": "2018-07-22T17:23:51.89949Z"
+                },
+                {
+                  "Quantity": 21,
+                  "TimeUTC": "2018-07-22T17:45:57.89949Z"
+                },
+                {
+                  "Quantity": 22,
+                  "TimeUTC": "2018-07-22T17:47:13.89949Z"
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-22T12:13:47.89949Z",
+              "Stops": [
+                {
+                  "ExpectedCycleTime": "PT15M30S",
+                  "Program": "1004",
+                  "StationGroup": "MC",
+                  "StationNums": [1, 2, 3, 4]
+                }
+              ],
+              "Unload": [1, 2]
+            }
+          ]
+        }
+      ],
+      "RemainingToStart": 22,
+      "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
+      "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
+      "ScheduleId": "schId1234",
+      "Unique": "ccc-schId1234"
+    }
+  },
+  "Material": [
+    {
+      "Action": {
+        "AutomatedTransfer": false,
+        "Type": "Waiting"
+      },
+      "JobUnique": "aaa-schId1234",
+      "Location": {
+        "Face": 1,
+        "PalletNum": 1,
+        "Type": "OnPallet"
+      },
+      "MaterialID": -1,
+      "PartName": "aaa",
+      "Path": 1,
+      "Process": 1,
+      "SignaledInspections": []
+    },
+    {
+      "Action": {
+        "AutomatedTransfer": false,
+        "Type": "Waiting"
+      },
+      "JobUnique": "aaa-schId1234",
+      "Location": {
+        "Face": 1,
+        "PalletNum": 2,
+        "Type": "OnPallet"
+      },
+      "MaterialID": -1,
+      "PartName": "aaa",
+      "Path": 1,
+      "Process": 1,
+      "SignaledInspections": []
+    },
+    {
+      "Action": {
+        "AutomatedTransfer": false,
+        "Type": "Waiting"
+      },
+      "JobUnique": "aaa-schId1234",
+      "Location": {
+        "Face": 1,
+        "PalletNum": 3,
+        "Type": "OnPallet"
+      },
+      "MaterialID": -1,
+      "PartName": "aaa",
+      "Path": 1,
+      "Process": 1,
+      "SignaledInspections": []
+    },
+    {
+      "Action": {
+        "AutomatedTransfer": false,
+        "LoadOntoFace": 1,
+        "LoadOntoPalletNum": 4,
+        "PathAfterLoad": 1,
+        "ProcessAfterLoad": 1,
+        "Type": "Loading"
+      },
+      "JobUnique": "aaa-schId1234",
+      "Location": {
+        "Type": "Free"
+      },
+      "MaterialID": -1,
+      "PartName": "aaa",
+      "Path": 1,
+      "Process": 0,
+      "SignaledInspections": []
+    }
+  ],
+  "Pallets": {
+    "1": {
+      "CurrentPalletLocation": {
+        "group": "MC",
+        "loc": "Machine",
+        "num": 1
+      },
+      "FixtureOnPallet": "F:1:abfix:1",
+      "NumFaces": 1,
+      "OnHold": false,
+      "PalletNum": 1
+    },
+    "2": {
+      "CurrentPalletLocation": {
+        "group": "MC",
+        "loc": "Machine",
+        "num": 2
+      },
+      "FixtureOnPallet": "F:1:abfix:1",
+      "NumFaces": 1,
+      "OnHold": false,
+      "PalletNum": 2
+    },
+    "3": {
+      "CurrentPalletLocation": {
+        "group": "L/U",
+        "loc": "LoadUnload",
+        "num": 1
+      },
+      "FixtureOnPallet": "F:1:abfix:1",
+      "NumFaces": 1,
+      "OnHold": false,
+      "PalletNum": 3
+    },
+    "4": {
+      "CurrentPalletLocation": {
+        "group": "L/U",
+        "loc": "LoadUnload",
+        "num": 2
+      },
+      "FixtureOnPallet": "F:1:abfix:1",
+      "NumFaces": 1,
+      "OnHold": false,
+      "PalletNum": 4
+    }
+  },
+  "Queues": {
+    "castings": {},
+    "queueAAA": {},
+    "queueBBB": {},
+    "queueCCC": {}
+  },
+  "TimeOfCurrentStatusUTC": "2018-07-19T20:42:03Z"
+}

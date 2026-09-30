@@ -1,0 +1,59 @@
+{
+  "Fixtures": [
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:1:fixtureBB:1"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:2:fixtureAA1:1"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:3:fixtureAA2:2"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:4:fixtureCC5:1"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:5:fixtureCC6:2"
+    }
+  ],
+  "Pallets": [],
+  "Parts": [],
+  "Prefix": "Add Fixtures",
+  "Programs": [
+    {
+      "Command": "Add",
+      "Comment": "Insight:8:prog-aaa-1",
+      "MainProgram": "theprogdir/rev8/prog-aaa-1.EIA",
+      "ProgramContent": "prog-aaa-1 content rev 8",
+      "ProgramName": "prog-aaa-1",
+      "ProgramRevision": 8
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight:4:prog-aaa-2",
+      "MainProgram": "theprogdir/rev4/prog-aaa-2.EIA",
+      "ProgramContent": "prog-aaa-2 content rev 4",
+      "ProgramName": "prog-aaa-2",
+      "ProgramRevision": 4
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight:5:prog-bbb-2",
+      "MainProgram": "theprogdir/rev5/prog-bbb-2.EIA",
+      "ProgramContent": "prog-bbb-2 content rev 5",
+      "ProgramName": "prog-bbb-2",
+      "ProgramRevision": 5
+    }
+  ],
+  "Schedules": []
+}

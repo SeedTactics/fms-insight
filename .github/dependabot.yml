@@ -16,8 +16,6 @@ updates:
     directory: "/server"
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "Verify.TUnit"
     groups:
       server:
         patterns:

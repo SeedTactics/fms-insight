@@ -1,0 +1,216 @@
+{
+  "Fixtures": [],
+  "Pallets": [
+    {
+      "Command": "Add",
+      "Fixture": "F:0:1:1",
+      "FixtureGroup": 1,
+      "FixtureGroupV2": 1,
+      "PalletNumber": 1,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:1:1",
+      "FixtureGroup": 1,
+      "FixtureGroupV2": 1,
+      "PalletNumber": 2,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:1:1",
+      "FixtureGroup": 1,
+      "FixtureGroupV2": 1,
+      "PalletNumber": 3,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:1:1",
+      "FixtureGroup": 1,
+      "FixtureGroupV2": 1,
+      "PalletNumber": 4,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:1:2",
+      "FixtureGroup": 1,
+      "FixtureGroupV2": 1,
+      "PalletNumber": 1,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:1:2",
+      "FixtureGroup": 1,
+      "FixtureGroupV2": 1,
+      "PalletNumber": 2,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:1:2",
+      "FixtureGroup": 1,
+      "FixtureGroupV2": 1,
+      "PalletNumber": 3,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:1:2",
+      "FixtureGroup": 1,
+      "FixtureGroupV2": 1,
+      "PalletNumber": 4,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:2:1",
+      "FixtureGroup": 2,
+      "FixtureGroupV2": 2,
+      "PalletNumber": 1,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:2:1",
+      "FixtureGroup": 2,
+      "FixtureGroupV2": 2,
+      "PalletNumber": 2,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:2:2",
+      "FixtureGroup": 2,
+      "FixtureGroupV2": 2,
+      "PalletNumber": 1,
+      "RecordID": 0
+    },
+    {
+      "Command": "Add",
+      "Fixture": "F:0:2:2",
+      "FixtureGroup": 2,
+      "FixtureGroupV2": 2,
+      "PalletNumber": 2,
+      "RecordID": 0
+    }
+  ],
+  "Parts": [
+    {
+      "CheckCount": 0,
+      "Command": "Add",
+      "Comment": "aaa-0Pc6PyIjHQ2Bz0Ew2-Insight",
+      "MaterialName": "",
+      "PartName": "aaa:0:1",
+      "Part_1": 0,
+      "Part_2": 0,
+      "Part_3": "",
+      "Part_4": 0,
+      "Part_5": 0,
+      "Price": 0,
+      "Processes": [
+        {
+          "ContinueCut": 0,
+          "CreateToolList_RA": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixQuantity": 1,
+          "FixTime": 0,
+          "Fixture": "F:0:1:1",
+          "MainProgram": "1001",
+          "PartName": "aaa:0:1",
+          "PartProcess_1": 0,
+          "PartProcess_2": 0,
+          "PartProcess_3": 0,
+          "PartProcess_4": 0,
+          "ProcessNumber": 1,
+          "RemoveLDS": "3",
+          "RemoveTime": 0,
+          "WashType": 0
+        },
+        {
+          "ContinueCut": 0,
+          "CreateToolList_RA": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixQuantity": 1,
+          "FixTime": 0,
+          "Fixture": "F:0:1:2",
+          "MainProgram": "1002",
+          "PartName": "aaa:0:1",
+          "PartProcess_1": 0,
+          "PartProcess_2": 0,
+          "PartProcess_3": 0,
+          "PartProcess_4": 0,
+          "ProcessNumber": 2,
+          "RemoveLDS": "3",
+          "RemoveTime": 0,
+          "WashType": 0
+        }
+      ],
+      "ProductCount": 0,
+      "TotalProcess": 2
+    },
+    {
+      "CheckCount": 0,
+      "Command": "Add",
+      "Comment": "bbb-1Pc6PyIjHQ2Bz0Ew2-Insight",
+      "MaterialName": "",
+      "PartName": "bbb:0:2",
+      "Part_1": 0,
+      "Part_2": 0,
+      "Part_3": "",
+      "Part_4": 0,
+      "Part_5": 0,
+      "Price": 0,
+      "Processes": [
+        {
+          "ContinueCut": 0,
+          "CreateToolList_RA": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixQuantity": 1,
+          "FixTime": 0,
+          "Fixture": "F:0:2:1",
+          "MainProgram": "1003",
+          "PartName": "bbb:0:2",
+          "PartProcess_1": 0,
+          "PartProcess_2": 0,
+          "PartProcess_3": 0,
+          "PartProcess_4": 0,
+          "ProcessNumber": 1,
+          "RemoveLDS": "3",
+          "RemoveTime": 0,
+          "WashType": 0
+        },
+        {
+          "ContinueCut": 0,
+          "CreateToolList_RA": 0,
+          "CutMc": "15",
+          "FixLDS": "3",
+          "FixQuantity": 1,
+          "FixTime": 0,
+          "Fixture": "F:0:2:2",
+          "MainProgram": "1004",
+          "PartName": "bbb:0:2",
+          "PartProcess_1": 0,
+          "PartProcess_2": 0,
+          "PartProcess_3": 0,
+          "PartProcess_4": 0,
+          "ProcessNumber": 2,
+          "RemoveLDS": "3",
+          "RemoveTime": 0,
+          "WashType": 0
+        }
+      ],
+      "ProductCount": 0,
+      "TotalProcess": 2
+    }
+  ],
+  "Prefix": "Add Parts",
+  "Programs": [],
+  "Schedules": []
+}

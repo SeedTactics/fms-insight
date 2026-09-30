@@ -570,7 +570,7 @@ namespace MazakMachineInterface
 
       return new CurrentStatus()
       {
-        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        TimeOfCurrentStatusUTC = utcNow,
         Jobs = allJobs,
         Pallets = palletsByName.ToImmutable(),
         Material = material.ToImmutable(),

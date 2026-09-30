@@ -1,0 +1,25 @@
+{
+  "Fixtures": [],
+  "Pallets": [],
+  "Parts": [
+    {
+      "CheckCount": 0,
+      "Command": "Delete",
+      "Comment": "uniq1-Insight",
+      "MaterialName": "",
+      "PartName": "part1:1:1",
+      "Part_1": 0,
+      "Part_2": 0,
+      "Part_3": "",
+      "Part_4": 0,
+      "Part_5": 0,
+      "Price": 0,
+      "Processes": [],
+      "ProductCount": 0,
+      "TotalProcess": 1
+    }
+  ],
+  "Prefix": "Delete Parts",
+  "Programs": [],
+  "Schedules": []
+}

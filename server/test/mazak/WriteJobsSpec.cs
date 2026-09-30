@@ -43,7 +43,6 @@ using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using NSubstitute;
 using Shouldly;
-using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -245,26 +244,45 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _repoCfg.Dispose();
     }
 
-    private async Task ShouldMatchSnapshot<T>(T val, string snapshot)
+    private Task ShouldMatchSnapshot(MazakWriteData val, string snapshot)
     {
-      await Verifier
-        .Verify(val)
-        .UseDirectory("write-snapshots")
-        .UseFileName(snapshot)
-        .DisableRequireUniquePrefix()
-        .ScrubLinesWithReplace(input =>
-        {
-          // MainProgram paths use Directory separator which is different on windows and linux
-          // scrub to always use /
-          if (input.Trim().StartsWith("theprogdir"))
-          {
-            return input.Replace('/', '\\');
-          }
-          else
-          {
-            return input;
-          }
-        });
+      var normalized = val with
+      {
+        // Mazak due dates are calendar dates, without a time zone offset.
+        Schedules = val
+          .Schedules.Select(s =>
+            s with
+            {
+              DueDate = s.DueDate.HasValue
+                ? DateTime.SpecifyKind(s.DueDate.Value, DateTimeKind.Unspecified)
+                : null,
+            }
+          )
+          .ToImmutableList(),
+        Parts = val
+          .Parts.Select(p =>
+            p with
+            {
+              Processes = p
+                .Processes.Select(proc =>
+                  proc with
+                  {
+                    // Program paths use the host's directory separator.
+                    MainProgram = proc.MainProgram?.Replace('\\', '/'),
+                  }
+                )
+                .ToImmutableList(),
+            }
+          )
+          .ToImmutableList(),
+      };
+      // Legacy Mazak rows have unannotated nullable fields.
+      var options = new JsonSerializerOptions(jsonSettings) { RespectNullableAnnotations = false };
+      return Snapshot.Match(
+        Snapshot.Json(normalized, options),
+        "write-snapshots/" + snapshot,
+        "json"
+      );
     }
 
     [Test]

@@ -1,0 +1,29 @@
+{
+  "Fixtures": [
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:1:1"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:1:2"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:2:1"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:2:2"
+    }
+  ],
+  "Pallets": [],
+  "Parts": [],
+  "Prefix": "Add Fixtures",
+  "Programs": [],
+  "Schedules": []
+}
