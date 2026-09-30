@@ -52,6 +52,7 @@ import { SortableMatData } from "./Material.js";
 import { useAddExistingMaterialToQueue } from "../../cell-status/material-details.js";
 import { reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status.js";
 import { currentOperator } from "../../data/operators.js";
+import { canSetMaterialInQueue } from "../../data/material-operation-policy.js";
 import { useAtomValue, useSetAtom } from "jotai";
 
 export interface SortableRegionProps {
@@ -94,19 +95,30 @@ export const SortableRegion = memo(function SortableRegion(props: SortableRegion
       onDragEnd={({ active, over }) => {
         const activeMatId = numericId(active.id);
         const overMatId = over ? numericId(over.id) : null;
-        if (over && active.id !== over.id && activeMatId !== null && overMatId !== null) {
+        const mat = isSortableMatData(active.data.current) ? active.data.current.mat : null;
+        if (
+          over &&
+          active.id !== over.id &&
+          activeMatId !== null &&
+          overMatId !== null &&
+          mat !== null &&
+          canSetMaterialInQueue(mat, props.queueName)
+        ) {
           const overIdx = props.matIds.indexOf(overMatId);
           void addExistingMatToQueue({
             materialId: activeMatId,
             queue: props.queueName,
             queuePosition: overIdx,
             operator: operator,
-          }).catch(console.error);
-          reorderQueuedMat({
-            queue: props.queueName,
-            matId: activeMatId,
-            newIdx: overIdx,
-          });
+          })
+            .then(() =>
+              reorderQueuedMat({
+                queue: props.queueName,
+                matId: activeMatId,
+                newIdx: overIdx,
+              }),
+            )
+            .catch(console.error);
         }
         setActiveMat(undefined);
       }}

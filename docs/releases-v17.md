@@ -11,7 +11,8 @@ controlled by automation or being unloaded by an operator, while `quarantine-que
 queued material directly. The operator signal button is labeled **Signal for quarantine** when a
 quarantine queue is configured, or **Scrap** otherwise; both record deferred disposition. Human
 loading uses explicit `cancel-load`, validated against its current `LoadCancellationId`, before
-direct material edits. Automated transfers are declared by the backend's default-false
+cross-queue moves, queue removal or cycle invalidation. Same-queue priority reordering remains
+allowed during human loading. Automated transfers are declared by the backend's default-false
 `AutomatedTransfer` field and remain protected from cancellation and direct edits. Declaring
 backends must preserve signals through delayed events and restart. `Free` describes an untracked
 location and does not grant operator edit permission.

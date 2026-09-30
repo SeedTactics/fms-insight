@@ -93,6 +93,7 @@ import { useSetTitle } from "../routes.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { fmsInformation } from "../../network/server-settings.js";
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
+import { canSetMaterialInQueue } from "../../data/material-operation-policy.js";
 
 type ColWithTitleProps = {
   readonly label: string | ReactNode;
@@ -524,6 +525,7 @@ export function AllMaterial(props: AllMaterialProps) {
             ? findQueueInQuarantineQueues(over.id, allBins)
             : findMaterialInQuarantineQueues(over.id, allBins);
         if (!overCol) return;
+        if (!canSetMaterialInQueue(activeDrag.mat, overCol.bin.queueName)) return;
 
         if (overCol.bin.binId !== activeDrag.curOverBinId) {
           setActiveDrag({
@@ -558,18 +560,22 @@ export function AllMaterial(props: AllMaterialProps) {
             typeof over.id === "string"
               ? findQueueInQuarantineQueues(over.id, allBins)
               : findMaterialInQuarantineQueues(over.id, allBins);
-          if (overCol) {
+          if (overCol && canSetMaterialInQueue(activeDrag.mat, overCol.bin.queueName)) {
+            const matId = activeDrag.mat.materialID;
             void addExistingMatToQueue({
-              materialId: activeDrag.mat.materialID,
+              materialId: matId,
               queue: overCol.bin.queueName,
               queuePosition: overCol.idx,
               operator: null,
-            }).catch(console.error);
-            reorderQueuedMat({
-              queue: overCol.bin.queueName,
-              matId: activeDrag.mat.materialID,
-              newIdx: overCol.idx,
-            });
+            })
+              .then(() =>
+                reorderQueuedMat({
+                  queue: overCol.bin.queueName,
+                  matId,
+                  newIdx: overCol.idx,
+                }),
+              )
+              .catch(console.error);
           }
         }
 

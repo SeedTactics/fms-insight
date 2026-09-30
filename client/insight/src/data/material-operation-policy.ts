@@ -129,6 +129,21 @@ export function canAddOrMoveMaterialToQueue(material: MaterialForPolicy): boolea
   return state.kind === "AddToQueueProposal" || state.kind === "HumanControlledQueue";
 }
 
+export function canReorderQueuedMaterial(material: MaterialForPolicy): boolean {
+  // Priority changes within the source queue remain allowed during human station work.
+  return (
+    material !== null &&
+    material.location.type === LocType.InQueue &&
+    material.action.automatedTransfer !== true
+  );
+}
+
+export function canSetMaterialInQueue(material: MaterialForPolicy, queue: string): boolean {
+  return material?.location.type === LocType.InQueue && material.location.currentQueue === queue
+    ? canReorderQueuedMaterial(material)
+    : canAddOrMoveMaterialToQueue(material);
+}
+
 export function quarantineRoute(material: Readonly<IInProcessMaterial>): {
   readonly process: number;
   readonly path: number;

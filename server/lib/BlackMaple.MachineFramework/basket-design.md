@@ -29,9 +29,11 @@ separate from committed material contents and completion permission.
 
 Material operations distinguish physical location from authority. `Free` means no cell-tracked
 location, including raw material during loading; it does not establish operator ownership. Human
-loading and unloading protect material from direct queue edits and invalidation. A nonblank
-`LoadCancellationId` grants cancellation of the backend's complete atomic instruction, subject to
-current-work validation. Blank tokens remain protected but grant no cancellation.
+loading and unloading protect material from cross-queue moves, queue removal and invalidation.
+Same-queue priority reordering remains allowed for queued material, including during human loading,
+unless `AutomatedTransfer` is declared. A nonblank `LoadCancellationId` grants cancellation of the
+backend's complete atomic instruction, subject to current-work validation. Blank tokens remain
+protected but grant no cancellation.
 
 `AutomatedTransfer` defaults to false. A backend can set it only when automation controls the
 accepted transfer, and must retain quarantine signals through completion, delayed manufacturing

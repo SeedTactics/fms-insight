@@ -12,6 +12,8 @@ import {
   canDirectlyQuarantine,
   canInvalidateMaterial,
   canRemoveFromQueue,
+  canReorderQueuedMaterial,
+  canSetMaterialInQueue,
   canSignalQuarantine,
   isActiveLoadStationOperation,
   materialOperationState,
@@ -133,6 +135,43 @@ describe("material operation permissions", () => {
       expect(canAddOrMoveMaterialToQueue(controlled)).toBe(false);
     }
   });
+});
+
+describe("queue drag permissions", () => {
+  it.each([
+    ActionType.Waiting,
+    ActionType.Loading,
+    ActionType.LoadingToBasket,
+    ActionType.UnloadToInProcess,
+  ])(
+    "allows same-queue human %s reordering without allowing active cross-queue moves",
+    (action) => {
+      const m = material(LocType.InQueue, action);
+      expect(canReorderQueuedMaterial(m)).toBe(true);
+      expect(canSetMaterialInQueue(m, "queue")).toBe(true);
+      expect(canSetMaterialInQueue(m, "other-queue")).toBe(action === ActionType.Waiting);
+    },
+  );
+
+  it.each([ActionType.Waiting, ActionType.Loading, ActionType.LoadingToBasket])(
+    "blocks automated queued %s reordering and cross-queue movement",
+    (action) => {
+      const m = material(LocType.InQueue, action, "operator-token");
+      m.action.automatedTransfer = true;
+      expect(canReorderQueuedMaterial(m)).toBe(false);
+      expect(canSetMaterialInQueue(m, "queue")).toBe(false);
+      expect(canSetMaterialInQueue(m, "other-queue")).toBe(false);
+    },
+  );
+
+  it.each([LocType.Free, LocType.OnPallet, LocType.InBasket])(
+    "does not grant same-queue reordering to material at %s",
+    (location) => {
+      const m = material(location, ActionType.Loading, "operation");
+      expect(canReorderQueuedMaterial(m)).toBe(false);
+      expect(canSetMaterialInQueue(m, "queue")).toBe(false);
+    },
+  );
 });
 
 describe("transfer quarantine policy", () => {
