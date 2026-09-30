@@ -39,9 +39,8 @@ namespace MazakMachineInterface
 {
   public enum MazakDbType
   {
-    MazakVersionE,
-    MazakWeb,
-    MazakSmooth,
+    MazakWeb = 1,
+    MazakSmooth = 2,
   }
 
   [DataContract]
@@ -354,28 +353,12 @@ namespace MazakMachineInterface
     public int RecordID { get; init; }
 
     [DataMember]
-    public int AngleV1 { get; init; }
-
-    [DataMember]
     public int FixtureGroupV2 { get; init; }
 
     [DataMember]
     public MazakWriteCommand Command { get; init; } // only for transaction DB
 
-    public int FixtureGroup
-    {
-      get
-      {
-        if (AngleV1 > 1000)
-        {
-          return AngleV1 % 1000;
-        }
-        else
-        {
-          return FixtureGroupV2;
-        }
-      }
-    }
+    public int FixtureGroup => FixtureGroupV2;
   }
 
   [DataContract]

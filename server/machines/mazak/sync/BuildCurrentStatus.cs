@@ -651,12 +651,9 @@ namespace MazakMachineInterface
         string cutStr = partProcRow.CutMc;
         string removeStr = partProcRow.RemoveLDS;
 
-        if (mazakCfg.DBType != MazakDbType.MazakVersionE)
-        {
-          fixStr = ConvertStatIntV2ToV1(Convert.ToInt32(fixStr));
-          cutStr = ConvertStatIntV2ToV1(Convert.ToInt32(cutStr));
-          removeStr = ConvertStatIntV2ToV1(Convert.ToInt32(removeStr));
-        }
+        fixStr = ConvertStatIntV2ToV1(Convert.ToInt32(fixStr));
+        cutStr = ConvertStatIntV2ToV1(Convert.ToInt32(cutStr));
+        removeStr = ConvertStatIntV2ToV1(Convert.ToInt32(removeStr));
 
         var loads = ImmutableSortedSet.CreateBuilder<int>();
         var unloads = ImmutableSortedSet.CreateBuilder<int>();
@@ -1305,77 +1302,11 @@ namespace MazakMachineInterface
       {
         if (palLocRow.PalletNumber == palletNum)
         {
-          if (mazakCfg.DBType != MazakDbType.MazakVersionE)
-          {
-            return ParseStatNameWeb(machName, palLocRow.PalletPosition, mazakCfg);
-          }
-          else
-          {
-            return ParseStatNameVerE(machName, palLocRow.PalletPosition, mazakCfg);
-          }
+          return ParseStatNameWeb(machName, palLocRow.PalletPosition, mazakCfg);
         }
       }
 
       return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 0);
-    }
-
-    private static PalletLocation ParseStatNameVerE(string machName, string pos, MazakConfig cfg)
-    {
-      if (pos.StartsWith("LS"))
-      {
-        //load station
-        return new PalletLocation()
-        {
-          Location = PalletLocationEnum.LoadUnload,
-          StationGroup = "L/U",
-          Num = cfg.TranslateLoadStationNumber(Convert.ToInt32(pos.Substring(3))),
-        };
-      }
-      else if (pos.StartsWith("M"))
-      {
-        //M23 means machine 2, on the table (M21 is is the input pos, M22 is the output pos)
-        int num = Convert.ToInt32(pos[1].ToString());
-        if (cfg.MachineNumbers != null && num > 0 && num <= cfg.MachineNumbers.Count)
-        {
-          num = cfg.MachineNumbers[num - 1];
-        }
-        return new PalletLocation()
-        {
-          Location = pos[2] == '3' ? PalletLocationEnum.Machine : PalletLocationEnum.MachineQueue,
-          StationGroup = machName,
-          Num = num,
-        };
-      }
-      else if (pos.StartsWith("S"))
-      {
-        if (pos == "STA")
-        {
-          return new PalletLocation()
-          {
-            Location = PalletLocationEnum.Cart,
-            StationGroup = "Cart",
-            Num = 1,
-          };
-        }
-        else
-        {
-          return new PalletLocation()
-          {
-            Location = PalletLocationEnum.Buffer,
-            StationGroup = "Buffer",
-            Num = Convert.ToInt32(pos.Substring(1)),
-          };
-        }
-      }
-      else
-      {
-        return new PalletLocation()
-        {
-          Location = PalletLocationEnum.Buffer,
-          StationGroup = "Unknown",
-          Num = 0,
-        };
-      }
     }
 
     private static PalletLocation ParseStatNameWeb(string machName, string pos, MazakConfig cfg)

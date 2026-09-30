@@ -96,35 +96,30 @@
     {
       PalletNumber: 2,
       Fixture: F:0:1:fixtureBB:1,
-      AngleV1: 1000,
       FixtureGroupV2: 1,
       Command: Add
     },
     {
       PalletNumber: 1,
       Fixture: F:0:2:fixtureAA1:1,
-      AngleV1: 2000,
       FixtureGroupV2: 2,
       Command: Add
     },
     {
       PalletNumber: 1,
       Fixture: F:0:3:fixtureAA2:2,
-      AngleV1: 3000,
       FixtureGroupV2: 3,
       Command: Add
     },
     {
       PalletNumber: 5,
       Fixture: F:0:4:fixtureCC5:1,
-      AngleV1: 4000,
       FixtureGroupV2: 4,
       Command: Add
     },
     {
       PalletNumber: 6,
       Fixture: F:0:5:fixtureCC6:2,
-      AngleV1: 5000,
       FixtureGroupV2: 5,
       Command: Add
     }

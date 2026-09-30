@@ -56,23 +56,12 @@ namespace MazakMachineInterface
     private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitDB>();
     public static System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
 
-    private readonly string ready4ConectPath;
     private readonly string _readConnStr;
     private readonly string _writeConnStr;
     private readonly ICurrentLoadActions _loadOper;
     private readonly MazakConfig _cfg;
     private System.IO.FileSystemWatcher logWatcher;
     private MazakDbType _dbType => _cfg.DBType;
-
-    private void CheckReadyForConnect()
-    {
-      if (_dbType != MazakDbType.MazakVersionE)
-        return;
-      if (!System.IO.File.Exists(ready4ConectPath))
-      {
-        throw new Exception("Open database kit is not running");
-      }
-    }
 
     public OpenDatabaseKitDB(MazakConfig cfg, ICurrentLoadActions loadOper)
     {
@@ -86,12 +75,7 @@ namespace MazakMachineInterface
         cfg.LoadCSVPath
       );
 
-      if (_dbType != MazakDbType.MazakSmooth)
-      {
-        ready4ConectPath = System.IO.Path.Combine(cfg.OleDbDatabasePath, "ready4Conect.mdb");
-      }
-
-      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakWeb)
       {
         _readConnStr =
           cfg.SQLConnectionString
@@ -110,39 +94,19 @@ namespace MazakMachineInterface
         _writeConnStr = cfg.SQLConnectionString + ";Database=FCNETUSER01";
       }
 
-      if (_dbType == MazakDbType.MazakVersionE)
+      if (System.IO.Directory.Exists(cfg.LogCSVPath))
       {
-        if (System.IO.Directory.Exists(cfg.LoadCSVPath))
-        {
-          logWatcher = new System.IO.FileSystemWatcher(cfg.LoadCSVPath) { Filter = "*.csv" };
-          logWatcher.Created += RaiseNewLog;
-          logWatcher.Changed += RaiseNewLog;
-        }
-        else
-        {
-          Log.Error(
-            "Load CSV Directory "
-              + cfg.LoadCSVPath
-              + " does not exist. Set the directory in the proxy configuration."
-          );
-        }
+        logWatcher = new System.IO.FileSystemWatcher(cfg.LogCSVPath) { Filter = "*.csv" };
+        logWatcher.Created += RaiseNewLog;
+        Log.Debug("Watching Mazak log CSV directory {path} for new files", cfg.LogCSVPath);
       }
       else
       {
-        if (System.IO.Directory.Exists(cfg.LogCSVPath))
-        {
-          logWatcher = new System.IO.FileSystemWatcher(cfg.LogCSVPath) { Filter = "*.csv" };
-          logWatcher.Created += RaiseNewLog;
-          Log.Debug("Watching Mazak log CSV directory {path} for new files", cfg.LogCSVPath);
-        }
-        else
-        {
-          Log.Error(
-            "Log CSV Directory "
-              + cfg.LogCSVPath
-              + " does not exist. Set the directory in the proxy configuration."
-          );
-        }
+        Log.Error(
+          "Log CSV Directory "
+            + cfg.LogCSVPath
+            + " does not exist. Set the directory in the proxy configuration."
+        );
       }
       if (logWatcher != null)
         logWatcher.EnableRaisingEvents = true;
@@ -211,7 +175,7 @@ namespace MazakMachineInterface
 
     private IDbConnection CreateReadConnection()
     {
-      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakWeb)
       {
         return OpenOleDb(_readConnStr);
       }
@@ -225,7 +189,7 @@ namespace MazakMachineInterface
 
     private IDbConnection CreateWriteConnection()
     {
-      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakWeb)
       {
         return OpenOleDb(_writeConnStr);
       }
@@ -272,8 +236,6 @@ namespace MazakMachineInterface
 
     private void SaveChunck(MazakWriteData data)
     {
-      CheckReadyForConnect();
-
       Log.Debug("Writing {@data} to transaction db", data);
 
       foreach (var prog in data.Programs)
@@ -367,34 +329,9 @@ namespace MazakMachineInterface
         transaction: trans
       );
 
-      if (_dbType == MazakDbType.MazakVersionE)
-      {
-        // pallet version 1
-        conn.Execute(
-          @"INSERT INTO Pallet_t(
-            Angle,
-            Command,
-            Fixture,
-            PalletNumber,
-            RecordID,
-            TransactionStatus
-          ) VALUES (
-            @AngleV1,
-            @Command,
-            @Fixture,
-            @PalletNumber,
-            @RecordID,
-            0
-          )",
-          data.Pallets,
-          transaction: trans
-        );
-      }
-      else
-      {
-        // pallet version 2
-        conn.Execute(
-          @"INSERT INTO Pallet_t(
+      // pallet version 2
+      conn.Execute(
+        @"INSERT INTO Pallet_t(
             Command,
             Fixture,
             FixtureGroup,
@@ -409,10 +346,9 @@ namespace MazakMachineInterface
             @RecordID,
             0
           )",
-          data.Pallets,
-          transaction: trans
-        );
-      }
+        data.Pallets,
+        transaction: trans
+      );
 
       if (_dbType == MazakDbType.MazakSmooth)
       {
@@ -931,15 +867,8 @@ namespace MazakMachineInterface
     {
       _fixtureSelect = "SELECT FixtureName, Comment FROM Fixture";
 
-      if (_dbType != MazakDbType.MazakVersionE)
-      {
-        _palletSelect =
-          "SELECT PalletNumber, FixtureGroup AS FixtureGroupV2, Fixture, RecordID FROM Pallet";
-      }
-      else
-      {
-        _palletSelect = "SELECT PalletNumber, Angle AS AngleV1, Fixture, RecordID FROM Pallet";
-      }
+      _palletSelect =
+        "SELECT PalletNumber, FixtureGroup AS FixtureGroupV2, Fixture, RecordID FROM Pallet";
 
       if (_dbType != MazakDbType.MazakSmooth)
       {
@@ -1118,7 +1047,6 @@ namespace MazakMachineInterface
 
     public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
     {
-      CheckReadyForConnect();
       using (var conn = CreateReadConnection())
       {
         return action(conn);
@@ -1347,15 +1275,8 @@ namespace MazakMachineInterface
 
         IList<LogEntry> logs;
 
-        if (_dbType == MazakDbType.MazakVersionE)
-        {
-          logs = LogDataVerE.LoadLog(maxLogID, conn, trans);
-        }
-        else
-        {
-          trans.Rollback();
-          logs = LogCSVParsing.LoadLog(maxLogID, _cfg.LogCSVPath);
-        }
+        trans.Rollback();
+        logs = LogCSVParsing.LoadLog(maxLogID, _cfg.LogCSVPath);
 
         return new MazakAllDataAndLogs()
         {
@@ -1380,14 +1301,7 @@ namespace MazakMachineInterface
         "Received request to delete Mazak logs through foreign ID {lastSeenForeignId}",
         lastSeenForeignId
       );
-      if (_dbType == MazakDbType.MazakVersionE)
-      {
-        // verE logs are deleted by Mazak
-      }
-      else
-      {
-        LogCSVParsing.DeleteLog(lastSeenForeignId, _cfg.LogCSVPath);
-      }
+      LogCSVParsing.DeleteLog(lastSeenForeignId, _cfg.LogCSVPath);
     }
 
     public event Action OnNewEvent;

@@ -79,7 +79,7 @@ public class ProxyService : System.ServiceProcess.ServiceBase
           new MazakConfig()
           {
             Port = 5200,
-            DBType = MazakDbType.MazakVersionE,
+            DBType = MazakDbType.MazakWeb,
             OleDbDatabasePath = "c:\\Mazak\\NFMS\\DB",
             SQLConnectionString = MazakConfig.DefaultConnectionStr,
             LogCSVPath = "c:\\Mazak\\FMS\\Log",

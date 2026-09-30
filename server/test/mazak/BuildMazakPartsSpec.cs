@@ -49,14 +49,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       SQLConnectionString = "unused",
       LogCSVPath = "unused path",
       ProgramDirectory = "unused prog dir",
-      DBType = MazakDbType.MazakVersionE,
+      DBType = MazakDbType.MazakWeb,
     };
 
     [Test]
     [Arguments(MazakDbType.MazakSmooth, "2", "1")]
     [Arguments(MazakDbType.MazakSmooth, "512", "1", 10)]
-    [Arguments(MazakDbType.MazakVersionE, "0000000001", "1000000000", 10)]
-    [Arguments(MazakDbType.MazakVersionE, "0200000000", "1000000000")]
     public async System.Threading.Tasks.Task ExplicitLoadStationMapWritesControllerCoordinates(
       MazakDbType type,
       string loadMask,
@@ -1432,6 +1430,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       actions.Programs.ShouldBeEmpty();
     }
 
+    private static string ConvertMask(string mask) =>
+      Enumerable.Range(0, mask.Length).Where(i => mask[i] != '0').Sum(i => 1 << i).ToString();
+
     private void CheckPartProcess(MazakWriteData dset, string part, int proc, string fixture)
     {
       CheckPartProcess(dset, part, proc, fixture, "0000000000", "0000000000", "00000000");
@@ -1462,9 +1463,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           if (row.PartName == part && row.ProcessNumber == proc)
           {
             row.Fixture.ShouldBe(fixture, "on " + part);
-            row.FixLDS.ShouldBe(fix, "on " + part);
-            row.RemoveLDS.ShouldBe(rem, "on " + part);
-            row.CutMc.ShouldBe(cut, "on " + part);
+            row.FixLDS.ShouldBe(ConvertMask(fix), "on " + part);
+            row.RemoveLDS.ShouldBe(ConvertMask(rem), "on " + part);
+            row.CutMc.ShouldBe(ConvertMask(cut), "on " + part);
             mpart.Processes.Remove(row);
             break;
           }
@@ -1493,11 +1494,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       IList<int> pals
     )
     {
-      int angle = groupNum * 1000;
-
       foreach (int pal in pals)
       {
-        CheckPallet(dset, fix, pal, angle, groupNum);
+        CheckPallet(dset, fix, pal, groupNum);
       }
     }
 
@@ -1524,30 +1523,21 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       IList<int> pals
     )
     {
-      int angle = groupNum * 1000;
-
       foreach (int pal in pals)
       {
         foreach (var fix in fixs)
         {
-          CheckPallet(dset, fix, pal, angle, groupNum);
+          CheckPallet(dset, fix, pal, groupNum);
         }
       }
     }
 
-    private void CheckPallet(
-      MazakWriteData dset,
-      string fix,
-      int pal,
-      int expectedAngle,
-      int expectedFixGroup
-    )
+    private void CheckPallet(MazakWriteData dset, string fix, int pal, int expectedFixGroup)
     {
       foreach (var row in dset.Pallets.ToList())
       {
         if (row.PalletNumber == pal && row.Fixture == fix)
         {
-          row.AngleV1.ShouldBe(expectedAngle);
           row.FixtureGroupV2.ShouldBe(expectedFixGroup);
           ((List<MazakPalletRow>)dset.Pallets).Remove(row);
         }

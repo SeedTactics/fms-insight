@@ -219,8 +219,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     {
       StateUpdated = mazakData.Logs.Count > 0 || evtResults.PalletStatusChanged,
       TimeUntilNextRefresh =
-        mazakConfig?.DBType == MazakDbType.MazakVersionE
-        || evtResults.StoppedBecauseRecentMachineEvent
+        evtResults.StoppedBecauseRecentMachineEvent
         || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue
           ? TimeSpan.FromSeconds(15)
           : TimeSpan.FromMinutes(2),
@@ -233,11 +232,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   }
 
   private string MazakLogWatermark(IRepository db) =>
-    // Version E uses its existing epoch-ID-timestamp cursor, not CSV filenames.
-    // Web/Smooth CSV names begin with LG; exclude other producers such as robot events.
-    mazakConfig.DBType == MazakDbType.MazakVersionE
-      ? db.MaxForeignID()
-      : db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound);
+    // Web/Smooth CSV names begin with LG; exclude other event producers.
+    db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound);
 
   public bool ApplyActions(IRepository db, MazakState st)
   {

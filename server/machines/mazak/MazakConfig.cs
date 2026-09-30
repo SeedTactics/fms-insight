@@ -210,10 +210,6 @@ namespace MazakMachineInterface
     public static MazakConfig Load(IConfiguration configuration)
     {
       var cfg = configuration.GetSection("Mazak");
-      if (cfg["Starting Load Station Number"] != null)
-        throw new InvalidOperationException(
-          "Starting Load Station Number was removed. Configure Load Station Numbers instead."
-        );
       var loadStationNumbers = cfg["Load Station Numbers"] is string configuredStations
         ? configuredStations.Split(',').Select(s => int.Parse(s.Trim())).ToImmutableList()
         : null;
@@ -260,10 +256,7 @@ namespace MazakMachineInterface
       }
 
       string? loadPath = null;
-      if (
-        string.IsNullOrEmpty(proxyDBUrl)
-        && (dbtype == MazakDbType.MazakVersionE || dbtype == MazakDbType.MazakWeb)
-      )
+      if (string.IsNullOrEmpty(proxyDBUrl) && dbtype == MazakDbType.MazakWeb)
       {
         loadPath = cfg.GetValue<string>("Load CSV Path") ?? "c:\\mazak\\FMS\\LDS";
         if (!System.IO.Directory.Exists(loadPath))
@@ -328,33 +321,29 @@ namespace MazakMachineInterface
       string? proxyUrl
     )
     {
-      var verE = cfg.GetValue<bool>("VersionE");
       var webver = cfg.GetValue<bool>("Web Version");
       var smoothVer = cfg.GetValue<bool>("Smooth Version");
 
       string testPath = System.IO.Path.Combine(localDbPath, "FCREADDAT01.mdb");
 
-      if (verE || webver)
+      if (webver)
       {
         if (!System.IO.File.Exists(testPath) && string.IsNullOrEmpty(proxyUrl))
         {
           Serilog.Log.Error(
-            "Mazak Version E or Web Version selected, but database file {path} does not exist.",
+            "Mazak Web Version selected, but database file {path} does not exist.",
             testPath
           );
         }
       }
 
-      if (verE)
-        return MazakDbType.MazakVersionE;
-      else if (webver)
+      if (webver)
         return MazakDbType.MazakWeb;
       else if (smoothVer)
         return MazakDbType.MazakSmooth;
 
       if (System.IO.File.Exists(testPath))
       {
-        //TODO: open database to check column existance for web vs E.
         Serilog.Log.Information(
           "Assuming Mazak WEB version.  If this is incorrect it can be changed in the settings."
         );

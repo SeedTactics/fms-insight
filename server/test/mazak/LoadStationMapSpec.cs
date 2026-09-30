@@ -10,7 +10,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public class LoadStationMapSpec
 {
   [Test]
-  public async Task ConfigurationUsesListPositionAndRejectsRemovedOffset()
+  public async Task ConfigurationUsesExplicitListPosition()
   {
     var values = new Dictionary<string, string>
     {
@@ -27,12 +27,6 @@ public class LoadStationMapSpec
     await Assert
       .That(() => config.InverseLoadStationNumber(20))
       .Throws<ArgumentOutOfRangeException>();
-    values["Mazak:Starting Load Station Number"] = "10";
-    await Assert
-      .That(() =>
-        MazakConfig.Load(new ConfigurationBuilder().AddInMemoryCollection(values).Build())
-      )
-      .Throws<InvalidOperationException>();
   }
 
   [Test]

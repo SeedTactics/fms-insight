@@ -416,18 +416,9 @@ namespace MazakMachineInterface
         //newPartProcRow.RemovePhoto = "";
         WashType = 0,
         MainProgram = PartProgram.CellControllerProgramName,
-        FixLDS =
-          mazakCfg.DBType != MazakDbType.MazakVersionE
-            ? ConvertStatStrV1ToV2(new string(FixLDS)).ToString()
-            : new string(FixLDS),
-        RemoveLDS =
-          mazakCfg.DBType != MazakDbType.MazakVersionE
-            ? ConvertStatStrV1ToV2(new string(UnfixLDS)).ToString()
-            : new string(UnfixLDS),
-        CutMc =
-          mazakCfg.DBType != MazakDbType.MazakVersionE
-            ? ConvertStatStrV1ToV2(new string(Cut)).ToString()
-            : new string(Cut),
+        FixLDS = ConvertStatStrV1ToV2(new string(FixLDS)).ToString(),
+        RemoveLDS = ConvertStatStrV1ToV2(new string(UnfixLDS)).ToString(),
+        CutMc = ConvertStatStrV1ToV2(new string(Cut)).ToString(),
       };
 
       newPart.Processes.Add(newPartProcRow);
@@ -479,7 +470,7 @@ namespace MazakMachineInterface
         if (foundExisting)
           continue;
 
-        //Add rows to both V1 and V2.
+        // Add pallet rows.
         var newRow = new MazakPalletRow()
         {
           Command = MazakWriteCommand.Add,
@@ -487,8 +478,6 @@ namespace MazakMachineInterface
           Fixture = MazakFixtureName,
           RecordID = 0,
           FixtureGroupV2 = cfg.OverrideFixtureGroupToZero ? 0 : FixtureGroup,
-          //combos with an angle in the range 0-999, and we don't want to conflict with that
-          AngleV1 = cfg.OverrideFixtureGroupToZero ? 0 : (FixtureGroup * 1000),
         };
 
         ret.Add(newRow);
@@ -1123,16 +1112,7 @@ namespace MazakMachineInterface
             ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
             return;
           }
-          if (mazakCfg.DBType == MazakDbType.MazakVersionE)
-          {
-            int progNum;
-            if (!int.TryParse(stop.Program, out progNum))
-            {
-              ErrorDuringCreate =
-                "Part " + job.PartName + " program " + stop.Program + " is not an integer.";
-              return;
-            }
-          }
+
           if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.Program))
           {
             prog = new ProgramRevision()
