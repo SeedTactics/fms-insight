@@ -303,7 +303,8 @@ namespace BlackMaple.MachineFramework.Controllers
         client.Finished.TrySetResult();
       }
 
-      if (ws.CloseStatus.HasValue)
+      // Stopping the sender cancels any in-progress send, which aborts the socket.
+      if (ws.State == WebSocketState.CloseReceived && ws.CloseStatus.HasValue)
       {
         await ws.CloseAsync(
           ws.CloseStatus.Value,
