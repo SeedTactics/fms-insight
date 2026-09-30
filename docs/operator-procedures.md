@@ -69,6 +69,12 @@ detailed inspection, or some other rework. Material can be quarantined on the qu
 the material dialog and clicking a button. This moves the material to the quarantine queue where it
 is visible on the supervisor's material page.
 
+A quarantine signal records a request for the backend to handle material when it leaves automation
+control. The signal does not immediately move material or cancel a load. Direct quarantine moves
+material that is waiting in a queue into the configured quarantine queue. The available actions
+depend on the installation and the material's current state. Follow the displayed instructions and
+the installation's procedure before moving physical material.
+
 Once the material is ready to be re-introduced into the cell, the operator should bring it back to
 the shop floor. Once the material has arrived, the operator can click a button on the queues webpage
 (or scan the barcode) to add the material into the queue. Once it is back in the queue, the cell
@@ -93,6 +99,14 @@ is adjusted, FMS Insight will move any material that was thought to be loaded on
 quarantine queue. That material can then be re-introduced back into the queue so that the queue in
 FMS Insight matches the material on the shop floor. In addition, FMS Insight allows the ability to
 invalidate the inadvertent load events that were created.
+
+Only the latest still-valid process can be invalidated. For material with recorded processes 1, 2,
+and 3, first invalidate process 3, then review the refreshed history before invalidating process 2
+in a separate action. Continue backwards one process at a time as needed. To change a casting or job
+assignment, first invalidate any later processes in separate actions.
+
+Invalidation affects whole recorded cycle events and all material listed in the confirmation. The
+original events remain in the event log but no longer contribute to active material reconstruction.
 
 Insight does not reassign recorded pallet manufacturing history from one material identity to
 another. If machining was attributed to the wrong identity, record an explanatory operator note and

@@ -36,10 +36,11 @@ The [operations](client-operations#material) and [quality](client-quality#quaran
 webpages allow supervisors, quality engineers and others to manually move material between the
 various quarantined queues, view all the material, add notes, re-introduce material to "active"
 queues, or scrap material. In addition, the [server configuration](server-config) contains a setting
-_QuarantineQueue_ for the initial quarantine queue. If this setting is given, the
-[station monitor webpages](client-station-monitor) will contain a button _Quarantine Material_: if
-pressed the material is moved out of the "active" whiteboard regions/queues and into the quarantine
-queue specified in the server configuration file.
+_QuarantineQueue_ for the initial quarantine queue. Direct quarantine moves material that is waiting
+in a queue into this configured queue. A quarantine signal instead records a request for the backend
+to handle material when it leaves automation control; it does not immediately move material or
+cancel a load. The [operator procedures](operator-procedures#quarantine-material) explain this
+distinction. The available actions depend on the installation and the material's current state.
 
 FMS Insight allows arbitrary quarantined material queues, but we suggest you follow a scheme similar
 to the "TODO, In-Progress, Done" Kanban task management/project management technique.
