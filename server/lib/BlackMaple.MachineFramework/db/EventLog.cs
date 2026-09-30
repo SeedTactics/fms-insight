@@ -1566,9 +1566,7 @@ namespace BlackMaple.MachineFramework
     private static EventLogMetadata NormalizeEventLogMetadata(EventLogMetadata metadata) =>
       (metadata ?? new EventLogMetadata()) with
       {
-        ForeignId = NormalizeOptionalMetadata(metadata?.ForeignId),
         CorrelationId = NormalizeOptionalMetadata(metadata?.CorrelationId),
-        OriginalMessage = NormalizeOptionalMetadata(metadata?.OriginalMessage),
       };
 
     private static string NormalizeOptionalMetadata(string value) =>
