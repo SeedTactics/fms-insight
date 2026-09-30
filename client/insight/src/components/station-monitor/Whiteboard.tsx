@@ -49,7 +49,7 @@ import {
 } from "@dnd-kit/sortable";
 import { IInProcessMaterial } from "../../network/api.js";
 import { SortableMatData } from "./Material.js";
-import { moveQueuedMatInCurrentStatus } from "../../cell-status/current-status.js";
+import { moveQueuedMatInCurrentStatus } from "../../cell-status/loading.js";
 import { currentOperator } from "../../data/operators.js";
 import { canSetMaterialInQueue } from "../../data/material-operation-policy.js";
 import { useAtomValue, useSetAtom } from "jotai";

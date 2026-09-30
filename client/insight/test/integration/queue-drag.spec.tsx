@@ -64,7 +64,7 @@ function mockQueueMove(serverStatus: api.CurrentStatus) {
   const fetch = vi
     .spyOn(window, "fetch")
     .mockImplementation((input) =>
-      String(input).endsWith("/api/v1/jobs/status")
+      (input instanceof Request ? input.url : input.toString()).endsWith("/api/v1/jobs/status")
         ? Promise.resolve(new Response(JSON.stringify(serverStatus.toJSON())))
         : response,
     );

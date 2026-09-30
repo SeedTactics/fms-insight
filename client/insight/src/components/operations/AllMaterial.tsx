@@ -55,6 +55,7 @@ import {
   findQueueInQuarantineQueues,
 } from "../../data/all-material-bins.js";
 import * as currentSt from "../../cell-status/current-status.js";
+import { moveQueuedMatInCurrentStatus } from "../../cell-status/loading.js";
 import { Box } from "@mui/material";
 import { Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
@@ -465,7 +466,7 @@ export function AllMaterial(props: AllMaterialProps) {
   useSetTitle("All Material");
   const st = useAtomValue(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useAtom(currentMaterialBinOrder);
-  const moveQueuedMat = useSetAtom(currentSt.moveQueuedMatInCurrentStatus);
+  const moveQueuedMat = useSetAtom(moveQueuedMatInCurrentStatus);
   const [activeDrag, setActiveDrag] = useState<CurActiveDrag | null>(null);
 
   const allBins = useMemo(() => {

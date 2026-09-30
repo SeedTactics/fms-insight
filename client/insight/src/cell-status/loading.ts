@@ -37,7 +37,9 @@ import {
   ILogEntry,
   IRecentHistoricData,
   IServerEvent,
+  QueuePosition,
 } from "../network/api.js";
+import { JobsBackend } from "../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
 import * as simProd from "./sim-production.js";
@@ -141,6 +143,37 @@ export const onLoadCurrentSt = atom(null, (_, set, curSt: Readonly<ICurrentStatu
   set(customSt.replaceCustomState, curSt.customState ?? null);
   set(names.setNamesFromCurrentStatus, curSt);
 });
+
+export interface QueuedMatMove extends currentSt.QueueReordering {
+  readonly operator: string | null;
+}
+
+// Show queue drops immediately. Recovery must not replace intervening live updates or drags.
+export const moveQueuedMatInCurrentStatus = atom(
+  null,
+  async (get, set, { operator, ...move }: QueuedMatMove): Promise<void> => {
+    const before = get(currentSt.currentStatus);
+    set(currentSt.reorderQueuedMatInCurrentStatus, move);
+    const optimistic = get(currentSt.currentStatus);
+    try {
+      await JobsBackend.setMaterialInQueue(
+        move.matId,
+        operator,
+        new QueuePosition({ queue: move.queue, position: move.newIdx }),
+      );
+    } catch (error) {
+      const beforeReload = get(currentSt.currentStatus);
+      try {
+        const refreshed = await JobsBackend.currentStatus();
+        if (get(currentSt.currentStatus) === beforeReload) set(onLoadCurrentSt, refreshed);
+      } catch {
+        // If the server is unreachable, undo only this move's untouched optimistic snapshot.
+        if (get(currentSt.currentStatus) === optimistic) set(onLoadCurrentSt, before);
+      }
+      throw error;
+    }
+  },
+);
 
 export const onLoadSpecificMonthJobs = atom(
   null,
