@@ -2,16 +2,14 @@
 title: Mazak Palletech Integration
 nav: FMS Insight Server > Mazak
 description: >-
-  FMS Insight works with all Palletech cell controller versions from Mazak: Web Version, and Smooth
-  PMC. FMS Insight can read all events from the cell controller and can also edit almost all the
-  data in the cell controller.
+  FMS Insight supports Mazak Palletech Web Version and Smooth/Neo PMC. FMS Insight can read all
+  events from the cell controller and can also edit almost all the data in the cell controller.
 ---
 
 # FMS Insight Mazak Palletech Integration
 
-FMS Insight works with all Palletech cell controller versions from Mazak: Web Version, and Smooth
-PMC. FMS Insight can read all events from the cell controller and can also edit almost all the data
-in the cell controller.
+FMS Insight supports Mazak Palletech Web Version and Smooth/Neo PMC. FMS Insight can read all events
+from the cell controller and can also edit almost all the data in the cell controller.
 
 ## Load station numbering
 

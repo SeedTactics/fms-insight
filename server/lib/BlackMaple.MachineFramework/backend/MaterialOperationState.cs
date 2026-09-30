@@ -24,8 +24,8 @@ internal enum MaterialOperationKind
 }
 
 /// <summary>
-/// Classifies the current owner of material-changing operations. Callers must hold the
-/// <c>JobsAndQueuesFromDb</c> change lock while using the classification with current status.
+/// Determines material-operation permissions from current status. Backend callers must hold
+/// their mutation gate while using these permissions to validate and apply an operation.
 /// </summary>
 public static class MaterialOperationState
 {

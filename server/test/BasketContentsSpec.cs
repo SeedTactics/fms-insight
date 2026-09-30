@@ -523,6 +523,162 @@ public sealed class BasketContentsSpec : IDisposable
   }
 
   [Test]
+  [Arguments(null)]
+  [Arguments("")]
+  [Arguments("  source-1  ")]
+  public async Task ContentsRetryPreservesForeignIdAndCurrentProjection(string foreignId)
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var contents = Contents(4, 1, materialId, "tp-101");
+    var operation = Operation(
+      new BasketContentsChange
+      {
+        BasketId = 4,
+        Expected = null,
+        Result = contents,
+      }
+    );
+    var metadata = new EventLogMetadata { ForeignId = foreignId };
+    repository.RecordBasketContentsOperation(operation, "prepare-4", metadata);
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = contents,
+          Result = Empty(4),
+        }
+      ),
+      "later-update"
+    );
+    var events = repository.GetLogForMaterial(materialId).ToImmutableList();
+
+    repository.RecordBasketContentsOperation(operation, "prepare-4", metadata);
+    if (string.IsNullOrEmpty(foreignId))
+      repository.RecordBasketContentsOperation(
+        operation,
+        "prepare-4",
+        metadata with
+        {
+          ForeignId = foreignId is null ? "" : null,
+        }
+      );
+    else
+      await Assert
+        .That(() =>
+          repository.RecordBasketContentsOperation(
+            operation,
+            "prepare-4",
+            metadata with
+            {
+              ForeignId = foreignId.Trim(),
+            }
+          )
+        )
+        .Throws<ConflictRequestException>();
+
+    await Assert.That(repository.GetBasketContents(4)!.Slots).IsEmpty();
+    await Assert.That(repository.GetLogForMaterial(materialId)).IsEquivalentTo(events);
+  }
+
+  [Test]
+  [Arguments(null)]
+  [Arguments("")]
+  [Arguments("  source-1  ")]
+  public async Task StationRetryPreservesForeignIdAndCurrentProjection(string foreignId)
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var contents = Contents(4, 1, materialId, "tp-101");
+    var operation = StationPreparation(materialId, contents);
+    var metadata = new EventLogMetadata { ForeignId = foreignId };
+    var callbackForeignIds = ImmutableList<string>.Empty;
+    _repositoryConfig.NewLogEntry += (_, observedForeignId, _) =>
+      callbackForeignIds = callbackForeignIds.Add(observedForeignId);
+    var recorded = repository
+      .RecordBasketStationOperation(
+        operation,
+        1,
+        TimeSpan.Zero,
+        DateTime.UtcNow,
+        ImmutableDictionary<string, string>.Empty,
+        "station-prepare-4",
+        metadata: metadata
+      )
+      .ToImmutableList();
+    await Assert.That(callbackForeignIds).IsNotEmpty();
+    await Assert.That(callbackForeignIds.All(id => id == foreignId)).IsTrue();
+    foreach (var entry in recorded)
+      await Assert.That(repository.ForeignIDForCounter(entry.Counter)).IsEqualTo(foreignId ?? "");
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = contents,
+          Result = Empty(4),
+        }
+      ),
+      "later-update"
+    );
+    var events = repository.GetLogForMaterial(materialId).ToImmutableList();
+    var callbackCount = callbackForeignIds.Count;
+
+    var retry = repository
+      .RecordBasketStationOperation(
+        operation,
+        1,
+        TimeSpan.Zero,
+        DateTime.UtcNow,
+        ImmutableDictionary<string, string>.Empty,
+        "station-prepare-4",
+        metadata: metadata
+      )
+      .ToImmutableList();
+    if (string.IsNullOrEmpty(foreignId))
+      repository
+        .RecordBasketStationOperation(
+          operation,
+          1,
+          TimeSpan.Zero,
+          DateTime.UtcNow,
+          ImmutableDictionary<string, string>.Empty,
+          "station-prepare-4",
+          metadata: metadata with
+          {
+            ForeignId = foreignId is null ? "" : null,
+          }
+        )
+        .ToImmutableList();
+    else
+      await Assert
+        .That(() =>
+          repository.RecordBasketStationOperation(
+            operation,
+            1,
+            TimeSpan.Zero,
+            DateTime.UtcNow,
+            ImmutableDictionary<string, string>.Empty,
+            "station-prepare-4",
+            metadata: metadata with
+            {
+              ForeignId = foreignId.Trim(),
+            }
+          )
+        )
+        .Throws<ConflictRequestException>();
+
+    await Assert
+      .That(retry.Select(entry => entry.Counter))
+      .IsEquivalentTo(recorded.Select(entry => entry.Counter));
+    await Assert.That(retry).IsEquivalentTo(events);
+    await Assert.That(repository.GetBasketContents(4)!.Slots).IsEmpty();
+    await Assert.That(repository.GetLogForMaterial(materialId)).IsEquivalentTo(events);
+    await Assert.That(callbackForeignIds.Count).IsEqualTo(callbackCount);
+  }
+
+  [Test]
   public async Task IdenticalRetrySucceedsAndChangedRetryConflicts()
   {
     using var repository = _repositoryConfig.OpenConnection();
@@ -1323,6 +1479,58 @@ public sealed class BasketContentsSpec : IDisposable
       )
       .IsEquivalentTo([ordinary, basket]);
     await Assert.That(repository.GetBasketContents(4) is not null).IsEqualTo(includeBasket);
+    await Assert.That(repository.GetMaterialInAllQueues()).IsEmpty();
+  }
+
+  [Test]
+  public async Task BasketTransferRejectsACompetingQueueUnloadForTheSameMaterial()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var id = repository.AllocateMaterialID("job-1", "part-a", 2);
+    LoadMaterialOntoPallet(repository, id);
+    var counters = repository.GetLogForMaterial(id).Select(e => e.Counter).ToImmutableList();
+    var unload = new MaterialToUnloadFromFace
+    {
+      MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(id, null),
+      FaceNum = 1,
+      Process = 1,
+      ActiveOperationTime = TimeSpan.Zero,
+    };
+
+    await Assert
+      .That(() =>
+        repository.RecordPartialLoadUnload(
+          toLoad: null,
+          toUnload:
+          [
+            unload,
+            unload with
+            {
+              FaceNum = 2,
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                id,
+                new UnloadDestination { Queue = "transfer" }
+              ),
+            },
+          ],
+          lulNum: 1,
+          pallet: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: DateTime.UtcNow,
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          palletBasketCompletion: PalletLoadOntoBasketCompletion(
+            id,
+            null,
+            Contents(4, 1, id, "tp-101", process: 1)
+          )
+        )
+      )
+      .Throws<ArgumentException>();
+
+    await Assert
+      .That(repository.GetLogForMaterial(id).Select(e => e.Counter))
+      .IsEquivalentTo(counters);
+    await Assert.That(repository.GetBasketContents(4)).IsNull();
     await Assert.That(repository.GetMaterialInAllQueues()).IsEmpty();
   }
 

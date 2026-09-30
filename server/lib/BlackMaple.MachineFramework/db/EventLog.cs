@@ -1964,8 +1964,14 @@ namespace BlackMaple.MachineFramework
 
       var transferredToBasket = ImmutableHashSet.CreateBuilder<long>();
       var transferredFromBasket = ImmutableHashSet.CreateBuilder<long>();
-      var transferredToBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
-      var transferredFromBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
+      var transferredToBasketWithProcess = ImmutableHashSet.CreateBuilder<(
+        long MaterialID,
+        int Process
+      )>();
+      var transferredFromBasketWithProcess = ImmutableHashSet.CreateBuilder<(
+        long MaterialID,
+        int Process
+      )>();
       foreach (var transfer in palletBasketCompletion.Transfers)
       {
         ValidateBasketId(transfer.BasketId);
@@ -2112,8 +2118,18 @@ namespace BlackMaple.MachineFramework
               .Select(destination => (MaterialID: destination.Key, unload.Process))
           )
           .ToImmutableHashSet();
+        var queuedUnloadMaterial = (toUnload ?? [])
+          .SelectMany(unload =>
+            unload
+              .MaterialIDToDestination.Where(destination => destination.Value?.Queue is not null)
+              .Select(destination => destination.Key)
+          )
+          .ToImmutableHashSet();
         if (
-          transferredToBasketWithProcess.Any(material => !palletUnloadMaterial.Contains(material))
+          transferredToBasketWithProcess.Any(material =>
+            !palletUnloadMaterial.Contains(material)
+            || queuedUnloadMaterial.Contains(material.MaterialID)
+          )
         )
           throw new ArgumentException(
             "Pallet-to-basket material and process must match a pallet unload without a queue destination.",
@@ -2743,7 +2759,7 @@ namespace BlackMaple.MachineFramework
           if (
             existingType != operationType
             || existingFingerprint != fingerprint
-            || existingForeignId != metadata.ForeignId
+            || (existingForeignId ?? "") != (metadata.ForeignId ?? "")
             || existingOriginalMessage != (metadata.OriginalMessage ?? "")
           )
             throw new ConflictRequestException(

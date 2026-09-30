@@ -378,6 +378,40 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
+  public async Task CancelLoadRejectsAnAutomatedPeerInTheCancellationGroup()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandler = handler;
+    await StartSyncThread();
+
+    var human = QueuedMat(1, null, "part", 0, 1, "first", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "shared",
+      },
+    };
+    var automated = human with
+    {
+      MaterialID = 2,
+      Action = human.Action with { AutomatedTransfer = true },
+    };
+    await SetCurrentMaterial([human, automated]);
+
+    await Assert
+      .That(() => _jq.CancelLoad(human.MaterialID, "shared", null, null))
+      .Throws<ConflictRequestException>();
+    await Assert.That(handler.Calls).IsEqualTo(0);
+
+    // Reject the entire operation without consuming its token or cancelling only the human peer.
+    await SetCurrentMaterial([human, automated with { Action = human.Action }]);
+    _jq.CancelLoad(human.MaterialID, "shared", null, null);
+    await Assert.That(handler.Calls).IsEqualTo(1);
+    await Assert.That(handler.MaterialIds).IsEquivalentTo(new[] { 1L, 2L });
+  }
+
+  [Test]
   public async Task CancelLoadRejectsStaleCancellationIdBeforeCallingTheHandler()
   {
     var handler = new RecordingLoadCancel();
@@ -1595,7 +1629,9 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
-  public async Task AllowsReorderingLoadingMaterialWithinItsQueue()
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task QueueReorderingRespectsAutomatedTransfer(bool automatedTransfer)
   {
     await StartSyncThread();
     using var db = _repo.OpenConnection();
@@ -1638,12 +1674,26 @@ public sealed class JobAndQueueSpec
         Action = new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Loading,
+          AutomatedTransfer = automatedTransfer,
         },
       },
       expectedMat2,
     ]);
 
     db.GetMaterialInAllQueues().Select(m => m.MaterialID).ShouldBe(new[] { 1L, 2L });
+
+    if (automatedTransfer)
+    {
+      var logCount = db.GetLogForMaterial(1).Count();
+      await Assert
+        .That(() => _jq.SetMaterialInQueue(materialId: 1, "q1", 1, "oper"))
+        .Throws<ConflictRequestException>();
+      await Assert
+        .That(db.GetMaterialInAllQueues().Select(m => m.MaterialID).SequenceEqual([1L, 2L]))
+        .IsTrue();
+      await Assert.That(db.GetLogForMaterial(1).Count()).IsEqualTo(logCount);
+      return;
+    }
 
     var newStatusTask = CreateTaskToWaitForNewStatus();
 

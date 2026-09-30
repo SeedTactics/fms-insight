@@ -808,6 +808,10 @@ namespace BlackMaple.MachineFramework
           var isReorder =
             mat?.Location.Type == InProcessMaterialLocation.LocType.InQueue
             && mat.Location.CurrentQueue == queue;
+          if (isReorder && mat?.Action.AutomatedTransfer == true)
+            throw new ConflictRequestException(
+              "Material is owned by an automated transfer and cannot be reordered."
+            );
           if (!isReorder && mat is not null)
           {
             var operation = MaterialOperationState.Classify(mat);
@@ -1024,10 +1028,7 @@ namespace BlackMaple.MachineFramework
             "The displayed load cancellation is no longer current."
           );
 
-        if (
-          MaterialOperationState.Classify(selected)
-          != MaterialOperationKind.ActiveLoadStationOperation
-        )
+        if (!MaterialOperationState.CanCancelLoad(selected))
           throw new ConflictRequestException(
             "The displayed load cancellation is no longer current."
           );
@@ -1037,7 +1038,10 @@ namespace BlackMaple.MachineFramework
             m.Action.LoadCancellationId == expectedLoadCancellationId
           )
           .ToImmutableList();
-        if (cancellationGroup.IsEmpty)
+        if (
+          cancellationGroup.IsEmpty
+          || cancellationGroup.Any(m => !MaterialOperationState.CanCancelLoad(m))
+        )
           throw new ConflictRequestException(
             "The displayed load cancellation is no longer current."
           );

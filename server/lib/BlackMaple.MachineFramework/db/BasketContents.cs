@@ -75,7 +75,7 @@ namespace BlackMaple.MachineFramework
             if (
               existingType != "contents"
               || existingFingerprint != fingerprint
-              || existingForeignId != eventMetadata.ForeignId
+              || (existingForeignId ?? "") != (eventMetadata.ForeignId ?? "")
               || existingOriginalMessage != (eventMetadata.OriginalMessage ?? "")
             )
               throw new ConflictRequestException(
