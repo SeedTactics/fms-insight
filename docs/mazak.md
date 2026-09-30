@@ -2,16 +2,14 @@
 title: Mazak Palletech Integration
 nav: FMS Insight Server > Mazak
 description: >-
-  FMS Insight works with all Palletech cell controller versions from Mazak: Version E, Web Version,
-  and Smooth PMC. FMS Insight can read all events from the cell controller and can also edit almost
-  all the data in the cell controller.
+  FMS Insight supports Mazak Palletech Web Version and Smooth/Neo PMC. FMS Insight can read all
+  events from the cell controller and can also edit almost all the data in the cell controller.
 ---
 
 # FMS Insight Mazak Palletech Integration
 
-FMS Insight works with all Palletech cell controller versions from Mazak: Version E, Web Version,
-and Smooth PMC. FMS Insight can read all events from the cell controller and can also edit almost
-all the data in the cell controller.
+FMS Insight supports Mazak Palletech Web Version and Smooth/Neo PMC. FMS Insight can read all events
+from the cell controller and can also edit almost all the data in the cell controller.
 
 ## Load station numbering
 
@@ -31,8 +29,7 @@ updating configuration.
 To facilitate the communication between FMS Insight and the Mazak cell controller, you must acquire
 a program called "Mazak Open Database Kit". This is a software program developed by Mazak which
 allows safe access to the data inside the cell controller. Please contact your Mazak representative
-and ask to obtain "Open Database Kit" that matches the specific cell controller (Version E, Web, or
-Smooth PMC).
+and ask to obtain "Open Database Kit" that matches the specific cell controller (Web or Smooth PMC).
 
 ## Enable Log CSV
 
@@ -49,10 +46,10 @@ specify the same folder in the FMS Insight server configuration file.
 
 ## Load Instructions
 
-On Version E and MazakWeb, one parameter must be changed. If you are using Mazak Smooth PMC, this
-step can be skipped! Open the Mazak Palletech software, go to the parameter edit screen, select `X`,
-and scroll to the setting `X-31`. Set the `X-31` setting from 0 to 1. This setting will cause CSV
-files describing the current load and unload operation at the load station to be output to the
+On MazakWeb, one parameter must be changed. If you are using Mazak Smooth PMC, this step can be
+skipped! Open the Mazak Palletech software, go to the parameter edit screen, select `X`, and scroll
+to the setting `X-31`. Set the `X-31` setting from 0 to 1. This setting will cause CSV files
+describing the current load and unload operation at the load station to be output to the
 `c:\Mazak\FMS\LDS` directory. FMS Insight monitors this directory and uses the CSV files to display
 the parts being loaded and unloaded from each pallet at the load station.
 

@@ -15,10 +15,19 @@ FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
 
 using System;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineFramework.Controllers;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Shouldly;
 
@@ -136,6 +145,67 @@ public sealed class JobsControllerSpec
     });
 
     context.Response.StatusCode.ShouldBe(StatusCodes.Status409Conflict);
+  }
+
+  [Test]
+  public async Task BasketCompletionValidatesTheHttpBodyAndForwardsOnlyWorkId()
+  {
+    using var repository = RepositoryConfig.InitializeMemoryDB(null);
+    var control = Substitute.For<IJobAndQueueControl>();
+    control
+      .When(c => c.CompleteBasketLoadStation("stale"))
+      .Do(_ => throw new ConflictRequestException("Work changed."));
+    var builder = WebApplication.CreateBuilder();
+    builder.WebHost.UseKestrel().UseUrls("http://127.0.0.1:0");
+    builder.Services.AddSingleton(repository);
+    builder.Services.AddSingleton(control);
+    builder
+      .Services.AddControllers()
+      .AddApplicationPart(typeof(JobsController).Assembly)
+      .AddJsonOptions(options => FMSInsightWebHost.JsonSettings(options.JsonSerializerOptions));
+    await using var app = builder.Build();
+    app.UseMiddleware<ErrorHandlingMiddleware>();
+    app.MapControllers();
+    await app.StartAsync();
+    using var http = new HttpClient
+    {
+      BaseAddress = new Uri(
+        app.Services.GetRequiredService<IServer>()
+          .Features.Get<IServerAddressesFeature>()!
+          .Addresses.Single()
+      ),
+    };
+    foreach (
+      var body in new[]
+      {
+        "{}",
+        "null",
+        "{",
+        "{\"WorkId\":null}",
+        "{\"WorkId\":\" \"}",
+        "{\"WorkId\":17}",
+      }
+    )
+    {
+      using var response = await http.PostAsync(
+        "/api/v1/jobs/basket-load-station/complete",
+        new StringContent(body, Encoding.UTF8, "application/json")
+      );
+      await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+    }
+    control.DidNotReceiveWithAnyArgs().CompleteBasketLoadStation(default!);
+    using var accepted = await http.PostAsync(
+      "/api/v1/jobs/basket-load-station/complete",
+      new StringContent("{\"WorkId\":\"current\"}", Encoding.UTF8, "application/json")
+    );
+    await Assert.That(accepted.StatusCode).IsEqualTo(HttpStatusCode.OK);
+    control.Received(1).CompleteBasketLoadStation("current");
+    using var conflict = await http.PostAsync(
+      "/api/v1/jobs/basket-load-station/complete",
+      new StringContent("{\"WorkId\":\"stale\"}", Encoding.UTF8, "application/json")
+    );
+    await Assert.That(conflict.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
+    await app.StopAsync();
   }
 
   private static async Task<HttpContext> InvokeThroughMiddleware(Func<Task> request)

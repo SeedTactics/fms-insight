@@ -117,7 +117,6 @@ begin
     'Mazak Version', 'Please select the Mazak Software Version',
     'Select the Mazak Software Version',
     True, False);
-  VersionPage.Add('Version E');
   VersionPage.Add('Web');
   VersionPage.Add('Smooth / Neo');
 
@@ -153,30 +152,23 @@ end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
+  Result := False;
   if IsUpgrade() then
     begin
       Result := False;
       exit;
     end;
 
-  if PageID = LogCSVPage.ID then begin
-    if VersionPage.Values[0] then begin
-      Result := True
-    end else begin
-      Result := False
-    end
-  end;
-
   if PageID = DatabasePage.ID then begin
-    Result := VersionPage.Values[2]
+    Result := VersionPage.Values[1]
   end;
 
   if PageID = SQLConnectionPage.ID then begin
-    Result := not VersionPage.Values[2]
+    Result := not VersionPage.Values[1]
   end;
 
   if PageID = LoadCSVPage.ID then begin
-    Result := VersionPage.Values[2]
+    Result := VersionPage.Values[1]
   end;
 end;
 
@@ -188,12 +180,9 @@ begin
   end;
 
   if VersionPage.Values[0] then begin
-    Result := 'MazakVersionE'
-  end;
-  if VersionPage.Values[1] then begin
     Result := 'MazakWeb'
   end;
-  if VersionPage.Values[2] then begin
+  if VersionPage.Values[1] then begin
     Result := 'MazakSmooth'
   end;
 end;
@@ -214,7 +203,7 @@ begin
     exit;
   end;
 
-  if VersionPage.Values[2] then begin
+  if VersionPage.Values[1] then begin
     Result := SQLConnectionPage.Values[0]
   end else begin
     Result := 'Provider=Microsoft.Jet.OLEDB.4.0;Password="";User ID=Admin;Mode=Share Deny None;'

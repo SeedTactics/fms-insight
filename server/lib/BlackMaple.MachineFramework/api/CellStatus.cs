@@ -141,36 +141,6 @@ namespace BlackMaple.MachineFramework
     public int? Zone { get; init; }
   }
 
-  public enum BasketMoveReason
-  {
-    LoadMaterial,
-    UnloadMaterial,
-    ProcessTransfer,
-    SupplyMaterialToCell,
-    SupplyEmptyBasket,
-    ReturnToStorage,
-    RemoveForCorrection,
-    Other,
-  }
-
-  public record BasketMoveInstruction
-  {
-    /// <summary>
-    /// Current integration-supplied operator intent. It does not establish durable basket
-    /// position or movement history in FMS Insight.
-    /// </summary>
-    public required string InstructionId { get; init; }
-    public required int BasketId { get; init; }
-    public BasketPosition? Source { get; init; }
-    public required BasketPosition Destination { get; init; }
-    public required BasketMoveReason Reason { get; init; }
-    public required string DisplayText { get; init; }
-
-    // When set, the prerequisite move must be completed before this move.  In particular, a
-    // replacement basket cannot enter an occupied staging position until the old basket leaves.
-    public string? PrerequisiteInstructionId { get; init; }
-  }
-
   public record CurrentStatus
   {
     public required DateTime TimeOfCurrentStatusUTC { get; init; }
@@ -192,8 +162,6 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<ActiveWorkorder>? Workorders { get; init; } = null;
 
     public ImmutableDictionary<int, BasketStatus>? Baskets { get; init; }
-
-    public ImmutableList<BasketMoveInstruction>? BasketMoveInstructions { get; init; }
 
     /// <summary>
     /// Optional application-specific state transported opaquely by FMS Insight. Use this only as a

@@ -378,6 +378,40 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
+  public async Task CancelLoadRejectsAnAutomatedPeerInTheCancellationGroup()
+  {
+    var handler = new RecordingLoadCancel();
+    _loadCancelHandler = handler;
+    await StartSyncThread();
+
+    var human = QueuedMat(1, null, "part", 0, 1, "first", "q1", 0) with
+    {
+      Action = new InProcessMaterialAction
+      {
+        Type = InProcessMaterialAction.ActionType.Loading,
+        LoadCancellationId = "shared",
+      },
+    };
+    var automated = human with
+    {
+      MaterialID = 2,
+      Action = human.Action with { AutomatedTransfer = true },
+    };
+    await SetCurrentMaterial([human, automated]);
+
+    await Assert
+      .That(() => _jq.CancelLoad(human.MaterialID, "shared", null, null))
+      .Throws<ConflictRequestException>();
+    await Assert.That(handler.Calls).IsEqualTo(0);
+
+    // Reject the entire operation without consuming its token or cancelling only the human peer.
+    await SetCurrentMaterial([human, automated with { Action = human.Action }]);
+    _jq.CancelLoad(human.MaterialID, "shared", null, null);
+    await Assert.That(handler.Calls).IsEqualTo(1);
+    await Assert.That(handler.MaterialIds).IsEquivalentTo(new[] { 1L, 2L });
+  }
+
+  [Test]
   public async Task CancelLoadRejectsStaleCancellationIdBeforeCallingTheHandler()
   {
     var handler = new RecordingLoadCancel();
@@ -1595,7 +1629,9 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
-  public async Task AllowsReorderingLoadingMaterialWithinItsQueue()
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task QueueReorderingRespectsAutomatedTransfer(bool automatedTransfer)
   {
     await StartSyncThread();
     using var db = _repo.OpenConnection();
@@ -1638,12 +1674,26 @@ public sealed class JobAndQueueSpec
         Action = new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Loading,
+          AutomatedTransfer = automatedTransfer,
         },
       },
       expectedMat2,
     ]);
 
     db.GetMaterialInAllQueues().Select(m => m.MaterialID).ShouldBe(new[] { 1L, 2L });
+
+    if (automatedTransfer)
+    {
+      var logCount = db.GetLogForMaterial(1).Count();
+      await Assert
+        .That(() => _jq.SetMaterialInQueue(materialId: 1, "q1", 1, "oper"))
+        .Throws<ConflictRequestException>();
+      await Assert
+        .That(db.GetMaterialInAllQueues().Select(m => m.MaterialID).SequenceEqual([1L, 2L]))
+        .IsTrue();
+      await Assert.That(db.GetLogForMaterial(1).Count()).IsEqualTo(logCount);
+      return;
+    }
 
     var newStatusTask = CreateTaskToWaitForNewStatus();
 
@@ -1670,11 +1720,49 @@ public sealed class JobAndQueueSpec
     public int Pallet { get; set; } = 4;
     public string Error { get; set; } = null;
     public int Process { get; set; } = 0;
+    public bool AutomatedTransfer { get; init; }
+    public int? ProcessAfterLoad { get; init; }
     public string JobTransferQeuue { get; set; } = "q1";
   }
 
   public readonly ImmutableList<SignalQuarantineTheoryData> SignalTheoryData =
   [
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.Free,
+      QuarantineQueue = "quarqqq",
+      Process = 0,
+      AutomatedTransfer = true,
+      ProcessAfterLoad = 1,
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.InQueue,
+      QuarantineQueue = "quarqqq",
+      Process = 1,
+      AutomatedTransfer = true,
+      ProcessAfterLoad = 2,
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.Free,
+      QuarantineQueue = "quarqqq",
+      Process = 0,
+      AutomatedTransfer = true,
+      ProcessAfterLoad = 1,
+      JobTransferQeuue = null,
+      Error = "Material does not have a supported path out of automation control.",
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 2,
+    },
     new SignalQuarantineTheoryData
     {
       ActionType = InProcessMaterialAction.ActionType.Waiting,
@@ -1712,7 +1800,6 @@ public sealed class JobAndQueueSpec
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = "q1",
-      Error = "Material is not eligible for deferred quarantine in its current state.",
     },
     new SignalQuarantineTheoryData
     {
@@ -1893,7 +1980,14 @@ public sealed class JobAndQueueSpec
     await SetCurrentMaterial([
       queuedMat with
       {
-        Action = new InProcessMaterialAction() { Type = data.ActionType },
+        Action = new InProcessMaterialAction()
+        {
+          Type = data.ActionType,
+          AutomatedTransfer = data.AutomatedTransfer,
+          ProcessAfterLoad = data.ProcessAfterLoad,
+          PathAfterLoad = data.ProcessAfterLoad is null ? null : 1,
+          LoadOntoPalletNum = data.Pallet,
+        },
         Location = new InProcessMaterialLocation()
         {
           Type = data.LocType,
@@ -1921,7 +2015,10 @@ public sealed class JobAndQueueSpec
 
       expectedLog.Add(
         SignalQuarantineExpectedEntry(
-          logMat,
+          logMat with
+          {
+            Process = data.ProcessAfterLoad ?? data.Process,
+          },
           cntr: expectedLog.Count + 1,
           pal: data.Pallet,
           queue: data.QuarantineQueue ?? "",
@@ -1930,7 +2027,8 @@ public sealed class JobAndQueueSpec
           timeUTC: now
         )
       );
-      db.GetMaterialInAllQueues().ShouldBeEmpty();
+      if (!data.AutomatedTransfer || data.LocType != InProcessMaterialLocation.LocType.InQueue)
+        db.GetMaterialInAllQueues().ShouldBeEmpty();
     }
 
     var mat1Log = db.GetLogForMaterial(materialID: 1).ToList();
@@ -2198,13 +2296,13 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
-  public async Task InvalidationAllowsOnlyMostRecentPartialProcess()
+  public async Task InvalidationStepsBackThroughOnlyTheLatestProcess()
   {
     await StartSyncThread();
     using var db = _repo.OpenConnection();
     await SetCurrentState(stateUpdated: false, executeAction: false);
 
-    var materialId = db.AllocateMaterialID("job", "part", 3);
+    var materialId = db.AllocateMaterialID("job", "part", 5);
     for (var process = 1; process <= 3; process++)
     {
       db.RecordMachineStart(
@@ -2234,11 +2332,40 @@ public sealed class JobAndQueueSpec
     Should
       .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 2))
       .Message.ShouldBe("The requested process is no longer current.");
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 1))
+      .Message.ShouldBe("The requested process is no longer current.");
+    var logBefore = db.GetLogForMaterial(materialId).ToImmutableList();
+    Should
+      .Throw<ConflictRequestException>(() =>
+        _jq.InvalidatePalletCycle(materialId, 1, changeCastingTo: "new-casting")
+      )
+      .Message.ShouldBe(
+        "Later processes must be invalidated before changing the material assignment."
+      );
+    db.GetLogForMaterial(materialId).EventsShouldBe(logBefore);
+    db.GetMaterialDetails(materialId).JobUnique.ShouldBe("job");
+    db.GetMaterialDetails(materialId).PartName.ShouldBe("part");
 
     var newStatusTask = CreateTaskToWaitForNewStatus();
     _jq.InvalidatePalletCycle(materialId, 3);
     (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
-    db.GetLogForMaterial(materialId).ShouldContain(e => e.LogType == LogType.InvalidateCycle);
+    db.NextProcessForQueuedMaterial(materialId).ShouldBe(3);
+    Should
+      .Throw<ConflictRequestException>(() => _jq.InvalidatePalletCycle(materialId, 1))
+      .Message.ShouldBe("The requested process is no longer current.");
+
+    newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.InvalidatePalletCycle(materialId, 2);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
+    db.NextProcessForQueuedMaterial(materialId).ShouldBe(2);
+
+    newStatusTask = CreateTaskToWaitForNewStatus();
+    _jq.InvalidatePalletCycle(materialId, 1, changeCastingTo: "new-casting");
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
+    db.NextProcessForQueuedMaterial(materialId).ShouldBeNull();
+    db.GetMaterialDetails(materialId).JobUnique.ShouldBeNull();
+    db.GetMaterialDetails(materialId).PartName.ShouldBe("new-casting");
   }
 
   [Test]
@@ -2344,7 +2471,13 @@ public sealed class JobAndQueueSpec
         .Throw<ConflictRequestException>(() =>
           _jq.SignalMaterialForQuarantine(material.MaterialID, null, null)
         )
-        .Message.ShouldBe("Material is not eligible for deferred quarantine in its current state.");
+        .Message.ShouldBe(
+          actionType
+            is InProcessMaterialAction.ActionType.UnloadToInProcess
+              or InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+            ? "Material does not have a supported path out of automation control."
+            : "Material is not eligible for deferred quarantine in its current state."
+        );
       Should
         .Throw<ConflictRequestException>(() =>
           _jq.QuarantineQueuedMaterial(material.MaterialID, null, null)
@@ -2391,12 +2524,12 @@ public sealed class JobAndQueueSpec
       .Throw<BadRequestException>(() =>
         _jq.InvalidatePalletCycle(materialId, 2, changeCastingTo: "new-casting")
       )
-      .Message.ShouldBe("Can only change casting when invalidating all processes");
+      .Message.ShouldBe("Can only change casting when invalidating process 1");
     Should
       .Throw<BadRequestException>(() =>
         _jq.InvalidatePalletCycle(materialId, 2, changeJobUniqueTo: "new-job")
       )
-      .Message.ShouldBe("Can only change job when invalidating all processes");
+      .Message.ShouldBe("Can only change job when invalidating process 1");
     Should
       .Throw<BadRequestException>(() =>
         _jq.InvalidatePalletCycle(

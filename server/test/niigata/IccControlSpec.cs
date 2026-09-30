@@ -6389,19 +6389,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Test]
-    [Arguments(true)]
-    [Arguments(false)]
-    public void SignalForQuarantine(bool signalDuringUnload)
+    [Arguments(true, false)]
+    [Arguments(false, false)]
+    [Arguments(true, true)]
+    public void SignalForQuarantine(bool signalDuringUnload, bool twoParts)
     {
+      var count = twoParts ? 2 : 1;
       _dsl.AddJobs(
           new[]
           {
             FakeIccDsl.CreateMultiProcSeparatePalletJob(
               unique: "uniq1",
               part: "part1",
-              qty: 3,
+              qty: 3 * count,
               priority: 5,
-              partsPerPal: 1,
+              partsPerPal: count,
               pals1: new[] { 1 },
               pals2: new[] { 2 },
               load1: new[] { 3, 4 },
@@ -6425,8 +6427,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           new[] { (prog: "prog111", rev: 5L) }
         )
-        .SetExpectedLoadCastings(new[] { (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1) })
-        .IncrJobStartedCnt("uniq1", path: 1)
+        .SetExpectedLoadCastings(
+          Enumerable.Repeat((unique: "uniq1", part: "part1", pal: 1, path: 1, face: 1), count)
+        )
+        .IncrJobStartedCnt("uniq1", path: 1, cnt: count)
         .ExpectTransition(
           expectedUpdates: false,
           expectedChanges: new[]
@@ -6460,10 +6464,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               face: 1,
               unique: "uniq1",
               path: 1,
-              cnt: 1,
+              cnt: count,
               elapsedMin: 2,
-              activeMins: 8,
-              totalActiveMins: 8,
+              activeMins: 8 * count,
+              totalActiveMins: 8 * count,
               mats: out var AAAproc1
             ),
             FakeIccDsl.ExpectPalletStart(pal: 1, mats: AAAproc1),
@@ -6532,8 +6536,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         )
         .SetBeforeUnload(pal: 1)
         .MoveToLoad(pal: 1, lul: 4)
-        .SetExpectedLoadCastings(new[] { (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1) })
-        .IncrJobStartedCnt("uniq1", path: 1)
+        .SetExpectedLoadCastings(
+          Enumerable.Repeat((unique: "uniq1", part: "part1", pal: 1, path: 1, face: 1), count)
+        )
+        .IncrJobStartedCnt("uniq1", path: 1, cnt: count)
         .UpdateExpectedMaterial(
           AAAproc1,
           a => new InProcessMaterialAction()
@@ -6562,8 +6568,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       if (signalDuringUnload)
       {
-        // signal for quarantine
-        _dsl.SignalForQuarantine(AAAproc1, pal: 1, q: "Quarantine")
+        // Each material must retain an independent signal and unload destination.
+        if (twoParts)
+          _dsl.SignalForQuarantine(AAAproc1.Take(1), pal: 1, q: "Quarantine")
+            .UpdateExpectedMaterial(
+              AAAproc1.Take(1),
+              a => a with { UnloadIntoQueue = "Quarantine" },
+              im => im with { QuarantineAfterUnload = true }
+            )
+            .ExpectNoChanges();
+        _dsl.SignalForQuarantine(twoParts ? AAAproc1.Skip(1) : AAAproc1, pal: 1, q: "Quarantine")
           .UpdateExpectedMaterial(
             AAAproc1,
             a => a with { UnloadIntoQueue = "Quarantine" },
@@ -6585,39 +6599,38 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 Type = InProcessMaterialLocation.LocType.InQueue,
                 CurrentQueue = "Quarantine",
-                QueuePosition = 0,
+                QueuePosition = twoParts && im.MaterialID == AAAproc1.Last().MaterialID ? 1 : 0,
               },
             }
         )
         .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAproc1.Count())
-        .ExpectTransition(
-          new[]
-          {
-            FakeIccDsl.ExpectPalletEnd(pal: 1, mins: 17 - 2, mats: AAAproc1),
-            FakeIccDsl.UnloadFromFace(
-              pal: 1,
-              lul: 4,
-              elapsedMin: 5,
-              activeMins: 9,
-              totalActiveMins: 9 + 8,
-              mats: AAAproc1
-            ),
-            FakeIccDsl.AddToQueue("Quarantine", 0, reason: "Unloaded", AAAproc1),
-            FakeIccDsl.LoadCastingToFace(
-              pal: 1,
-              lul: 4,
-              elapsedMin: 5,
-              face: 1,
-              unique: "uniq1",
-              path: 1,
-              cnt: 1,
-              activeMins: 8,
-              totalActiveMins: 9 + 8,
-              mats: out var BBBproc1
-            ),
-            FakeIccDsl.ExpectPalletStart(pal: 1, mats: BBBproc1),
-          }
-        );
+        .ExpectTransition([
+          FakeIccDsl.ExpectPalletEnd(pal: 1, mins: 17 - 2, mats: AAAproc1),
+          FakeIccDsl.UnloadFromFace(
+            pal: 1,
+            lul: 4,
+            elapsedMin: 5,
+            activeMins: 9 * count,
+            totalActiveMins: (9 + 8) * count,
+            mats: AAAproc1
+          ),
+          .. AAAproc1.Select(
+            (m, i) => FakeIccDsl.AddToQueue("Quarantine", i, reason: "Unloaded", [m])
+          ),
+          FakeIccDsl.LoadCastingToFace(
+            pal: 1,
+            lul: 4,
+            elapsedMin: 5,
+            face: 1,
+            unique: "uniq1",
+            path: 1,
+            cnt: count,
+            activeMins: 8 * count,
+            totalActiveMins: (9 + 8) * count,
+            mats: out var BBBproc1
+          ),
+          FakeIccDsl.ExpectPalletStart(pal: 1, mats: BBBproc1),
+        ]);
     }
 
     [Test]

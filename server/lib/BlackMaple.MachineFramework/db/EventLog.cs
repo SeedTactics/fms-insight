@@ -1566,9 +1566,7 @@ namespace BlackMaple.MachineFramework
     private static EventLogMetadata NormalizeEventLogMetadata(EventLogMetadata metadata) =>
       (metadata ?? new EventLogMetadata()) with
       {
-        ForeignId = NormalizeOptionalMetadata(metadata?.ForeignId),
         CorrelationId = NormalizeOptionalMetadata(metadata?.CorrelationId),
-        OriginalMessage = NormalizeOptionalMetadata(metadata?.OriginalMessage),
       };
 
     private static string NormalizeOptionalMetadata(string value) =>
@@ -1949,24 +1947,12 @@ namespace BlackMaple.MachineFramework
     private static void ValidatePalletBasketCompletion(
       PalletBasketLoadUnloadCompletion palletBasketCompletion,
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
-      IReadOnlyList<MaterialToUnloadFromFace> toUnload
+      IReadOnlyList<MaterialToUnloadFromFace> toUnload,
+      bool requirePalletCounterparts = true
     )
     {
       if (palletBasketCompletion is null)
-      {
-        if (
-          toUnload?.Any(unload =>
-            unload.MaterialIDToDestination.Values.Any(destination =>
-              destination is not null && destination.Queue is null
-            )
-          ) == true
-        )
-          throw new ArgumentException(
-            "Pallet unloads without a queue destination require an explicit basket completion.",
-            nameof(palletBasketCompletion)
-          );
         return;
-      }
       if (
         palletBasketCompletion.Transfers.Count == 0
         && palletBasketCompletion.CycleBoundaries.Count == 0
@@ -1978,8 +1964,14 @@ namespace BlackMaple.MachineFramework
 
       var transferredToBasket = ImmutableHashSet.CreateBuilder<long>();
       var transferredFromBasket = ImmutableHashSet.CreateBuilder<long>();
-      var transferredToBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
-      var transferredFromBasketWithProcess = ImmutableHashSet.CreateBuilder<(long, int)>();
+      var transferredToBasketWithProcess = ImmutableHashSet.CreateBuilder<(
+        long MaterialID,
+        int Process
+      )>();
+      var transferredFromBasketWithProcess = ImmutableHashSet.CreateBuilder<(
+        long MaterialID,
+        int Process
+      )>();
       foreach (var transfer in palletBasketCompletion.Transfers)
       {
         ValidateBasketId(transfer.BasketId);
@@ -2107,9 +2099,9 @@ namespace BlackMaple.MachineFramework
           );
       }
 
-      if (toLoad is not null)
+      if (requirePalletCounterparts)
       {
-        var palletLoadMaterial = toLoad
+        var palletLoadMaterial = (toLoad ?? [])
           .SelectMany(load => load.MaterialIDs.Select(id => (MaterialID: id, load.Process)))
           .ToImmutableHashSet();
         if (
@@ -2119,21 +2111,28 @@ namespace BlackMaple.MachineFramework
             "Basket-to-pallet material and process must match the pallet load.",
             nameof(palletBasketCompletion)
           );
-      }
-      if (toUnload is not null)
-      {
-        var basketDestinationMaterial = toUnload
+        var palletUnloadMaterial = (toUnload ?? [])
           .SelectMany(unload =>
             unload
-              .MaterialIDToDestination.Where(destination =>
-                destination.Value is not null && destination.Value.Queue is null
-              )
+              .MaterialIDToDestination.Where(destination => destination.Value?.Queue is null)
               .Select(destination => (MaterialID: destination.Key, unload.Process))
           )
           .ToImmutableHashSet();
-        if (!transferredToBasketWithProcess.SetEquals(basketDestinationMaterial))
+        var queuedUnloadMaterial = (toUnload ?? [])
+          .SelectMany(unload =>
+            unload
+              .MaterialIDToDestination.Where(destination => destination.Value?.Queue is not null)
+              .Select(destination => destination.Key)
+          )
+          .ToImmutableHashSet();
+        if (
+          transferredToBasketWithProcess.Any(material =>
+            !palletUnloadMaterial.Contains(material)
+            || queuedUnloadMaterial.Contains(material.MaterialID)
+          )
+        )
           throw new ArgumentException(
-            "Pallet unloads without a queue destination must exactly match pallet-to-basket material and process.",
+            "Pallet-to-basket material and process must match a pallet unload without a queue destination.",
             nameof(palletBasketCompletion)
           );
       }
@@ -2533,7 +2532,12 @@ namespace BlackMaple.MachineFramework
         throw new ArgumentOutOfRangeException(nameof(totalElapsed));
       var eventMetadata = MergeEventLogMetadata(metadata, foreignId, originalMessage);
       var palletCompletion = ToPalletBasketLoadUnloadCompletion(operation);
-      ValidatePalletBasketCompletion(palletCompletion, toLoad: null, toUnload: null);
+      ValidatePalletBasketCompletion(
+        palletCompletion,
+        toLoad: null,
+        toUnload: null,
+        requirePalletCounterparts: false
+      );
       var contentsOperation = operation.ContentsChanges.IsEmpty
         ? null
         : NormalizeBasketContentsOperation(
@@ -2755,7 +2759,7 @@ namespace BlackMaple.MachineFramework
           if (
             existingType != operationType
             || existingFingerprint != fingerprint
-            || existingForeignId != metadata.ForeignId
+            || (existingForeignId ?? "") != (metadata.ForeignId ?? "")
             || existingOriginalMessage != (metadata.OriginalMessage ?? "")
           )
             throw new ConflictRequestException(
@@ -2958,8 +2962,13 @@ namespace BlackMaple.MachineFramework
     )
     {
       var fingerprint = new StringBuilder();
+      AppendFingerprint(fingerprint, "station-operation");
       AppendFingerprint(fingerprint, lulNum.ToString(CultureInfo.InvariantCulture));
       AppendFingerprint(fingerprint, totalElapsed.Ticks.ToString(CultureInfo.InvariantCulture));
+      AppendFingerprint(
+        fingerprint,
+        operation.Transfers.Count.ToString(CultureInfo.InvariantCulture)
+      );
       foreach (var transfer in operation.Transfers)
       {
         AppendFingerprint(
@@ -2982,6 +2991,10 @@ namespace BlackMaple.MachineFramework
           AppendFingerprint(fingerprint, externalServer);
         else
           AppendFingerprint(fingerprint, null);
+        AppendFingerprint(
+          fingerprint,
+          transfer.Material.Count.ToString(CultureInfo.InvariantCulture)
+        );
         foreach (
           var material in transfer
             .Material.OrderBy(material => material.MaterialID)
@@ -2998,19 +3011,10 @@ namespace BlackMaple.MachineFramework
         }
       }
       AppendBasketLifecycleFingerprint(fingerprint, operation.CycleBoundaries);
-      if (contentsOperation is not null)
-        AppendFingerprint(fingerprint, BasketContentsFingerprint(contentsOperation));
-      return fingerprint.ToString();
-    }
-
-    private static string BasketLifecycleFingerprint(
-      ImmutableList<BasketCycleBoundary> cycleBoundaries,
-      int locationNum
-    )
-    {
-      var fingerprint = new StringBuilder();
-      AppendFingerprint(fingerprint, locationNum.ToString(CultureInfo.InvariantCulture));
-      AppendBasketLifecycleFingerprint(fingerprint, cycleBoundaries);
+      AppendFingerprint(
+        fingerprint,
+        contentsOperation is null ? "missing" : BasketContentsFingerprint(contentsOperation)
+      );
       return fingerprint.ToString();
     }
 
@@ -3019,10 +3023,16 @@ namespace BlackMaple.MachineFramework
       ImmutableList<BasketCycleBoundary> cycleBoundaries
     )
     {
+      AppendFingerprint(fingerprint, "cycles");
+      AppendFingerprint(fingerprint, cycleBoundaries.Count.ToString(CultureInfo.InvariantCulture));
       foreach (var boundary in cycleBoundaries)
       {
         AppendFingerprint(fingerprint, boundary is BasketCycleBoundary.Start ? "start" : "end");
         AppendFingerprint(fingerprint, BasketStationIdentity(boundary.BasketId));
+        AppendFingerprint(
+          fingerprint,
+          boundary.Material.Count.ToString(CultureInfo.InvariantCulture)
+        );
         foreach (
           var material in boundary
             .Material.OrderBy(material => material.MaterialID)
@@ -4224,7 +4234,8 @@ namespace BlackMaple.MachineFramework
       string reason,
       DateTime? timeUTC = null,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      ImmutableDictionary<string, string> extraData = null
     )
     {
       var log = new NewEventLogEntry()
@@ -4240,6 +4251,8 @@ namespace BlackMaple.MachineFramework
         Result = "QuarantineAfterUnload",
       };
 
+      foreach (var (key, value) in extraData ?? ImmutableDictionary<string, string>.Empty)
+        log.ProgramDetails[key] = value;
       if (!string.IsNullOrEmpty(operatorName))
       {
         log.ProgramDetails["operator"] = operatorName;
@@ -4495,7 +4508,6 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      if (process is > 1)
       {
         using var getLatestProcess = _connection.CreateCommand();
         getLatestProcess.CommandText =
@@ -4517,9 +4529,17 @@ namespace BlackMaple.MachineFramework
         }
 
         var latestProcessNumber = Convert.ToInt32(latestProcess);
-        if (latestProcessNumber != process.Value)
+        if (
+          process is { } requestedProcess
+            ? latestProcessNumber != requestedProcess
+            : latestProcessNumber > 1
+        )
         {
-          throw new ConflictRequestException("The requested process is no longer current.");
+          throw new ConflictRequestException(
+            process.HasValue
+              ? "The requested process is no longer current."
+              : "Later processes must be invalidated before changing the material assignment."
+          );
         }
       }
 

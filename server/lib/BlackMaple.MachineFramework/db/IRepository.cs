@@ -471,8 +471,12 @@ namespace BlackMaple.MachineFramework
       string reason,
       DateTime? timeUTC = null,
       string foreignId = null,
-      string originalMessage = null
+      string originalMessage = null,
+      ImmutableDictionary<string, string> extraData = null
     );
+
+    /// Invalidates the selected material's latest valid process and its machining group. Earlier
+    /// processes require subsequent actions after the latest process has been invalidated.
     IEnumerable<LogEntry> InvalidatePalletCycle(
       long matId,
       int process,
@@ -480,6 +484,9 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null,
       Action<ImmutableList<EventLogMaterial>> validateAffectedMaterials = null
     );
+
+    /// Changes the assignment after invalidating process 1 or raw process-0 queue history. Any
+    /// later valid process must first be invalidated through separate latest-process actions.
     IEnumerable<LogEntry> InvalidateAndChangeAssignment(
       long matId,
       string operatorName,

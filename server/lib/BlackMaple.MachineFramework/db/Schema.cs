@@ -100,19 +100,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, Result)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText =
-          "CREATE INDEX stations_basket_cycles ON stations(Pallet, Counter) WHERE StationLoc = 117 AND Result = 'BasketCycle'";
-        cmd.ExecuteNonQuery();
-
         cmd.CommandText = "CREATE INDEX stations_pallet_counter ON stations(Pallet, Counter)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
-          "CREATE INDEX stations_numbered_basket_location_program_counter ON stations(Pallet, Program, Counter) WHERE StationLoc = 116";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
-          "CREATE INDEX stations_numbered_basket_location ON stations(Pallet, Program, StationName, StationNum, Counter) WHERE StationLoc = 116";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -1340,16 +1328,7 @@ namespace BlackMaple.MachineFramework
 
       cmd.CommandText = "ALTER TABLE stations ADD CorrelationId TEXT";
       cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX stations_basket_cycles ON stations(Pallet, Counter) WHERE StationLoc = 117 AND Result = 'BasketCycle'";
-      cmd.ExecuteNonQuery();
       cmd.CommandText = "CREATE INDEX stations_pallet_counter ON stations(Pallet, Counter)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX stations_numbered_basket_location_program_counter ON stations(Pallet, Program, Counter) WHERE StationLoc = 116";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX stations_numbered_basket_location ON stations(Pallet, Program, StationName, StationNum, Counter) WHERE StationLoc = 116";
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE INDEX stations_correlation_id ON stations(CorrelationId, Counter) WHERE CorrelationId IS NOT NULL";

@@ -815,7 +815,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    [Arguments(MazakDbType.MazakVersionE, "0000000001")]
     [Arguments(MazakDbType.MazakSmooth, "512")]
     public async Task TenthControllerStationUsesMaskPosition(MazakDbType type, string mask)
     {
@@ -845,7 +844,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                   {
                     FixLDS = mask,
                     RemoveLDS = mask,
-                    CutMc = type == MazakDbType.MazakVersionE ? "10000000" : "1",
+                    CutMc = "1",
                   }
                 )
                 .ToList(),

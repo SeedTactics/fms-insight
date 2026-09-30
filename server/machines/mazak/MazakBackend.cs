@@ -45,10 +45,6 @@ namespace MazakMachineInterface
     )
     {
       Serilog.Log.Information("Using Mazak Backend with config {@config}", mazakCfg);
-      if (mazakCfg.DBType == MazakDbType.MazakVersionE)
-      {
-        throw new Exception("This version of FMS Insight does not support Mazak Version E");
-      }
 
       s.AddSingleton(mazakCfg);
 

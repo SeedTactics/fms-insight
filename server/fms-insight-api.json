@@ -361,6 +361,29 @@
         }
       }
     },
+    "/api/v1/jobs/basket-load-station/complete": {
+      "post": {
+        "tags": ["Jobs"],
+        "operationId": "Jobs_CompleteBasketLoadStation",
+        "requestBody": {
+          "x-name": "completion",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BasketLoadStationCompletion"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/status": {
       "get": {
         "tags": ["Jobs"],
@@ -3333,13 +3356,6 @@
               "$ref": "#/components/schemas/BasketStatus"
             }
           },
-          "BasketMoveInstructions": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/BasketMoveInstruction"
-            }
-          },
           "CustomState": {
             "nullable": true
           }
@@ -3648,6 +3664,9 @@
         "properties": {
           "Type": {
             "$ref": "#/components/schemas/ActionType"
+          },
+          "AutomatedTransfer": {
+            "type": "boolean"
           },
           "WorkId": {
             "type": "string",
@@ -4055,76 +4074,6 @@
         "x-enumNames": ["LoadUnload", "LoadStationStaging", "Storage", "InTransit"],
         "enum": ["LoadUnload", "LoadStationStaging", "Storage", "InTransit"]
       },
-      "BasketMoveInstruction": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "InstructionId",
-          "BasketId",
-          "Destination",
-          "Reason",
-          "DisplayText",
-          "InstructionId",
-          "BasketId",
-          "Destination",
-          "Reason",
-          "DisplayText"
-        ],
-        "properties": {
-          "InstructionId": {
-            "type": "string"
-          },
-          "BasketId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "Source": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BasketPosition"
-              }
-            ]
-          },
-          "Destination": {
-            "$ref": "#/components/schemas/BasketPosition"
-          },
-          "Reason": {
-            "$ref": "#/components/schemas/BasketMoveReason"
-          },
-          "DisplayText": {
-            "type": "string"
-          },
-          "PrerequisiteInstructionId": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "BasketMoveReason": {
-        "type": "string",
-        "description": "",
-        "x-enumNames": [
-          "LoadMaterial",
-          "UnloadMaterial",
-          "ProcessTransfer",
-          "SupplyMaterialToCell",
-          "SupplyEmptyBasket",
-          "ReturnToStorage",
-          "RemoveForCorrection",
-          "Other"
-        ],
-        "enum": [
-          "LoadMaterial",
-          "UnloadMaterial",
-          "ProcessTransfer",
-          "SupplyMaterialToCell",
-          "SupplyEmptyBasket",
-          "ReturnToStorage",
-          "RemoveForCorrection",
-          "Other"
-        ]
-      },
       "ProblemDetails": {
         "type": "object",
         "additionalProperties": {
@@ -4417,6 +4366,16 @@
           "Workorder": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "BasketLoadStationCompletion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["WorkId", "WorkId"],
+        "properties": {
+          "WorkId": {
+            "type": "string"
           }
         }
       },

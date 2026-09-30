@@ -37,6 +37,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace BlackMaple.MachineFramework.Controllers
@@ -56,12 +57,22 @@ namespace BlackMaple.MachineFramework.Controllers
 
     private class ServerClosingException : Exception { }
 
+    private sealed record Client(WebSocket Socket)
+    {
+      public TaskCompletionSource Finished { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+      public Channel<ArraySegment<byte>> Messages { get; } =
+        Channel.CreateBounded<ArraySegment<byte>>(
+          new BoundedChannelOptions(100) { SingleReader = true, SingleWriter = true }
+        );
+    }
+
     private class WebsocketDict
     {
       private readonly System.Threading.Lock _lock = new();
-      private Dictionary<Guid, WebSocket>? _sockets = new Dictionary<Guid, WebSocket>();
+      private Dictionary<Guid, Client>? _sockets = new Dictionary<Guid, Client>();
 
-      public List<KeyValuePair<Guid, WebSocket>> AllSockets()
+      public List<KeyValuePair<Guid, Client>> AllSockets()
       {
         lock (_lock)
         {
@@ -69,7 +80,7 @@ namespace BlackMaple.MachineFramework.Controllers
         }
       }
 
-      public List<WebSocket> Clear()
+      public List<Client> Clear()
       {
         lock (_lock)
         {
@@ -79,7 +90,7 @@ namespace BlackMaple.MachineFramework.Controllers
         }
       }
 
-      public void Add(Guid guid, WebSocket ws)
+      public void Add(Guid guid, Client ws)
       {
         lock (_lock)
         {
@@ -179,48 +190,48 @@ namespace BlackMaple.MachineFramework.Controllers
           continue;
         }
 
-        Task.WhenAll(_sockets.AllSockets().Select(socket => SendToClient(socket, buffer)))
-          .GetAwaiter()
-          .GetResult();
+        foreach (var (id, client) in _sockets.AllSockets())
+          if (!client.Messages.Writer.TryWrite(buffer))
+          {
+            Log.Warning(
+              "Websocket client {ClientId} outgoing queue overflowed; aborting the connection",
+              id
+            );
+            RemoveAndAbort(id, client);
+          }
       }
     }
 
-    private async Task SendToClient(KeyValuePair<Guid, WebSocket> client, ArraySegment<byte> buffer)
+    private async Task SendToClient(Guid clientId, Client client, CancellationToken stopping)
     {
-      var (clientId, ws) = client;
-      if (ws.CloseStatus.HasValue)
-      {
-        _sockets.Remove(clientId);
-        return;
-      }
-
-      using var timeout = new CancellationTokenSource(_clientSendTimeout);
       try
       {
-        await ws.SendAsync(buffer, WebSocketMessageType.Text, true, timeout.Token);
+        await foreach (var buffer in client.Messages.Reader.ReadAllAsync(stopping))
+        {
+          using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stopping);
+          timeout.CancelAfter(_clientSendTimeout);
+          await client.Socket.SendAsync(buffer, WebSocketMessageType.Text, true, timeout.Token);
+        }
       }
-      catch (OperationCanceledException) when (timeout.IsCancellationRequested)
-      {
-        Log.Warning(
-          "Websocket client {ClientId} did not accept an event within {Timeout}; aborting the connection",
-          clientId,
-          _clientSendTimeout
-        );
-        RemoveAndAbort(clientId, ws);
-      }
+      catch (OperationCanceledException) when (stopping.IsCancellationRequested) { }
       catch (Exception ex)
       {
-        Log.Debug(ex, "Unable to send websocket event to client {ClientId}", clientId);
-        RemoveAndAbort(clientId, ws);
+        Log.Debug(
+          ex,
+          "Unable to send websocket event to client {ClientId}; aborting the connection",
+          clientId
+        );
+        RemoveAndAbort(clientId, client);
       }
     }
 
-    private void RemoveAndAbort(Guid clientId, WebSocket ws)
+    private void RemoveAndAbort(Guid clientId, Client client)
     {
       _sockets.Remove(clientId);
+      client.Messages.Writer.TryComplete();
       try
       {
-        ws.Abort();
+        client.Socket.Abort();
       }
       catch (Exception ex)
       {
@@ -232,9 +243,15 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       var buffer = new byte[1024 * 4];
       var guid = Guid.NewGuid();
+      var client = new Client(ws);
+      using var senderStopping = CancellationTokenSource.CreateLinkedTokenSource(
+        applicationStopping
+      );
+      Task sender = Task.CompletedTask;
       try
       {
-        _sockets.Add(guid, ws);
+        _sockets.Add(guid, client);
+        sender = SendToClient(guid, client, senderStopping.Token);
 
         var res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), applicationStopping);
         while (res.MessageType != WebSocketMessageType.Close)
@@ -251,6 +268,8 @@ namespace BlackMaple.MachineFramework.Controllers
       }
       catch (OperationCanceledException) when (applicationStopping.IsCancellationRequested)
       {
+        await senderStopping.CancelAsync();
+        await sender;
         using var closeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(1));
         try
         {
@@ -278,9 +297,14 @@ namespace BlackMaple.MachineFramework.Controllers
       finally
       {
         _sockets.Remove(guid);
+        client.Messages.Writer.TryComplete();
+        await senderStopping.CancelAsync();
+        await sender;
+        client.Finished.TrySetResult();
       }
 
-      if (ws.CloseStatus.HasValue)
+      // Stopping the sender cancels any in-progress send, which aborts the socket.
+      if (ws.State == WebSocketState.CloseReceived && ws.CloseStatus.HasValue)
       {
         await ws.CloseAsync(
           ws.CloseStatus.Value,
@@ -298,25 +322,12 @@ namespace BlackMaple.MachineFramework.Controllers
         return;
       _disposed = true;
 
-      var tasks = new List<Task>();
-      var sockets = _sockets.Clear();
-
+      var clients = _sockets.Clear();
       _messages.CompleteAdding();
-
-      foreach (var ws in sockets)
-      {
-        var tokenSource = new CancellationTokenSource();
-        var closeTask = ws.CloseOutputAsync(
-          WebSocketCloseStatus.NormalClosure,
-          "Server is stopping",
-          tokenSource.Token
-        );
-        var cancelTask = Task.Delay(TimeSpan.FromSeconds(3))
-          .ContinueWith(_ => tokenSource.Cancel());
-        tasks.Add(Task.WhenAny(closeTask, cancelTask));
-      }
-
-      await Task.WhenAll(tasks);
+      foreach (var client in clients)
+        RemoveAndAbort(Guid.Empty, client);
+      await Task.Run(() => _thread.Join());
+      await Task.WhenAll(clients.Select(client => client.Finished.Task));
     }
   }
 }

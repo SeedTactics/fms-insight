@@ -69,8 +69,9 @@ function hasLoadStationAction(material: Readonly<IInProcessMaterial>): boolean {
 export function materialOperationState(
   material: Readonly<IInProcessMaterial>,
 ): MaterialOperationState {
+  if (material.action.automatedTransfer === true) return { kind: "AutomationControlled" };
   const cancellationId = nonBlankCancellationId(material);
-  if (cancellationId !== null || hasLoadStationAction(material)) {
+  if (material.action.loadCancellationId !== undefined || hasLoadStationAction(material)) {
     return { kind: "ActiveLoadStationOperation", cancellationId };
   }
 
@@ -100,7 +101,13 @@ export function canCancelLoad(material: MaterialForPolicy): boolean {
 }
 
 export function canSignalQuarantine(material: MaterialForPolicy): boolean {
-  return material !== null && materialOperationState(material).kind === "AutomationControlled";
+  return (
+    material !== null &&
+    material.materialID >= 0 &&
+    (materialOperationState(material).kind === "AutomationControlled" ||
+      material.action.type === ActionType.UnloadToInProcess ||
+      material.action.type === ActionType.UnloadToCompletedMaterial)
+  );
 }
 
 export function canDirectlyQuarantine(material: MaterialForPolicy): boolean {
@@ -120,4 +127,30 @@ export function canAddOrMoveMaterialToQueue(material: MaterialForPolicy): boolea
 
   const state = materialOperationState(material);
   return state.kind === "AddToQueueProposal" || state.kind === "HumanControlledQueue";
+}
+
+export function canReorderQueuedMaterial(material: MaterialForPolicy): boolean {
+  // Priority changes within the source queue remain allowed during human station work.
+  return (
+    material !== null &&
+    material.location.type === LocType.InQueue &&
+    material.action.automatedTransfer !== true
+  );
+}
+
+export function canSetMaterialInQueue(material: MaterialForPolicy, queue: string): boolean {
+  return material?.location.type === LocType.InQueue && material.location.currentQueue === queue
+    ? canReorderQueuedMaterial(material)
+    : canAddOrMoveMaterialToQueue(material);
+}
+
+export function quarantineRoute(material: Readonly<IInProcessMaterial>): {
+  readonly process: number;
+  readonly path: number;
+} {
+  return material.action.automatedTransfer === true &&
+    (material.action.type === ActionType.Loading ||
+      material.action.type === ActionType.LoadingToBasket)
+    ? { process: material.action.processAfterLoad ?? 0, path: material.action.pathAfterLoad ?? 0 }
+    : { process: material.process, path: material.path };
 }

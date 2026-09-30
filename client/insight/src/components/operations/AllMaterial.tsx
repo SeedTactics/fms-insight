@@ -54,8 +54,8 @@ import {
   findMaterialInQuarantineQueues,
   findQueueInQuarantineQueues,
 } from "../../data/all-material-bins.js";
-import * as matDetails from "../../cell-status/material-details.js";
 import * as currentSt from "../../cell-status/current-status.js";
+import { moveQueuedMatInCurrentStatus } from "../../cell-status/loading.js";
 import { Box } from "@mui/material";
 import { Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
@@ -93,6 +93,7 @@ import { useSetTitle } from "../routes.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { fmsInformation } from "../../network/server-settings.js";
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
+import { canSetMaterialInQueue } from "../../data/material-operation-policy.js";
 
 type ColWithTitleProps = {
   readonly label: string | ReactNode;
@@ -465,8 +466,7 @@ export function AllMaterial(props: AllMaterialProps) {
   useSetTitle("All Material");
   const st = useAtomValue(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useAtom(currentMaterialBinOrder);
-  const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
-  const reorderQueuedMat = useSetAtom(currentSt.reorderQueuedMatInCurrentStatus);
+  const moveQueuedMat = useSetAtom(moveQueuedMatInCurrentStatus);
   const [activeDrag, setActiveDrag] = useState<CurActiveDrag | null>(null);
 
   const allBins = useMemo(() => {
@@ -524,6 +524,7 @@ export function AllMaterial(props: AllMaterialProps) {
             ? findQueueInQuarantineQueues(over.id, allBins)
             : findMaterialInQuarantineQueues(over.id, allBins);
         if (!overCol) return;
+        if (!canSetMaterialInQueue(activeDrag.mat, overCol.bin.queueName)) return;
 
         if (overCol.bin.binId !== activeDrag.curOverBinId) {
           setActiveDrag({
@@ -558,18 +559,13 @@ export function AllMaterial(props: AllMaterialProps) {
             typeof over.id === "string"
               ? findQueueInQuarantineQueues(over.id, allBins)
               : findMaterialInQuarantineQueues(over.id, allBins);
-          if (overCol) {
-            void addExistingMatToQueue({
-              materialId: activeDrag.mat.materialID,
-              queue: overCol.bin.queueName,
-              queuePosition: overCol.idx,
-              operator: null,
-            }).catch(console.error);
-            reorderQueuedMat({
+          if (overCol && canSetMaterialInQueue(activeDrag.mat, overCol.bin.queueName)) {
+            moveQueuedMat({
               queue: overCol.bin.queueName,
               matId: activeDrag.mat.materialID,
               newIdx: overCol.idx,
-            });
+              operator: null,
+            }).catch(console.error);
           }
         }
 

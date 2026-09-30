@@ -153,10 +153,15 @@ namespace BlackMaple.MachineFramework
       string? reason = null
     );
 
+    /// Complete the exact opaque basket work occurrence. Backends resolve saved work under their
+    /// mutation gate and acknowledge durable completed retries without repeating manufacturing.
+    void CompleteBasketLoadStation(string workId);
+
     /// Remove material only from a human-controlled waiting queue.
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName = null);
 
-    /// Reject a current add-to-queue proposal by invalidating its latest process or all processes.
+    /// Reject a current add-to-queue proposal by invalidating its latest process. Assignment changes
+    /// are allowed only after later processes have been invalidated in separate actions.
     MaterialDetails? InvalidatePalletCycle(
       long matId,
       int process,
@@ -803,6 +808,10 @@ namespace BlackMaple.MachineFramework
           var isReorder =
             mat?.Location.Type == InProcessMaterialLocation.LocType.InQueue
             && mat.Location.CurrentQueue == queue;
+          if (isReorder && mat?.Action.AutomatedTransfer == true)
+            throw new ConflictRequestException(
+              "Material is owned by an automated transfer and cannot be reordered."
+            );
           if (!isReorder && mat is not null)
           {
             var operation = MaterialOperationState.Classify(mat);
@@ -895,34 +904,36 @@ namespace BlackMaple.MachineFramework
 
           if (mat == null)
             throw new ConflictRequestException("Material not found in the current cell state.");
-          if (MaterialOperationState.Classify(mat) != MaterialOperationKind.AutomationControlled)
+          if (!MaterialOperationState.CanSignalQuarantine(mat))
             throw new ConflictRequestException(
               "Material is not eligible for deferred quarantine in its current state."
             );
           if (
-            mat.Location.Type
-            is not (
-              InProcessMaterialLocation.LocType.OnPallet
-              or InProcessMaterialLocation.LocType.InBasket
-            )
+            !mat.Action.AutomatedTransfer
+            && mat.Location.Type
+              is not (
+                InProcessMaterialLocation.LocType.OnPallet
+                or InProcessMaterialLocation.LocType.InBasket
+              )
           )
             throw new ConflictRequestException(
               "Material does not have a supported path out of automation control."
             );
 
+          var (process, pathNumber) = MaterialOperationState.QuarantineRoute(mat);
           var job = st?.Jobs.GetValueOrDefault(mat.JobUnique);
           if (job == null)
             throw new ConflictRequestException("Material job is no longer current.");
           if (
-            mat.Process < 1
-            || mat.Process > job.Processes.Count
-            || mat.Path < 1
-            || mat.Path > job.Processes[mat.Process - 1].Paths.Count
+            process < 1
+            || process > job.Processes.Count
+            || pathNumber < 1
+            || pathNumber > job.Processes[process - 1].Paths.Count
           )
             throw new ConflictRequestException("Material routing is no longer current.");
 
-          var path = job.Processes[mat.Process - 1].Paths[mat.Path - 1];
-          if (mat.Process != job.Processes.Count && string.IsNullOrEmpty(path.OutputQueue))
+          var path = job.Processes[process - 1].Paths[pathNumber - 1];
+          if (process != job.Processes.Count && string.IsNullOrEmpty(path.OutputQueue))
             throw new ConflictRequestException(
               "Material does not have a supported path out of automation control."
             );
@@ -931,12 +942,13 @@ namespace BlackMaple.MachineFramework
             mat: new EventLogMaterial()
             {
               MaterialID = materialId,
-              Process = mat.Process,
+              Process = process,
               Face = 0,
             },
-            pallet: mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet
-              ? mat.Location.PalletNum ?? 0
-              : 0,
+            pallet: mat.Action.AutomatedTransfer
+            && mat.Action.Type == InProcessMaterialAction.ActionType.Loading
+              ? mat.Action.LoadOntoPalletNum ?? 0
+              : mat.Location.PalletNum ?? 0,
             queue: _settings.QuarantineQueue ?? "",
             timeUTC: null,
             operatorName: operatorName,
@@ -983,6 +995,9 @@ namespace BlackMaple.MachineFramework
       RecalculateCellState();
     }
 
+    public void CompleteBasketLoadStation(string workId) =>
+      throw new ConflictRequestException("No basket station work is available.");
+
     public void CancelLoad(
       long materialId,
       string expectedLoadCancellationId,
@@ -1013,10 +1028,7 @@ namespace BlackMaple.MachineFramework
             "The displayed load cancellation is no longer current."
           );
 
-        if (
-          MaterialOperationState.Classify(selected)
-          != MaterialOperationKind.ActiveLoadStationOperation
-        )
+        if (!MaterialOperationState.CanCancelLoad(selected))
           throw new ConflictRequestException(
             "The displayed load cancellation is no longer current."
           );
@@ -1026,7 +1038,10 @@ namespace BlackMaple.MachineFramework
             m.Action.LoadCancellationId == expectedLoadCancellationId
           )
           .ToImmutableList();
-        if (cancellationGroup.IsEmpty)
+        if (
+          cancellationGroup.IsEmpty
+          || cancellationGroup.Any(m => !MaterialOperationState.CanCancelLoad(m))
+        )
           throw new ConflictRequestException(
             "The displayed load cancellation is no longer current."
           );
@@ -1084,12 +1099,12 @@ namespace BlackMaple.MachineFramework
 
         if (!string.IsNullOrEmpty(changeCastingTo) && process != 1)
         {
-          throw new BadRequestException("Can only change casting when invalidating all processes");
+          throw new BadRequestException("Can only change casting when invalidating process 1");
         }
 
         if (!string.IsNullOrEmpty(changeJobUniqueTo) && process != 1)
         {
-          throw new BadRequestException("Can only change job when invalidating all processes");
+          throw new BadRequestException("Can only change job when invalidating process 1");
         }
 
         CurrentStatus? st;

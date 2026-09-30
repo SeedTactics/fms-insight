@@ -81,7 +81,11 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { basketDisplayName, basketSlotLabel } from "../../cell-status/station-cycles.js";
-import { materialOperationState } from "../../data/material-operation-policy.js";
+import {
+  canAddOrMoveMaterialToQueue,
+  canReorderQueuedMaterial,
+  materialOperationState,
+} from "../../data/material-operation-policy.js";
 
 export class PartIdenticon extends PureComponent<{
   part: string;
@@ -739,6 +743,7 @@ export type SortableMatData = {
 export const SortableInProcMaterial = memo(function SortableInProcMaterial(
   props: InProcMaterialProps & ShakeProp,
 ) {
+  const canDrag = canReorderQueuedMaterial(props.mat) || canAddOrMoveMaterialToQueue(props.mat);
   const d: SortableMatData = { mat: props.mat };
   const {
     active,
@@ -752,6 +757,7 @@ export const SortableInProcMaterial = memo(function SortableInProcMaterial(
   } = useSortable({
     id: props.mat.materialID,
     data: d,
+    disabled: { draggable: !canDrag },
   });
 
   const handleProps: { [key: string]: unknown } = {
@@ -773,7 +779,7 @@ export const SortableInProcMaterial = memo(function SortableInProcMaterial(
     <MatCard
       ref={setNodeRef}
       dragRootProps={{ style }}
-      showDragHandle={true}
+      showDragHandle={canDrag}
       dragHandleProps={handleProps}
       setDragHandleRef={setActivatorNodeRef}
       isActiveDrag={isDragging}

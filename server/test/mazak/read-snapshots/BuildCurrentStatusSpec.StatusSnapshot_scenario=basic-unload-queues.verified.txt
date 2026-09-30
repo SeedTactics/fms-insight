@@ -794,7 +794,9 @@
         PalletNum: 1,
         Face: 1
       },
-      Action: {}
+      Action: {
+        AutomatedTransfer: false
+      }
     },
     {
       MaterialID: 2426323,
@@ -811,6 +813,7 @@
       },
       Action: {
         Type: UnloadToInProcess,
+        AutomatedTransfer: false,
         UnloadIntoQueue: queueCCC,
         ElapsedLoadUnloadTime: 00:00:47
       }
@@ -830,6 +833,7 @@
       },
       Action: {
         Type: UnloadToInProcess,
+        AutomatedTransfer: false,
         UnloadIntoQueue: queueCCC,
         ElapsedLoadUnloadTime: 00:00:47
       }
@@ -842,6 +846,7 @@
       Location: {},
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 5,
         LoadOntoFace: 1,
         ProcessAfterLoad: 1,
@@ -857,6 +862,7 @@
       Location: {},
       Action: {
         Type: Loading,
+        AutomatedTransfer: false,
         LoadOntoPalletNum: 5,
         LoadOntoFace: 1,
         ProcessAfterLoad: 1,
@@ -878,6 +884,7 @@
       },
       Action: {
         Type: Machining,
+        AutomatedTransfer: false,
         ElapsedMachiningTime: 00:02:37,
         ExpectedRemainingMachiningTime: 00:42:53
       }
@@ -896,6 +903,7 @@
       },
       Action: {
         Type: Machining,
+        AutomatedTransfer: false,
         ElapsedMachiningTime: 00:02:37,
         ExpectedRemainingMachiningTime: 00:42:53
       }

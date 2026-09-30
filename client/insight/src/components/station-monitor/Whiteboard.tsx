@@ -49,9 +49,9 @@ import {
 } from "@dnd-kit/sortable";
 import { IInProcessMaterial } from "../../network/api.js";
 import { SortableMatData } from "./Material.js";
-import { useAddExistingMaterialToQueue } from "../../cell-status/material-details.js";
-import { reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status.js";
+import { moveQueuedMatInCurrentStatus } from "../../cell-status/loading.js";
 import { currentOperator } from "../../data/operators.js";
+import { canSetMaterialInQueue } from "../../data/material-operation-policy.js";
 import { useAtomValue, useSetAtom } from "jotai";
 
 export interface SortableRegionProps {
@@ -72,8 +72,7 @@ function numericId(id: string | number): number | null {
 
 export const SortableRegion = memo(function SortableRegion(props: SortableRegionProps) {
   const [activeMat, setActiveMat] = useState<Readonly<IInProcessMaterial> | undefined>(undefined);
-  const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
-  const reorderQueuedMat = useSetAtom(reorderQueuedMatInCurrentStatus);
+  const moveQueuedMat = useSetAtom(moveQueuedMatInCurrentStatus);
   const operator = useAtomValue(currentOperator);
   const sortableItemIds = useMemo(() => props.matIds.slice(), [props.matIds]);
   const sensors = useSensors(
@@ -94,19 +93,21 @@ export const SortableRegion = memo(function SortableRegion(props: SortableRegion
       onDragEnd={({ active, over }) => {
         const activeMatId = numericId(active.id);
         const overMatId = over ? numericId(over.id) : null;
-        if (over && active.id !== over.id && activeMatId !== null && overMatId !== null) {
-          const overIdx = props.matIds.indexOf(overMatId);
-          void addExistingMatToQueue({
-            materialId: activeMatId,
-            queue: props.queueName,
-            queuePosition: overIdx,
-            operator: operator,
-          }).catch(console.error);
-          reorderQueuedMat({
+        const mat = isSortableMatData(active.data.current) ? active.data.current.mat : null;
+        if (
+          over &&
+          active.id !== over.id &&
+          activeMatId !== null &&
+          overMatId !== null &&
+          mat !== null &&
+          canSetMaterialInQueue(mat, props.queueName)
+        ) {
+          moveQueuedMat({
             queue: props.queueName,
             matId: activeMatId,
-            newIdx: overIdx,
-          });
+            newIdx: props.matIds.indexOf(overMatId),
+            operator,
+          }).catch(console.error);
         }
         setActiveMat(undefined);
       }}

@@ -112,14 +112,24 @@ function InvalidateButton({ state = null }: { readonly state?: InvalidateCycleSt
   );
 }
 
-function InvalidateConfirmation({ onClose }: { readonly onClose: () => void }) {
-  const [invalidation, setInvalidation] = useState<InvalidateCycleState | null>({
-    process: 1,
-    changeRawMat: null,
-    changeJobUnique: null,
-    updating: false,
-    error: null,
-  });
+function InvalidateConfirmation({
+  onClose,
+  initialProcess = 1,
+}: {
+  readonly onClose: () => void;
+  readonly initialProcess?: number | null;
+}) {
+  const [invalidation, setInvalidation] = useState<InvalidateCycleState | null>(
+    initialProcess === null
+      ? null
+      : {
+          process: initialProcess,
+          changeRawMat: null,
+          changeJobUnique: null,
+          updating: false,
+          error: null,
+        },
+  );
   return (
     <>
       <InvalidateCycleDialogContent st={invalidation} setState={setInvalidation} />
@@ -135,6 +145,7 @@ function logEvent({
   peerSerial,
   invalidated = false,
   type = api.LogType.MachineCycle,
+  totalNumProcesses = 2,
 }: {
   readonly counter: number;
   readonly process: number;
@@ -142,6 +153,7 @@ function logEvent({
   readonly peerSerial?: string;
   readonly invalidated?: boolean;
   readonly type?: api.LogType;
+  readonly totalNumProcesses?: number;
 }): api.LogEntry {
   return new api.LogEntry({
     counter,
@@ -152,7 +164,7 @@ function logEvent({
         part: "Part",
         proc: process,
         path: 1,
-        numproc: 2,
+        numproc: totalNumProcesses,
         face: 1,
         serial: "SELECTED",
         workorder: "",
@@ -163,7 +175,7 @@ function logEvent({
         part: "Part",
         proc: process,
         path: 1,
-        numproc: 2,
+        numproc: totalNumProcesses,
         face: 2,
         serial: peerSerial,
         workorder: "",
@@ -188,6 +200,126 @@ function eventResponse(events: ReadonlyArray<api.LogEntry>): Response {
 }
 
 describe("cycle invalidation workflow", () => {
+  test("invalidates the latest valid process one step at a time before allowing reassignment", async () => {
+    const selected = material({ materialId: 101 });
+    const details = new api.MaterialDetails({
+      materialID: 101,
+      jobUnique: "JOB-1",
+      partName: "Part",
+      numProcesses: 5,
+      serial: "SERIAL-101",
+    });
+    const scanned = new api.ScannedMaterial({
+      existingMaterial: details,
+      potentialNewMaterial: new api.ScannedPotentialNewMaterial({
+        possibleCastingsByQueue: { "Queue A": ["NEW-CASTING"] },
+        possibleJobsByQueue: {
+          "Queue A": [
+            new api.PossibleJobAndProcess({ jobUnique: "NEW-JOB", lastCompletedProcess: 0 }),
+          ],
+        },
+      }),
+    });
+    const events: ReadonlyArray<Readonly<api.ILogEntry>> = [1, 2, 3].map((process) =>
+      logEvent({ counter: process, process, peerId: 102, totalNumProcesses: 5 }),
+    );
+    const requests: Array<{ readonly url: string; readonly process: number }> = [];
+    vi.spyOn(window, "fetch").mockImplementation(async (input, init) => {
+      const url = requestUrl(input);
+      if (url.startsWith("/api/v1/fms/parse-barcode")) {
+        return new Response(JSON.stringify(scanned.toJSON()), { status: 200 });
+      }
+      if (init?.method === "GET") {
+        return eventResponse(
+          events.map(
+            (event) =>
+              new api.LogEntry({
+                ...event,
+                details: requests.some((request) => request.process === event.material[0].proc)
+                  ? { PalletCycleInvalidated: "1" }
+                  : event.details,
+              }),
+          ),
+        );
+      }
+      if (init?.method === "PUT") {
+        requests.push({ url, process: Number(init.body) });
+        return new Response(JSON.stringify(details.toJSON()), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    registerNetworkBackend();
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <InvalidateConfirmation initialProcess={null} onClose={() => {}} />
+      </Suspense>,
+      {
+        currentStatus: statusWithMaterial([selected]),
+        fmsInfo: { allowInvalidateMaterialOnQueuesPage: true },
+        seedStore: (store) =>
+          store.set(materialDialogOpen, { type: "Barcode", barcode: "SERIAL-101", toQueue: null }),
+      },
+    );
+
+    for (const process of [3, 2, 1]) {
+      await screen.getByRole("button", { name: "Invalidate Cycle", exact: true }).click();
+      await screen.getByRole("combobox").click();
+      await expect
+        .element(screen.getByRole("option", { name: `Invalidate Process ${process}`, exact: true }))
+        .toBeVisible();
+      await expect
+        .element(screen.getByRole("option", { name: /Invalidate All/ }))
+        .not.toBeInTheDocument();
+      await expect
+        .element(
+          screen.getByRole("option", { name: `Invalidate Process ${process + 1}`, exact: true }),
+        )
+        .not.toBeInTheDocument();
+      if (process > 1) {
+        await expect
+          .element(screen.getByRole("option", { name: /Change to/ }))
+          .not.toBeInTheDocument();
+        await screen
+          .getByRole("option", { name: `Invalidate Process ${process}`, exact: true })
+          .click();
+        await screen
+          .getByRole("button", { name: `Invalidate Process ${process}`, exact: true })
+          .click();
+        await expect
+          .poll(() => screen.store.get(materialDialogOpen))
+          .toMatchObject({ type: "MatDetails" });
+        screen.store.set(materialDialogOpen, {
+          type: "Barcode",
+          barcode: "SERIAL-101",
+          toQueue: null,
+        });
+      } else {
+        await expect
+          .element(
+            screen.getByRole("option", { name: "Invalidate Process 1 and Change to Job NEW-JOB" }),
+          )
+          .toBeVisible();
+        await screen
+          .getByRole("option", { name: "Invalidate Process 1 and Change to NEW-CASTING" })
+          .click();
+        await screen
+          .getByRole("button", {
+            name: "Invalidate Process 1 and Change to NEW-CASTING",
+            exact: true,
+          })
+          .click();
+        await expect
+          .poll(() => screen.store.get(materialDialogOpen))
+          .toMatchObject({ type: "MatDetails" });
+      }
+    }
+
+    expect(requests.map((request) => request.process)).toEqual([3, 2, 1]);
+    expect(requests[2].url).toBe(
+      "/api/v1/jobs/material/101/invalidate-process?changeCastingTo=NEW-CASTING",
+    );
+  });
+
   test("does not offer invalidation while the selected material is queued", async () => {
     const selected = material({
       materialId: 101,
@@ -349,37 +481,143 @@ describe("cycle invalidation workflow", () => {
     );
 
     await expect
-      .element(screen.getByRole("button", { name: /current automated operation/ }))
+      .element(screen.getByRole("button", { name: "Signal for quarantine" }))
       .not.toBeInTheDocument();
   });
 
-  test("signals quarantine for a basket with a supported exit", async () => {
-    const selected = material({
-      materialId: 201,
-      location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
-    });
-    const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
-    registerNetworkBackend();
+  test.each([
+    { location: api.LocType.InBasket, quarantineQueue: "Quarantine" },
+    { location: api.LocType.InBasket, quarantineQueue: undefined },
+    { location: api.LocType.InBasket, quarantineQueue: "" },
+    { location: api.LocType.OnPallet, quarantineQueue: "Quarantine" },
+    { location: api.LocType.OnPallet, quarantineQueue: undefined },
+    { location: api.LocType.OnPallet, quarantineQueue: "" },
+  ])(
+    "signals deferred disposition from $location with queue '$quarantineQueue'",
+    async ({ location, quarantineQueue }) => {
+      const selected = material({
+        materialId: 201,
+        location:
+          location === api.LocType.InBasket
+            ? { type: location, basketId: 7, basketSlot: 1 }
+            : { type: location, palletNum: 1, face: 1 },
+      });
+      const fetch = vi
+        .spyOn(window, "fetch")
+        .mockResolvedValue(new Response(null, { status: 204 }));
+      registerNetworkBackend();
 
-    const screen = await renderInsightPage(
-      <Suspense fallback={<div>Loading</div>}>
-        <QuarantineMatButton />
-      </Suspense>,
-      {
-        currentStatus: statusWithMaterial([selected], { "JOB-1": quarantineJob("Queue A") }),
-        fmsInfo: { quarantineQueue: "Quarantine" },
-        ...dialogData(selected),
-      },
-    );
+      const screen = await renderInsightPage(
+        <Suspense fallback={<div>Loading</div>}>
+          <QuarantineMatButton />
+        </Suspense>,
+        {
+          currentStatus: statusWithMaterial([selected], { "JOB-1": quarantineJob("Queue A") }),
+          fmsInfo: { quarantineQueue },
+          ...dialogData(selected),
+        },
+      );
 
-    await screen.getByRole("button", { name: /current automated operation/ }).click();
-    await screen.getByRole("dialog").getByRole("button", { name: "Quarantine" }).click();
+      const buttonLabel = quarantineQueue ? "Signal for quarantine" : "Scrap";
+      await screen.getByRole("button", { name: buttonLabel }).click();
+      const dialog = screen.getByRole("dialog");
+      await expect
+        .element(dialog)
+        .toMatchTextContent("The current automated operation will continue.");
+      await expect
+        .element(dialog)
+        .toMatchTextContent(
+          quarantineQueue
+            ? `When the material leaves automation control, move it to ${quarantineQueue}`
+            : "When the material leaves automation control, remove it from normal production flow as scrap",
+        );
+      await dialog.getByRole("button", { name: buttonLabel }).click();
 
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/jobs/material/201/signal-quarantine",
-      expect.objectContaining({ method: "PUT" }),
-    );
-  });
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/v1/jobs/material/201/signal-quarantine",
+        expect.objectContaining({ method: "PUT" }),
+      );
+    },
+  );
+
+  test.each([
+    { source: api.LocType.Free, process: 0, target: 1 },
+    { source: api.LocType.InQueue, process: 1, target: 2 },
+  ])(
+    "signals an accepted automated load from $source using the target route",
+    async ({ source, process, target }) => {
+      const selected = createMaterial({
+        materialID: 201,
+        jobUnique: "JOB-1",
+        partName: "Part",
+        process,
+        path: 1,
+        location: { type: source, currentQueue: "Queue A" },
+        action: {
+          type: api.ActionType.Loading,
+          automatedTransfer: true,
+          processAfterLoad: target,
+          pathAfterLoad: 1,
+          loadCancellationId: "not-cancellable",
+        },
+      });
+      const fetch = vi
+        .spyOn(window, "fetch")
+        .mockResolvedValue(new Response(null, { status: 204 }));
+      registerNetworkBackend();
+      const job = quarantineJob("Queue A");
+      const twoProcessJob = api.ActiveJob.fromJS({
+        ...job.toJSON(),
+        ProcsAndPaths: [job.procsAndPaths[0].toJSON(), job.procsAndPaths[0].toJSON()],
+      });
+      const screen = await renderInsightPage(
+        <Suspense fallback={<div>Loading</div>}>
+          <QuarantineMatButton />
+        </Suspense>,
+        {
+          currentStatus: statusWithMaterial([selected], { "JOB-1": twoProcessJob }),
+          fmsInfo: { quarantineQueue: "Quarantine" },
+          ...dialogData(selected),
+        },
+      );
+      await screen.getByRole("button", { name: "Signal for quarantine" }).click();
+      await screen
+        .getByRole("dialog")
+        .getByRole("button", { name: "Signal for quarantine" })
+        .click();
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/v1/jobs/material/201/signal-quarantine",
+        expect.objectContaining({ method: "PUT" }),
+      );
+    },
+  );
+
+  test.each([api.ActionType.UnloadToInProcess, api.ActionType.UnloadToCompletedMaterial])(
+    "signals human unload %s without offering direct disposition",
+    async (type) => {
+      const selected = material({
+        materialId: 201,
+        location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
+        action: { type, workId: "mixed-work", loadCancellationId: "mixed-work" },
+      });
+      const screen = await renderInsightPage(
+        <Suspense fallback={<div>Loading</div>}>
+          <QuarantineMatButton />
+        </Suspense>,
+        {
+          currentStatus: statusWithMaterial([selected], { "JOB-1": quarantineJob("Queue A") }),
+          fmsInfo: { quarantineQueue: "Quarantine" },
+          ...dialogData(selected),
+        },
+      );
+      await expect
+        .element(screen.getByRole("button", { name: "Signal for quarantine" }))
+        .toBeVisible();
+      await expect
+        .element(screen.getByRole("button", { name: "Remove from Queue" }))
+        .not.toBeInTheDocument();
+    },
+  );
 
   test("removes waiting queued material without losing the scanned dialog context", async () => {
     const selected = material({

@@ -22,8 +22,8 @@ The supported entry point for embedding a customized FMS Insight application is
 
 - `bootstrapInsight` to start the application in a supplied element, or in the element with ID
   `root`.
-- `AppProps` to add custom routes, change the mode chooser, or replace the basket load-station
-  command.
+- `AppProps` to add custom routes or change the mode chooser. Basket station confirmation uses the
+  shared WorkId HTTP command; the backend resolves its saved work.
 - `customState`, a read-only Jotai atom containing the server's opaque custom state.
 - `currentStatusIsLive`, a read-only Jotai atom that is true while the websocket is connected and
   the retained current status (including `customState`) reflects the server. Pages that must not act
@@ -33,8 +33,9 @@ The supported entry point for embedding a customized FMS Insight application is
 - `defaultChooseModes` and `RouteLocation` for composing custom navigation.
 
 The host application must provide compatible versions of the package's React, React DOM, and Jotai
-peer dependencies. This ensures custom components and Insight use the same React runtime and Jotai
-store.
+peer dependencies (React/React DOM 19.3 and Jotai 3). These share the runtime implementations. The
+Insight provider selects the actual Jotai store; extension components must render inside that
+provider to read the same atoms. A shared runtime alone does not select a store.
 
 Other package subpaths expose reusable Insight internals. They remain available for existing
 integrations, but `extension` is the intentionally small application-composition API.

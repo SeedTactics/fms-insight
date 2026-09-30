@@ -9,6 +9,40 @@ namespace BlackMaple.FMSInsight.Tests;
 public sealed class PalletLoadMetadataSpec
 {
   [Test]
+  public async Task LegacyMetadataIsPreservedInStorageAndCallbacks()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repo = config.OpenConnection();
+    string observedForeignId = null;
+    LogEntry observed = null;
+    config.NewLogEntry += (entry, foreignId, _) =>
+    {
+      observed = entry;
+      observedForeignId = foreignId;
+    };
+    var entry = repo.RecordGeneralMessage(
+      mats: [],
+      program: "message",
+      result: "recorded",
+      metadata: new EventLogMetadata
+      {
+        ForeignId = "  source-1  ",
+        OriginalMessage = "  original message\r\n",
+        CorrelationId = "  correlation-1  ",
+      }
+    );
+    await Assert.That(repo.ForeignIDForCounter(entry.Counter)).IsEqualTo("  source-1  ");
+    await Assert
+      .That(repo.OriginalMessageByForeignID("  source-1  "))
+      .IsEqualTo("  original message\r\n");
+    await Assert.That(observedForeignId).IsEqualTo("  source-1  ");
+    await Assert.That(observed.CorrelationId).IsEqualTo("correlation-1");
+    await Assert
+      .That(repo.GetLogForForeignID("  source-1  ").Single().CorrelationId)
+      .IsEqualTo("correlation-1");
+  }
+
+  [Test]
   [Arguments("carrier-a")]
   [Arguments("")]
   [Arguments(null)]
