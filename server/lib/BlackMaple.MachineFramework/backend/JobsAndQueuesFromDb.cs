@@ -153,6 +153,10 @@ namespace BlackMaple.MachineFramework
       string? reason = null
     );
 
+    /// Complete the exact opaque basket work occurrence. Backends resolve saved work under their
+    /// mutation gate and acknowledge durable completed retries without repeating manufacturing.
+    void CompleteBasketLoadStation(string workId);
+
     /// Remove material only from a human-controlled waiting queue.
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string? operatorName = null);
 
@@ -986,6 +990,9 @@ namespace BlackMaple.MachineFramework
 
       RecalculateCellState();
     }
+
+    public void CompleteBasketLoadStation(string workId) =>
+      throw new ConflictRequestException("No basket station work is available.");
 
     public void CancelLoad(
       long materialId,

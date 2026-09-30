@@ -32,16 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { bootstrapInsight } from "./extension.js";
-import type { AppProps } from "./components/App.js";
 import { ApiException } from "./network/api.js";
 
 async function main(): Promise<void> {
-  const developmentProps: AppProps = import.meta.env.DEV
-    ? {
-        submitBasketLoadStationCommand: async () => "accepted",
-      }
-    : {};
-  await bootstrapInsight(developmentProps);
+  await bootstrapInsight();
 }
 
 main().catch((e) => {

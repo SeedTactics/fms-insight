@@ -34,25 +34,15 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 
 import { basketSlotLabel } from "../../cell-status/station-cycles.js";
 import * as api from "../../network/api.js";
+import { JobsBackend } from "../../network/backend.js";
 import { InProcMaterial, MatCardFontSize } from "./Material.js";
 import { MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
 
-export interface BasketLoadStationCommand {
-  readonly workId: string;
-}
-
-export type SubmitBasketLoadStationCommand = (
-  stationNumber: number,
-  command: BasketLoadStationCommand,
-) => Promise<"accepted" | "conflict">;
-
 interface BasketLoadStationWorkflowProps {
-  readonly stationNumber: number;
   readonly basket: Readonly<api.IBasketStatus>;
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   readonly fsize: MatCardFontSize;
-  readonly submitCommand: SubmitBasketLoadStationCommand | undefined;
 }
 
 type SubmissionState = "idle" | "submitting" | "accepted" | "conflict" | "error";
@@ -227,11 +217,9 @@ function SlotMaterial({
 }
 
 export function BasketLoadStationWorkflow({
-  stationNumber,
   basket,
   material,
   fsize,
-  submitCommand,
 }: BasketLoadStationWorkflowProps) {
   const [submission, setSubmission] = useState<Submission | undefined>();
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
@@ -285,15 +273,20 @@ export function BasketLoadStationWorkflow({
   );
 
   async function submit(): Promise<void> {
-    if (work === undefined || !work.ready || submitCommand === undefined) return;
+    if (work === undefined || !work.ready) return;
     const submittedWorkId = work.workId;
     const pending: Submission = { workId: submittedWorkId, basket, material, state: "submitting" };
     setSubmission(pending);
     try {
-      const state = await submitCommand(stationNumber, { workId: submittedWorkId });
+      await JobsBackend.completeBasketLoadStation(
+        new api.BasketLoadStationCompletion({ workId: submittedWorkId }),
+      );
+      const state = "accepted";
       setSubmission((current) => (current === pending ? { ...pending, state } : current));
-    } catch {
-      setSubmission((current) => (current === pending ? { ...pending, state: "error" } : current));
+    } catch (error) {
+      const state =
+        api.ApiException.isApiException(error) && error.status === 409 ? "conflict" : "error";
+      setSubmission((current) => (current === pending ? { ...pending, state } : current));
     }
   }
 
@@ -371,14 +364,12 @@ export function BasketLoadStationWorkflow({
               : "Basket work is not ready for confirmation.")}
         </Alert>
       )}
-      {work && submitCommand ? (
+      {work ? (
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <Button variant="contained" disabled={submissionDisabled} onClick={() => void submit()}>
             Confirm
           </Button>
         </Box>
-      ) : work ? (
-        <Alert severity="warning">Basket work confirmation is not configured.</Alert>
       ) : workState.type === "inconsistent" ? (
         <Alert severity="warning">
           Basket work is inconsistent. Wait for refreshed material actions before confirming.

@@ -514,6 +514,52 @@ export class JobsClient {
     return Promise.resolve<MostRecentSchedule>(null as any);
   }
 
+  completeBasketLoadStation(
+    completion: BasketLoadStationCompletion,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/basket-load-station/complete";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(completion);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processCompleteBasketLoadStation(_response);
+    });
+  }
+
+  protected processCompleteBasketLoadStation(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException(
+          "An unexpected server error occurred.",
+          status,
+          _responseText,
+          _headers,
+        );
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
   currentStatus(signal?: AbortSignal): Promise<CurrentStatus> {
     let url_ = this.baseUrl + "/api/v1/jobs/status";
     url_ = url_.replace(/[?&]$/, "");
@@ -4596,7 +4642,6 @@ export class CurrentStatus implements ICurrentStatus {
   machineLocations?: MachineLocation[] | undefined;
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
-  basketMoveInstructions?: BasketMoveInstruction[] | undefined;
   customState?: any | undefined;
 
   constructor(data?: ICurrentStatus) {
@@ -4672,11 +4717,6 @@ export class CurrentStatus implements ICurrentStatus {
               : new BasketStatus();
         }
       }
-      if (Array.isArray(_data["BasketMoveInstructions"])) {
-        this.basketMoveInstructions = [] as any;
-        for (let item of _data["BasketMoveInstructions"])
-          this.basketMoveInstructions!.push(BasketMoveInstruction.fromJS(item));
-      }
       this.customState = _data["CustomState"];
     }
   }
@@ -4748,11 +4788,6 @@ export class CurrentStatus implements ICurrentStatus {
             : (undefined as any);
       }
     }
-    if (Array.isArray(this.basketMoveInstructions)) {
-      data["BasketMoveInstructions"] = [];
-      for (let item of this.basketMoveInstructions)
-        data["BasketMoveInstructions"].push(item ? item.toJSON() : (undefined as any));
-    }
     data["CustomState"] = this.customState;
     return data;
   }
@@ -4768,7 +4803,6 @@ export interface ICurrentStatus {
   machineLocations?: MachineLocation[] | undefined;
   workorders?: ActiveWorkorder[] | undefined;
   baskets?: { [key: string]: BasketStatus } | undefined;
-  basketMoveInstructions?: BasketMoveInstruction[] | undefined;
   customState?: any | undefined;
 }
 
@@ -5857,81 +5891,6 @@ export enum BasketLocationEnum {
   InTransit = "InTransit",
 }
 
-export class BasketMoveInstruction implements IBasketMoveInstruction {
-  instructionId!: string;
-  basketId!: number;
-  source?: BasketPosition | undefined;
-  destination!: BasketPosition;
-  reason!: BasketMoveReason;
-  displayText!: string;
-  prerequisiteInstructionId?: string | undefined;
-
-  constructor(data?: IBasketMoveInstruction) {
-    if (data) {
-      for (var property in data) {
-        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
-      }
-    }
-    if (!data) {
-      this.destination = new BasketPosition();
-    }
-  }
-
-  init(_data?: any) {
-    if (_data) {
-      this.instructionId = _data["InstructionId"];
-      this.basketId = _data["BasketId"];
-      this.source = _data["Source"] ? BasketPosition.fromJS(_data["Source"]) : (undefined as any);
-      this.destination = _data["Destination"]
-        ? BasketPosition.fromJS(_data["Destination"])
-        : new BasketPosition();
-      this.reason = _data["Reason"];
-      this.displayText = _data["DisplayText"];
-      this.prerequisiteInstructionId = _data["PrerequisiteInstructionId"];
-    }
-  }
-
-  static fromJS(data: any): BasketMoveInstruction {
-    data = typeof data === "object" ? data : {};
-    let result = new BasketMoveInstruction();
-    result.init(data);
-    return result;
-  }
-
-  toJSON(data?: any) {
-    data = typeof data === "object" ? data : {};
-    data["InstructionId"] = this.instructionId;
-    data["BasketId"] = this.basketId;
-    data["Source"] = this.source ? this.source.toJSON() : (undefined as any);
-    data["Destination"] = this.destination ? this.destination.toJSON() : (undefined as any);
-    data["Reason"] = this.reason;
-    data["DisplayText"] = this.displayText;
-    data["PrerequisiteInstructionId"] = this.prerequisiteInstructionId;
-    return data;
-  }
-}
-
-export interface IBasketMoveInstruction {
-  instructionId: string;
-  basketId: number;
-  source?: BasketPosition | undefined;
-  destination: BasketPosition;
-  reason: BasketMoveReason;
-  displayText: string;
-  prerequisiteInstructionId?: string | undefined;
-}
-
-export enum BasketMoveReason {
-  LoadMaterial = "LoadMaterial",
-  UnloadMaterial = "UnloadMaterial",
-  ProcessTransfer = "ProcessTransfer",
-  SupplyMaterialToCell = "SupplyMaterialToCell",
-  SupplyEmptyBasket = "SupplyEmptyBasket",
-  ReturnToStorage = "ReturnToStorage",
-  RemoveForCorrection = "RemoveForCorrection",
-  Other = "Other",
-}
-
 export class ProblemDetails implements IProblemDetails {
   type?: string | undefined;
   title?: string | undefined;
@@ -6535,6 +6494,41 @@ export interface IRebooking {
   priority?: number | undefined;
   notes?: string | undefined;
   workorder?: string | undefined;
+}
+
+export class BasketLoadStationCompletion implements IBasketLoadStationCompletion {
+  workId!: string;
+
+  constructor(data?: IBasketLoadStationCompletion) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
+      }
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.workId = _data["WorkId"];
+    }
+  }
+
+  static fromJS(data: any): BasketLoadStationCompletion {
+    data = typeof data === "object" ? data : {};
+    let result = new BasketLoadStationCompletion();
+    result.init(data);
+    return result;
+  }
+
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["WorkId"] = this.workId;
+    return data;
+  }
+}
+
+export interface IBasketLoadStationCompletion {
+  workId: string;
 }
 
 export class SimulationResults implements ISimulationResults {

@@ -90,11 +90,6 @@ import { CompletedCountHeatmap, StationOeeHeatmap } from "./analysis/EfficiencyP
 import { PartLoadStationCycleChart, PartMachineCycleChart } from "./analysis/PartCycleCards.js";
 import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
 import { BasketCycleChart } from "./analysis/BasketCycleCards.js";
-import type { SubmitBasketLoadStationCommand } from "./station-monitor/BasketLoadStationWork.js";
-import type {
-  SubmitBasketLocationCorrection,
-  SubmitBasketMovementCompletion,
-} from "./station-monitor/BasketMovementArrival.js";
 import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
 import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
 import { useAtom, useAtomValue } from "jotai";
@@ -390,9 +385,6 @@ export interface AppProps {
     readonly page: ReactNode;
   };
   readonly chooseModes?: (i: serverSettings.FMSInfoAndUser) => ReadonlyArray<ChooseModeItem> | null;
-  readonly submitBasketLoadStationCommand?: SubmitBasketLoadStationCommand;
-  readonly submitBasketMovementCompletion?: SubmitBasketMovementCompletion;
-  readonly submitBasketLocationCorrection?: SubmitBasketLocationCorrection;
 }
 
 const App = memo(function App(props: AppProps) {
@@ -436,9 +428,6 @@ const App = memo(function App(props: AppProps) {
             loadNum={route.loadNum}
             queues={route.queues}
             completed={route.completed}
-            submitBasketLoadStationCommand={props.submitBasketLoadStationCommand}
-            submitBasketMovementCompletion={props.submitBasketMovementCompletion}
-            submitBasketLocationCorrection={props.submitBasketLocationCorrection}
           />
         );
         nav1 = StationToolbar;

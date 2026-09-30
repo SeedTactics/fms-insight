@@ -137,6 +137,9 @@ const jobBackend: JobAPI = {
   quarantineQueuedMaterial() {
     return unexpectedCall("JobAPI.quarantineQueuedMaterial");
   },
+  completeBasketLoadStation() {
+    return unexpectedCall("JobAPI.completeBasketLoadStation");
+  },
   cancelLoad() {
     return unexpectedCall("JobAPI.cancelLoad");
   },

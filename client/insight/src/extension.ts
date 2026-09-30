@@ -29,10 +29,3 @@ export { defaultChooseModes } from "./components/ChooseMode.js";
 export type { ChooseModeItem } from "./components/ChooseMode.js";
 export { RouteLocation } from "./components/routes.js";
 export { authenticatedFetch } from "./network/backend.js";
-export type {
-  BasketMovementCompletionCommand,
-  BasketMovementCompletionReceipt,
-  BasketLocationCorrectionCommand,
-  SubmitBasketLocationCorrection,
-  SubmitBasketMovementCompletion,
-} from "./components/station-monitor/BasketMovementArrival.js";

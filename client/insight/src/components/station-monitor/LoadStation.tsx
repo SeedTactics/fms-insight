@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useMemo, memo, useState, useCallback, useEffect, ReactNode } from "react";
+import { useMemo, memo, useState, useCallback, ReactNode } from "react";
 import { Box, useMediaQuery, Button, Typography } from "@mui/material";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 
@@ -84,17 +84,7 @@ import { PrintLabelButton } from "./PrintedLabel.js";
 import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 import { canAddOrMoveMaterialToQueue } from "../../data/material-operation-policy.js";
-import {
-  BasketLoadStationWorkflow,
-  SubmitBasketLoadStationCommand,
-} from "./BasketLoadStationWork.js";
-import {
-  BasketArrivalReceipt,
-  BasketMovementArrival,
-  SubmitBasketLocationCorrection,
-  loadStationArrivalInstruction,
-  SubmitBasketMovementCompletion,
-} from "./BasketMovementArrival.js";
+import { BasketLoadStationWorkflow } from "./BasketLoadStationWork.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -578,17 +568,7 @@ function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }
   }
 }
 
-function PalletFace({
-  data,
-  faceNum,
-  loadNum,
-  submitBasketLoadStationCommand,
-}: {
-  data: LoadStationData;
-  faceNum: number;
-  loadNum: number;
-  submitBasketLoadStationCommand: SubmitBasketLoadStationCommand | undefined;
-}) {
+function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number }) {
   const face = data.face.get(faceNum);
   const fmsInfo = useAtomValue(fmsInformation);
   const basketName = basketDisplayName(fmsInfo.basketName);
@@ -624,11 +604,9 @@ function PalletFace({
             }}
           >
             <BasketLoadStationWorkflow
-              stationNumber={loadNum}
               basket={data.activeBasket}
               material={data.allMaterial}
               fsize={data.fsize}
-              submitCommand={submitBasketLoadStationCommand}
             />
           </MoveMaterialArrowNode>
         </Box>
@@ -1216,9 +1194,6 @@ interface LoadStationProps {
   readonly queues: ReadonlyArray<string>;
   readonly completed: boolean;
   readonly whiteBackground?: boolean;
-  readonly submitBasketLoadStationCommand?: SubmitBasketLoadStationCommand;
-  readonly submitBasketMovementCompletion?: SubmitBasketMovementCompletion;
-  readonly submitBasketLocationCorrection?: SubmitBasketLocationCorrection;
 }
 
 function useGridLayout({
@@ -1278,30 +1253,6 @@ export function LoadStation(props: LoadStationProps) {
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt, hideNonLoading),
     [currentSt, props.loadNum, props.queues, hideNonLoading],
   );
-  const arrivalInstruction = loadStationArrivalInstruction(
-    currentSt.basketMoveInstructions ?? [],
-    props.loadNum,
-  );
-  const [recentArrivalReceipt, setRecentArrivalReceipt] = useState<BasketArrivalReceipt>();
-  useEffect(() => {
-    if (
-      recentArrivalReceipt !== undefined &&
-      (recentArrivalReceipt.stationNumber !== props.loadNum ||
-        (arrivalInstruction !== undefined &&
-          arrivalInstruction.instructionId !== recentArrivalReceipt.instruction.instructionId))
-    ) {
-      // This state is an ephemeral receipt; discard it permanently when a new instruction supersedes it.
-      // oxlint-disable-next-line react/set-state-in-effect -- intentional invalidation of stale UI state.
-      setRecentArrivalReceipt(undefined);
-    }
-  }, [arrivalInstruction, props.loadNum, recentArrivalReceipt]);
-  const displayedArrivalInstruction = arrivalInstruction ?? recentArrivalReceipt?.instruction;
-  const displayedArrivalReceipt =
-    recentArrivalReceipt?.stationNumber === props.loadNum &&
-    displayedArrivalInstruction?.instructionId === recentArrivalReceipt?.instruction.instructionId
-      ? recentArrivalReceipt
-      : undefined;
-
   const queueCols = LazySeq.of(data.queues)
     .sortBy(([q]) => q)
     .map(([q, mats]) => ({
@@ -1359,44 +1310,6 @@ export function LoadStation(props: LoadStationProps) {
 
   return (
     <>
-      {displayedArrivalInstruction === undefined ? null : (
-        <BasketMovementArrival
-          basketName={basketName}
-          instruction={displayedArrivalInstruction}
-          stationNumber={props.loadNum}
-          submitCommand={props.submitBasketMovementCompletion}
-          submitCorrection={props.submitBasketLocationCorrection}
-          receipt={displayedArrivalReceipt}
-          onAccepted={setRecentArrivalReceipt}
-          onCorrected={(command) =>
-            setRecentArrivalReceipt((current) => {
-              if (
-                current === undefined ||
-                current.stationNumber !== props.loadNum ||
-                current.receipt.observationId !== command.targetObservationId
-              )
-                return current;
-              return command.replacementBasketId === null ||
-                command.replacementObservationId === null
-                ? { ...current, status: "retracted" }
-                : {
-                    ...current,
-                    receipt: {
-                      ...current.receipt,
-                      observationId: command.replacementObservationId,
-                      observedBasketId: command.replacementBasketId,
-                    },
-                    command: {
-                      ...current.command,
-                      commandId: command.replacementObservationId,
-                      observedBasketId: command.replacementBasketId,
-                    },
-                    status: "corrected",
-                  };
-            })
-          }
-        />
-      )}
       <MoveMaterialArrowContainer
         hideArrows={!fillViewPort}
         whiteBackground={props.whiteBackground}
@@ -1439,12 +1352,7 @@ export function LoadStation(props: LoadStationProps) {
                 borderTop: data.pallet && idx !== 0 ? "1px solid black" : undefined,
               }}
             >
-              <PalletFace
-                data={data}
-                faceNum={faceNum}
-                loadNum={props.loadNum}
-                submitBasketLoadStationCommand={props.submitBasketLoadStationCommand}
-              />
+              <PalletFace data={data} faceNum={faceNum} />
             </Box>
           ))}
           <Box

@@ -78,6 +78,7 @@ export interface JobAPI {
     operName: string | null,
     reason: string | undefined,
   ): Promise<void>;
+  completeBasketLoadStation(request: Readonly<api.IBasketLoadStationCompletion>): Promise<void>;
   cancelLoad(
     materialId: number,
     operName: string | null,

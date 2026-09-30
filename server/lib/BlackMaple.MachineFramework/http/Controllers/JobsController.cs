@@ -46,6 +46,11 @@ namespace BlackMaple.MachineFramework.Controllers
     public required int Position { get; init; }
   }
 
+  public record BasketLoadStationCompletion
+  {
+    public required string WorkId { get; init; }
+  }
+
   [ApiController]
   [Route("api/v1/jobs")]
   public class JobsController(
@@ -94,6 +99,14 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       using var db = repo.OpenConnection();
       return db.LoadMostRecentSchedule();
+    }
+
+    [HttpPost("basket-load-station/complete")]
+    public void CompleteBasketLoadStation([FromBody] BasketLoadStationCompletion completion)
+    {
+      if (string.IsNullOrWhiteSpace(completion.WorkId))
+        throw new BadRequestException("A basket work ID is required.");
+      jobAndQueue.CompleteBasketLoadStation(completion.WorkId);
     }
 
     [HttpGet("status")]

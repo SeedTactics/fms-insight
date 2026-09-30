@@ -270,6 +270,9 @@ export function registerMockBackend(
     quarantineQueuedMaterial(): Promise<void> {
       return Promise.resolve();
     },
+    completeBasketLoadStation(): Promise<void> {
+      return Promise.resolve();
+    },
     cancelLoad(): Promise<void> {
       return Promise.resolve();
     },
