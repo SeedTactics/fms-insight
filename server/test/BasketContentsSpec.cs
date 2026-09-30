@@ -977,6 +977,127 @@ public sealed class BasketContentsSpec : IDisposable
       Face = slot,
     };
 
+  [Test]
+  [Arguments(true)]
+  [Arguments(false)]
+  public async Task OmittedPalletCounterpartRollsBackBasketTransfer(bool ontoBasket)
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var id = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var occupied = Contents(4, 1, id, "tp-101", process: 1);
+    var before = ontoBasket ? Empty(4) : occupied;
+    var after = ontoBasket ? occupied : Empty(4);
+    repository.RecordBasketContentsOperation(
+      Operation(
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = null,
+          Result = before,
+        }
+      ),
+      "initial"
+    );
+    var completion = new PalletBasketLoadUnloadCompletion
+    {
+      Transfers = ontoBasket
+        ?
+        [
+          new PalletBasketTransfer.LoadOntoBasket
+          {
+            BasketId = 4,
+            Material = [LogMaterial(id, 1, 1)],
+          },
+        ]
+        :
+        [
+          new PalletBasketTransfer.UnloadFromBasket
+          {
+            BasketId = 4,
+            Material = [LogMaterial(id, 1, 1)],
+          },
+        ],
+      CycleBoundaries = [],
+      ContentsChanges =
+      [
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = before,
+          Result = after,
+        },
+      ],
+    };
+    var events = repository.GetLogForMaterial(id).ToImmutableList();
+    await Assert
+      .That(() =>
+        repository.RecordPartialLoadUnload(
+          toLoad: null,
+          toUnload: null,
+          lulNum: 1,
+          pallet: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: DateTime.UtcNow,
+          externalQueues: ImmutableDictionary<string, string>.Empty,
+          palletBasketCompletion: completion
+        )
+      )
+      .Throws<ArgumentException>();
+    await Assert.That(repository.GetLogForMaterial(id)).IsEquivalentTo(events);
+    await Assert
+      .That(repository.GetBasketContents(4)!.Slots.Keys)
+      .IsEquivalentTo(before.Slots.Keys);
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task OrdinaryNoQueueUnloadCanAccompanyBasketTransfer(bool includeBasket)
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var ordinary = repository.AllocateMaterialID("job-1", "part-a", 2);
+    var basket = repository.AllocateMaterialID("job-1", "part-a", 2);
+    LoadMaterialOntoPallet(repository, ordinary);
+    LoadMaterialOntoPallet(repository, basket);
+    var occupied = Contents(4, 1, basket, "tp-101", process: 1);
+    var logs = repository
+      .RecordLoadUnloadComplete(
+        toLoad: null,
+        previouslyLoaded: null,
+        toUnload:
+        [
+          new MaterialToUnloadFromFace
+          {
+            MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>
+              .Empty.Add(ordinary, new UnloadDestination { Queue = null })
+              .Add(basket, null),
+            FaceNum = 1,
+            Process = 1,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        previouslyUnloaded: null,
+        lulNum: 1,
+        pallet: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: DateTime.UtcNow,
+        externalQueues: ImmutableDictionary<string, string>.Empty,
+        palletBasketCompletion: includeBasket
+          ? PalletLoadOntoBasketCompletion(basket, null, occupied)
+          : null
+      )
+      .ToImmutableList();
+    await Assert
+      .That(
+        logs.Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+          .SelectMany(e => e.Material)
+          .Select(m => m.MaterialID)
+      )
+      .IsEquivalentTo([ordinary, basket]);
+    await Assert.That(repository.GetBasketContents(4) is not null).IsEqualTo(includeBasket);
+    await Assert.That(repository.GetMaterialInAllQueues()).IsEmpty();
+  }
+
   private static PalletBasketLoadUnloadCompletion PalletLoadOntoBasketCompletion(
     long materialId,
     BasketContents expected,

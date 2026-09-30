@@ -1949,24 +1949,12 @@ namespace BlackMaple.MachineFramework
     private static void ValidatePalletBasketCompletion(
       PalletBasketLoadUnloadCompletion palletBasketCompletion,
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
-      IReadOnlyList<MaterialToUnloadFromFace> toUnload
+      IReadOnlyList<MaterialToUnloadFromFace> toUnload,
+      bool requirePalletCounterparts = true
     )
     {
       if (palletBasketCompletion is null)
-      {
-        if (
-          toUnload?.Any(unload =>
-            unload.MaterialIDToDestination.Values.Any(destination =>
-              destination is not null && destination.Queue is null
-            )
-          ) == true
-        )
-          throw new ArgumentException(
-            "Pallet unloads without a queue destination require an explicit basket completion.",
-            nameof(palletBasketCompletion)
-          );
         return;
-      }
       if (
         palletBasketCompletion.Transfers.Count == 0
         && palletBasketCompletion.CycleBoundaries.Count == 0
@@ -2107,9 +2095,9 @@ namespace BlackMaple.MachineFramework
           );
       }
 
-      if (toLoad is not null)
+      if (requirePalletCounterparts)
       {
-        var palletLoadMaterial = toLoad
+        var palletLoadMaterial = (toLoad ?? [])
           .SelectMany(load => load.MaterialIDs.Select(id => (MaterialID: id, load.Process)))
           .ToImmutableHashSet();
         if (
@@ -2119,21 +2107,18 @@ namespace BlackMaple.MachineFramework
             "Basket-to-pallet material and process must match the pallet load.",
             nameof(palletBasketCompletion)
           );
-      }
-      if (toUnload is not null)
-      {
-        var basketDestinationMaterial = toUnload
+        var palletUnloadMaterial = (toUnload ?? [])
           .SelectMany(unload =>
             unload
-              .MaterialIDToDestination.Where(destination =>
-                destination.Value is not null && destination.Value.Queue is null
-              )
+              .MaterialIDToDestination.Where(destination => destination.Value?.Queue is null)
               .Select(destination => (MaterialID: destination.Key, unload.Process))
           )
           .ToImmutableHashSet();
-        if (!transferredToBasketWithProcess.SetEquals(basketDestinationMaterial))
+        if (
+          transferredToBasketWithProcess.Any(material => !palletUnloadMaterial.Contains(material))
+        )
           throw new ArgumentException(
-            "Pallet unloads without a queue destination must exactly match pallet-to-basket material and process.",
+            "Pallet-to-basket material and process must match a pallet unload without a queue destination.",
             nameof(palletBasketCompletion)
           );
       }
@@ -2533,7 +2518,12 @@ namespace BlackMaple.MachineFramework
         throw new ArgumentOutOfRangeException(nameof(totalElapsed));
       var eventMetadata = MergeEventLogMetadata(metadata, foreignId, originalMessage);
       var palletCompletion = ToPalletBasketLoadUnloadCompletion(operation);
-      ValidatePalletBasketCompletion(palletCompletion, toLoad: null, toUnload: null);
+      ValidatePalletBasketCompletion(
+        palletCompletion,
+        toLoad: null,
+        toUnload: null,
+        requirePalletCounterparts: false
+      );
       var contentsOperation = operation.ContentsChanges.IsEmpty
         ? null
         : NormalizeBasketContentsOperation(

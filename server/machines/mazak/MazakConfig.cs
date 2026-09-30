@@ -94,7 +94,7 @@ namespace MazakMachineInterface
 
     // Each dictionary must cover exactly the corresponding context's ForeignIds. The translator
     // owns face/process/path, timestamps, foreign IDs and timing. A null unload destination means
-    // ordinary unload without a queue; a non-null destination with Queue=null requires a basket transfer.
+    // ordinary unload without a queue. Explicit basket transfers identify basket destinations.
     public sealed record Resolved : MazakLoadUnloadResolution
     {
       public required ImmutableDictionary<string, MazakResolvedLoad> MaterialForLoads { get; init; }
