@@ -185,14 +185,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             .Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
           new[]
           {
+            // Mazak's Windows database supplies backslash paths, even when tests run on Linux.
             new MazakProgramRow()
             {
-              MainProgram = System.IO.Path.Combine("theprogdir", "rev2", "prog-bbb-1.EIA"),
+              MainProgram = @"theprogdir\rev2\prog-bbb-1.EIA",
               Comment = "Insight:2:prog-bbb-1",
             },
             new MazakProgramRow()
             {
-              MainProgram = System.IO.Path.Combine("theprogdir", "rev3", "prog-bbb-1.EIA"),
+              MainProgram = @"theprogdir\rev3\prog-bbb-1.EIA",
               Comment = "Insight:3:prog-bbb-1",
             },
           }
@@ -274,6 +275,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                 .ToImmutableList(),
             }
           )
+          .ToImmutableList(),
+        Programs = val
+          .Programs.Select(p => p with { MainProgram = p.MainProgram?.Replace('\\', '/') })
           .ToImmutableList(),
       };
       // Legacy Mazak rows have unannotated nullable fields.
