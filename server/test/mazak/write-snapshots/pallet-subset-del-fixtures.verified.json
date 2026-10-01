@@ -1,0 +1,21 @@
+{
+  "Fixtures": [
+    {
+      "Command": "Delete",
+      "Comment": "Insight",
+      "FixtureName": "fixtoremove"
+    }
+  ],
+  "Pallets": [],
+  "Parts": [],
+  "Prefix": "Delete Fixtures",
+  "Programs": [
+    {
+      "Command": "Delete",
+      "Comment": "Insight:2:prog-bbb-1",
+      "MainProgram": "theprogdir/rev2/prog-bbb-1.EIA",
+      "ProgramRevision": 0
+    }
+  ],
+  "Schedules": []
+}

@@ -37,10 +37,10 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using Shouldly;
-using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -530,12 +530,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         File.Delete(_tempLogFile);
       }
 
-      await Verifier
-        .Verify(status)
-        .UseDirectory("read-snapshots")
-        .UseParameters(scenario)
-        .DontScrubDateTimes()
-        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+      await Snapshot.Match(
+        Snapshot.Json(status, jsonSettings),
+        $"read-snapshots/{nameof(BuildCurrentStatusSpec)}.{nameof(StatusSnapshot)}_scenario={scenario}",
+        "json"
+      );
     }
 
     [Test]
@@ -579,11 +578,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
-      await Verifier
-        .Verify(status)
-        .UseDirectory("read-snapshots")
-        .DontScrubDateTimes()
-        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+      await Snapshot.Match(
+        Snapshot.Json(status, jsonSettings),
+        $"read-snapshots/{nameof(BuildCurrentStatusSpec)}.{nameof(PendingLoad)}",
+        "json"
+      );
     }
 
     [Test]
@@ -659,11 +658,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         File.Delete(_tempLogFile);
       }
 
-      await Verifier
-        .Verify(status)
-        .UseDirectory("read-snapshots")
-        .DontScrubDateTimes()
-        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+      await Snapshot.Match(
+        Snapshot.Json(status, jsonSettings),
+        $"read-snapshots/{nameof(BuildCurrentStatusSpec)}.{nameof(SignalForQuarantine)}",
+        "json"
+      );
     }
 
     [Test]
@@ -769,11 +768,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
-      await Verifier
-        .Verify(status)
-        .DontScrubDateTimes()
-        .UseDirectory("read-snapshots")
-        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+      await Snapshot.Match(
+        Snapshot.Json(status, jsonSettings),
+        $"read-snapshots/{nameof(BuildCurrentStatusSpec)}.{nameof(WithMachineNumbers)}",
+        "json"
+      );
     }
 
     [Test]
@@ -807,11 +806,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
-      await Verifier
-        .Verify(status)
-        .DontScrubDateTimes()
-        .UseDirectory("read-snapshots")
-        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+      await Snapshot.Match(
+        Snapshot.Json(status, jsonSettings),
+        $"read-snapshots/{nameof(BuildCurrentStatusSpec)}.{nameof(WithPalletNumbers)}",
+        "json"
+      );
     }
 
     [Test]
@@ -908,11 +907,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
-      await Verifier
-        .Verify(status)
-        .DontScrubDateTimes()
-        .UseDirectory("read-snapshots")
-        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
+      await Snapshot.Match(
+        Snapshot.Json(status, jsonSettings),
+        $"read-snapshots/{nameof(BuildCurrentStatusSpec)}.{nameof(WithLoadStationNumbers)}",
+        "json"
+      );
     }
 
     [Test]

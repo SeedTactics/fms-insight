@@ -1,0 +1,34 @@
+{
+  "Fixtures": [
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:1:fixtureBB:1"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:2:fixtureAA1:1"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:3:fixtureAA2:2"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:4:fixtureCC5:1"
+    },
+    {
+      "Command": "Add",
+      "Comment": "Insight",
+      "FixtureName": "F:0:5:fixtureCC6:2"
+    }
+  ],
+  "Pallets": [],
+  "Parts": [],
+  "Prefix": "Add Fixtures",
+  "Programs": [],
+  "Schedules": []
+}

@@ -37,11 +37,11 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Xml;
+using System.Xml.Linq;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using NSubstitute;
 using Shouldly;
-using VerifyTUnit;
 
 #nullable enable
 
@@ -85,10 +85,11 @@ public sealed class OrderXMLSpec : IDisposable
       Substitute.For<IRepository>()
     );
 
-    var actual = new XmlDocument();
-    actual.Load(_tempFile);
-
-    await Verifier.Verify(actual);
+    await Snapshot.Match(
+      XDocument.Load(_tempFile).ToString(),
+      $"{nameof(OrderXMLSpec)}.{nameof(FullJobs)}",
+      "xml"
+    );
   }
 
   [Test]
@@ -111,10 +112,11 @@ public sealed class OrderXMLSpec : IDisposable
       Substitute.For<IRepository>()
     );
 
-    var actual = new XmlDocument();
-    actual.Load(_tempFile);
-
-    await Verifier.Verify(actual);
+    await Snapshot.Match(
+      XDocument.Load(_tempFile).ToString(),
+      $"{nameof(OrderXMLSpec)}.{nameof(OnlyOrders)}",
+      "xml"
+    );
   }
 
   [Test]
@@ -149,10 +151,11 @@ public sealed class OrderXMLSpec : IDisposable
       db
     );
 
-    var actual = new XmlDocument();
-    actual.Load(_tempFile);
-
-    await Verifier.Verify(actual);
+    await Snapshot.Match(
+      XDocument.Load(_tempFile).ToString(),
+      $"{nameof(OrderXMLSpec)}.{nameof(OnlyOrdersCustomDetails)}",
+      "xml"
+    );
   }
 
   [Test]
@@ -189,10 +192,11 @@ public sealed class OrderXMLSpec : IDisposable
       Substitute.For<IRepository>()
     );
 
-    var actual = new XmlDocument();
-    actual.Load(_tempFile);
-
-    await Verifier.Verify(actual);
+    await Snapshot.Match(
+      XDocument.Load(_tempFile).ToString(),
+      $"{nameof(OrderXMLSpec)}.{nameof(OnlyOrdersWithoutPrograms)}",
+      "xml"
+    );
   }
 
   [Test]
@@ -206,8 +210,10 @@ public sealed class OrderXMLSpec : IDisposable
       ]
     );
 
-    var actual = new XmlDocument();
-    actual.Load(_tempFile);
-    await Verifier.Verify(actual);
+    await Snapshot.Match(
+      XDocument.Load(_tempFile).ToString(),
+      $"{nameof(OrderXMLSpec)}.{nameof(Decrements)}",
+      "xml"
+    );
   }
 }
