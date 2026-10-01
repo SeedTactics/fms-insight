@@ -1,15 +1,27 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BlackMaple.FMSInsight.Tests;
 
 internal static class Snapshot
 {
+  private static readonly string ProjectDirectory = typeof(Snapshot)
+    .Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+    .Single(a => a.Key == "TestSourceDirectory")
+    .Value!;
+  private static readonly SemaphoreSlim FileAccess = new(1, 1);
+
+  // Both caller paths receive the same compiler path mapping in CI.
+  private static string CompiledSourceDirectory([CallerFilePath] string sourceFile = "") =>
+    Path.GetDirectoryName(sourceFile)!;
+
   public static async Task Match(
     string actual,
     string name,
@@ -17,23 +29,38 @@ internal static class Snapshot
     [CallerFilePath] string sourceFile = ""
   )
   {
-    var path = Path.Combine(Path.GetDirectoryName(sourceFile)!, name);
+    var callerDirectory = Path.GetRelativePath(
+      CompiledSourceDirectory(),
+      Path.GetDirectoryName(sourceFile)!
+    );
+    var path = Path.GetFullPath(Path.Combine(ProjectDirectory, callerDirectory, name));
     var verified = path + ".verified." + extension;
     var received = path + ".received." + extension;
     actual = actual.ReplaceLineEndings("\n");
 
-    if (File.Exists(verified) && Matches(actual, await File.ReadAllTextAsync(verified), extension))
+    // Several scenarios share a baseline; serialize access to their received files on Windows.
+    await FileAccess.WaitAsync();
+    try
     {
-      File.Delete(received);
-      return;
-    }
+      if (
+        File.Exists(verified) && Matches(actual, await File.ReadAllTextAsync(verified), extension)
+      )
+      {
+        File.Delete(received);
+        return;
+      }
 
-    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-    await File.WriteAllTextAsync(received, actual);
-    throw new InvalidOperationException(
-      $"Snapshot {(File.Exists(verified) ? "does not match" : "is missing")}."
-        + $"\nVerified: {verified}\nReceived: {received}"
-    );
+      Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+      await File.WriteAllTextAsync(received, actual);
+      throw new InvalidOperationException(
+        $"Snapshot {(File.Exists(verified) ? "does not match" : "is missing")}."
+          + $"\nVerified: {verified}\nReceived: {received}"
+      );
+    }
+    finally
+    {
+      FileAccess.Release();
+    }
   }
 
   private static bool Matches(string actual, string expected, string extension)

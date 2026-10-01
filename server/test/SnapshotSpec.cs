@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -16,6 +18,43 @@ public sealed class SnapshotSpec : IDisposable
     {
       Directory.Delete(directory, recursive: true);
     }
+  }
+
+  [Test]
+  public async Task RelativeNamesResolveFromTheRealProjectDirectory()
+  {
+    Directory.CreateDirectory(directory);
+    var name = Path.Combine(directory, "example");
+    await File.WriteAllTextAsync(name + ".verified.txt", "expected");
+    var projectDirectory = typeof(SnapshotSpec)
+      .Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+      .Single(a => a.Key == "TestSourceDirectory")
+      .Value!;
+
+    // This also exercises mapped CallerFilePath values when built with CI's PathMap.
+    await Snapshot.Match("expected", Path.GetRelativePath(projectDirectory, name), "txt");
+
+    await Assert.That(File.Exists(name + ".received.txt")).IsFalse();
+  }
+
+  [Test]
+  public async Task ConcurrentFailuresCanShareAReceivedFile()
+  {
+    var name = Path.Combine(directory, "example");
+    var actual = new string('a', 10000);
+    await Task.WhenAll(
+      Enumerable
+        .Range(0, 20)
+        .Select(async _ =>
+          await Assert
+            .That(() => Snapshot.Match(actual, name, "txt"))
+            .Throws<InvalidOperationException>()
+            .WithMessageContaining("Snapshot is missing.")
+        )
+    );
+
+    await Assert.That(await File.ReadAllTextAsync(name + ".received.txt")).IsEqualTo(actual);
+    await Assert.That(File.Exists(name + ".verified.txt")).IsFalse();
   }
 
   [Test]

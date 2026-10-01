@@ -25,6 +25,7 @@
     <None Update="database-ver40.db" CopyToOutputDirectory="Always" />
   </ItemGroup>
   <ItemGroup>
+    <AssemblyMetadata Include="TestSourceDirectory" Value="$(MSBuildProjectDirectory)" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="Shouldly" />
