@@ -96,6 +96,30 @@ function explicitBasketWork(
 }
 
 describe("explicit basket station work", () => {
+  test("shows preparation advice without blocking confirmation of the achieved result", async () => {
+    const submit = vi.fn<CompletionHandler>().mockResolvedValue("accepted");
+    completionRequests(submit);
+    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+      currentStatus: explicitBasketWork({
+        workId: "load-1",
+        type: api.BasketLoadStationWorkType.Material,
+        readyToConfirm: true,
+        instructionWarning: "Review transfer-plate availability for the preserved targets.",
+      }),
+    });
+    await expect
+      .element(
+        screen.getByText("Review transfer-plate availability for the preserved targets.", {
+          exact: true,
+        }),
+      )
+      .toBeVisible();
+    const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await expect.element(confirm).toBeEnabled();
+    await confirm.click();
+    expect(submit).toHaveBeenCalledOnce();
+  });
+
   test.for([false, true])(
     "permits the same work after a transient conflict (refresh before response: %s)",
     async (refreshBeforeResponse) => {

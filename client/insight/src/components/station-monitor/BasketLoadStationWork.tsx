@@ -224,6 +224,7 @@ export function BasketLoadStationWorkflow({
   const [submission, setSubmission] = useState<Submission | undefined>();
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
   const blockedReason = basket.loadStationWork?.confirmationBlockedReason?.trim();
+  const instructionWarning = basket.loadStationWork?.instructionWarning?.trim();
   const work = workState.type === "active" ? workState.work : undefined;
   const submissionState =
     submission !== undefined &&
@@ -356,6 +357,7 @@ export function BasketLoadStationWorkflow({
         })}
       </Box>
       {work?.confirmEmpty && <Typography>Confirm basket {basket.basketId} is empty.</Typography>}
+      {instructionWarning && <Alert severity="warning">{instructionWarning}</Alert>}
       {work && !work.ready && (
         <Alert severity="info">
           {blockedReason ||

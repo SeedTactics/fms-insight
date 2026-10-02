@@ -4030,6 +4030,10 @@
             "type": "string",
             "nullable": true
           },
+          "InstructionWarning": {
+            "type": "string",
+            "nullable": true
+          },
           "AwaitingMaterialSlots": {
             "type": "array",
             "items": {
