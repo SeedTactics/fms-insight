@@ -73,7 +73,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/browser-playwright": "^5.0.2",
-    "jotai": "^3.0.0",
+    "jotai": "^3.0.1",
     "jsdom": "^30.1.1",
     "nswag": "^14.7.1",
     "oxfmt": "^0.71.0",
@@ -88,7 +88,7 @@
     "vitest-browser-react": "^2.3.0"
   },
   "peerDependencies": {
-    "jotai": "^3.0.0",
+    "jotai": "^3.0.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
