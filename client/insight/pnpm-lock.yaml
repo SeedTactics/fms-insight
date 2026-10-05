@@ -67,7 +67,7 @@ importers:
         version: 3.3.0
       jotai-family:
         specifier: ^1.1.0
-        version: 1.1.0(jotai@3.0.0(@types/react@19.3.0)(react@19.3.0))
+        version: 1.1.0(jotai@3.0.1(@types/react@19.3.0)(react@19.3.0))
       jsbarcode:
         specifier: ^3.12.3
         version: 3.12.3
@@ -124,8 +124,8 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(playwright@1.63.0)(vite@8.3.1(@types/node@26.6.3))(vitest@5.0.2)
       jotai:
-        specifier: ^3.0.0
-        version: 3.0.0(@types/react@19.3.0)(react@19.3.0)
+        specifier: ^3.0.1
+        version: 3.0.1(@types/react@19.3.0)(react@19.3.0)
       jsdom:
         specifier: ^30.1.1
         version: 30.1.1
@@ -1339,8 +1339,8 @@ packages:
     peerDependencies:
       jotai: '>=2.9.0'
 
-  jotai@3.0.0:
-    resolution: {integrity: sha512-KxhbmsJUp/tmrv6aZgO+nzB3H9K8C0xmk5i3aGkwy/EANg73DVBkggv3zVHaAi5PlNlQgTgP4uiVepo+JC+wSA==}
+  jotai@3.0.1:
+    resolution: {integrity: sha512-6tS7wY9otdiNp26Wqb/1ds3OuVJVoV+tJlN4hpLrYmfFf/t9bauVt+zKBNSpS5qSl5h6GieVQ+OknVraZX+udQ==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       '@types/react': '>=18.0.0'
@@ -2846,11 +2846,11 @@ snapshots:
     dependencies:
       canvas-renderer: 2.2.1
 
-  jotai-family@1.1.0(jotai@3.0.0(@types/react@19.3.0)(react@19.3.0)):
+  jotai-family@1.1.0(jotai@3.0.1(@types/react@19.3.0)(react@19.3.0)):
     dependencies:
-      jotai: 3.0.0(@types/react@19.3.0)(react@19.3.0)
+      jotai: 3.0.1(@types/react@19.3.0)(react@19.3.0)
 
-  jotai@3.0.0(@types/react@19.3.0)(react@19.3.0):
+  jotai@3.0.1(@types/react@19.3.0)(react@19.3.0):
     optionalDependencies:
       '@types/react': 19.3.0
       react: 19.3.0
