@@ -5780,6 +5780,7 @@ export class BasketLoadStationWork implements IBasketLoadStationWork {
   type!: BasketLoadStationWorkType;
   readyToConfirm!: boolean;
   confirmationBlockedReason?: string | undefined;
+  instructionWarning?: string | undefined;
   awaitingMaterialSlots?: number[];
 
   constructor(data?: IBasketLoadStationWork) {
@@ -5796,6 +5797,7 @@ export class BasketLoadStationWork implements IBasketLoadStationWork {
       this.type = _data["Type"];
       this.readyToConfirm = _data["ReadyToConfirm"];
       this.confirmationBlockedReason = _data["ConfirmationBlockedReason"];
+      this.instructionWarning = _data["InstructionWarning"];
       if (Array.isArray(_data["AwaitingMaterialSlots"])) {
         this.awaitingMaterialSlots = [] as any;
         for (let item of _data["AwaitingMaterialSlots"]) this.awaitingMaterialSlots!.push(item);
@@ -5816,6 +5818,7 @@ export class BasketLoadStationWork implements IBasketLoadStationWork {
     data["Type"] = this.type;
     data["ReadyToConfirm"] = this.readyToConfirm;
     data["ConfirmationBlockedReason"] = this.confirmationBlockedReason;
+    data["InstructionWarning"] = this.instructionWarning;
     if (Array.isArray(this.awaitingMaterialSlots)) {
       data["AwaitingMaterialSlots"] = [];
       for (let item of this.awaitingMaterialSlots) data["AwaitingMaterialSlots"].push(item);
@@ -5829,6 +5832,7 @@ export interface IBasketLoadStationWork {
   type: BasketLoadStationWorkType;
   readyToConfirm: boolean;
   confirmationBlockedReason?: string | undefined;
+  instructionWarning?: string | undefined;
   awaitingMaterialSlots?: number[];
 }
 

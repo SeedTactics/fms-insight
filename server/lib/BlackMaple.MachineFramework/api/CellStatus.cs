@@ -91,6 +91,9 @@ namespace BlackMaple.MachineFramework
     /// </summary>
     public string? ConfirmationBlockedReason { get; init; }
 
+    /// <summary>Advice about the displayed targets; does not prevent recording an achieved result.</summary>
+    public string? InstructionWarning { get; init; }
+
     /// <summary>
     /// One-based slots awaiting material. Must be empty for ready work and empty-basket assertions.
     /// Material instructions for other slots can remain visible while these slots are pending.
