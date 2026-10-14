@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { ListItem, ListItemButton, Paper } from "@mui/material";
+import { Alert, AlertTitle, ListItem, ListItemButton, Paper } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItemIcon } from "@mui/material";
 import { ListSubheader } from "@mui/material";
@@ -53,6 +53,11 @@ import {
 
 import { RouteState, RouteLocation } from "./routes.js";
 import { ReactNode } from "react";
+import { useAtomValue } from "jotai";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { currentStatus } from "../cell-status/current-status.js";
+import { errorLoadingLast30 } from "../network/websocket.js";
+import { errorLoadingSpecificMonthData } from "../network/load-specific-month.js";
 
 export type ChooseModeItem =
   | { readonly type: "Subheader"; readonly caption: string }
@@ -155,6 +160,13 @@ export interface ChooseModeProps {
 }
 
 export function ChooseMode(p: ChooseModeProps): ReactNode {
+  const status = useAtomValue(currentStatus);
+  const recentError = useAtomValue(errorLoadingLast30);
+  const monthError = useAtomValue(errorLoadingSpecificMonthData);
+  const errors = LazySeq.of([...status.alarms, recentError, monthError])
+    .filter((error): error is string => error !== null && error.length > 0)
+    .distinct()
+    .toRArray();
   const navList = (
     <Paper>
       <List component="nav" dense>
@@ -176,7 +188,7 @@ export function ChooseMode(p: ChooseModeProps): ReactNode {
 
   return (
     <main style={{ display: "flex", justifyContent: "center" }}>
-      <div>
+      <div style={{ maxWidth: "50em", padding: "0 1em" }}>
         <div style={{ textAlign: "center" }}>
           <Typography variant="h4" style={{ marginTop: "2em" }}>
             Select user and computer location
@@ -195,6 +207,14 @@ export function ChooseMode(p: ChooseModeProps): ReactNode {
             <a href="https://fms-insight.seedtactics.com/docs/client-dashboard.html">Learn More</a>
           </Typography>
         </div>
+        {errors.length > 0 ? (
+          <Alert severity="error" sx={{ margin: "1em 0" }}>
+            <AlertTitle>FMS Insight errors</AlertTitle>
+            {errors.map((error) => (
+              <p key={error}>{error}</p>
+            ))}
+          </Alert>
+        ) : undefined}
         {navList}
       </div>
     </main>

@@ -49,6 +49,7 @@ import {
   loadingSpecificMonthData,
 } from "../network/load-specific-month.js";
 import { useAtomValue } from "jotai";
+import { currentRoute, RouteLocation } from "./routes.js";
 
 export const LoadingIcon = memo(function LoadingIcon() {
   const websocketLoading = useAtomValue(websocketReconnecting);
@@ -56,14 +57,15 @@ export const LoadingIcon = memo(function LoadingIcon() {
 
   const last30Error = useAtomValue(errorLoadingLast30);
   const specificMonthError = useAtomValue(errorLoadingSpecificMonthData);
+  const errorsInline = useAtomValue(currentRoute).route === RouteLocation.ChooseMode;
 
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
     <>
-      {last30Error != null || specificMonthError != null ? (
+      {!errorsInline && (last30Error != null || specificMonthError != null) ? (
         <Tooltip title="Error">
-          <IconButton onClick={() => setDialogOpen(true)} size="large">
+          <IconButton aria-label="Error" onClick={() => setDialogOpen(true)} size="large">
             <ErrorIcon />
           </IconButton>
         </Tooltip>
@@ -73,7 +75,7 @@ export const LoadingIcon = memo(function LoadingIcon() {
           <CircularProgress data-testid="loading-icon" color="secondary" />
         </Tooltip>
       ) : undefined}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+      <Dialog open={dialogOpen && !errorsInline} onClose={() => setDialogOpen(false)}>
         <DialogTitle>Error</DialogTitle>
         <DialogContent>
           {last30Error !== null ? <p>{last30Error}</p> : undefined}
