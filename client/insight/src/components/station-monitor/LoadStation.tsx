@@ -452,6 +452,18 @@ function selectLoadStationAndQueueProps(
         .toRArray().length
     : 0;
   const layoutCount = Math.max(matCount, activeBasketSlotCount);
+  // Basket slots are rows of material side by side, so the widest slot must fit across the screen
+  const widestBasketSlot = activeBasket
+    ? (LazySeq.of(curSt.material)
+        .filter(
+          (mat) =>
+            mat.location.type === api.LocType.InBasket &&
+            mat.location.basketId === activeBasket.basketId,
+        )
+        .groupBy((mat) => mat.location.basketSlot ?? 0)
+        .map(([, mats]) => mats.length)
+        .maxBy((n) => n) ?? 0)
+    : 0;
   return {
     pallet: pal,
     activeBasket,
@@ -461,7 +473,8 @@ function selectLoadStationAndQueueProps(
     queues: sortedQueueMat,
     baskets: sortedBasketMat,
     elapsedLoadingTime,
-    fsize: layoutCount <= 2 ? "x-large" : layoutCount <= 6 ? "large" : "normal",
+    fsize:
+      layoutCount > 6 || widestBasketSlot >= 3 ? "normal" : layoutCount <= 2 ? "x-large" : "large",
   };
 }
 
@@ -577,39 +590,17 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
   if (data.activeBasket && !data.pallet) {
     return (
       <div data-testid="load-station-active-basket">
-        {faceNum === 1 ? (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-            }}
-          >
+        <BasketLoadStationWorkflow
+          basket={data.activeBasket}
+          material={data.allMaterial}
+          fsize={data.fsize}
+          title={
             <Typography variant="h4">
               {basketName} {data.activeBasket.basketId}
             </Typography>
-            <Box
-              sx={{
-                justifySelf: "flex-end",
-              }}
-            >
-              <ElapsedLoadTime elapsedLoadTime={data.elapsedLoadingTime} />
-            </Box>
-          </Box>
-        ) : null}
-        <Box sx={{ ml: "4em", mr: "4em" }}>
-          <MoveMaterialArrowNode
-            kind={{
-              type: MoveMaterialNodeKindType.BasketZone,
-              basketId: data.activeBasket.basketId,
-            }}
-          >
-            <BasketLoadStationWorkflow
-              basket={data.activeBasket}
-              material={data.allMaterial}
-              fsize={data.fsize}
-            />
-          </MoveMaterialArrowNode>
-        </Box>
+          }
+          elapsed={<ElapsedLoadTime elapsedLoadTime={data.elapsedLoadingTime} />}
+        />
       </div>
     );
   }
@@ -722,6 +713,7 @@ function MaterialRegion({
             <InProcMaterial
               mat={m}
               displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+              displayActionForSingleBasket={data.activeBasket?.basketId}
               fsize={data.fsize}
               showRawMaterial
               showJobComment
@@ -730,13 +722,10 @@ function MaterialRegion({
             <SortableInProcMaterial
               mat={m}
               displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
-              shake={
-                m.action.type === api.ActionType.Loading &&
-                m.action.loadOntoPalletNum === data.pallet?.palletNum
-              }
+              displayActionForSingleBasket={data.activeBasket?.basketId}
+              shake={isLoadingToDisplayedTarget(m, data.pallet, data.activeBasket)}
               fsize={
-                m.action.type === api.ActionType.Loading &&
-                m.action.loadOntoPalletNum === data.pallet?.palletNum
+                isLoadingToDisplayedTarget(m, data.pallet, data.activeBasket)
                   ? data.fsize
                   : undefined
               }
@@ -852,9 +841,9 @@ function MaterialColumn({
               <DragOverlayInProcMaterial
                 mat={mat}
                 displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+                displayActionForSingleBasket={data.activeBasket?.basketId}
                 fsize={
-                  mat.action.type === api.ActionType.Loading &&
-                  mat.action.loadOntoPalletNum === data.pallet?.palletNum
+                  isLoadingToDisplayedTarget(mat, data.pallet, data.activeBasket)
                     ? data.fsize
                     : undefined
                 }

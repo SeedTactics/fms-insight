@@ -67,6 +67,16 @@ function elementToRect(e: Element): MoveMaterialElemRect {
 }
 
 function arrowToPath(arr: MoveMaterialArrow): string {
+  if (arr.type === "loop") {
+    // almost a full circle, from the lower left over the top to the lower right, so the arrow
+    // head points back at the start
+    const point = (degrees: number) => {
+      const radians = (degrees * Math.PI) / 180;
+      return `${arr.centerX + arr.radius * Math.cos(radians)} ${arr.centerY + arr.radius * Math.sin(radians)}`;
+    };
+    return `M ${point(120)} A ${arr.radius} ${arr.radius} 0 1 1 ${point(60)}`;
+  }
+
   // mid point of line
   const mpx = (arr.fromX + arr.toX) / 2;
   const mpy = (arr.fromY + arr.toY) / 2;

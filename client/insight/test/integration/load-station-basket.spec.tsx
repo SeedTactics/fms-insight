@@ -449,16 +449,71 @@ describe("load station with active basket", () => {
     await expect.element(activeBasket).toMatchTextContent("Basket 7");
     await expect.element(activeBasket).toMatchTextContent("Basket To Queue");
     await expect.element(activeBasket).toMatchTextContent("Unload into queue Queue B");
-    await expect.element(activeBasket).toMatchTextContent("Load from Queue A");
+    await expect.element(activeBasket).not.toMatchTextContent("Load from");
 
     await expect.element(queueA).toMatchTextContent("Queue To Basket");
-    await expect.element(queueA).toMatchTextContent("Load into Basket 7 slot B");
+    await expect.element(queueA).toMatchTextContent("Load into slot B");
     await expect.element(legacyQueue).toMatchTextContent("Legacy Queue To Basket");
     await expect.element(legacyQueue).toMatchTextContent("Load into Basket 7");
     await expect.element(queueB).toMatchTextContent("Queue Existing");
     await expect.element(queueC).not.toMatchTextContent("Queue Existing");
     await expect.element(basketsColumn).toMatchTextContent("Baskets");
     await expect.element(stagingBasket).toMatchTextContent("Staging Basket");
+  });
+
+  test("queue material loading into the basket shakes like material loading onto a pallet", async () => {
+    const currentStatus = createCurrentStatus({
+      baskets: [
+        createBasket({
+          basketId: 7,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadUnload,
+            locationNum: 1,
+          }),
+          emptySlots: [1],
+        }),
+      ],
+      material: [
+        createMaterial({
+          materialID: 501,
+          jobUnique: "JOB",
+          partName: "Loading Part",
+          process: 1,
+          path: 1,
+          location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "basket-work",
+            loadToBasketId: 7,
+            loadToBasketSlot: 1,
+            processAfterLoad: 2,
+          },
+        }),
+        createMaterial({
+          materialID: 502,
+          jobUnique: "JOB",
+          partName: "Waiting Part",
+          process: 1,
+          path: 1,
+          location: { type: api.LocType.InQueue, currentQueue: "Queue B", queuePosition: 0 },
+          action: { type: api.ActionType.Waiting },
+        }),
+      ],
+    });
+
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={["Queue B"]} completed={false} />,
+      { currentStatus },
+    );
+    const queueA = region(screen, queueRegionTestId("Queue A"));
+    const queueB = region(screen, queueRegionTestId("Queue B"));
+
+    await expect.element(queueA).toMatchTextContent("Loading Part");
+    await expect.element(queueB).toMatchTextContent("Waiting Part");
+    await expect
+      .poll(() => queueA.element().getAnimations({ subtree: true }).length)
+      .toBeGreaterThan(0);
+    expect(queueB.element().getAnimations({ subtree: true })).toHaveLength(0);
   });
 
   test("confirms all unload and load work with one button press", async () => {
@@ -564,20 +619,21 @@ describe("load station with active basket", () => {
       .element(region(screen, "basket-load-station-slot-1"))
       .toMatchTextContent("Unload into queue Transfer Queue");
     await expect
-      .element(region(screen, "basket-load-station-slot-1"))
-      .toMatchTextContent("Load from Transfer Queue");
+      .element(region(screen, queueRegionTestId("Transfer Queue")))
+      .toMatchTextContent("Load into slot A");
     await expect
       .element(region(screen, "basket-load-station-slot-2"))
       .toMatchTextContent("Unload from Basket 7 to completed material");
+    await expect.element(region(screen, "basket-load-station-slot-3")).toMatchTextContent("Slot C");
     await expect
       .element(region(screen, "basket-load-station-slot-3"))
-      .toMatchTextContent("Load from raw material");
+      .not.toMatchTextContent("Empty");
     await expect
       .element(region(screen, "basket-load-station-slot-4"))
-      .toMatchTextContent("Unload, re-plate, and reload this slot");
+      .toMatchTextContent("Load into slot D");
     await expect
       .element(region(screen, "load-station-material"))
-      .toMatchTextContent("Load into Basket 7 slot C");
+      .toMatchTextContent("Load into slot C");
 
     await screen.getByRole("button", { name: "Confirm" }).click();
 
@@ -650,7 +706,7 @@ describe("load station with active basket", () => {
       onLoadCurrentSt,
       confirmableBasketStatus("replacement-work", "Replacement Part"),
     );
-    await expect.element(screen.getByText("Replacement Part · Process 1")).toBeVisible();
+    await expect.element(screen.getByText("Replacement Part")).toBeVisible();
     await expect.element(confirm).toBeEnabled();
 
     resolveSubmission("accepted");
