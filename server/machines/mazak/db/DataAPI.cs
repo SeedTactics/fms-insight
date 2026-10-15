@@ -463,7 +463,7 @@ namespace MazakMachineInterface
     public int? PocketType { get; init; }
 
     [DataMember]
-    public int? ToolID { get; init; }
+    public long? ToolID { get; init; }
 
     [DataMember]
     public int? ToolNameCode { get; init; }
@@ -503,6 +503,12 @@ namespace MazakMachineInterface
 
     [DataMember]
     public int? LifeUsed { get; init; }
+
+    [DataMember]
+    public int? LifeCount { get; init; }
+
+    [DataMember]
+    public int? LifeUsedCount { get; init; }
 
     [DataMember]
     public string NominalDiameter { get; init; }

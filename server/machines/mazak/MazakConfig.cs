@@ -113,6 +113,9 @@ namespace MazakMachineInterface
   {
     public required MazakDbType DBType { get; init; }
     public string? SQLConnectionString { get; init; }
+
+    // Opt-in experiment against undocumented Smooth/Neo tables. Configure on the proxy when used.
+    public bool ExperimentalInternalToolData { get; init; } = false;
     public string? OleDbDatabasePath { get; init; }
     public string? LogCSVPath { get; init; }
     public string? ProgramDirectory { get; init; }
@@ -300,6 +303,7 @@ namespace MazakMachineInterface
       {
         DBType = dbtype,
         SQLConnectionString = dbConnStr,
+        ExperimentalInternalToolData = cfg.GetValue<bool>("Experimental Internal Tool Data", false),
         OleDbDatabasePath = localDbPath,
         ProxyDBUri = proxyUri,
         LogCSVPath = logPath,

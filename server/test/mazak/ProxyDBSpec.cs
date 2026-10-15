@@ -199,6 +199,77 @@ public sealed class ProxyDBspec : IDisposable
   }
 
   [Test]
+  public async Task ToolsFromOlderProxyHaveNoCounts()
+  {
+    _server
+      .Given(Request.Create().WithPath("/tools").UsingGet())
+      .RespondWith(
+        Response
+          .Create()
+          .WithStatusCode(200)
+          .WithBody(
+            "[{\"MachineNumber\":1,\"PocketNumber\":10,\"GroupNo\":\"tool1\",\"IsToolDataValid\":true,\"LifeUsed\":30,\"LifeSpan\":100}]"
+          )
+      );
+
+    using var repo = RepositoryConfig.InitializeMemoryDB(
+      new SerialSettings() { ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m) },
+      Guid.NewGuid()
+    );
+    var control = new MazakMachineControl(
+      repo,
+      _db,
+      new MazakConfig() { DBType = MazakDbType.MazakSmooth }
+    );
+    var tool = control.CurrentToolsInMachines().Single();
+
+    await Assert.That(tool.CurrentUse).IsEqualTo(TimeSpan.FromSeconds(30));
+    await Assert.That(tool.TotalLifeTime).IsEqualTo(TimeSpan.FromSeconds(100));
+    await Assert.That(tool.CurrentUseCount).IsNull();
+    await Assert.That(tool.TotalLifeCount).IsNull();
+  }
+
+  [Test]
+  [Arguments(0, 0)]
+  [Arguments(12, 200)]
+  public async Task NativeToolCountsReachMachineControl(int used, int life)
+  {
+    var row = new InternalToolData.Row()
+    {
+      DeviceNumber = 2,
+      PocketNumber = 10,
+      PocketStatus = 1,
+      PocketAttribute = 0,
+      PocketOccupancy = 1,
+      GroupNumber = 42,
+      LifeUsed = 30,
+      LifeSpan = 100,
+      LifeUsedCount = used,
+      LifeCount = life,
+    };
+    var tools = new[] { InternalToolData.ToToolPocket(row) };
+    _server.Given(Request.Create().WithPath("/tools").UsingGet()).RespondWith(JsonBody(tools));
+
+    using var repo = RepositoryConfig.InitializeMemoryDB(
+      new SerialSettings() { ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m) },
+      Guid.NewGuid()
+    );
+    var control = new MazakMachineControl(
+      repo,
+      _db,
+      new MazakConfig() { DBType = MazakDbType.MazakSmooth }
+    );
+    var tool = control.CurrentToolsInMachine("MC", 2).Single();
+
+    await Assert.That(tool.ToolName).IsEqualTo("42");
+    await Assert.That(tool.Pocket).IsEqualTo(10);
+    await Assert.That(tool.CurrentUse).IsEqualTo(TimeSpan.FromSeconds(30));
+    await Assert.That(tool.TotalLifeTime).IsEqualTo(TimeSpan.FromSeconds(100));
+    await Assert.That(tool.CurrentUseCount).IsEqualTo(used);
+    await Assert.That(tool.TotalLifeCount).IsEqualTo(life);
+  }
+
+  [Test]
   public void DeleteLogs()
   {
     _server

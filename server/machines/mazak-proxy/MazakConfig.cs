@@ -40,6 +40,7 @@ public class MazakConfig
   public MazakDbType DBType { get; init; }
   public int Port { get; init; } = 5200;
   public string SQLConnectionString { get; init; }
+  public bool ExperimentalInternalToolData { get; init; } = false;
   public string OleDbDatabasePath { get; init; }
   public string LogCSVPath { get; init; }
   public string LoadCSVPath { get; init; }
@@ -71,6 +72,11 @@ public class MazakConfig
         SQLConnectionString = string.IsNullOrEmpty(sqlConnectionString)
           ? DefaultConnectionString(dbType)
           : sqlConnectionString,
+        ExperimentalInternalToolData = string.Equals(
+          key.GetValue("ExperimentalInternalToolData", "false").ToString(),
+          "true",
+          StringComparison.OrdinalIgnoreCase
+        ),
         OleDbDatabasePath = key.GetValue("OleDbDatabasePath", "c:\\Mazak\\NFMS\\DB").ToString(),
         LogCSVPath = key.GetValue("LogCSVPath", "c:\\Mazak\\FMS\\Log").ToString(),
         LoadCSVPath = key.GetValue("LoadCSVPath", "c:\\Mazak\\FMS\\LDS").ToString(),
@@ -111,6 +117,15 @@ public class MazakConfig
         SQLConnectionString = string.IsNullOrEmpty(sqlConnectionString)
           ? DefaultConnectionString(dbType)
           : sqlConnectionString,
+        ExperimentalInternalToolData = string.Equals(
+          RegistryWOW6432.GetRegKey32(
+            RegHive.HKEY_LOCAL_MACHINE,
+            @"Software\SeedTactics\FMS Insight Mazak Proxy",
+            "ExperimentalInternalToolData"
+          ),
+          "true",
+          StringComparison.OrdinalIgnoreCase
+        ),
         OleDbDatabasePath = RegistryWOW6432.GetRegKey32(
           RegHive.HKEY_LOCAL_MACHINE,
           @"Software\SeedTactics\FMS Insight Mazak Proxy",

@@ -108,8 +108,8 @@ namespace MazakMachineInterface
           Serial = null,
           CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
           TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
-          CurrentUseCount = null,
-          TotalLifeCount = null,
+          CurrentUseCount = t.LifeUsedCount,
+          TotalLifeCount = t.LifeCount,
         })
         .ToImmutableList();
     }

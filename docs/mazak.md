@@ -31,6 +31,49 @@ a program called "Mazak Open Database Kit". This is a software program developed
 allows safe access to the data inside the cell controller. Please contact your Mazak representative
 and ask to obtain "Open Database Kit" that matches the specific cell controller (Web or Smooth PMC).
 
+## Experimental native tool counts (Smooth/Neo)
+
+The public `FCREADDAT01.ToolPocket` table exposes tool-use time and life time, but no native use
+counts in the inspected Smooth/Neo schema. By default, Insight reads that public table. Counts shown
+by the tool report in this mode can be estimates based on machining history.
+
+For testing only, `ExperimentalInternalToolData` replaces the entire tool read with one query of
+`Mazak_Tool.dbo.Mazak_ToolData`, joined to `PMC_Basic.dbo.T5_Pocket` by device and pocket. Time,
+count, and tool identity come from the same internal tool row, rather than combining observations
+from the public and internal databases. This is a SQL READ COMMITTED read; it does not guarantee
+that Mazak publishes its related internal updates atomically. Schedule and event reads still use
+their ordinary sources. These internal tables are undocumented integration interfaces and require
+Mazak confirmation and qualification on the target version before production use.
+
+When using the proxy, install the updated proxy and Insight adapter, then set the **string**
+registry value `ExperimentalInternalToolData` to `true` under the proxy's existing configuration
+key, `HKEY_LOCAL_MACHINE\Software\SeedTactics\FMS Insight Mazak Proxy` (the 32-bit registry view for
+a 32-bit proxy). Restart the proxy service. A setting in Insight's config does not change a remote
+proxy. Without a proxy, set `Experimental Internal Tool Data = true` in Insight's `[Mazak]` section
+and restart Insight. Both options default to false. Revert the setting and restart to restore the
+public tool read. The experiment requires Smooth/Neo and read permissions on the internal tables;
+query failures are logged and reported, without silently falling back to the public data.
+
+Internal SQL column descriptions identify `mtdb_use`/`mtdb_lif` as used/life time and
+`mtdb_cuse`/`mtdb_clif` as used/life quantity. The experiment assumes the time values use the same
+seconds as the public interface and preserves native counts, including zero. Native count increments
+are controller data, not an Insight assertion that one count equals one finished part. Counts feed
+both the current tool report and machining-cycle usage history.
+
+Until native status bits are verified, inclusion requires a valid, occupied machine pocket with a
+matching internal tool row, excluding error and reserved pockets. This is a provisional inclusion
+rule, not a decoded Mazak tool-data-valid flag. Stocker devices are excluded. Unknown tool status
+bits are left uninterpreted, and the nominal diameter's numeric scale is not guessed. Duplicate
+machine/pocket rows fail the read rather than producing ambiguous usage records.
+
+Each experimental read logs its source, row/inclusion counts, and every raw and mapped tool row at
+debug level, including the unmodified tool status/information words and pocket flags. With the proxy
+these details go to its normal debug log under `%ProgramData%\FMS Insight Mazak Proxy`. On the real
+machine, compare a few pockets with Mazak's tool screen: tool/group identity, pocket presence, time
+units, zero/unset limits, count increments during machining, and resets on tool replacement. The
+simulator schema accepts the query, but has no attached-machine tool data, so populated rows and
+these semantics have not yet been validated on hardware.
+
 ## Enable Log CSV
 
 For Mazak Web and Mazak Smooth PMC, you must enable a setting in the Mazak cell controller which

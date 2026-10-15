@@ -4830,7 +4830,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void Tools()
+    [Arguments(false)]
+    [Arguments(true)]
+    public void Tools(bool nativeCounts)
     {
       var j = new Job()
       {
@@ -4890,6 +4892,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             GroupNo = "tool1",
             IsToolDataValid = true,
             LifeUsed = 30,
+            LifeUsedCount = nativeCounts ? 12 : null,
+            LifeCount = nativeCounts ? 200 : null,
             LifeSpan = 102,
           },
           new ToolPocketRow()
@@ -4899,6 +4903,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             GroupNo = "tool2",
             IsToolDataValid = true,
             LifeUsed = 40,
+            LifeUsedCount = nativeCounts ? 0 : null,
+            LifeCount = nativeCounts ? 300 : null,
             LifeSpan = 103,
           },
           new ToolPocketRow()
@@ -4930,6 +4936,20 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           },
         }
       );
+      if (nativeCounts)
+      {
+        mazakDataTools.Add(
+          new ToolPocketRow()
+          {
+            MachineNumber = 2,
+            PocketNumber = 25,
+            GroupNo = "count-only",
+            IsToolDataValid = true,
+            LifeUsedCount = 0,
+            LifeCount = 50,
+          }
+        );
+      }
       MachStart(p, offset: 4, mach: 2);
 
       mazakDataTools.Clear();
@@ -4952,6 +4972,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             GroupNo = "tool1",
             IsToolDataValid = true,
             LifeUsed = 33,
+            LifeUsedCount = nativeCounts ? 15 : null,
+            LifeCount = nativeCounts ? 200 : null,
             LifeSpan = 102,
           },
           new ToolPocketRow()
@@ -4961,6 +4983,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             GroupNo = "tool2",
             IsToolDataValid = true,
             LifeUsed = 44,
+            LifeUsedCount = nativeCounts ? 2 : null,
+            LifeCount = nativeCounts ? 300 : null,
             LifeSpan = 103,
           },
           new ToolPocketRow()
@@ -4992,31 +5016,62 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           },
         }
       );
-      MachEnd(
-        p,
-        offset: 20,
-        mach: 2,
-        elapMin: 16,
-        tools: new List<ToolUse>()
+      if (nativeCounts)
+      {
+        mazakDataTools.Add(
+          new ToolPocketRow()
+          {
+            MachineNumber = 2,
+            PocketNumber = 25,
+            GroupNo = "count-only",
+            IsToolDataValid = true,
+            LifeUsedCount = 1,
+            LifeCount = 50,
+          }
+        );
+      }
+      var expectedTools = new List<ToolUse>()
+      {
+        new ToolUse()
         {
+          Tool = "tool1",
+          Pocket = 10,
+          ToolUseDuringCycle = TimeSpan.FromSeconds(33 - 30),
+          TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(33),
+          ConfiguredToolLife = TimeSpan.FromSeconds(102),
+          ToolUseCountDuringCycle = nativeCounts ? 3 : null,
+          TotalToolUseCountAtEndOfCycle = nativeCounts ? 15 : null,
+          ConfiguredToolLifeCount = nativeCounts ? 200 : null,
+        },
+        new ToolUse()
+        {
+          Tool = "tool2",
+          Pocket = 20,
+          ToolUseDuringCycle = TimeSpan.FromSeconds(44 - 40),
+          TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(44),
+          ConfiguredToolLife = TimeSpan.FromSeconds(103),
+          ToolUseCountDuringCycle = nativeCounts ? 2 : null,
+          TotalToolUseCountAtEndOfCycle = nativeCounts ? 2 : null,
+          ConfiguredToolLifeCount = nativeCounts ? 300 : null,
+        },
+      };
+      if (nativeCounts)
+      {
+        expectedTools.Add(
           new ToolUse()
           {
-            Tool = "tool1",
-            Pocket = 10,
-            ToolUseDuringCycle = TimeSpan.FromSeconds(33 - 30),
-            TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(33),
-            ConfiguredToolLife = TimeSpan.FromSeconds(102),
-          },
-          new ToolUse()
-          {
-            Tool = "tool2",
-            Pocket = 20,
-            ToolUseDuringCycle = TimeSpan.FromSeconds(44 - 40),
-            TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(44),
-            ConfiguredToolLife = TimeSpan.FromSeconds(103),
-          },
-        }
-      );
+            Tool = "count-only",
+            Pocket = 25,
+            ToolUseDuringCycle = null,
+            TotalToolUseAtEndOfCycle = TimeSpan.Zero,
+            ConfiguredToolLife = TimeSpan.Zero,
+            ToolUseCountDuringCycle = 1,
+            TotalToolUseCountAtEndOfCycle = 1,
+            ConfiguredToolLifeCount = 50,
+          }
+        );
+      }
+      MachEnd(p, offset: 20, mach: 2, elapMin: 16, tools: expectedTools);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }

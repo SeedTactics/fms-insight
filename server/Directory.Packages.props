@@ -20,6 +20,8 @@
     <PackageVersion Include="Serilog.Sinks.EventLog" Version="4.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="System.Data.OleDb" Version="10.0.12" />
+    <!-- Pin SqlClient's existing transitive dependency past the October 2026 security fixes. -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
     <!-- test projects -->
     <PackageVersion Include="AutoFixture" Version="4.18.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />

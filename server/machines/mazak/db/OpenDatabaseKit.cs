@@ -68,6 +68,21 @@ namespace MazakMachineInterface
       _cfg = cfg;
       _loadOper = loadOper;
 
+      if (cfg.ExperimentalInternalToolData && cfg.DBType != MazakDbType.MazakSmooth)
+      {
+        throw new ArgumentException(
+          "Experimental internal tool data requires Smooth/Neo.",
+          nameof(cfg)
+        );
+      }
+
+      if (cfg.ExperimentalInternalToolData)
+      {
+        Log.Information(
+          "EXPERIMENTAL tool data enabled: reading Mazak_Tool and PMC_Basic instead of FCREADDAT01.ToolPocket; mapping requires hardware validation."
+        );
+      }
+
       Log.Debug(
         "Initializing Mazak database access for {dbType} with log CSV path {logPath} and load CSV path {loadPath}",
         cfg.DBType,
@@ -1180,6 +1195,11 @@ namespace MazakMachineInterface
     {
       if (_dbType == MazakDbType.MazakSmooth)
       {
+        if (_cfg.ExperimentalInternalToolData)
+        {
+          return LoadInternalTools();
+        }
+
         return WithReadDBConnection(conn =>
         {
           using var trans = conn.BeginTransaction();
@@ -1189,6 +1209,51 @@ namespace MazakMachineInterface
       else
       {
         return Enumerable.Empty<ToolPocketRow>();
+      }
+    }
+
+    private IEnumerable<ToolPocketRow> LoadInternalTools()
+    {
+      try
+      {
+        return WithReadDBConnection(conn =>
+        {
+          using var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
+          var rows = conn.Query<InternalToolData.Row>(InternalToolData.Select, transaction: trans)
+            .ToList();
+          var tools = rows.Select(InternalToolData.ToToolPocket).ToList();
+          for (var i = 0; i < rows.Count; ++i)
+          {
+            Log.Debug(
+              "Experimental Mazak tool data: raw {@InternalTool}, mapped {@ToolPocket}",
+              rows[i],
+              tools[i]
+            );
+          }
+
+          Log.Debug(
+            "Experimental Mazak tool read: {Rows} rows, {ValidTools} included, {ExcludedTools} excluded; source Mazak_Tool/PMC_Basic",
+            rows.Count,
+            tools.Count(t => t.IsToolDataValid == true),
+            tools.Count(t => t.IsToolDataValid != true)
+          );
+
+          if (tools.GroupBy(t => new { t.MachineNumber, t.PocketNumber }).Any(g => g.Count() > 1))
+          {
+            throw new InvalidOperationException(
+              "Experimental Mazak tool data contains duplicate machine/pocket rows. See raw tool debug logs."
+            );
+          }
+
+          return tools;
+        });
+      }
+      catch (Exception ex)
+      {
+        Log.Error(
+          "Experimental Mazak tool read failed; not falling back to public tool data. " + ex
+        );
+        throw;
       }
     }
 
