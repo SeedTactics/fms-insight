@@ -56,6 +56,7 @@ export type MoveMaterialNodeKind =
   | { readonly type: MoveMaterialNodeKindType.CompletedExpandedMaterialZone }
   | {
       readonly type: MoveMaterialNodeKindType.PalletFaceZone;
+      readonly palletNum: number;
       readonly face: number;
     }
   | {
@@ -85,7 +86,7 @@ export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIde
     case MoveMaterialNodeKindType.CompletedExpandedMaterialZone:
       return "CompletedExpandedMaterialZone";
     case MoveMaterialNodeKindType.PalletFaceZone:
-      return "PalletFaceZone-" + kind.face.toString();
+      return `PalletFaceZone-${kind.palletNum}-${kind.face}`;
     case MoveMaterialNodeKindType.QueueZone:
       return "QueueZone-" + kind.queue;
     case MoveMaterialNodeKindType.BasketZone:
@@ -104,7 +105,7 @@ export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<
     case MoveMaterialNodeKindType.CompletedExpandedMaterialZone:
       return [kind.type, null];
     case MoveMaterialNodeKindType.PalletFaceZone:
-      return [kind.type, kind.face];
+      return [kind.type, kind.palletNum, kind.face];
     case MoveMaterialNodeKindType.QueueZone:
       return [kind.type, kind.queue];
     case MoveMaterialNodeKindType.BasketZone:
@@ -139,7 +140,7 @@ export type MoveMaterialElemRect = {
 type NodeRectsGroupedByKind = {
   readonly freeMaterial?: MoveMaterialElemRect;
   readonly completedMaterial?: MoveMaterialElemRect;
-  readonly faces: ReadonlyMap<number, MoveMaterialElemRect>;
+  readonly faces: ReadonlyMap<string, MoveMaterialElemRect>;
   readonly queues: ReadonlyMap<string, MoveMaterialElemRect>;
   readonly baskets: ReadonlyMap<number, MoveMaterialElemRect>;
   readonly basketSlots: ReadonlyMap<string, MoveMaterialElemRect>;
@@ -147,12 +148,16 @@ type NodeRectsGroupedByKind = {
   readonly material: ReadonlyArray<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>;
 };
 
+function faceKey(palletNum: number | undefined, face: number): string {
+  return `${palletNum ?? ""}:${face}`;
+}
+
 function groupMatByKind(
   allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>,
 ): NodeRectsGroupedByKind {
   let freeMaterial: MoveMaterialElemRect | undefined;
   let completedMaterial: MoveMaterialElemRect | undefined;
-  const faces = new Map<number, MoveMaterialElemRect>();
+  const faces = new Map<string, MoveMaterialElemRect>();
   const queues = new Map<string, MoveMaterialElemRect>();
   const baskets = new Map<number, MoveMaterialElemRect>();
   const basketSlots = new Map<string, MoveMaterialElemRect>();
@@ -168,7 +173,7 @@ function groupMatByKind(
         completedMaterial = node.elem;
         break;
       case MoveMaterialNodeKindType.PalletFaceZone:
-        faces.set(node.face, node.elem);
+        faces.set(faceKey(node.palletNum, node.face), node.elem);
         break;
       case MoveMaterialNodeKindType.QueueZone:
         queues.set(node.queue, node.elem);
@@ -204,7 +209,7 @@ export function computeArrows(
 
   const arrows: Array<MoveMaterialArrow> = [];
 
-  const faceDestUsed = new Map<number, number>();
+  const faceDestUsed = new Map<string, number>();
   const queueDestUsed = new Map<string, number>();
   const basketDestUsed = new Map<number, number>();
   let lastFreeUsed = 0;
@@ -266,10 +271,11 @@ export function computeArrows(
       case api.ActionType.Loading:
         if (mat.action.loadFromBasketId && mat.action.loadOntoFace) {
           // loading from basket onto pallet face
-          const face = byKind.faces.get(mat.action.loadOntoFace);
+          const key = faceKey(mat.action.loadOntoPalletNum, mat.action.loadOntoFace);
+          const face = byKind.faces.get(key);
           if (face !== undefined) {
-            const faceSpotsUsed = faceDestUsed.get(mat.action.loadOntoFace) ?? 0;
-            faceDestUsed.set(mat.action.loadOntoFace, faceSpotsUsed + 1);
+            const faceSpotsUsed = faceDestUsed.get(key) ?? 0;
+            faceDestUsed.set(key, faceSpotsUsed + 1);
             arrows.push({
               fromX: rect.right,
               fromY: rect.top + rect.height / 2,
@@ -307,7 +313,9 @@ export function computeArrows(
               });
             } else {
               // move to different face
-              const face = byKind.faces.get(mat.action.loadOntoFace);
+              const face = byKind.faces.get(
+                faceKey(mat.action.loadOntoPalletNum, mat.action.loadOntoFace),
+              );
               if (face) {
                 if (mat.action.loadOntoFace < (mat.location.face ?? 0)) {
                   arrows.push({
@@ -330,10 +338,11 @@ export function computeArrows(
             }
           } else {
             // loading from queues or free Material
-            const face = byKind.faces.get(mat.action.loadOntoFace);
+            const key = faceKey(mat.action.loadOntoPalletNum, mat.action.loadOntoFace);
+            const face = byKind.faces.get(key);
             if (face !== undefined) {
-              const faceSpotsUsed = faceDestUsed.get(mat.action.loadOntoFace) ?? 0;
-              faceDestUsed.set(mat.action.loadOntoFace, faceSpotsUsed + 1);
+              const faceSpotsUsed = faceDestUsed.get(key) ?? 0;
+              faceDestUsed.set(key, faceSpotsUsed + 1);
               arrows.push({
                 fromX: rect.right,
                 fromY: rect.top + rect.height / 2,

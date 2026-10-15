@@ -663,7 +663,11 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
         }}
       >
         <MoveMaterialArrowNode
-          kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: faceNum }}
+          kind={{
+            type: MoveMaterialNodeKindType.PalletFaceZone,
+            palletNum: data.pallet.palletNum,
+            face: faceNum,
+          }}
         >
           <Box
             sx={{
