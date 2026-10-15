@@ -66,6 +66,69 @@ test("points basket loads to the exact destination slot", () => {
   ]);
 });
 
+test("points queue loads only to the face of their destination pallet", () => {
+  const thisPalletKind: MoveMaterialNodeKind = {
+    type: MoveMaterialNodeKindType.Material,
+    material: loadingOnto(1, 1),
+  };
+  const otherPalletKind: MoveMaterialNodeKind = {
+    type: MoveMaterialNodeKindType.Material,
+    material: loadingOnto(2, 5),
+  };
+  const completedKind: MoveMaterialNodeKind = {
+    type: MoveMaterialNodeKindType.CompletedCollapsedMaterialZone,
+  };
+  const faceKind: MoveMaterialNodeKind = {
+    type: MoveMaterialNodeKindType.PalletFaceZone,
+    palletNum: 1,
+    face: 1,
+  };
+  const nodes: AllMoveMaterialNodes<MoveMaterialElemRect> = HashMap.empty<
+    string,
+    MoveMaterialNodeKind & { readonly elem: MoveMaterialElemRect }
+  >()
+    .set(uniqueIdForNodeKind(thisPalletKind), { ...thisPalletKind, elem: rect(10, 100, 100, 80) })
+    .set(uniqueIdForNodeKind(otherPalletKind), {
+      ...otherPalletKind,
+      elem: rect(10, 200, 100, 80),
+    })
+    .set(uniqueIdForNodeKind(completedKind), { ...completedKind, elem: rect(900, 0, 100, 500) })
+    .set(uniqueIdForNodeKind(faceKind), { ...faceKind, elem: rect(300, 20, 500, 400) });
+
+  expect(computeArrows(rect(0, 0, 1_000, 500), nodes)).toEqual([
+    {
+      fromX: 110,
+      fromY: 140,
+      toX: 320,
+      toY: 70,
+      curveDirection: -1,
+    },
+  ]);
+});
+
+function loadingOnto(materialID: number, palletNum: number): api.InProcessMaterial {
+  return new api.InProcessMaterial({
+    materialID,
+    jobUnique: "job",
+    partName: "part",
+    process: 1,
+    path: 1,
+    signaledInspections: [],
+    location: new api.InProcessMaterialLocation({
+      type: api.LocType.InQueue,
+      currentQueue: "Queue1",
+      queuePosition: materialID,
+    }),
+    action: new api.InProcessMaterialAction({
+      type: api.ActionType.Loading,
+      loadOntoPalletNum: palletNum,
+      loadOntoFace: 1,
+      processAfterLoad: 1,
+      pathAfterLoad: 1,
+    }),
+  });
+}
+
 function rect(left: number, top: number, width: number, height: number): MoveMaterialElemRect {
   return { left, top, width, height, right: left + width, bottom: top + height };
 }
