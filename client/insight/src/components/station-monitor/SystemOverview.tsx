@@ -298,7 +298,24 @@ function useCellOverview(): CellOverview {
     }
   }
 
-  for (let i = 1; i <= maxLoadNum; i++) {
+  // Sites which name their load stations show exactly those plus any station with a basket (stations
+  // with a pallet are already present); otherwise show every station up to the largest a job uses.
+  const namedLoads = LazySeq.ofObject(fmsInfo.loadStationNames ?? {})
+    .map(([num]) => parseInt(num))
+    .toRArray();
+  const emptyLoads =
+    namedLoads.length > 0
+      ? LazySeq.of(namedLoads).concat(
+          LazySeq.ofObject(currentSt.baskets ?? {}).collect(([, b]) =>
+            b.position?.location === BasketLocationEnum.LoadUnload ||
+            b.position?.location === BasketLocationEnum.LoadStationStaging
+              ? (b.position.locationNum ?? null)
+              : null,
+          ),
+        )
+      : LazySeq.ofRange(1, maxLoadNum + 1);
+
+  for (const i of emptyLoads) {
     loads = loads.alter(i, (status) => {
       if (status) return status;
       return {
