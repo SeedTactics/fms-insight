@@ -9,10 +9,61 @@ namespace DebugMachineWatchApiServer;
 
 public static class DebugMockStatusLoader
 {
+  /// Loads BMS_CURRENT_STATUS_FILE when set, otherwise the hand-written sample status.
+  public static CurrentStatus Load(
+    string sampleDataPath,
+    JsonSerializerOptions jsonSettings,
+    TimeSpan sampleDataOffset
+  )
+  {
+    var statusFile = Environment.GetEnvironmentVariable("BMS_CURRENT_STATUS_FILE");
+    if (!string.IsNullOrEmpty(statusFile))
+    {
+      return LoadExternal(statusFile, jsonSettings, DateTime.UtcNow);
+    }
+
+    var statusJson = File.ReadAllText(Path.Combine(sampleDataPath, "status-mock.json"));
+    return OffsetStatus(
+      JsonSerializer.Deserialize<CurrentStatus>(statusJson, jsonSettings),
+      sampleDataOffset
+    );
+  }
+
+  /// Names every load station used by the status with the client's default label. Sites name their
+  /// stations in code; the client offers named stations in its load station dropdown and limits the
+  /// system overview to them, so any loaded status shows just its own stations.
+  public static ImmutableDictionary<int, string> LoadStationNames(CurrentStatus status) =>
+    status
+      .Jobs.Values.SelectMany(j => j.Processes)
+      .SelectMany(proc =>
+        proc.Paths.SelectMany(path => path.Load.Concat(path.Unload))
+          .Concat(proc.BasketLoadStations ?? [])
+          .Concat(proc.BasketUnloadStations ?? [])
+      )
+      .Concat(
+        status
+          .Pallets.Values.Where(p =>
+            p.CurrentPalletLocation.Location == PalletLocationEnum.LoadUnload
+          )
+          .Select(p => p.CurrentPalletLocation.Num)
+      )
+      .Concat(
+        (status.Baskets?.Values ?? [])
+          .Select(b => b.Position)
+          .Where(pos =>
+            pos?.Location is BasketLocationEnum.LoadUnload or BasketLocationEnum.LoadStationStaging
+          )
+          .Select(pos => pos.LocationNum)
+      )
+      .Distinct()
+      .ToImmutableDictionary(num => num, num => $"L/U #{num}");
+
+  /// Loads a status captured at any time, such as a scenario snapshot, and shifts it to be current
+  /// as of nowUTC.
   public static CurrentStatus LoadExternal(
     string filePath,
     JsonSerializerOptions jsonSettings,
-    TimeSpan offset
+    DateTime nowUTC
   )
   {
     if (string.IsNullOrWhiteSpace(filePath))
@@ -40,7 +91,7 @@ public static class DebugMockStatusLoader
         );
       }
 
-      return OffsetStatus(status, offset);
+      return OffsetStatus(status, nowUTC - status.TimeOfCurrentStatusUTC);
     }
     catch (JsonException ex)
     {
