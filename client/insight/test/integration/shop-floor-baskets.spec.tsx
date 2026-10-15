@@ -40,6 +40,54 @@ describe("basket shop-floor screens", () => {
     await expect.element(screen.locator).not.toMatchTextContent("Basket ");
   });
 
+  test("system overview shows only named load stations and stations holding a basket", async () => {
+    const fixture = createPalletOnlyFixture();
+    const routedToStation4 = new api.ActiveJob({
+      ...fixture.job,
+      unique: "routed-to-4",
+      procsAndPaths: fixture.job.procsAndPaths.map(
+        (proc) =>
+          new api.ProcessInfo({
+            ...proc,
+            paths: proc.paths.map((path) => new api.ProcPathInfo({ ...path, load: [4] })),
+          }),
+      ),
+    });
+    const currentStatus = new api.CurrentStatus({
+      ...fixture.data.currentStatus!,
+      jobs: { ...fixture.data.currentStatus!.jobs, [routedToStation4.unique]: routedToStation4 },
+      baskets: {
+        "7": createBasket({
+          basketId: 7,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 3,
+          }),
+          emptySlots: [1],
+        }),
+      },
+    });
+
+    const named = await renderInsightPage(<SystemOverviewPage ignoreOperator whiteBackground />, {
+      ...fixture.data,
+      currentStatus,
+    });
+    await expect.element(named.getByText("Prep Cell")).toBeVisible();
+    await expect.element(named.getByText("L/U #3")).toBeVisible();
+    await expect.element(named.getByText("L/U #2")).not.toBeInTheDocument();
+    await expect.element(named.getByText("L/U #4")).not.toBeInTheDocument();
+    await named.unmount();
+
+    const unnamed = await renderInsightPage(<SystemOverviewPage ignoreOperator whiteBackground />, {
+      ...fixture.data,
+      currentStatus,
+      fmsInfo: {},
+    });
+    for (const lul of [1, 2, 3, 4]) {
+      await expect.element(unnamed.getByText(`L/U #${lul}`)).toBeVisible();
+    }
+  });
+
   test("system overview shows elapsed time for basket loading", async () => {
     const currentStatus = createCurrentStatus({
       baskets: [
