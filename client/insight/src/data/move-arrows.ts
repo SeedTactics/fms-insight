@@ -120,13 +120,24 @@ export type AllMoveMaterialNodes<T> = HashMap<
   MoveMaterialNodeKind & { readonly elem: T }
 >;
 
-export type MoveMaterialArrow = {
-  readonly fromX: number;
-  readonly fromY: number;
-  readonly toX: number;
-  readonly toY: number;
-  readonly curveDirection: number; // 1 or -1
-};
+export type MoveMaterialArrow =
+  | {
+      readonly type: "curve";
+      readonly fromX: number;
+      readonly fromY: number;
+      readonly toX: number;
+      readonly toY: number;
+      readonly curveDirection: number; // 1 or -1
+    }
+  | {
+      // material staying where it is: a small circle pointing back at itself
+      readonly type: "loop";
+      readonly centerX: number;
+      readonly centerY: number;
+      readonly radius: number;
+    };
+
+type CurveArrow = Omit<Extract<MoveMaterialArrow, { type: "curve" }>, "type">;
 
 export type MoveMaterialElemRect = {
   readonly left: number;
@@ -195,6 +206,56 @@ function groupMatByKind(
   return { freeMaterial, completedMaterial, faces, queues, baskets, basketSlots, material };
 }
 
+// All material in a basket slot moves together, so material leaving or staying in a slot draws a
+// single arrow from the combined rectangle of the slot's material.  Material arriving from
+// elsewhere keeps an arrow per piece.
+function basketSlotGroup(mat: Readonly<api.IInProcessMaterial>): string | null {
+  if (
+    mat.location.type === api.LocType.InBasket &&
+    mat.location.basketId !== undefined &&
+    mat.location.basketSlot !== undefined
+  ) {
+    return `${mat.location.basketId}:${mat.location.basketSlot}`;
+  }
+  return null;
+}
+
+function unionRect(a: MoveMaterialElemRect, b: MoveMaterialElemRect): MoveMaterialElemRect {
+  const left = Math.min(a.left, b.left);
+  const top = Math.min(a.top, b.top);
+  const right = Math.max(a.right, b.right);
+  const bottom = Math.max(a.bottom, b.bottom);
+  return { left, top, right, bottom, width: right - left, height: bottom - top };
+}
+
+function arrowSources(
+  material: ReadonlyArray<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>,
+): ReadonlyArray<readonly [MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]> {
+  const sorted = LazySeq.of(material)
+    .sortBy(
+      ([box]) => box.left,
+      ([box]) => box.top,
+    )
+    .toRArray();
+  const slotRects = LazySeq.of(sorted)
+    .collect(([rect, mat]) => {
+      const group = basketSlotGroup(mat);
+      return group === null ? null : ([group, rect] as const);
+    })
+    .buildHashMap(
+      ([group]) => group,
+      (prev: MoveMaterialElemRect | undefined, [, rect]) => (prev ? unionRect(prev, rect) : rect),
+    );
+  const seen = new Set<string>();
+  return sorted.flatMap(([rect, mat]) => {
+    const group = basketSlotGroup(mat);
+    if (group === null) return [[rect, mat] as const];
+    if (seen.has(group)) return [];
+    seen.add(group);
+    return [[slotRects.get(group) ?? rect, mat] as const];
+  });
+}
+
 export function computeArrows(
   container: MoveMaterialElemRect | null | undefined,
   allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>,
@@ -207,17 +268,16 @@ export function computeArrows(
     return [];
   }
 
-  const arrows: Array<MoveMaterialArrow> = [];
+  const arrows: Array<CurveArrow> = [];
+  const loops: Array<Extract<MoveMaterialArrow, { type: "loop" }>> = [];
 
   const faceDestUsed = new Map<string, number>();
   const queueDestUsed = new Map<string, number>();
   const basketDestUsed = new Map<number, number>();
+  const slotDestUsed = new Map<string, number>();
   let lastFreeUsed = 0;
 
-  for (const [rect, mat] of LazySeq.of(byKind.material).sortBy(
-    ([box]) => box.left,
-    ([box]) => box.top,
-  )) {
+  for (const [rect, mat] of arrowSources(byKind.material)) {
     switch (mat.action.type) {
       case api.ActionType.UnloadToCompletedMaterial:
       case api.ActionType.UnloadToInProcess:
@@ -357,11 +417,36 @@ export function computeArrows(
       case api.ActionType.LoadingToBasket: {
         const basketId = mat.action.loadToBasketId;
         if (basketId === undefined) break;
-        const dest =
-          mat.action.loadToBasketSlot === undefined
-            ? byKind.baskets.get(basketId)
-            : (byKind.basketSlots.get(`${basketId}:${mat.action.loadToBasketSlot}`) ??
-              byKind.baskets.get(basketId));
+        if (
+          mat.location.type === api.LocType.InBasket &&
+          mat.location.basketId === basketId &&
+          mat.location.basketSlot === mat.action.loadToBasketSlot
+        ) {
+          loops.push({
+            type: "loop",
+            centerX: rect.left - 20 - container.left,
+            centerY: rect.top + rect.height / 2 - container.top,
+            radius: 12,
+          });
+          break;
+        }
+        const slotKey = `${basketId}:${mat.action.loadToBasketSlot}`;
+        const slotDest =
+          mat.action.loadToBasketSlot === undefined ? undefined : byKind.basketSlots.get(slotKey);
+        if (slotDest !== undefined) {
+          // a slot is a row, so arrows into it are spread along the row
+          const spotsUsed = slotDestUsed.get(slotKey) ?? 0;
+          slotDestUsed.set(slotKey, spotsUsed + 1);
+          arrows.push({
+            fromX: rect.right,
+            fromY: rect.top + rect.height / 2,
+            toX: slotDest.left + 20 + 40 * spotsUsed,
+            toY: slotDest.top + slotDest.height / 2,
+            curveDirection: -1,
+          });
+          break;
+        }
+        const dest = byKind.baskets.get(basketId);
         const lastSlotUsed = basketDestUsed.get(basketId) ?? 0;
         basketDestUsed.set(basketId, lastSlotUsed + 1);
         arrows.push({
@@ -376,11 +461,15 @@ export function computeArrows(
     }
   }
 
-  return arrows.map((arr) => ({
-    fromX: arr.fromX - container.left,
-    fromY: arr.fromY - container.top,
-    toX: arr.toX - container.left,
-    toY: arr.toY - container.top,
-    curveDirection: arr.curveDirection,
-  }));
+  return [
+    ...arrows.map((arr): MoveMaterialArrow => ({
+      type: "curve",
+      fromX: arr.fromX - container.left,
+      fromY: arr.fromY - container.top,
+      toX: arr.toX - container.left,
+      toY: arr.toY - container.top,
+      curveDirection: arr.curveDirection,
+    })),
+    ...loops,
+  ];
 }
