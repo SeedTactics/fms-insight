@@ -5,7 +5,9 @@ material at a process, with namespaced metadata for the integration's physical g
 repository's current-contents tables project committed manufacturing history; sensing and operator
 suggestions do not independently change material ownership. Current contents are compared
 structurally, including material/process pairs and metadata, regardless of dictionary or material
-iteration order. One material identity cannot occupy two current basket slots.
+iteration order. One material identity cannot occupy two current basket slots. A slot is the unit of
+handling, such as one transfer plate or one part: all material in a slot moves together, so a
+station instruction applies to the whole slot and the client draws one arrow per slot.
 
 A manufacturing completion has three parts: exact transfers, basket cycle boundaries, and expected
 and resulting contents. A pallet completion requires the corresponding pallet load or unload for

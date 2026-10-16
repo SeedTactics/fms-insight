@@ -40,6 +40,119 @@ describe("basket shop-floor screens", () => {
     await expect.element(screen.locator).not.toMatchTextContent("Basket ");
   });
 
+  test("system overview shows only named load stations and stations holding a basket", async () => {
+    const fixture = createPalletOnlyFixture();
+    const routedToStation4 = new api.ActiveJob({
+      ...fixture.job,
+      unique: "routed-to-4",
+      procsAndPaths: fixture.job.procsAndPaths.map(
+        (proc) =>
+          new api.ProcessInfo({
+            ...proc,
+            paths: proc.paths.map((path) => new api.ProcPathInfo({ ...path, load: [4] })),
+          }),
+      ),
+    });
+    const currentStatus = new api.CurrentStatus({
+      ...fixture.data.currentStatus!,
+      jobs: { ...fixture.data.currentStatus!.jobs, [routedToStation4.unique]: routedToStation4 },
+      baskets: {
+        "7": createBasket({
+          basketId: 7,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 3,
+          }),
+          emptySlots: [1],
+        }),
+      },
+    });
+
+    const named = await renderInsightPage(<SystemOverviewPage ignoreOperator whiteBackground />, {
+      ...fixture.data,
+      currentStatus,
+    });
+    await expect.element(named.getByText("Prep Cell")).toBeVisible();
+    await expect.element(named.getByText("L/U #3")).toBeVisible();
+    await expect.element(named.getByText("L/U #2")).not.toBeInTheDocument();
+    await expect.element(named.getByText("L/U #4")).not.toBeInTheDocument();
+    await named.unmount();
+
+    const unnamed = await renderInsightPage(<SystemOverviewPage ignoreOperator whiteBackground />, {
+      ...fixture.data,
+      currentStatus,
+      fmsInfo: {},
+    });
+    for (const lul of [1, 2, 3, 4]) {
+      await expect.element(unnamed.getByText(`L/U #${lul}`)).toBeVisible();
+    }
+  });
+
+  test("system overview lines up incoming loads above the basket's slots inside the station", async () => {
+    const material = [1, 2, 3].flatMap((slot) => [
+      createMaterial({
+        materialID: 700 + slot,
+        jobUnique: "JOB",
+        partName: "Part",
+        process: 2,
+        path: 1,
+        location: { type: api.LocType.InBasket, basketId: 4, basketSlot: slot },
+        action: { type: api.ActionType.UnloadToCompletedMaterial },
+      }),
+      ...[0, 1, 2].map(() =>
+        createMaterial({
+          materialID: -1,
+          jobUnique: "JOB",
+          partName: "Part",
+          process: 0,
+          path: 1,
+          location: { type: api.LocType.Free },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            loadToBasketId: 4,
+            loadToBasketSlot: slot,
+            processAfterLoad: 1,
+          },
+        }),
+      ),
+    ]);
+    const currentStatus = createCurrentStatus({
+      baskets: [
+        createBasket({
+          basketId: 4,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadUnload,
+            locationNum: 20,
+          }),
+          slotCount: 3,
+          emptySlots: [],
+        }),
+      ],
+      material,
+    });
+
+    const screen = await renderInsightPage(<SystemOverviewPage ignoreOperator whiteBackground />, {
+      currentStatus,
+      fmsInfo: { loadStationNames: { "20": "Basket Station" } },
+    });
+
+    await expect.element(screen.getByText("Basket Station")).toBeVisible();
+    await expect.element(screen.getByText("To Load")).toBeVisible();
+    let station: Element | null = screen.getByText("Basket Station").element();
+    while (station && getComputedStyle(station).display !== "grid") station = station.parentElement;
+    const bounds = station!.getBoundingClientRect();
+    const icons = Array.from(station!.querySelectorAll(".MuiPaper-root"));
+    // one icon per slot for the incoming blanks and one per slot in the basket
+    expect(icons).toHaveLength(6);
+    for (const icon of icons) {
+      const r = icon.getBoundingClientRect();
+      expect(r.left).toBeGreaterThanOrEqual(bounds.left);
+      expect(r.right).toBeLessThanOrEqual(bounds.right);
+      expect(r.top).toBeGreaterThanOrEqual(bounds.top);
+      expect(r.bottom).toBeLessThanOrEqual(bounds.bottom);
+    }
+  });
+
   test("system overview shows elapsed time for basket loading", async () => {
     const currentStatus = createCurrentStatus({
       baskets: [
