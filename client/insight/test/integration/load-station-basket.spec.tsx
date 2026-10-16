@@ -516,6 +516,69 @@ describe("load station with active basket", () => {
     expect(queueB.element().getAnimations({ subtree: true })).toHaveLength(0);
   });
 
+  test("groups raw blanks per slot and places confirm above the slots", async () => {
+    const material = [1, 2, 3].flatMap((slot) => [
+      createMaterial({
+        materialID: 600 + slot,
+        jobUnique: "JOB",
+        partName: "Finished Part",
+        process: 2,
+        path: 1,
+        location: { type: api.LocType.InBasket, basketId: 7, basketSlot: slot },
+        action: { type: api.ActionType.UnloadToCompletedMaterial, workId: "refill" },
+      }),
+      ...[0, 1, 2].map(() =>
+        createMaterial({
+          materialID: -1,
+          jobUnique: "JOB",
+          partName: "Blank Part",
+          process: 0,
+          path: 1,
+          location: { type: api.LocType.Free },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "refill",
+            loadToBasketId: 7,
+            loadToBasketSlot: slot,
+            processAfterLoad: 1,
+          },
+        }),
+      ),
+    ]);
+    const currentStatus = createCurrentStatus({
+      baskets: [
+        createBasket({
+          basketId: 7,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadUnload,
+            locationNum: 1,
+          }),
+          emptySlots: [],
+        }),
+      ],
+      material,
+    });
+
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed={false} />,
+      { currentStatus },
+    );
+    const raw = region(screen, "load-station-material");
+
+    for (const slot of ["A", "B", "C"]) {
+      await expect.element(raw.getByText(`Load into slot ${slot}`)).toBeVisible();
+    }
+    await expect.poll(() => raw.getByText("Blank Part").elements().length).toBe(3);
+    await expect.poll(() => raw.getByText("3", { exact: true }).elements().length).toBe(3);
+
+    const confirm = screen.getByRole("button", { name: "Confirm" });
+    await expect.element(confirm).toBeVisible();
+    const slotA = region(screen, "basket-load-station-slot-1");
+    expect(confirm.element().getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      slotA.element().getBoundingClientRect().top,
+    );
+  });
+
   test("confirms all unload and load work with one button press", async () => {
     const submit = vi.fn(async () => "accepted" as const);
     const currentStatus = createCurrentStatus({
