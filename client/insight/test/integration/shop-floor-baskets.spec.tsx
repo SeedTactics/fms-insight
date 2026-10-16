@@ -88,6 +88,71 @@ describe("basket shop-floor screens", () => {
     }
   });
 
+  test("system overview lines up incoming loads above the basket's slots inside the station", async () => {
+    const material = [1, 2, 3].flatMap((slot) => [
+      createMaterial({
+        materialID: 700 + slot,
+        jobUnique: "JOB",
+        partName: "Part",
+        process: 2,
+        path: 1,
+        location: { type: api.LocType.InBasket, basketId: 4, basketSlot: slot },
+        action: { type: api.ActionType.UnloadToCompletedMaterial },
+      }),
+      ...[0, 1, 2].map(() =>
+        createMaterial({
+          materialID: -1,
+          jobUnique: "JOB",
+          partName: "Part",
+          process: 0,
+          path: 1,
+          location: { type: api.LocType.Free },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            loadToBasketId: 4,
+            loadToBasketSlot: slot,
+            processAfterLoad: 1,
+          },
+        }),
+      ),
+    ]);
+    const currentStatus = createCurrentStatus({
+      baskets: [
+        createBasket({
+          basketId: 4,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadUnload,
+            locationNum: 20,
+          }),
+          slotCount: 3,
+          emptySlots: [],
+        }),
+      ],
+      material,
+    });
+
+    const screen = await renderInsightPage(<SystemOverviewPage ignoreOperator whiteBackground />, {
+      currentStatus,
+      fmsInfo: { loadStationNames: { "20": "Basket Station" } },
+    });
+
+    await expect.element(screen.getByText("Basket Station")).toBeVisible();
+    await expect.element(screen.getByText("To Load")).toBeVisible();
+    let station: Element | null = screen.getByText("Basket Station").element();
+    while (station && getComputedStyle(station).display !== "grid") station = station.parentElement;
+    const bounds = station!.getBoundingClientRect();
+    const icons = Array.from(station!.querySelectorAll(".MuiPaper-root"));
+    // one icon per slot for the incoming blanks and one per slot in the basket
+    expect(icons).toHaveLength(6);
+    for (const icon of icons) {
+      const r = icon.getBoundingClientRect();
+      expect(r.left).toBeGreaterThanOrEqual(bounds.left);
+      expect(r.right).toBeLessThanOrEqual(bounds.right);
+      expect(r.top).toBeGreaterThanOrEqual(bounds.top);
+      expect(r.bottom).toBeLessThanOrEqual(bounds.bottom);
+    }
+  });
+
   test("system overview shows elapsed time for basket loading", async () => {
     const currentStatus = createCurrentStatus({
       baskets: [

@@ -335,6 +335,23 @@ function useCellOverview(): CellOverview {
     if (mat.location.face !== null && mat.location.face !== undefined) {
       maxNumFacesOnPallet = Math.max(maxNumFacesOnPallet, mat.location.face);
     }
+    if (mat.location.type === LocType.InBasket && mat.location.basketSlot !== undefined) {
+      maxNumFacesOnPallet = Math.max(maxNumFacesOnPallet, mat.location.basketSlot);
+    }
+  }
+  // a basket at a load station shows its slots side by side, like the faces of a pallet
+  for (const basket of Object.values(currentSt.baskets ?? {})) {
+    if (
+      basket.position?.location === BasketLocationEnum.LoadUnload ||
+      basket.position?.location === BasketLocationEnum.LoadStationStaging
+    ) {
+      maxNumFacesOnPallet = Math.max(
+        maxNumFacesOnPallet,
+        basket.slotCount ?? 1,
+        ...(basket.emptySlots ?? []),
+        ...(basket.unknownSlots ?? []),
+      );
+    }
   }
 
   let machAtLoad = OrderedMap.empty<number, MachineAtLoadStatus>();
@@ -446,12 +463,26 @@ function useCellOverview(): CellOverview {
   }
 
   loads = loads.mapValues((load) => {
+    const currentBasket = LazySeq.of(activeBaskets.get(load.lulNum) ?? [])
+      .sortBy((b) => b.basket.position?.locationNum ?? 0)
+      .toRArray();
+    // Extras beyond the first active basket at this station fall back to floating
+    for (const extra of currentBasket.slice(1)) {
+      floatingBaskets.set(extra.basket.basketId, extra);
+    }
+    const currentBasketId = currentBasket[0]?.basket.basketId;
+
     const sourceRows = new Map<
       string,
       { label: string; mats: Array<Readonly<IInProcessMaterial>> }
     >();
-    const sourceMats = LazySeq.of(load.pal?.mats ?? load.basket?.mats ?? [])
-      .filter((mat) => mat.location.type !== LocType.OnPallet)
+    // material arriving from elsewhere, not already on the pallet or in the basket
+    const sourceMats = LazySeq.of(load.pal?.mats ?? currentBasket[0]?.mats ?? [])
+      .filter(
+        (mat) =>
+          mat.location.type !== LocType.OnPallet &&
+          !(mat.location.type === LocType.InBasket && mat.location.basketId === currentBasketId),
+      )
       .toRArray();
 
     for (const mat of sourceMats) {
@@ -488,13 +519,6 @@ function useCellOverview(): CellOverview {
       }
     }
 
-    const currentBasket = LazySeq.of(activeBaskets.get(load.lulNum) ?? [])
-      .sortBy((b) => b.basket.position?.locationNum ?? 0)
-      .toRArray();
-    // Extras beyond the first active basket at this station fall back to floating
-    for (const extra of currentBasket.slice(1)) {
-      floatingBaskets.set(extra.basket.basketId, extra);
-    }
     const loadingFromBasketIds = new Set(
       LazySeq.of(load.pal?.mats ?? [])
         .collect((mat) => mat.action.loadFromBasketId ?? null)
@@ -697,7 +721,7 @@ function PalletFaces({
     const byFace = loadingOntoPallet
       ? LazySeq.of(allMats)
           .filter((m) => noFilter || m.location.type !== LocType.OnPallet)
-          .orderedGroupBy((m) => m.action.loadOntoFace ?? 1)
+          .orderedGroupBy((m) => m.action.loadOntoFace ?? m.action.loadToBasketSlot ?? 1)
       : LazySeq.of(allMats)
           .filter((m) => noFilter || m.location.type === LocType.OnPallet)
           .orderedGroupBy((m) =>
@@ -734,8 +758,41 @@ function PalletFaces({
   }
 }
 
-function BasketContents({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
-  const byPosition = LazySeq.of(mats).orderedGroupBy((m) => m.location.basketSlot ?? 0);
+function BasketContents({
+  basketId,
+  mats,
+  maxNumFaces,
+}: {
+  basketId: number;
+  mats: ReadonlyArray<Readonly<IInProcessMaterial>>;
+  maxNumFaces?: number;
+}) {
+  // the basket's material list also contains material loading into it from elsewhere
+  const bySlot = LazySeq.of(mats)
+    .filter((m) => m.location.type === LocType.InBasket && m.location.basketId === basketId)
+    .orderedGroupBy((m) => m.location.basketSlot ?? 1);
+  if (maxNumFaces !== undefined) {
+    // at a load station, slots line up in columns like pallet faces
+    return (
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateRows: `${CollapsedIconSize}px`,
+          gridTemplateColumns: `repeat(${maxNumFaces}, ${CollapsedIconSize}px)`,
+          columnGap: "5px",
+          height: "100%",
+          alignContent: "center",
+          justifyContent: "center",
+        }}
+      >
+        {bySlot.map(([slot, slotMats]) => (
+          <Box key={slot} sx={{ gridColumn: Math.min(slot, maxNumFaces), gridRow: 1 }}>
+            <MaterialIcon mats={slotMats} />
+          </Box>
+        ))}
+      </Box>
+    );
+  }
   return (
     <Box
       sx={{
@@ -751,9 +808,9 @@ function BasketContents({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMater
         alignContent: "center",
       }}
     >
-      {byPosition.map(([position, bucketMats]) => (
-        <Box key={position}>
-          <MaterialIcon mats={bucketMats} />
+      {bySlot.map(([slot, slotMats]) => (
+        <Box key={slot}>
+          <MaterialIcon mats={slotMats} />
         </Box>
       ))}
     </Box>
@@ -1180,7 +1237,13 @@ function LoadStation({
         }}
       >
         {load.pal ? <PalletFaces mats={load.pal.mats} maxNumFaces={maxNumFaces} /> : undefined}
-        {!load.pal && load.basket ? <BasketContents mats={load.basket.mats} /> : undefined}
+        {!load.pal && load.basket ? (
+          <BasketContents
+            basketId={load.basket.basket.basketId}
+            mats={load.basket.mats}
+            maxNumFaces={maxNumFaces}
+          />
+        ) : undefined}
       </Box>
       {Array.from({ length: numStagingRows }, (_, i) => {
         const row = load.staging[i] ?? null;
@@ -1213,7 +1276,13 @@ function LoadStation({
                 justifyContent: "center",
               }}
             >
-              {row ? <BasketContents mats={row.mats} /> : undefined}
+              {row ? (
+                <BasketContents
+                  basketId={row.basket.basketId}
+                  mats={row.mats}
+                  maxNumFaces={maxNumFaces}
+                />
+              ) : undefined}
             </Box>
           </Fragment>
         );
@@ -1450,7 +1519,7 @@ function FloatingBasket({ basket }: { basket: BasketAndMaterial }) {
         {basketName} {basket.basket.basketId}
       </Typography>
       <Box sx={{ gridArea: "basketmat" }}>
-        <BasketContents mats={basket.mats} />
+        <BasketContents basketId={basket.basket.basketId} mats={basket.mats} />
       </Box>
     </Box>
   );
