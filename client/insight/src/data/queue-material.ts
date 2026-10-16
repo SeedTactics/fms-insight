@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { HashMap, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { LogBackend } from "../network/backend.js";
 import { differenceInSeconds } from "date-fns";
 import { useAtomValue } from "jotai";
@@ -229,6 +229,51 @@ export function extractJobRawMaterial(
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
+function hasSerial(m: Readonly<api.IInProcessMaterial>): boolean {
+  return m.serial !== undefined && m.serial !== null && m.serial !== "";
+}
+
+function interchangeableKey(m: Readonly<api.IInProcessMaterial>): string {
+  return [
+    m.partName,
+    m.jobUnique,
+    m.process,
+    m.action.type,
+    m.action.loadOntoPalletNum,
+    m.action.loadOntoFace,
+    m.action.loadToBasketId,
+    m.action.loadToBasketSlot,
+    m.action.processAfterLoad,
+    m.action.pathAfterLoad,
+  ].join("|");
+}
+
+// Material without a serial is interchangeable with others of the same part, job, process, and
+// destination, so it is displayed as one card with a count.  Groups the material selected by
+// canGroup in order of first appearance; other material is returned individually.
+export function groupInterchangeableMaterial(
+  material: MaterialList,
+  canGroup: (m: Readonly<api.IInProcessMaterial>) => boolean,
+): ReadonlyArray<MaterialList> {
+  const groupKey = (m: Readonly<api.IInProcessMaterial>): string | null =>
+    canGroup(m) && !hasSerial(m) ? interchangeableKey(m) : null;
+  const groups = LazySeq.of(material)
+    .collect((m) => {
+      const key = groupKey(m);
+      return key === null ? null : ([key, m] as const);
+    })
+    .groupBy(([key]) => key)
+    .toHashMap(([key, entries]) => [key, entries.map(([, m]) => m)]);
+  const seen = new Set<string>();
+  return material.flatMap((m) => {
+    const key = groupKey(m);
+    if (key === null) return [[m]];
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return [groups.get(key) ?? [m]];
+  });
+}
+
 export interface QueueRawMaterialGroup {
   readonly partOrCasting: string;
   readonly assignedJobUnique: string | null;
@@ -258,64 +303,36 @@ export function selectQueueData(
     const isRawMat = rawMatQueues.has(queueName);
 
     if (isRawMat) {
-      let materialByPos = OrderedMap.empty<number, api.IInProcessMaterial>();
-      const matByPartThenUniq = new Map<
-        string,
-        Map<string | null, Readonly<api.IInProcessMaterial>[]>
-      >();
+      const inQueue = LazySeq.of(curSt.material)
+        .filter(
+          (m) =>
+            m.location.type === api.LocType.InQueue &&
+            m.location.currentQueue === queueName &&
+            m.location.queuePosition !== undefined,
+        )
+        .toSortedArray((m) => m.location.queuePosition ?? 0);
+      // material with a serial or an action keeps its own card and queue position
+      const waitingWithoutSerial = (m: Readonly<api.IInProcessMaterial>) =>
+        !hasSerial(m) && m.action.type === api.ActionType.Waiting;
 
-      for (const m of curSt.material) {
-        if (
-          m.location.type === api.LocType.InQueue &&
-          m.location.currentQueue === queueName &&
-          m.location.queuePosition !== undefined
-        ) {
-          if ((m.serial && m.serial !== "") || m.action.type !== api.ActionType.Waiting) {
-            materialByPos = materialByPos.set(m.location.queuePosition, m);
-          } else {
-            let matsForPart = matByPartThenUniq.get(m.partName);
-            if (!matsForPart) {
-              matsForPart = new Map<string | null, Readonly<api.IInProcessMaterial>[]>();
-              matByPartThenUniq.set(m.partName, matsForPart);
-            }
-
-            const uniq = m.jobUnique || null;
-            const matsForJob = matsForPart.get(uniq);
-            if (matsForJob) {
-              matsForJob.push(m);
-            } else {
-              matsForPart.set(uniq, [m]);
-            }
-          }
-        }
-      }
-
-      const matGroups: QueueRawMaterialGroup[] = [];
-      for (const [partName, matsForPart] of matByPartThenUniq) {
-        for (const [uniq, mats] of matsForPart) {
-          matGroups.push({
-            partOrCasting: partName,
-            assignedJobUnique: uniq,
-            material: mats,
-          });
-        }
-      }
-      matGroups.sort((x, y) => {
-        const c1 = x.partOrCasting.localeCompare(y.partOrCasting);
-        if (c1 === 0) {
-          return (x.assignedJobUnique || "").localeCompare(y.assignedJobUnique || "");
-        } else {
-          return c1;
-        }
-      });
+      const matGroups = LazySeq.of(
+        groupInterchangeableMaterial(inQueue.filter(waitingWithoutSerial), () => true),
+      ).toSortedArray(
+        (g) => g[0].partName,
+        (g) => g[0].jobUnique ?? "",
+      );
 
       queues.push({
         label: queueName,
         free: false,
         rawMaterialQueue: true,
         inProcQueue: false,
-        material: [...materialByPos.values()],
-        groupedRawMat: matGroups,
+        material: inQueue.filter((m) => !waitingWithoutSerial(m)),
+        groupedRawMat: matGroups.map((material) => ({
+          partOrCasting: material[0].partName,
+          assignedJobUnique: material[0].jobUnique || null,
+          material,
+        })),
       });
     } else {
       queues.push({

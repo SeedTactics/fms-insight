@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { useMemo, memo, useState, useCallback, ReactNode } from "react";
-import { Box, useMediaQuery, Button, Typography } from "@mui/material";
+import { Badge, Box, useMediaQuery, Button, Typography } from "@mui/material";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 
 import { FolderOpen as FolderOpenIcon } from "@mui/icons-material";
@@ -81,7 +81,10 @@ import { addHours } from "date-fns";
 import { PromptForQueue } from "./QueuesAddMaterial.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { PrintLabelButton } from "./PrintedLabel.js";
-import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
+import {
+  groupInterchangeableMaterial,
+  hideNonLoadingMaterialOnLoadStation,
+} from "../../data/queue-material.js";
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 import { canAddOrMoveMaterialToQueue } from "../../data/material-operation-policy.js";
 import { BasketLoadStationWorkflow } from "./BasketLoadStationWork.js";
@@ -697,44 +700,56 @@ function MaterialRegion({
   return (
     <div>
       {mat.label !== "" ? <Typography variant="h4">{mat.label}</Typography> : null}
-      {mat.material.mats.map((m, matIdx) => (
-        <MoveMaterialArrowNode
-          key={matIdx}
-          kind={{
-            type: MoveMaterialNodeKindType.Material,
-            material: m,
-            identifier:
-              m.materialID < 0
-                ? `raw-${mat.isFree ? "free" : "queue"}-${mat.label}-${matIdx}`
-                : undefined,
-          }}
-        >
-          {mat.isFree || mat.sortable === false ? (
-            <InProcMaterial
-              mat={m}
-              displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
-              displayActionForSingleBasket={data.activeBasket?.basketId}
-              fsize={data.fsize}
-              showRawMaterial
-              showJobComment
-            />
-          ) : (
-            <SortableInProcMaterial
-              mat={m}
-              displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
-              displayActionForSingleBasket={data.activeBasket?.basketId}
-              shake={isLoadingToDisplayedTarget(m, data.pallet, data.activeBasket)}
-              fsize={
-                isLoadingToDisplayedTarget(m, data.pallet, data.activeBasket)
-                  ? data.fsize
-                  : undefined
-              }
-              showRawMaterial
-              showJobComment
-            />
-          )}
-        </MoveMaterialArrowNode>
-      ))}
+      {(mat.isFree
+        ? groupInterchangeableMaterial(mat.material.mats, (m) => m.process === 0)
+        : mat.material.mats.map((m) => [m])
+      ).map((group, matIdx) => {
+        const m = group[0];
+        return (
+          <MoveMaterialArrowNode
+            key={matIdx}
+            kind={{
+              type: MoveMaterialNodeKindType.Material,
+              material: m,
+              identifier:
+                m.materialID < 0
+                  ? `raw-${mat.isFree ? "free" : "queue"}-${mat.label}-${matIdx}`
+                  : undefined,
+            }}
+          >
+            {mat.isFree || mat.sortable === false ? (
+              <Badge
+                badgeContent={group.length < 2 ? 0 : group.length}
+                color="secondary"
+                sx={{ display: "block" }}
+              >
+                <InProcMaterial
+                  mat={m}
+                  displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+                  displayActionForSingleBasket={data.activeBasket?.basketId}
+                  fsize={data.fsize}
+                  showRawMaterial
+                  showJobComment
+                />
+              </Badge>
+            ) : (
+              <SortableInProcMaterial
+                mat={m}
+                displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+                displayActionForSingleBasket={data.activeBasket?.basketId}
+                shake={isLoadingToDisplayedTarget(m, data.pallet, data.activeBasket)}
+                fsize={
+                  isLoadingToDisplayedTarget(m, data.pallet, data.activeBasket)
+                    ? data.fsize
+                    : undefined
+                }
+                showRawMaterial
+                showJobComment
+              />
+            )}
+          </MoveMaterialArrowNode>
+        );
+      })}
       {mat.material.hiddenCnt > 0 ? (
         <Typography
           variant="body2"
