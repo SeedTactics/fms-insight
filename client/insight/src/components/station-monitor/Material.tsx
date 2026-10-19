@@ -379,7 +379,7 @@ export function MaterialAction({
       ) {
         return (
           <MatCardDetail fsize={fsize}>
-            Unload from {basketName} {mat.location.basketId} to completed material
+            Unload completed from {basketName} {mat.location.basketId}
           </MatCardDetail>
         );
       } else if (mat.location.type === api.LocType.InBasket) {

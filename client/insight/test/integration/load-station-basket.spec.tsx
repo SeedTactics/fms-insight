@@ -714,7 +714,7 @@ describe("load station with active basket", () => {
       .toMatchTextContent("Load into slot A for process 2");
     await expect
       .element(region(screen, "basket-load-station-slot-2"))
-      .toMatchTextContent("Unload from Basket 7 to completed material");
+      .toMatchTextContent("Unload completed from Basket 7");
     await expect.element(region(screen, "basket-load-station-slot-3")).toMatchTextContent("Slot C");
     await expect
       .element(region(screen, "basket-load-station-slot-3"))
