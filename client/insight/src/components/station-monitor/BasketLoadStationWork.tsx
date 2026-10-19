@@ -390,23 +390,28 @@ export function BasketLoadStationWorkflow({
                 sx={{
                   display: "flex",
                   justifyContent: "center",
-                  alignItems: "baseline",
+                  alignItems: "center",
                   flexWrap: "wrap",
                   columnGap: 1,
                   color: "text.secondary",
                   mb: 2,
                 }}
               >
-                <Typography variant="h6">Slot {basketSlotLabel(slot)}</Typography>
+                <Typography variant="h6" sx={{ color: "text.primary" }}>
+                  Slot {basketSlotLabel(slot)}
+                </Typography>
                 {target && (
-                  <>
-                    <Typography variant="body2" color="inherit" aria-hidden>
+                  <Box
+                    component="span"
+                    sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}
+                  >
+                    <Typography component="span" variant="body2" color="inherit" aria-hidden>
                       ·
                     </Typography>
-                    <Typography variant="body2" color="inherit">
+                    <Typography component="span" variant="body2" color="inherit">
                       {target}
                     </Typography>
-                  </>
+                  </Box>
                 )}
               </Box>
               <Box sx={{ ml: "4em", mr: "4em" }}>
