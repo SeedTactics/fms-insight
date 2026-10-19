@@ -60,7 +60,7 @@ test("points basket loads to the exact destination slot", () => {
       type: "curve",
       fromX: 110,
       fromY: 140,
-      toX: 570,
+      toX: 530,
       toY: 295,
       curveDirection: -1,
     },
@@ -146,7 +146,7 @@ test("points queue loads only to the face of their destination pallet", () => {
   ]);
 });
 
-test("arrows into a basket slot spread along it while a slot leaves or stays with one arrow", () => {
+test("arrows into a basket slot fan out before its row while a slot leaves or stays with one arrow", () => {
   const queued = [1, 2, 3].map((id) =>
     basketMaterial(
       id,
@@ -198,9 +198,9 @@ test("arrows into a basket slot spread along it while a slot leaves or stays wit
     );
 
   expect(computeArrows(rect(0, 0, 1_000, 500), nodes)).toEqual([
-    { type: "curve", fromX: 110, fromY: 140, toX: 320, toY: 70, curveDirection: -1 },
-    { type: "curve", fromX: 110, fromY: 240, toX: 360, toY: 70, curveDirection: -1 },
-    { type: "curve", fromX: 110, fromY: 340, toX: 400, toY: 70, curveDirection: -1 },
+    { type: "curve", fromX: 110, fromY: 140, toX: 280, toY: 45, curveDirection: -1 },
+    { type: "curve", fromX: 110, fromY: 240, toX: 280, toY: 70, curveDirection: -1 },
+    { type: "curve", fromX: 110, fromY: 340, toX: 280, toY: 95, curveDirection: -1 },
     { type: "curve", fromX: 300, fromY: 190, toX: 245, toY: 20, curveDirection: 1 },
     { type: "loop", centerX: 280, centerY: 300, radius: 12 },
   ]);

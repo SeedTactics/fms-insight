@@ -277,7 +277,17 @@ export function computeArrows(
   const slotDestUsed = new Map<string, number>();
   let lastFreeUsed = 0;
 
-  for (const [rect, mat] of arrowSources(byKind.material)) {
+  const sources = arrowSources(byKind.material);
+  const slotLoadCounts = LazySeq.of(sources)
+    .filter(
+      ([, mat]) =>
+        mat.action.type === api.ActionType.LoadingToBasket &&
+        basketSlotGroup(mat) !== `${mat.action.loadToBasketId}:${mat.action.loadToBasketSlot}`,
+    )
+    .groupBy(([, mat]) => `${mat.action.loadToBasketId}:${mat.action.loadToBasketSlot}`)
+    .toHashMap(([slot, loads]) => [slot, loads.length]);
+
+  for (const [rect, mat] of sources) {
     switch (mat.action.type) {
       case api.ActionType.UnloadToCompletedMaterial:
       case api.ActionType.UnloadToInProcess:
@@ -434,14 +444,17 @@ export function computeArrows(
         const slotDest =
           mat.action.loadToBasketSlot === undefined ? undefined : byKind.basketSlots.get(slotKey);
         if (slotDest !== undefined) {
-          // a slot is a row, so arrows into it are spread along the row
+          // Keep arrowheads in the margin before the row so cards cannot cover them. Multiple
+          // arrivals are spread vertically within the row's height.
           const spotsUsed = slotDestUsed.get(slotKey) ?? 0;
           slotDestUsed.set(slotKey, spotsUsed + 1);
           arrows.push({
             fromX: rect.right,
             fromY: rect.top + rect.height / 2,
-            toX: slotDest.left + 20 + 40 * spotsUsed,
-            toY: slotDest.top + slotDest.height / 2,
+            toX: slotDest.left - 20,
+            toY:
+              slotDest.top +
+              (slotDest.height * (spotsUsed + 1)) / ((slotLoadCounts.get(slotKey) ?? 1) + 1),
             curveDirection: -1,
           });
           break;
