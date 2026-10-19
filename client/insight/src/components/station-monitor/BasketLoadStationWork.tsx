@@ -393,14 +393,20 @@ export function BasketLoadStationWorkflow({
                   alignItems: "baseline",
                   flexWrap: "wrap",
                   columnGap: 1,
+                  color: "text.secondary",
                   mb: 2,
                 }}
               >
                 <Typography variant="h6">Slot {basketSlotLabel(slot)}</Typography>
                 {target && (
-                  <Typography variant="body2" color="textSecondary">
-                    {target}
-                  </Typography>
+                  <>
+                    <Typography variant="body2" color="inherit" aria-hidden>
+                      ·
+                    </Typography>
+                    <Typography variant="body2" color="inherit">
+                      {target}
+                    </Typography>
+                  </>
                 )}
               </Box>
               <Box sx={{ ml: "4em", mr: "4em" }}>
