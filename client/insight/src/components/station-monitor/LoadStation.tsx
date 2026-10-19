@@ -797,7 +797,7 @@ function BasketRegion({
               basketId: basket.basketId,
             }}
           >
-            {basket.empty && <Typography color="text.secondary">Empty</Typography>}
+            {basket.empty && <Typography color="textSecondary">Empty</Typography>}
             <MaterialRegion
               data={data}
               mat={{

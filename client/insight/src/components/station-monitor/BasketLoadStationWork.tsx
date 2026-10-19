@@ -352,6 +352,33 @@ export function BasketLoadStationWorkflow({
         {slots.map((slot, idx) => {
           const slotMaterial = materialBySlot.get(slot) ?? [];
           const isUnknown = basket.unknownSlots?.includes(slot) === true;
+          const targetContents = LazySeq.of(slotMaterial)
+            .filter(
+              (mat) =>
+                mat.action.type !== api.ActionType.UnloadToInProcess &&
+                mat.action.type !== api.ActionType.UnloadToCompletedMaterial,
+            )
+            .concat(loadsBySlot.get(slot) ?? [])
+            .map((mat) => {
+              const process =
+                mat.action.type === api.ActionType.LoadingToBasket
+                  ? mat.action.processAfterLoad
+                  : mat.process;
+              return `${mat.partName}${process !== undefined ? ` proc ${process}` : ""}`;
+            })
+            .distinctBy((label) => label)
+            .toRArray();
+          const targetEmpty =
+            work?.confirmEmpty ||
+            (!isUnknown && (slotMaterial.length > 0 || basket.emptySlots?.includes(slot) === true));
+          const target =
+            work && !work.awaitingSlots.includes(slot)
+              ? targetContents.length > 0
+                ? `Fill with ${targetContents.join(", ")}`
+                : targetEmpty
+                  ? "Leave empty"
+                  : undefined
+              : undefined;
           return (
             <Box
               key={slot}
@@ -359,8 +386,22 @@ export function BasketLoadStationWorkflow({
               data-testid={`basket-load-station-slot-${slot}`}
               sx={{ borderTop: idx !== 0 ? "1px solid black" : undefined, py: 3 }}
             >
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "baseline",
+                  flexWrap: "wrap",
+                  columnGap: 1,
+                  mb: 2,
+                }}
+              >
                 <Typography variant="h6">Slot {basketSlotLabel(slot)}</Typography>
+                {target && (
+                  <Typography variant="body2" color="textSecondary">
+                    {target}
+                  </Typography>
+                )}
               </Box>
               <Box sx={{ ml: "4em", mr: "4em" }}>
                 <MoveMaterialArrowNode

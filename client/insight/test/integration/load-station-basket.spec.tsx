@@ -710,18 +710,45 @@ describe("load station with active basket", () => {
       .element(region(screen, "basket-load-station-slot-1"))
       .toMatchTextContent("Unload into queue Transfer Queue");
     await expect
+      .element(
+        region(screen, "basket-load-station-slot-1").getByText("Fill with Process 2 Part proc 2", {
+          exact: true,
+        }),
+      )
+      .toBeVisible();
+    await expect
       .element(region(screen, queueRegionTestId("Transfer Queue")))
       .toMatchTextContent("Load into slot A for process 2");
     await expect
       .element(region(screen, "basket-load-station-slot-2"))
       .toMatchTextContent("Unload completed from Basket 7");
+    await expect
+      .element(
+        region(screen, "basket-load-station-slot-2").getByText("Leave empty", { exact: true }),
+      )
+      .toBeVisible();
     await expect.element(region(screen, "basket-load-station-slot-3")).toMatchTextContent("Slot C");
+    await expect
+      .element(
+        region(screen, "basket-load-station-slot-3").getByText("Fill with Raw Part proc 1", {
+          exact: true,
+        }),
+      )
+      .toBeVisible();
     await expect
       .element(region(screen, "basket-load-station-slot-3"))
       .not.toMatchTextContent("Empty");
     await expect
       .element(region(screen, "basket-load-station-slot-4"))
       .toMatchTextContent("Load into slot D for process 2");
+    await expect
+      .element(
+        region(screen, "basket-load-station-slot-4").getByText(
+          "Fill with Direct Replate Part proc 2",
+          { exact: true },
+        ),
+      )
+      .toBeVisible();
     await expect
       .element(region(screen, "load-station-material"))
       .toMatchTextContent("Load into slot C for process 1");
