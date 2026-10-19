@@ -354,6 +354,27 @@ describe("load station with active basket", () => {
             zone: 1,
           }),
         }),
+        createBasket({
+          basketId: 9,
+          slotCount: 3,
+          emptySlots: [1, 2, 3],
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 1,
+            zone: 2,
+          }),
+        }),
+        createBasket({
+          basketId: 10,
+          slotCount: 3,
+          emptySlots: [1, 2],
+          unknownSlots: [3],
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 1,
+            zone: 3,
+          }),
+        }),
       ],
       material: [
         createMaterial({
@@ -459,6 +480,13 @@ describe("load station with active basket", () => {
     await expect.element(queueC).not.toMatchTextContent("Queue Existing");
     await expect.element(basketsColumn).toMatchTextContent("Baskets");
     await expect.element(stagingBasket).toMatchTextContent("Staging Basket");
+    await expect.element(stagingBasket.getByText("Empty", { exact: true })).not.toBeInTheDocument();
+    await expect
+      .element(region(screen, basketRegionTestId(9)).getByText("Empty", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(region(screen, basketRegionTestId(10)).getByText("Empty", { exact: true }))
+      .not.toBeInTheDocument();
   });
 
   test("queue material loading into the basket shakes like material loading onto a pallet", async () => {

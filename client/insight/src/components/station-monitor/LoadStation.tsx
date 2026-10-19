@@ -124,6 +124,7 @@ type BasketMaterialRegion = {
     readonly basketId: number;
     readonly label: string;
     readonly material: RegionMaterial;
+    readonly empty: boolean;
   }>;
 };
 
@@ -773,11 +774,7 @@ function BasketRegion({
 }: {
   readonly data: LoadStationData;
   readonly label: string;
-  readonly baskets: ReadonlyArray<{
-    readonly basketId: number;
-    readonly label: string;
-    readonly material: RegionMaterial;
-  }>;
+  readonly baskets: BasketMaterialRegion["baskets"];
 }) {
   return (
     <div>
@@ -805,6 +802,7 @@ function BasketRegion({
               basketId: basket.basketId,
             }}
           >
+            {basket.empty && <Typography color="text.secondary">Empty</Typography>}
             <MaterialRegion
               data={data}
               mat={{
@@ -1276,11 +1274,20 @@ export function LoadStation(props: LoadStationProps) {
     const baskets = LazySeq.of(data.baskets)
       .filter(([b]) => b !== data.activeBasket?.basketId)
       .sortBy(([b]) => b)
-      .map(([b, mats]) => ({
-        basketId: b,
-        label: `${basketName} ${b}`,
-        material: mats,
-      }))
+      .map(([b, mats]) => {
+        const basket = currentSt.baskets?.[b];
+        return {
+          basketId: b,
+          label: `${basketName} ${b}`,
+          material: mats,
+          empty:
+            mats.mats.length === 0 &&
+            mats.hiddenCnt === 0 &&
+            (basket?.slotCount ?? 0) > 0 &&
+            basket?.emptySlots?.length === basket?.slotCount &&
+            (basket?.unknownSlots?.length ?? 0) === 0,
+        };
+      })
       .toRArray();
 
     if (baskets.length > 0) {
