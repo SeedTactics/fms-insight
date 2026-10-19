@@ -154,7 +154,7 @@ public static class DebugMockStatusLoader
                 {
                   SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
                   SimulatedProduction = path
-                    .SimulatedProduction.Select(prod =>
+                    .SimulatedProduction?.Select(prod =>
                       prod with
                       {
                         TimeUTC = prod.TimeUTC.Add(offset),

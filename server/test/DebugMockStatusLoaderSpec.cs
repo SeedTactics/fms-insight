@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
@@ -49,6 +50,79 @@ public sealed class DebugMockStatusLoaderSpec
       await Assert
         .That(customState.GetProperty("MaterialIds")[0].GetString())
         .IsEqualTo("9007199254740993");
+    }
+    finally
+    {
+      File.Delete(path);
+    }
+  }
+
+  [Test]
+  public async Task LoadsExternalStatusWithMissingEmptyAndPopulatedSimulatedProduction()
+  {
+    var options = new JsonSerializerOptions();
+    FMSInsightWebHost.JsonSettings(options);
+    var original = DebugMockStatusLoader.Load(
+      Path.Combine("..", "..", "..", "..", "debug-mock", "sample-data"),
+      options,
+      TimeSpan.Zero
+    );
+    var job = original.Jobs.Values.First();
+    var route = job.Processes[0].Paths[0];
+    var production = new SimulatedProduction
+    {
+      TimeUTC = original.TimeOfCurrentStatusUTC.AddHours(1),
+      Quantity = 3,
+    };
+    original = original with
+    {
+      Jobs = original.Jobs.SetItem(
+        job.UniqueStr,
+        job with
+        {
+          Processes =
+          [
+            new ProcessInfo
+            {
+              Paths =
+              [
+                route with
+                {
+                  SimulatedProduction = null,
+                },
+                route with
+                {
+                  SimulatedProduction = [],
+                },
+                route with
+                {
+                  SimulatedProduction = [production],
+                },
+              ],
+            },
+          ],
+        }
+      ),
+    };
+
+    var path = Path.GetTempFileName();
+    try
+    {
+      await File.WriteAllTextAsync(path, JsonSerializer.Serialize(original, options));
+      var now = new DateTime(2026, 10, 19, 12, 0, 0, DateTimeKind.Utc);
+      var loaded = DebugMockStatusLoader.LoadExternal(path, options, now);
+      var routes = loaded.Jobs[job.UniqueStr].Processes[0].Paths;
+      var offset = now - original.TimeOfCurrentStatusUTC;
+
+      await Assert.That(loaded.TimeOfCurrentStatusUTC).IsEqualTo(now);
+      await Assert.That(routes[0].SimulatedProduction).IsNull();
+      await Assert.That(routes[1].SimulatedProduction).IsEmpty();
+      await Assert
+        .That(routes[2].SimulatedProduction)
+        .IsEquivalentTo([production with { TimeUTC = production.TimeUTC.Add(offset) }]);
+      await Assert
+        .That(routes[0].SimulatedStartingUTC)
+        .IsEqualTo(route.SimulatedStartingUTC.Add(offset));
     }
     finally
     {
