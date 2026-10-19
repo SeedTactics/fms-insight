@@ -180,11 +180,11 @@ describe("explicit basket station work", () => {
   );
 
   test("confirms an empty basket without material and retries the same occurrence after a lost response", async () => {
-    const work = new api.BasketLoadStationWork({
+    const work: Readonly<api.IBasketLoadStationWork> = {
       workId: "empty-1",
       type: api.BasketLoadStationWorkType.ConfirmEmptyBasket,
       readyToConfirm: true,
-    });
+    };
     const submit = vi
       .fn<CompletionHandler>()
       .mockRejectedValueOnce(new Error("Lost response"))
@@ -193,10 +193,24 @@ describe("explicit basket station work", () => {
     expect(status.material).toHaveLength(0);
     completionRequests(submit);
     const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
-      currentStatus: status,
+      currentStatus: explicitBasketWork(
+        new api.BasketLoadStationWork({
+          ...work,
+          readyToConfirm: false,
+          confirmationBlockedReason: "Basket work is on hold. See Basket status for details.",
+        }),
+        false,
+      ),
     });
-    await expect.element(screen.getByText("Confirm basket 7 is empty.")).toBeVisible();
     const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await expect.element(confirm).toBeDisabled();
+    await expect
+      .element(screen.getByText("Basket work is on hold. See Basket status for details."))
+      .toBeVisible();
+    await expect.element(screen.getByText("Confirm basket 7 is empty.")).not.toBeInTheDocument();
+    screen.store.set(onLoadCurrentSt, status);
+    await expect.element(screen.getByText("Confirm basket 7 is empty.")).toBeVisible();
+    await expect.element(confirm).toBeEnabled();
     await confirm.click();
     await expect.element(confirm).toBeEnabled();
     await confirm.click();

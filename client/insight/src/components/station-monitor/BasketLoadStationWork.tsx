@@ -319,7 +319,9 @@ export function BasketLoadStationWorkflow({
         <Box sx={{ justifySelf: "flex-end" }}>{elapsed}</Box>
       </Box>
       <Stack spacing={2} sx={{ ml: "4em", mr: "4em", mt: 2 }}>
-        {work?.confirmEmpty && <Typography>Confirm basket {basket.basketId} is empty.</Typography>}
+        {work?.confirmEmpty && work.ready && (
+          <Typography>Confirm basket {basket.basketId} is empty.</Typography>
+        )}
         {instructionWarning && <Alert severity="warning">{instructionWarning}</Alert>}
         {work && !work.ready && (
           <Alert severity="info">
