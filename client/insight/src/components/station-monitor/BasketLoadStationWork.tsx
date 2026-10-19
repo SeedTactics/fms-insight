@@ -307,6 +307,7 @@ export function BasketLoadStationWorkflow({
           {work ? (
             <Button
               variant="contained"
+              color="secondary"
               size="large"
               disabled={submissionDisabled}
               onClick={() => void submit()}
