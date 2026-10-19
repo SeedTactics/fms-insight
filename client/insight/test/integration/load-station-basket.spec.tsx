@@ -180,11 +180,11 @@ describe("explicit basket station work", () => {
   );
 
   test("confirms an empty basket without material and retries the same occurrence after a lost response", async () => {
-    const work = new api.BasketLoadStationWork({
+    const work: Readonly<api.IBasketLoadStationWork> = {
       workId: "empty-1",
       type: api.BasketLoadStationWorkType.ConfirmEmptyBasket,
       readyToConfirm: true,
-    });
+    };
     const submit = vi
       .fn<CompletionHandler>()
       .mockRejectedValueOnce(new Error("Lost response"))
@@ -193,10 +193,24 @@ describe("explicit basket station work", () => {
     expect(status.material).toHaveLength(0);
     completionRequests(submit);
     const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
-      currentStatus: status,
+      currentStatus: explicitBasketWork(
+        new api.BasketLoadStationWork({
+          ...work,
+          readyToConfirm: false,
+          confirmationBlockedReason: "Basket work is on hold. See Basket status for details.",
+        }),
+        false,
+      ),
     });
-    await expect.element(screen.getByText("Confirm basket 7 is empty.")).toBeVisible();
     const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await expect.element(confirm).toBeDisabled();
+    await expect
+      .element(screen.getByText("Basket work is on hold. See Basket status for details."))
+      .toBeVisible();
+    await expect.element(screen.getByText("Confirm basket 7 is empty.")).not.toBeInTheDocument();
+    screen.store.set(onLoadCurrentSt, status);
+    await expect.element(screen.getByText("Confirm basket 7 is empty.")).toBeVisible();
+    await expect.element(confirm).toBeEnabled();
     await confirm.click();
     await expect.element(confirm).toBeEnabled();
     await confirm.click();
@@ -354,6 +368,27 @@ describe("load station with active basket", () => {
             zone: 1,
           }),
         }),
+        createBasket({
+          basketId: 9,
+          slotCount: 3,
+          emptySlots: [1, 2, 3],
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 1,
+            zone: 2,
+          }),
+        }),
+        createBasket({
+          basketId: 10,
+          slotCount: 3,
+          emptySlots: [1, 2],
+          unknownSlots: [3],
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadStationStaging,
+            locationNum: 1,
+            zone: 3,
+          }),
+        }),
       ],
       material: [
         createMaterial({
@@ -449,16 +484,141 @@ describe("load station with active basket", () => {
     await expect.element(activeBasket).toMatchTextContent("Basket 7");
     await expect.element(activeBasket).toMatchTextContent("Basket To Queue");
     await expect.element(activeBasket).toMatchTextContent("Unload into queue Queue B");
-    await expect.element(activeBasket).toMatchTextContent("Load from Queue A");
+    await expect.element(activeBasket).not.toMatchTextContent("Load from");
 
     await expect.element(queueA).toMatchTextContent("Queue To Basket");
-    await expect.element(queueA).toMatchTextContent("Load into Basket 7 slot B");
+    await expect.element(queueA).toMatchTextContent("Load into slot B for process 1");
     await expect.element(legacyQueue).toMatchTextContent("Legacy Queue To Basket");
     await expect.element(legacyQueue).toMatchTextContent("Load into Basket 7");
     await expect.element(queueB).toMatchTextContent("Queue Existing");
     await expect.element(queueC).not.toMatchTextContent("Queue Existing");
     await expect.element(basketsColumn).toMatchTextContent("Baskets");
     await expect.element(stagingBasket).toMatchTextContent("Staging Basket");
+    await expect.element(stagingBasket.getByText("Empty", { exact: true })).not.toBeInTheDocument();
+    await expect
+      .element(region(screen, basketRegionTestId(9)).getByText("Empty", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(region(screen, basketRegionTestId(10)).getByText("Empty", { exact: true }))
+      .not.toBeInTheDocument();
+  });
+
+  test("queue material loading into the basket shakes like material loading onto a pallet", async () => {
+    const currentStatus = createCurrentStatus({
+      baskets: [
+        createBasket({
+          basketId: 7,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadUnload,
+            locationNum: 1,
+          }),
+          emptySlots: [1],
+        }),
+      ],
+      material: [
+        createMaterial({
+          materialID: 501,
+          jobUnique: "JOB",
+          partName: "Loading Part",
+          process: 1,
+          path: 1,
+          location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 0 },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "basket-work",
+            loadToBasketId: 7,
+            loadToBasketSlot: 1,
+            processAfterLoad: 2,
+          },
+        }),
+        createMaterial({
+          materialID: 502,
+          jobUnique: "JOB",
+          partName: "Waiting Part",
+          process: 1,
+          path: 1,
+          location: { type: api.LocType.InQueue, currentQueue: "Queue B", queuePosition: 0 },
+          action: { type: api.ActionType.Waiting },
+        }),
+      ],
+    });
+
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={["Queue B"]} completed={false} />,
+      { currentStatus },
+    );
+    const queueA = region(screen, queueRegionTestId("Queue A"));
+    const queueB = region(screen, queueRegionTestId("Queue B"));
+
+    await expect.element(queueA).toMatchTextContent("Loading Part");
+    await expect.element(queueB).toMatchTextContent("Waiting Part");
+    await expect
+      .poll(() => queueA.element().getAnimations({ subtree: true }).length)
+      .toBeGreaterThan(0);
+    expect(queueB.element().getAnimations({ subtree: true })).toHaveLength(0);
+  });
+
+  test("groups raw blanks per slot and places confirm above the slots", async () => {
+    const material = [1, 2, 3].flatMap((slot) => [
+      createMaterial({
+        materialID: 600 + slot,
+        jobUnique: "JOB",
+        partName: "Finished Part",
+        process: 2,
+        path: 1,
+        location: { type: api.LocType.InBasket, basketId: 7, basketSlot: slot },
+        action: { type: api.ActionType.UnloadToCompletedMaterial, workId: "refill" },
+      }),
+      ...[0, 1, 2].map(() =>
+        createMaterial({
+          materialID: -1,
+          jobUnique: "JOB",
+          partName: "Blank Part",
+          process: 0,
+          path: 1,
+          location: { type: api.LocType.Free },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "refill",
+            loadToBasketId: 7,
+            loadToBasketSlot: slot,
+            processAfterLoad: 1,
+          },
+        }),
+      ),
+    ]);
+    const currentStatus = createCurrentStatus({
+      baskets: [
+        createBasket({
+          basketId: 7,
+          position: new api.BasketPosition({
+            location: api.BasketLocationEnum.LoadUnload,
+            locationNum: 1,
+          }),
+          emptySlots: [],
+        }),
+      ],
+      material,
+    });
+
+    const screen = await renderInsightPage(
+      <LoadStation loadNum={1} queues={[]} completed={false} />,
+      { currentStatus },
+    );
+    const raw = region(screen, "load-station-material");
+
+    for (const slot of ["A", "B", "C"]) {
+      await expect.element(raw.getByText(`Load into slot ${slot} for process 1`)).toBeVisible();
+    }
+    await expect.poll(() => raw.getByText("Blank Part").elements().length).toBe(3);
+    await expect.poll(() => raw.getByText("3", { exact: true }).elements().length).toBe(3);
+
+    const confirm = screen.getByRole("button", { name: "Confirm" });
+    await expect.element(confirm).toBeVisible();
+    const slotA = region(screen, "basket-load-station-slot-1");
+    expect(confirm.element().getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      slotA.element().getBoundingClientRect().top,
+    );
   });
 
   test("confirms all unload and load work with one button press", async () => {
@@ -564,20 +724,48 @@ describe("load station with active basket", () => {
       .element(region(screen, "basket-load-station-slot-1"))
       .toMatchTextContent("Unload into queue Transfer Queue");
     await expect
-      .element(region(screen, "basket-load-station-slot-1"))
-      .toMatchTextContent("Load from Transfer Queue");
+      .element(
+        region(screen, "basket-load-station-slot-1").getByText("Fill with Process 2 Part proc 2", {
+          exact: true,
+        }),
+      )
+      .toBeVisible();
+    await expect
+      .element(region(screen, queueRegionTestId("Transfer Queue")))
+      .toMatchTextContent("Load into slot A for process 2");
     await expect
       .element(region(screen, "basket-load-station-slot-2"))
-      .toMatchTextContent("Unload from Basket 7 to completed material");
+      .toMatchTextContent("Unload completed from Basket 7");
+    await expect
+      .element(
+        region(screen, "basket-load-station-slot-2").getByText("Leave empty", { exact: true }),
+      )
+      .toBeVisible();
+    await expect.element(region(screen, "basket-load-station-slot-3")).toMatchTextContent("Slot C");
+    await expect
+      .element(
+        region(screen, "basket-load-station-slot-3").getByText("Fill with Raw Part proc 1", {
+          exact: true,
+        }),
+      )
+      .toBeVisible();
     await expect
       .element(region(screen, "basket-load-station-slot-3"))
-      .toMatchTextContent("Load from raw material");
+      .not.toMatchTextContent("Empty");
     await expect
       .element(region(screen, "basket-load-station-slot-4"))
-      .toMatchTextContent("Unload, re-plate, and reload this slot");
+      .toMatchTextContent("Load into slot D for process 2");
+    await expect
+      .element(
+        region(screen, "basket-load-station-slot-4").getByText(
+          "Fill with Direct Replate Part proc 2",
+          { exact: true },
+        ),
+      )
+      .toBeVisible();
     await expect
       .element(region(screen, "load-station-material"))
-      .toMatchTextContent("Load into Basket 7 slot C");
+      .toMatchTextContent("Load into slot C for process 1");
 
     await screen.getByRole("button", { name: "Confirm" }).click();
 
@@ -650,7 +838,7 @@ describe("load station with active basket", () => {
       onLoadCurrentSt,
       confirmableBasketStatus("replacement-work", "Replacement Part"),
     );
-    await expect.element(screen.getByText("Replacement Part · Process 1")).toBeVisible();
+    await expect.element(screen.getByText("Replacement Part")).toBeVisible();
     await expect.element(confirm).toBeEnabled();
 
     resolveSubmission("accepted");

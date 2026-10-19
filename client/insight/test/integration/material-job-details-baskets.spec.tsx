@@ -21,7 +21,7 @@ describe("basket material and job details", () => {
       fixture.data,
     );
 
-    await expect.element(screen.getByText("Load into Tray 21 slot B")).toBeVisible();
+    await expect.element(screen.getByText("Load into Tray 21 slot B for process 1")).toBeVisible();
     await expect.element(screen.getByText("Unload into queue Queue Beta")).toBeVisible();
     await expect.element(screen.getByText("Load from Tray 22 to pal 1")).toBeVisible();
     await expect.element(screen.getByText("Unload to Tray 22 slot B")).toBeVisible();

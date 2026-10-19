@@ -81,7 +81,10 @@ import { addHours } from "date-fns";
 import { PromptForQueue } from "./QueuesAddMaterial.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { PrintLabelButton } from "./PrintedLabel.js";
-import { hideNonLoadingMaterialOnLoadStation } from "../../data/queue-material.js";
+import {
+  groupInterchangeableMaterial,
+  hideNonLoadingMaterialOnLoadStation,
+} from "../../data/queue-material.js";
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 import { canAddOrMoveMaterialToQueue } from "../../data/material-operation-policy.js";
 import { BasketLoadStationWorkflow } from "./BasketLoadStationWork.js";
@@ -121,6 +124,7 @@ type BasketMaterialRegion = {
     readonly basketId: number;
     readonly label: string;
     readonly material: RegionMaterial;
+    readonly empty: boolean;
   }>;
 };
 
@@ -452,6 +456,18 @@ function selectLoadStationAndQueueProps(
         .toRArray().length
     : 0;
   const layoutCount = Math.max(matCount, activeBasketSlotCount);
+  // Basket slots are rows of material side by side, so the widest slot must fit across the screen
+  const widestBasketSlot = activeBasket
+    ? (LazySeq.of(curSt.material)
+        .filter(
+          (mat) =>
+            mat.location.type === api.LocType.InBasket &&
+            mat.location.basketId === activeBasket.basketId,
+        )
+        .groupBy((mat) => mat.location.basketSlot ?? 0)
+        .map(([, mats]) => mats.length)
+        .maxBy((n) => n) ?? 0)
+    : 0;
   return {
     pallet: pal,
     activeBasket,
@@ -461,7 +477,8 @@ function selectLoadStationAndQueueProps(
     queues: sortedQueueMat,
     baskets: sortedBasketMat,
     elapsedLoadingTime,
-    fsize: layoutCount <= 2 ? "x-large" : layoutCount <= 6 ? "large" : "normal",
+    fsize:
+      layoutCount > 6 || widestBasketSlot >= 3 ? "normal" : layoutCount <= 2 ? "x-large" : "large",
   };
 }
 
@@ -577,39 +594,17 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
   if (data.activeBasket && !data.pallet) {
     return (
       <div data-testid="load-station-active-basket">
-        {faceNum === 1 ? (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-            }}
-          >
+        <BasketLoadStationWorkflow
+          basket={data.activeBasket}
+          material={data.allMaterial}
+          fsize={data.fsize}
+          title={
             <Typography variant="h4">
               {basketName} {data.activeBasket.basketId}
             </Typography>
-            <Box
-              sx={{
-                justifySelf: "flex-end",
-              }}
-            >
-              <ElapsedLoadTime elapsedLoadTime={data.elapsedLoadingTime} />
-            </Box>
-          </Box>
-        ) : null}
-        <Box sx={{ ml: "4em", mr: "4em" }}>
-          <MoveMaterialArrowNode
-            kind={{
-              type: MoveMaterialNodeKindType.BasketZone,
-              basketId: data.activeBasket.basketId,
-            }}
-          >
-            <BasketLoadStationWorkflow
-              basket={data.activeBasket}
-              material={data.allMaterial}
-              fsize={data.fsize}
-            />
-          </MoveMaterialArrowNode>
-        </Box>
+          }
+          elapsed={<ElapsedLoadTime elapsedLoadTime={data.elapsedLoadingTime} />}
+        />
       </div>
     );
   }
@@ -663,7 +658,11 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
         }}
       >
         <MoveMaterialArrowNode
-          kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: faceNum }}
+          kind={{
+            type: MoveMaterialNodeKindType.PalletFaceZone,
+            palletNum: data.pallet.palletNum,
+            face: faceNum,
+          }}
         >
           <Box
             sx={{
@@ -702,46 +701,51 @@ function MaterialRegion({
   return (
     <div>
       {mat.label !== "" ? <Typography variant="h4">{mat.label}</Typography> : null}
-      {mat.material.mats.map((m, matIdx) => (
-        <MoveMaterialArrowNode
-          key={matIdx}
-          kind={{
-            type: MoveMaterialNodeKindType.Material,
-            material: m,
-            identifier:
-              m.materialID < 0
-                ? `raw-${mat.isFree ? "free" : "queue"}-${mat.label}-${matIdx}`
-                : undefined,
-          }}
-        >
-          {mat.isFree || mat.sortable === false ? (
-            <InProcMaterial
-              mat={m}
-              displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
-              fsize={data.fsize}
-              showRawMaterial
-              showJobComment
-            />
-          ) : (
-            <SortableInProcMaterial
-              mat={m}
-              displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
-              shake={
-                m.action.type === api.ActionType.Loading &&
-                m.action.loadOntoPalletNum === data.pallet?.palletNum
-              }
-              fsize={
-                m.action.type === api.ActionType.Loading &&
-                m.action.loadOntoPalletNum === data.pallet?.palletNum
-                  ? data.fsize
-                  : undefined
-              }
-              showRawMaterial
-              showJobComment
-            />
-          )}
-        </MoveMaterialArrowNode>
-      ))}
+      {(mat.isFree
+        ? groupInterchangeableMaterial(mat.material.mats, (m) => m.process === 0)
+        : mat.material.mats.map((m) => [m])
+      ).map((group, matIdx) => {
+        const m = group[0];
+        return (
+          <MoveMaterialArrowNode
+            key={matIdx}
+            kind={{
+              type: MoveMaterialNodeKindType.Material,
+              material: m,
+              identifier:
+                m.materialID < 0
+                  ? `raw-${mat.isFree ? "free" : "queue"}-${mat.label}-${matIdx}`
+                  : undefined,
+            }}
+          >
+            {mat.isFree || mat.sortable === false ? (
+              <InProcMaterial
+                mat={m}
+                materialCount={group.length}
+                displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+                displayActionForSingleBasket={data.activeBasket?.basketId}
+                fsize={data.fsize}
+                showRawMaterial
+                showJobComment
+              />
+            ) : (
+              <SortableInProcMaterial
+                mat={m}
+                displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+                displayActionForSingleBasket={data.activeBasket?.basketId}
+                shake={isLoadingToDisplayedTarget(m, data.pallet, data.activeBasket)}
+                fsize={
+                  isLoadingToDisplayedTarget(m, data.pallet, data.activeBasket)
+                    ? data.fsize
+                    : undefined
+                }
+                showRawMaterial
+                showJobComment
+              />
+            )}
+          </MoveMaterialArrowNode>
+        );
+      })}
       {mat.material.hiddenCnt > 0 ? (
         <Typography
           variant="body2"
@@ -765,11 +769,7 @@ function BasketRegion({
 }: {
   readonly data: LoadStationData;
   readonly label: string;
-  readonly baskets: ReadonlyArray<{
-    readonly basketId: number;
-    readonly label: string;
-    readonly material: RegionMaterial;
-  }>;
+  readonly baskets: BasketMaterialRegion["baskets"];
 }) {
   return (
     <div>
@@ -797,6 +797,7 @@ function BasketRegion({
               basketId: basket.basketId,
             }}
           >
+            {basket.empty && <Typography color="textSecondary">Empty</Typography>}
             <MaterialRegion
               data={data}
               mat={{
@@ -848,9 +849,9 @@ function MaterialColumn({
               <DragOverlayInProcMaterial
                 mat={mat}
                 displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+                displayActionForSingleBasket={data.activeBasket?.basketId}
                 fsize={
-                  mat.action.type === api.ActionType.Loading &&
-                  mat.action.loadOntoPalletNum === data.pallet?.palletNum
+                  isLoadingToDisplayedTarget(mat, data.pallet, data.activeBasket)
                     ? data.fsize
                     : undefined
                 }
@@ -1268,11 +1269,20 @@ export function LoadStation(props: LoadStationProps) {
     const baskets = LazySeq.of(data.baskets)
       .filter(([b]) => b !== data.activeBasket?.basketId)
       .sortBy(([b]) => b)
-      .map(([b, mats]) => ({
-        basketId: b,
-        label: `${basketName} ${b}`,
-        material: mats,
-      }))
+      .map(([b, mats]) => {
+        const basket = currentSt.baskets?.[b];
+        return {
+          basketId: b,
+          label: `${basketName} ${b}`,
+          material: mats,
+          empty:
+            mats.mats.length === 0 &&
+            mats.hiddenCnt === 0 &&
+            (basket?.slotCount ?? 0) > 0 &&
+            basket?.emptySlots?.length === basket?.slotCount &&
+            (basket?.unknownSlots?.length ?? 0) === 0,
+        };
+      })
       .toRArray();
 
     if (baskets.length > 0) {

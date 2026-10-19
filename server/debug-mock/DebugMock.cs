@@ -40,7 +40,6 @@ using System.Reflection;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -111,17 +110,23 @@ namespace DebugMachineWatchApiServer
         AddToQueueButton = AddToQueueButton.ManualBarcodeScan,
         RebookingPrefix = "RE:",
         RebookingsDisplayName = "DRebook",
-        BasketName = "Tray",
-        LoadStationNames = ImmutableDictionary.CreateRange(
-          new[]
-          {
-            KeyValuePair.Create(1, "Load 1"),
-            KeyValuePair.Create(2, "Load 2"),
-            KeyValuePair.Create(3, "Load 3"),
-            KeyValuePair.Create(4, "Load 4"),
-          }
-        ),
       };
+
+      var initialStatus =
+        InsightBackupDbFile != null
+          ? null
+          : DebugMockStatusLoader.Load(
+            MockServerBackend.SampleDataPath,
+            MockServerBackend.JsonSettings(),
+            MockServerBackend.SampleDataOffset
+          );
+      if (initialStatus != null)
+      {
+        fmsSettings = fmsSettings with
+        {
+          LoadStationNames = DebugMockStatusLoader.LoadStationNames(initialStatus),
+        };
+      }
 
       string tempDbFile = null;
 
@@ -129,13 +134,20 @@ namespace DebugMachineWatchApiServer
         .UseContentRoot(Path.GetDirectoryName(Environment.ProcessPath))
         .ConfigureServices(s =>
         {
-          s.AddSingleton<MockServerBackend>();
+          s.AddSingleton(sp => new MockServerBackend(
+            sp.GetRequiredService<FMSSettings>(),
+            sp.GetRequiredService<RepositoryConfig>(),
+            initialStatus
+          ));
           s.AddSingleton<IMachineControl>(sp => sp.GetRequiredService<MockServerBackend>());
           s.AddSingleton<ISynchronizeCellState<DebugCellState>>(sp =>
             sp.GetRequiredService<MockServerBackend>()
           );
           s.AddSingleton<IPrintLabelForMaterial>(sp => sp.GetRequiredService<MockServerBackend>());
           s.AddSingleton<IParseBarcode>(sp => sp.GetRequiredService<MockServerBackend>());
+          s.AddSingleton<ILoadCancel<DebugCellState>>(sp =>
+            sp.GetRequiredService<MockServerBackend>()
+          );
 
           s.AddOpenApiDocument(cfg =>
           {
@@ -171,12 +183,7 @@ namespace DebugMachineWatchApiServer
             );
           }
         })
-        .AddFMSInsightWebHost(
-          cfg,
-          serverSettings,
-          fmsSettings,
-          [new AssemblyPart(typeof(DebugMockScenarioController).Assembly)]
-        );
+        .AddFMSInsightWebHost(cfg, serverSettings, fmsSettings);
 
       var host = hostB.Build();
 
@@ -207,15 +214,12 @@ namespace DebugMachineWatchApiServer
     : IMachineControl,
       ISynchronizeCellState<DebugCellState>,
       IPrintLabelForMaterial,
-      IParseBarcode
+      IParseBarcode,
+      ILoadCancel<DebugCellState>
   {
     public RepositoryConfig RepoConfig { get; private set; }
 
-    private Dictionary<string, CurrentStatus> Statuses { get; } =
-      new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
-    private DebugMockScenarioPlayer _scenario;
-    private readonly object _scenarioLock = new();
     private ImmutableList<ToolInMachine> Tools { get; set; }
 
     private class MockProgram
@@ -234,11 +238,31 @@ namespace DebugMachineWatchApiServer
 
     private readonly FMSSettings _fmsSettings;
 
-    public MockServerBackend(FMSSettings settings, RepositoryConfig repo)
+    // sample data starts at Jan 1, 2018.  Need to offset to current month
+    public static readonly TimeSpan SampleDataOffset = DateTime
+      .UtcNow.AddDays(-28)
+      .Subtract(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+    public static readonly string SampleDataPath = Path.Combine(
+      Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+      "../../../sample-data/"
+    );
+
+    public static JsonSerializerOptions JsonSettings()
+    {
+      var settings = new JsonSerializerOptions();
+      FMSInsightWebHost.JsonSettings(settings);
+      return settings;
+    }
+
+    public MockServerBackend(
+      FMSSettings settings,
+      RepositoryConfig repo,
+      CurrentStatus initialStatus
+    )
     {
       _fmsSettings = settings;
-      _jsonSettings = new JsonSerializerOptions();
-      FMSInsightWebHost.JsonSettings(_jsonSettings);
+      _jsonSettings = JsonSettings();
 
       RepoConfig = repo;
 
@@ -248,20 +272,11 @@ namespace DebugMachineWatchApiServer
       }
       else
       {
-        // sample data starts at Jan 1, 2018.  Need to offset to current month
-        var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        var offset = DateTime.UtcNow.AddDays(-28).Subtract(jan1_18);
-
-        var sampleDataPath = System.IO.Path.Combine(
-          System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-          "../../../sample-data/"
-        );
-
-        LoadEvents(sampleDataPath, offset);
-        LoadJobs(sampleDataPath, offset);
-        LoadStatus(sampleDataPath, offset);
-        LoadTools(sampleDataPath);
-        LoadPrograms(sampleDataPath);
+        LoadEvents(SampleDataPath, SampleDataOffset);
+        LoadJobs(SampleDataPath, SampleDataOffset);
+        CurrentStatus = initialStatus;
+        LoadTools(SampleDataPath);
+        LoadPrograms(SampleDataPath);
       }
     }
 
@@ -286,6 +301,25 @@ namespace DebugMachineWatchApiServer
         process,
         httpReferer,
         loadStation
+      );
+    }
+
+    public void CancelLoad(
+      IRepository repository,
+      DebugCellState state,
+      InProcessMaterial selectedMaterial,
+      ImmutableList<InProcessMaterial> cancellationGroup,
+      string cancellationId,
+      string operatorName,
+      string reason
+    )
+    {
+      Serilog.Log.Information(
+        "Cancel load {cancellationId} for {matIds} by {operator}: {reason}",
+        cancellationId,
+        cancellationGroup.Select(m => m.MaterialID),
+        operatorName,
+        reason
       );
     }
 
@@ -360,57 +394,10 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-    public event Action NewCellState = delegate { };
-
-    public DebugMockScenarioStatus ScenarioStatus
+    public event Action NewCellState
     {
-      get
-      {
-        lock (_scenarioLock)
-          return _scenario?.Status;
-      }
-    }
-
-    public bool TryApplyScenarioRequest(
-      string method,
-      string path,
-      out DebugMockScenarioResponse response
-    )
-    {
-      response = null;
-      lock (_scenarioLock)
-      {
-        if (_scenario is null || !_scenario.TryTransition(method, path, out response))
-          return false;
-        CurrentStatus = _scenario.CurrentStatus;
-      }
-      NewCellState();
-      return true;
-    }
-
-    public bool AdvanceScenario()
-    {
-      lock (_scenarioLock)
-      {
-        if (_scenario is null || !_scenario.Next())
-          return false;
-        CurrentStatus = _scenario.CurrentStatus;
-      }
-      NewCellState();
-      return true;
-    }
-
-    public bool ResetScenario()
-    {
-      lock (_scenarioLock)
-      {
-        if (_scenario is null)
-          return false;
-        _scenario.Reset();
-        CurrentStatus = _scenario.CurrentStatus;
-      }
-      NewCellState();
-      return true;
+      add { }
+      remove { }
     }
 
     public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
@@ -422,7 +409,7 @@ namespace DebugMachineWatchApiServer
     {
       bool changed = false;
       _curStatusLoadCount += 1;
-      if (_scenario is null && _curStatusLoadCount % 5 == 0)
+      if (_curStatusLoadCount % 5 == 0)
       {
         changed = true;
         if (CurrentStatus.Alarms.Count > 0)
@@ -514,17 +501,6 @@ namespace DebugMachineWatchApiServer
     public string GetProgramContent(string programName, long? revision)
     {
       return "Program Content for " + programName + " and revision " + revision.ToString();
-    }
-
-    private static string EventDetail(LogEntry entry, string key)
-    {
-      return entry.ProgramDetails?.TryGetValue(key, out var value) == true ? value : null;
-    }
-
-    private static int? EventDetailAsInt(LogEntry entry, string key)
-    {
-      var value = EventDetail(entry, key);
-      return int.TryParse(value, out var parsed) ? parsed : null;
     }
 
     private void LoadEvents(string sampleDataPath, TimeSpan offset)
@@ -688,7 +664,6 @@ namespace DebugMachineWatchApiServer
         }
         else if (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Program == "UNLOAD")
         {
-          var basketId = EventDetailAsInt(e, "BasketId");
           LogDB.RecordPartialLoadUnload(
             toLoad: null,
             toUnload:
@@ -697,22 +672,7 @@ namespace DebugMachineWatchApiServer
               {
                 MaterialIDToDestination = e.Material.ToImmutableDictionary(
                   m => m.MaterialID,
-                  m =>
-                  {
-                    var queue = EventDetail(e, "Queue");
-                    if (basketId.HasValue)
-                    {
-                      return new UnloadDestination();
-                    }
-                    else if (!string.IsNullOrEmpty(queue))
-                    {
-                      return new UnloadDestination() { Queue = queue };
-                    }
-                    else
-                    {
-                      return null;
-                    }
-                  }
+                  m => (UnloadDestination)null
                 ),
                 FaceNum = e.Material[0].Face,
                 Process = e.Material[0].Process,
@@ -723,21 +683,7 @@ namespace DebugMachineWatchApiServer
             lulNum: e.LocationNum,
             timeUTC: e.EndTimeUTC.Add(offset),
             totalElapsed: e.ElapsedTime,
-            externalQueues: null,
-            palletBasketCompletion: basketId.HasValue
-              ? new PalletBasketLoadUnloadCompletion
-              {
-                Transfers =
-                [
-                  new PalletBasketTransfer.LoadOntoBasket
-                  {
-                    BasketId = basketId.Value,
-                    Material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
-                  },
-                ],
-                CycleBoundaries = [],
-              }
-              : null
+            externalQueues: null
           );
         }
         else if (e.LogType == LogType.PalletCycle)
@@ -804,151 +750,11 @@ namespace DebugMachineWatchApiServer
             completeTimeUTC: e.EndTimeUTC.Add(offset)
           );
         }
-        else if (e.LogType == LogType.BasketLoadUnload && e.StartOfCycle && e.Program == "LOAD")
-        {
-          LogDB.RecordBasketLoadBegin(
-            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
-            basketId: e.Pallet,
-            lulNum: e.LocationNum,
-            timeUTC: e.EndTimeUTC.Add(offset)
-          );
-        }
-        else if (e.LogType == LogType.BasketLoadUnload && e.StartOfCycle && e.Program == "UNLOAD")
-        {
-          LogDB.RecordBasketUnloadBegin(
-            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
-            basketId: e.Pallet,
-            lulNum: e.LocationNum,
-            timeUTC: e.EndTimeUTC.Add(offset)
-          );
-        }
-        else if (e.LogType == LogType.BasketLoadUnload && !e.StartOfCycle && e.Program == "LOAD")
-        {
-          var queue = EventDetail(e, "Queue");
-          if (!string.IsNullOrEmpty(queue))
-          {
-            var material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList();
-            var expected = LogDB.GetBasketContents(e.Pallet);
-            LogDB.RecordBasketStationOperation(
-              operation: new BasketStationOperation
-              {
-                Transfers =
-                [
-                  new BasketStationTransfer.LoadOntoBasket
-                  {
-                    BasketId = e.Pallet,
-                    Material = material,
-                    ActiveOperationTime = e.ActiveOperationTime,
-                  },
-                ],
-                CycleBoundaries = [],
-                ContentsChanges =
-                [
-                  new BasketContentsChange
-                  {
-                    BasketId = e.Pallet,
-                    Expected = expected,
-                    Result = ApplyBasketTransfer(e.Pallet, expected, material, load: true),
-                  },
-                ],
-              },
-              lulNum: e.LocationNum,
-              totalElapsed: e.ElapsedTime,
-              timeUTC: e.EndTimeUTC.Add(offset),
-              externalQueues: null,
-              idempotencyKey: $"debug-replay-basket:{e.Counter}",
-              foreignId: $"debug-replay-basket:{e.Counter}"
-            );
-          }
-        }
-        else if (e.LogType == LogType.BasketLoadUnload && !e.StartOfCycle && e.Program == "UNLOAD")
-        {
-          var queue = EventDetail(e, "Queue");
-          if (!string.IsNullOrEmpty(queue))
-          {
-            var material = e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList();
-            var expected = LogDB.GetBasketContents(e.Pallet);
-            LogDB.RecordBasketStationOperation(
-              operation: new BasketStationOperation
-              {
-                Transfers =
-                [
-                  new BasketStationTransfer.UnloadFromBasket
-                  {
-                    BasketId = e.Pallet,
-                    Material = material,
-                    ActiveOperationTime = e.ActiveOperationTime,
-                    DestinationQueue = queue,
-                  },
-                ],
-                CycleBoundaries = [],
-                ContentsChanges =
-                [
-                  new BasketContentsChange
-                  {
-                    BasketId = e.Pallet,
-                    Expected = expected,
-                    Result = ApplyBasketTransfer(e.Pallet, expected, material, load: false),
-                  },
-                ],
-              },
-              lulNum: e.LocationNum,
-              totalElapsed: e.ElapsedTime,
-              timeUTC: e.EndTimeUTC.Add(offset),
-              externalQueues: null,
-              idempotencyKey: $"debug-replay-basket:{e.Counter}",
-              foreignId: $"debug-replay-basket:{e.Counter}"
-            );
-          }
-        }
-        else if (e.LogType == LogType.BasketCycle)
-        {
-          // Basket cycle rows are derived from basket load/unload replay above.
-        }
         else
         {
           throw new Exception("Invalid log type " + e.LogType);
         }
       }
-    }
-
-    private static BasketContents ApplyBasketTransfer(
-      int basketId,
-      BasketContents current,
-      ImmutableList<EventLogMaterial> transfer,
-      bool load
-    )
-    {
-      var slots = current?.Slots ?? ImmutableSortedDictionary<int, BasketSlotContents>.Empty;
-      foreach (var bySlot in transfer.GroupBy(mat => mat.Face))
-      {
-        var existing = slots.GetValueOrDefault(bySlot.Key);
-        var existingMaterial = existing?.Material ?? [];
-        var transferredIds = bySlot.Select(mat => mat.MaterialID).ToImmutableHashSet();
-        var resultMaterial = load
-          ? existingMaterial.AddRange(
-            bySlot.Select(mat => new BasketMaterial
-            {
-              MaterialID = mat.MaterialID,
-              Process = mat.Process,
-            })
-          )
-          : existingMaterial
-            .Where(mat => !transferredIds.Contains(mat.MaterialID))
-            .ToImmutableList();
-        var additionalData =
-          existing?.AdditionalData ?? ImmutableSortedDictionary<string, string>.Empty;
-
-        if (resultMaterial.IsEmpty && additionalData.IsEmpty)
-          slots = slots.Remove(bySlot.Key);
-        else
-          slots = slots.SetItem(
-            bySlot.Key,
-            new BasketSlotContents { Material = resultMaterial, AdditionalData = additionalData }
-          );
-      }
-
-      return new BasketContents { BasketId = basketId, Slots = slots };
     }
 
     private void LoadJobs(string sampleDataPath, TimeSpan offset)
@@ -989,58 +795,6 @@ namespace DebugMachineWatchApiServer
         };
 
         LogDB.AddJobs(newJobsOffset, null, addAsCopiedToSystem: true);
-      }
-    }
-
-    private void LoadStatus(string sampleDataPath, TimeSpan offset)
-    {
-      var files = System.IO.Directory.GetFiles(sampleDataPath, "status-*.json");
-      foreach (var f in files)
-      {
-        var name = System.IO.Path.GetFileNameWithoutExtension(f).Replace("status-", "");
-
-        var statusJson = System.IO.File.ReadAllText(f);
-        var curSt = DebugMockStatusLoader.OffsetStatus(
-          JsonSerializer.Deserialize<CurrentStatus>(statusJson, _jsonSettings),
-          offset
-        );
-        Statuses.Add(name, curSt);
-      }
-
-      string statusFileFromEnv = System.Environment.GetEnvironmentVariable(
-        "BMS_CURRENT_STATUS_FILE"
-      );
-      string scenarioFileFromEnv = System.Environment.GetEnvironmentVariable(
-        "BMS_CURRENT_STATUS_SCENARIO"
-      );
-      if (!string.IsNullOrEmpty(statusFileFromEnv) && !string.IsNullOrEmpty(scenarioFileFromEnv))
-        throw new InvalidOperationException(
-          "Set only one of BMS_CURRENT_STATUS_FILE and BMS_CURRENT_STATUS_SCENARIO."
-        );
-      if (!string.IsNullOrEmpty(scenarioFileFromEnv))
-      {
-        _scenario = DebugMockScenarioPlayer.Load(scenarioFileFromEnv, _jsonSettings, offset);
-        CurrentStatus = _scenario.CurrentStatus;
-        return;
-      }
-      if (!string.IsNullOrEmpty(statusFileFromEnv))
-      {
-        CurrentStatus = DebugMockStatusLoader.LoadExternal(
-          statusFileFromEnv,
-          _jsonSettings,
-          offset
-        );
-        return;
-      }
-
-      string statusFromEnv = System.Environment.GetEnvironmentVariable("BMS_CURRENT_STATUS");
-      if (string.IsNullOrEmpty(statusFromEnv) || !Statuses.ContainsKey(statusFromEnv))
-      {
-        CurrentStatus = Statuses.OrderBy(st => st.Key).First().Value;
-      }
-      else
-      {
-        CurrentStatus = Statuses[statusFromEnv];
       }
     }
 

@@ -28,7 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
@@ -43,6 +43,8 @@ interface BasketLoadStationWorkflowProps {
   readonly basket: Readonly<api.IBasketStatus>;
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   readonly fsize: MatCardFontSize;
+  readonly title: ReactNode;
+  readonly elapsed: ReactNode;
 }
 
 type SubmissionState = "idle" | "submitting" | "accepted" | "conflict" | "error";
@@ -185,25 +187,13 @@ function stationWork(
   };
 }
 
-function loadingInstruction(mat: Readonly<api.IInProcessMaterial>): string {
-  if (
-    mat.location.type === api.LocType.InBasket &&
-    mat.location.basketId === mat.action.loadToBasketId &&
-    mat.location.basketSlot === mat.action.loadToBasketSlot
-  ) {
-    return "Unload, re-plate, and reload this slot";
-  }
-  if (mat.location.type === api.LocType.InQueue && mat.location.currentQueue) {
-    return `Load from ${mat.location.currentQueue}`;
-  }
-  return "Load from raw material";
-}
-
 function SlotMaterial({
   material,
+  basketId,
   fsize,
 }: {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
+  readonly basketId: number;
   readonly fsize: MatCardFontSize;
 }) {
   return material.map((mat) => (
@@ -211,7 +201,7 @@ function SlotMaterial({
       key={mat.materialID}
       kind={{ type: MoveMaterialNodeKindType.Material, material: mat }}
     >
-      <InProcMaterial mat={mat} fsize={fsize} />
+      <InProcMaterial mat={mat} displayActionForSingleBasket={basketId} fsize={fsize} />
     </MoveMaterialArrowNode>
   ));
 }
@@ -220,6 +210,8 @@ export function BasketLoadStationWorkflow({
   basket,
   material,
   fsize,
+  title,
+  elapsed,
 }: BasketLoadStationWorkflowProps) {
   const [submission, setSubmission] = useState<Submission | undefined>();
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
@@ -297,95 +289,165 @@ export function BasketLoadStationWorkflow({
     submissionState === "accepted" ||
     submissionState === "conflict";
 
+  // Confirm sits in the header so it is visible without scrolling. Slots are drawn like pallet
+  // faces: stacked regions holding their material side by side. All material in a slot moves
+  // together.
   return (
-    <Stack spacing={2} sx={{ mt: 2 }}>
-      <Typography variant="h6">Basket slots</Typography>
+    <div>
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(15em, 1fr))",
-          gap: 2,
+          gridTemplateColumns: "1fr auto auto",
+          alignItems: "center",
+          columnGap: 4,
         }}
       >
-        {slots.map((slot) => {
+        {title}
+        <Box>
+          {work ? (
+            <Button
+              variant="contained"
+              color="secondary"
+              size="large"
+              disabled={submissionDisabled}
+              onClick={() => void submit()}
+            >
+              Confirm
+            </Button>
+          ) : null}
+        </Box>
+        <Box sx={{ justifySelf: "flex-end" }}>{elapsed}</Box>
+      </Box>
+      <Stack spacing={2} sx={{ ml: "4em", mr: "4em", mt: 2 }}>
+        {work?.confirmEmpty && work.ready && (
+          <Typography>Confirm basket {basket.basketId} is empty.</Typography>
+        )}
+        {instructionWarning && <Alert severity="warning">{instructionWarning}</Alert>}
+        {work && !work.ready && (
+          <Alert severity="info">
+            {blockedReason ||
+              (work.awaitingSlots.length > 0
+                ? `Waiting for material for slots ${work.awaitingSlots.map(basketSlotLabel).join(", ")}.`
+                : "Basket work is not ready for confirmation.")}
+          </Alert>
+        )}
+        {!work && workState.type === "inconsistent" ? (
+          <Alert severity="warning">
+            Basket work is inconsistent. Wait for refreshed material actions before confirming.
+          </Alert>
+        ) : null}
+        {submissionState === "accepted" ? (
+          <Alert severity="success">Confirmation accepted. Waiting for refreshed work.</Alert>
+        ) : submissionState === "conflict" ? (
+          <Alert severity="warning">
+            Basket work changed before confirmation. Review the refreshed slots and try again.
+          </Alert>
+        ) : submissionState === "error" ? (
+          <Alert severity="error">
+            Unable to confirm basket work. No work was assumed complete.
+          </Alert>
+        ) : null}
+      </Stack>
+      <MoveMaterialArrowNode
+        kind={{ type: MoveMaterialNodeKindType.BasketZone, basketId: basket.basketId }}
+      >
+        {slots.map((slot, idx) => {
           const slotMaterial = materialBySlot.get(slot) ?? [];
-          const loads = loadsBySlot.get(slot) ?? [];
           const isUnknown = basket.unknownSlots?.includes(slot) === true;
+          const targetContents = LazySeq.of(slotMaterial)
+            .filter(
+              (mat) =>
+                mat.action.type !== api.ActionType.UnloadToInProcess &&
+                mat.action.type !== api.ActionType.UnloadToCompletedMaterial,
+            )
+            .concat(loadsBySlot.get(slot) ?? [])
+            .map((mat) => {
+              const process =
+                mat.action.type === api.ActionType.LoadingToBasket
+                  ? mat.action.processAfterLoad
+                  : mat.process;
+              return `${mat.partName}${process !== undefined ? ` proc ${process}` : ""}`;
+            })
+            .distinctBy((label) => label)
+            .toRArray();
+          const targetEmpty =
+            work?.confirmEmpty ||
+            (!isUnknown && (slotMaterial.length > 0 || basket.emptySlots?.includes(slot) === true));
+          const target =
+            work && !work.awaitingSlots.includes(slot)
+              ? targetContents.length > 0
+                ? `Fill with ${targetContents.join(", ")}`
+                : targetEmpty
+                  ? "Leave empty"
+                  : undefined
+              : undefined;
           return (
-            <MoveMaterialArrowNode
+            <Box
               key={slot}
-              kind={{
-                type: MoveMaterialNodeKindType.BasketSlotZone,
-                basketId: basket.basketId,
-                slot,
-              }}
+              component="section"
+              data-testid={`basket-load-station-slot-${slot}`}
+              sx={{ borderTop: idx !== 0 ? "1px solid black" : undefined, py: 3 }}
             >
               <Box
-                component="section"
-                data-testid={`basket-load-station-slot-${slot}`}
-                sx={{ border: "1px solid", borderColor: "text.primary", p: 2 }}
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  columnGap: 1,
+                  color: "text.secondary",
+                  mb: 2,
+                }}
               >
-                <Typography variant="h6">Slot {basketSlotLabel(slot)}</Typography>
-                {loads.length > 0 &&
-                  slotMaterial.some(
-                    (mat) =>
-                      mat.action.type === api.ActionType.UnloadToInProcess ||
-                      mat.action.type === api.ActionType.UnloadToCompletedMaterial,
-                  ) && (
-                    <Typography>
-                      Unload the current material before preparing the replacement.
+                <Typography variant="h6" sx={{ color: "text.primary" }}>
+                  Slot {basketSlotLabel(slot)}
+                </Typography>
+                {target && (
+                  <Box
+                    component="span"
+                    sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}
+                  >
+                    <Typography component="span" variant="body2" color="inherit" aria-hidden>
+                      ·
                     </Typography>
-                  )}
-                {slotMaterial.length > 0 ? (
-                  <SlotMaterial material={slotMaterial} fsize={fsize} />
-                ) : (
-                  <Typography color={isUnknown ? "warning.main" : "text.secondary"}>
-                    {isUnknown ? "Unknown" : "Empty"}
-                  </Typography>
-                )}
-                {loads.map((mat, index) => (
-                  <Box key={`${mat.jobUnique}-${mat.process}-${index}`} sx={{ mt: 1 }}>
-                    <Typography>{loadingInstruction(mat)}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {mat.partName} · Process {mat.action.processAfterLoad ?? mat.process}
+                    <Typography component="span" variant="body2" color="inherit">
+                      {target}
                     </Typography>
                   </Box>
-                ))}
+                )}
               </Box>
-            </MoveMaterialArrowNode>
+              <Box sx={{ ml: "4em", mr: "4em" }}>
+                <MoveMaterialArrowNode
+                  kind={{
+                    type: MoveMaterialNodeKindType.BasketSlotZone,
+                    basketId: basket.basketId,
+                    slot,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      justifyContent: "space-around",
+                      minHeight: "4em",
+                    }}
+                  >
+                    {slotMaterial.length > 0 ? (
+                      <SlotMaterial
+                        material={slotMaterial}
+                        basketId={basket.basketId}
+                        fsize={fsize}
+                      />
+                    ) : isUnknown ? (
+                      <Typography color="warning.main">Unknown</Typography>
+                    ) : null}
+                  </Box>
+                </MoveMaterialArrowNode>
+              </Box>
+            </Box>
           );
         })}
-      </Box>
-      {work?.confirmEmpty && <Typography>Confirm basket {basket.basketId} is empty.</Typography>}
-      {instructionWarning && <Alert severity="warning">{instructionWarning}</Alert>}
-      {work && !work.ready && (
-        <Alert severity="info">
-          {blockedReason ||
-            (work.awaitingSlots.length > 0
-              ? `Waiting for material for slots ${work.awaitingSlots.map(basketSlotLabel).join(", ")}.`
-              : "Basket work is not ready for confirmation.")}
-        </Alert>
-      )}
-      {work ? (
-        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button variant="contained" disabled={submissionDisabled} onClick={() => void submit()}>
-            Confirm
-          </Button>
-        </Box>
-      ) : workState.type === "inconsistent" ? (
-        <Alert severity="warning">
-          Basket work is inconsistent. Wait for refreshed material actions before confirming.
-        </Alert>
-      ) : null}
-      {submissionState === "accepted" ? (
-        <Alert severity="success">Confirmation accepted. Waiting for refreshed work.</Alert>
-      ) : submissionState === "conflict" ? (
-        <Alert severity="warning">
-          Basket work changed before confirmation. Review the refreshed slots and try again.
-        </Alert>
-      ) : submissionState === "error" ? (
-        <Alert severity="error">Unable to confirm basket work. No work was assumed complete.</Alert>
-      ) : null}
-    </Stack>
+      </MoveMaterialArrowNode>
+    </div>
   );
 }

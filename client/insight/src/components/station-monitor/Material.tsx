@@ -229,10 +229,12 @@ const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
 export function MaterialAction({
   mat,
   displayActionForSinglePallet,
+  displayActionForSingleBasket,
   fsize,
 }: {
   mat: Readonly<api.IInProcessMaterial>;
   displayActionForSinglePallet?: number;
+  displayActionForSingleBasket?: number;
   fsize?: MatCardFontSize;
 }): ReactNode | null {
   const curSt = useAtomValue(currentStatus);
@@ -327,11 +329,29 @@ export function MaterialAction({
       }
 
     case api.ActionType.LoadingToBasket:
+      // The load station displays a single basket, so its slot alone identifies the destination.
+      if (
+        displayActionForSingleBasket !== undefined &&
+        displayActionForSingleBasket === mat.action.loadToBasketId &&
+        mat.action.loadToBasketSlot !== undefined
+      ) {
+        return (
+          <MatCardDetail fsize={fsize}>
+            Load into slot {basketSlotLabel(mat.action.loadToBasketSlot)}
+            {mat.action.processAfterLoad !== undefined
+              ? ` for process ${mat.action.processAfterLoad}`
+              : ""}
+          </MatCardDetail>
+        );
+      }
       return (
         <MatCardDetail fsize={fsize}>
           Load into {basketName} {mat.action.loadToBasketId ?? ""}
           {mat.action.loadToBasketSlot !== undefined
             ? ` slot ${basketSlotLabel(mat.action.loadToBasketSlot)}`
+            : ""}
+          {mat.action.processAfterLoad !== undefined
+            ? ` for process ${mat.action.processAfterLoad}`
             : ""}
         </MatCardDetail>
       );
@@ -359,7 +379,7 @@ export function MaterialAction({
       ) {
         return (
           <MatCardDetail fsize={fsize}>
-            Unload from {basketName} {mat.location.basketId} to completed material
+            Unload completed from {basketName} {mat.location.basketId}
           </MatCardDetail>
         );
       } else if (mat.location.type === api.LocType.InBasket) {
@@ -505,9 +525,11 @@ interface MaterialDragProps {
 
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>;
+  readonly materialCount?: number;
   readonly inProcMat?: Readonly<api.IInProcessMaterial>;
   readonly fsize?: MatCardFontSize;
   readonly displayActionForSinglePallet?: number;
+  readonly displayActionForSingleBasket?: number;
   readonly focusInspectionType?: string | null;
   readonly hideWarningIcon?: boolean;
   readonly displayJob?: boolean;
@@ -519,6 +541,7 @@ export interface MaterialSummaryProps {
 
 const MatCard = function MatCard({
   mat,
+  materialCount = 1,
   inProcMat,
   fsize,
   focusInspectionType,
@@ -534,6 +557,7 @@ const MatCard = function MatCard({
   showRawMaterial,
   showJobComment,
   displayActionForSinglePallet,
+  displayActionForSingleBasket,
   hideAvatar,
   hideWarningIcon,
   ref,
@@ -571,6 +595,7 @@ const MatCard = function MatCard({
       ref={ref}
       elevation={4}
       sx={{
+        position: "relative",
         display: "flex",
         minWidth: "10em",
         padding: "8px",
@@ -584,6 +609,13 @@ const MatCard = function MatCard({
       onAnimationIteration={shakeAnimationIteration}
       {...dragRootProps}
     >
+      {materialCount > 1 && (
+        <Badge
+          badgeContent={materialCount}
+          color="secondary"
+          sx={{ position: "absolute", top: 0, right: 0, zIndex: 1 }}
+        />
+      )}
       {showDragHandle ? (
         <div
           ref={setDragHandleRef}
@@ -659,6 +691,7 @@ const MatCard = function MatCard({
               <MaterialAction
                 mat={inProcMat}
                 displayActionForSinglePallet={displayActionForSinglePallet}
+                displayActionForSingleBasket={displayActionForSingleBasket}
                 fsize={fsize}
               />
             ) : undefined}
@@ -703,8 +736,10 @@ export const MatSummary: ComponentType<MaterialSummaryProps> = memo(MatCard);
 
 export type InProcMaterialProps = {
   readonly mat: Readonly<api.IInProcessMaterial>;
+  readonly materialCount?: number;
   readonly fsize?: MatCardFontSize;
   readonly displayActionForSinglePallet?: number;
+  readonly displayActionForSingleBasket?: number;
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
@@ -722,8 +757,10 @@ export const InProcMaterial = memo(function InProcMaterial(
   return (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
+      materialCount={props.materialCount}
       inProcMat={props.mat}
       displayActionForSinglePallet={props.displayActionForSinglePallet}
+      displayActionForSingleBasket={props.displayActionForSingleBasket}
       fsize={props.fsize}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
@@ -784,14 +821,17 @@ export const SortableInProcMaterial = memo(function SortableInProcMaterial(
       setDragHandleRef={setActivatorNodeRef}
       isActiveDrag={isDragging}
       mat={inproc_mat_to_summary(props.mat)}
+      materialCount={props.materialCount}
       inProcMat={props.mat}
       displayActionForSinglePallet={props.displayActionForSinglePallet}
+      displayActionForSingleBasket={props.displayActionForSingleBasket}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
       hideEmptySerial={props.hideEmptySerial}
       fsize={props.fsize}
       shake={active ? undefined : props.shake}
       showRawMaterial={props.showRawMaterial}
+      showJobComment={props.showJobComment}
     />
   );
 });
@@ -800,8 +840,10 @@ export function DragOverlayInProcMaterial(props: InProcMaterialProps) {
   return (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
+      materialCount={props.materialCount}
       inProcMat={props.mat}
       displayActionForSinglePallet={props.displayActionForSinglePallet}
+      displayActionForSingleBasket={props.displayActionForSingleBasket}
       showDragHandle={true}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
