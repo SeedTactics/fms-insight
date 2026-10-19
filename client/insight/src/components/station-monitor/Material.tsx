@@ -831,6 +831,7 @@ export const SortableInProcMaterial = memo(function SortableInProcMaterial(
       fsize={props.fsize}
       shake={active ? undefined : props.shake}
       showRawMaterial={props.showRawMaterial}
+      showJobComment={props.showJobComment}
     />
   );
 });
