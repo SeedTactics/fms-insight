@@ -67,6 +67,44 @@ test("points basket loads to the exact destination slot", () => {
   ]);
 });
 
+test.each([true, false])(
+  "draws basket loads only when their destination is displayed (%s)",
+  (destinationShown) => {
+    const materialKind: MoveMaterialNodeKind = {
+      type: MoveMaterialNodeKindType.Material,
+      material: basketMaterial(
+        42,
+        new api.InProcessMaterialLocation({
+          type: api.LocType.InQueue,
+          currentQueue: "transfer",
+          queuePosition: 0,
+        }),
+        toSlot(3),
+      ),
+    };
+    const basketKind: MoveMaterialNodeKind = {
+      type: MoveMaterialNodeKindType.BasketZone,
+      basketId: destinationShown ? 7 : 4,
+    };
+    const completedKind: MoveMaterialNodeKind = {
+      type: MoveMaterialNodeKindType.CompletedCollapsedMaterialZone,
+    };
+    const nodes: AllMoveMaterialNodes<MoveMaterialElemRect> = HashMap.empty<
+      string,
+      MoveMaterialNodeKind & { readonly elem: MoveMaterialElemRect }
+    >()
+      .set(uniqueIdForNodeKind(materialKind), { ...materialKind, elem: rect(10, 100, 100, 80) })
+      .set(uniqueIdForNodeKind(completedKind), { ...completedKind, elem: rect(900, 0, 100, 500) })
+      .set(uniqueIdForNodeKind(basketKind), { ...basketKind, elem: rect(300, 20, 500, 400) });
+
+    expect(computeArrows(rect(0, 0, 1_000, 500), nodes)).toEqual(
+      destinationShown
+        ? [{ type: "curve", fromX: 110, fromY: 140, toX: 320, toY: 70, curveDirection: -1 }]
+        : [],
+    );
+  },
+);
+
 test("points queue loads only to the face of their destination pallet", () => {
   const thisPalletKind: MoveMaterialNodeKind = {
     type: MoveMaterialNodeKindType.Material,

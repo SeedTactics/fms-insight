@@ -447,13 +447,14 @@ export function computeArrows(
           break;
         }
         const dest = byKind.baskets.get(basketId);
+        if (dest === undefined) break;
         const lastSlotUsed = basketDestUsed.get(basketId) ?? 0;
         basketDestUsed.set(basketId, lastSlotUsed + 1);
         arrows.push({
           fromX: rect.right,
           fromY: rect.top + rect.height / 2,
-          toX: dest !== undefined ? dest.left + 20 : container.right - 10,
-          toY: dest !== undefined ? dest.top + 50 + 20 * lastSlotUsed : rect.top + rect.height / 2,
+          toX: dest.left + 20,
+          toY: dest.top + 50 + 20 * lastSlotUsed,
           curveDirection: -1,
         });
         break;
