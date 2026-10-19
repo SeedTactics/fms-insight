@@ -452,7 +452,7 @@ describe("load station with active basket", () => {
     await expect.element(activeBasket).not.toMatchTextContent("Load from");
 
     await expect.element(queueA).toMatchTextContent("Queue To Basket");
-    await expect.element(queueA).toMatchTextContent("Load into slot B");
+    await expect.element(queueA).toMatchTextContent("Load into slot B for process 1");
     await expect.element(legacyQueue).toMatchTextContent("Legacy Queue To Basket");
     await expect.element(legacyQueue).toMatchTextContent("Load into Basket 7");
     await expect.element(queueB).toMatchTextContent("Queue Existing");
@@ -566,7 +566,7 @@ describe("load station with active basket", () => {
     const raw = region(screen, "load-station-material");
 
     for (const slot of ["A", "B", "C"]) {
-      await expect.element(raw.getByText(`Load into slot ${slot}`)).toBeVisible();
+      await expect.element(raw.getByText(`Load into slot ${slot} for process 1`)).toBeVisible();
     }
     await expect.poll(() => raw.getByText("Blank Part").elements().length).toBe(3);
     await expect.poll(() => raw.getByText("3", { exact: true }).elements().length).toBe(3);
@@ -683,7 +683,7 @@ describe("load station with active basket", () => {
       .toMatchTextContent("Unload into queue Transfer Queue");
     await expect
       .element(region(screen, queueRegionTestId("Transfer Queue")))
-      .toMatchTextContent("Load into slot A");
+      .toMatchTextContent("Load into slot A for process 2");
     await expect
       .element(region(screen, "basket-load-station-slot-2"))
       .toMatchTextContent("Unload from Basket 7 to completed material");
@@ -693,10 +693,10 @@ describe("load station with active basket", () => {
       .not.toMatchTextContent("Empty");
     await expect
       .element(region(screen, "basket-load-station-slot-4"))
-      .toMatchTextContent("Load into slot D");
+      .toMatchTextContent("Load into slot D for process 2");
     await expect
       .element(region(screen, "load-station-material"))
-      .toMatchTextContent("Load into slot C");
+      .toMatchTextContent("Load into slot C for process 1");
 
     await screen.getByRole("button", { name: "Confirm" }).click();
 

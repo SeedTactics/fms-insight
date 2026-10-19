@@ -42,16 +42,13 @@ describe("basket shop-floor screens", () => {
 
   test("system overview shows only named load stations and stations holding a basket", async () => {
     const fixture = createPalletOnlyFixture();
-    const routedToStation4 = new api.ActiveJob({
-      ...fixture.job,
-      unique: "routed-to-4",
-      procsAndPaths: fixture.job.procsAndPaths.map(
-        (proc) =>
-          new api.ProcessInfo({
-            ...proc,
-            paths: proc.paths.map((path) => new api.ProcPathInfo({ ...path, load: [4] })),
-          }),
-      ),
+    const routedToStation4 = api.ActiveJob.fromJS({
+      ...fixture.job.toJSON(),
+      Unique: "routed-to-4",
+      ProcsAndPaths: fixture.job.procsAndPaths.map((proc) => ({
+        ...proc.toJSON(),
+        paths: proc.paths.map((path) => ({ ...path.toJSON(), Load: [4] })),
+      })),
     });
     const currentStatus = new api.CurrentStatus({
       ...fixture.data.currentStatus!,
@@ -203,7 +200,7 @@ describe("basket shop-floor screens", () => {
     await expect.element(screen.getByText("Prep Cell")).toBeVisible();
     await expect.element(screen.getByText("Trays")).toBeVisible();
     await expect.element(screen.getByText("Tray 21 (LoadUnload 2)")).toBeVisible();
-    await expect.element(screen.getByText("Load into Tray 21 slot B")).toBeVisible();
+    await expect.element(screen.getByText("Load into Tray 21 slot B for process 1")).toBeVisible();
     await expect.element(screen.getByText("Unload into queue Queue Beta")).toBeVisible();
     await expect.element(screen.getByText("In Tray 22")).toBeVisible();
     await expect.element(screen.getByText("In Tray 25")).toBeVisible();

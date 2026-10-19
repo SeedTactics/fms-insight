@@ -338,6 +338,9 @@ export function MaterialAction({
         return (
           <MatCardDetail fsize={fsize}>
             Load into slot {basketSlotLabel(mat.action.loadToBasketSlot)}
+            {mat.action.processAfterLoad !== undefined
+              ? ` for process ${mat.action.processAfterLoad}`
+              : ""}
           </MatCardDetail>
         );
       }
@@ -346,6 +349,9 @@ export function MaterialAction({
           Load into {basketName} {mat.action.loadToBasketId ?? ""}
           {mat.action.loadToBasketSlot !== undefined
             ? ` slot ${basketSlotLabel(mat.action.loadToBasketSlot)}`
+            : ""}
+          {mat.action.processAfterLoad !== undefined
+            ? ` for process ${mat.action.processAfterLoad}`
             : ""}
         </MatCardDetail>
       );
