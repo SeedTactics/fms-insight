@@ -525,6 +525,7 @@ interface MaterialDragProps {
 
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>;
+  readonly materialCount?: number;
   readonly inProcMat?: Readonly<api.IInProcessMaterial>;
   readonly fsize?: MatCardFontSize;
   readonly displayActionForSinglePallet?: number;
@@ -540,6 +541,7 @@ export interface MaterialSummaryProps {
 
 const MatCard = function MatCard({
   mat,
+  materialCount = 1,
   inProcMat,
   fsize,
   focusInspectionType,
@@ -593,6 +595,7 @@ const MatCard = function MatCard({
       ref={ref}
       elevation={4}
       sx={{
+        position: "relative",
         display: "flex",
         minWidth: "10em",
         padding: "8px",
@@ -606,6 +609,13 @@ const MatCard = function MatCard({
       onAnimationIteration={shakeAnimationIteration}
       {...dragRootProps}
     >
+      {materialCount > 1 && (
+        <Badge
+          badgeContent={materialCount}
+          color="secondary"
+          sx={{ position: "absolute", top: 0, right: 0, zIndex: 1 }}
+        />
+      )}
       {showDragHandle ? (
         <div
           ref={setDragHandleRef}
@@ -726,6 +736,7 @@ export const MatSummary: ComponentType<MaterialSummaryProps> = memo(MatCard);
 
 export type InProcMaterialProps = {
   readonly mat: Readonly<api.IInProcessMaterial>;
+  readonly materialCount?: number;
   readonly fsize?: MatCardFontSize;
   readonly displayActionForSinglePallet?: number;
   readonly displayActionForSingleBasket?: number;
@@ -746,6 +757,7 @@ export const InProcMaterial = memo(function InProcMaterial(
   return (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
+      materialCount={props.materialCount}
       inProcMat={props.mat}
       displayActionForSinglePallet={props.displayActionForSinglePallet}
       displayActionForSingleBasket={props.displayActionForSingleBasket}
@@ -809,6 +821,7 @@ export const SortableInProcMaterial = memo(function SortableInProcMaterial(
       setDragHandleRef={setActivatorNodeRef}
       isActiveDrag={isDragging}
       mat={inproc_mat_to_summary(props.mat)}
+      materialCount={props.materialCount}
       inProcMat={props.mat}
       displayActionForSinglePallet={props.displayActionForSinglePallet}
       displayActionForSingleBasket={props.displayActionForSingleBasket}
@@ -826,6 +839,7 @@ export function DragOverlayInProcMaterial(props: InProcMaterialProps) {
   return (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
+      materialCount={props.materialCount}
       inProcMat={props.mat}
       displayActionForSinglePallet={props.displayActionForSinglePallet}
       displayActionForSingleBasket={props.displayActionForSingleBasket}

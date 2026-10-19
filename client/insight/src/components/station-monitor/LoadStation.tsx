@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { useMemo, memo, useState, useCallback, ReactNode } from "react";
-import { Badge, Box, useMediaQuery, Button, Typography } from "@mui/material";
+import { Box, useMediaQuery, Button, Typography } from "@mui/material";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 
 import { FolderOpen as FolderOpenIcon } from "@mui/icons-material";
@@ -719,20 +719,15 @@ function MaterialRegion({
             }}
           >
             {mat.isFree || mat.sortable === false ? (
-              <Badge
-                badgeContent={group.length < 2 ? 0 : group.length}
-                color="secondary"
-                sx={{ display: "block" }}
-              >
-                <InProcMaterial
-                  mat={m}
-                  displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
-                  displayActionForSingleBasket={data.activeBasket?.basketId}
-                  fsize={data.fsize}
-                  showRawMaterial
-                  showJobComment
-                />
-              </Badge>
+              <InProcMaterial
+                mat={m}
+                materialCount={group.length}
+                displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
+                displayActionForSingleBasket={data.activeBasket?.basketId}
+                fsize={data.fsize}
+                showRawMaterial
+                showJobComment
+              />
             ) : (
               <SortableInProcMaterial
                 mat={m}
