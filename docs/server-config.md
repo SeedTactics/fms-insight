@@ -29,19 +29,27 @@ message with details into the [event log](server-errors).
 
 FMS Insight uses [SQLite](https://www.sqlite.org/) to store data about the cell. The primary data
 stored is a log of the activity of all parts, pallets, machines, jobs, schedules, inspections,
-serial numbers, orders, and other data. In addition, FMS Insight stores a small amount of temporary
-data to assist with monitoring.
+serial numbers, orders, and other data. The databases also hold operational state, including
+committed basket contents, material-allocation identities, and operation receipts used to recognize
+completed work on retries.
 
 The SQLite databases are by default stored locally in the Windows Common AppData folder which on a
 default Windows install is `c:\ProgramData\SeedTactics\FMSInsight`. This path can be changed in the
 `config.ini` file if needed, but we suggest that the databases are kept on the local drive for
-performance and data integrity (SQLite works best on a local drive). The SQLite databases are not
-large, typically under 100 megabytes, so disk space is not a problem.
+performance and data integrity (SQLite works best on a local drive). Database size grows with
+production activity and retained history; allow space for both production databases and backups.
 
-Every time FMS Insight starts, it checks for the existence of the SQLite databases and if they are
-missing it creates them. For this reason, the databases can be deleted without impacting the
-operation of the cell (as long as FMS Insight is restarted). Also, since the databases just store a
-log of past activity and all complex logic is outside FMS Insight, if the databases are deleted (and
-recreated) the cell will continue to operate just fine in the future (minus the historical data).
-Thus it is not necessary to backup the databases (but of course you can if you want to preserve
-historical data).
+Preserve production databases and back them up before upgrades. Use a backup method that captures a
+consistent SQLite database, such as stopping the server before copying its database files. If an
+integration maintains additional coordination databases, follow its procedure for backing up the
+complete installation consistently.
+
+Deleting a production database loses both history and operational identities and retry records.
+Creating a fresh database does not reconstruct that state from the equipment. Follow the
+integration's recovery procedure before resetting or restoring databases, including reconciling the
+physical cell and any integration-specific state. A backup from an earlier point in production is
+not automatically safe to restore against a cell that has continued operating.
+
+Fresh databases can be used for controlled QA or initial commissioning when the physical cell and
+the integration's state have been prepared for a fresh start. FMS Insight creates missing databases
+at startup; integrations may impose additional startup and initialization requirements.

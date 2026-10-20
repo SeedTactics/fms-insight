@@ -1,15 +1,85 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import LoadStation from "../../src/components/station-monitor/LoadStation.js";
 import { AllMaterial } from "../../src/components/operations/AllMaterial.js";
 import { SystemOverviewPage } from "../../src/components/station-monitor/SystemOverview.js";
 import { secondsSinceEpochAtom } from "../../src/cell-status/current-status.js";
+import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
 import * as api from "../../src/network/api.js";
 import { renderInsightPage } from "./framework.js";
 import { createMixedBasketFixture, createPalletOnlyFixture } from "./basket-fixtures.js";
-import { createBasket, createCurrentStatus, createMaterial } from "./load-station-testkit.js";
+import {
+  createBasket,
+  createCurrentStatus,
+  createMaterial,
+  createPallet,
+} from "./load-station-testkit.js";
 
 describe("basket shop-floor screens", () => {
+  test("system overview keeps serialized overdue machining time negative across refreshes", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    try {
+      const { job } = createPalletOnlyFixture();
+      const reference = Date.parse("2026-04-24T12:00:00Z") / 1000;
+      const statusAt = (overdue: number): api.CurrentStatus => {
+        const status = createCurrentStatus({
+          jobs: { [job.unique]: job },
+          pallets: [
+            createPallet({
+              palletNum: 11,
+              numFaces: 1,
+              currentPalletLocation: { loc: api.PalletLocationEnum.Machine, group: "MC", num: 3 },
+            }),
+          ],
+          material: [
+            createMaterial({
+              materialID: 802,
+              jobUnique: job.unique,
+              partName: job.partName,
+              process: 1,
+              path: 1,
+              location: { type: api.LocType.OnPallet, palletNum: 11, face: 1 },
+              action: {
+                type: api.ActionType.Machining,
+                elapsedMachiningTime: `PT${60 + overdue}S`,
+                expectedRemainingMachiningTime: `-PT${overdue}S`,
+              },
+            }),
+          ],
+        });
+        // Exercise the network model reader with the leading-sign form emitted by XmlConvert.
+        return api.CurrentStatus.fromJS({
+          ...status.toJSON(),
+          TimeOfCurrentStatusUTC: new Date((reference + overdue - 10) * 1000).toISOString(),
+        });
+      };
+      const screen = await renderInsightPage(
+        <SystemOverviewPage ignoreOperator whiteBackground />,
+        {
+          currentStatus: statusAt(10),
+          seedStore: (store) => store.set(secondsSinceEpochAtom, reference),
+        },
+      );
+      await expect
+        .element(screen.getByRole("heading", { name: "MC 3", exact: true }))
+        .toBeVisible();
+      await expect.element(screen.getByText("1:10 / -0:10", { exact: true })).toBeVisible();
+      await expect
+        .element(screen.getByRole("progressbar"))
+        .toHaveClass("MuiLinearProgress-colorError");
+      screen.store.set(secondsSinceEpochAtom, reference + 10);
+      await expect.element(screen.getByText("1:20 / -0:20", { exact: true })).toBeVisible();
+      screen.store.set(onLoadCurrentSt, statusAt(20));
+      await expect.element(screen.getByText("1:20 / -0:20", { exact: true })).toBeVisible();
+      await expect
+        .element(screen.getByRole("progressbar"))
+        .toHaveClass("MuiLinearProgress-colorError");
+      await screen.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("system overview shows tray-specific active, floating, and storage sections", async () => {
     const fixture = createMixedBasketFixture();
     const screen = await renderInsightPage(

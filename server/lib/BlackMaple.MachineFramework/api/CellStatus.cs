@@ -110,8 +110,9 @@ namespace BlackMaple.MachineFramework
     public int? SlotCount { get; init; }
 
     /// <summary>
-    /// Optional current station-work occurrence. When present it governs confirmability;
-    /// clients must not fall back to action-derived confirmation if it is inconsistent.
+    /// Optional current station-work occurrence. When absent there is no confirmable basket
+    /// station work. When present it governs confirmability; clients must not fall back to
+    /// action-derived confirmation if it is inconsistent.
     /// This intent is integration-supplied and is not durable manufacturing or position evidence.
     /// </summary>
     public BasketLoadStationWork? LoadStationWork { get; init; }
