@@ -54,6 +54,11 @@ function confirmableBasketStatus(workId: string, partName: string): Readonly<api
           locationNum: 1,
         }),
         emptySlots: [1],
+        loadStationWork: new api.BasketLoadStationWork({
+          workId,
+          type: api.BasketLoadStationWorkType.Material,
+          readyToConfirm: true,
+        }),
       }),
     ],
     material: [
@@ -96,6 +101,31 @@ function explicitBasketWork(
 }
 
 describe("explicit basket station work", () => {
+  test("keeps material visible but cannot confirm actions without a work descriptor", async () => {
+    const status = confirmableBasketStatus("load-1", "Unconfirmed part");
+    const basket = status.baskets!["7"];
+    const submit = vi.fn<CompletionHandler>().mockResolvedValue("accepted");
+    completionRequests(submit);
+    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+      currentStatus: {
+        ...status,
+        baskets: {
+          "7": new api.BasketStatus({
+            basketId: basket.basketId,
+            position: basket.position,
+            emptySlots: basket.emptySlots,
+          }),
+        },
+      },
+    });
+    await expect.element(screen.getByText("Unconfirmed part", { exact: true })).toBeVisible();
+    await expect.element(screen.getByText(/Basket work is inconsistent/)).toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Confirm", exact: true }))
+      .not.toBeInTheDocument();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
   test("shows preparation advice without blocking confirmation of the achieved result", async () => {
     const submit = vi.fn<CompletionHandler>().mockResolvedValue("accepted");
     completionRequests(submit);
@@ -595,6 +625,11 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
+          loadStationWork: new api.BasketLoadStationWork({
+            workId: "refill",
+            type: api.BasketLoadStationWorkType.Material,
+            readyToConfirm: true,
+          }),
           emptySlots: [],
         }),
       ],
@@ -630,6 +665,11 @@ describe("load station with active basket", () => {
           position: new api.BasketPosition({
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
+          }),
+          loadStationWork: new api.BasketLoadStationWork({
+            workId: "basket-work",
+            type: api.BasketLoadStationWorkType.Material,
+            readyToConfirm: true,
           }),
           emptySlots: [3],
         }),
@@ -783,6 +823,11 @@ describe("load station with active basket", () => {
           position: new api.BasketPosition({
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
+          }),
+          loadStationWork: new api.BasketLoadStationWork({
+            workId: "stale-work",
+            type: api.BasketLoadStationWorkType.Material,
+            readyToConfirm: true,
           }),
           emptySlots: [1],
         }),
@@ -1099,6 +1144,11 @@ describe("load station with active basket", () => {
           position: new api.BasketPosition({
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
+          }),
+          loadStationWork: new api.BasketLoadStationWork({
+            workId: "load-work",
+            type: api.BasketLoadStationWorkType.Material,
+            readyToConfirm: true,
           }),
           emptySlots: [1],
         }),

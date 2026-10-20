@@ -1485,6 +1485,129 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       jobLog.CurrentPalletLog(pallet).ToList();
 
     [Test]
+    public async Task MachiningKeepsPalletIdentityWhenBasketSharesItsNumber()
+    {
+      AddTestJob("owned-job", "owned-part", [Process()]);
+      AddTestPartPrograms(50, true, ["100"]);
+      mazakData = mazakData with
+      {
+        Pallets = [new MazakPalletRow { PalletNumber = 1, Fixture = "fixture" }],
+      };
+      // The basket material is allocated first: ordinary selection of the lowest matching ID
+      // must never let it replace the material actually loaded on pallet 1.
+      var basketMaterial = jobLog.AllocateMaterialID("owned-job", "owned-part", 1);
+      var basketContents = new BasketContents
+      {
+        BasketId = 1,
+        Slots = ImmutableSortedDictionary<int, BasketSlotContents>.Empty.Add(
+          1,
+          new BasketSlotContents
+          {
+            Material = [new BasketMaterial { MaterialID = basketMaterial, Process = 1 }],
+            AdditionalData = ImmutableSortedDictionary<string, string>.Empty,
+          }
+        ),
+      };
+      var time = DateTime.UtcNow.AddHours(-1);
+      CompleteLoad(LoadEndEvent(time, "owned-part"));
+      var palletMaterial = CurrentPalletLog(1)
+        .Single(e => e.LogType == LogType.LoadUnloadCycle)
+        .Material.Single()
+        .MaterialID;
+      await Assert.That(palletMaterial).IsGreaterThan(basketMaterial);
+      jobLog.RecordBasketStationOperation(
+        new BasketStationOperation
+        {
+          Transfers =
+          [
+            new BasketStationTransfer.LoadOntoBasket
+            {
+              BasketId = 1,
+              Material =
+              [
+                new EventLogMaterial
+                {
+                  MaterialID = basketMaterial,
+                  Process = 1,
+                  Face = 1,
+                },
+              ],
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          CycleBoundaries = [],
+          ContentsChanges =
+          [
+            new BasketContentsChange
+            {
+              BasketId = 1,
+              Expected = null,
+              Result = basketContents,
+            },
+          ],
+        },
+        1,
+        TimeSpan.Zero,
+        time.AddMinutes(1),
+        ImmutableDictionary<string, string>.Empty,
+        "basket-1"
+      );
+
+      TranslateChunk(
+        LoadEndEvent(time.AddMinutes(2), "owned-part") with
+        {
+          Code = LogCode.MachineCycleStart,
+          ForeignID = "MC001",
+        }
+      );
+      TranslateChunk(
+        LoadEndEvent(time.AddMinutes(4), "owned-part") with
+        {
+          Code = LogCode.MachineCycleEnd,
+          ForeignID = "MC002",
+        },
+        FollowingEvent(time.AddMinutes(4))
+      );
+      var machining = CurrentPalletLog(1)
+        .Where(e => e.LogType == LogType.MachineCycle)
+        .ToImmutableList();
+      await Assert.That(machining.Count).IsEqualTo(2);
+      await Assert
+        .That(machining.All(e => e.Material.Single().MaterialID == palletMaterial))
+        .IsTrue();
+      mazakData = mazakData with
+      {
+        PalletPositions =
+        [
+          new MazakPalletPositionRow { PalletNumber = 1, PalletPosition = "S011" },
+        ],
+      };
+      SetPalletFace(1, 50, 1, 1);
+      var status = BuildCurrentStatus.Build(
+        jobLog,
+        settings,
+        mazakCfg,
+        mazakData,
+        "machinespec",
+        null,
+        time.AddMinutes(5)
+      );
+      await Assert
+        .That(
+          status
+            .Material.Where(m => m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+            .Select(m => m.MaterialID)
+        )
+        .IsEquivalentTo([palletMaterial]);
+      await Assert
+        .That(jobLog.GetBasketContents(1).Slots[1].Material.Single().MaterialID)
+        .IsEqualTo(basketMaterial);
+      await Assert
+        .That(jobLog.GetLogForMaterial(basketMaterial).Any(e => e.LogType == LogType.MachineCycle))
+        .IsFalse();
+    }
+
+    [Test]
     public void BasketLoadWithoutResolverRetainsLegacyAllocation()
     {
       AddTestJob(

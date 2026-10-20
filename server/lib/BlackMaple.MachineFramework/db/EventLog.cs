@@ -686,7 +686,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
+    // Pallets and baskets share the Pallet column. Event numbers 116-128 identify basket
+    // history, including retired basket events that load as GeneralMessage.
+    // Loads the current pallet cycle, which is all events from the last Result = "PalletCycle"
     public List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false)
     {
       using (var trans = _connection.BeginTransaction())
@@ -707,7 +709,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT MAX(Counter) FROM stations where Pallet = $pal AND Result = 'PalletCycle'";
+          "SELECT MAX(Counter) FROM stations where Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Result = 'PalletCycle'";
         cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
 
         var counter = cmd.ExecuteScalar();
@@ -717,7 +719,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations s "
-            + " WHERE Pallet = $pal AND "
+            + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
@@ -730,7 +732,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations s "
-            + " WHERE Pallet = $pal AND Counter "
+            + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Counter "
             + (includeLastPalletCycleEvt ? ">=" : ">")
             + " $cntr AND "
             + ignoreInvalidEventCondition
@@ -765,7 +767,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT MAX(Counter) FROM stations WHERE Pallet = $basketId AND Result = 'BasketCycle'";
+          "SELECT MAX(Counter) FROM stations WHERE Pallet = $basketId AND StationLoc BETWEEN 116 AND 128 AND Result = 'BasketCycle'";
         cmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
 
         var counter = cmd.ExecuteScalar();
@@ -775,12 +777,9 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations s "
-            + " WHERE Pallet = $basketId AND "
+            + " WHERE Pallet = $basketId AND StationLoc BETWEEN 116 AND 128 AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
-          cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
-            LogType.BasketLoadUnload;
-          cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
           using (var reader = cmd.ExecuteReader())
           {
             return LoadLog(reader, trans).ToList();
@@ -791,14 +790,11 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations s "
-            + " WHERE Pallet = $basketId AND Counter "
+            + " WHERE Pallet = $basketId AND StationLoc BETWEEN 116 AND 128 AND Counter "
             + (includeLastCycleEvt ? ">=" : ">")
             + " $cntr AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
-          cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
-            LogType.BasketLoadUnload;
-          cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
 
           using (var reader = cmd.ExecuteReader())
@@ -2524,18 +2520,20 @@ namespace BlackMaple.MachineFramework
               }
               else
               {
-                AddToQueue(
-                  trans,
-                  // Basket process describes its tooling/preparation, not completed machining.
-                  material with
-                  {
-                    Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
-                  },
-                  transfer.DestinationQueue,
-                  position: -1,
-                  operatorName: null,
-                  timeUTC,
-                  reason: null
+                newLogs.AddRange(
+                  AddToQueue(
+                    trans,
+                    // Basket process describes its tooling/preparation, not completed machining.
+                    material with
+                    {
+                      Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
+                    },
+                    transfer.DestinationQueue,
+                    position: -1,
+                    operatorName: null,
+                    timeUTC,
+                    reason: null
+                  )
                 );
               }
             }
@@ -2549,15 +2547,17 @@ namespace BlackMaple.MachineFramework
           {
             // Taking prepared material out of a queue must not advance its manufacturing process.
             foreach (var material in transfer.Material)
-              RemoveFromAllQueues(
-                trans,
-                material with
-                {
-                  Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
-                },
-                operatorName: null,
-                reason: null,
-                timeUTC
+              newLogs.AddRange(
+                RemoveFromAllQueues(
+                  trans,
+                  material with
+                  {
+                    Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
+                  },
+                  operatorName: null,
+                  reason: null,
+                  timeUTC
+                )
               );
             RecordBasketStationTransfer(
               transfer,

@@ -172,19 +172,7 @@ function stationWork(
       },
     };
   }
-  if (validActions.length === 0) return { type: "none" };
-  const tagged = validActions.filter(
-    (action): action is { readonly type: "valid"; readonly workId: string } =>
-      isNonBlank(action.workId),
-  );
-  const workIds = LazySeq.of(tagged).toHashSet(({ workId }) => workId);
-  if (tagged.length !== validActions.length || workIds.size !== 1) {
-    return { type: "inconsistent" };
-  }
-  return {
-    type: "active",
-    work: { workId: tagged[0].workId, ready: true, confirmEmpty: false, awaitingSlots: [] },
-  };
+  return { type: validActions.length === 0 ? "none" : "inconsistent" };
 }
 
 function SlotMaterial({

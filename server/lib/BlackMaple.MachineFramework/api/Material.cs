@@ -69,8 +69,8 @@ namespace BlackMaple.MachineFramework
     public bool AutomatedTransfer { get; init; }
 
     /// <summary>
-    /// An opaque identifier shared by every material action in one operator-confirmable load/unload
-    /// phase. The command handler uses it to reject confirmation of stale work.
+    /// An opaque identifier shared by material actions in one station work phase, including
+    /// anonymous raw material. Completion uses BasketLoadStationWork.WorkId.
     /// </summary>
     public string? WorkId { get; init; }
 
