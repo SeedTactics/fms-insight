@@ -304,7 +304,16 @@ export function BasketLoadStationWorkflow({
             </Button>
           ) : null}
         </Box>
-        <Box sx={{ justifySelf: "flex-end" }}>{elapsed}</Box>
+        <Box
+          sx={{
+            justifySelf: "flex-end",
+            minWidth: "8ch",
+            textAlign: "right",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {elapsed}
+        </Box>
       </Box>
       <Stack spacing={2} sx={{ ml: "4em", mr: "4em", mt: 2 }}>
         {work?.confirmEmpty && work.ready && (

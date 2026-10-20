@@ -578,9 +578,8 @@ function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }
 
   if (elapsedLoadTime) {
     const elapsedSecsInCurSt = durationToSeconds(elapsedLoadTime);
-    const elapsedSecs =
-      elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
-    return <span>{formatSeconds(elapsedSecs)}</span>;
+    const elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - currentStTime.getTime() / 1000);
+    return <span>{formatSeconds(Math.max(0, elapsedSecs))}</span>;
   } else {
     return null;
   }

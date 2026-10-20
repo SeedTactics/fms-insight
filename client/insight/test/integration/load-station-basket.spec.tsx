@@ -31,6 +31,7 @@ function completionRequests(submit: CompletionHandler): void {
   });
 }
 import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
+import { secondsSinceEpochAtom } from "../../src/cell-status/current-status.js";
 import * as api from "../../src/network/api.js";
 import { renderInsightPage } from "./framework.js";
 import {
@@ -44,7 +45,11 @@ import {
   region,
 } from "./load-station-testkit.js";
 
-function confirmableBasketStatus(workId: string, partName: string): Readonly<api.ICurrentStatus> {
+function confirmableBasketStatus(
+  workId: string,
+  partName: string,
+  elapsedLoadUnloadTime?: string,
+): Readonly<api.ICurrentStatus> {
   return createCurrentStatus({
     baskets: [
       createBasket({
@@ -75,6 +80,7 @@ function confirmableBasketStatus(workId: string, partName: string): Readonly<api
           loadToBasketId: 7,
           loadToBasketSlot: 1,
           processAfterLoad: 1,
+          elapsedLoadUnloadTime,
         },
       }),
     ],
@@ -101,6 +107,38 @@ function explicitBasketWork(
 }
 
 describe("explicit basket station work", () => {
+  test("keeps elapsed time and Confirm position stable across status refreshes", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    try {
+      const started = Date.parse("2026-04-24T12:00:00.750Z") / 1000;
+      const statusAt = (seconds: number): Readonly<api.ICurrentStatus> => ({
+        ...confirmableBasketStatus("timed-work", "Timed Part", `PT${seconds}S`),
+        timeOfCurrentStatusUTC: new Date((started + seconds) * 1000),
+      });
+      const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+        currentStatus: statusAt(0),
+        seedStore: (store) => store.set(secondsSinceEpochAtom, Math.floor(started) - 1),
+      });
+      await expect.element(screen.getByText("0:00", { exact: true })).toBeVisible();
+      const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+      const confirmX = confirm.element().getBoundingClientRect().x;
+      for (const [seconds, displayed] of [
+        [1, "0:01"],
+        [65, "1:05"],
+        [3600, "1:00:00"],
+      ] as const) {
+        screen.store.set(secondsSinceEpochAtom, Math.ceil(started + seconds));
+        await expect.element(screen.getByText(displayed, { exact: true })).toBeVisible();
+        screen.store.set(onLoadCurrentSt, statusAt(seconds));
+        await expect.element(screen.getByText(displayed, { exact: true })).toBeVisible();
+        expect(confirm.element().getBoundingClientRect().x).toBe(confirmX);
+      }
+      await screen.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("keeps material visible but cannot confirm actions without a work descriptor", async () => {
     const status = confirmableBasketStatus("load-1", "Unconfirmed part");
     const basket = status.baskets!["7"];
