@@ -47,6 +47,7 @@ import {
 } from "./Material.js";
 import { SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
+import { apiErrorMessage } from "../../network/api-errors.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
 import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
@@ -577,9 +578,8 @@ function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }
 
   if (elapsedLoadTime) {
     const elapsedSecsInCurSt = durationToSeconds(elapsedLoadTime);
-    const elapsedSecs =
-      elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
-    return <span>{formatSeconds(elapsedSecs)}</span>;
+    const elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - currentStTime.getTime() / 1000);
+    return <span>{formatSeconds(Math.max(0, elapsedSecs))}</span>;
   } else {
     return null;
   }
@@ -1089,13 +1089,7 @@ function AddMatButton({
               setMatToShow(null);
               onClose();
             } catch (e) {
-              setAddError(
-                api.ApiException.isApiException(e)
-                  ? e.response
-                  : e instanceof Error
-                    ? e.message
-                    : String(e),
-              );
+              setAddError(apiErrorMessage(e));
             }
           }}
         >

@@ -31,7 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ApiException, ServerEvent, type ILogEntry } from "./api.js";
+import { ServerEvent, type ILogEntry } from "./api.js";
+import { apiErrorMessage } from "./api-errors.js";
 import { JobsBackend, LogBackend } from "./backend.js";
 import { fmsInformation } from "./server-settings.js";
 import { useEffect, useRef } from "react";
@@ -80,26 +81,6 @@ function isCurrentSession(get: Getter, session: number): boolean {
   return get(websocketSessionAtom).id === session;
 }
 
-function loadingErrorMessage(error: unknown, fallback: string): string {
-  if (error !== null && typeof error === "object" && ApiException.isApiException(error)) {
-    try {
-      const problem: unknown = JSON.parse(error.response);
-      if (
-        problem !== null &&
-        typeof problem === "object" &&
-        "detail" in problem &&
-        typeof problem.detail === "string" &&
-        problem.detail.trim().length > 0
-      ) {
-        return problem.detail;
-      }
-    } catch {
-      // Older servers can return plain text or HTML instead of a JSON problem.
-    }
-  }
-  return error instanceof Error ? error.message : fallback;
-}
-
 function loadCurrentStatus(get: Getter, set: Setter, session: number): Promise<void> {
   return JobsBackend.currentStatus().then((st) => {
     const current = get(websocketSessionAtom);
@@ -131,7 +112,7 @@ function loadHistory(
     },
     (e: unknown) => {
       if (!isCurrentSession(get, session)) return;
-      set(errorLoadingLogRW, loadingErrorMessage(e, "Error loading log history"));
+      set(errorLoadingLogRW, apiErrorMessage(e, "Error loading log history"));
       // Keep buffering and retry from the same applied position without interrupting live status.
       setTimeout(() => {
         if (isCurrentSession(get, session)) {
@@ -165,7 +146,7 @@ function finishLoading(
   Promise.all(loads)
     .catch((e: unknown) => {
       if (isCurrentSession(get, session)) {
-        set(errorLoadingLast30RW, loadingErrorMessage(e, "Error"));
+        set(errorLoadingLast30RW, apiErrorMessage(e, "Error"));
       }
     })
     .finally(() => {

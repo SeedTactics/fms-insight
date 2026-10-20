@@ -9,7 +9,7 @@ namespace BlackMaple.FMSInsight.Tests;
 public sealed class PalletLoadMetadataSpec
 {
   [Test]
-  public async Task LegacyMetadataIsPreservedInStorageAndCallbacks()
+  public async Task ForeignIdAndOriginalMessageArePreservedInStorageAndCallbacks()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
     using var repo = config.OpenConnection();
@@ -24,22 +24,19 @@ public sealed class PalletLoadMetadataSpec
       mats: [],
       program: "message",
       result: "recorded",
-      metadata: new EventLogMetadata
-      {
-        ForeignId = "  source-1  ",
-        OriginalMessage = "  original message\r\n",
-        CorrelationId = "  correlation-1  ",
-      }
+      foreignId: "  source-1  ",
+      originalMessage: "  original message\r\n"
     );
+    await Assert.That(entry.ForeignID).IsEqualTo("  source-1  ");
     await Assert.That(repo.ForeignIDForCounter(entry.Counter)).IsEqualTo("  source-1  ");
     await Assert
       .That(repo.OriginalMessageByForeignID("  source-1  "))
       .IsEqualTo("  original message\r\n");
     await Assert.That(observedForeignId).IsEqualTo("  source-1  ");
-    await Assert.That(observed.CorrelationId).IsEqualTo("correlation-1");
+    await Assert.That(observed.ForeignID).IsEqualTo("  source-1  ");
     await Assert
-      .That(repo.GetLogForForeignID("  source-1  ").Single().CorrelationId)
-      .IsEqualTo("correlation-1");
+      .That(repo.MostRecentLogEntryForForeignID("  source-1  ").Counter)
+      .IsEqualTo(entry.Counter);
   }
 
   [Test]

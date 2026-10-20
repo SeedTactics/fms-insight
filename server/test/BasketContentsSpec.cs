@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using Microsoft.Data.Sqlite;
+using TUnit.Assertions.Enums;
 
 namespace BlackMaple.FMSInsight.Tests;
 
@@ -16,6 +17,145 @@ public sealed class BasketContentsSpec : IDisposable
     _repositoryConfig = RepositoryConfig.InitializeMemoryDB(null, _databaseId);
 
   public void Dispose() => _repositoryConfig.Dispose();
+
+  [Test]
+  [Arguments(false, false)]
+  [Arguments(false, true)]
+  [Arguments(true, false)]
+  [Arguments(true, true)]
+  public async Task CurrentHistoriesSeparateOverlappingPalletAndBasketIds(
+    bool cycle,
+    bool includeCycle
+  )
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    using var connection = new SqliteConnection(
+      $"Data Source=file:${_databaseId}?mode=memory&cache=shared"
+    );
+    connection.Open();
+    long Entry(int type, string result = "")
+    {
+      var entry = repository.RecordGeneralMessage(
+        Array.Empty<EventLogMaterial>(),
+        "",
+        result,
+        pallet: 4
+      );
+      using var command = connection.CreateCommand();
+      command.CommandText = "UPDATE stations SET StationLoc = $type WHERE Counter = $counter";
+      command.Parameters.AddWithValue("$type", type);
+      command.Parameters.AddWithValue("$counter", entry.Counter);
+      command.ExecuteNonQuery();
+      return entry.Counter;
+    }
+    var oldPallet = Entry((int)LogType.LoadUnloadCycle);
+    var oldBasket = Entry((int)LogType.BasketLoadUnload);
+    var palletCycle = cycle ? Entry((int)LogType.PalletCycle, "PalletCycle") : 0;
+    var basketCycle = cycle ? Entry((int)LogType.BasketCycle, "BasketCycle") : 0;
+    var pallet = Entry((int)LogType.LoadUnloadCycle);
+    var basket = Entry((int)LogType.BasketLoadUnload);
+    var retired = Enumerable.Range(118, 11).Select(type => Entry(type)).ToImmutableList();
+    ImmutableList<long> expectedPallet = cycle
+      ? includeCycle
+        ? [palletCycle, pallet]
+        : [pallet]
+      : [oldPallet, pallet];
+    ImmutableList<long> expectedBasket = cycle
+      ? includeCycle
+        ? [basketCycle, basket]
+        : [basket]
+      : [oldBasket, basket];
+    await Assert
+      .That(repository.CurrentPalletLog(4, includeCycle).Select(e => e.Counter))
+      .IsEquivalentTo(expectedPallet, CollectionOrdering.Matching);
+    await Assert
+      .That(repository.CurrentBasketLog(4, includeCycle).Select(e => e.Counter))
+      .IsEquivalentTo(expectedBasket.AddRange(retired), CollectionOrdering.Matching);
+    await Assert.That(repository.CurrentPalletLog(4).Select(e => e.Counter)).Contains(pallet);
+    await Assert.That(repository.CurrentBasketLog(4).Select(e => e.Counter)).Contains(basket);
+    await Assert
+      .That(
+        repository
+          .CurrentBasketLog(4)
+          .Where(e => retired.Contains(e.Counter))
+          .All(e => e.LogType == LogType.GeneralMessage)
+      )
+      .IsTrue();
+  }
+
+  [Test]
+  public async Task StationQueueEventsAreInReceiptsAndNotificationsAndRetriesDoNotRepublish()
+  {
+    using var repository = _repositoryConfig.OpenConnection();
+    var material = repository.AllocateMaterialID("job-1", "part-a", 2);
+    repository.RecordAddMaterialToQueue(LogMaterial(material, 0, 1), "raw", -1, null, null);
+    var contents = Contents(4, 1, material, "tp-101");
+    var prepare = StationPreparation(material, contents);
+    var empty = new BasketStationOperation
+    {
+      Transfers =
+      [
+        new BasketStationTransfer.UnloadFromBasket
+        {
+          BasketId = 4,
+          Material = [LogMaterial(material, 0, 1)],
+          DestinationQueue = "output",
+          ActiveOperationTime = TimeSpan.Zero,
+        },
+      ],
+      CycleBoundaries = [],
+      ContentsChanges =
+      [
+        new BasketContentsChange
+        {
+          BasketId = 4,
+          Expected = contents,
+          Result = Empty(4),
+        },
+      ],
+    };
+    var notifications = ImmutableList<long>.Empty;
+    _repositoryConfig.NewLogEntry += (entry, _, _) =>
+      notifications = notifications.Add(entry.Counter);
+    foreach (
+      var (operation, key, queueType) in ImmutableList.Create(
+        (prepare, "prepare", LogType.RemoveFromQueue),
+        (empty, "empty", LogType.AddToQueue)
+      )
+    )
+    {
+      var cursor = repository.GetRecentLog(0).Max(e => e.Counter);
+      var notifiedBefore = notifications.Count;
+      ImmutableList<LogEntry> Record() =>
+        repository
+          .RecordBasketStationOperation(
+            operation,
+            1,
+            TimeSpan.Zero,
+            DateTime.UtcNow,
+            ImmutableDictionary<string, string>.Empty,
+            key
+          )
+          .ToImmutableList();
+      var receipt = Record();
+      var committed = repository.GetRecentLog(cursor).Select(e => e.Counter).ToImmutableList();
+      await Assert.That(receipt.Any(e => e.LogType == queueType)).IsTrue();
+      await Assert
+        .That(receipt.Select(e => e.Counter))
+        .IsEquivalentTo(committed, CollectionOrdering.Matching);
+      await Assert
+        .That(notifications.Skip(notifiedBefore))
+        .IsEquivalentTo(committed, CollectionOrdering.Matching);
+      var retry = Record();
+      await Assert
+        .That(retry.Select(e => e.Counter))
+        .IsEquivalentTo(committed, CollectionOrdering.Matching);
+      await Assert
+        .That(repository.GetRecentLog(cursor).Select(e => e.Counter))
+        .IsEquivalentTo(committed, CollectionOrdering.Matching);
+      await Assert.That(notifications.Count).IsEqualTo(notifiedBefore + receipt.Count);
+    }
+  }
 
   [Test]
   public async Task RecordsAndLoadsNamedBasketContentsByBasketId()
@@ -539,8 +679,7 @@ public sealed class BasketContentsSpec : IDisposable
         Result = contents,
       }
     );
-    var metadata = new EventLogMetadata { ForeignId = foreignId };
-    repository.RecordBasketContentsOperation(operation, "prepare-4", metadata);
+    repository.RecordBasketContentsOperation(operation, "prepare-4", foreignId);
     repository.RecordBasketContentsOperation(
       Operation(
         new BasketContentsChange
@@ -554,27 +693,17 @@ public sealed class BasketContentsSpec : IDisposable
     );
     var events = repository.GetLogForMaterial(materialId).ToImmutableList();
 
-    repository.RecordBasketContentsOperation(operation, "prepare-4", metadata);
+    repository.RecordBasketContentsOperation(operation, "prepare-4", foreignId);
     if (string.IsNullOrEmpty(foreignId))
       repository.RecordBasketContentsOperation(
         operation,
         "prepare-4",
-        metadata with
-        {
-          ForeignId = foreignId is null ? "" : null,
-        }
+        foreignId is null ? "" : null
       );
     else
       await Assert
         .That(() =>
-          repository.RecordBasketContentsOperation(
-            operation,
-            "prepare-4",
-            metadata with
-            {
-              ForeignId = foreignId.Trim(),
-            }
-          )
+          repository.RecordBasketContentsOperation(operation, "prepare-4", foreignId.Trim())
         )
         .Throws<ConflictRequestException>();
 
@@ -592,7 +721,6 @@ public sealed class BasketContentsSpec : IDisposable
     var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
     var contents = Contents(4, 1, materialId, "tp-101");
     var operation = StationPreparation(materialId, contents);
-    var metadata = new EventLogMetadata { ForeignId = foreignId };
     var callbackForeignIds = ImmutableList<string>.Empty;
     _repositoryConfig.NewLogEntry += (_, observedForeignId, _) =>
       callbackForeignIds = callbackForeignIds.Add(observedForeignId);
@@ -604,7 +732,7 @@ public sealed class BasketContentsSpec : IDisposable
         DateTime.UtcNow,
         ImmutableDictionary<string, string>.Empty,
         "station-prepare-4",
-        metadata: metadata
+        foreignId: foreignId
       )
       .ToImmutableList();
     await Assert.That(callbackForeignIds).IsNotEmpty();
@@ -633,7 +761,7 @@ public sealed class BasketContentsSpec : IDisposable
         DateTime.UtcNow,
         ImmutableDictionary<string, string>.Empty,
         "station-prepare-4",
-        metadata: metadata
+        foreignId: foreignId
       )
       .ToImmutableList();
     if (string.IsNullOrEmpty(foreignId))
@@ -645,10 +773,7 @@ public sealed class BasketContentsSpec : IDisposable
           DateTime.UtcNow,
           ImmutableDictionary<string, string>.Empty,
           "station-prepare-4",
-          metadata: metadata with
-          {
-            ForeignId = foreignId is null ? "" : null,
-          }
+          foreignId: foreignId is null ? "" : null
         )
         .ToImmutableList();
     else
@@ -661,10 +786,7 @@ public sealed class BasketContentsSpec : IDisposable
             DateTime.UtcNow,
             ImmutableDictionary<string, string>.Empty,
             "station-prepare-4",
-            metadata: metadata with
-            {
-              ForeignId = foreignId.Trim(),
-            }
+            foreignId: foreignId.Trim()
           )
         )
         .Throws<ConflictRequestException>();

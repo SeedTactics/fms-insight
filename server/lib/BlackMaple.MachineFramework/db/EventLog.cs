@@ -102,7 +102,6 @@ namespace BlackMaple.MachineFramework
           if (!reader.IsDBNull(11))
             locName = reader.GetString(11);
           string foreignId = reader.IsDBNull(13) ? null : reader.GetString(13);
-          string correlationId = reader.IsDBNull(14) ? null : reader.GetString(14);
           LogType ty;
           if (Enum.IsDefined(typeof(LogType), logType))
           {
@@ -285,7 +284,6 @@ namespace BlackMaple.MachineFramework
             ProgramDetails = progDetails.Count == 0 ? null : progDetails.ToImmutable(),
             Tools = tools.Count == 0 ? null : tools.ToImmutable(),
             ForeignID = foreignId,
-            CorrelationId = correlationId,
           };
         }
       } // close usings
@@ -308,7 +306,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
           + " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
 
         cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
@@ -349,7 +347,7 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Transaction = trans;
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
@@ -371,7 +369,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
           + " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
@@ -382,21 +380,6 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public ImmutableList<LogEntry> GetLogForForeignID(string foreignID)
-    {
-      using var trans = _connection.BeginTransaction();
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = trans;
-      cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
-        + "FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
-      cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
-      using var reader = cmd.ExecuteReader();
-      var entries = LoadLog(reader, trans).ToImmutableList();
-      trans.Commit();
-      return entries;
-    }
-
     public LogEntry MostRecentLogEntryLessOrEqualToForeignID(string foreignID)
     {
       using (var trans = _connection.BeginTransaction())
@@ -404,7 +387,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
           + " FROM stations WHERE ForeignID <= $foreign ORDER BY ForeignID DESC, Counter DESC LIMIT 1";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
@@ -456,7 +439,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID, s.CorrelationId "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID "
         + " FROM stations s "
         + " WHERE s.Counter IN (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID = $mat)"
         + (includeInvalidatedCycles ? "" : " AND " + ignoreInvalidEventCondition)
@@ -492,7 +475,7 @@ namespace BlackMaple.MachineFramework
       }
 
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID, s.CorrelationId "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID "
         + " FROM stations s WHERE s.Counter IN "
         + "     (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID IN "
         + "        (SELECT t.MaterialID FROM temp_mat_ids t))"
@@ -514,7 +497,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
           + " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
         cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
 
@@ -535,7 +518,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
           + " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
@@ -616,7 +599,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
           + " FROM stations "
           + " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) "
           + "    OR (Pallet = 0 AND Result = $work AND StationLoc = $workloc) "
@@ -632,24 +615,6 @@ namespace BlackMaple.MachineFramework
           }
         }
       }
-    }
-
-    public ImmutableList<LogEntry> GetLogForCorrelationId(string correlationId)
-    {
-      if (string.IsNullOrWhiteSpace(correlationId))
-        throw new ArgumentException("Correlation ID is required.", nameof(correlationId));
-
-      using var trans = _connection.BeginTransaction();
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = trans;
-      cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
-        + "FROM stations WHERE CorrelationId = $correlation ORDER BY Counter ASC";
-      cmd.Parameters.Add("correlation", SqliteType.Text).Value = correlationId;
-      using var reader = cmd.ExecuteReader();
-      var entries = LoadLog(reader, trans).ToImmutableList();
-      trans.Commit();
-      return entries;
     }
 
     public IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC)
@@ -685,7 +650,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
           + " FROM stations WHERE Counter IN ("
           + searchCompleted
           + ") ORDER BY Counter ASC";
@@ -709,7 +674,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
         + " FROM stations WHERE Counter > $cntr AND StationLoc = $loadty AND Result = 'UNLOAD' AND Start = 0";
       cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
       cmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
@@ -721,7 +686,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
+    // Pallets and baskets share the Pallet column. Event numbers 116-128 identify basket
+    // history, including retired basket events that load as GeneralMessage.
+    // Loads the current pallet cycle, which is all events from the last Result = "PalletCycle"
     public List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false)
     {
       using (var trans = _connection.BeginTransaction())
@@ -730,29 +697,6 @@ namespace BlackMaple.MachineFramework
         trans.Commit();
         return ret;
       }
-    }
-
-    public ImmutableList<LogEntry> CurrentAndPreviousPalletLog(int pallet)
-    {
-      using var trans = _connection.BeginTransaction();
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = trans;
-      cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
-        + "FROM stations s WHERE Pallet = $pal AND Counter >= COALESCE(("
-        + " SELECT Counter FROM stations"
-        + " WHERE Pallet = $pal AND Result = 'PalletCycle'"
-        // One load/unload completion can write both a cycle end and the next cycle start. The
-        // third marker is therefore the bounded beginning of the immediately previous cycle.
-        + " ORDER BY Counter DESC LIMIT 1 OFFSET 2"
-        + "), 0) AND "
-        + ignoreInvalidEventCondition
-        + " ORDER BY Counter ASC";
-      cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
-      using var reader = cmd.ExecuteReader();
-      var entries = LoadLog(reader, trans).ToImmutableList();
-      trans.Commit();
-      return entries;
     }
 
     private List<LogEntry> CurrentPalletLog(
@@ -765,7 +709,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT MAX(Counter) FROM stations where Pallet = $pal AND Result = 'PalletCycle'";
+          "SELECT MAX(Counter) FROM stations where Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Result = 'PalletCycle'";
         cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
 
         var counter = cmd.ExecuteScalar();
@@ -773,9 +717,9 @@ namespace BlackMaple.MachineFramework
         if (counter == DBNull.Value)
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations s "
-            + " WHERE Pallet = $pal AND "
+            + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
@@ -786,9 +730,9 @@ namespace BlackMaple.MachineFramework
         else
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations s "
-            + " WHERE Pallet = $pal AND Counter "
+            + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Counter "
             + (includeLastPalletCycleEvt ? ">=" : ">")
             + " $cntr AND "
             + ignoreInvalidEventCondition
@@ -823,7 +767,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT MAX(Counter) FROM stations WHERE Pallet = $basketId AND Result = 'BasketCycle'";
+          "SELECT MAX(Counter) FROM stations WHERE Pallet = $basketId AND StationLoc BETWEEN 116 AND 128 AND Result = 'BasketCycle'";
         cmd.Parameters.Add("basketId", SqliteType.Integer).Value = basketId;
 
         var counter = cmd.ExecuteScalar();
@@ -831,14 +775,11 @@ namespace BlackMaple.MachineFramework
         if (counter == DBNull.Value)
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations s "
-            + " WHERE Pallet = $basketId AND "
+            + " WHERE Pallet = $basketId AND StationLoc BETWEEN 116 AND 128 AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
-          cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
-            LogType.BasketLoadUnload;
-          cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
           using (var reader = cmd.ExecuteReader())
           {
             return LoadLog(reader, trans).ToList();
@@ -847,16 +788,13 @@ namespace BlackMaple.MachineFramework
         else
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID, CorrelationId "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
             + " FROM stations s "
-            + " WHERE Pallet = $basketId AND Counter "
+            + " WHERE Pallet = $basketId AND StationLoc BETWEEN 116 AND 128 AND Counter "
             + (includeLastCycleEvt ? ">=" : ">")
             + " $cntr AND "
             + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
-          cmd.Parameters.Add("loadUnloadType", SqliteType.Integer).Value = (int)
-            LogType.BasketLoadUnload;
-          cmd.Parameters.Add("cycleType", SqliteType.Integer).Value = (int)LogType.BasketCycle;
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
 
           using (var reader = cmd.ExecuteReader())
@@ -1393,7 +1331,7 @@ namespace BlackMaple.MachineFramework
       }
       public ImmutableList<ToolUse> Tools { get; init; } = ImmutableList<ToolUse>.Empty;
       public IEnumerable<ToolSnapshot> ToolPockets { get; init; }
-      public EventLogMetadata Metadata { get; init; } = new();
+      public string ForeignID { get; init; } = null;
 
       internal LogEntry ToLogEntry(long newCntr, Func<long, MaterialDetails> getDetails)
       {
@@ -1437,8 +1375,7 @@ namespace BlackMaple.MachineFramework
               ? null
               : this.ProgramDetails.ToImmutableDictionary(),
           Tools = this.Tools == null || this.Tools.Count == 0 ? null : this.Tools,
-          ForeignID = this.Metadata.ForeignId,
-          CorrelationId = this.Metadata.CorrelationId,
+          ForeignID = this.ForeignID,
         };
       }
 
@@ -1458,11 +1395,7 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = e.ElapsedTime,
           ActiveOperationTime = e.ActiveOperationTime,
           Tools = e.Tools,
-          Metadata = new EventLogMetadata
-          {
-            ForeignId = e.ForeignID,
-            CorrelationId = e.CorrelationId,
-          },
+          ForeignID = e.ForeignID,
         };
         if (e.ProgramDetails != null)
         {
@@ -1480,29 +1413,17 @@ namespace BlackMaple.MachineFramework
       NewEventLogEntry log,
       string foreignID,
       string origMessage
-    ) =>
-      AddLogEntry(
-        trans,
-        log,
-        new EventLogMetadata { ForeignId = foreignID, OriginalMessage = origMessage }
-      );
-
-    private LogEntry AddLogEntry(
-      IDbTransaction trans,
-      NewEventLogEntry log,
-      EventLogMetadata metadata
     )
     {
-      metadata = NormalizeEventLogMetadata(metadata);
-      log = log with { Metadata = metadata };
+      log = log with { ForeignID = string.IsNullOrEmpty(foreignID) ? null : foreignID };
       ValidateLogEntry(log);
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, Elapsed, ActiveTime, ForeignID, CorrelationId, OriginalMessage)"
-          + "VALUES ($pal,$loc,$locname,$locnum,$prog,$start,$time,$result,$elapsed,$active,$foreign,$correlation,$orig)";
+          "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, Elapsed, ActiveTime, ForeignID, OriginalMessage)"
+          + "VALUES ($pal,$loc,$locname,$locnum,$prog,$start,$time,$result,$elapsed,$active,$foreign,$orig)";
 
         cmd.Parameters.Add("pal", SqliteType.Integer).Value = log.Pallet;
         cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)log.LogType;
@@ -1520,18 +1441,14 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters.Add("active", SqliteType.Integer).Value = log.ActiveOperationTime.Ticks;
         else
           cmd.Parameters.Add("active", SqliteType.Integer).Value = DBNull.Value;
-        if (metadata.ForeignId == null || metadata.ForeignId == "")
+        if (log.ForeignID == null)
           cmd.Parameters.Add("foreign", SqliteType.Text).Value = DBNull.Value;
         else
-          cmd.Parameters.Add("foreign", SqliteType.Text).Value = metadata.ForeignId;
-        if (metadata.CorrelationId == null || metadata.CorrelationId == "")
-          cmd.Parameters.Add("correlation", SqliteType.Text).Value = DBNull.Value;
-        else
-          cmd.Parameters.Add("correlation", SqliteType.Text).Value = metadata.CorrelationId;
-        if (metadata.OriginalMessage == null || metadata.OriginalMessage == "")
+          cmd.Parameters.Add("foreign", SqliteType.Text).Value = log.ForeignID;
+        if (origMessage == null || origMessage == "")
           cmd.Parameters.Add("orig", SqliteType.Text).Value = DBNull.Value;
         else
-          cmd.Parameters.Add("orig", SqliteType.Text).Value = metadata.OriginalMessage;
+          cmd.Parameters.Add("orig", SqliteType.Text).Value = origMessage;
 
         cmd.ExecuteNonQuery();
 
@@ -1547,30 +1464,6 @@ namespace BlackMaple.MachineFramework
         return log.ToLogEntry(ctr, m => this.GetMaterialDetails(m, trans));
       }
     }
-
-    private static EventLogMetadata MergeEventLogMetadata(
-      EventLogMetadata metadata,
-      string foreignId,
-      string originalMessage
-    ) =>
-      NormalizeEventLogMetadata(
-        metadata is null
-          ? new EventLogMetadata { ForeignId = foreignId, OriginalMessage = originalMessage }
-          : metadata with
-          {
-            ForeignId = metadata.ForeignId ?? foreignId,
-            OriginalMessage = metadata.OriginalMessage ?? originalMessage,
-          }
-      );
-
-    private static EventLogMetadata NormalizeEventLogMetadata(EventLogMetadata metadata) =>
-      (metadata ?? new EventLogMetadata()) with
-      {
-        CorrelationId = NormalizeOptionalMetadata(metadata?.CorrelationId),
-      };
-
-    private static string NormalizeOptionalMetadata(string value) =>
-      string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static void ValidateLogEntry(NewEventLogEntry log)
     {
@@ -2195,8 +2088,7 @@ namespace BlackMaple.MachineFramework
       List<LogEntry> logs,
       IDbTransaction trans,
       string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
+      string originalMessage = null
     )
     {
       foreach (
@@ -2232,9 +2124,7 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = timeUTC >= firstEventTime ? timeUTC - firstEventTime : TimeSpan.Zero,
           ActiveOperationTime = TimeSpan.Zero,
         };
-        logs.Add(
-          AddLogEntry(trans, cycleEnd, MergeEventLogMetadata(metadata, foreignId, originalMessage))
-        );
+        logs.Add(AddLogEntry(trans, cycleEnd, foreignId, originalMessage));
       }
     }
 
@@ -2275,8 +2165,7 @@ namespace BlackMaple.MachineFramework
       List<LogEntry> logs,
       IDbTransaction trans,
       string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
+      string originalMessage = null
     )
     {
       foreach (
@@ -2306,13 +2195,7 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = TimeSpan.Zero,
           ActiveOperationTime = TimeSpan.Zero,
         };
-        logs.Add(
-          AddLogEntry(
-            trans,
-            cycleStart,
-            MergeEventLogMetadata(metadata, foreignId, originalMessage)
-          )
-        );
+        logs.Add(AddLogEntry(trans, cycleStart, foreignId, originalMessage));
       }
     }
 
@@ -2324,7 +2207,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID, s.CorrelationId "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID "
         + "FROM basket_operation_events o "
         + "JOIN stations s ON s.Counter = o.Counter "
         + "WHERE o.IdempotencyKey = $key ORDER BY o.Position";
@@ -2523,14 +2406,12 @@ namespace BlackMaple.MachineFramework
       IReadOnlyDictionary<string, string> externalQueues,
       string idempotencyKey,
       string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
+      string originalMessage = null
     )
     {
       ArgumentNullException.ThrowIfNull(operation);
       if (totalElapsed < TimeSpan.Zero)
         throw new ArgumentOutOfRangeException(nameof(totalElapsed));
-      var eventMetadata = MergeEventLogMetadata(metadata, foreignId, originalMessage);
       var palletCompletion = ToPalletBasketLoadUnloadCompletion(operation);
       ValidatePalletBasketCompletion(
         palletCompletion,
@@ -2590,7 +2471,8 @@ namespace BlackMaple.MachineFramework
         timeUTC,
         idempotencyKey,
         fingerprint,
-        eventMetadata,
+        foreignId,
+        originalMessage,
         contentsOperation,
         basketLoads,
         basketUnloads,
@@ -2613,9 +2495,8 @@ namespace BlackMaple.MachineFramework
               timeUTC,
               trans,
               newLogs,
-              eventMetadata.ForeignId,
-              eventMetadata.OriginalMessage,
-              eventMetadata
+              foreignId,
+              originalMessage
             );
             if (transfer.DestinationQueue is null)
               continue;
@@ -2639,18 +2520,20 @@ namespace BlackMaple.MachineFramework
               }
               else
               {
-                AddToQueue(
-                  trans,
-                  // Basket process describes its tooling/preparation, not completed machining.
-                  material with
-                  {
-                    Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
-                  },
-                  transfer.DestinationQueue,
-                  position: -1,
-                  operatorName: null,
-                  timeUTC,
-                  reason: null
+                newLogs.AddRange(
+                  AddToQueue(
+                    trans,
+                    // Basket process describes its tooling/preparation, not completed machining.
+                    material with
+                    {
+                      Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
+                    },
+                    transfer.DestinationQueue,
+                    position: -1,
+                    operatorName: null,
+                    timeUTC,
+                    reason: null
+                  )
                 );
               }
             }
@@ -2664,15 +2547,17 @@ namespace BlackMaple.MachineFramework
           {
             // Taking prepared material out of a queue must not advance its manufacturing process.
             foreach (var material in transfer.Material)
-              RemoveFromAllQueues(
-                trans,
-                material with
-                {
-                  Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
-                },
-                operatorName: null,
-                reason: null,
-                timeUTC
+              newLogs.AddRange(
+                RemoveFromAllQueues(
+                  trans,
+                  material with
+                  {
+                    Process = (NextProcessForQueuedMaterial(trans, material.MaterialID) ?? 1) - 1,
+                  },
+                  operatorName: null,
+                  reason: null,
+                  timeUTC
+                )
               );
             RecordBasketStationTransfer(
               transfer,
@@ -2687,9 +2572,8 @@ namespace BlackMaple.MachineFramework
               timeUTC,
               trans,
               newLogs,
-              eventMetadata.ForeignId,
-              eventMetadata.OriginalMessage,
-              eventMetadata
+              foreignId,
+              originalMessage
             );
           }
         }
@@ -2709,7 +2593,8 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       string idempotencyKey,
       string fingerprint,
-      EventLogMetadata metadata,
+      string foreignId,
+      string originalMessage,
       BasketContentsOperation contentsOperation,
       ImmutableList<BasketMaterialPosition> basketLoads,
       ImmutableList<BasketMaterialPosition> basketUnloads,
@@ -2759,8 +2644,8 @@ namespace BlackMaple.MachineFramework
           if (
             existingType != operationType
             || existingFingerprint != fingerprint
-            || (existingForeignId ?? "") != (metadata.ForeignId ?? "")
-            || existingOriginalMessage != (metadata.OriginalMessage ?? "")
+            || (existingForeignId ?? "") != (foreignId ?? "")
+            || existingOriginalMessage != (originalMessage ?? "")
           )
             throw new ConflictRequestException(
               $"Idempotency key {idempotencyKey} already identifies a different basket operation."
@@ -2782,7 +2667,8 @@ namespace BlackMaple.MachineFramework
           timeUTC,
           newLogs,
           trans,
-          metadata: metadata
+          foreignId,
+          originalMessage
         );
         afterCycleEnds?.Invoke(trans, newLogs);
         RecordExplicitBasketCycleStarts(
@@ -2791,7 +2677,8 @@ namespace BlackMaple.MachineFramework
           timeUTC,
           newLogs,
           trans,
-          metadata: metadata
+          foreignId,
+          originalMessage
         );
         if (contentsOperation is not null)
           ApplyBasketContentsChanges(contentsOperation, trans);
@@ -2805,12 +2692,11 @@ namespace BlackMaple.MachineFramework
         recordOperation.Parameters.Add("type", SqliteType.Text).Value = operationType;
         recordOperation.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
         recordOperation.Parameters.Add("foreign", SqliteType.Text).Value = string.IsNullOrEmpty(
-          metadata.ForeignId
+          foreignId
         )
           ? DBNull.Value
-          : metadata.ForeignId;
-        recordOperation.Parameters.Add("original", SqliteType.Text).Value =
-          metadata.OriginalMessage ?? "";
+          : foreignId;
+        recordOperation.Parameters.Add("original", SqliteType.Text).Value = originalMessage ?? "";
         recordOperation.ExecuteNonQuery();
         recordOperation.CommandText =
           "INSERT INTO basket_operation_events(IdempotencyKey, Position, Counter) "
@@ -2830,7 +2716,7 @@ namespace BlackMaple.MachineFramework
       }
 
       foreach (var log in logs)
-        _cfg.OnNewLogEntry(log, metadata.ForeignId, this);
+        _cfg.OnNewLogEntry(log, foreignId, this);
       return new RecordedBasketOperation(logs, Created: true);
     }
 
@@ -2913,8 +2799,7 @@ namespace BlackMaple.MachineFramework
       IDbTransaction trans,
       List<LogEntry> logs,
       string foreignId,
-      string originalMessage,
-      EventLogMetadata metadata = null
+      string originalMessage
     )
     {
       var recordedBasketId = ValidateBasketId(transfer.BasketId);
@@ -2935,7 +2820,8 @@ namespace BlackMaple.MachineFramework
             ElapsedTime = elapsed,
             ActiveOperationTime = transfer.ActiveOperationTime,
           },
-          MergeEventLogMetadata(metadata, foreignId, originalMessage)
+          foreignId,
+          originalMessage
         )
       );
     }
@@ -3674,8 +3560,7 @@ namespace BlackMaple.MachineFramework
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
+      string originalMessage = null
     )
     {
       return AddEntryInTransaction(trans =>
@@ -3695,11 +3580,7 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = TimeSpan.Zero,
           ActiveOperationTime = TimeSpan.Zero,
         };
-        return AddLogEntry(
-          trans,
-          entry,
-          MergeEventLogMetadata(metadata, foreignId, originalMessage)
-        );
+        return AddLogEntry(trans, entry, foreignId, originalMessage);
       });
     }
 
@@ -3709,8 +3590,7 @@ namespace BlackMaple.MachineFramework
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
+      string originalMessage = null
     )
     {
       return AddEntryInTransaction(trans =>
@@ -3731,11 +3611,7 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = TimeSpan.Zero,
           ActiveOperationTime = TimeSpan.Zero,
         };
-        return AddLogEntry(
-          trans,
-          entry,
-          MergeEventLogMetadata(metadata, foreignId, originalMessage)
-        );
+        return AddLogEntry(trans, entry, foreignId, originalMessage);
       });
     }
 
@@ -4272,8 +4148,7 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null,
       string foreignId = null,
       string originalMessage = null,
-      IDictionary<string, string> extraData = null,
-      EventLogMetadata metadata = null
+      IDictionary<string, string> extraData = null
     )
     {
       return RecordGeneralMessage(
@@ -4284,8 +4159,7 @@ namespace BlackMaple.MachineFramework
         timeUTC: timeUTC,
         foreignId: foreignId,
         originalMessage: originalMessage,
-        extraData: extraData,
-        metadata: metadata
+        extraData: extraData
       );
     }
 
@@ -4297,8 +4171,7 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null,
       string foreignId = null,
       string originalMessage = null,
-      IDictionary<string, string> extraData = null,
-      EventLogMetadata metadata = null
+      IDictionary<string, string> extraData = null
     )
     {
       var log = new NewEventLogEntry()
@@ -4318,16 +4191,9 @@ namespace BlackMaple.MachineFramework
         foreach (var x in extraData)
           log.ProgramDetails.Add(x.Key, x.Value);
       }
-      var eventMetadata = metadata is null
-        ? new EventLogMetadata { ForeignId = foreignId, OriginalMessage = originalMessage }
-        : metadata with
-        {
-          ForeignId = metadata.ForeignId ?? foreignId,
-          OriginalMessage = metadata.OriginalMessage ?? originalMessage,
-        };
       return AddEntryInTransaction(
-        trans => AddLogEntry(trans, log, eventMetadata),
-        eventMetadata.ForeignId
+        trans => AddLogEntry(trans, log, foreignId, originalMessage),
+        foreignId
       );
     }
 

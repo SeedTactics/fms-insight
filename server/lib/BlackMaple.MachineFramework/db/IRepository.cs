@@ -72,10 +72,7 @@ namespace BlackMaple.MachineFramework
     );
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
-    ImmutableList<LogEntry> GetLogForCorrelationId(string correlationId);
-    ImmutableList<LogEntry> GetLogForForeignID(string foreignID);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
-    ImmutableList<LogEntry> CurrentAndPreviousPalletLog(int pallet);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
 
     [return: MaybeNull]
@@ -105,9 +102,6 @@ namespace BlackMaple.MachineFramework
     // caused an event. One external input may generate several log events, so foreignId is not
     // necessarily unique and does not itself provide an idempotency contract.
     //
-    // correlationId optionally groups events from several inputs into a larger workflow or
-    // operation. It is also not an idempotency key.
-    //
     // APIs that accept an explicit idempotency key define their retry behavior separately.
     LogEntry RecordLoadStart(
       IEnumerable<EventLogMaterial> mats,
@@ -131,8 +125,7 @@ namespace BlackMaple.MachineFramework
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
+      string originalMessage = null
     );
     LogEntry RecordBasketUnloadBegin(
       IEnumerable<EventLogMaterial> mats,
@@ -140,8 +133,7 @@ namespace BlackMaple.MachineFramework
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
+      string originalMessage = null
     );
 
     // RecordPartialLoadUnload is for partial pallet <-> queue or pallet <-> basket events.
@@ -179,10 +171,9 @@ namespace BlackMaple.MachineFramework
     // Atomically records one completed basket-station operation. Each transfer names the physical
     // basket it changes. Queue changes, operation timing, transfer events, and basket contents are committed
     // under one idempotency key. An identical retry returns the original event group; changed
-    // durable input throws ConflictRequestException. timeUTC and metadata.CorrelationId are
-    // intentionally excluded from retry comparison. A retry with a different correlation ID returns
-    // the original event group with its original metadata. Cycle-boundary events record lulNum as
-    // their location number. foreignId remains optional event correlation metadata.
+    // durable input, including foreignId and originalMessage, throws ConflictRequestException.
+    // timeUTC is intentionally excluded from retry comparison. Cycle-boundary events record lulNum
+    // as their location number.
     //
     // totalElapsed is apportioned among transfers in proportion to ActiveOperationTime when every
     // transfer has a positive expected time. Otherwise, it is apportioned by material count.
@@ -197,8 +188,7 @@ namespace BlackMaple.MachineFramework
       IReadOnlyDictionary<string, string> externalQueues,
       string idempotencyKey,
       string foreignId = null,
-      string originalMessage = null,
-      EventLogMetadata metadata = null
+      string originalMessage = null
     );
 
     /// <summary>
@@ -209,7 +199,8 @@ namespace BlackMaple.MachineFramework
     void RecordBasketContentsOperation(
       BasketContentsOperation operation,
       string idempotencyKey,
-      EventLogMetadata metadata = null
+      string foreignId = null,
+      string originalMessage = null
     );
 
     IEnumerable<LogEntry> RecordEmptyPallet(
@@ -441,8 +432,7 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null,
       string foreignId = null,
       string originalMessage = null,
-      IDictionary<string, string> extraData = null,
-      EventLogMetadata metadata = null
+      IDictionary<string, string> extraData = null
     );
     LogEntry RecordGeneralMessage(
       IEnumerable<EventLogMaterial> mats,
@@ -452,8 +442,7 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null,
       string foreignId = null,
       string originalMessage = null,
-      IDictionary<string, string> extraData = null,
-      EventLogMetadata metadata = null
+      IDictionary<string, string> extraData = null
     );
     LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName);
     LogEntry RecordOperatorNotes(

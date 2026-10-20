@@ -4,7 +4,7 @@ import { Duration } from "date-fns";
 const nr = "-?\\d+(?:[\\.,]\\d+)?";
 const dateRegex = "(" + nr + "Y)?(" + nr + "M)?(" + nr + "D)?";
 const timeRegex = "T(" + nr + "H)?(" + nr + "M)?(" + nr + "S)?";
-const durationRegex = new RegExp("P" + dateRegex + "(?:" + timeRegex + ")?");
+const durationRegex = new RegExp("^(-?)P" + dateRegex + "(?:" + timeRegex + ")?$");
 
 export default function parseISODuration(argument: string): Duration | null {
   const match = durationRegex.exec(argument);
@@ -13,17 +13,18 @@ export default function parseISODuration(argument: string): Duration | null {
   }
 
   // at least one part must be specified
-  if (!match[1] && !match[2] && !match[3] && !match[4] && !match[5] && !match[6]) {
+  if (!match.slice(2).some(Boolean)) {
     return null;
   }
 
+  const sign = match[1] === "-" ? -1 : 1;
   const duration: Duration = {};
-  if (match[1]) duration.years = parseFloat(match[1]);
-  if (match[2]) duration.months = parseFloat(match[2]);
-  if (match[3]) duration.days = parseFloat(match[3]);
-  if (match[4]) duration.hours = parseFloat(match[4]);
-  if (match[5]) duration.minutes = parseFloat(match[5]);
-  if (match[6]) duration.seconds = parseFloat(match[6]);
+  if (match[2]) duration.years = sign * parseFloat(match[2]);
+  if (match[3]) duration.months = sign * parseFloat(match[3]);
+  if (match[4]) duration.days = sign * parseFloat(match[4]);
+  if (match[5]) duration.hours = sign * parseFloat(match[5]);
+  if (match[6]) duration.minutes = sign * parseFloat(match[6]);
+  if (match[7]) duration.seconds = sign * parseFloat(match[7]);
   return duration;
 }
 

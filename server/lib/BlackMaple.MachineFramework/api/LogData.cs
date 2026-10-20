@@ -117,21 +117,6 @@ namespace BlackMaple.MachineFramework
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 
-  public sealed record EventLogMetadata
-  {
-    /// External message, observation, command, or source operation that caused the event. One
-    /// external input may generate several log events, so this is not necessarily unique and does
-    /// not itself provide an idempotency contract.
-    public string? ForeignId { get; init; }
-
-    /// Broader workflow or operation grouping events from several external inputs. This is not an
-    /// idempotency key.
-    public string? CorrelationId { get; init; }
-
-    /// Original message which created the event, retained primarily for auditing.
-    public string? OriginalMessage { get; init; }
-  }
-
   [KnownType(typeof(MaterialProcessActualPath))]
   public record LogEntry
   {
@@ -181,9 +166,6 @@ namespace BlackMaple.MachineFramework
     [JsonIgnore]
     public string? ForeignID { get; init; } = null;
 
-    [JsonIgnore]
-    public string? CorrelationId { get; init; } = null;
-
     public LogEntry() { }
 
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
@@ -217,7 +199,6 @@ namespace BlackMaple.MachineFramework
       ProgramDetails = null;
       Tools = null;
       ForeignID = null;
-      CorrelationId = null;
     }
   }
 

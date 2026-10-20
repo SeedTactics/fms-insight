@@ -32,7 +32,6 @@ public static class CompareEvents
           // Legacy transition tests compare operational event content, not optional envelope
           // metadata. Dedicated metadata tests cover these fields.
           ForeignID = null,
-          CorrelationId = null,
         }
       )
       .ToList();
@@ -49,7 +48,6 @@ public static class CompareEvents
           Tools = e.Tools?.OrderBy(t => t.Tool).ToImmutableList(),
           Material = e.Material.OrderBy(m => m.MaterialID).ToImmutableList(),
           ForeignID = null,
-          CorrelationId = null,
         }
       )
       .ToList();

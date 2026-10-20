@@ -121,12 +121,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(43);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(44);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(43);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(44);
       }
 
       CheckSchema(conn1, memDb);
@@ -997,6 +997,69 @@ namespace BlackMaple.FMSInsight.Tests
     public void Schema()
     {
       SchemaUpgradeSpec.Check(_tempFile);
+    }
+  }
+
+  public sealed class Ver43UpgradeSpec : IDisposable
+  {
+    private readonly string _tempFile;
+    private readonly RepositoryConfig _repo;
+    private readonly LogEntry _recorded;
+
+    public Ver43UpgradeSpec()
+    {
+      _tempFile = System.IO.Path.GetTempFileName();
+      System.IO.File.Delete(_tempFile);
+      using (
+        var created = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false)
+      )
+      using (var db = created.OpenConnection())
+      {
+        _recorded = db.RecordGeneralMessage(
+          mats: [],
+          program: "message",
+          result: "recorded",
+          foreignId: "source-1",
+          originalMessage: "original"
+        );
+      }
+      // Version 43 stored an unused CorrelationId column with a partial index.
+      using (var conn = new SqliteConnection("Data Source=" + _tempFile + ";Pooling=False"))
+      {
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "ALTER TABLE stations ADD CorrelationId TEXT";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText =
+          "CREATE INDEX stations_correlation_id ON stations(CorrelationId, Counter) WHERE CorrelationId IS NOT NULL";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText = "UPDATE stations SET CorrelationId = 'correlation-1'";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText = "UPDATE version SET ver = 43";
+        cmd.ExecuteNonQuery();
+      }
+      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
+    }
+
+    public void Dispose()
+    {
+      _repo.Dispose();
+      if (!string.IsNullOrEmpty(_tempFile) && System.IO.File.Exists(_tempFile))
+        System.IO.File.Delete(_tempFile);
+    }
+
+    [Test]
+    public void Schema()
+    {
+      SchemaUpgradeSpec.Check(_tempFile);
+    }
+
+    [Test]
+    public void RetainsEvents()
+    {
+      using var db = _repo.OpenConnection();
+      db.MostRecentLogEntryForForeignID("source-1").ShouldBeEquivalentTo(_recorded);
+      db.OriginalMessageByForeignID("source-1").ShouldBe("original");
     }
   }
 

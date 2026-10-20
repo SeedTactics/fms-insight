@@ -172,19 +172,7 @@ function stationWork(
       },
     };
   }
-  if (validActions.length === 0) return { type: "none" };
-  const tagged = validActions.filter(
-    (action): action is { readonly type: "valid"; readonly workId: string } =>
-      isNonBlank(action.workId),
-  );
-  const workIds = LazySeq.of(tagged).toHashSet(({ workId }) => workId);
-  if (tagged.length !== validActions.length || workIds.size !== 1) {
-    return { type: "inconsistent" };
-  }
-  return {
-    type: "active",
-    work: { workId: tagged[0].workId, ready: true, confirmEmpty: false, awaitingSlots: [] },
-  };
+  return { type: validActions.length === 0 ? "none" : "inconsistent" };
 }
 
 function SlotMaterial({
@@ -316,7 +304,16 @@ export function BasketLoadStationWorkflow({
             </Button>
           ) : null}
         </Box>
-        <Box sx={{ justifySelf: "flex-end" }}>{elapsed}</Box>
+        <Box
+          sx={{
+            justifySelf: "flex-end",
+            minWidth: "8ch",
+            textAlign: "right",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {elapsed}
+        </Box>
       </Box>
       <Stack spacing={2} sx={{ ml: "4em", mr: "4em", mt: 2 }}>
         {work?.confirmEmpty && work.ready && (
