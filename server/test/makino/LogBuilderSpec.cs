@@ -1434,10 +1434,5 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  private static LogEntry WithoutEventMetadata(LogEntry entry) =>
-    entry with
-    {
-      ForeignID = null,
-      CorrelationId = null,
-    };
+  private static LogEntry WithoutEventMetadata(LogEntry entry) => entry with { ForeignID = null };
 }

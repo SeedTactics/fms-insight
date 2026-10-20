@@ -44,7 +44,8 @@ namespace BlackMaple.MachineFramework
     public void RecordBasketContentsOperation(
       BasketContentsOperation operation,
       string idempotencyKey,
-      EventLogMetadata metadata = null
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       var normalized = NormalizeBasketContentsOperation(operation);
@@ -54,7 +55,6 @@ namespace BlackMaple.MachineFramework
           nameof(idempotencyKey)
         );
       var fingerprint = BasketContentsFingerprint(normalized);
-      var eventMetadata = NormalizeEventLogMetadata(metadata);
       lock (_cfg)
       {
         using var trans = _connection.BeginTransaction();
@@ -75,8 +75,8 @@ namespace BlackMaple.MachineFramework
             if (
               existingType != "contents"
               || existingFingerprint != fingerprint
-              || (existingForeignId ?? "") != (eventMetadata.ForeignId ?? "")
-              || existingOriginalMessage != (eventMetadata.OriginalMessage ?? "")
+              || (existingForeignId ?? "") != (foreignId ?? "")
+              || existingOriginalMessage != (originalMessage ?? "")
             )
               throw new ConflictRequestException(
                 $"Idempotency key {idempotencyKey} already identifies a different basket operation."
@@ -90,7 +90,13 @@ namespace BlackMaple.MachineFramework
         ValidateBasketContentsChanges(normalized, trans);
         ApplyBasketContentsChanges(normalized, trans);
 
-        RecordBasketOperationIdentity(idempotencyKey, fingerprint, eventMetadata, trans);
+        RecordBasketOperationIdentity(
+          idempotencyKey,
+          fingerprint,
+          foreignId,
+          originalMessage,
+          trans
+        );
         trans.Commit();
       }
     }
@@ -359,7 +365,8 @@ namespace BlackMaple.MachineFramework
     private void RecordBasketOperationIdentity(
       string idempotencyKey,
       string fingerprint,
-      EventLogMetadata metadata,
+      string foreignId,
+      string originalMessage,
       SqliteTransaction trans
     )
     {
@@ -371,12 +378,10 @@ namespace BlackMaple.MachineFramework
         + "VALUES($key, 'contents', $fingerprint, $foreign, $original)";
       command.Parameters.Add("key", SqliteType.Text).Value = idempotencyKey;
       command.Parameters.Add("fingerprint", SqliteType.Text).Value = fingerprint;
-      command.Parameters.Add("foreign", SqliteType.Text).Value = string.IsNullOrEmpty(
-        metadata.ForeignId
-      )
+      command.Parameters.Add("foreign", SqliteType.Text).Value = string.IsNullOrEmpty(foreignId)
         ? DBNull.Value
-        : metadata.ForeignId;
-      command.Parameters.Add("original", SqliteType.Text).Value = metadata.OriginalMessage ?? "";
+        : foreignId;
+      command.Parameters.Add("original", SqliteType.Text).Value = originalMessage ?? "";
       command.ExecuteNonQuery();
     }
 

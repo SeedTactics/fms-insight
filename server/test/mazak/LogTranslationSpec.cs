@@ -1476,6 +1476,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
     }
 
+    private IEnumerable<BlackMaple.MachineFramework.LogEntry> LogForForeignID(string foreignId) =>
+      jobLog
+        .GetLogEntries(DateTime.MinValue, DateTime.MaxValue)
+        .Where(e => e.ForeignID == foreignId);
+
     private List<BlackMaple.MachineFramework.LogEntry> CurrentPalletLog(int pallet) =>
       jobLog.CurrentPalletLog(pallet).ToList();
 
@@ -1862,16 +1867,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       {
         await Assert
           .That(
-            jobLog
-              .GetLogForForeignID("LG002")
+            LogForForeignID("LG002")
               .Single(e => e.LogType == LogType.LoadUnloadCycle)
               .ProgramDetails["carrier-id"]
           )
           .IsEqualTo("first");
         await Assert
           .That(
-            jobLog
-              .GetLogForForeignID("LG004")
+            LogForForeignID("LG004")
               .Single(e => e.LogType == LogType.LoadUnloadCycle)
               .ProgramDetails["carrier-id"]
           )
@@ -1887,8 +1890,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           .IsEquivalentTo([firstLoad, secondLoad]);
         await Assert
           .That(
-            jobLog
-              .GetLogForForeignID("LG003")
+            LogForForeignID("LG003")
               .Single(e => e.LogType == LogType.LoadUnloadCycle)
               .ProgramDetails["transfer-id"]
           )

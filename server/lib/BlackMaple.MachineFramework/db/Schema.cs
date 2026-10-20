@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 43;
+    private const int Version = 44;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet INTEGER,"
           + "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER,"
-          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT, CorrelationId TEXT)";
+          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -105,9 +105,6 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE INDEX stations_foreignid ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText =
-          "CREATE INDEX stations_correlation_id ON stations(CorrelationId, Counter) WHERE CorrelationId IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         CreateBasketOperationTables(cmd);
@@ -525,6 +522,10 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 43)
             Ver41ToVer43(trans);
+
+          // Only databases created at or upgraded to version 43 have the correlation column.
+          if (curVersion == 43)
+            Ver43ToVer44(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1326,16 +1327,24 @@ namespace BlackMaple.MachineFramework
       using var cmd = trans.Connection.CreateCommand();
       cmd.Transaction = trans;
 
-      cmd.CommandText = "ALTER TABLE stations ADD CorrelationId TEXT";
-      cmd.ExecuteNonQuery();
       cmd.CommandText = "CREATE INDEX stations_pallet_counter ON stations(Pallet, Counter)";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText =
-        "CREATE INDEX stations_correlation_id ON stations(CorrelationId, Counter) WHERE CorrelationId IS NOT NULL";
       cmd.ExecuteNonQuery();
       CreateBasketOperationTables(cmd);
       CreateBasketContentsTables(cmd);
       CreateMaterialAllocationOperationTables(cmd);
+    }
+
+    private static void Ver43ToVer44(IDbTransaction trans)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      // Version 43 added an unused CorrelationId column. Dropping a column rewrites the table, so
+      // upgrades from earlier versions skip adding it instead.
+      cmd.CommandText = "DROP INDEX stations_correlation_id";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE stations DROP COLUMN CorrelationId";
+      cmd.ExecuteNonQuery();
     }
 
     private static void CreateBasketOperationTables(IDbCommand cmd)

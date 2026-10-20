@@ -539,8 +539,7 @@ public sealed class BasketContentsSpec : IDisposable
         Result = contents,
       }
     );
-    var metadata = new EventLogMetadata { ForeignId = foreignId };
-    repository.RecordBasketContentsOperation(operation, "prepare-4", metadata);
+    repository.RecordBasketContentsOperation(operation, "prepare-4", foreignId);
     repository.RecordBasketContentsOperation(
       Operation(
         new BasketContentsChange
@@ -554,27 +553,17 @@ public sealed class BasketContentsSpec : IDisposable
     );
     var events = repository.GetLogForMaterial(materialId).ToImmutableList();
 
-    repository.RecordBasketContentsOperation(operation, "prepare-4", metadata);
+    repository.RecordBasketContentsOperation(operation, "prepare-4", foreignId);
     if (string.IsNullOrEmpty(foreignId))
       repository.RecordBasketContentsOperation(
         operation,
         "prepare-4",
-        metadata with
-        {
-          ForeignId = foreignId is null ? "" : null,
-        }
+        foreignId is null ? "" : null
       );
     else
       await Assert
         .That(() =>
-          repository.RecordBasketContentsOperation(
-            operation,
-            "prepare-4",
-            metadata with
-            {
-              ForeignId = foreignId.Trim(),
-            }
-          )
+          repository.RecordBasketContentsOperation(operation, "prepare-4", foreignId.Trim())
         )
         .Throws<ConflictRequestException>();
 
@@ -592,7 +581,6 @@ public sealed class BasketContentsSpec : IDisposable
     var materialId = repository.AllocateMaterialID("job-1", "part-a", 2);
     var contents = Contents(4, 1, materialId, "tp-101");
     var operation = StationPreparation(materialId, contents);
-    var metadata = new EventLogMetadata { ForeignId = foreignId };
     var callbackForeignIds = ImmutableList<string>.Empty;
     _repositoryConfig.NewLogEntry += (_, observedForeignId, _) =>
       callbackForeignIds = callbackForeignIds.Add(observedForeignId);
@@ -604,7 +592,7 @@ public sealed class BasketContentsSpec : IDisposable
         DateTime.UtcNow,
         ImmutableDictionary<string, string>.Empty,
         "station-prepare-4",
-        metadata: metadata
+        foreignId: foreignId
       )
       .ToImmutableList();
     await Assert.That(callbackForeignIds).IsNotEmpty();
@@ -633,7 +621,7 @@ public sealed class BasketContentsSpec : IDisposable
         DateTime.UtcNow,
         ImmutableDictionary<string, string>.Empty,
         "station-prepare-4",
-        metadata: metadata
+        foreignId: foreignId
       )
       .ToImmutableList();
     if (string.IsNullOrEmpty(foreignId))
@@ -645,10 +633,7 @@ public sealed class BasketContentsSpec : IDisposable
           DateTime.UtcNow,
           ImmutableDictionary<string, string>.Empty,
           "station-prepare-4",
-          metadata: metadata with
-          {
-            ForeignId = foreignId is null ? "" : null,
-          }
+          foreignId: foreignId is null ? "" : null
         )
         .ToImmutableList();
     else
@@ -661,10 +646,7 @@ public sealed class BasketContentsSpec : IDisposable
             DateTime.UtcNow,
             ImmutableDictionary<string, string>.Empty,
             "station-prepare-4",
-            metadata: metadata with
-            {
-              ForeignId = foreignId.Trim(),
-            }
+            foreignId: foreignId.Trim()
           )
         )
         .Throws<ConflictRequestException>();
