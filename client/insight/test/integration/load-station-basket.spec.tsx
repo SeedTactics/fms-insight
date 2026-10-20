@@ -905,6 +905,11 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
+          loadStationWork: new api.BasketLoadStationWork({
+            workId: "first-work",
+            type: api.BasketLoadStationWorkType.Material,
+            readyToConfirm: true,
+          }),
           emptySlots: [1, 2],
         }),
       ],
@@ -973,6 +978,11 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
+          loadStationWork: new api.BasketLoadStationWork({
+            workId: "load-work",
+            type: api.BasketLoadStationWorkType.Material,
+            readyToConfirm: true,
+          }),
           emptySlots: [1],
         }),
       ],
@@ -1017,7 +1027,7 @@ describe("load station with active basket", () => {
         location: { type: api.LocType.Free },
         action: {
           type: api.ActionType.LoadingToBasket,
-          workId: "load-work",
+          workId: "geometry-work",
           loadToBasketId: 7,
           processAfterLoad: 1,
         },
@@ -1034,7 +1044,7 @@ describe("load station with active basket", () => {
         location: { type: api.LocType.Free },
         action: {
           type: api.ActionType.LoadingToBasket,
-          workId: "load-work",
+          workId: "geometry-work",
           loadToBasketSlot: 1,
           processAfterLoad: 1,
         },
@@ -1051,7 +1061,7 @@ describe("load station with active basket", () => {
         location: { type: api.LocType.InQueue, queuePosition: 0 },
         action: {
           type: api.ActionType.LoadingToBasket,
-          workId: "load-work",
+          workId: "geometry-work",
           loadToBasketId: 7,
           loadToBasketSlot: 1,
           processAfterLoad: 2,
@@ -1069,7 +1079,7 @@ describe("load station with active basket", () => {
         location: { type: api.LocType.InBasket, basketId: 7 },
         action: {
           type: api.ActionType.UnloadToCompletedMaterial,
-          workId: "unload-work",
+          workId: "geometry-work",
         },
       }),
     ],
@@ -1084,7 +1094,7 @@ describe("load station with active basket", () => {
         location: { type: api.LocType.Free },
         action: {
           type: api.ActionType.LoadingToBasket,
-          workId: "load-work",
+          workId: "geometry-work",
           loadToBasketId: 7,
           loadToBasketSlot: 0,
           processAfterLoad: 1,
@@ -1102,7 +1112,7 @@ describe("load station with active basket", () => {
         location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 0 },
         action: {
           type: api.ActionType.UnloadToCompletedMaterial,
-          workId: "unload-work",
+          workId: "geometry-work",
         },
       }),
     ],
@@ -1116,10 +1126,33 @@ describe("load station with active basket", () => {
             location: api.BasketLocationEnum.LoadUnload,
             locationNum: 1,
           }),
-          emptySlots: [1],
+          loadStationWork: new api.BasketLoadStationWork({
+            workId: "geometry-work",
+            type: api.BasketLoadStationWorkType.Material,
+            readyToConfirm: true,
+          }),
+          emptySlots: [1, 2],
         }),
       ],
-      material: [material],
+      // A valid peer keeps work confirmable if the malformed action is accidentally ignored.
+      material: [
+        material,
+        createMaterial({
+          materialID: 402,
+          jobUnique: "PEER-JOB",
+          partName: "Valid Peer",
+          process: 0,
+          path: 1,
+          location: { type: api.LocType.Free },
+          action: {
+            type: api.ActionType.LoadingToBasket,
+            workId: "geometry-work",
+            loadToBasketId: 7,
+            loadToBasketSlot: 2,
+            processAfterLoad: 1,
+          },
+        }),
+      ],
     });
 
     completionRequests(submit);
