@@ -51,13 +51,8 @@ import {
   useSignalForQuarantine,
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
-import {
-  ApiException,
-  ICurrentStatus,
-  IInProcessMaterial,
-  LocType,
-  QueueRole,
-} from "../../network/api.js";
+import { ICurrentStatus, IInProcessMaterial, LocType, QueueRole } from "../../network/api.js";
+import { apiErrorMessage } from "../../network/api-errors.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
@@ -204,9 +199,7 @@ function RemoveFromQueuesButton({
         },
       });
     } catch (e) {
-      setError(
-        ApiException.isApiException(e) ? e.response : e instanceof Error ? e.message : String(e),
-      );
+      setError(apiErrorMessage(e));
     }
   }
 
@@ -353,9 +346,7 @@ export function QuarantineMatButton({
         onClose?.();
       }
     } catch (e) {
-      setError(
-        ApiException.isApiException(e) ? e.response : e instanceof Error ? e.message : String(e),
-      );
+      setError(apiErrorMessage(e));
     } finally {
       setUpdating(false);
     }

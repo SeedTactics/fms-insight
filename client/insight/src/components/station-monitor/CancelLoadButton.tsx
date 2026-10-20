@@ -17,7 +17,8 @@ import {
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
 import { JobsBackend } from "../../network/backend.js";
-import { ApiException, CancelLoadRequest, IInProcessMaterial } from "../../network/api.js";
+import { CancelLoadRequest, IInProcessMaterial } from "../../network/api.js";
+import { apiErrorMessage } from "../../network/api-errors.js";
 import { canCancelLoad } from "../../data/material-operation-policy.js";
 
 type CancelLoadSnapshot = {
@@ -75,9 +76,7 @@ export function CancelLoadButton({
       setMaterialDialogOpen(null);
       onClose?.();
     } catch (e) {
-      setError(
-        ApiException.isApiException(e) ? e.response : e instanceof Error ? e.message : String(e),
-      );
+      setError(apiErrorMessage(e));
     } finally {
       setUpdating(false);
     }

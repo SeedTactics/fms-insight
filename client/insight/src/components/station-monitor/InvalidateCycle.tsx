@@ -53,7 +53,7 @@ import { useEffect, useRef } from "react";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { PartIdenticon } from "./Material.js";
 import { isLogEntryInvalidated } from "../LogEntry.js";
-import { ApiException } from "../../network/api.js";
+import { apiErrorMessage } from "../../network/api-errors.js";
 import { canInvalidateMaterial } from "../../data/material-operation-policy.js";
 
 export type InvalidateCycleState = {
@@ -342,11 +342,7 @@ export function InvalidateCycleDialogButton(
           props.setState({
             ...props.st!,
             updating: false,
-            error: ApiException.isApiException(e)
-              ? e.response
-              : e instanceof Error
-                ? e.message
-                : String(e),
+            error: apiErrorMessage(e),
           });
         });
     }

@@ -49,6 +49,7 @@ import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 
 import { PartIdenticon, WorkorderFromBarcode } from "./Material.js";
 import * as api from "../../network/api.js";
+import { apiErrorMessage } from "../../network/api-errors.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import {
   SelectableCasting,
@@ -648,13 +649,7 @@ export function AddToQueueButton({
                 setMatToShow(null);
                 onClose();
               } catch (e) {
-                setAddError(
-                  api.ApiException.isApiException(e)
-                    ? e.response
-                    : e instanceof Error
-                      ? e.message
-                      : String(e),
-                );
+                setAddError(apiErrorMessage(e));
               }
             }}
           >

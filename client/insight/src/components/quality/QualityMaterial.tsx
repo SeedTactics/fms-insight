@@ -50,7 +50,8 @@ import {
 } from "../station-monitor/Material.js";
 import { buildPathString, extractPath } from "../../data/results.inspection.js";
 import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
-import { ApiException, ILogEntry, LogType } from "../../network/api.js";
+import { ILogEntry, LogType } from "../../network/api.js";
+import { apiErrorMessage } from "../../network/api-errors.js";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup.js";
@@ -82,15 +83,7 @@ function SerialLookup() {
             setError("No material found with serial " + serial);
           }
         })
-        .catch((e: Error | string) => {
-          if (ApiException.isApiException(e)) {
-            setError(e.response);
-          } else if (e instanceof Error) {
-            setError(e.message);
-          } else {
-            setError(e);
-          }
-        })
+        .catch((e: unknown) => setError(apiErrorMessage(e)))
         .finally(() => setLoading(false));
     }
   }

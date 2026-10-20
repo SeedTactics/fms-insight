@@ -37,6 +37,7 @@ import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { ApiException } from "../network/api.js";
+import { apiErrorMessage } from "../network/api-errors.js";
 
 function displayUnknownError(error: unknown): string {
   if (typeof error === "string") {
@@ -64,7 +65,7 @@ export function DisplayError({ error }: FallbackProps) {
       <Card>
         <CardContent>
           <h3>FMS Insight Server Error</h3>
-          <p>{error.response}</p>
+          <p>{apiErrorMessage(error)}</p>
         </CardContent>
       </Card>
     );

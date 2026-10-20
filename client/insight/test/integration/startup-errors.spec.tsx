@@ -36,7 +36,11 @@ function status(alarms: ReadonlyArray<string>): CurrentStatus {
   });
 }
 
-async function startup(alarms: ReadonlyArray<string>, historyProblem: string | null) {
+async function startup(
+  alarms: ReadonlyArray<string>,
+  historyProblem: string | null,
+  contentType = "application/problem+json",
+) {
   TestSocket.sockets = [];
   vi.stubGlobal("WebSocket", TestSocket);
   vi.spyOn(window, "fetch").mockImplementation(async (input) => {
@@ -46,7 +50,7 @@ async function startup(alarms: ReadonlyArray<string>, historyProblem: string | n
     if (path === "/api/v1/jobs/recent" || path === "/api/v1/log/events/all") {
       return historyProblem === null
         ? Response.json(path === "/api/v1/jobs/recent" ? { jobs: {}, stationUse: [] } : [])
-        : new Response(historyProblem, { status: 503 });
+        : new Response(historyProblem, { status: 503, headers: { "Content-Type": contentType } });
     }
     throw new Error(`Unexpected startup request ${path}`);
   });
@@ -96,10 +100,13 @@ test("initial page displays the server problem when status has no alarm", async 
   await screen.unmount();
 });
 
-test.each(["<html>Service unavailable</html>", JSON.stringify({ detail: 123 })])(
-  "initial page falls back to the API error for an unsupported response: %s",
-  async (problem) => {
-    const { screen } = await startup([], problem);
+test.each([
+  ["text/html", "<html>Service unavailable</html>"],
+  ["application/problem+json", JSON.stringify({ detail: 123 })],
+])(
+  "initial page falls back to the API error for an unsupported %s response: %s",
+  async (contentType, problem) => {
+    const { screen } = await startup([], problem, contentType);
     await expect
       .element(screen.getByRole("alert"))
       .toMatchTextContent("An unexpected server error occurred.");
