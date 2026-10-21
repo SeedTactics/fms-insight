@@ -259,6 +259,10 @@ public sealed class WebsocketSpec
       CancellationToken cancellationToken
     )
     {
+      // Mirror ManagedWebSocket: a receive after an abort reports an invalid state, and an abort
+      // during a receive reports cancellation.
+      if (Aborted)
+        throw new WebSocketException(WebSocketError.InvalidState);
       ReceiveStarted.TrySetResult(true);
       using var receiveCancellation = CancellationTokenSource.CreateLinkedTokenSource(
         cancellationToken,
@@ -270,7 +274,7 @@ public sealed class WebsocketSpec
       }
       catch (OperationCanceledException) when (_aborted.IsCancellationRequested)
       {
-        throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
+        throw new OperationCanceledException("Aborted");
       }
       throw new InvalidOperationException(
         "The blocking receive should only end through cancellation."

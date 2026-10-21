@@ -286,6 +286,14 @@ namespace BlackMaple.MachineFramework.Controllers
         }
         return;
       }
+      catch (Exception ex)
+        when (ex is OperationCanceledException or WebSocketException
+          && ws.State == WebSocketState.Aborted
+        )
+      {
+        // The sender aborted a stalled or overflowing client and logged why. An abort during a
+        // receive throws OperationCanceledException; a later receive throws WebSocketException.
+      }
       catch (ServerClosingException)
       {
         await ws.CloseOutputAsync(

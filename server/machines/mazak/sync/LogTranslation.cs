@@ -543,8 +543,8 @@ namespace MazakMachineInterface
     private bool HandleNonLulEndEvent(LogEntry e)
     {
       var translatedPallet = mazakConfig.TranslatePalletNumber(e.Pallet);
-      // Mazak uses -1 when an event has no pallet. New log events use zero for no container
-      // identity; -1 is reserved for UUID-identified containers.
+      // Mazak uses -1 when an event has no pallet, but log events record zero for no pallet and
+      // reject negative pallet numbers.
       var eventPallet = Math.Max(0, translatedPallet);
       var cycle = new List<MWI.LogEntry>();
       if (translatedPallet >= 1)

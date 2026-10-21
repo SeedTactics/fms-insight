@@ -101,7 +101,7 @@ namespace BlackMaple.MachineFramework
           string locName = null;
           if (!reader.IsDBNull(11))
             locName = reader.GetString(11);
-          string foreignId = reader.IsDBNull(13) ? null : reader.GetString(13);
+          string foreignId = reader.IsDBNull(12) ? null : reader.GetString(12);
           LogType ty;
           if (Enum.IsDefined(typeof(LogType), logType))
           {
@@ -306,7 +306,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
           + " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
 
         cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
@@ -347,7 +347,7 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Transaction = trans;
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
             + " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
@@ -369,7 +369,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
           + " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
@@ -387,7 +387,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
           + " FROM stations WHERE ForeignID <= $foreign ORDER BY ForeignID DESC, Counter DESC LIMIT 1";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
@@ -439,7 +439,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.ForeignID "
         + " FROM stations s "
         + " WHERE s.Counter IN (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID = $mat)"
         + (includeInvalidatedCycles ? "" : " AND " + ignoreInvalidEventCondition)
@@ -475,7 +475,7 @@ namespace BlackMaple.MachineFramework
       }
 
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.ForeignID "
         + " FROM stations s WHERE s.Counter IN "
         + "     (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID IN "
         + "        (SELECT t.MaterialID FROM temp_mat_ids t))"
@@ -497,7 +497,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
           + " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
         cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
 
@@ -518,7 +518,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
           + " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
@@ -599,7 +599,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
           + " FROM stations "
           + " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) "
           + "    OR (Pallet = 0 AND Result = $work AND StationLoc = $workloc) "
@@ -650,7 +650,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
           + " FROM stations WHERE Counter IN ("
           + searchCompleted
           + ") ORDER BY Counter ASC";
@@ -674,7 +674,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
         + " FROM stations WHERE Counter > $cntr AND StationLoc = $loadty AND Result = 'UNLOAD' AND Start = 0";
       cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
       cmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
@@ -717,7 +717,7 @@ namespace BlackMaple.MachineFramework
         if (counter == DBNull.Value)
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
             + " FROM stations s "
             + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND "
             + ignoreInvalidEventCondition
@@ -730,7 +730,7 @@ namespace BlackMaple.MachineFramework
         else
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
             + " FROM stations s "
             + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Counter "
             + (includeLastPalletCycleEvt ? ">=" : ">")
@@ -775,7 +775,7 @@ namespace BlackMaple.MachineFramework
         if (counter == DBNull.Value)
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
             + " FROM stations s "
             + " WHERE Pallet = $basketId AND StationLoc BETWEEN 116 AND 128 AND "
             + ignoreInvalidEventCondition
@@ -788,7 +788,7 @@ namespace BlackMaple.MachineFramework
         else
         {
           cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, NULL, ForeignID "
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
             + " FROM stations s "
             + " WHERE Pallet = $basketId AND StationLoc BETWEEN 116 AND 128 AND Counter "
             + (includeLastCycleEvt ? ">=" : ">")
@@ -2207,7 +2207,7 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       ((IDbCommand)cmd).Transaction = trans;
       cmd.CommandText =
-        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, NULL, s.ForeignID "
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.ForeignID "
         + "FROM basket_operation_events o "
         + "JOIN stations s ON s.Counter = o.Counter "
         + "WHERE o.IdempotencyKey = $key ORDER BY o.Position";
