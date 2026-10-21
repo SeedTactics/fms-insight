@@ -31,6 +31,7 @@ export default defineConfig({
     projects: [
       {
         extends: false,
+        resolve: { dedupe: ["react", "react-dom", "jotai"] },
         test: {
           include: ["src/**/*.{test,spec}.ts", "src/**/*.{test,spec}.tsx"],
           name: "unit",

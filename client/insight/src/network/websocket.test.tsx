@@ -41,6 +41,7 @@ import {
   websocketReconnecting,
   WebsocketConnection,
   errorLoadingLast30,
+  refreshCurrentStatus,
 } from "./websocket.js";
 import {
   registerBackend,
@@ -54,6 +55,7 @@ import {
   InProcessMaterial,
   InProcessMaterialLocation,
   InProcessMaterialAction,
+  ActionType,
   ToolUse,
   NewJobs,
   LogEntry,
@@ -61,6 +63,7 @@ import {
   LogType,
   ServerEvent,
   type ICurrentStatus,
+  type IInProcessMaterial,
   type ILogEntry,
 } from "./api.js";
 import { fmsInformation } from "./server-settings.js";
@@ -293,6 +296,149 @@ test("a failed status load does not certify the retained status", async () => {
   expect(live()).toEqual({ live: false, reconnecting: false });
   await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("pushed")));
   expect(live().live).toBe(true);
+});
+
+test("a failed bootstrap status retries without a websocket status event", async () => {
+  const { live, installed, store } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => {
+    statusLoads[0]?.reject(new Error("temporary status failure"));
+    logLoads[0]?.resolve([]);
+  });
+  expect(live().live).toBe(false);
+  await settle(() => vi.advanceTimersByTime(1000));
+  expect(statusLoads).toHaveLength(2);
+  await settle(() => statusLoads[1]?.resolve(status("recovered")));
+  expect(installed().alarms).toEqual(["recovered"]);
+  expect(live().live).toBe(true);
+  expect(store.get(errorLoadingLast30)).toBeNull();
+});
+
+test.each(["close", "dispose", "socket status"] as const)(
+  "bootstrap retries stop after %s",
+  async (ending) => {
+    const { unmount } = await connect();
+    await settle(() => FakeSocket.sockets[0]?.emit("open"));
+    await settle(() => statusLoads[0]?.reject(new Error("temporary failure")));
+    if (ending === "dispose") await unmount();
+    else
+      await settle(() => {
+        if (ending === "close") FakeSocket.sockets[0]?.close();
+        else FakeSocket.sockets[0]?.emit("message", statusMessage("recovered"));
+      });
+    await settle(() => vi.advanceTimersByTime(1000));
+    expect(statusLoads).toHaveLength(1);
+  },
+);
+
+test("explicit refresh works after a previous websocket status", async () => {
+  const { store, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("before control")));
+  const refreshed = store.set(refreshCurrentStatus);
+  await settle(() => statusLoads[1]?.resolve(status("after control")));
+  expect(await refreshed).toBe(true);
+  expect(installed().alarms).toEqual(["after control"]);
+});
+
+test("a cancelled refresh cannot install a late result", async () => {
+  const { store, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(status("initial")));
+  const lifetime = new AbortController();
+  const refreshed = store.set(refreshCurrentStatus, lifetime.signal);
+  const rejected = expect(refreshed).rejects.toMatchObject({ name: "AbortError" });
+  lifetime.abort();
+  await settle(() => statusLoads[1]?.resolve(status("cancelled")));
+  await rejected;
+  expect(installed().alarms).toEqual(["initial"]);
+});
+
+test("an older bootstrap cannot satisfy a post-control refresh", async () => {
+  const { store, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  const refreshed = store.set(refreshCurrentStatus);
+  await settle(() => statusLoads[0]?.resolve(status("before control")));
+  await settle(() => statusLoads[1]?.resolve(status("invalidated read")));
+  expect(statusLoads).toHaveLength(3);
+  expect(installed().alarms).toEqual(["before control"]);
+  await settle(() => statusLoads[2]?.resolve(status("after control")));
+  expect(await refreshed).toBe(true);
+  expect(installed().alarms).toEqual(["after control"]);
+});
+
+test("an explicit refresh yields to a newer socket status and ends with its session", async () => {
+  const { store, live, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(status("initial")));
+  const refreshed = store.set(refreshCurrentStatus);
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("newer")));
+  await settle(() => statusLoads[1]?.resolve(status("late read")));
+  expect(await refreshed).toBe(true);
+  expect(installed().alarms).toEqual(["newer"]);
+  const ended = store.set(refreshCurrentStatus);
+  await settle(() => FakeSocket.sockets[0]?.close());
+  await settle(() => statusLoads[2]?.resolve(status("closed session")));
+  expect(await ended).toBe(false);
+  expect(installed().alarms).toEqual(["newer"]);
+  expect(live().live).toBe(false);
+});
+
+test("refresh preserves intervening log-derived state by reading again", async () => {
+  const { store } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(statusWithMaterial("initial")));
+  const refreshed = store.set(refreshCurrentStatus);
+  await settle(() => FakeSocket.sockets[0]?.emit("message", logMessage(assigned(120))));
+  await settle(() => statusLoads[1]?.resolve(statusWithMaterial("old")));
+  expect(store.get(currentStatus).material[0]?.workorderId).toBe("order-120");
+  expect(statusLoads).toHaveLength(3);
+  await settle(() => statusLoads[2]?.resolve(statusWithMaterial("order-120")));
+  expect(await refreshed).toBe(true);
+});
+
+test("live logs already reflected in status preserve anonymous targets and inspection uniqueness", async () => {
+  const { store } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  const base = statusWithMaterial("order");
+  const named: Readonly<IInProcessMaterial> | undefined = base.material[0];
+  if (!named) throw new Error("Expected identified material");
+  const anonymous = [1, 1, 2].map(
+    (slot) =>
+      new InProcessMaterial({
+        ...named,
+        materialID: -1,
+        action: new InProcessMaterialAction({
+          type: ActionType.LoadingToBasket,
+          loadToBasketSlot: slot,
+        }),
+      }),
+  );
+  const snapshot = {
+    ...base,
+    material: [...anonymous, new InProcessMaterial({ ...named, signaledInspections: ["check"] })],
+  };
+  const inspection = {
+    ...machined(100),
+    counter: 120,
+    type: LogType.InspectionForce,
+    result: "true",
+    program: "check",
+  };
+  await settle(() => {
+    statusLoads[0]?.resolve(snapshot);
+    logLoads[0]?.resolve([inspection]);
+  });
+  await settle(() => FakeSocket.sockets[0]?.emit("message", logMessage(inspection)));
+  await settle(() =>
+    FakeSocket.sockets[0]?.emit(
+      "message",
+      logMessage({ ...machined(999), type: LogType.PartMark, result: "unrelated serial" }),
+    ),
+  );
+  expect(store.get(currentStatus)).toBe(snapshot);
+  expect(store.get(currentStatus).material).toHaveLength(4);
+  expect(store.get(currentStatus).material[3]?.signaledInspections).toEqual(["check"]);
 });
 
 test("a failed history load does not affect a live status", async () => {

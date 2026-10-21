@@ -154,6 +154,50 @@ it("sets a forced inspection", () => {
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp55"]);
 });
 
+it.each(["mark", "workorder", "inspection"])(
+  "preserves anonymous targets for unrelated and reflected %s logs",
+  (kind) => {
+    const template: Readonly<api.IInProcessMaterial> = statusWithMat.material[0];
+    const anonymous = [1, 1, 2].map(
+      (slot) =>
+        new api.InProcessMaterial({
+          ...template,
+          materialID: -1,
+          action: new api.InProcessMaterialAction({
+            type: api.ActionType.LoadingToBasket,
+            loadToBasketSlot: slot,
+          }),
+        }),
+    );
+    const initial = { ...statusWithMat, material: [...anonymous, ...statusWithMat.material] };
+    const store = createStore();
+    store.set(onLoadCurrentSt, initial);
+    const event = (id: number) =>
+      kind === "mark"
+        ? fakeSerial(fakeMaterialWithId(id), "serial")
+        : kind === "workorder"
+          ? fakeWorkorderAssign(fakeMaterialWithId(id), "workorder")
+          : fakeInspSignal(fakeMaterialWithId(id), "inspection");
+    const publish = (id: number) =>
+      store.set(onServerEvent, {
+        evt: { logEntry: new api.LogEntry(event(id)) },
+        expire: false,
+        now: new Date(),
+      });
+    publish(999);
+    expect(store.get(cs.currentStatus)).toBe(initial);
+    publish(20);
+    const updated = store.get(cs.currentStatus);
+    expect(updated.material.slice(0, 3)).toEqual(anonymous);
+    expect(updated.material).toHaveLength(initial.material.length);
+    publish(20);
+    expect(store.get(cs.currentStatus)).toBe(updated);
+    expect(updated.material[4]?.signaledInspections).toEqual(
+      kind === "inspection" ? ["aaa", "inspection"] : ["aaa"],
+    );
+  },
+);
+
 it("ignores other cycles", () => {
   const mat = fakeMaterialWithId(10);
   const snapshot = applyEvent(fakeInspComplete(mat));

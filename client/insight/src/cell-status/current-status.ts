@@ -48,6 +48,7 @@ import {
 import { last30JobComment } from "./scheduled-jobs.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { Atom, atom } from "jotai";
+import { HashSet } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../data/operators.js";
 
 const currentStatusRW = atom<Readonly<ICurrentStatus>>({
@@ -132,64 +133,52 @@ function processEventsIntoCurrentStatus(
   entry: Readonly<ILogEntry>,
 ): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
   return (curSt) => {
-    const mats = new Map<number, Readonly<InProcessMaterial>>();
-    function adjustMat(
-      id: number,
-      f: (mat: Readonly<IInProcessMaterial>) => Readonly<IInProcessMaterial>,
-    ) {
-      if (mats.size === 0) {
-        for (const m of curSt.material) {
-          mats.set(m.materialID, m);
-        }
-      }
-      const oldMat = mats.get(id);
-      if (oldMat !== undefined) {
-        mats.set(id, new InProcessMaterial(f(oldMat)));
-      }
-    }
-
-    switch (entry.type) {
-      case LogType.PartMark:
-        for (const m of entry.material) {
-          adjustMat(m.id, (inmat) => ({ ...inmat, serial: entry.result }));
-        }
-        break;
-
-      case LogType.OrderAssignment:
-        for (const m of entry.material) {
-          adjustMat(m.id, (inmat) => ({ ...inmat, workorderId: entry.result }));
-        }
-        break;
-
-      case LogType.Inspection:
-      case LogType.InspectionForce:
-        if (entry.result.toLowerCase() === "true" || entry.result === "1") {
-          let inspType: string;
-          if (entry.type === LogType.InspectionForce) {
-            inspType = entry.program;
-          } else {
-            inspType = (entry.details || {}).InspectionType;
-          }
-          if (inspType) {
-            for (const m of entry.material) {
-              adjustMat(m.id, (inmat) => ({
-                ...inmat,
-                signaledInspections: [...inmat.signaledInspections, inspType],
-              }));
-            }
-          }
-        }
-        break;
-    }
-
-    if (mats.size === 0) {
+    if (
+      entry.type !== LogType.PartMark &&
+      entry.type !== LogType.OrderAssignment &&
+      entry.type !== LogType.Inspection &&
+      entry.type !== LogType.InspectionForce
+    )
       return curSt;
-    } else {
-      return {
-        ...curSt,
-        material: Array.from(mats.values()),
-      };
-    }
+    const materialIds = HashSet.from(entry.material.map((m) => m.id));
+    // Anonymous raw material can repeat ID -1, including several pieces in the same slot. A log
+    // updates identified material in place; it must never rebuild these targets through an ID map.
+    const material = curSt.material.map((mat) => {
+      if (mat.materialID < 0 || !materialIds.has(mat.materialID)) return mat;
+      const data: Readonly<IInProcessMaterial> = mat;
+      switch (entry.type) {
+        case LogType.PartMark:
+          return mat.serial === entry.result
+            ? mat
+            : new InProcessMaterial({ ...data, serial: entry.result });
+
+        case LogType.OrderAssignment:
+          return mat.workorderId === entry.result
+            ? mat
+            : new InProcessMaterial({ ...data, workorderId: entry.result });
+
+        case LogType.Inspection:
+        case LogType.InspectionForce:
+          if (entry.result.toLowerCase() === "true" || entry.result === "1") {
+            let inspType: string;
+            if (entry.type === LogType.InspectionForce) {
+              inspType = entry.program;
+            } else {
+              inspType = (entry.details || {}).InspectionType;
+            }
+            if (inspType && !mat.signaledInspections.includes(inspType))
+              return new InProcessMaterial({
+                ...data,
+                signaledInspections: [...mat.signaledInspections, inspType],
+              });
+          }
+          break;
+      }
+      return mat;
+    });
+    return material.every((mat, idx) => mat === curSt.material[idx])
+      ? curSt
+      : { ...curSt, material };
   };
 }
 
