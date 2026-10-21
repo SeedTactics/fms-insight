@@ -21,8 +21,8 @@ maintained separately.
 
 Omitting the list preserves identity numbering. Explicit lists must contain unique positive IDs and
 cover every controller L/U station used. Job routes outside the map are rejected. The old Starting
-Load Station Number setting has been removed and is rejected; replace it with an explicit list when
-updating configuration.
+Load Station Number setting has been removed and is no longer read; replace it with an explicit list
+when updating configuration.
 
 ## Open Database Kit
 

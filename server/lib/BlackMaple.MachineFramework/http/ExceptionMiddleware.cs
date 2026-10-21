@@ -66,7 +66,9 @@ namespace BlackMaple.MachineFramework
       {
         await next(context);
       }
-      catch (Exception ex)
+      // Once a response (including a websocket upgrade) has started, its status can no longer be
+      // changed; let the server abort the connection instead.
+      catch (Exception ex) when (!context.Response.HasStarted)
       {
         await HandleExceptionAsync(context, ex);
       }

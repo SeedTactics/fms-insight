@@ -34,6 +34,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 
 import { basketSlotLabel } from "../../cell-status/station-cycles.js";
 import * as api from "../../network/api.js";
+import { serverErrorMessage } from "../../network/api-errors.js";
 import { JobsBackend } from "../../network/backend.js";
 import { InProcMaterial, MatCardFontSize } from "./Material.js";
 import { MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
@@ -53,6 +54,8 @@ interface Submission {
   readonly basket: Readonly<api.IBasketStatus>;
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   readonly state: Exclude<SubmissionState, "idle">;
+  // The server's reason for a rejected or failed confirmation, when it supplied one.
+  readonly reason: string | null;
 }
 
 type BasketAction =
@@ -215,6 +218,7 @@ export function BasketLoadStationWorkflow({
       (submission.basket === basket && submission.material === material))
       ? submission.state
       : "idle";
+  const submissionReason = submissionState === "idle" ? null : (submission?.reason ?? null);
 
   const materialBySlot = useMemo(
     () =>
@@ -256,7 +260,13 @@ export function BasketLoadStationWorkflow({
   async function submit(): Promise<void> {
     if (work === undefined || !work.ready) return;
     const submittedWorkId = work.workId;
-    const pending: Submission = { workId: submittedWorkId, basket, material, state: "submitting" };
+    const pending: Submission = {
+      workId: submittedWorkId,
+      basket,
+      material,
+      state: "submitting",
+      reason: null,
+    };
     setSubmission(pending);
     try {
       await JobsBackend.completeBasketLoadStation(
@@ -267,7 +277,8 @@ export function BasketLoadStationWorkflow({
     } catch (error) {
       const state =
         api.ApiException.isApiException(error) && error.status === 409 ? "conflict" : "error";
-      setSubmission((current) => (current === pending ? { ...pending, state } : current));
+      const reason = serverErrorMessage(error);
+      setSubmission((current) => (current === pending ? { ...pending, state, reason } : current));
     }
   }
 
@@ -337,11 +348,13 @@ export function BasketLoadStationWorkflow({
           <Alert severity="success">Confirmation accepted. Waiting for refreshed work.</Alert>
         ) : submissionState === "conflict" ? (
           <Alert severity="warning">
-            Basket work changed before confirmation. Review the refreshed slots and try again.
+            {submissionReason ??
+              "Basket work changed before confirmation. Review the refreshed slots and try again."}
           </Alert>
         ) : submissionState === "error" ? (
           <Alert severity="error">
-            Unable to confirm basket work. No work was assumed complete.
+            Unable to confirm basket work{submissionReason ? `: ${submissionReason}` : "."} No work
+            was assumed complete.
           </Alert>
         ) : null}
       </Stack>

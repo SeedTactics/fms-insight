@@ -57,20 +57,25 @@ function problemMessage(response: string): string | null {
 
 /**
  * The server's explanation for a failed request: the detail of a JSON problem or a plain-text
- * message (also assumed without a content type). Other responses, such as HTML from a proxy, use
- * the request error's own message.
+ * message (also assumed without a content type). Null when the server gave none, including HTML
+ * from a proxy.
  */
-export function apiErrorMessage(error: unknown, fallback = "Error"): string {
-  if (error !== null && typeof error === "object" && ApiException.isApiException(error)) {
-    const type = mediaType(error.headers);
-    const message =
-      type === "application/problem+json" || type === "application/json"
-        ? problemMessage(error.response)
-        : type === "text/plain" || type === ""
-          ? nonBlank(error.response)
-          : null;
-    if (message !== null) return message;
+export function serverErrorMessage(error: unknown): string | null {
+  if (error === null || typeof error !== "object" || !ApiException.isApiException(error)) {
+    return null;
   }
+  const type = mediaType(error.headers);
+  return type === "application/problem+json" || type === "application/json"
+    ? problemMessage(error.response)
+    : type === "text/plain" || type === ""
+      ? nonBlank(error.response)
+      : null;
+}
+
+/** The server's explanation for a failed request, otherwise the request error's own message. */
+export function apiErrorMessage(error: unknown, fallback = "Error"): string {
+  const message = serverErrorMessage(error);
+  if (message !== null) return message;
   if (error instanceof Error) return error.message;
   return nonBlank(error) ?? fallback;
 }

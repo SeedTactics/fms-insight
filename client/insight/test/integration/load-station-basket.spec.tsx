@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import LoadStation from "../../src/components/station-monitor/LoadStation.js";
 import { registerNetworkBackend } from "../../src/network/backend.js";
-type CompletionHandler = (command: { readonly workId: string }) => Promise<"accepted" | "conflict">;
+type CompletionHandler = (command: {
+  readonly workId: string;
+}) => Promise<"accepted" | "conflict" | Response>;
 
 afterEach(() => vi.restoreAllMocks());
 beforeEach(() => {
@@ -27,6 +29,7 @@ function completionRequests(submit: CompletionHandler): void {
     )
       throw new Error("Expected the opaque basket WorkId request.");
     const result = await submit({ workId: body.WorkId });
+    if (result instanceof Response) return result;
     return new Response(null, { status: result === "conflict" ? 409 : 204 });
   });
 }
@@ -901,6 +904,40 @@ describe("load station with active basket", () => {
     expect(submit).toHaveBeenCalledWith({ workId: "stale-work" });
     expect(submit).toHaveBeenCalledTimes(1);
   });
+
+  test.each([
+    {
+      status: 409,
+      detail: "Basket 4 is still sensed at the robot.",
+      shown: "Basket 4 is still sensed at the robot.",
+    },
+    {
+      status: 500,
+      detail: "The operation failed; see the server log.",
+      shown:
+        "Unable to confirm basket work: The operation failed; see the server log. No work was assumed complete.",
+    },
+  ])(
+    "shows the server's reason for a $status confirmation response",
+    async ({ status, detail, shown }) => {
+      const submit = vi.fn<CompletionHandler>(
+        async () =>
+          new Response(JSON.stringify({ status, detail }), {
+            status,
+            headers: { "Content-Type": "application/problem+json" },
+          }),
+      );
+      completionRequests(submit);
+      const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+        currentStatus: confirmableBasketStatus("rejected-work", "Part"),
+      });
+
+      await screen.getByRole("button", { name: "Confirm" }).click();
+      await expect.element(screen.getByText(shown, { exact: true })).toBeVisible();
+      await expect.element(screen.getByText(/Basket work changed/)).not.toBeInTheDocument();
+      expect(submit).toHaveBeenCalledWith({ workId: "rejected-work" });
+    },
+  );
 
   test("ignores a submission response after the displayed work changes", async () => {
     let resolveSubmission!: (result: "accepted" | "conflict") => void;
