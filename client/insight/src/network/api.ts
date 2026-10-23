@@ -4633,6 +4633,7 @@ export interface INewProgramContent {
 }
 
 export class CurrentStatus implements ICurrentStatus {
+  revision?: number | undefined;
   timeOfCurrentStatusUTC!: Date;
   jobs!: { [key: string]: ActiveJob };
   pallets!: { [key: string]: PalletStatus };
@@ -4661,6 +4662,7 @@ export class CurrentStatus implements ICurrentStatus {
 
   init(_data?: any) {
     if (_data) {
+      this.revision = _data["Revision"];
       this.timeOfCurrentStatusUTC = _data["TimeOfCurrentStatusUTC"]
         ? new Date(_data["TimeOfCurrentStatusUTC"].toString())
         : (undefined as any);
@@ -4730,6 +4732,7 @@ export class CurrentStatus implements ICurrentStatus {
 
   toJSON(data?: any) {
     data = typeof data === "object" ? data : {};
+    data["Revision"] = this.revision;
     data["TimeOfCurrentStatusUTC"] = this.timeOfCurrentStatusUTC
       ? this.timeOfCurrentStatusUTC.toISOString()
       : (undefined as any);
@@ -4794,6 +4797,7 @@ export class CurrentStatus implements ICurrentStatus {
 }
 
 export interface ICurrentStatus {
+  revision?: number | undefined;
   timeOfCurrentStatusUTC: Date;
   jobs: { [key: string]: ActiveJob };
   pallets: { [key: string]: PalletStatus };

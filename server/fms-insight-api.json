@@ -3301,6 +3301,11 @@
           "Queues"
         ],
         "properties": {
+          "Revision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
           "TimeOfCurrentStatusUTC": {
             "type": "string",
             "format": "date-time"

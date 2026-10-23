@@ -228,6 +228,7 @@ namespace BlackMaple.MachineFramework
 
     // curStLock protects _lastCurrentStatus and _syncError field
     private readonly Lock _curStLock = new();
+    private long _statusRevision;
     private St? _lastCurrentStatus = default;
     private ImmutableHashSet<string> _consumedLoadCancellationIds = ImmutableHashSet<string>.Empty;
     private string? _syncError = null;
@@ -376,10 +377,13 @@ namespace BlackMaple.MachineFramework
           } while (actionPerformed);
 
           _syncronizeErrorCount = 0;
-          if (_syncError != null)
+          lock (_curStLock)
           {
-            _syncError = null;
-            raiseNewCurStatus = true;
+            if (_syncError != null)
+            {
+              _syncError = null;
+              raiseNewCurStatus = true;
+            }
           }
 
           // signal waiting requests
@@ -489,10 +493,12 @@ namespace BlackMaple.MachineFramework
     {
       lock (_curStLock)
       {
+        var revision = checked(++_statusRevision);
         if (_lastCurrentStatus == null)
         {
           return new CurrentStatus()
           {
+            Revision = revision,
             TimeOfCurrentStatusUTC = DateTime.UtcNow,
             Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
             Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -511,6 +517,7 @@ namespace BlackMaple.MachineFramework
         {
           return _lastCurrentStatus.CurrentStatus with
           {
+            Revision = revision,
             Alarms = _lastCurrentStatus.CurrentStatus.Alarms.Add(
               $"Error communicating with machines: {_syncError}. Will try again in a few minutes."
             ),
@@ -525,6 +532,7 @@ namespace BlackMaple.MachineFramework
           {
             return _lastCurrentStatus.CurrentStatus with
             {
+              Revision = revision,
               Alarms = _lastCurrentStatus.CurrentStatus.Alarms.Add(
                 $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be {_serverSettings.ExpectedTimeZone.Id}."
               ),
@@ -532,7 +540,7 @@ namespace BlackMaple.MachineFramework
           }
           else
           {
-            return _lastCurrentStatus.CurrentStatus;
+            return _lastCurrentStatus.CurrentStatus with { Revision = revision };
           }
         }
       }

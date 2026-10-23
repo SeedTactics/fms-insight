@@ -103,8 +103,9 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-function status(label = "status"): ICurrentStatus {
+function status(label = "status", revision?: number): ICurrentStatus {
   return new CurrentStatus({
+    revision,
     timeOfCurrentStatusUTC: new Date(),
     jobs: {},
     pallets: {},
@@ -115,8 +116,8 @@ function status(label = "status"): ICurrentStatus {
   });
 }
 
-function statusMessage(label: string) {
-  const evt = new ServerEvent({ newCurrentStatus: new CurrentStatus(status(label)) });
+function statusMessage(label: string, revision?: number) {
+  const evt = new ServerEvent({ newCurrentStatus: new CurrentStatus(status(label, revision)) });
   return { data: JSON.stringify(evt.toJSON()) };
 }
 
@@ -340,6 +341,97 @@ test("explicit refresh works after a previous websocket status", async () => {
   expect(await refreshed).toBe(true);
   expect(installed().alarms).toEqual(["after control"]);
 });
+
+test("server revisions let a newer HTTP snapshot replace an intervening socket snapshot", async () => {
+  const { store, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("socket", 41)));
+  await settle(() => statusLoads[0]?.resolve(status("newer HTTP", 42)));
+  expect(installed()).toEqual({ alarms: ["newer HTTP"], custom: { label: "newer HTTP" } });
+  expect(store.get(currentStatus).revision).toBe(42);
+  expect(statusLoads).toHaveLength(1);
+});
+
+test("older HTTP responses and delayed or duplicate socket snapshots cannot replace newer state", async () => {
+  const { store, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(status("initial", 40)));
+  const refreshed = store.set(refreshCurrentStatus);
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("newer", 42)));
+  await settle(() => statusLoads[1]?.resolve(status("old HTTP", 41)));
+  expect(await refreshed).toBe(true);
+  await settle(() => {
+    FakeSocket.sockets[0]?.emit("message", statusMessage("old socket", 41));
+    FakeSocket.sockets[0]?.emit("message", statusMessage("duplicate socket", 42));
+  });
+  expect(installed()).toEqual({ alarms: ["newer"], custom: { label: "newer" } });
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("latest", 43)));
+  expect(installed().alarms).toEqual(["latest"]);
+});
+
+test.each([true, false])(
+  "concurrent HTTP reads follow capture revisions (newer response first: %s)",
+  async (newerFirst) => {
+    const { store, installed } = await connect();
+    await settle(() => FakeSocket.sockets[0]?.emit("open"));
+    await settle(() => statusLoads[0]?.resolve(status("initial", 40)));
+    const first = store.set(refreshCurrentStatus);
+    const second = store.set(refreshCurrentStatus);
+    const newer = () => statusLoads[1]?.resolve(status("newer", 42));
+    const older = () => statusLoads[2]?.resolve(status("older", 41));
+    await settle(newerFirst ? newer : older);
+    await settle(newerFirst ? older : newer);
+    expect(await first).toBe(true);
+    expect(await second).toBe(true);
+    expect(installed().alarms).toEqual(["newer"]);
+    expect(statusLoads).toHaveLength(3);
+  },
+);
+
+test("reconnect resets server revision comparison and rejects a late read from the old session", async () => {
+  const { store, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(status("before restart", 100)));
+  const oldRead = store.set(refreshCurrentStatus);
+  await reconnect(1);
+  await settle(() => statusLoads[2]?.resolve(status("restarted", 1)));
+  await settle(() => statusLoads[1]?.resolve(status("old process", 101)));
+  expect(await oldRead).toBe(false);
+  expect(installed().alarms).toEqual(["restarted"]);
+  expect(store.get(currentStatus).revision).toBe(1);
+});
+
+test.each([true, false])(
+  "a higher snapshot revision preserves log edits (intervening full snapshot: %s)",
+  async (interveningSnapshot) => {
+    const { store } = await connect();
+    await settle(() => FakeSocket.sockets[0]?.emit("open"));
+    await settle(() => statusLoads[0]?.resolve({ ...statusWithMaterial("initial"), revision: 40 }));
+    const refreshed = store.set(refreshCurrentStatus);
+    if (interveningSnapshot)
+      await settle(() =>
+        FakeSocket.sockets[0]?.emit("message", {
+          data: JSON.stringify(
+            new ServerEvent({
+              newCurrentStatus: new CurrentStatus({
+                ...statusWithMaterial("socket"),
+                revision: 41,
+              }),
+            }).toJSON(),
+          ),
+        }),
+      );
+    await settle(() => FakeSocket.sockets[0]?.emit("message", logMessage(assigned(120))));
+    await settle(() => statusLoads[1]?.resolve({ ...statusWithMaterial("old"), revision: 42 }));
+    expect(store.get(currentStatus).material[0]?.workorderId).toBe("order-120");
+    expect(statusLoads).toHaveLength(3);
+    await settle(() =>
+      statusLoads[2]?.resolve({ ...statusWithMaterial("order-120"), revision: 43 }),
+    );
+    expect(await refreshed).toBe(true);
+    expect(store.get(currentStatus).revision).toBe(43);
+  },
+);
 
 test("a cancelled refresh cannot install a late result", async () => {
   const { store, installed } = await connect();

@@ -60,14 +60,17 @@ const currentStatusIsLiveRW = atom<boolean>(false);
 export const currentStatusIsLive: Atom<boolean> = currentStatusIsLiveRW;
 
 // A session is one open socket; it ends when that socket closes or is disposed, so late results
-// from an earlier connection are ignored. The status version lets each HTTP read yield to a full
-// status received while that read was in flight, without disqualifying later explicit refreshes.
+// from an earlier connection are ignored. Server revisions order complete snapshots across HTTP
+// and websocket delivery. Keep the original snapshot reference to recognize subsequent log edits.
 type WebsocketSession = {
   readonly id: number;
   readonly open: boolean;
-  readonly statusVersion: number;
+  readonly snapshot: {
+    readonly status: Readonly<ICurrentStatus>;
+    readonly source: "http" | "socket";
+  } | null;
 };
-const websocketSessionAtom = atom<WebsocketSession>({ id: 0, open: false, statusVersion: 0 });
+const websocketSessionAtom = atom<WebsocketSession>({ id: 0, open: false, snapshot: null });
 
 // Only historical effects wait for HTTP catch-up. A fresh session discards its predecessor's
 // unapplied buffer and reloads from lastEventCounter, which has not advanced past that history.
@@ -87,6 +90,15 @@ function isCurrentSession(get: Getter, session: number): boolean {
   return get(websocketSessionAtom).id === session;
 }
 
+function compareStatusRevisions(
+  incoming: Readonly<ICurrentStatus>,
+  installed: Readonly<ICurrentStatus> | undefined,
+): number | undefined {
+  return incoming.revision != null && installed?.revision != null
+    ? incoming.revision - installed.revision
+    : undefined;
+}
+
 async function loadCurrentStatus(
   get: Getter,
   set: Setter,
@@ -95,7 +107,7 @@ async function loadCurrentStatus(
 ): Promise<boolean> {
   while (isCurrentSession(get, session)) {
     const before = get(currentStatus);
-    const version = get(websocketSessionAtom).statusVersion;
+    const snapshot = get(websocketSessionAtom).snapshot;
     let st: Readonly<ICurrentStatus>;
     try {
       signal?.throwIfAborted();
@@ -104,16 +116,36 @@ async function loadCurrentStatus(
     } catch (error) {
       const current = get(websocketSessionAtom);
       if (current.id !== session) return false;
-      if (!signal?.aborted && current.statusVersion !== version) return true;
+      if (
+        !signal?.aborted &&
+        current.snapshot !== snapshot &&
+        current.snapshot?.source === "socket"
+      )
+        return true;
       throw error;
     }
     const current = get(websocketSessionAtom);
     if (current.id !== session) return false;
-    if (current.statusVersion !== version) return true;
-    // An intervening log edit or another HTTP read must not be overwritten. In particular an
-    // older bootstrap response cannot satisfy a refresh requested after an operator action.
-    if (get(currentStatus) !== before) continue;
+    const installed = current.snapshot?.status;
+    const comparison = compareStatusRevisions(st, installed);
+    if (comparison !== undefined && comparison <= 0) return true;
+    // Older servers have no revision. Preserve their existing preference for an intervening
+    // socket snapshot, and reread if another HTTP request changed status while this one ran.
+    if (
+      comparison === undefined &&
+      current.snapshot !== snapshot &&
+      current.snapshot?.source === "socket"
+    )
+      return true;
+    // A higher server revision can replace an intervening complete snapshot, but a log edit or
+    // optimistic local edit still needs a fresh read rather than being overwritten.
+    if (
+      get(currentStatus) !== before &&
+      (comparison === undefined || get(currentStatus) !== installed)
+    )
+      continue;
     set(onLoadCurrentSt, st);
+    set(websocketSessionAtom, { ...current, snapshot: { status: st, source: "http" } });
     if (current.open) set(currentStatusIsLiveRW, true);
     set(errorLoadingStatusRW, null);
     return true;
@@ -281,7 +313,7 @@ class ReconnectingWebsocket {
 
 const onOpenAtom = atom(null, (get, set): number => {
   const session = get(websocketSessionAtom).id + 1;
-  set(websocketSessionAtom, { id: session, open: true, statusVersion: 0 });
+  set(websocketSessionAtom, { id: session, open: true, snapshot: null });
   set(websocketReconnectingAtom, true);
   set(currentStatusIsLiveRW, false);
   set(errorLoadingLast30RW, null);
@@ -297,14 +329,21 @@ const onOpenAtom = atom(null, (get, set): number => {
 const onCloseAtom = atom(null, (get, set, session: number | null, reconnecting: boolean) => {
   if (reconnecting) set(websocketReconnectingAtom, true);
   if (session === null || !isCurrentSession(get, session)) return;
-  set(websocketSessionAtom, { id: session + 1, open: false, statusVersion: 0 });
+  set(websocketSessionAtom, { id: session + 1, open: false, snapshot: null });
   set(currentStatusIsLiveRW, false);
   set(bufferedLogAtom, null);
 });
 
 const onMessageAtom = atom(null, (get, set, evt: MessageEvent<string>, session: number | null) => {
   if (session === null || !isCurrentSession(get, session)) return;
-  const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
+  const received = ServerEvent.fromJS(JSON.parse(evt.data));
+  const comparison = received.newCurrentStatus
+    ? compareStatusRevisions(received.newCurrentStatus, get(websocketSessionAtom).snapshot?.status)
+    : undefined;
+  const serverEvt =
+    comparison !== undefined && comparison <= 0
+      ? new ServerEvent({ logEntry: received.logEntry, newJobs: received.newJobs })
+      : received;
   const eventAndTime = { evt: serverEvt, now: new Date(), expire: true };
   set(onLiveServerEvent, eventAndTime);
   const log = serverEvt.logEntry;
@@ -320,7 +359,7 @@ const onMessageAtom = atom(null, (get, set, evt: MessageEvent<string>, session: 
     set(websocketSessionAtom, {
       id: session,
       open: true,
-      statusVersion: get(websocketSessionAtom).statusVersion + 1,
+      snapshot: { status: serverEvt.newCurrentStatus, source: "socket" },
     });
     set(currentStatusIsLiveRW, true);
     set(errorLoadingStatusRW, null);

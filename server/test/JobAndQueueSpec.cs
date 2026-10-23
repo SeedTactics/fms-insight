@@ -126,10 +126,12 @@ public sealed class JobAndQueueSpec
 
     // before starting (or while starting), the current status is Starting up
     var initial = _jq.GetCurrentStatus();
+    await Assert.That(initial.Revision).IsEqualTo(1L);
     initial.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(4));
     initial.ShouldBeEquivalentTo(
       new CurrentStatus()
       {
+        Revision = initial.Revision,
         TimeOfCurrentStatusUTC = initial.TimeOfCurrentStatusUTC,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -220,13 +222,34 @@ public sealed class JobAndQueueSpec
   }
 
   private TaskCompletionSource<CurrentStatus> _newCellStateTcs;
+  private long _lastPublishedRevision;
 
   private void OnNewCurrentStatus(CurrentStatus st)
   {
+    st.Revision.ShouldNotBeNull();
+    st.Revision.Value.ShouldBeGreaterThan(_lastPublishedRevision);
+    _lastPublishedRevision = st.Revision.Value;
     var tcs = _newCellStateTcs;
     _newCellStateTcs = null;
     tcs.ShouldNotBeNull();
-    tcs.SetResult(st);
+    // These scenarios compare manufacturing state; ordering is asserted above and across HTTP
+    // captures in StatusRevisionsOrderReadsAndPublications.
+    tcs.SetResult(st with { Revision = null });
+  }
+
+  [Test]
+  public async Task StatusRevisionsOrderReadsAndPublications()
+  {
+    await StartSyncThread();
+    var published = _lastPublishedRevision;
+    var first = _jq.GetCurrentStatus();
+    var second = _jq.GetCurrentStatus();
+    await Assert.That(first.Revision!.Value).IsGreaterThan(published);
+    await Assert.That(second.Revision!.Value).IsGreaterThan(first.Revision.Value);
+    await Assert.That(second with { Revision = first.Revision }).IsEqualTo(first);
+
+    await SetCurrentState(stateUpdated: true, executeAction: false);
+    await Assert.That(_lastPublishedRevision).IsGreaterThan(second.Revision.Value);
   }
 
   private Task<CurrentStatus> CreateTaskToWaitForNewStatus()
