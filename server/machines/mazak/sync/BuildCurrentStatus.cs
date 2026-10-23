@@ -570,6 +570,7 @@ namespace MazakMachineInterface
 
       return new CurrentStatus()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = utcNow,
         Jobs = allJobs,
         Pallets = palletsByName.ToImmutable(),

@@ -37,7 +37,7 @@ import { User } from "oidc-client-ts";
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
   recent(startUTC: Date, alreadyKnownSchIds: string[]): Promise<Readonly<api.IRecentHistoricData>>;
-  currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
+  currentStatus(signal?: AbortSignal): Promise<Readonly<api.ICurrentStatus>>;
   setJobComment(unique: string, comment: string): Promise<void>;
 
   removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
@@ -115,6 +115,7 @@ export interface LogAPI {
   recent(
     lastSeenCounter: number,
     expectedEndUTCofLastSeen: Date | null | undefined,
+    signal?: AbortSignal,
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterial(
     materialID: number,

@@ -31,11 +31,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { type ReactNode, useMemo, useState } from "react";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { useSetAtom } from "jotai";
 
 import { basketSlotLabel } from "../../cell-status/station-cycles.js";
 import * as api from "../../network/api.js";
 import { serverErrorMessage } from "../../network/api-errors.js";
 import { JobsBackend } from "../../network/backend.js";
+import { refreshCurrentStatus } from "../../network/websocket.js";
 import { InProcMaterial, MatCardFontSize } from "./Material.js";
 import { MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
@@ -205,6 +207,10 @@ export function BasketLoadStationWorkflow({
   elapsed,
 }: BasketLoadStationWorkflowProps) {
   const [submission, setSubmission] = useState<Submission | undefined>();
+  const refresh = useSetAtom(refreshCurrentStatus);
+  const [refreshError, setRefreshError] = useState<
+    { readonly workId: string; readonly message: string } | undefined
+  >();
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
   const blockedReason = basket.loadStationWork?.confirmationBlockedReason?.trim();
   const instructionWarning = basket.loadStationWork?.instructionWarning?.trim();
@@ -257,6 +263,19 @@ export function BasketLoadStationWorkflow({
     [basket.emptySlots, basket.unknownSlots, materialBySlot, loadsBySlot],
   );
 
+  async function refreshStatus(workId: string): Promise<void> {
+    setRefreshError(undefined);
+    try {
+      if (!(await refresh(AbortSignal.timeout(5000))))
+        setRefreshError({ workId, message: "The connection changed while refreshing status." });
+    } catch (error) {
+      setRefreshError({
+        workId,
+        message: serverErrorMessage(error) ?? "Unable to refresh status.",
+      });
+    }
+  }
+
   async function submit(): Promise<void> {
     if (work === undefined || !work.ready) return;
     const submittedWorkId = work.workId;
@@ -280,6 +299,7 @@ export function BasketLoadStationWorkflow({
       const reason = serverErrorMessage(error);
       setSubmission((current) => (current === pending ? { ...pending, state, reason } : current));
     }
+    await refreshStatus(submittedWorkId);
   }
 
   const submissionDisabled =
@@ -327,6 +347,18 @@ export function BasketLoadStationWorkflow({
         </Box>
       </Box>
       <Stack spacing={2} sx={{ ml: "4em", mr: "4em", mt: 2 }}>
+        {refreshError?.workId === work?.workId && refreshError && (
+          <Alert
+            severity="warning"
+            action={
+              <Button onClick={() => void refreshStatus(refreshError.workId)}>
+                Refresh status
+              </Button>
+            }
+          >
+            {refreshError.message} Refresh current status to review the latest work.
+          </Alert>
+        )}
         {work?.confirmEmpty && work.ready && (
           <Typography>Confirm basket {basket.basketId} is empty.</Typography>
         )}

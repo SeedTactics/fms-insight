@@ -327,6 +327,7 @@ public sealed class MazakSyncSpec : IDisposable
       {
         CurrentStatus = new CurrentStatus()
         {
+          Revision = 0,
           TimeOfCurrentStatusUTC = cellSt.CurrentStatus.TimeOfCurrentStatusUTC,
           Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
           Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -626,6 +627,7 @@ public sealed class MazakSyncSpec : IDisposable
       {
         CurrentStatus = new CurrentStatus()
         {
+          Revision = 0,
           TimeOfCurrentStatusUTC = cellSt.CurrentStatus.TimeOfCurrentStatusUTC,
           Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
           Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -683,6 +685,7 @@ public sealed class MazakSyncSpec : IDisposable
       StoppedBecauseRecentLogEvent = false,
       CurrentStatus = new()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = new(2018, 07, 19, 1, 2, 3, DateTimeKind.Utc),
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -768,6 +771,7 @@ public sealed class MazakSyncSpec : IDisposable
       StoppedBecauseRecentLogEvent = false,
       CurrentStatus = new()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,

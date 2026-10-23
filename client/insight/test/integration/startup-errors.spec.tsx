@@ -25,8 +25,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function status(alarms: ReadonlyArray<string>): CurrentStatus {
+function status(alarms: ReadonlyArray<string>, revision = 1): CurrentStatus {
   return new CurrentStatus({
+    revision,
     timeOfCurrentStatusUTC: new Date(),
     jobs: {},
     pallets: {},
@@ -120,7 +121,7 @@ test("initial page removes resolved alarms when current status changes", async (
   await expect.element(screen.getByRole("alert")).toMatchTextContent(alarm);
   socket.dispatchEvent(
     new MessageEvent("message", {
-      data: JSON.stringify(new ServerEvent({ newCurrentStatus: status([]) }).toJSON()),
+      data: JSON.stringify(new ServerEvent({ newCurrentStatus: status([], 2) }).toJSON()),
     }),
   );
   await expect.element(screen.getByRole("alert")).not.toBeInTheDocument();

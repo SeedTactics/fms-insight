@@ -82,6 +82,7 @@ public sealed class JobAndQueueSpec
     {
       CurrentStatus = new CurrentStatus()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -126,10 +127,12 @@ public sealed class JobAndQueueSpec
 
     // before starting (or while starting), the current status is Starting up
     var initial = _jq.GetCurrentStatus();
+    await Assert.That(initial.Revision).IsEqualTo(1L);
     initial.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(4));
     initial.ShouldBeEquivalentTo(
       new CurrentStatus()
       {
+        Revision = initial.Revision,
         TimeOfCurrentStatusUTC = initial.TimeOfCurrentStatusUTC,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -147,6 +150,7 @@ public sealed class JobAndQueueSpec
     actual.ShouldBeEquivalentTo(
       new CurrentStatus()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = actual.TimeOfCurrentStatusUTC,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -190,6 +194,7 @@ public sealed class JobAndQueueSpec
         Uniq = _curSt.Uniq + 1,
         CurrentStatus = new CurrentStatus()
         {
+          Revision = 0,
           TimeOfCurrentStatusUTC = DateTime.UtcNow,
           Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
           Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -220,13 +225,33 @@ public sealed class JobAndQueueSpec
   }
 
   private TaskCompletionSource<CurrentStatus> _newCellStateTcs;
+  private long _lastPublishedRevision;
 
   private void OnNewCurrentStatus(CurrentStatus st)
   {
+    st.Revision.ShouldBeGreaterThan(_lastPublishedRevision);
+    _lastPublishedRevision = st.Revision;
     var tcs = _newCellStateTcs;
     _newCellStateTcs = null;
     tcs.ShouldNotBeNull();
-    tcs.SetResult(st);
+    // These scenarios compare manufacturing state; ordering is asserted above and across HTTP
+    // captures in StatusRevisionsOrderReadsAndPublications.
+    tcs.SetResult(st with { Revision = 0 });
+  }
+
+  [Test]
+  public async Task StatusRevisionsOrderReadsAndPublications()
+  {
+    await StartSyncThread();
+    var published = _lastPublishedRevision;
+    var first = _jq.GetCurrentStatus();
+    var second = _jq.GetCurrentStatus();
+    await Assert.That(first.Revision).IsGreaterThan(published);
+    await Assert.That(second.Revision).IsGreaterThan(first.Revision);
+    await Assert.That(second with { Revision = first.Revision }).IsEqualTo(first);
+
+    await SetCurrentState(stateUpdated: true, executeAction: false);
+    await Assert.That(_lastPublishedRevision).IsGreaterThan(second.Revision);
   }
 
   private Task<CurrentStatus> CreateTaskToWaitForNewStatus()
@@ -248,6 +273,7 @@ public sealed class JobAndQueueSpec
   {
     curSt ??= new CurrentStatus()
     {
+      Revision = 0,
       TimeOfCurrentStatusUTC = DateTime.UtcNow,
       Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
       Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -765,6 +791,7 @@ public sealed class JobAndQueueSpec
 
     var curSt = new CurrentStatus()
     {
+      Revision = 0,
       TimeOfCurrentStatusUTC = DateTime.UtcNow,
       Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
       Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -810,6 +837,7 @@ public sealed class JobAndQueueSpec
 
     var curSt = new CurrentStatus()
     {
+      Revision = 0,
       TimeOfCurrentStatusUTC = DateTime.UtcNow,
       Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
       Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -910,6 +938,7 @@ public sealed class JobAndQueueSpec
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>
           .Empty.Add(completedActive.UniqueStr, completedActive)
@@ -988,6 +1017,7 @@ public sealed class JobAndQueueSpec
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = now,
         Jobs = ImmutableDictionary<string, ActiveJob>
           .Empty.Add(j1.UniqueStr, j1Active)
@@ -1922,6 +1952,7 @@ public sealed class JobAndQueueSpec
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty.Add(job.UniqueStr, job),
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
@@ -2845,6 +2876,7 @@ public sealed class JobAndQueueSpec
 
     var curSt = new CurrentStatus()
     {
+      Revision = 0,
       TimeOfCurrentStatusUTC = DateTime.UtcNow,
       Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
       Pallets = ImmutableDictionary<int, PalletStatus>.Empty,

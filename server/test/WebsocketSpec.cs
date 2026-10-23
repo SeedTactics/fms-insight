@@ -204,6 +204,7 @@ public sealed class WebsocketSpec
   private static CurrentStatus Status() =>
     new()
     {
+      Revision = 0,
       TimeOfCurrentStatusUTC = DateTime.UtcNow,
       Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
       Pallets = ImmutableDictionary<int, PalletStatus>.Empty,

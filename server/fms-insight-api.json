@@ -3287,12 +3287,14 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "Revision",
           "TimeOfCurrentStatusUTC",
           "Jobs",
           "Pallets",
           "Material",
           "Alarms",
           "Queues",
+          "Revision",
           "TimeOfCurrentStatusUTC",
           "Jobs",
           "Pallets",
@@ -3301,6 +3303,10 @@
           "Queues"
         ],
         "properties": {
+          "Revision": {
+            "type": "integer",
+            "format": "int64"
+          },
           "TimeOfCurrentStatusUTC": {
             "type": "string",
             "format": "date-time"

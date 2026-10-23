@@ -11,6 +11,7 @@ afterEach(() => vi.restoreAllMocks());
 
 function status(label: string): api.CurrentStatus {
   return new api.CurrentStatus({
+    revision: 0,
     timeOfCurrentStatusUTC: new Date("2026-09-30T12:00:00Z"),
     jobs: {},
     pallets: {},

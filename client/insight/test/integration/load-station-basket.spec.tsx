@@ -12,11 +12,20 @@ beforeEach(() => {
   vi.spyOn(window, "fetch").mockResolvedValue(new Response("[]", { status: 200 }));
 });
 
-function completionRequests(submit: CompletionHandler): void {
+function completionRequests(
+  submit: CompletionHandler,
+  readStatus?: () => Promise<Readonly<api.ICurrentStatus>>,
+): void {
   registerNetworkBackend();
   vi.spyOn(window, "fetch").mockImplementation(async (input, init) => {
     const url =
       typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    if (url.endsWith("/jobs/status")) {
+      if (!readStatus) return new Response("Status read unavailable", { status: 503 });
+      return new Response(JSON.stringify(new api.CurrentStatus(await readStatus()).toJSON()), {
+        status: 200,
+      });
+    }
     if (!url.endsWith("/jobs/basket-load-station/complete"))
       return new Response("[]", { status: 200 });
     if (typeof init?.body !== "string") throw new Error("Expected a JSON completion body");
@@ -110,6 +119,49 @@ function explicitBasketWork(
 }
 
 describe("explicit basket station work", () => {
+  test("a conflict refreshes the same ready work without another broadcast or automatic submission", async () => {
+    const status = confirmableBasketStatus("preserved-work", "Part");
+    const submit = vi
+      .fn<CompletionHandler>()
+      .mockResolvedValueOnce("conflict")
+      .mockResolvedValue("accepted");
+    const read = vi.fn(async () => status);
+    completionRequests(submit, read);
+    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+      currentStatus: status,
+    });
+    const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await confirm.click();
+    await expect.element(confirm).toBeEnabled();
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(submit).toHaveBeenCalledTimes(1);
+    await confirm.click();
+    await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
+    expect(submit.mock.calls).toEqual([
+      [{ workId: "preserved-work" }],
+      [{ workId: "preserved-work" }],
+    ]);
+  });
+
+  test("a failed conflict refresh can be retried without resubmitting work", async () => {
+    const status = confirmableBasketStatus("preserved-work", "Part");
+    const submit = vi.fn<CompletionHandler>().mockResolvedValue("conflict");
+    const read = vi
+      .fn<() => Promise<Readonly<api.ICurrentStatus>>>()
+      .mockRejectedValueOnce(new Error("temporarily unavailable"))
+      .mockResolvedValue(status);
+    completionRequests(submit, read);
+    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+      currentStatus: status,
+    });
+    const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await confirm.click();
+    await screen.getByRole("button", { name: "Refresh status" }).click();
+    await expect.element(confirm).toBeEnabled();
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(submit).toHaveBeenCalledTimes(1);
+  });
+
   test("keeps elapsed time and Confirm position stable across status refreshes", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
     try {

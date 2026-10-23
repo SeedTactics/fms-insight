@@ -43,6 +43,7 @@ public sealed class DebugMockStatusLoaderSpec
       var customState = (JsonElement)status.CustomState;
 
       await Assert.That(status.TimeOfCurrentStatusUTC).IsEqualTo(now);
+      await Assert.That(status.Revision).IsEqualTo(0);
       await Assert.That(customState.GetProperty("PrivateMode").GetString()).IsEqualTo("working");
       await Assert
         .That(customState.GetProperty("Nested").GetProperty("Preserve").GetBoolean())
@@ -76,6 +77,7 @@ public sealed class DebugMockStatusLoaderSpec
     };
     original = original with
     {
+      Revision = 42,
       Jobs = original.Jobs.SetItem(
         job.UniqueStr,
         job with
@@ -115,6 +117,7 @@ public sealed class DebugMockStatusLoaderSpec
       var offset = now - original.TimeOfCurrentStatusUTC;
 
       await Assert.That(loaded.TimeOfCurrentStatusUTC).IsEqualTo(now);
+      await Assert.That(loaded.Revision).IsEqualTo(0);
       await Assert.That(routes[0].SimulatedProduction).IsNull();
       await Assert.That(routes[1].SimulatedProduction).IsEmpty();
       await Assert
@@ -199,6 +202,7 @@ public sealed class DebugMockStatusLoaderSpec
       };
     var status = new CurrentStatus
     {
+      Revision = 0,
       TimeOfCurrentStatusUTC = DateTime.UtcNow,
       Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
       Pallets = ImmutableDictionary<int, PalletStatus>
