@@ -45,6 +45,7 @@ import {
 } from "./websocket.js";
 import {
   registerBackend,
+  LogBackend,
   type FmsAPI,
   type JobAPI,
   type LogAPI,
@@ -60,6 +61,7 @@ import {
   ToolUse,
   NewJobs,
   LogEntry,
+  LogClient,
   LogMaterial,
   LogType,
   ServerEvent,
@@ -229,7 +231,9 @@ function only<T extends object>(calls: Partial<T>): T {
 }
 
 let statusLoads: Deferred<Readonly<ICurrentStatus>>[];
-let logLoads: Deferred<ReadonlyArray<Readonly<ILogEntry>>>[];
+let logLoads: Array<
+  Deferred<ReadonlyArray<Readonly<ILogEntry>>> & { readonly signal?: AbortSignal }
+>;
 let recentFrom: number[];
 let root: Root;
 let mounted: boolean;
@@ -237,23 +241,32 @@ let mounted: boolean;
 beforeEach(() => {
   nextStatusRevision = 0;
   vi.useFakeTimers();
+  vi.spyOn(AbortSignal, "timeout").mockImplementation((milliseconds) => {
+    const controller = new AbortController();
+    setTimeout(
+      () => controller.abort(new DOMException("The operation timed out.", "TimeoutError")),
+      milliseconds,
+    );
+    return controller.signal;
+  });
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   FakeSocket.sockets.length = 0;
   vi.stubGlobal("WebSocket", FakeSocket);
   statusLoads = [];
   logLoads = [];
   recentFrom = [];
-  const logLoad = () => {
-    const load = deferred<ReadonlyArray<Readonly<ILogEntry>>>();
+  const logLoad = (signal?: AbortSignal) => {
+    const load = { ...deferred<ReadonlyArray<Readonly<ILogEntry>>>(), signal };
     logLoads.push(load);
+    signal?.addEventListener("abort", () => load.reject(signal.reason), { once: true });
     return load.promise;
   };
   registerBackend(
     only<LogAPI>({
-      get: logLoad,
-      recent: (from: number) => {
+      get: (_start, _end, signal) => logLoad(signal),
+      recent: (from: number, _expected: Date | null | undefined, signal?: AbortSignal) => {
         recentFrom.push(from);
-        return logLoad();
+        return logLoad(signal);
       },
     }),
     only<JobAPI>({
@@ -273,6 +286,7 @@ beforeEach(() => {
 afterEach(async () => {
   if (mounted) await act(async () => root.unmount());
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -709,6 +723,50 @@ test("an interrupted history catch-up resumes from where it started", async () =
 });
 
 for (const loading of ["initial", "reconnect"] as const) {
+  test(`${loading} history times out a stalled request and retries without advancing the applied cursor`, async () => {
+    const { store, live } = await connect();
+    await settle(() => FakeSocket.sockets[0]?.emit("open"));
+    const socket = loading === "initial" ? 0 : 1;
+    if (socket === 1) {
+      await settle(() => logLoads[0]?.resolve([assigned(100)]));
+      await reconnect(1);
+    }
+    await settle(() => statusLoads[socket]?.resolve(statusWithMaterial("before")));
+    await settle(() => {
+      FakeSocket.sockets[socket]?.emit("message", logMessage(toolCycle(120)));
+      FakeSocket.sockets[socket]?.emit("message", logMessage(assigned(130)));
+    });
+    await settle(() => vi.advanceTimersByTime(119999));
+    expect(logLoads).toHaveLength(socket + 1);
+    expect(store.get(errorLoadingLast30)).toBeNull();
+    await settle(() => vi.advanceTimersByTime(1));
+    expect(logLoads[socket]?.signal?.aborted).toBe(true);
+    expect(store.get(errorLoadingLast30)).toContain("timed out");
+    expect(store.get(lastEventCounter)).toBe(socket === 0 ? null : 100);
+    expect(store.get(currentStatus).material[0]?.workorderId).toBe("order-130");
+    expect(live().live).toBe(true);
+
+    await settle(() => vi.advanceTimersByTime(1000));
+    expect(logLoads).toHaveLength(socket + 2);
+    expect(recentFrom).toEqual(socket === 0 ? [] : [100, 100]);
+    expect(logLoads[socket + 1]?.signal).not.toBe(logLoads[socket]?.signal);
+    expect(logLoads[socket + 1]?.signal?.aborted).toBe(false);
+    await settle(() => FakeSocket.sockets[socket]?.emit("message", logMessage(assigned(140))));
+    await settle(() =>
+      logLoads[socket + 1]?.resolve([toolCycle(110), toolCycle(120), assigned(125)]),
+    );
+    expect(store.get(lastEventCounter)).toBe(140);
+    expect(store.get(last30MaterialSummary).matsById.get(100)?.workorderId).toBe("order-140");
+    expect(store.get(currentStatus).material[0]?.workorderId).toBe("order-140");
+    expect(store.get(errorLoadingLast30)).toBeNull();
+    expect(
+      store
+        .get(last30ToolUse)
+        .get(PartAndStationOperation.ofLogCycle(toolCycle(110)))
+        ?.recentCycles.map((cycle) => cycle.tools[0]?.cycleUsageCnt),
+    ).toEqual([110, 120]);
+  });
+
   test(`${loading} history is applied before buffered live assignments without replaying current status`, async () => {
     const { store, live } = await connect();
     await settle(() => FakeSocket.sockets[0]?.emit("open"));
@@ -795,6 +853,68 @@ for (const loading of ["initial", "reconnect"] as const) {
     ).toEqual([110, 120]);
   });
 }
+
+test("a stalled history response body times out through the generated HTTP client", async () => {
+  let bodies: ReadonlyArray<{
+    readonly signal: AbortSignal | null | undefined;
+    readonly controller: ReadableStreamDefaultController<Uint8Array>;
+  }> = [];
+  const client = new LogClient(undefined, {
+    fetch: async (_input, init) =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            const signal = init?.signal;
+            bodies = [...bodies, { signal, controller }];
+            signal?.addEventListener("abort", () => controller.error(signal.reason), {
+              once: true,
+            });
+          },
+        }),
+      ),
+  });
+  vi.spyOn(LogBackend, "get").mockImplementation((start, end, signal) =>
+    client.get(start, end, signal),
+  );
+  const { store, live } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => {
+    statusLoads[0]?.resolve(statusWithMaterial("before"));
+    FakeSocket.sockets[0]?.emit("message", logMessage(assigned(120)));
+  });
+  expect(bodies).toHaveLength(1);
+  await settle(() => vi.advanceTimersByTime(120000));
+  expect(bodies[0]?.signal?.aborted).toBe(true);
+  expect(store.get(lastEventCounter)).toBeNull();
+  expect(store.get(errorLoadingLast30)).toContain("timed out");
+  expect(live().live).toBe(true);
+  await settle(() => vi.advanceTimersByTime(1000));
+  expect(bodies).toHaveLength(2);
+  await settle(() => {
+    bodies[1]?.controller.enqueue(
+      new TextEncoder().encode(JSON.stringify([new LogEntry(assigned(110)).toJSON()])),
+    );
+    bodies[1]?.controller.close();
+  });
+  expect(store.get(lastEventCounter)).toBe(120);
+  expect(store.get(last30MaterialSummary).matsById.get(100)?.workorderId).toBe("order-120");
+  expect(store.get(errorLoadingLast30)).toBeNull();
+});
+
+test.each(["close", "dispose"] as const)(
+  "a pending history timeout does not retry after %s",
+  async (ending) => {
+    const { store, unmount } = await connect();
+    await settle(() => FakeSocket.sockets[0]?.emit("open"));
+    if (ending === "close") await settle(() => FakeSocket.sockets[0]?.close());
+    else await unmount();
+    await settle(() => vi.advanceTimersByTime(150000));
+    expect(logLoads[0]?.signal?.aborted).toBe(true);
+    expect(logLoads).toHaveLength(1);
+    expect(store.get(lastEventCounter)).toBeNull();
+    expect(store.get(errorLoadingLast30)).toBeNull();
+  },
+);
 
 test("an interrupted initial load discards unapplied samples and reloads initial history", async () => {
   const { store } = await connect();

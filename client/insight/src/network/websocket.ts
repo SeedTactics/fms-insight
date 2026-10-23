@@ -148,8 +148,13 @@ function loadHistory(
   retryDelay = 1000,
 ): Promise<void> {
   const now = new Date();
+  // Initial history can be much larger than status. Bound both headers and body reads, then
+  // retry from the same applied position while retaining buffered socket events.
+  const signal = AbortSignal.timeout(120000);
   const request =
-    from === null ? LogBackend.get(addDays(now, -30), now) : LogBackend.recent(from, undefined);
+    from === null
+      ? LogBackend.get(addDays(now, -30), now, signal)
+      : LogBackend.recent(from, undefined, signal);
   return request.then(
     (log) => {
       if (!isCurrentSession(get, session)) return;
@@ -162,7 +167,12 @@ function loadHistory(
     },
     (e: unknown) => {
       if (!isCurrentSession(get, session)) return;
-      set(errorLoadingLogRW, apiErrorMessage(e, "Error loading log history"));
+      set(
+        errorLoadingLogRW,
+        signal.aborted
+          ? "Loading log history timed out."
+          : apiErrorMessage(e, "Error loading log history"),
+      );
       // Keep buffering and retry from the same applied position without interrupting live status.
       setTimeout(() => {
         if (isCurrentSession(get, session)) {

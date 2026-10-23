@@ -22,3 +22,7 @@ local rollback and offline fixture replacement do not advance that revision.
 A backend that suppresses unchanged display state excludes Revision from its display comparison.
 Reading status never consumes a broadcast owed to other clients. Historical log catch-up retains its
 separate event-counter cursor, buffering, and deduplication rules.
+
+Initial history and reconnect catch-up requests have a two-minute deadline, including reading the
+response body. A timeout uses the existing retry backoff from the unchanged applied counter and
+retains buffered socket events. Current status continues independently while history catches up.

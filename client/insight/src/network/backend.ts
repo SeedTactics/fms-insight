@@ -115,6 +115,7 @@ export interface LogAPI {
   recent(
     lastSeenCounter: number,
     expectedEndUTCofLastSeen: Date | null | undefined,
+    signal?: AbortSignal,
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterial(
     materialID: number,
