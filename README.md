@@ -2,8 +2,9 @@
 
 [Project Website](https://fms-insight.seedtactics.com)
 
-[![OpenAPI](https://img.shields.io/swagger/valid/2.0/https/raw.githubusercontent.com/SeedTactics/fms-insight/main/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json)
+[![OpenAPI 3.0](https://img.shields.io/badge/OpenAPI-3.0-blue?logo=swagger)](https://editor.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json)
 [![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineFramework.svg)](https://www.nuget.org/packages/BlackMaple.MachineFramework/)
+[![npm version](https://img.shields.io/npm/v/%40seedtactics%2Finsight-client)](https://www.npmjs.com/package/@seedtactics/insight-client)
 
 FMS Insight is a program which runs on an flexible machining system (FMS) cell controller which has
 the following goals:
