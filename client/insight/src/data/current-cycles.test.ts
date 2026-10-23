@@ -230,6 +230,7 @@ it("calculates current cycles", () => {
   const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
 
   const curSt: ICurrentStatus = {
+    revision: 0,
     timeOfCurrentStatusUTC: now,
     jobs: {},
     pallets: {
@@ -383,6 +384,7 @@ it("calculates current basket load cycles", () => {
   const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
 
   const curSt: ICurrentStatus = {
+    revision: 0,
     timeOfCurrentStatusUTC: now,
     jobs: {
       uniq7: new ActiveJob({
@@ -468,6 +470,7 @@ it("calculates current cycles for queue-to-basket load", () => {
   const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
 
   const curSt: ICurrentStatus = {
+    revision: 0,
     timeOfCurrentStatusUTC: now,
     jobs: {
       uniq8: new ActiveJob({
@@ -542,6 +545,7 @@ it("uses load station display names for current load cycles when provided", () =
   const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
 
   const curSt: ICurrentStatus = {
+    revision: 0,
     timeOfCurrentStatusUTC: now,
     jobs: {},
     pallets: {

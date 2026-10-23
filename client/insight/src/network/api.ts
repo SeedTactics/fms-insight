@@ -4633,7 +4633,7 @@ export interface INewProgramContent {
 }
 
 export class CurrentStatus implements ICurrentStatus {
-  revision?: number | undefined;
+  revision!: number;
   timeOfCurrentStatusUTC!: Date;
   jobs!: { [key: string]: ActiveJob };
   pallets!: { [key: string]: PalletStatus };
@@ -4797,7 +4797,7 @@ export class CurrentStatus implements ICurrentStatus {
 }
 
 export interface ICurrentStatus {
-  revision?: number | undefined;
+  revision: number;
   timeOfCurrentStatusUTC: Date;
   jobs: { [key: string]: ActiveJob };
   pallets: { [key: string]: PalletStatus };

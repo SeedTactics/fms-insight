@@ -43,6 +43,7 @@ const eventTime = {
 } as const;
 
 const currentStatus = (state?: unknown): Readonly<ICurrentStatus> => ({
+  revision: 0,
   timeOfCurrentStatusUTC: new Date("2026-07-22T12:00:00Z"),
   jobs: {},
   pallets: {},

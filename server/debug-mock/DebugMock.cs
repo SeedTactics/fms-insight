@@ -844,6 +844,7 @@ namespace DebugMachineWatchApiServer
 
       CurrentStatus = new CurrentStatus()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,

@@ -37,6 +37,7 @@ export function createCurrentStatus({
   readonly queues?: Readonly<Record<string, api.QueueInfo>>;
 } = {}): api.CurrentStatus {
   return new api.CurrentStatus({
+    revision: 0,
     timeOfCurrentStatusUTC: new Date("2026-04-24T12:00:00Z"),
     jobs: { ...jobs },
     pallets: Object.fromEntries(pallets.map((p) => [p.palletNum, p])),

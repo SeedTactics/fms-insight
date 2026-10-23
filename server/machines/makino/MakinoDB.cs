@@ -1060,6 +1060,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       return new CurrentStatus()
       {
+        Revision = 0,
         TimeOfCurrentStatusUTC = nowUTC,
         Jobs = map.Jobs.ToImmutableDictionary(j => j.UniqueStr),
         Pallets = map.Pallets.ToImmutableDictionary(),

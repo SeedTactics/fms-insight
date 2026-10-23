@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using BlackMaple.MachineFramework;
 
 namespace DebugMachineWatchApiServer;
@@ -22,11 +23,8 @@ public static class DebugMockStatusLoader
       return LoadExternal(statusFile, jsonSettings, DateTime.UtcNow);
     }
 
-    var statusJson = File.ReadAllText(Path.Combine(sampleDataPath, "status-mock.json"));
-    return OffsetStatus(
-      JsonSerializer.Deserialize<CurrentStatus>(statusJson, jsonSettings),
-      sampleDataOffset
-    );
+    using var file = File.OpenRead(Path.Combine(sampleDataPath, "status-mock.json"));
+    return OffsetStatus(DeserializeSnapshot(file, jsonSettings), sampleDataOffset);
   }
 
   /// Names every load station used by the status with the client's default label. Sites name their
@@ -83,7 +81,7 @@ public static class DebugMockStatusLoader
     try
     {
       using var file = File.OpenRead(filePath);
-      var status = JsonSerializer.Deserialize<CurrentStatus>(file, jsonSettings);
+      var status = DeserializeSnapshot(file, jsonSettings);
       if (status is null)
       {
         throw new InvalidOperationException(
@@ -114,6 +112,16 @@ public static class DebugMockStatusLoader
         ex
       );
     }
+  }
+
+  private static CurrentStatus DeserializeSnapshot(Stream file, JsonSerializerOptions jsonSettings)
+  {
+    var snapshot = JsonNode.Parse(file);
+    // A replay is a new unpublished projection, independent of the original capture sequence.
+    // This also permits loading saved fixtures captured before revisions were introduced.
+    if (snapshot is JsonObject status)
+      status["Revision"] = 0;
+    return snapshot?.Deserialize<CurrentStatus>(jsonSettings);
   }
 
   public static CurrentStatus OffsetStatus(CurrentStatus originalStatus, TimeSpan offset)

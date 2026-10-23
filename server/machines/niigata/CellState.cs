@@ -174,6 +174,7 @@ namespace BlackMaple.FMSInsight.Niigata
         OldUnusedPrograms = OldUnusedPrograms(logDB, status, progsInUse),
         CurrentStatus = new CurrentStatus()
         {
+          Revision = 0,
           TimeOfCurrentStatusUTC = status.TimeOfStatusUTC,
           Jobs = jobCache.BuildActiveJobs(
             allMaterial: pals.SelectMany(p => p.Material).Concat(queuedMats).Select(m => m.Mat),

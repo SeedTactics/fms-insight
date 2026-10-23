@@ -150,9 +150,9 @@ namespace BlackMaple.MachineFramework
     /// <summary>
     /// Increasing snapshot capture order within this server process, shared by HTTP and websocket
     /// status. Assigned under the backend's status lock before transport; gaps are expected.
-    /// Clients reset their comparison on reconnect. Null for backends without revision support.
+    /// Clients reset their comparison on reconnect. Unpublished projections use zero.
     /// </summary>
-    public long? Revision { get; init; }
+    public required long Revision { get; init; }
 
     public required DateTime TimeOfCurrentStatusUTC { get; init; }
 

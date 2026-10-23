@@ -52,6 +52,7 @@ import { HashSet } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../data/operators.js";
 
 const currentStatusRW = atom<Readonly<ICurrentStatus>>({
+  revision: 0,
   timeOfCurrentStatusUTC: new Date(),
   jobs: {},
   pallets: {},

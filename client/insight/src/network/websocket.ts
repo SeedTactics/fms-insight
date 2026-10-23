@@ -90,15 +90,6 @@ function isCurrentSession(get: Getter, session: number): boolean {
   return get(websocketSessionAtom).id === session;
 }
 
-function compareStatusRevisions(
-  incoming: Readonly<ICurrentStatus>,
-  installed: Readonly<ICurrentStatus> | undefined,
-): number | undefined {
-  return incoming.revision != null && installed?.revision != null
-    ? incoming.revision - installed.revision
-    : undefined;
-}
-
 async function loadCurrentStatus(
   get: Getter,
   set: Setter,
@@ -127,23 +118,10 @@ async function loadCurrentStatus(
     const current = get(websocketSessionAtom);
     if (current.id !== session) return false;
     const installed = current.snapshot?.status;
-    const comparison = compareStatusRevisions(st, installed);
-    if (comparison !== undefined && comparison <= 0) return true;
-    // Older servers have no revision. Preserve their existing preference for an intervening
-    // socket snapshot, and reread if another HTTP request changed status while this one ran.
-    if (
-      comparison === undefined &&
-      current.snapshot !== snapshot &&
-      current.snapshot?.source === "socket"
-    )
-      return true;
+    if (installed && st.revision <= installed.revision) return true;
     // A higher server revision can replace an intervening complete snapshot, but a log edit or
     // optimistic local edit still needs a fresh read rather than being overwritten.
-    if (
-      get(currentStatus) !== before &&
-      (comparison === undefined || get(currentStatus) !== installed)
-    )
-      continue;
+    if (get(currentStatus) !== before && get(currentStatus) !== installed) continue;
     set(onLoadCurrentSt, st);
     set(websocketSessionAtom, { ...current, snapshot: { status: st, source: "http" } });
     if (current.open) set(currentStatusIsLiveRW, true);
@@ -337,11 +315,11 @@ const onCloseAtom = atom(null, (get, set, session: number | null, reconnecting: 
 const onMessageAtom = atom(null, (get, set, evt: MessageEvent<string>, session: number | null) => {
   if (session === null || !isCurrentSession(get, session)) return;
   const received = ServerEvent.fromJS(JSON.parse(evt.data));
-  const comparison = received.newCurrentStatus
-    ? compareStatusRevisions(received.newCurrentStatus, get(websocketSessionAtom).snapshot?.status)
-    : undefined;
+  const installed = get(websocketSessionAtom).snapshot?.status;
   const serverEvt =
-    comparison !== undefined && comparison <= 0
+    received.newCurrentStatus &&
+    installed &&
+    received.newCurrentStatus.revision <= installed.revision
       ? new ServerEvent({ logEntry: received.logEntry, newJobs: received.newJobs })
       : received;
   const eventAndTime = { evt: serverEvt, now: new Date(), expire: true };

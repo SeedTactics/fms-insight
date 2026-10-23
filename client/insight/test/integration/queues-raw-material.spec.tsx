@@ -8,6 +8,7 @@ import { createMaterial } from "./load-station-testkit.js";
 describe("standalone queues page", () => {
   test("shows serialed raw material already in a raw material queue", async () => {
     const currentStatus = new api.CurrentStatus({
+      revision: 0,
       timeOfCurrentStatusUTC: new Date("2026-04-24T12:00:00Z"),
       jobs: {},
       pallets: {},

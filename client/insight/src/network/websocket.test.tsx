@@ -103,7 +103,9 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-function status(label = "status", revision?: number): ICurrentStatus {
+let nextStatusRevision = 0;
+
+function status(label = "status", revision = ++nextStatusRevision): ICurrentStatus {
   return new CurrentStatus({
     revision,
     timeOfCurrentStatusUTC: new Date(),
@@ -203,6 +205,7 @@ let root: Root;
 let mounted: boolean;
 
 beforeEach(() => {
+  nextStatusRevision = 0;
   vi.useFakeTimers();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   FakeSocket.sockets.length = 0;
@@ -446,16 +449,15 @@ test("a cancelled refresh cannot install a late result", async () => {
   expect(installed().alarms).toEqual(["initial"]);
 });
 
-test("an older bootstrap cannot satisfy a post-control refresh", async () => {
+test("a post-control refresh accepts its newer capture after an older bootstrap completes", async () => {
   const { store, installed } = await connect();
   await settle(() => FakeSocket.sockets[0]?.emit("open"));
   const refreshed = store.set(refreshCurrentStatus);
-  await settle(() => statusLoads[0]?.resolve(status("before control")));
-  await settle(() => statusLoads[1]?.resolve(status("invalidated read")));
-  expect(statusLoads).toHaveLength(3);
+  await settle(() => statusLoads[0]?.resolve(status("before control", 1)));
   expect(installed().alarms).toEqual(["before control"]);
-  await settle(() => statusLoads[2]?.resolve(status("after control")));
+  await settle(() => statusLoads[1]?.resolve(status("after control", 2)));
   expect(await refreshed).toBe(true);
+  expect(statusLoads).toHaveLength(2);
   expect(installed().alarms).toEqual(["after control"]);
 });
 
@@ -464,8 +466,8 @@ test("an explicit refresh yields to a newer socket status and ends with its sess
   await settle(() => FakeSocket.sockets[0]?.emit("open"));
   await settle(() => statusLoads[0]?.resolve(status("initial")));
   const refreshed = store.set(refreshCurrentStatus);
-  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("newer")));
-  await settle(() => statusLoads[1]?.resolve(status("late read")));
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("newer", 3)));
+  await settle(() => statusLoads[1]?.resolve(status("late read", 2)));
   expect(await refreshed).toBe(true);
   expect(installed().alarms).toEqual(["newer"]);
   const ended = store.set(refreshCurrentStatus);
@@ -546,9 +548,9 @@ test("a failed history load does not affect a live status", async () => {
 test("a bootstrap status response does not replace a newer status from the socket", async () => {
   const { live, installed } = await connect();
   await settle(() => FakeSocket.sockets[0]?.emit("open"));
-  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("pushed")));
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("pushed", 2)));
   await settle(() => {
-    statusLoads[0]?.resolve(status("bootstrap"));
+    statusLoads[0]?.resolve(status("bootstrap", 1));
     logLoads[0]?.resolve([]);
   });
   expect(installed()).toEqual({ alarms: ["pushed"], custom: { label: "pushed" } });

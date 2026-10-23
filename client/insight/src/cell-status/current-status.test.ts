@@ -71,6 +71,7 @@ it("updates report time once per minute and stops the clock when no longer obser
 });
 
 const statusWithMat: api.ICurrentStatus = {
+  revision: 0,
   timeOfCurrentStatusUTC: new Date(),
   jobs: {},
   pallets: {},
