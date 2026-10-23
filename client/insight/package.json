@@ -11,6 +11,7 @@
   ],
   "type": "module",
   "exports": {
+    "./openapi.json": "./dist/fms-insight-api.json",
     "./extension": "./dist/extension.js",
     "./cell-status/*": "./dist/cell-status/*.js",
     "./components/*": "./dist/components/*.js",
@@ -26,7 +27,7 @@
     "type-check": "tsc --noEmit --skipLibCheck",
     "lint": "oxlint --type-aware",
     "build": "vite build",
-    "build:package": "tsc --project tsconfig.publish.json && cp -Tr ../../docs ./docs",
+    "build:package": "tsc --project tsconfig.publish.json && cp ../../server/fms-insight-api.json ./dist/fms-insight-api.json && cp -Tr ../../docs ./docs",
     "start": "vite",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --browser.headless --project integration",

@@ -12,8 +12,20 @@ The client in this npm package is a React SPA which communicates with the server
 requests. The client is built using vite and served as static files, typically by the C# server.
 Because of that, the nuget package for the server contain a built version of the client. If you are
 just using FMS Insight and don't intend any changes to the client, you can just use the
-BlackMaple.MachineFramework nuget. This npm package is needed only if you wish to modify the client
-or import portions of the client into your own pages.
+BlackMaple.MachineFramework nuget. This npm package provides client extensions, reusable client
+components, and the OpenAPI document for the same release.
+
+## OpenAPI Document
+
+Import the server's OpenAPI document through `@seedtactics/insight-client/openapi.json`:
+
+```js
+import openapi from "@seedtactics/insight-client/openapi.json" with { type: "json" };
+```
+
+`build:package` copies `server/fms-insight-api.json` unchanged into the npm package. This is the
+same document NSwag uses to generate `src/network/api.ts`. Pin the npm package version to select a
+release; the document's `info.version` is separate from the npm release version.
 
 ## Extending the Client
 
