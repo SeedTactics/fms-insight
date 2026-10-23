@@ -14,7 +14,10 @@ freshness, manufacturing events, or physical work occurrences.
 
 The server and browser ship together and require the revision contract. A newer HTTP snapshot can
 replace an intervening websocket snapshot directly. Log-derived and optimistic edits still need
-protection because their changes are not represented by the last complete snapshot's revision.
+protection because their changes are not represented by the last complete snapshot's revision. Every
+complete live snapshot, including recovery after a rejected queue move, uses shared session and
+revision acceptance. Installing the display and advancing its comparison revision happen together;
+local rollback and offline fixture replacement do not advance that revision.
 
 A backend that suppresses unchanged display state excludes Revision from its display comparison.
 Reading status never consumes a broadcast owed to other clients. Historical log catch-up retains its

@@ -56,6 +56,7 @@ import {
   InProcessMaterialLocation,
   InProcessMaterialAction,
   ActionType,
+  LocType,
   ToolUse,
   NewJobs,
   LogEntry,
@@ -68,6 +69,7 @@ import {
 } from "./api.js";
 import { fmsInformation } from "./server-settings.js";
 import { currentStatus } from "../cell-status/current-status.js";
+import { moveQueuedMatInCurrentStatus } from "../cell-status/loading.js";
 import { customState } from "../cell-status/custom-state.js";
 import { lastEventCounter } from "../cell-status/loading.js";
 import { last30ToolUse } from "../cell-status/tool-usage.js";
@@ -157,7 +159,10 @@ function toolCycle(counter: number): ILogEntry {
   };
 }
 
-function statusWithMaterial(workorderId: string): ICurrentStatus {
+function statusWithMaterial(
+  workorderId: string,
+  location = new InProcessMaterialLocation(),
+): ICurrentStatus {
   return {
     ...status(),
     material: [
@@ -169,11 +174,36 @@ function statusWithMaterial(workorderId: string): ICurrentStatus {
         path: 1,
         workorderId,
         signaledInspections: [],
-        location: new InProcessMaterialLocation(),
+        location,
         action: new InProcessMaterialAction(),
       }),
     ],
   };
+}
+
+function queuedStatus(label: string, revision: number): ICurrentStatus {
+  return {
+    ...status(label, revision),
+    material: statusWithMaterial(
+      label,
+      new InProcessMaterialLocation({
+        type: LocType.InQueue,
+        currentQueue: "Queue A",
+        queuePosition: 0,
+      }),
+    ).material,
+  };
+}
+
+function rejectedQueueMove(store: ReturnType<typeof createStore>) {
+  return store
+    .set(moveQueuedMatInCurrentStatus, {
+      queue: "Queue B",
+      matId: 100,
+      newIdx: 0,
+      operator: null,
+    })
+    .catch((error: unknown) => error);
 }
 
 async function reconnect(socket: number) {
@@ -227,6 +257,7 @@ beforeEach(() => {
       },
     }),
     only<JobAPI>({
+      setMaterialInQueue: () => Promise.reject(new Error("queue rejected")),
       currentStatus: () => {
         const load = deferred<Readonly<ICurrentStatus>>();
         statusLoads.push(load);
@@ -371,6 +402,51 @@ test("older HTTP responses and delayed or duplicate socket snapshots cannot repl
   await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("latest", 43)));
   expect(installed().alarms).toEqual(["latest"]);
 });
+
+test("queue rejection recovery orders subsequent socket snapshots against the recovered revision", async () => {
+  const { store, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(queuedStatus("initial", 40)));
+  const recovery = rejectedQueueMove(store);
+  await settle();
+  expect(statusLoads).toHaveLength(2);
+  await settle(() => statusLoads[1]?.resolve(queuedStatus("recovered", 42)));
+  expect(await recovery).toMatchObject({ message: "queue rejected" });
+  expect(store.get(currentStatus).revision).toBe(42);
+
+  await settle(() => {
+    FakeSocket.sockets[0]?.emit("message", statusMessage("delayed", 41));
+    FakeSocket.sockets[0]?.emit("message", statusMessage("duplicate", 42));
+  });
+  expect(store.get(currentStatus).revision).toBe(42);
+  expect(installed().custom).toEqual({ label: "recovered" });
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("latest", 43)));
+  expect(installed().custom).toEqual({ label: "latest" });
+});
+
+test.each(["success", "failure"] as const)(
+  "an old queue recovery %s cannot install or roll back status in a new connection",
+  async (outcome) => {
+    const { store, live } = await connect();
+    await settle(() => FakeSocket.sockets[0]?.emit("open"));
+    await settle(() => statusLoads[0]?.resolve(queuedStatus("initial", 40)));
+    const recovery = rejectedQueueMove(store);
+    await settle();
+    const optimistic = store.get(currentStatus);
+    expect(optimistic.material[0]?.location.currentQueue).toBe("Queue B");
+    await reconnect(1);
+    await settle(() => {
+      if (outcome === "success") statusLoads[1]?.resolve(queuedStatus("old session", 42));
+      else statusLoads[1]?.reject(new Error("offline"));
+    });
+    expect(await recovery).toMatchObject({ message: "queue rejected" });
+    expect(store.get(currentStatus)).toBe(optimistic);
+    expect(live().live).toBe(false);
+    await settle(() => statusLoads[2]?.resolve(queuedStatus("new session", 1)));
+    expect(store.get(currentStatus).revision).toBe(1);
+    expect(live().live).toBe(true);
+  },
+);
 
 test.each([true, false])(
   "concurrent HTTP reads follow capture revisions (newer response first: %s)",

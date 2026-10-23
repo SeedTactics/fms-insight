@@ -32,13 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import {
-  ICurrentStatus,
   IHistoricData,
   ILogEntry,
   IRecentHistoricData,
   IServerEvent,
   QueuePosition,
 } from "../network/api.js";
+import {
+  acceptCurrentStatusSnapshot,
+  currentStatusSessionAtom,
+  onLoadCurrentSt,
+} from "../network/current-status-session.js";
+export { onLoadCurrentSt } from "../network/current-status-session.js";
 import { JobsBackend } from "../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
@@ -138,12 +143,6 @@ export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<I
   );
 });
 
-export const onLoadCurrentSt = atom(null, (_, set, curSt: Readonly<ICurrentStatus>) => {
-  set(currentSt.setCurrentStatus, curSt);
-  set(customSt.replaceCustomState, curSt.customState ?? null);
-  set(names.setNamesFromCurrentStatus, curSt);
-});
-
 export interface QueuedMatMove extends currentSt.QueueReordering {
   readonly operator: string | null;
 }
@@ -162,13 +161,19 @@ export const moveQueuedMatInCurrentStatus = atom(
         new QueuePosition({ queue: move.queue, position: move.newIdx }),
       );
     } catch (error) {
+      const session = get(currentStatusSessionAtom).id;
       const beforeReload = get(currentSt.currentStatus);
       try {
         const refreshed = await JobsBackend.currentStatus();
-        if (get(currentSt.currentStatus) === beforeReload) set(onLoadCurrentSt, refreshed);
+        if (get(currentSt.currentStatus) === beforeReload)
+          set(acceptCurrentStatusSnapshot, session, refreshed, "http");
       } catch {
         // If the server is unreachable, undo only this move's untouched optimistic snapshot.
-        if (get(currentSt.currentStatus) === optimistic) set(onLoadCurrentSt, before);
+        if (
+          get(currentStatusSessionAtom).id === session &&
+          get(currentSt.currentStatus) === optimistic
+        )
+          set(onLoadCurrentSt, before);
       }
       throw error;
     }

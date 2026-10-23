@@ -31,6 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import {
+  acceptCurrentStatusSnapshot,
+  currentStatusSessionAtom,
+  currentStatusIsLiveRW,
+  errorLoadingStatusRW,
+  isCurrentSession,
+} from "./current-status-session.js";
+
 import { ServerEvent, type ICurrentStatus, type ILogEntry } from "./api.js";
 import { apiErrorMessage } from "./api-errors.js";
 import { JobsBackend, LogBackend } from "./backend.js";
@@ -38,7 +46,6 @@ import { fmsInformation } from "./server-settings.js";
 import { useEffect, useRef } from "react";
 import {
   lastEventCounter,
-  onLoadCurrentSt,
   onLoadLast30Jobs,
   onLoadLast30Log,
   onLiveServerEvent,
@@ -56,21 +63,7 @@ export const websocketReconnecting: Atom<boolean> = websocketReconnectingAtom;
 // True while the websocket is open and this connection has loaded or received a current status, so
 // the retained current status reflects the server. Loading the historical jobs and log does not
 // affect it.
-const currentStatusIsLiveRW = atom<boolean>(false);
 export const currentStatusIsLive: Atom<boolean> = currentStatusIsLiveRW;
-
-// A session is one open socket; it ends when that socket closes or is disposed, so late results
-// from an earlier connection are ignored. Server revisions order complete snapshots across HTTP
-// and websocket delivery. Keep the original snapshot reference to recognize subsequent log edits.
-type WebsocketSession = {
-  readonly id: number;
-  readonly open: boolean;
-  readonly snapshot: {
-    readonly status: Readonly<ICurrentStatus>;
-    readonly source: "http" | "socket";
-  } | null;
-};
-const websocketSessionAtom = atom<WebsocketSession>({ id: 0, open: false, snapshot: null });
 
 // Only historical effects wait for HTTP catch-up. A fresh session discards its predecessor's
 // unapplied buffer and reloads from lastEventCounter, which has not advanced past that history.
@@ -81,14 +74,9 @@ const loadedLogCountersAtom = atom(HashSet.empty<number>());
 
 const errorLoadingLast30RW = atom<string | null>(null);
 const errorLoadingLogRW = atom<string | null>(null);
-const errorLoadingStatusRW = atom<string | null>(null);
 export const errorLoadingLast30: Atom<string | null> = atom(
   (get) => get(errorLoadingStatusRW) ?? get(errorLoadingLast30RW) ?? get(errorLoadingLogRW),
 );
-
-function isCurrentSession(get: Getter, session: number): boolean {
-  return get(websocketSessionAtom).id === session;
-}
 
 async function loadCurrentStatus(
   get: Getter,
@@ -98,14 +86,14 @@ async function loadCurrentStatus(
 ): Promise<boolean> {
   while (isCurrentSession(get, session)) {
     const before = get(currentStatus);
-    const snapshot = get(websocketSessionAtom).snapshot;
+    const snapshot = get(currentStatusSessionAtom).snapshot;
     let st: Readonly<ICurrentStatus>;
     try {
       signal?.throwIfAborted();
       st = await JobsBackend.currentStatus(signal);
       signal?.throwIfAborted();
     } catch (error) {
-      const current = get(websocketSessionAtom);
+      const current = get(currentStatusSessionAtom);
       if (current.id !== session) return false;
       if (
         !signal?.aborted &&
@@ -115,17 +103,14 @@ async function loadCurrentStatus(
         return true;
       throw error;
     }
-    const current = get(websocketSessionAtom);
+    const current = get(currentStatusSessionAtom);
     if (current.id !== session) return false;
     const installed = current.snapshot?.status;
     if (installed && st.revision <= installed.revision) return true;
     // A higher server revision can replace an intervening complete snapshot, but a log edit or
     // optimistic local edit still needs a fresh read rather than being overwritten.
     if (get(currentStatus) !== before && get(currentStatus) !== installed) continue;
-    set(onLoadCurrentSt, st);
-    set(websocketSessionAtom, { ...current, snapshot: { status: st, source: "http" } });
-    if (current.open) set(currentStatusIsLiveRW, true);
-    set(errorLoadingStatusRW, null);
+    set(acceptCurrentStatusSnapshot, session, st, "http");
     return true;
   }
   return false;
@@ -133,7 +118,7 @@ async function loadCurrentStatus(
 
 // Every caller starts its own read, after its action has settled. Session ownership stays here.
 export const refreshCurrentStatus = atom(null, (get, set, signal?: AbortSignal): Promise<boolean> =>
-  loadCurrentStatus(get, set, get(websocketSessionAtom).id, signal),
+  loadCurrentStatus(get, set, get(currentStatusSessionAtom).id, signal),
 );
 
 async function loadBootstrapStatus(
@@ -290,8 +275,8 @@ class ReconnectingWebsocket {
 }
 
 const onOpenAtom = atom(null, (get, set): number => {
-  const session = get(websocketSessionAtom).id + 1;
-  set(websocketSessionAtom, { id: session, open: true, snapshot: null });
+  const session = get(currentStatusSessionAtom).id + 1;
+  set(currentStatusSessionAtom, { id: session, open: true, snapshot: null });
   set(websocketReconnectingAtom, true);
   set(currentStatusIsLiveRW, false);
   set(errorLoadingLast30RW, null);
@@ -307,7 +292,7 @@ const onOpenAtom = atom(null, (get, set): number => {
 const onCloseAtom = atom(null, (get, set, session: number | null, reconnecting: boolean) => {
   if (reconnecting) set(websocketReconnectingAtom, true);
   if (session === null || !isCurrentSession(get, session)) return;
-  set(websocketSessionAtom, { id: session + 1, open: false, snapshot: null });
+  set(currentStatusSessionAtom, { id: session + 1, open: false, snapshot: null });
   set(currentStatusIsLiveRW, false);
   set(bufferedLogAtom, null);
 });
@@ -315,15 +300,15 @@ const onCloseAtom = atom(null, (get, set, session: number | null, reconnecting: 
 const onMessageAtom = atom(null, (get, set, evt: MessageEvent<string>, session: number | null) => {
   if (session === null || !isCurrentSession(get, session)) return;
   const received = ServerEvent.fromJS(JSON.parse(evt.data));
-  const installed = get(websocketSessionAtom).snapshot?.status;
+  const status = received.newCurrentStatus;
+  const accepted = status && set(acceptCurrentStatusSnapshot, session, status, "socket");
   const serverEvt =
-    received.newCurrentStatus &&
-    installed &&
-    received.newCurrentStatus.revision <= installed.revision
+    status && !accepted
       ? new ServerEvent({ logEntry: received.logEntry, newJobs: received.newJobs })
       : received;
   const eventAndTime = { evt: serverEvt, now: new Date(), expire: true };
-  set(onLiveServerEvent, eventAndTime);
+  // Complete snapshots were installed above; standalone log edits still apply immediately.
+  if (!serverEvt.newCurrentStatus) set(onLiveServerEvent, eventAndTime);
   const log = serverEvt.logEntry;
   const buffered = get(bufferedLogAtom);
   if (!log || !get(loadedLogCountersAtom).has(log.counter)) {
@@ -332,15 +317,6 @@ const onMessageAtom = atom(null, (get, set, evt: MessageEvent<string>, session: 
     } else {
       set(onHistoricalServerEvent, eventAndTime);
     }
-  }
-  if (serverEvt.newCurrentStatus) {
-    set(websocketSessionAtom, {
-      id: session,
-      open: true,
-      snapshot: { status: serverEvt.newCurrentStatus, source: "socket" },
-    });
-    set(currentStatusIsLiveRW, true);
-    set(errorLoadingStatusRW, null);
   }
 });
 
