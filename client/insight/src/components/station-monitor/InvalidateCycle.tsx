@@ -45,6 +45,7 @@ import {
   materialInDialogInfo,
   materialInDialogLargestUsedProcess,
   materialInDialogLocalEvents,
+  useMaterialBlockingAlarms,
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -286,6 +287,7 @@ export function InvalidateCycleDialogButton(
   const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
   const possibleNew = useAtomValue(barcodePotentialNewMaterial);
   const setMatToShow = useSetAtom(materialDialogOpen);
+  const changesSuspended = useMaterialBlockingAlarms().length > 0;
   let operator = useAtomValue(currentOperator);
 
   if (props.loadStation && !fmsInfo.allowInvalidateMaterialAtLoadStation) return null;
@@ -317,6 +319,7 @@ export function InvalidateCycleDialogButton(
   }
 
   function invalidateCycle() {
+    if (changesSuspended) return;
     if (curMat && (props.st?.process || props.st?.changeRawMat || props.st?.changeJobUnique)) {
       props.setState({ ...props.st, updating: true });
       JobsBackend.invalidatePalletCycle(
@@ -351,7 +354,7 @@ export function InvalidateCycleDialogButton(
   return (
     <>
       {props.st === null ? (
-        <Button color="primary" onClick={showInvalidate}>
+        <Button color="primary" disabled={changesSuspended} onClick={showInvalidate}>
           Invalidate Cycle
         </Button>
       ) : undefined}
@@ -360,6 +363,7 @@ export function InvalidateCycleDialogButton(
           color="primary"
           onClick={invalidateCycle}
           disabled={
+            changesSuspended ||
             props.st.updating ||
             (changingAssignment && !allowChange) ||
             (!changingAssignment &&

@@ -61,6 +61,27 @@ function move(store: ReturnType<typeof createStore>) {
     .catch((error: unknown) => error);
 }
 
+test("a blocking status alarm prevents a queue drop without an optimistic edit or request", async () => {
+  const fetch = vi.spyOn(window, "fetch");
+  registerNetworkBackend();
+  const store = createStore();
+  const retained: Readonly<api.ICurrentStatus> = status("retained");
+  const before = new api.CurrentStatus({
+    ...retained,
+    alarmDetails: [
+      new api.CurrentStatusAlarm({
+        code: "status-refresh-failed",
+        message: "Showing retained data.",
+        impact: api.AlarmImpact.SuspendChanges,
+      }),
+    ],
+  });
+  store.set(onLoadCurrentSt, before);
+  expect(await move(store)).toMatchObject({ message: "Showing retained data." });
+  expect(store.get(currentStatus)).toBe(before);
+  expect(fetch).not.toHaveBeenCalled();
+});
+
 test("undoes the optimistic drop when rejection recovery cannot reach the server", async () => {
   const fetch = vi
     .spyOn(window, "fetch")

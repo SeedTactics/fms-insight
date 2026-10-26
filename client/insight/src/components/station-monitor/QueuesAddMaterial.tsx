@@ -544,6 +544,7 @@ export function AddToQueueButton({
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const lastProcMat = useAtomValue(matDetails.materialInDialogLargestUsedProcess);
+  const blockingAlarms = matDetails.useMaterialBlockingAlarms();
 
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addNewMat, addingNewMat] = matDetails.useAddNewMaterialToQueue();
@@ -588,18 +589,21 @@ export function AddToQueueButton({
     <>
       <Tooltip
         title={
-          toQueue === null
-            ? "Select a queue to add the material to"
-            : fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-                (enteredOperator === null || enteredOperator === "")
-              ? "Please enter an operator name"
-              : ""
+          blockingAlarms.length > 0
+            ? blockingAlarms.map((alarm) => alarm.message).join(" ")
+            : toQueue === null
+              ? "Select a queue to add the material to"
+              : fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                  (enteredOperator === null || enteredOperator === "")
+                ? "Please enter an operator name"
+                : ""
         }
       >
         <span>
           <Button
             color="primary"
             disabled={
+              blockingAlarms.length > 0 ||
               toQueue === null ||
               addingExistingMat ||
               addingNewMat ||
@@ -609,6 +613,7 @@ export function AddToQueueButton({
                 (enteredOperator === null || enteredOperator === ""))
             }
             onClick={async () => {
+              if (blockingAlarms.length > 0) return;
               setAddError(null);
               try {
                 if (existingMat) {

@@ -105,6 +105,129 @@ const raw = (slot: number) =>
   });
 
 describe("cancel load", () => {
+  test("an alarm arriving in an open cancellation dialog disables submission until recovery", async () => {
+    const material = loadingMaterial({ materialId: 101, cancellationId: "saved-load" });
+    const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+    registerNetworkBackend();
+    const screen = await renderCancelLoadButton(material, [material]);
+    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    const dialog = screen.getByRole("dialog");
+    const confirm = dialog.getByRole("button", { name: "Cancel Load", exact: true });
+    await expect.element(confirm).toBeEnabled();
+    const status: Readonly<api.ICurrentStatus> = createCurrentStatus({ material: [material] });
+    screen.store.set(onLoadCurrentSt, {
+      ...status,
+      alarmDetails: [
+        new api.CurrentStatusAlarm({
+          code: "status-refresh-failed",
+          message: "Showing retained status.",
+          impact: api.AlarmImpact.SuspendChanges,
+        }),
+      ],
+    });
+    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Showing retained status.");
+    await expect.element(confirm).toBeDisabled();
+    expect(fetch).not.toHaveBeenCalled();
+    // Read-only inspection and dismissing the dialog remain available.
+    await expect.element(dialog.getByRole("textbox", { name: "Reason (optional)" })).toBeEnabled();
+    await expect.element(dialog.getByRole("button", { name: "Keep Load" })).toBeEnabled();
+    screen.store.set(onLoadCurrentSt, status);
+    await expect.element(confirm).toBeEnabled();
+    await confirm.click();
+    await expect.element(dialog).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        method: "PUT",
+        body: '{"ExpectedLoadCancellationId":"saved-load"}',
+      }),
+    );
+  });
+
+  test("scoped cancellation checks every member of the captured atomic group", async () => {
+    const selected = raw(1);
+    const peerBase: Readonly<api.IInProcessMaterial> = raw(2);
+    const peerAction: Readonly<api.IInProcessMaterialAction> = peerBase.action;
+    const peer = new api.InProcessMaterial({
+      ...peerBase,
+      action: new api.InProcessMaterialAction({
+        ...peerAction,
+        loadToBasketId: 8,
+        loadCancellationId: selected.action.loadCancellationId,
+      }),
+    });
+    const screen = await renderCancelLoadButton(selected, [selected, peer]);
+    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    const dialog = screen.getByRole("dialog");
+    const confirm = dialog.getByRole("button", { name: "Cancel Load", exact: true });
+    const status: Readonly<api.ICurrentStatus> = createCurrentStatus({
+      material: [selected, peer],
+    });
+    const alarm: Readonly<api.ICurrentStatusAlarm> = new api.CurrentStatusAlarm({
+      code: "basket-observation",
+      message: "Basket 8 observation unavailable.",
+      impact: api.AlarmImpact.SuspendChanges,
+      activity: api.AlarmActivity.BasketLoadStation,
+      basketId: 8,
+    });
+    screen.store.set(onLoadCurrentSt, { ...status, alarmDetails: [alarm] });
+    await expect.element(confirm).toBeDisabled();
+    await expect.element(dialog.getByRole("alert")).toHaveTextContent(alarm.message);
+    // The dialog still represents the original group if the live material view changes.
+    const empty: Readonly<api.ICurrentStatus> = createCurrentStatus();
+    screen.store.set(onLoadCurrentSt, { ...empty, alarmDetails: [alarm] });
+    await expect.element(confirm).toBeDisabled();
+    await expect.element(dialog.getByRole("list")).toBeVisible();
+    screen.store.set(onLoadCurrentSt, {
+      ...status,
+      alarmDetails: [new api.CurrentStatusAlarm({ ...alarm, basketId: 9 })],
+    });
+    await expect.element(confirm).toBeEnabled();
+  });
+
+  test("an open quarantine dialog uses the same blocking rule and retains its material", async () => {
+    const materialBase: Readonly<api.IInProcessMaterial> = loadingMaterial({ materialId: 101 });
+    const material = new api.InProcessMaterial({
+      ...materialBase,
+      action: new api.InProcessMaterialAction({ type: api.ActionType.Waiting }),
+    });
+    const statusBase: Readonly<api.ICurrentStatus> = createCurrentStatus({ material: [material] });
+    const status: Readonly<api.ICurrentStatus> = new api.CurrentStatus({
+      ...statusBase,
+      queues: { "Queue A": new api.QueueInfo({ role: api.QueueRole.RawMaterial }) },
+    });
+    const screen = await renderInsightPage(
+      <Suspense fallback={<div>Loading</div>}>
+        <QuarantineMatButton />
+      </Suspense>,
+      {
+        currentStatus: status,
+        fmsInfo: { quarantineQueue: "Quarantine" },
+        seedStore: (store) =>
+          store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
+      },
+    );
+    await screen.getByRole("button", { name: "Move to Quarantine" }).click();
+    const dialog = screen.getByRole("dialog");
+    const confirm = dialog.getByRole("button", { name: "Quarantine", exact: true });
+    await expect.element(confirm).toBeEnabled();
+    screen.store.set(onLoadCurrentSt, {
+      ...status,
+      alarmDetails: [
+        new api.CurrentStatusAlarm({
+          code: "status-refresh-failed",
+          message: "Showing retained status.",
+          impact: api.AlarmImpact.SuspendChanges,
+        }),
+      ],
+    });
+    await expect.element(confirm).toBeDisabled();
+    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Showing retained status.");
+    await expect.element(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeEnabled();
+    screen.store.set(onLoadCurrentSt, status);
+    await expect.element(confirm).toBeEnabled();
+  });
+
   test("is only available for an instruction with a cancellation ID", async () => {
     const material = loadingMaterial({ materialId: 101, serial: "SERIAL-101" });
     const screen = await renderCancelLoadButton(material, [material]);

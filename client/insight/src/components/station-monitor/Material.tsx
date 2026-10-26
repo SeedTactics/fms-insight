@@ -77,6 +77,7 @@ import { currentOperator } from "../../data/operators.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { ErrorBoundary } from "react-error-boundary";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { alarmsBlockingMaterialChanges } from "../../cell-status/alarms.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -780,7 +781,11 @@ export type SortableMatData = {
 export const SortableInProcMaterial = memo(function SortableInProcMaterial(
   props: InProcMaterialProps & ShakeProp,
 ) {
-  const canDrag = canReorderQueuedMaterial(props.mat) || canAddOrMoveMaterialToQueue(props.mat);
+  const changesSuspended =
+    alarmsBlockingMaterialChanges(useAtomValue(currentStatus), [props.mat]).length > 0;
+  const canDrag =
+    !changesSuspended &&
+    (canReorderQueuedMaterial(props.mat) || canAddOrMoveMaterialToQueue(props.mat));
   const d: SortableMatData = { mat: props.mat };
   const {
     active,
@@ -1059,6 +1064,17 @@ function RebookingNote() {
 
 function MaterialOperationNotice() {
   const material = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const alarms = matDetails.useMaterialBlockingAlarms();
+  if (alarms.length > 0)
+    return (
+      <>
+        {alarms.map((alarm, index) => (
+          <Typography key={index} role="alert" variant="caption" component="p">
+            {alarm.message}
+          </Typography>
+        ))}
+      </>
+    );
   if (material === null) return null;
 
   if (material.quarantineAfterUnload) {

@@ -1052,6 +1052,7 @@ function AddMatButton({
   const operator = useAtomValue(currentOperator);
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addError, setAddError] = useState<string | null>(null);
+  const changesSuspended = matDetails.useMaterialBlockingAlarms().length > 0;
 
   if (!existingMat || !canAddOrMoveMaterialToQueue(inProcMat)) {
     return null;
@@ -1067,7 +1068,7 @@ function AddMatButton({
 
   if (!showAddToQueue) {
     return (
-      <Button color="primary" onClick={() => setShowAddToQueue(true)}>
+      <Button color="primary" disabled={changesSuspended} onClick={() => setShowAddToQueue(true)}>
         Add To Queue
       </Button>
     );
@@ -1076,8 +1077,9 @@ function AddMatButton({
       <>
         <Button
           color="primary"
-          disabled={toQueue === null || addingExistingMat}
+          disabled={changesSuspended || toQueue === null || addingExistingMat}
           onClick={async () => {
+            if (changesSuspended) return;
             setAddError(null);
             try {
               await addExistingMat({

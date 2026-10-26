@@ -48,7 +48,8 @@ import {
 } from "../network/api.js";
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
-import { atom, useSetAtom, type Atom, type Getter } from "jotai";
+import { atom, useAtomValue, useSetAtom, type Atom, type Getter } from "jotai";
+import { alarmsBlockingMaterialChanges } from "./alarms.js";
 import { unwrap } from "jotai/utils";
 import { isLogEntryInvalidated } from "../components/LogEntry.js";
 import { currentRoute, RouteLocation } from "../components/routes.js";
@@ -431,6 +432,12 @@ export const possibleWorkordersForMaterialInDialog = atom<
 //--------------------------------------------------------------------------------
 // Updates
 //--------------------------------------------------------------------------------
+
+// Page controls use the same backend-declared scope as dialogs; no local validity estimate.
+export function useMaterialBlockingAlarms() {
+  const material = useAtomValue(inProcessMaterialInDialog);
+  return alarmsBlockingMaterialChanges(useAtomValue(currentStatus), material ? [material] : []);
+}
 
 export interface ForceInspectionData {
   readonly mat: MaterialToShowInfo;

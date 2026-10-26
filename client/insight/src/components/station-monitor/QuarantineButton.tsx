@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { useState } from "react";
 import {
+  Alert,
   Button,
   Dialog,
   DialogActions,
@@ -43,6 +44,7 @@ import {
 } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { alarmsBlockingMaterialChanges } from "../../cell-status/alarms.js";
 import {
   inProcessMaterialInDialog,
   materialDialogOpen,
@@ -184,8 +186,10 @@ function RemoveFromQueuesButton({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setMatToShow = useSetAtom(materialDialogOpen);
+  const alarms = alarmsBlockingMaterialChanges(useAtomValue(currentStatus), [material]);
 
   async function remove() {
+    if (alarms.length > 0) return;
     setError(null);
     try {
       await removeFromQueues();
@@ -211,13 +215,18 @@ function RemoveFromQueuesButton({
   return (
     <>
       <Tooltip title="Remove from the current queue so it can be rescanned">
-        <Button color="primary" disabled={removing} onClick={openRemoval}>
+        <Button color="primary" disabled={removing || alarms.length > 0} onClick={openRemoval}>
           Remove from Queue
         </Button>
       </Tooltip>
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Remove Material from Queue</DialogTitle>
         <DialogContent>
+          {alarms.map((alarm, index) => (
+            <Alert key={index} severity="warning">
+              {alarm.message}
+            </Alert>
+          ))}
           <p>
             Remove this material from its current queue. Its production history will remain
             available. You can scan it again to correct its history or assignment and then add it
@@ -226,7 +235,7 @@ function RemoveFromQueuesButton({
           {error ? <p role="alert">{error}</p> : null}
         </DialogContent>
         <DialogActions>
-          <Button color="primary" disabled={removing} onClick={remove}>
+          <Button color="primary" disabled={removing || alarms.length > 0} onClick={remove}>
             Remove from Queue
           </Button>
           <Button color="secondary" disabled={removing} onClick={() => setOpen(false)}>
@@ -274,6 +283,15 @@ export function QuarantineMatButton({
           operator,
         };
   const displayedSnapshot = snapshot ?? currentSnapshot;
+  const status = useAtomValue(currentStatus);
+  const currentAlarms = alarmsBlockingMaterialChanges(
+    status,
+    currentSnapshot ? [currentSnapshot.material] : [],
+  );
+  const confirmationAlarms = alarmsBlockingMaterialChanges(
+    status,
+    snapshot ? [snapshot.material] : [],
+  );
 
   function openQuarantine() {
     if (currentSnapshot === null) return;
@@ -314,7 +332,7 @@ export function QuarantineMatButton({
   }
 
   async function quarantine() {
-    if (snapshot === null) return;
+    if (snapshot === null || confirmationAlarms.length > 0) return;
     setUpdating(true);
     setError(null);
     try {
@@ -366,7 +384,11 @@ export function QuarantineMatButton({
     <>
       {q ? (
         <Tooltip title={title} describeChild={displayedSnapshot.operation === "DeferredQuarantine"}>
-          <Button color="primary" disabled={removing} onClick={openQuarantine}>
+          <Button
+            color="primary"
+            disabled={removing || currentAlarms.length > 0}
+            onClick={openQuarantine}
+          >
             {btnTxt}
           </Button>
         </Tooltip>
@@ -381,6 +403,11 @@ export function QuarantineMatButton({
       <Dialog open={open && snapshot !== null} onClose={closeQuarantine}>
         <DialogTitle>Quarantine Material</DialogTitle>
         <DialogContent>
+          {confirmationAlarms.map((alarm, index) => (
+            <Alert key={index} severity="warning">
+              {alarm.message}
+            </Alert>
+          ))}
           <p>{title}</p>
           <TextField
             label="Reason"
@@ -393,7 +420,11 @@ export function QuarantineMatButton({
           {error ? <p role="alert">{error}</p> : null}
         </DialogContent>
         <DialogActions>
-          <Button color="primary" disabled={removing} onClick={quarantine}>
+          <Button
+            color="primary"
+            disabled={removing || confirmationAlarms.length > 0}
+            onClick={quarantine}
+          >
             {btnTxt}
           </Button>
           <Button color="secondary" disabled={removing} onClick={closeQuarantine}>

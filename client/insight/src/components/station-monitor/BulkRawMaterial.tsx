@@ -49,6 +49,7 @@ import {
   DialogTitle,
   CircularProgress,
   TextField,
+  Alert,
 } from "@mui/material";
 import { useReactToPrint } from "react-to-print";
 
@@ -60,6 +61,7 @@ import { currentOperator } from "../../data/operators.js";
 import { PrintedLabel, PrintOnClientButton } from "./PrintedLabel.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { alarmsBlockingChanges, alarmsBlockingMaterialChanges } from "../../cell-status/alarms.js";
 import { useAddNewCastingToQueue, usePrintLabel } from "../../cell-status/material-details.js";
 import { castingNames } from "../../cell-status/names.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -226,6 +228,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
 
   const currentSt = useAtomValue(currentStatus);
   const historicCastNames = useAtomValue(castingNames);
+  const blockingAlarms = alarmsBlockingChanges(currentSt, {});
 
   const castings = useMemo(
     () =>
@@ -251,6 +254,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
   }
 
   function add() {
+    if (blockingAlarms.length > 0) return;
     if (
       queue !== null &&
       selectedCasting !== null &&
@@ -270,6 +274,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
   }
 
   function addAndPrint() {
+    if (blockingAlarms.length > 0) return;
     if (queue !== null && selectedCasting !== null && enteredQty !== null && !isNaN(enteredQty)) {
       setAdding(true);
       void addNewCasting({
@@ -368,12 +373,18 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
               <JobsForCasting casting={selectedCasting} queue={queue} />
             ) : undefined}
           </Stack>
+          {blockingAlarms.map((alarm, index) => (
+            <Alert key={index} severity="warning">
+              {alarm.message}
+            </Alert>
+          ))}
         </DialogContent>
         <DialogActions>
           {printOnAdd ? (
             <Button
               color="primary"
               disabled={
+                blockingAlarms.length > 0 ||
                 adding ||
                 selectedCasting === null ||
                 enteredQty === null ||
@@ -393,6 +404,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
             <Button
               color="primary"
               disabled={
+                blockingAlarms.length > 0 ||
                 selectedCasting === null ||
                 enteredQty === null ||
                 isNaN(enteredQty) ||
@@ -425,7 +437,9 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
   props: MultiMaterialDialogProps,
 ) {
   const fmsInfo = useAtomValue(fmsInformation);
-  const jobs = useAtomValue(currentStatus).jobs;
+  const status = useAtomValue(currentStatus);
+  const jobs = status.jobs;
+  const blockingAlarms = alarmsBlockingMaterialChanges(status, props.material ?? []);
   const [printLabel, printingLabel] = usePrintLabel();
 
   const [loading, setLoading] = useState(false);
@@ -484,6 +498,7 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
   }
 
   function remove() {
+    if (blockingAlarms.length > 0) return;
     if (showRemove) {
       if (!isNaN(removeCnt)) {
         setLoading(true);
@@ -521,6 +536,11 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
         )}
       </DialogTitle>
       <DialogContent>
+        {blockingAlarms.map((alarm, index) => (
+          <Alert key={index} severity="warning">
+            {alarm.message}
+          </Alert>
+        ))}
         {loading ? (
           <CircularProgress color="secondary" />
         ) : (
@@ -568,7 +588,7 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
         <Button
           color="primary"
           onClick={remove}
-          disabled={loading || (showRemove && isNaN(removeCnt))}
+          disabled={blockingAlarms.length > 0 || loading || (showRemove && isNaN(removeCnt))}
         >
           {loading && showRemove
             ? "Removing..."

@@ -52,6 +52,7 @@ import * as simUse from "./sim-station-use.js";
 import * as schJobs from "./scheduled-jobs.js";
 import * as buffers from "./buffers.js";
 import * as currentSt from "./current-status.js";
+import { alarmsBlockingMaterialChanges } from "./alarms.js";
 import * as customSt from "./custom-state.js";
 import * as insp from "./inspections.js";
 import * as mats from "./material-summary.js";
@@ -152,6 +153,9 @@ export const moveQueuedMatInCurrentStatus = atom(
   null,
   async (get, set, { operator, ...move }: QueuedMatMove): Promise<void> => {
     const before = get(currentSt.currentStatus);
+    const moving = before.material.filter((mat) => mat.materialID === move.matId);
+    const alarms = alarmsBlockingMaterialChanges(before, moving);
+    if (alarms.length > 0) throw new Error(alarms.map((alarm) => alarm.message).join(" "));
     set(currentSt.reorderQueuedMatInCurrentStatus, move);
     const optimistic = get(currentSt.currentStatus);
     try {
