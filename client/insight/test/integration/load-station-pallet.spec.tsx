@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 
+import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
 import LoadStation from "../../src/components/station-monitor/LoadStation.js";
 import * as api from "../../src/network/api.js";
 import { renderInsightPage } from "./framework.js";
@@ -19,7 +20,7 @@ import {
 
 describe("load station with active pallet", () => {
   test("places basket-to-pallet loading and pallet-to-basket unloading in the correct regions", async () => {
-    const currentStatus = createCurrentStatus({
+    const currentStatus: Readonly<api.ICurrentStatus> = createCurrentStatus({
       pallets: [
         createPallet({
           palletNum: 1,
@@ -135,6 +136,24 @@ describe("load station with active pallet", () => {
     await expect.element(targetBasket).toMatchTextContent("Basket 10");
     await expect.element(targetBasket).toMatchTextContent("Target Basket Existing");
     await expect.element(targetBasket).not.toMatchTextContent("Basket Unload");
+
+    screen.store.set(onLoadCurrentSt, {
+      ...currentStatus,
+      alarmDetails: [
+        new api.CurrentStatusAlarm({
+          code: "station-unavailable",
+          message: "Basket station work is unavailable.",
+          impact: api.AlarmImpact.SuspendChanges,
+          activity: api.AlarmActivity.BasketLoadStation,
+        }),
+      ],
+    });
+    await expect
+      .element(sourceBasket.getByText("Load from Basket 9 to Face 1", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(face2.getByText("Unload to Basket 10 slot B", { exact: true }))
+      .toBeVisible();
   });
 
   test("places queued, pallet-face, and explicit queue material in the correct regions", async () => {

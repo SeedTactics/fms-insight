@@ -72,7 +72,7 @@ export function alarmsBlockingMaterialChanges(
             ]
           : []),
         ...(station && mat.action.unloadToBasketId !== undefined
-          ? [{ basketId: mat.action.unloadToBasketId, activity: AlarmActivity.BasketLoadStation }]
+          ? [{ basketId: mat.action.unloadToBasketId }]
           : []),
       ];
     }),

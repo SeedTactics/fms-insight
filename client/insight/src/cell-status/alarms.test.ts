@@ -116,3 +116,33 @@ test("station alarms suspend legacy basket loads without suspending pallet loads
   });
   expect(materialActionIsSuspended(status, pallet)).toBe(false);
 });
+
+test.each([
+  {
+    direction: "basket to pallet",
+    location: { Type: "InBasket", BasketId: 7, BasketSlot: 1 },
+    action: { Type: "Loading", LoadFromBasketId: 7, LoadOntoPalletNum: 1, LoadOntoFace: 1 },
+  },
+  {
+    direction: "pallet to basket",
+    location: { Type: "OnPallet", PalletNum: 1, Face: 1 },
+    action: { Type: "UnloadToInProcess", UnloadToBasketId: 7, UnloadToBasketSlot: 1 },
+  },
+])(
+  "pallet transfers keep basket scope without station activity ($direction)",
+  ({ location, action }) => {
+    const material = InProcessMaterial.fromJS({ Location: location, Action: action });
+    expect(
+      materialActionIsSuspended(
+        { alarmDetails: [{ ...blocked, activity: AlarmActivity.BasketLoadStation }] },
+        material,
+      ),
+    ).toBe(false);
+    expect(
+      materialActionIsSuspended({ alarmDetails: [{ ...blocked, basketId: 7 }] }, material),
+    ).toBe(true);
+    expect(
+      materialActionIsSuspended({ alarmDetails: [{ ...blocked, basketId: 8 }] }, material),
+    ).toBe(false);
+  },
+);
