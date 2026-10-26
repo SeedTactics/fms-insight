@@ -31,6 +31,7 @@ export default defineConfig({
     projects: [
       {
         extends: false,
+        root: import.meta.dirname,
         resolve: { dedupe: ["react", "react-dom", "jotai"] },
         test: {
           include: ["src/**/*.{test,spec}.ts", "src/**/*.{test,spec}.tsx"],
@@ -41,13 +42,14 @@ export default defineConfig({
             deps: {
               // MUI imports react-transition-group's context via a directory-style subpath.
               // Inline these so Vitest resolves it through Vite instead of Node's ESM loader.
-              inline: ["@mui/material", "react-transition-group"],
+              inline: ["@mui/material", "react-transition-group", "jotai"],
             },
           },
         },
       },
       {
         extends: false,
+        root: import.meta.dirname,
         test: {
           include: ["test/integration/**/*.{test,spec}.tsx"],
           name: "integration",

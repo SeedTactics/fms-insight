@@ -40,3 +40,10 @@ The shared basket station uses the common `alarmsBlockingChanges` rule to disabl
 retained targets. Integrations should use that same rule for their own instruction and control
 surfaces. Each surface supplies its activity and resource context; it does not reinterpret
 diagnostic codes or invent a second model of backend readiness.
+
+Complete snapshots returned by custom actions use the same revision/session acceptance as status
+GETs. If a reconnect or intervening local edit prevents installation, the shared loader obtains a
+replacement read with the existing timeout and retry backoff. The action remains acknowledged and
+recovery survives navigation. A queued socket frame cannot satisfy that particular read requirement;
+a later successful read, including connection bootstrap, can. A read already pending when the
+requirement arose cannot clear it. Recovery never resubmits the action.

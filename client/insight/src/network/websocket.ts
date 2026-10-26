@@ -37,6 +37,10 @@ import {
   currentStatusIsLiveRW,
   errorLoadingStatusRW,
   isCurrentSession,
+  currentStatusRequest,
+  installCurrentStatusResponse,
+  requiredStatusReadRW,
+  type CurrentStatusRequest,
 } from "./current-status-session.js";
 
 import { ServerEvent, type ICurrentStatus, type ILogEntry } from "./api.js";
@@ -64,6 +68,7 @@ export const websocketReconnecting: Atom<boolean> = websocketReconnectingAtom;
 // the retained current status reflects the server. Loading the historical jobs and log does not
 // affect it.
 export const currentStatusIsLive: Atom<boolean> = currentStatusIsLiveRW;
+export const errorLoadingCurrentStatus: Atom<string | null> = errorLoadingStatusRW;
 
 // Only historical effects wait for HTTP catch-up. A fresh session discards its predecessor's
 // unapplied buffer and reloads from lastEventCounter, which has not advanced past that history.
@@ -87,6 +92,7 @@ async function loadCurrentStatus(
   while (isCurrentSession(get, session)) {
     const before = get(currentStatus);
     const snapshot = get(currentStatusSessionAtom).snapshot;
+    const requiredRead = get(requiredStatusReadRW);
     let st: Readonly<ICurrentStatus>;
     try {
       signal?.throwIfAborted();
@@ -97,6 +103,7 @@ async function loadCurrentStatus(
       if (current.id !== session) return false;
       if (
         !signal?.aborted &&
+        !get(requiredStatusReadRW) &&
         current.snapshot !== snapshot &&
         current.snapshot?.source === "socket"
       )
@@ -105,12 +112,14 @@ async function loadCurrentStatus(
     }
     const current = get(currentStatusSessionAtom);
     if (current.id !== session) return false;
-    const installed = current.snapshot?.status;
-    if (installed && st.revision <= installed.revision) return true;
     // A higher server revision can replace an intervening complete snapshot, but a log edit or
     // optimistic local edit still needs a fresh read rather than being overwritten.
-    if (get(currentStatus) !== before && get(currentStatus) !== installed) continue;
-    set(acceptCurrentStatusSnapshot, session, st, "http");
+    if (!set(installCurrentStatusResponse, { session, before }, st)) continue;
+    if (get(requiredStatusReadRW) === requiredRead) {
+      set(requiredStatusReadRW, null);
+      if (current.open) set(currentStatusIsLiveRW, true);
+      set(errorLoadingStatusRW, null);
+    }
     return true;
   }
   return false;
@@ -126,19 +135,33 @@ async function loadBootstrapStatus(
   set: Setter,
   session: number,
   retryDelay = 1000,
-): Promise<void> {
+): Promise<boolean> {
   try {
-    await loadCurrentStatus(get, set, session, AbortSignal.timeout(10000));
+    return await loadCurrentStatus(get, set, session, AbortSignal.timeout(10000));
   } catch (error) {
-    if (!isCurrentSession(get, session) || get(currentStatusIsLiveRW)) return;
+    if (!isCurrentSession(get, session) || get(currentStatusIsLiveRW)) return false;
     set(errorLoadingStatusRW, apiErrorMessage(error, "Error loading current status"));
     setTimeout(() => {
       if (isCurrentSession(get, session) && !get(currentStatusIsLiveRW)) {
         void loadBootstrapStatus(get, set, session, Math.min(retryDelay * 2, 30000));
       }
     }, retryDelay);
+    return false;
   }
 }
+
+// Custom actions may return the resulting complete snapshot. Install it normally, or use the
+// existing timed read/backoff path when reconnect or intervening edits prevent installation.
+// Recovery belongs to the store and survives navigation; it never resubmits the action.
+export const applyCurrentStatusResponse = atom(
+  null,
+  (get, set, request: CurrentStatusRequest, status: Readonly<ICurrentStatus>): Promise<boolean> => {
+    if (set(installCurrentStatusResponse, request, status)) return Promise.resolve(true);
+    set(requiredStatusReadRW, { pending: true });
+    set(currentStatusIsLiveRW, false);
+    return loadBootstrapStatus(get, set, get(currentStatusRequest).session);
+  },
+);
 
 function loadHistory(
   get: Getter,
@@ -198,7 +221,7 @@ function loadConnection(get: Getter, set: Setter, session: number): void {
 }
 
 function finishLoading(
-  loads: ReadonlyArray<Promise<void>>,
+  loads: ReadonlyArray<Promise<unknown>>,
   get: Getter,
   set: Setter,
   session: number,

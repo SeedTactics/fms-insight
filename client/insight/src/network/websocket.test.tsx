@@ -42,7 +42,9 @@ import {
   WebsocketConnection,
   errorLoadingLast30,
   refreshCurrentStatus,
+  applyCurrentStatusResponse,
 } from "./websocket.js";
+import { currentStatusRequest, onLoadCurrentSt } from "./current-status-session.js";
 import {
   registerBackend,
   LogBackend,
@@ -388,6 +390,81 @@ test("explicit refresh works after a previous websocket status", async () => {
   await settle(() => statusLoads[1]?.resolve(status("after control")));
   expect(await refreshed).toBe(true);
   expect(installed().alarms).toEqual(["after control"]);
+});
+
+test("an action response uses normal revision ordering without an extra read", async () => {
+  const { store, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(status("before", 100)));
+  const request = store.get(currentStatusRequest);
+  await settle(() => FakeSocket.sockets[0]?.emit("message", statusMessage("newer", 102)));
+  expect(await store.set(applyCurrentStatusResponse, request, status("action", 101))).toBe(true);
+  expect(installed().alarms).toEqual(["newer"]);
+  expect(statusLoads).toHaveLength(1);
+});
+
+test.each(["during", "after"] as const)(
+  "a queued socket frame %s a failed action replacement read cannot satisfy recovery",
+  async (when) => {
+    const { store, installed, live } = await connect();
+    await settle(() => FakeSocket.sockets[0]?.emit("open"));
+    await settle(() => statusLoads[0]?.resolve(status("before", 100)));
+    const request = store.get(currentStatusRequest);
+    store.set(onLoadCurrentSt, status("local edit", 100));
+    const recovering = store.set(applyCurrentStatusResponse, request, status("action", 102));
+    expect(live().live).toBe(false);
+    const socket = FakeSocket.sockets[0];
+    const queued = () => socket?.emit("message", statusMessage("queued before action", 101));
+    if (when === "during") await settle(queued);
+    await settle(() => statusLoads[1]?.reject(new Error("offline")));
+    expect(await recovering).toBe(false);
+    if (when === "after") await settle(queued);
+    expect(installed().alarms).toEqual(["queued before action"]);
+    expect(live().live).toBe(false);
+    await settle(() => {
+      void vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(statusLoads).toHaveLength(3);
+    await settle(() => statusLoads[2]?.resolve(status("recovered", 103)));
+    expect(installed().alarms).toEqual(["recovered"]);
+    expect(live().live).toBe(true);
+  },
+);
+
+test("a successful read begun before the replacement requirement cannot clear it", async () => {
+  const { store, live } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(status("before", 100)));
+  const request = store.get(currentStatusRequest);
+  const olderRead = store.set(refreshCurrentStatus);
+  const recovering = store.set(
+    applyCurrentStatusResponse,
+    { ...request, session: -1 },
+    status("old session", 101),
+  );
+  await settle(() => statusLoads[1]?.resolve(status("older read", 101)));
+  expect(await olderRead).toBe(true);
+  expect(live().live).toBe(false);
+  await settle(() => statusLoads[2]?.resolve(status("qualifying read", 102)));
+  expect(await recovering).toBe(true);
+  expect(live().live).toBe(true);
+});
+
+test("reconnect can satisfy pending action recovery without the page or the old read", async () => {
+  const { store, live, installed } = await connect();
+  await settle(() => FakeSocket.sockets[0]?.emit("open"));
+  await settle(() => statusLoads[0]?.resolve(status("before", 100)));
+  const request = store.get(currentStatusRequest);
+  store.set(onLoadCurrentSt, status("local edit", 100));
+  const recovering = store.set(applyCurrentStatusResponse, request, status("action", 102));
+  await reconnect(1);
+  await settle(() => FakeSocket.sockets[1]?.emit("message", statusMessage("queued", 1)));
+  expect(live().live).toBe(false);
+  await settle(() => statusLoads[2]?.resolve(status("new connection read", 2)));
+  expect(live().live).toBe(true);
+  await settle(() => statusLoads[1]?.resolve(status("old connection response", 1000)));
+  expect(await recovering).toBe(false);
+  expect(installed().alarms).toEqual(["new connection read"]);
 });
 
 test("server revisions let a newer HTTP snapshot replace an intervening socket snapshot", async () => {

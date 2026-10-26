@@ -163,7 +163,7 @@ describe("cancel load", () => {
     const status: Readonly<api.ICurrentStatus> = createCurrentStatus({
       material: [selected, peer],
     });
-    const alarm: Readonly<api.ICurrentStatusAlarm> = new api.CurrentStatusAlarm({
+    const alarm = new api.CurrentStatusAlarm({
       code: "basket-observation",
       message: "Basket 8 observation unavailable.",
       impact: api.AlarmImpact.SuspendChanges,
@@ -178,9 +178,10 @@ describe("cancel load", () => {
     screen.store.set(onLoadCurrentSt, { ...empty, alarmDetails: [alarm] });
     await expect.element(confirm).toBeDisabled();
     await expect.element(dialog.getByRole("list")).toBeVisible();
+    const alarmData: Readonly<api.ICurrentStatusAlarm> = alarm;
     screen.store.set(onLoadCurrentSt, {
       ...status,
-      alarmDetails: [new api.CurrentStatusAlarm({ ...alarm, basketId: 9 })],
+      alarmDetails: [new api.CurrentStatusAlarm({ ...alarmData, basketId: 9 })],
     });
     await expect.element(confirm).toBeEnabled();
   });
