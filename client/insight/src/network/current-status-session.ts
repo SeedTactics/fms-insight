@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { atom, type Getter } from "jotai";
+import { atom, type Atom, type Getter } from "jotai";
 import type { ICurrentStatus } from "./api.js";
-import { currentStatus, setCurrentStatus } from "../cell-status/current-status.js";
+import { setCurrentStatus } from "../cell-status/current-status.js";
 import { replaceCustomState } from "../cell-status/custom-state.js";
 import { setNamesFromCurrentStatus } from "../cell-status/names.js";
 
@@ -56,29 +56,23 @@ export const currentStatusSessionAtom = atom<CurrentStatusSession>({
 export const currentStatusIsLiveRW = atom(false);
 export const errorLoadingStatusRW = atom<string | null>(null);
 
-// A rejected action response needs an actual replacement read. A queued socket frame alone
-// cannot establish that read. Identity keeps an older in-flight read from satisfying a later one.
-export const requiredStatusReadRW = atom<Readonly<{ pending: true }> | null>(null);
+export const errorLoadingCurrentStatus: Atom<string | null> = errorLoadingStatusRW;
 
-export const currentStatusRequest = atom((get) => ({
+// Capture before sending a custom action; its response belongs to this connection session.
+export type CurrentStatusRequest = Readonly<{ session: number }>;
+export const currentStatusRequest = atom<CurrentStatusRequest>((get) => ({
   session: get(currentStatusSessionAtom).id,
-  before: get(currentStatus),
 }));
 
-export type CurrentStatusRequest = Readonly<{
-  session: number;
-  before: Readonly<ICurrentStatus>;
-}>;
-
-// Successful HTTP responses share this rule, including snapshots returned by custom actions.
-export const installCurrentStatusResponse = atom(
+// Acknowledged action snapshots are authoritative, just like websocket snapshots. They may
+// replace optimistic display edits. False means the response belongs to an earlier session;
+// true means it was installed or a newer complete snapshot was already installed.
+export const applyCurrentStatusResponse = atom(
   null,
   (get, set, request: CurrentStatusRequest, loaded: Readonly<ICurrentStatus>): boolean => {
     const current = get(currentStatusSessionAtom);
     if (current.id !== request.session) return false;
-    const installed = current.snapshot?.status;
-    if (installed && loaded.revision <= installed.revision) return true;
-    if (get(currentStatus) !== request.before && get(currentStatus) !== installed) return false;
+    if (current.snapshot && loaded.revision <= current.snapshot.status.revision) return true;
     return set(acceptCurrentStatusSnapshot, request.session, loaded, "http");
   },
 );
@@ -110,10 +104,8 @@ export const acceptCurrentStatusSnapshot = atom(
       return false;
     set(onLoadCurrentSt, status);
     set(currentStatusSessionAtom, { ...current, snapshot: { status, source } });
-    if (!get(requiredStatusReadRW)) {
-      if (current.open) set(currentStatusIsLiveRW, true);
-      set(errorLoadingStatusRW, null);
-    }
+    if (current.open) set(currentStatusIsLiveRW, true);
+    set(errorLoadingStatusRW, null);
     return true;
   },
 );
