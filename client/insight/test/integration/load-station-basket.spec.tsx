@@ -119,6 +119,78 @@ function explicitBasketWork(
 }
 
 describe("explicit basket station work", () => {
+  test("retains saved targets while a server alarm suspends confirmation, then recovers", async () => {
+    const status = confirmableBasketStatus("saved-work", "Known part");
+    const submit = vi.fn<CompletionHandler>().mockResolvedValue("accepted");
+    completionRequests(submit);
+    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+      currentStatus: status,
+    });
+    const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    await expect.element(confirm).toBeEnabled();
+
+    screen.store.set(onLoadCurrentSt, {
+      ...status,
+      alarms: ["Displaying retained station data."],
+      alarmDetails: [
+        new api.CurrentStatusAlarm({
+          code: "status-refresh-failed",
+          message: "Displaying retained station data.",
+          impact: api.AlarmImpact.SuspendChanges,
+        }),
+      ],
+    });
+    await expect
+      .element(screen.getByText("Instructions unavailable: Displaying retained station data."))
+      .toBeVisible();
+    await expect.element(confirm).toBeDisabled();
+    await expect
+      .element(screen.getByText("Saved target: Fill with Known part proc 1"))
+      .toBeVisible();
+    expect(submit).not.toHaveBeenCalled();
+
+    screen.store.set(onLoadCurrentSt, status);
+    await expect.element(confirm).toBeEnabled();
+    await expect
+      .element(screen.getByText("Fill with Known part proc 1", { exact: true }))
+      .toBeVisible();
+    await confirm.click();
+    await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
+    expect(submit.mock.calls).toEqual([[{ workId: "saved-work" }]]);
+  });
+
+  test.each([
+    [api.AlarmImpact.Informational, undefined, undefined, true],
+    [api.AlarmImpact.SuspendChanges, api.AlarmActivity.BasketMovement, 7, true],
+    [api.AlarmImpact.SuspendChanges, api.AlarmActivity.BasketLoadStation, 8, true],
+    [api.AlarmImpact.SuspendChanges, api.AlarmActivity.BasketLoadStation, 7, false],
+    [api.AlarmImpact.SuspendChanges, undefined, 7, false],
+  ])(
+    "uses declared alarm scope for confirmation (%s, %s, %s)",
+    async (impact, activity, basketId, enabled) => {
+      const status = confirmableBasketStatus("scoped-work", "Known part");
+      const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+        currentStatus: {
+          ...status,
+          alarms: ["Backend diagnostic"],
+          alarmDetails: [
+            new api.CurrentStatusAlarm({
+              code: "diagnostic",
+              message: "Backend diagnostic",
+              impact,
+              activity,
+              basketId,
+            }),
+          ],
+        },
+      });
+      const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+      if (enabled) await expect.element(confirm).toBeEnabled();
+      else await expect.element(confirm).toBeDisabled();
+      await expect.element(screen.getByText(/Fill with Known part proc 1/)).toBeVisible();
+    },
+  );
+
   test("a conflict refreshes the same ready work without another broadcast or automatic submission", async () => {
     const status = confirmableBasketStatus("preserved-work", "Part");
     const submit = vi
@@ -141,6 +213,37 @@ describe("explicit basket station work", () => {
       [{ workId: "preserved-work" }],
       [{ workId: "preserved-work" }],
     ]);
+  });
+
+  test("a blocked empty-basket assertion is retained without offering the instruction", async () => {
+    const status = explicitBasketWork(
+      {
+        workId: "empty-basket",
+        type: api.BasketLoadStationWorkType.ConfirmEmptyBasket,
+        readyToConfirm: true,
+      },
+      false,
+    );
+    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+      currentStatus: {
+        ...status,
+        alarmDetails: [
+          new api.CurrentStatusAlarm({
+            code: "status-refresh-failed",
+            message: "Displaying retained station data.",
+            impact: api.AlarmImpact.SuspendChanges,
+          }),
+        ],
+      },
+    });
+    await expect
+      .element(screen.getByText("Instructions unavailable: Displaying retained station data."))
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Confirm", exact: true }))
+      .toBeDisabled();
+    await expect.element(screen.getByText("Confirm basket 7 is empty.")).not.toBeInTheDocument();
+    await expect.element(screen.getByText("Saved target: Leave empty")).toBeVisible();
   });
 
   test("a failed conflict refresh can be retried without resubmitting work", async () => {

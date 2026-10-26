@@ -164,6 +164,12 @@ namespace BlackMaple.MachineFramework
 
     public required ImmutableList<string> Alarms { get; init; }
 
+    /// <summary>
+    /// Optional backend-owned alarm scope and impact. Messages also appear in Alarms for existing
+    /// consumers. Plain Alarms entries have no implied effect on instruction availability.
+    /// </summary>
+    public ImmutableList<CurrentStatusAlarm>? AlarmDetails { get; init; }
+
     public required ImmutableDictionary<string, QueueInfo> Queues { get; init; }
 
     // The following is only filled in if the machines move to the load station

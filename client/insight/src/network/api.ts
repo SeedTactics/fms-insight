@@ -4639,6 +4639,7 @@ export class CurrentStatus implements ICurrentStatus {
   pallets!: { [key: string]: PalletStatus };
   material!: InProcessMaterial[];
   alarms!: string[];
+  alarmDetails?: CurrentStatusAlarm[] | undefined;
   queues!: { [key: string]: QueueInfo };
   machineLocations?: MachineLocation[] | undefined;
   workorders?: ActiveWorkorder[] | undefined;
@@ -4691,6 +4692,11 @@ export class CurrentStatus implements ICurrentStatus {
       if (Array.isArray(_data["Alarms"])) {
         this.alarms = [] as any;
         for (let item of _data["Alarms"]) this.alarms!.push(item);
+      }
+      if (Array.isArray(_data["AlarmDetails"])) {
+        this.alarmDetails = [] as any;
+        for (let item of _data["AlarmDetails"])
+          this.alarmDetails!.push(CurrentStatusAlarm.fromJS(item));
       }
       if (_data["Queues"]) {
         this.queues = {} as any;
@@ -4763,6 +4769,11 @@ export class CurrentStatus implements ICurrentStatus {
       data["Alarms"] = [];
       for (let item of this.alarms) data["Alarms"].push(item);
     }
+    if (Array.isArray(this.alarmDetails)) {
+      data["AlarmDetails"] = [];
+      for (let item of this.alarmDetails)
+        data["AlarmDetails"].push(item ? item.toJSON() : (undefined as any));
+    }
     if (this.queues) {
       data["Queues"] = {};
       for (let key in this.queues) {
@@ -4803,6 +4814,7 @@ export interface ICurrentStatus {
   pallets: { [key: string]: PalletStatus };
   material: InProcessMaterial[];
   alarms: string[];
+  alarmDetails?: CurrentStatusAlarm[] | undefined;
   queues: { [key: string]: QueueInfo };
   machineLocations?: MachineLocation[] | undefined;
   workorders?: ActiveWorkorder[] | undefined;
@@ -5373,6 +5385,67 @@ export enum ActionType {
   UnloadToCompletedMaterial = "UnloadToCompletedMaterial",
   Machining = "Machining",
   LoadingToBasket = "LoadingToBasket",
+}
+
+export class CurrentStatusAlarm implements ICurrentStatusAlarm {
+  code!: string;
+  message!: string;
+  impact!: AlarmImpact;
+  activity?: AlarmActivity | undefined;
+  basketId?: number | undefined;
+
+  constructor(data?: ICurrentStatusAlarm) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (this as any)[property] = (data as any)[property];
+      }
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.code = _data["Code"];
+      this.message = _data["Message"];
+      this.impact = _data["Impact"];
+      this.activity = _data["Activity"];
+      this.basketId = _data["BasketId"];
+    }
+  }
+
+  static fromJS(data: any): CurrentStatusAlarm {
+    data = typeof data === "object" ? data : {};
+    let result = new CurrentStatusAlarm();
+    result.init(data);
+    return result;
+  }
+
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Code"] = this.code;
+    data["Message"] = this.message;
+    data["Impact"] = this.impact;
+    data["Activity"] = this.activity;
+    data["BasketId"] = this.basketId;
+    return data;
+  }
+}
+
+export interface ICurrentStatusAlarm {
+  code: string;
+  message: string;
+  impact: AlarmImpact;
+  activity?: AlarmActivity | undefined;
+  basketId?: number | undefined;
+}
+
+export enum AlarmImpact {
+  Informational = "Informational",
+  SuspendChanges = "SuspendChanges",
+}
+
+export enum AlarmActivity {
+  BasketMovement = "BasketMovement",
+  BasketLoadStation = "BasketLoadStation",
 }
 
 export class QueueInfo implements IQueueInfo {
