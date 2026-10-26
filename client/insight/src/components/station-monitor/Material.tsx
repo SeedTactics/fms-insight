@@ -77,7 +77,10 @@ import { currentOperator } from "../../data/operators.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { ErrorBoundary } from "react-error-boundary";
 import { currentStatus } from "../../cell-status/current-status.js";
-import { alarmsBlockingMaterialChanges } from "../../cell-status/alarms.js";
+import {
+  alarmsBlockingMaterialChanges,
+  materialActionIsSuspended,
+} from "../../cell-status/alarms.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { last30Rebookings } from "../../cell-status/rebookings.js";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -242,22 +245,45 @@ export function MaterialAction({
   const fmsInfo = useAtomValue(fmsInformation);
   const basketName = basketDisplayName(fmsInfo.basketName);
 
+  const description = materialActionDescription(
+    mat,
+    curSt,
+    basketName,
+    displayActionForSinglePallet,
+    displayActionForSingleBasket,
+  );
+  if (description === null) return null;
+  return (
+    <MatCardDetail fsize={fsize}>
+      {materialActionIsSuspended(curSt, mat) ? "Saved action (unavailable): " : null}
+      {description}
+    </MatCardDetail>
+  );
+}
+
+function materialActionDescription(
+  mat: Readonly<api.IInProcessMaterial>,
+  curSt: Readonly<api.ICurrentStatus>,
+  basketName: string,
+  displayActionForSinglePallet?: number,
+  displayActionForSingleBasket?: number,
+): ReactNode | null {
   switch (mat.action.type) {
     case api.ActionType.Loading:
       // Check if loading from basket
       if (mat.action.loadFromBasketId) {
         if (mat.action.loadOntoPalletNum === null || mat.action.loadOntoPalletNum === undefined) {
           return (
-            <MatCardDetail fsize={fsize}>
+            <>
               Load into {basketName} {mat.action.loadFromBasketId}
-            </MatCardDetail>
+            </>
           );
         } else if (displayActionForSinglePallet === undefined) {
           return (
-            <MatCardDetail fsize={fsize}>
+            <>
               Load from {basketName} {mat.action.loadFromBasketId} to pal{" "}
               {mat.action.loadOntoPalletNum ?? ""}
-            </MatCardDetail>
+            </>
           );
         } else if (displayActionForSinglePallet === mat.action.loadOntoPalletNum) {
           const faceNum = mat.action.loadOntoFace ?? 0;
@@ -265,10 +291,10 @@ export function MaterialAction({
             ? curSt.pallets[mat.action.loadOntoPalletNum]?.faceNames?.[faceNum - 1]
             : null;
           return (
-            <MatCardDetail fsize={fsize}>
+            <>
               Load from {basketName} {mat.action.loadFromBasketId} to{" "}
               {faceName ?? `face ${faceNum}`}
-            </MatCardDetail>
+            </>
           );
         } else {
           return null;
@@ -286,11 +312,7 @@ export function MaterialAction({
             ) {
               // material is not moving, just having some manual work done on it
               if (mat.action.processAfterLoad && mat.action.processAfterLoad !== mat.process) {
-                return (
-                  <MatCardDetail fsize={fsize}>
-                    Reclamp material to process # {mat.action.processAfterLoad}
-                  </MatCardDetail>
-                );
+                return <>Reclamp material to process # {mat.action.processAfterLoad}</>;
               } else {
                 return null;
               }
@@ -299,11 +321,7 @@ export function MaterialAction({
               const faceName = mat.location.palletNum
                 ? curSt.pallets[mat.location.palletNum]?.faceNames?.[faceNum - 1]
                 : null;
-              return (
-                <MatCardDetail fsize={fsize}>
-                  Transfer to {faceName ?? `face ${faceNum}`}
-                </MatCardDetail>
-              );
+              return <>Transfer to {faceName ?? `face ${faceNum}`}</>;
             }
           } else {
             return null;
@@ -315,14 +333,12 @@ export function MaterialAction({
             : null;
           if (displayActionForSinglePallet === undefined) {
             return (
-              <MatCardDetail fsize={fsize}>
+              <>
                 Load to {faceName ?? `face ${faceNum}`} of pal {mat.action.loadOntoPalletNum ?? ""}
-              </MatCardDetail>
+              </>
             );
           } else if (displayActionForSinglePallet === mat.action.loadOntoPalletNum) {
-            return (
-              <MatCardDetail fsize={fsize}>Load to {faceName ?? `face ${faceNum}`}</MatCardDetail>
-            );
+            return <>Load to {faceName ?? `face ${faceNum}`}</>;
           } else {
             return null;
           }
@@ -337,16 +353,16 @@ export function MaterialAction({
         mat.action.loadToBasketSlot !== undefined
       ) {
         return (
-          <MatCardDetail fsize={fsize}>
+          <>
             Load into slot {basketSlotLabel(mat.action.loadToBasketSlot)}
             {mat.action.processAfterLoad !== undefined
               ? ` for process ${mat.action.processAfterLoad}`
               : ""}
-          </MatCardDetail>
+          </>
         );
       }
       return (
-        <MatCardDetail fsize={fsize}>
+        <>
           Load into {basketName} {mat.action.loadToBasketId ?? ""}
           {mat.action.loadToBasketSlot !== undefined
             ? ` slot ${basketSlotLabel(mat.action.loadToBasketSlot)}`
@@ -354,69 +370,61 @@ export function MaterialAction({
           {mat.action.processAfterLoad !== undefined
             ? ` for process ${mat.action.processAfterLoad}`
             : ""}
-        </MatCardDetail>
+        </>
       );
 
     case api.ActionType.UnloadToInProcess:
     case api.ActionType.UnloadToCompletedMaterial:
       if (mat.action.unloadToBasketId) {
         return (
-          <MatCardDetail fsize={fsize}>
+          <>
             Unload to {basketName} {mat.action.unloadToBasketId}
             {mat.action.unloadToBasketSlot !== undefined
               ? ` slot ${basketSlotLabel(mat.action.unloadToBasketSlot)}`
               : ""}
-          </MatCardDetail>
+          </>
         );
       } else if (mat.action.unloadIntoQueue) {
-        return (
-          <MatCardDetail fsize={fsize}>
-            Unload into queue {mat.action.unloadIntoQueue}
-          </MatCardDetail>
-        );
+        return <>Unload into queue {mat.action.unloadIntoQueue}</>;
       } else if (
         mat.action.type === api.ActionType.UnloadToCompletedMaterial &&
         mat.location.type === api.LocType.InBasket
       ) {
         return (
-          <MatCardDetail fsize={fsize}>
+          <>
             Unload completed from {basketName} {mat.location.basketId}
-          </MatCardDetail>
+          </>
         );
       } else if (mat.location.type === api.LocType.InBasket) {
         return (
-          <MatCardDetail fsize={fsize}>
+          <>
             Unload from {basketName} {mat.location.basketId}
-          </MatCardDetail>
+          </>
         );
       } else {
-        return <MatCardDetail fsize={fsize}>Unload from pallet</MatCardDetail>;
+        return <>Unload from pallet</>;
       }
 
     case api.ActionType.Waiting:
       if (mat.location.type === api.LocType.InQueue && !!mat.jobUnique && mat.jobUnique !== "") {
-        return (
-          <MatCardDetail fsize={fsize}>Waiting; next process is #{mat.process + 1}</MatCardDetail>
-        );
+        return <>Waiting; next process is #{mat.process + 1}</>;
       } else if (mat.location.type === api.LocType.InBasket) {
         return (
-          <MatCardDetail fsize={fsize}>
+          <>
             In {basketName} {mat.location.basketId}
-          </MatCardDetail>
+          </>
         );
       } else if (
         mat.location.type === api.LocType.OnPallet &&
         (mat.lastCompletedMachiningRouteStopIndex === null ||
           mat.lastCompletedMachiningRouteStopIndex === undefined)
       ) {
-        return <MatCardDetail fsize={fsize}>Waiting for machining</MatCardDetail>;
+        return <>Waiting for machining</>;
       }
       break;
 
     case api.ActionType.Machining:
-      return (
-        <MatCardDetail fsize={fsize}>Machining program {mat.action.program ?? ""}</MatCardDetail>
-      );
+      return <>Machining program {mat.action.program ?? ""}</>;
   }
   return null;
 }
@@ -834,7 +842,7 @@ export const SortableInProcMaterial = memo(function SortableInProcMaterial(
       displayJob={props.displayJob}
       hideEmptySerial={props.hideEmptySerial}
       fsize={props.fsize}
-      shake={active ? undefined : props.shake}
+      shake={active || changesSuspended ? undefined : props.shake}
       showRawMaterial={props.showRawMaterial}
       showJobComment={props.showJobComment}
     />

@@ -3,9 +3,11 @@ import {
   AlarmActivity,
   AlarmImpact,
   CurrentStatus,
+  InProcessMaterial,
+  ActionType,
   type ICurrentStatusAlarm,
 } from "../network/api.js";
-import { alarmsBlockingChanges } from "./alarms.js";
+import { alarmsBlockingChanges, materialActionIsSuspended } from "./alarms.js";
 
 const blocked: Readonly<ICurrentStatusAlarm> = {
   code: "observation-unavailable",
@@ -56,3 +58,47 @@ test("wire null scope means the whole status and a later snapshot removes the bl
   expect(alarmsBlockingChanges(parsed, station)).toHaveLength(1);
   expect(alarmsBlockingChanges(CurrentStatus.fromJS({ AlarmDetails: [] }), station)).toEqual([]);
 });
+
+test.each([
+  { Type: "LoadingToBasket", LoadToBasketId: 7 },
+  { Type: "Loading", LoadFromBasketId: 7 },
+  { Type: "UnloadToInProcess", UnloadToBasketId: 7 },
+  { Type: "UnloadToCompletedMaterial" },
+])("transfer cues match their source and destination basket ($Type)", (action) => {
+  const mat = InProcessMaterial.fromJS({
+    MaterialID: 1,
+    JobUnique: "job",
+    PartName: "Part",
+    Process: 1,
+    Path: 1,
+    SignaledInspections: [],
+    Location:
+      action.Type === "UnloadToCompletedMaterial"
+        ? { Type: "InBasket", BasketId: 7 }
+        : { Type: "Free" },
+    Action: action,
+  });
+  expect(materialActionIsSuspended({ alarmDetails: [{ ...blocked, basketId: 7 }] }, mat)).toBe(
+    true,
+  );
+  expect(materialActionIsSuspended({ alarmDetails: [{ ...blocked, basketId: 8 }] }, mat)).toBe(
+    false,
+  );
+  expect(
+    materialActionIsSuspended(
+      { alarmDetails: [{ ...blocked, impact: AlarmImpact.Informational }] },
+      mat,
+    ),
+  ).toBe(false);
+});
+
+test.each([ActionType.Waiting, ActionType.Machining])(
+  "blocking changes preserves read-only %s observations",
+  (type) => {
+    const mat = InProcessMaterial.fromJS({
+      Action: { Type: type },
+      Location: { Type: "InBasket", BasketId: 7 },
+    });
+    expect(materialActionIsSuspended({ alarmDetails: [blocked] }, mat)).toBe(false);
+  },
+);

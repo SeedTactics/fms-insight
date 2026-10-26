@@ -59,10 +59,30 @@ export function alarmsBlockingMaterialChanges(
               },
             ]
           : []),
+        ...(mat.action.type === ActionType.Loading && mat.action.loadFromBasketId !== undefined
+          ? [{ basketId: mat.action.loadFromBasketId }]
+          : []),
+        ...(station && mat.action.unloadToBasketId !== undefined
+          ? [{ basketId: mat.action.unloadToBasketId, activity: AlarmActivity.BasketLoadStation }]
+          : []),
       ];
     }),
   ];
   return (status.alarmDetails ?? []).filter((alarm) =>
     contexts.some((context) => applies(alarm, context)),
+  );
+}
+
+/** Suspend human transfer cues while retaining read-only observations such as machining/waiting. */
+export function materialActionIsSuspended(
+  status: StatusAlarms,
+  material: Readonly<IInProcessMaterial>,
+): boolean {
+  return (
+    (material.action.type === ActionType.Loading ||
+      material.action.type === ActionType.LoadingToBasket ||
+      material.action.type === ActionType.UnloadToInProcess ||
+      material.action.type === ActionType.UnloadToCompletedMaterial) &&
+    alarmsBlockingMaterialChanges(status, [material]).length > 0
   );
 }

@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { page } from "vitest/browser";
+import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi } from "vitest";
 
 import LoadStation from "../../src/components/station-monitor/LoadStation.js";
 import { registerNetworkBackend } from "../../src/network/backend.js";
@@ -118,8 +119,15 @@ function explicitBasketWork(
   };
 }
 
+async function showMovementArrows() {
+  const previous = { width: window.innerWidth, height: window.innerHeight };
+  onTestFinished(() => page.viewport(previous.width, previous.height));
+  await page.viewport(1600, 900);
+}
+
 describe("explicit basket station work", () => {
   test("retains saved targets while a server alarm suspends confirmation, then recovers", async () => {
+    await showMovementArrows();
     const status = confirmableBasketStatus("saved-work", "Known part");
     const submit = vi.fn<CompletionHandler>().mockResolvedValue("accepted");
     completionRequests(submit);
@@ -128,6 +136,10 @@ describe("explicit basket station work", () => {
     });
     const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
     await expect.element(confirm).toBeEnabled();
+    await expect
+      .element(screen.getByText("Load into slot A for process 1", { exact: true }))
+      .toBeVisible();
+    await expect.element(screen.getByTestId("material-movement-arrow").first()).toBeInTheDocument();
 
     screen.store.set(onLoadCurrentSt, {
       ...status,
@@ -147,6 +159,17 @@ describe("explicit basket station work", () => {
     await expect
       .element(screen.getByText("Saved target: Fill with Known part proc 1"))
       .toBeVisible();
+    await expect
+      .element(
+        screen.getByText("Saved action (unavailable): Load into slot A for process 1", {
+          exact: true,
+        }),
+      )
+      .toBeVisible();
+    await expect
+      .element(screen.getByText("Load into slot A for process 1", { exact: true }))
+      .not.toBeInTheDocument();
+    await expect.element(screen.getByTestId("material-movement-arrow")).not.toBeInTheDocument();
     expect(submit).not.toHaveBeenCalled();
 
     screen.store.set(onLoadCurrentSt, status);
@@ -154,10 +177,76 @@ describe("explicit basket station work", () => {
     await expect
       .element(screen.getByText("Fill with Known part proc 1", { exact: true }))
       .toBeVisible();
+    await expect
+      .element(screen.getByText("Load into slot A for process 1", { exact: true }))
+      .toBeVisible();
+    await expect.element(screen.getByTestId("material-movement-arrow").first()).toBeInTheDocument();
     await confirm.click();
     await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
     expect(submit.mock.calls).toEqual([[{ workId: "saved-work" }]]);
   });
+
+  test.each([
+    [api.ActionType.UnloadToInProcess, "Transfer Queue", "Unload into queue Transfer Queue"],
+    [api.ActionType.UnloadToInProcess, undefined, "Unload from Basket 7"],
+    [api.ActionType.UnloadToCompletedMaterial, undefined, "Unload completed from Basket 7"],
+  ] as const)(
+    "retains suspended unload information without active movement cues (%s, %s)",
+    async (type, queue, actionText) => {
+      await showMovementArrows();
+      const base = confirmableBasketStatus("unload-work", "Known part");
+      const basket: Readonly<api.IBasketStatus> = base.baskets!["7"];
+      const status: Readonly<api.ICurrentStatus> = {
+        ...base,
+        baskets: { "7": new api.BasketStatus({ ...basket, emptySlots: [] }) },
+        material: [
+          createMaterial({
+            materialID: 42,
+            jobUnique: "JOB",
+            partName: "Known part",
+            process: 1,
+            path: 1,
+            location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
+            action: { type, workId: "unload-work", unloadIntoQueue: queue },
+          }),
+        ],
+      };
+      const screen = await renderInsightPage(
+        <LoadStation loadNum={1} queues={queue ? [queue] : []} completed />,
+        { currentStatus: status },
+      );
+      await expect.element(screen.getByText(actionText, { exact: true })).toBeVisible();
+      await expect
+        .element(screen.getByTestId("material-movement-arrow").first())
+        .toBeInTheDocument();
+      screen.store.set(onLoadCurrentSt, {
+        ...status,
+        alarmDetails: [
+          new api.CurrentStatusAlarm({
+            code: "basket-status-unavailable",
+            message: "Showing the saved basket contents.",
+            impact: api.AlarmImpact.SuspendChanges,
+            activity: api.AlarmActivity.BasketLoadStation,
+            basketId: 7,
+          }),
+        ],
+      });
+      await expect
+        .element(screen.getByText(`Saved action (unavailable): ${actionText}`, { exact: true }))
+        .toBeVisible();
+      await expect.element(screen.getByText(actionText, { exact: true })).not.toBeInTheDocument();
+      await expect.element(screen.getByTestId("material-movement-arrow")).not.toBeInTheDocument();
+      await expect.element(screen.getByText("Known part", { exact: true })).toBeVisible();
+      await expect
+        .element(screen.getByRole("button", { name: "Confirm", exact: true }))
+        .toBeDisabled();
+      screen.store.set(onLoadCurrentSt, status);
+      await expect.element(screen.getByText(actionText, { exact: true })).toBeVisible();
+      await expect
+        .element(screen.getByTestId("material-movement-arrow").first())
+        .toBeInTheDocument();
+    },
+  );
 
   test.each([
     [api.AlarmImpact.Informational, undefined, undefined, true],
@@ -188,6 +277,16 @@ describe("explicit basket station work", () => {
       if (enabled) await expect.element(confirm).toBeEnabled();
       else await expect.element(confirm).toBeDisabled();
       await expect.element(screen.getByText(/Fill with Known part proc 1/)).toBeVisible();
+      await expect
+        .element(
+          screen.getByText(
+            enabled
+              ? "Load into slot A for process 1"
+              : "Saved action (unavailable): Load into slot A for process 1",
+            { exact: true },
+          ),
+        )
+        .toBeVisible();
     },
   );
 

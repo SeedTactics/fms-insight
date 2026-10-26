@@ -167,6 +167,8 @@ namespace BlackMaple.MachineFramework
     /// <summary>
     /// Optional backend-owned alarm scope and impact. Messages also appear in Alarms for existing
     /// consumers. Plain Alarms entries have no implied effect on instruction availability.
+    /// This is snapshot state: an accepted snapshot without an alarm removes its effect. Clients
+    /// do not remember or acknowledge alarms separately.
     /// </summary>
     public ImmutableList<CurrentStatusAlarm>? AlarmDetails { get; init; }
 

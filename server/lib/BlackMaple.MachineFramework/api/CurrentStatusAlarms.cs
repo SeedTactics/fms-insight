@@ -10,6 +10,7 @@ public enum AlarmImpact
   /// <summary>
   /// Retain the known data and saved targets, but mark instructions unavailable and disable
   /// status-dependent changes within the declared scope. Protective actions remain available.
+  /// The backend must still validate current command eligibility when a request arrives.
   /// </summary>
   SuspendChanges,
 }
@@ -29,6 +30,7 @@ public enum AlarmActivity
 /// </summary>
 public record CurrentStatusAlarm
 {
+  /// <summary>A stable diagnostic identifier; clients do not infer blocking policy from it.</summary>
   public required string Code { get; init; }
   public required string Message { get; init; }
   public required AlarmImpact Impact { get; init; }
