@@ -102,3 +102,17 @@ test.each([ActionType.Waiting, ActionType.Machining])(
     expect(materialActionIsSuspended({ alarmDetails: [blocked] }, mat)).toBe(false);
   },
 );
+
+test("station alarms suspend legacy basket loads without suspending pallet loads", () => {
+  const status = { alarmDetails: [{ ...blocked, ...station }] };
+  const legacy = InProcessMaterial.fromJS({
+    Action: { Type: "Loading", LoadFromBasketId: 7 },
+    Location: { Type: "InQueue", CurrentQueue: "stock" },
+  });
+  expect(materialActionIsSuspended(status, legacy)).toBe(true);
+  const pallet = InProcessMaterial.fromJS({
+    Action: { Type: "Loading", LoadFromBasketId: 7, LoadOntoPalletNum: 1, LoadOntoFace: 1 },
+    Location: { Type: "InBasket", BasketId: 7, BasketSlot: 1 },
+  });
+  expect(materialActionIsSuspended(status, pallet)).toBe(false);
+});

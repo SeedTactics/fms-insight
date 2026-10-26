@@ -60,7 +60,16 @@ export function alarmsBlockingMaterialChanges(
             ]
           : []),
         ...(mat.action.type === ActionType.Loading && mat.action.loadFromBasketId !== undefined
-          ? [{ basketId: mat.action.loadFromBasketId }]
+          ? [
+              {
+                basketId: mat.action.loadFromBasketId,
+                // Without a pallet, this legacy field names the station's destination basket.
+                activity:
+                  mat.action.loadOntoPalletNum == null
+                    ? AlarmActivity.BasketLoadStation
+                    : undefined,
+              },
+            ]
           : []),
         ...(station && mat.action.unloadToBasketId !== undefined
           ? [{ basketId: mat.action.unloadToBasketId, activity: AlarmActivity.BasketLoadStation }]
