@@ -1,4 +1,5 @@
 import { Suspense, useState } from "react";
+import { page, userEvent } from "vitest/browser";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { CancelLoadButton } from "../../src/components/station-monitor/CancelLoadButton.js";
@@ -124,7 +125,9 @@ describe("cancel load", () => {
         seedStore: (store) =>
           store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
       });
-      await expect.element(screen.getByRole("alert")).toHaveTextContent(alarm.message);
+      await expect
+        .element(screen.getByText(alarm.message, { exact: true }))
+        .not.toBeInTheDocument();
       const quarantineNotice = screen.getByText("Quarantine requested", { exact: true });
       const operationNotice = screen.getByText(
         /This material is part of the current load\/unload operation/,
@@ -184,7 +187,9 @@ describe("cancel load", () => {
     });
     screen.store.set(onLoadCurrentSt, { ...status, material: [moved], alarmDetails: [alarm] });
     await expect.element(confirm).toBeDisabled();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent(alarm.message);
+    await userEvent.hover(confirm, { force: true });
+    await expect.element(page.getByRole("tooltip")).toHaveTextContent("System alarm");
+    await expect.element(dialog.getByText(alarm.message, { exact: true })).not.toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
     screen.store.set(onLoadCurrentSt, { ...status, material: [moved] });
     await expect.element(confirm).toBeEnabled();
@@ -228,6 +233,8 @@ describe("cancel load", () => {
     });
     screen.store.set(onLoadCurrentSt, { ...status, material: [moved], alarmDetails: [alarm] });
     await expect.element(confirm).toBeDisabled();
+    await userEvent.hover(confirm, { force: true });
+    await expect.element(page.getByRole("tooltip")).toHaveTextContent("System alarm");
     expect(fetch).not.toHaveBeenCalled();
     screen.store.set(onLoadCurrentSt, { ...status, material: [moved] });
     await expect.element(confirm).toBeEnabled();
@@ -244,7 +251,7 @@ describe("cancel load", () => {
     const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
     registerNetworkBackend();
     const screen = await renderCancelLoadButton(material, [material]);
-    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    await screen.getByRole("button", { name: "Cancel Load" }).click();
     const dialog = screen.getByRole("dialog");
     const confirm = dialog.getByRole("button", { name: "Cancel Load", exact: true });
     await expect.element(confirm).toBeEnabled();
@@ -259,8 +266,12 @@ describe("cancel load", () => {
         }),
       ],
     });
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Showing retained status.");
+    await expect
+      .element(dialog.getByText("Showing retained status.", { exact: true }))
+      .not.toBeInTheDocument();
     await expect.element(confirm).toBeDisabled();
+    await userEvent.hover(confirm, { force: true });
+    await expect.element(page.getByRole("tooltip")).toHaveTextContent("System alarm");
     expect(fetch).not.toHaveBeenCalled();
     // Read-only inspection and dismissing the dialog remain available.
     await expect.element(dialog.getByRole("textbox", { name: "Reason (optional)" })).toBeEnabled();
@@ -291,7 +302,7 @@ describe("cancel load", () => {
       }),
     });
     const screen = await renderCancelLoadButton(selected, [selected, peer]);
-    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    await screen.getByRole("button", { name: "Cancel Load" }).click();
     const dialog = screen.getByRole("dialog");
     const confirm = dialog.getByRole("button", { name: "Cancel Load", exact: true });
     const status: Readonly<api.ICurrentStatus> = createCurrentStatus({
@@ -306,11 +317,15 @@ describe("cancel load", () => {
     });
     screen.store.set(onLoadCurrentSt, { ...status, alarmDetails: [alarm] });
     await expect.element(confirm).toBeDisabled();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent(alarm.message);
+    await userEvent.hover(confirm, { force: true });
+    await expect.element(page.getByRole("tooltip")).toHaveTextContent("System alarm");
+    await expect.element(dialog.getByText(alarm.message, { exact: true })).not.toBeInTheDocument();
     // The dialog still represents the original group if the live material view changes.
     const empty: Readonly<api.ICurrentStatus> = createCurrentStatus();
     screen.store.set(onLoadCurrentSt, { ...empty, alarmDetails: [alarm] });
     await expect.element(confirm).toBeDisabled();
+    await userEvent.hover(confirm, { force: true });
+    await expect.element(page.getByRole("tooltip")).toHaveTextContent("System alarm");
     await expect.element(dialog.getByRole("list")).toBeVisible();
     const alarmData: Readonly<api.ICurrentStatusAlarm> = alarm;
     screen.store.set(onLoadCurrentSt, {
@@ -342,7 +357,7 @@ describe("cancel load", () => {
           store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
       },
     );
-    await screen.getByRole("button", { name: "Move to Quarantine" }).click();
+    await screen.getByRole("button", { name: "Quarantine" }).click();
     const dialog = screen.getByRole("dialog");
     const confirm = dialog.getByRole("button", { name: "Quarantine", exact: true });
     await expect.element(confirm).toBeEnabled();
@@ -357,7 +372,11 @@ describe("cancel load", () => {
       ],
     });
     await expect.element(confirm).toBeDisabled();
-    await expect.element(dialog.getByRole("alert")).toHaveTextContent("Showing retained status.");
+    await userEvent.hover(confirm, { force: true });
+    await expect.element(page.getByRole("tooltip")).toHaveTextContent("System alarm");
+    await expect
+      .element(dialog.getByText("Showing retained status.", { exact: true }))
+      .not.toBeInTheDocument();
     await expect.element(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeEnabled();
     screen.store.set(onLoadCurrentSt, status);
     await expect.element(confirm).toBeEnabled();
@@ -368,7 +387,7 @@ describe("cancel load", () => {
     const screen = await renderCancelLoadButton(material, [material]);
 
     await expect
-      .element(screen.getByRole("button", { name: "Cancel the displayed load instruction" }))
+      .element(screen.getByRole("button", { name: "Cancel Load" }))
       .not.toBeInTheDocument();
   });
 
@@ -431,7 +450,7 @@ describe("cancel load", () => {
 
     const screen = await renderCancelLoadButton(selected, [selected, peerWithoutSerial, otherLoad]);
 
-    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    await screen.getByRole("button", { name: "Cancel Load" }).click();
     const dialog = screen.getByRole("dialog");
     await expect.element(dialog).toMatchTextContent("SERIAL-101");
     await expect.element(dialog).toMatchTextContent("Material ID 102");
@@ -455,7 +474,7 @@ describe("cancel load", () => {
     const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
     registerNetworkBackend();
     const screen = await renderCancelLoadButton(selected, [raw(1), raw(1), selected, raw(2)]);
-    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    await screen.getByRole("button", { name: "Cancel Load" }).click();
     const dialog = screen.getByRole("dialog");
     await expect.element(dialog).not.toMatchTextContent("Material ID -1");
     expect(dialog.getByRole("listitem").all()).toHaveLength(2);
@@ -481,7 +500,7 @@ describe("cancel load", () => {
     registerNetworkBackend();
 
     const screen = await renderCancelLoadButton(material, [material]);
-    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    await screen.getByRole("button", { name: "Cancel Load" }).click();
     const dialog = screen.getByRole("dialog");
     await dialog.getByRole("button", { name: "Cancel Load" }).click();
 
@@ -500,7 +519,7 @@ describe("cancel load", () => {
     registerNetworkBackend();
 
     const screen = await renderCancelLoadButton(selected, [selected, peer]);
-    await screen.getByRole("button", { name: "Cancel the displayed load instruction" }).click();
+    await screen.getByRole("button", { name: "Cancel Load" }).click();
     const dialog = screen.getByRole("dialog");
     await expect.element(dialog).toMatchTextContent("Material ID 102");
 

@@ -33,14 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { useState } from "react";
 import {
-  Alert,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   TextField,
-  Tooltip,
 } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -55,6 +53,7 @@ import {
 import { currentOperator } from "../../data/operators.js";
 import { ICurrentStatus, IInProcessMaterial, LocType, QueueRole } from "../../network/api.js";
 import { apiErrorMessage } from "../../network/api-errors.js";
+import { SystemAlarmTooltip } from "./SystemAlarmTooltip.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
@@ -214,19 +213,17 @@ function RemoveFromQueuesButton({
 
   return (
     <>
-      <Tooltip title="Remove from the current queue so it can be rescanned">
+      <SystemAlarmTooltip
+        suspended={alarms.length > 0}
+        title="Remove from the current queue so it can be rescanned"
+      >
         <Button color="primary" disabled={removing || alarms.length > 0} onClick={openRemoval}>
           Remove from Queue
         </Button>
-      </Tooltip>
+      </SystemAlarmTooltip>
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Remove Material from Queue</DialogTitle>
         <DialogContent>
-          {alarms.map((alarm, index) => (
-            <Alert key={index} severity="warning">
-              {alarm.message}
-            </Alert>
-          ))}
           <p>
             Remove this material from its current queue. Its production history will remain
             available. You can scan it again to correct its history or assignment and then add it
@@ -235,9 +232,11 @@ function RemoveFromQueuesButton({
           {error ? <p role="alert">{error}</p> : null}
         </DialogContent>
         <DialogActions>
-          <Button color="primary" disabled={removing || alarms.length > 0} onClick={remove}>
-            Remove from Queue
-          </Button>
+          <SystemAlarmTooltip suspended={alarms.length > 0}>
+            <Button color="primary" disabled={removing || alarms.length > 0} onClick={remove}>
+              Remove from Queue
+            </Button>
+          </SystemAlarmTooltip>
           <Button color="secondary" disabled={removing} onClick={() => setOpen(false)}>
             Cancel
           </Button>
@@ -383,7 +382,7 @@ export function QuarantineMatButton({
   return (
     <>
       {q ? (
-        <Tooltip title={title} describeChild={displayedSnapshot.operation === "DeferredQuarantine"}>
+        <SystemAlarmTooltip suspended={currentAlarms.length > 0} title={title}>
           <Button
             color="primary"
             disabled={removing || currentAlarms.length > 0}
@@ -391,7 +390,7 @@ export function QuarantineMatButton({
           >
             {btnTxt}
           </Button>
-        </Tooltip>
+        </SystemAlarmTooltip>
       ) : null}
       {removeFromQueues && q ? (
         <RemoveFromQueuesButton
@@ -403,11 +402,6 @@ export function QuarantineMatButton({
       <Dialog open={open && snapshot !== null} onClose={closeQuarantine}>
         <DialogTitle>Quarantine Material</DialogTitle>
         <DialogContent>
-          {confirmationAlarms.map((alarm, index) => (
-            <Alert key={index} severity="warning">
-              {alarm.message}
-            </Alert>
-          ))}
           <p>{title}</p>
           <TextField
             label="Reason"
@@ -420,13 +414,15 @@ export function QuarantineMatButton({
           {error ? <p role="alert">{error}</p> : null}
         </DialogContent>
         <DialogActions>
-          <Button
-            color="primary"
-            disabled={removing || confirmationAlarms.length > 0}
-            onClick={quarantine}
-          >
-            {btnTxt}
-          </Button>
+          <SystemAlarmTooltip suspended={confirmationAlarms.length > 0}>
+            <Button
+              color="primary"
+              disabled={removing || confirmationAlarms.length > 0}
+              onClick={quarantine}
+            >
+              {btnTxt}
+            </Button>
+          </SystemAlarmTooltip>
           <Button color="secondary" disabled={removing} onClick={closeQuarantine}>
             Cancel
           </Button>

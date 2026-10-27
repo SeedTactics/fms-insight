@@ -1,12 +1,10 @@
 import {
-  Alert,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   TextField,
-  Tooltip,
 } from "@mui/material";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
@@ -22,6 +20,7 @@ import { CancelLoadRequest, IInProcessMaterial } from "../../network/api.js";
 import { apiErrorMessage } from "../../network/api-errors.js";
 import { canCancelLoad } from "../../data/material-operation-policy.js";
 import { alarmsBlockingMaterialChanges } from "../../cell-status/alarms.js";
+import { SystemAlarmTooltip } from "./SystemAlarmTooltip.js";
 
 type CancelLoadSnapshot = {
   readonly material: Readonly<IInProcessMaterial>;
@@ -90,7 +89,10 @@ export function CancelLoadButton({
   return (
     <>
       {currentSnapshot ? (
-        <Tooltip title="Cancel the displayed load instruction">
+        <SystemAlarmTooltip
+          suspended={currentAlarms.length > 0}
+          title="Cancel the displayed load instruction"
+        >
           <Button
             color="primary"
             disabled={updating || currentAlarms.length > 0}
@@ -103,16 +105,11 @@ export function CancelLoadButton({
           >
             Cancel Load
           </Button>
-        </Tooltip>
+        </SystemAlarmTooltip>
       ) : null}
       <Dialog open={open && snapshot !== null} onClose={() => setOpen(false)}>
         <DialogTitle>Cancel Load</DialogTitle>
         <DialogContent>
-          {confirmationAlarms.map((alarm, index) => (
-            <Alert key={index} severity="warning">
-              {alarm.message}
-            </Alert>
-          ))}
           <p>The displayed load instruction will be cancelled and recalculated for:</p>
           <ul>
             {snapshot?.group.map((candidate, index) => (
@@ -133,13 +130,15 @@ export function CancelLoadButton({
           {error ? <p role="alert">{error}</p> : null}
         </DialogContent>
         <DialogActions>
-          <Button
-            color="primary"
-            disabled={updating || confirmationAlarms.length > 0}
-            onClick={cancelLoad}
-          >
-            Cancel Load
-          </Button>
+          <SystemAlarmTooltip suspended={confirmationAlarms.length > 0}>
+            <Button
+              color="primary"
+              disabled={updating || confirmationAlarms.length > 0}
+              onClick={cancelLoad}
+            >
+              Cancel Load
+            </Button>
+          </SystemAlarmTooltip>
           <Button color="secondary" disabled={updating} onClick={() => setOpen(false)}>
             Keep Load
           </Button>

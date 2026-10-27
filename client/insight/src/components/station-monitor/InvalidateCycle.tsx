@@ -56,6 +56,7 @@ import { PartIdenticon } from "./Material.js";
 import { isLogEntryInvalidated } from "../LogEntry.js";
 import { apiErrorMessage } from "../../network/api-errors.js";
 import { canInvalidateMaterial } from "../../data/material-operation-policy.js";
+import { SystemAlarmTooltip } from "./SystemAlarmTooltip.js";
 
 export type InvalidateCycleState = {
   readonly process: number | null;
@@ -352,13 +353,12 @@ export function InvalidateCycleDialogButton(
   }
 
   return (
-    <>
+    <SystemAlarmTooltip suspended={changesSuspended}>
       {props.st === null ? (
         <Button color="primary" disabled={changesSuspended} onClick={showInvalidate}>
           Invalidate Cycle
         </Button>
-      ) : undefined}
-      {props.st !== null ? (
+      ) : (
         <Button
           color="primary"
           onClick={invalidateCycle}
@@ -385,7 +385,7 @@ export function InvalidateCycleDialogButton(
                 ? "Invalidate Process " + props.st.process.toString()
                 : "Invalidate Cycle"}
         </Button>
-      ) : undefined}
-    </>
+      )}
+    </SystemAlarmTooltip>
   );
 }

@@ -634,9 +634,7 @@ describe("cycle invalidation workflow", () => {
       { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
     );
 
-    await screen
-      .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
-      .click();
+    await screen.getByRole("button", { name: "Remove from Queue" }).click();
     const dialog = screen.getByRole("dialog");
     await dialog.getByRole("button", { name: "Remove from Queue" }).click();
 
@@ -664,16 +662,16 @@ describe("cycle invalidation workflow", () => {
       },
     );
 
-    await expect.element(screen.getByRole("button", { name: "Move to Quarantine" })).toBeVisible();
+    await expect.element(screen.getByRole("button", { name: "Quarantine" })).toBeVisible();
     await expect
       .element(
         screen.getByRole("button", {
-          name: "Remove from the current queue so it can be rescanned",
+          name: "Remove from Queue",
         }),
       )
       .toBeVisible();
 
-    await screen.getByRole("button", { name: "Move to Quarantine" }).click();
+    await screen.getByRole("button", { name: "Quarantine" }).click();
     const dialog = screen.getByRole("dialog");
     await dialog.getByRole("button", { name: "Quarantine" }).click();
 
@@ -707,7 +705,7 @@ describe("cycle invalidation workflow", () => {
       },
     );
 
-    await screen.getByRole("button", { name: "Move to Quarantine" }).click();
+    await screen.getByRole("button", { name: "Quarantine" }).click();
     const dialog = screen.getByRole("dialog");
     screen.store.set(onLoadCurrentSt, statusWithMaterial([refreshed]));
 
@@ -736,9 +734,7 @@ describe("cycle invalidation workflow", () => {
       { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
     );
 
-    await screen
-      .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
-      .click();
+    await screen.getByRole("button", { name: "Remove from Queue" }).click();
     const dialog = screen.getByRole("dialog");
     await dialog.getByRole("button", { name: "Remove from Queue" }).click();
 
@@ -761,14 +757,15 @@ describe("cycle invalidation workflow", () => {
       { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
     );
 
-    await screen.getByRole("button", { name: "Remove from queue and treat as scrap" }).click();
+    await screen.getByRole("button", { name: "Scrap" }).click();
     let dialog = screen.getByRole("dialog");
     await dialog.getByRole("textbox", { name: "Reason" }).fill("bad material");
     await dialog.getByRole("button", { name: "Scrap" }).click();
     await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
-    await screen.getByRole("button", { name: "Remove from queue and treat as scrap" }).click();
+    await expect.element(dialog).not.toBeInTheDocument();
+    await screen.getByRole("button", { name: "Scrap" }).click();
     dialog = screen.getByRole("dialog");
     await expect.element(dialog).not.toMatchTextContent("Queue changed");
     await expect.element(dialog.getByRole("textbox", { name: "Reason" })).toHaveValue("");
@@ -789,17 +786,13 @@ describe("cycle invalidation workflow", () => {
       { currentStatus: statusWithMaterial([selected]), ...dialogData(selected) },
     );
 
-    await screen
-      .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
-      .click();
+    await screen.getByRole("button", { name: "Remove from Queue" }).click();
     let dialog = screen.getByRole("dialog");
     await dialog.getByRole("button", { name: "Remove from Queue" }).click();
     await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
-    await screen
-      .getByRole("button", { name: "Remove from the current queue so it can be rescanned" })
-      .click();
+    await screen.getByRole("button", { name: "Remove from Queue" }).click();
     dialog = screen.getByRole("dialog");
     await expect.element(dialog).not.toMatchTextContent("Queue changed");
   });

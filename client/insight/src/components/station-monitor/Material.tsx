@@ -1075,11 +1075,6 @@ function MaterialOperationNotice() {
   const state = material ? materialOperationState(material) : null;
   return (
     <>
-      {alarms.map((alarm, index) => (
-        <Typography key={index} role="alert" variant="caption" component="p">
-          {alarm.message}
-        </Typography>
-      ))}
       {material?.quarantineAfterUnload ? (
         <Typography variant="caption" component="p">
           Quarantine requested
