@@ -792,8 +792,10 @@ describe("cycle invalidation workflow", () => {
     await expect.element(dialog.getByRole("alert")).toMatchTextContent("Queue changed");
 
     await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect.element(dialog).not.toBeInTheDocument();
     await screen.getByRole("button", { name: "Remove from Queue" }).click();
     dialog = screen.getByRole("dialog");
+    await expect.element(dialog).toBeVisible();
     await expect.element(dialog).not.toMatchTextContent("Queue changed");
   });
 
