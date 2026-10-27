@@ -3335,6 +3335,13 @@
               "type": "string"
             }
           },
+          "AlarmDetails": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/CurrentStatusAlarm"
+            }
+          },
           "Queues": {
             "type": "object",
             "additionalProperties": {
@@ -3771,6 +3778,47 @@
           "Machining",
           "LoadingToBasket"
         ]
+      },
+      "CurrentStatusAlarm": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["Code", "Message", "Impact", "Code", "Message", "Impact"],
+        "properties": {
+          "Code": {
+            "type": "string"
+          },
+          "Message": {
+            "type": "string"
+          },
+          "Impact": {
+            "$ref": "#/components/schemas/AlarmImpact"
+          },
+          "Activity": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AlarmActivity"
+              }
+            ]
+          },
+          "BasketId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "AlarmImpact": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": ["Informational", "SuspendChanges"],
+        "enum": ["Informational", "SuspendChanges"]
+      },
+      "AlarmActivity": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": ["BasketMovement", "BasketLoadStation"],
+        "enum": ["BasketMovement", "BasketLoadStation"]
       },
       "QueueInfo": {
         "type": "object",

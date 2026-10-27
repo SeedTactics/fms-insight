@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { page } from "vitest/browser";
+import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi } from "vitest";
 
 import LoadStation from "../../src/components/station-monitor/LoadStation.js";
 import { registerNetworkBackend } from "../../src/network/backend.js";
@@ -118,7 +119,187 @@ function explicitBasketWork(
   };
 }
 
+async function showMovementArrows() {
+  const previous = { width: window.innerWidth, height: window.innerHeight };
+  onTestFinished(() => page.viewport(previous.width, previous.height));
+  await page.viewport(1600, 900);
+}
+
 describe("explicit basket station work", () => {
+  test("retains saved targets while a server alarm suspends confirmation, then recovers", async () => {
+    await showMovementArrows();
+    const status = confirmableBasketStatus("saved-work", "Known part");
+    const submit = vi.fn<CompletionHandler>().mockResolvedValue("accepted");
+    completionRequests(submit);
+    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+      currentStatus: status,
+    });
+    const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    const alarmCue = screen
+      .getByRole("group", { name: "Basket confirmation" })
+      .getByText("System alarm", { exact: true });
+    const slotA = screen.getByRole("heading", { name: "Slot A", exact: true });
+    await expect.element(confirm).toBeEnabled();
+    await expect.element(alarmCue).not.toBeVisible();
+    await expect
+      .element(screen.getByText("Load into slot A for process 1", { exact: true }))
+      .toBeVisible();
+    await expect.element(screen.getByTestId("material-movement-arrow").first()).toBeInTheDocument();
+    const confirmX = confirm.element().getBoundingClientRect().x;
+    const slotTop = slotA.element().getBoundingClientRect().top;
+
+    screen.store.set(onLoadCurrentSt, {
+      ...status,
+      alarms: ["Displaying retained station data."],
+      alarmDetails: [
+        new api.CurrentStatusAlarm({
+          code: "status-refresh-failed",
+          message: "Displaying retained station data.",
+          impact: api.AlarmImpact.SuspendChanges,
+        }),
+      ],
+    });
+    await expect.element(alarmCue).toBeVisible();
+    await expect
+      .element(screen.getByText(/Displaying retained station data/))
+      .not.toBeInTheDocument();
+    await expect.element(confirm).toBeDisabled();
+    expect(confirm.element().getBoundingClientRect().x).toBe(confirmX);
+    expect(slotA.element().getBoundingClientRect().top).toBe(slotTop);
+    await expect
+      .element(screen.getByText("Saved target: Fill with Known part proc 1"))
+      .toBeVisible();
+    await expect
+      .element(
+        screen
+          .getByText("System alarm", {
+            exact: true,
+          })
+          .last(),
+      )
+      .toBeVisible();
+    await expect
+      .element(screen.getByText("Load into slot A for process 1", { exact: true }))
+      .not.toBeInTheDocument();
+    await expect.element(screen.getByTestId("material-movement-arrow")).not.toBeInTheDocument();
+    expect(submit).not.toHaveBeenCalled();
+
+    screen.store.set(onLoadCurrentSt, status);
+    await expect.element(confirm).toBeEnabled();
+    await expect.element(alarmCue).not.toBeVisible();
+    await expect
+      .element(screen.getByText("Fill with Known part proc 1", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByText("Load into slot A for process 1", { exact: true }))
+      .toBeVisible();
+    await expect.element(screen.getByTestId("material-movement-arrow").first()).toBeInTheDocument();
+    await confirm.click();
+    await expect.element(screen.getByText(/Confirmation accepted/)).toBeVisible();
+    expect(submit.mock.calls).toEqual([[{ workId: "saved-work" }]]);
+  });
+
+  test.each([
+    [api.ActionType.UnloadToInProcess, "Transfer Queue", "Unload into queue Transfer Queue"],
+    [api.ActionType.UnloadToInProcess, undefined, "Unload from Basket 7"],
+    [api.ActionType.UnloadToCompletedMaterial, undefined, "Unload completed from Basket 7"],
+  ] as const)(
+    "retains suspended unload information without active movement cues (%s, %s)",
+    async (type, queue, actionText) => {
+      await showMovementArrows();
+      const base = confirmableBasketStatus("unload-work", "Known part");
+      const basket: Readonly<api.IBasketStatus> = base.baskets!["7"];
+      const status: Readonly<api.ICurrentStatus> = {
+        ...base,
+        baskets: { "7": new api.BasketStatus({ ...basket, emptySlots: [] }) },
+        material: [
+          createMaterial({
+            materialID: 42,
+            jobUnique: "JOB",
+            partName: "Known part",
+            process: 1,
+            path: 1,
+            location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
+            action: { type, workId: "unload-work", unloadIntoQueue: queue },
+          }),
+        ],
+      };
+      const screen = await renderInsightPage(
+        <LoadStation loadNum={1} queues={queue ? [queue] : []} completed />,
+        { currentStatus: status },
+      );
+      await expect.element(screen.getByText(actionText, { exact: true })).toBeVisible();
+      await expect
+        .element(screen.getByTestId("material-movement-arrow").first())
+        .toBeInTheDocument();
+      screen.store.set(onLoadCurrentSt, {
+        ...status,
+        alarmDetails: [
+          new api.CurrentStatusAlarm({
+            code: "basket-status-unavailable",
+            message: "Showing the saved basket contents.",
+            impact: api.AlarmImpact.SuspendChanges,
+            activity: api.AlarmActivity.BasketLoadStation,
+            basketId: 7,
+          }),
+        ],
+      });
+      await expect.element(screen.getByText("System alarm", { exact: true }).last()).toBeVisible();
+      await expect.element(screen.getByText(actionText, { exact: true })).not.toBeInTheDocument();
+      await expect.element(screen.getByTestId("material-movement-arrow")).not.toBeInTheDocument();
+      await expect.element(screen.getByText("Known part", { exact: true })).toBeVisible();
+      await expect
+        .element(screen.getByRole("button", { name: "Confirm", exact: true }))
+        .toBeDisabled();
+      screen.store.set(onLoadCurrentSt, status);
+      await expect.element(screen.getByText(actionText, { exact: true })).toBeVisible();
+      await expect
+        .element(screen.getByTestId("material-movement-arrow").first())
+        .toBeInTheDocument();
+    },
+  );
+
+  test.each([
+    [api.AlarmImpact.Informational, undefined, undefined, true],
+    [api.AlarmImpact.SuspendChanges, api.AlarmActivity.BasketMovement, 7, true],
+    [api.AlarmImpact.SuspendChanges, api.AlarmActivity.BasketLoadStation, 8, true],
+    [api.AlarmImpact.SuspendChanges, api.AlarmActivity.BasketLoadStation, 7, false],
+    [api.AlarmImpact.SuspendChanges, undefined, 7, false],
+  ])(
+    "uses declared alarm scope for confirmation (%s, %s, %s)",
+    async (impact, activity, basketId, enabled) => {
+      const status = confirmableBasketStatus("scoped-work", "Known part");
+      const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+        currentStatus: {
+          ...status,
+          alarms: ["Backend diagnostic"],
+          alarmDetails: [
+            new api.CurrentStatusAlarm({
+              code: "diagnostic",
+              message: "Backend diagnostic",
+              impact,
+              activity,
+              basketId,
+            }),
+          ],
+        },
+      });
+      const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+      if (enabled) await expect.element(confirm).toBeEnabled();
+      else await expect.element(confirm).toBeDisabled();
+      await expect.element(screen.getByText(/Fill with Known part proc 1/)).toBeVisible();
+      await expect
+        .element(
+          screen
+            .getByText(enabled ? "Load into slot A for process 1" : "System alarm", {
+              exact: true,
+            })
+            .last(),
+        )
+        .toBeVisible();
+    },
+  );
+
   test("a conflict refreshes the same ready work without another broadcast or automatic submission", async () => {
     const status = confirmableBasketStatus("preserved-work", "Part");
     const submit = vi
@@ -141,6 +322,41 @@ describe("explicit basket station work", () => {
       [{ workId: "preserved-work" }],
       [{ workId: "preserved-work" }],
     ]);
+  });
+
+  test("a blocked empty-basket assertion is retained without offering the instruction", async () => {
+    const status = explicitBasketWork(
+      {
+        workId: "empty-basket",
+        type: api.BasketLoadStationWorkType.ConfirmEmptyBasket,
+        readyToConfirm: true,
+      },
+      false,
+    );
+    const screen = await renderInsightPage(<LoadStation loadNum={1} queues={[]} completed />, {
+      currentStatus: {
+        ...status,
+        alarmDetails: [
+          new api.CurrentStatusAlarm({
+            code: "status-refresh-failed",
+            message: "Displaying retained station data.",
+            impact: api.AlarmImpact.SuspendChanges,
+          }),
+        ],
+      },
+    });
+    await expect
+      .element(
+        screen
+          .getByRole("group", { name: "Basket confirmation" })
+          .getByText("System alarm", { exact: true }),
+      )
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Confirm", exact: true }))
+      .toBeDisabled();
+    await expect.element(screen.getByText("Confirm basket 7 is empty.")).not.toBeInTheDocument();
+    await expect.element(screen.getByText("Saved target: Leave empty")).toBeVisible();
   });
 
   test("a failed conflict refresh can be retried without resubmitting work", async () => {

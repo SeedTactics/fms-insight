@@ -89,6 +89,7 @@ import {
 import { basketDisplayName, loadStationDisplayName } from "../../cell-status/station-cycles.js";
 import { canAddOrMoveMaterialToQueue } from "../../data/material-operation-policy.js";
 import { BasketLoadStationWorkflow } from "./BasketLoadStationWork.js";
+import { SystemAlarmTooltip } from "./SystemAlarmTooltip.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -1052,6 +1053,7 @@ function AddMatButton({
   const operator = useAtomValue(currentOperator);
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addError, setAddError] = useState<string | null>(null);
+  const changesSuspended = matDetails.useMaterialBlockingAlarms().length > 0;
 
   if (!existingMat || !canAddOrMoveMaterialToQueue(inProcMat)) {
     return null;
@@ -1067,35 +1069,40 @@ function AddMatButton({
 
   if (!showAddToQueue) {
     return (
-      <Button color="primary" onClick={() => setShowAddToQueue(true)}>
-        Add To Queue
-      </Button>
+      <SystemAlarmTooltip suspended={changesSuspended}>
+        <Button color="primary" disabled={changesSuspended} onClick={() => setShowAddToQueue(true)}>
+          Add To Queue
+        </Button>
+      </SystemAlarmTooltip>
     );
   } else {
     return (
       <>
-        <Button
-          color="primary"
-          disabled={toQueue === null || addingExistingMat}
-          onClick={async () => {
-            setAddError(null);
-            try {
-              await addExistingMat({
-                materialId: existingMat.materialID,
-                queue: toQueue ?? "",
-                queuePosition: -1,
-                operator: operator,
-              });
-              setMatToShow(null);
-              onClose();
-            } catch (e) {
-              setAddError(apiErrorMessage(e));
-            }
-          }}
-        >
-          Add To {toQueue ?? "Queue"}{" "}
-          {lastProcMat ? ` To Run Process ${lastProcMat.process + 1}` : ""}
-        </Button>
+        <SystemAlarmTooltip suspended={changesSuspended}>
+          <Button
+            color="primary"
+            disabled={changesSuspended || toQueue === null || addingExistingMat}
+            onClick={async () => {
+              if (changesSuspended) return;
+              setAddError(null);
+              try {
+                await addExistingMat({
+                  materialId: existingMat.materialID,
+                  queue: toQueue ?? "",
+                  queuePosition: -1,
+                  operator: operator,
+                });
+                setMatToShow(null);
+                onClose();
+              } catch (e) {
+                setAddError(apiErrorMessage(e));
+              }
+            }}
+          >
+            Add To {toQueue ?? "Queue"}{" "}
+            {lastProcMat ? ` To Run Process ${lastProcMat.process + 1}` : ""}
+          </Button>
+        </SystemAlarmTooltip>
         {addError ? <Typography role="alert">{addError}</Typography> : null}
       </>
     );

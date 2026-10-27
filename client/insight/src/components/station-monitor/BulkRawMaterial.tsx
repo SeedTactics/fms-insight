@@ -60,11 +60,13 @@ import { currentOperator } from "../../data/operators.js";
 import { PrintedLabel, PrintOnClientButton } from "./PrintedLabel.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { alarmsBlockingChanges, alarmsBlockingMaterialChanges } from "../../cell-status/alarms.js";
 import { useAddNewCastingToQueue, usePrintLabel } from "../../cell-status/material-details.js";
 import { castingNames } from "../../cell-status/names.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { JobsBackend } from "../../network/backend.js";
 import { LogEntries } from "../LogEntry.js";
+import { SystemAlarmTooltip } from "./SystemAlarmTooltip.js";
 
 export const bulkAddCastingToQueue = atom<string | null>(null);
 
@@ -226,6 +228,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
 
   const currentSt = useAtomValue(currentStatus);
   const historicCastNames = useAtomValue(castingNames);
+  const blockingAlarms = alarmsBlockingChanges(currentSt, {});
 
   const castings = useMemo(
     () =>
@@ -251,6 +254,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
   }
 
   function add() {
+    if (blockingAlarms.length > 0) return;
     if (
       queue !== null &&
       selectedCasting !== null &&
@@ -270,6 +274,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
   }
 
   function addAndPrint() {
+    if (blockingAlarms.length > 0) return;
     if (queue !== null && selectedCasting !== null && enteredQty !== null && !isNaN(enteredQty)) {
       setAdding(true);
       void addNewCasting({
@@ -370,41 +375,45 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
           </Stack>
         </DialogContent>
         <DialogActions>
-          {printOnAdd ? (
-            <Button
-              color="primary"
-              disabled={
-                adding ||
-                selectedCasting === null ||
-                enteredQty === null ||
-                isNaN(enteredQty) ||
-                (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-                  (enteredOperator === null || enteredOperator === ""))
-              }
-              onClick={addAndPrint}
-            >
-              {adding ? <CircularProgress size={10} /> : undefined}
-              Add {enteredQty !== null && !isNaN(enteredQty)
-                ? enteredQty.toString() + " "
-                : ""}to{" "}
-              {queue}
-            </Button>
-          ) : (
-            <Button
-              color="primary"
-              disabled={
-                selectedCasting === null ||
-                enteredQty === null ||
-                isNaN(enteredQty) ||
-                (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-                  (enteredOperator === null || enteredOperator === ""))
-              }
-              onClick={add}
-            >
-              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to{" "}
-              {queue}
-            </Button>
-          )}
+          <SystemAlarmTooltip suspended={blockingAlarms.length > 0}>
+            {printOnAdd ? (
+              <Button
+                color="primary"
+                disabled={
+                  blockingAlarms.length > 0 ||
+                  adding ||
+                  selectedCasting === null ||
+                  enteredQty === null ||
+                  isNaN(enteredQty) ||
+                  (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                    (enteredOperator === null || enteredOperator === ""))
+                }
+                onClick={addAndPrint}
+              >
+                {adding ? <CircularProgress size={10} /> : undefined}
+                Add {enteredQty !== null && !isNaN(enteredQty)
+                  ? enteredQty.toString() + " "
+                  : ""}to{" "}
+                {queue}
+              </Button>
+            ) : (
+              <Button
+                color="primary"
+                disabled={
+                  blockingAlarms.length > 0 ||
+                  selectedCasting === null ||
+                  enteredQty === null ||
+                  isNaN(enteredQty) ||
+                  (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                    (enteredOperator === null || enteredOperator === ""))
+                }
+                onClick={add}
+              >
+                Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to{" "}
+                {queue}
+              </Button>
+            )}
+          </SystemAlarmTooltip>
           <Button color="primary" disabled={adding && printOnAdd} onClick={close}>
             Cancel
           </Button>
@@ -425,7 +434,9 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
   props: MultiMaterialDialogProps,
 ) {
   const fmsInfo = useAtomValue(fmsInformation);
-  const jobs = useAtomValue(currentStatus).jobs;
+  const status = useAtomValue(currentStatus);
+  const jobs = status.jobs;
+  const blockingAlarms = alarmsBlockingMaterialChanges(status, props.material ?? []);
   const [printLabel, printingLabel] = usePrintLabel();
 
   const [loading, setLoading] = useState(false);
@@ -484,6 +495,7 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
   }
 
   function remove() {
+    if (blockingAlarms.length > 0) return;
     if (showRemove) {
       if (!isNaN(removeCnt)) {
         setLoading(true);
@@ -565,17 +577,19 @@ export const MultiMaterialDialog = memo(function MultiMaterialDialog(
             </Button>
           )
         ) : undefined}
-        <Button
-          color="primary"
-          onClick={remove}
-          disabled={loading || (showRemove && isNaN(removeCnt))}
-        >
-          {loading && showRemove
-            ? "Removing..."
-            : showRemove && !isNaN(removeCnt)
-              ? `Remove ${removeCnt} material`
-              : "Remove Material"}
-        </Button>
+        <SystemAlarmTooltip suspended={blockingAlarms.length > 0}>
+          <Button
+            color="primary"
+            onClick={remove}
+            disabled={blockingAlarms.length > 0 || loading || (showRemove && isNaN(removeCnt))}
+          >
+            {loading && showRemove
+              ? "Removing..."
+              : showRemove && !isNaN(removeCnt)
+                ? `Remove ${removeCnt} material`
+                : "Remove Material"}
+          </Button>
+        </SystemAlarmTooltip>
         <Button color="primary" onClick={close}>
           Close
         </Button>

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { atom, type Getter } from "jotai";
+import { atom, type Atom, type Getter } from "jotai";
 import type { ICurrentStatus } from "./api.js";
 import { setCurrentStatus } from "../cell-status/current-status.js";
 import { replaceCustomState } from "../cell-status/custom-state.js";
@@ -55,6 +55,27 @@ export const currentStatusSessionAtom = atom<CurrentStatusSession>({
 
 export const currentStatusIsLiveRW = atom(false);
 export const errorLoadingStatusRW = atom<string | null>(null);
+
+export const errorLoadingCurrentStatus: Atom<string | null> = errorLoadingStatusRW;
+
+// Capture before sending a custom action; its response belongs to this connection session.
+export type CurrentStatusRequest = Readonly<{ session: number }>;
+export const currentStatusRequest = atom<CurrentStatusRequest>((get) => ({
+  session: get(currentStatusSessionAtom).id,
+}));
+
+// Acknowledged action snapshots are authoritative, just like websocket snapshots. They may
+// replace optimistic display edits. False means the response belongs to an earlier session;
+// true means it was installed or a newer complete snapshot was already installed.
+export const applyCurrentStatusResponse = atom(
+  null,
+  (get, set, request: CurrentStatusRequest, loaded: Readonly<ICurrentStatus>): boolean => {
+    const current = get(currentStatusSessionAtom);
+    if (current.id !== request.session) return false;
+    if (current.snapshot && loaded.revision <= current.snapshot.status.revision) return true;
+    return set(acceptCurrentStatusSnapshot, request.session, loaded, "http");
+  },
+);
 
 export function isCurrentSession(get: Getter, session: number): boolean {
   return get(currentStatusSessionAtom).id === session;

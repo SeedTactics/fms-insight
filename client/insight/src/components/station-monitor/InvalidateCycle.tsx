@@ -45,6 +45,7 @@ import {
   materialInDialogInfo,
   materialInDialogLargestUsedProcess,
   materialInDialogLocalEvents,
+  useMaterialBlockingAlarms,
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -55,6 +56,7 @@ import { PartIdenticon } from "./Material.js";
 import { isLogEntryInvalidated } from "../LogEntry.js";
 import { apiErrorMessage } from "../../network/api-errors.js";
 import { canInvalidateMaterial } from "../../data/material-operation-policy.js";
+import { SystemAlarmTooltip } from "./SystemAlarmTooltip.js";
 
 export type InvalidateCycleState = {
   readonly process: number | null;
@@ -286,6 +288,7 @@ export function InvalidateCycleDialogButton(
   const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
   const possibleNew = useAtomValue(barcodePotentialNewMaterial);
   const setMatToShow = useSetAtom(materialDialogOpen);
+  const changesSuspended = useMaterialBlockingAlarms().length > 0;
   let operator = useAtomValue(currentOperator);
 
   if (props.loadStation && !fmsInfo.allowInvalidateMaterialAtLoadStation) return null;
@@ -317,6 +320,7 @@ export function InvalidateCycleDialogButton(
   }
 
   function invalidateCycle() {
+    if (changesSuspended) return;
     if (curMat && (props.st?.process || props.st?.changeRawMat || props.st?.changeJobUnique)) {
       props.setState({ ...props.st, updating: true });
       JobsBackend.invalidatePalletCycle(
@@ -349,17 +353,17 @@ export function InvalidateCycleDialogButton(
   }
 
   return (
-    <>
+    <SystemAlarmTooltip suspended={changesSuspended}>
       {props.st === null ? (
-        <Button color="primary" onClick={showInvalidate}>
+        <Button color="primary" disabled={changesSuspended} onClick={showInvalidate}>
           Invalidate Cycle
         </Button>
-      ) : undefined}
-      {props.st !== null ? (
+      ) : (
         <Button
           color="primary"
           onClick={invalidateCycle}
           disabled={
+            changesSuspended ||
             props.st.updating ||
             (changingAssignment && !allowChange) ||
             (!changingAssignment &&
@@ -381,7 +385,7 @@ export function InvalidateCycleDialogButton(
                 ? "Invalidate Process " + props.st.process.toString()
                 : "Invalidate Cycle"}
         </Button>
-      ) : undefined}
-    </>
+      )}
+    </SystemAlarmTooltip>
   );
 }

@@ -17,3 +17,14 @@ in the snapshot does not have matching history.
 BMS_CURRENT_STATUS_FILE=/path/to/current-status.json dotnet run --project server/debug-mock
 pnpm --dir client/insight start
 ```
+
+Generated test alarms alternate with a clear state every 30 seconds. They are informational by
+default, so ordinary UI development does not suspend instructions or disable controls. Set
+`BMS_ALARM_IMPACT=SuspendChanges` to review blocking warnings, saved instructions, and disabled
+controls; `Informational` explicitly selects the default. Restart the server to change the setting.
+Both modes produce a long message and a second message for reviewing wrapping and stacked alerts.
+The cycle adds and removes only its own alarms; alarms from a loaded status remain unchanged.
+
+```bash
+BMS_ALARM_IMPACT=SuspendChanges dotnet run --project server/debug-mock
+```

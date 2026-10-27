@@ -670,7 +670,6 @@ const App = memo(function App(props: AppProps) {
       case routes.RouteLocation.Quality_Quarantine:
         page = <AllMaterial displaySystemBins={false} />;
         nav1 = QualityTabs;
-        showAlarms = false;
         addBasicMaterialDialog = false;
         break;
 

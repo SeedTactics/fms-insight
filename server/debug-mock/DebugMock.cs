@@ -90,6 +90,14 @@ namespace DebugMachineWatchApiServer
     public static void Main()
     {
       var cfg = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+      var alarmImpact = cfg["BMS_ALARM_IMPACT"]?.Trim().ToLowerInvariant() switch
+      {
+        null or "" or "informational" => AlarmImpact.Informational,
+        "suspendchanges" => AlarmImpact.SuspendChanges,
+        _ => throw new InvalidOperationException(
+          "BMS_ALARM_IMPACT must be Informational (default) or SuspendChanges."
+        ),
+      };
 
       var serverSettings = ServerSettings.Load(cfg);
 
@@ -137,7 +145,8 @@ namespace DebugMachineWatchApiServer
           s.AddSingleton(sp => new MockServerBackend(
             sp.GetRequiredService<FMSSettings>(),
             sp.GetRequiredService<RepositoryConfig>(),
-            initialStatus
+            initialStatus,
+            alarmImpact
           ));
           s.AddSingleton<IMachineControl>(sp => sp.GetRequiredService<MockServerBackend>());
           s.AddSingleton<ISynchronizeCellState<DebugCellState>>(sp =>
@@ -237,6 +246,7 @@ namespace DebugMachineWatchApiServer
     public bool AddJobsAsCopiedToSystem { get; } = true;
 
     private readonly FMSSettings _fmsSettings;
+    private readonly AlarmImpact _alarmImpact;
 
     // sample data starts at Jan 1, 2018.  Need to offset to current month
     public static readonly TimeSpan SampleDataOffset = DateTime
@@ -258,10 +268,12 @@ namespace DebugMachineWatchApiServer
     public MockServerBackend(
       FMSSettings settings,
       RepositoryConfig repo,
-      CurrentStatus initialStatus
+      CurrentStatus initialStatus,
+      AlarmImpact alarmImpact
     )
     {
       _fmsSettings = settings;
+      _alarmImpact = alarmImpact;
       _jsonSettings = JsonSettings();
 
       RepoConfig = repo;
@@ -407,32 +419,37 @@ namespace DebugMachineWatchApiServer
 
     public DebugCellState CalculateCellState(IRepository db)
     {
-      bool changed = false;
       _curStatusLoadCount += 1;
-      if (_curStatusLoadCount % 5 == 0)
+      var status = CurrentStatus;
+      if (_curStatusLoadCount % 2 == 0)
       {
-        changed = true;
-        if (CurrentStatus.Alarms.Count > 0)
-        {
-          CurrentStatus = CurrentStatus with { Alarms = ImmutableList<string>.Empty };
-        }
-        else
-        {
-          CurrentStatus = CurrentStatus with
-          {
-            Alarms = ImmutableList.Create(
-              "Test alarm " + _curStatusLoadCount.ToString(),
-              "Another alarm"
-            ),
-          };
-        }
+        status = status
+          .AddAlarm(
+            new CurrentStatusAlarm
+            {
+              Code = "debug-mock-status",
+              Message =
+                _alarmImpact == AlarmImpact.SuspendChanges
+                  ? "Displaying retained data for visual review. Instructions and status-dependent changes are unavailable until this test alarm clears."
+                  : "Informational test alarm for visual review. Instructions and changes remain available.",
+              Impact = _alarmImpact,
+            }
+          )
+          .AddAlarm(
+            new CurrentStatusAlarm
+            {
+              Code = "debug-mock-additional",
+              Message = "Another test alarm for checking stacked messages.",
+              Impact = _alarmImpact,
+            }
+          );
       }
 
       return new DebugCellState()
       {
-        CurrentStatus = CurrentStatus,
-        TimeUntilNextRefresh = TimeSpan.FromMinutes(1),
-        StateUpdated = changed,
+        CurrentStatus = status,
+        TimeUntilNextRefresh = TimeSpan.FromSeconds(30),
+        StateUpdated = true,
       };
     }
 

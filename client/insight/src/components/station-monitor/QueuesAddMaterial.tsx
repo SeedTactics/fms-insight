@@ -41,7 +41,6 @@ import {
   ListItemIcon,
   ListItemText,
   TextField,
-  Tooltip,
   Typography,
   styled,
 } from "@mui/material";
@@ -62,6 +61,7 @@ import { fmsInformation } from "../../network/server-settings.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { canAddOrMoveMaterialToQueue } from "../../data/material-operation-policy.js";
+import { SystemAlarmTooltip } from "./SystemAlarmTooltip.js";
 
 export type AddMaterialState = {
   readonly toQueue: string | null;
@@ -544,6 +544,7 @@ export function AddToQueueButton({
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const lastProcMat = useAtomValue(matDetails.materialInDialogLargestUsedProcess);
+  const blockingAlarms = matDetails.useMaterialBlockingAlarms();
 
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addNewMat, addingNewMat] = matDetails.useAddNewMaterialToQueue();
@@ -586,7 +587,8 @@ export function AddToQueueButton({
 
   return (
     <>
-      <Tooltip
+      <SystemAlarmTooltip
+        suspended={blockingAlarms.length > 0}
         title={
           toQueue === null
             ? "Select a queue to add the material to"
@@ -596,75 +598,75 @@ export function AddToQueueButton({
               : ""
         }
       >
-        <span>
-          <Button
-            color="primary"
-            disabled={
-              toQueue === null ||
-              addingExistingMat ||
-              addingNewMat ||
-              addingNewCasting ||
-              (existingMat === null && newMaterialTy === null) ||
-              (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-                (enteredOperator === null || enteredOperator === ""))
-            }
-            onClick={async () => {
-              setAddError(null);
-              try {
-                if (existingMat) {
-                  await addExistingMat({
-                    materialId: existingMat.materialID,
-                    queue: toQueue ?? "",
-                    queuePosition: -1,
-                    operator: enteredOperator ?? operator,
-                  });
-                } else if (
-                  newMaterialTy &&
-                  newMaterialTy.kind === "JobAndProc" &&
-                  newMaterialTy.jobUnique
-                ) {
-                  await addNewMat({
-                    jobUnique: newMaterialTy.jobUnique,
-                    lastCompletedProcess: newMaterialTy.last_proc,
-                    serial: newSerial ?? undefined,
-                    workorder: newWorkorder ?? newMaterialTy?.workorder,
-                    queue: toQueue ?? "",
-                    queuePosition: -1,
-                    operator: enteredOperator ?? operator,
-                  });
-                } else if (
-                  newMaterialTy &&
-                  newMaterialTy.kind === "RawMat" &&
-                  newMaterialTy.rawMatName
-                ) {
-                  await addNewCasting({
-                    casting: newMaterialTy.rawMatName,
-                    quantity: 1,
-                    queue: toQueue ?? "",
-                    serials: newSerial ? [newSerial] : undefined,
-                    workorder: newWorkorder,
-                    operator: enteredOperator ?? operator,
-                  });
-                }
-                setMatToShow(null);
-                onClose();
-              } catch (e) {
-                setAddError(apiErrorMessage(e));
+        <Button
+          color="primary"
+          disabled={
+            blockingAlarms.length > 0 ||
+            toQueue === null ||
+            addingExistingMat ||
+            addingNewMat ||
+            addingNewCasting ||
+            (existingMat === null && newMaterialTy === null) ||
+            (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+              (enteredOperator === null || enteredOperator === ""))
+          }
+          onClick={async () => {
+            if (blockingAlarms.length > 0) return;
+            setAddError(null);
+            try {
+              if (existingMat) {
+                await addExistingMat({
+                  materialId: existingMat.materialID,
+                  queue: toQueue ?? "",
+                  queuePosition: -1,
+                  operator: enteredOperator ?? operator,
+                });
+              } else if (
+                newMaterialTy &&
+                newMaterialTy.kind === "JobAndProc" &&
+                newMaterialTy.jobUnique
+              ) {
+                await addNewMat({
+                  jobUnique: newMaterialTy.jobUnique,
+                  lastCompletedProcess: newMaterialTy.last_proc,
+                  serial: newSerial ?? undefined,
+                  workorder: newWorkorder ?? newMaterialTy?.workorder,
+                  queue: toQueue ?? "",
+                  queuePosition: -1,
+                  operator: enteredOperator ?? operator,
+                });
+              } else if (
+                newMaterialTy &&
+                newMaterialTy.kind === "RawMat" &&
+                newMaterialTy.rawMatName
+              ) {
+                await addNewCasting({
+                  casting: newMaterialTy.rawMatName,
+                  quantity: 1,
+                  queue: toQueue ?? "",
+                  serials: newSerial ? [newSerial] : undefined,
+                  workorder: newWorkorder,
+                  operator: enteredOperator ?? operator,
+                });
               }
-            }}
-          >
-            {toQueue === null ? (
-              "Add to Queue"
-            ) : (
-              <span>
-                {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
-                {withSerialMsg}
-                {addProcMsg}
-              </span>
-            )}
-          </Button>
-        </span>
-      </Tooltip>
+              setMatToShow(null);
+              onClose();
+            } catch (e) {
+              setAddError(apiErrorMessage(e));
+            }
+          }}
+        >
+          {toQueue === null ? (
+            "Add to Queue"
+          ) : (
+            <span>
+              {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
+              {withSerialMsg}
+              {addProcMsg}
+            </span>
+          )}
+        </Button>
+      </SystemAlarmTooltip>
       {addError ? <p role="alert">{addError}</p> : null}
     </>
   );

@@ -31,9 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { type ReactNode, useMemo, useState } from "react";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import { basketSlotLabel } from "../../cell-status/station-cycles.js";
+import { currentStatus } from "../../cell-status/current-status.js";
+import { alarmsBlockingChanges } from "../../cell-status/alarms.js";
 import * as api from "../../network/api.js";
 import { serverErrorMessage } from "../../network/api-errors.js";
 import { JobsBackend } from "../../network/backend.js";
@@ -212,6 +214,11 @@ export function BasketLoadStationWorkflow({
     { readonly workId: string; readonly message: string } | undefined
   >();
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
+  const changesSuspended =
+    alarmsBlockingChanges(useAtomValue(currentStatus), {
+      activity: api.AlarmActivity.BasketLoadStation,
+      basketId: basket.basketId,
+    }).length > 0;
   const blockedReason = basket.loadStationWork?.confirmationBlockedReason?.trim();
   const instructionWarning = basket.loadStationWork?.instructionWarning?.trim();
   const work = workState.type === "active" ? workState.work : undefined;
@@ -277,7 +284,7 @@ export function BasketLoadStationWorkflow({
   }
 
   async function submit(): Promise<void> {
-    if (work === undefined || !work.ready) return;
+    if (work === undefined || !work.ready || changesSuspended) return;
     const submittedWorkId = work.workId;
     const pending: Submission = {
       workId: submittedWorkId,
@@ -303,6 +310,7 @@ export function BasketLoadStationWorkflow({
   }
 
   const submissionDisabled =
+    changesSuspended ||
     !work?.ready ||
     submissionState === "submitting" ||
     submissionState === "accepted" ||
@@ -316,23 +324,36 @@ export function BasketLoadStationWorkflow({
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "1fr auto auto",
+          gridTemplateColumns: "minmax(max-content, 1fr) auto auto",
           alignItems: "center",
           columnGap: 4,
         }}
       >
         {title}
-        <Box>
+        <Box
+          role="group"
+          aria-label="Basket confirmation"
+          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+        >
           {work ? (
-            <Button
-              variant="contained"
-              color="secondary"
-              size="large"
-              disabled={submissionDisabled}
-              onClick={() => void submit()}
-            >
-              Confirm
-            </Button>
+            <>
+              <Typography
+                color="error"
+                noWrap
+                sx={{ visibility: changesSuspended ? "visible" : "hidden" }}
+              >
+                System alarm
+              </Typography>
+              <Button
+                variant="contained"
+                color="secondary"
+                size="large"
+                disabled={submissionDisabled}
+                onClick={() => void submit()}
+              >
+                Confirm
+              </Button>
+            </>
           ) : null}
         </Box>
         <Box
@@ -359,7 +380,7 @@ export function BasketLoadStationWorkflow({
             {refreshError.message} Refresh current status to review the latest work.
           </Alert>
         )}
-        {work?.confirmEmpty && work.ready && (
+        {work?.confirmEmpty && work.ready && !changesSuspended && (
           <Typography>Confirm basket {basket.basketId} is empty.</Typography>
         )}
         {instructionWarning && <Alert severity="warning">{instructionWarning}</Alert>}
@@ -453,7 +474,7 @@ export function BasketLoadStationWorkflow({
                       ·
                     </Typography>
                     <Typography component="span" variant="body2" color="inherit">
-                      {target}
+                      {changesSuspended ? `Saved target: ${target}` : target}
                     </Typography>
                   </Box>
                 )}

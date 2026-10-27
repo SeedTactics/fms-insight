@@ -53,6 +53,10 @@ import {
   memoPropsForNodeKind,
 } from "../../data/move-arrows.js";
 import { HashMap } from "@seedtactics/immutable-collections";
+import { useAtomValue } from "jotai";
+import { currentStatus } from "../../cell-status/current-status.js";
+import { materialActionIsSuspended } from "../../cell-status/alarms.js";
+import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
 
 function elementToRect(e: Element): MoveMaterialElemRect {
   const r = e.getBoundingClientRect();
@@ -99,6 +103,7 @@ const MoveMaterialArrows = memo(function MoveMaterialArrows({
   container: RefObject<HTMLElement | null>;
   arrowsWithRefs: AllMoveMaterialNodes<RefObject<HTMLDivElement | null>>;
 }) {
+  const status = useAtomValue(currentStatus);
   const [, setDims] = useState({
     height: window.innerHeight,
     width: window.innerWidth,
@@ -113,15 +118,22 @@ const MoveMaterialArrows = memo(function MoveMaterialArrows({
 
   const arrows = computeArrows(
     container.current ? elementToRect(container.current) : null,
-    arrowsWithRefs.collectValues((r) =>
-      r.elem.current ? { ...r, elem: elementToRect(r.elem.current) } : null,
-    ),
+    arrowsWithRefs.collectValues((r) => {
+      if (
+        r.type === MoveMaterialNodeKindType.Material &&
+        r.material &&
+        materialActionIsSuspended(status, r.material)
+      )
+        return null;
+      return r.elem.current ? { ...r, elem: elementToRect(r.elem.current) } : null;
+    }),
   );
 
   return (
     <g>
       {arrows.map((arr, idx) => (
         <path
+          data-testid="material-movement-arrow"
           key={idx}
           style={{ fill: "none", stroke: "rgba(0,0,0,0.15)", strokeWidth: 2 }}
           d={arrowToPath(arr)}
