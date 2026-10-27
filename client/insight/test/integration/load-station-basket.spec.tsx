@@ -135,11 +135,18 @@ describe("explicit basket station work", () => {
       currentStatus: status,
     });
     const confirm = screen.getByRole("button", { name: "Confirm", exact: true });
+    const alarmCue = screen
+      .getByRole("group", { name: "Basket confirmation" })
+      .getByText("System alarm", { exact: true });
+    const slotA = screen.getByRole("heading", { name: "Slot A", exact: true });
     await expect.element(confirm).toBeEnabled();
+    await expect.element(alarmCue).not.toBeVisible();
     await expect
       .element(screen.getByText("Load into slot A for process 1", { exact: true }))
       .toBeVisible();
     await expect.element(screen.getByTestId("material-movement-arrow").first()).toBeInTheDocument();
+    const confirmX = confirm.element().getBoundingClientRect().x;
+    const slotTop = slotA.element().getBoundingClientRect().top;
 
     screen.store.set(onLoadCurrentSt, {
       ...status,
@@ -152,18 +159,23 @@ describe("explicit basket station work", () => {
         }),
       ],
     });
+    await expect.element(alarmCue).toBeVisible();
     await expect
-      .element(screen.getByText("Instructions unavailable: Displaying retained station data."))
-      .toBeVisible();
+      .element(screen.getByText(/Displaying retained station data/))
+      .not.toBeInTheDocument();
     await expect.element(confirm).toBeDisabled();
+    expect(confirm.element().getBoundingClientRect().x).toBe(confirmX);
+    expect(slotA.element().getBoundingClientRect().top).toBe(slotTop);
     await expect
       .element(screen.getByText("Saved target: Fill with Known part proc 1"))
       .toBeVisible();
     await expect
       .element(
-        screen.getByText("System alarm", {
-          exact: true,
-        }),
+        screen
+          .getByText("System alarm", {
+            exact: true,
+          })
+          .last(),
       )
       .toBeVisible();
     await expect
@@ -174,6 +186,7 @@ describe("explicit basket station work", () => {
 
     screen.store.set(onLoadCurrentSt, status);
     await expect.element(confirm).toBeEnabled();
+    await expect.element(alarmCue).not.toBeVisible();
     await expect
       .element(screen.getByText("Fill with Known part proc 1", { exact: true }))
       .toBeVisible();
@@ -231,7 +244,7 @@ describe("explicit basket station work", () => {
           }),
         ],
       });
-      await expect.element(screen.getByText("System alarm", { exact: true })).toBeVisible();
+      await expect.element(screen.getByText("System alarm", { exact: true }).last()).toBeVisible();
       await expect.element(screen.getByText(actionText, { exact: true })).not.toBeInTheDocument();
       await expect.element(screen.getByTestId("material-movement-arrow")).not.toBeInTheDocument();
       await expect.element(screen.getByText("Known part", { exact: true })).toBeVisible();
@@ -277,9 +290,11 @@ describe("explicit basket station work", () => {
       await expect.element(screen.getByText(/Fill with Known part proc 1/)).toBeVisible();
       await expect
         .element(
-          screen.getByText(enabled ? "Load into slot A for process 1" : "System alarm", {
-            exact: true,
-          }),
+          screen
+            .getByText(enabled ? "Load into slot A for process 1" : "System alarm", {
+              exact: true,
+            })
+            .last(),
         )
         .toBeVisible();
     },
@@ -331,7 +346,11 @@ describe("explicit basket station work", () => {
       },
     });
     await expect
-      .element(screen.getByText("Instructions unavailable: Displaying retained station data."))
+      .element(
+        screen
+          .getByRole("group", { name: "Basket confirmation" })
+          .getByText("System alarm", { exact: true }),
+      )
       .toBeVisible();
     await expect
       .element(screen.getByRole("button", { name: "Confirm", exact: true }))

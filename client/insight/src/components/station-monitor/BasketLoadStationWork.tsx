@@ -214,11 +214,11 @@ export function BasketLoadStationWorkflow({
     { readonly workId: string; readonly message: string } | undefined
   >();
   const workState = useMemo(() => stationWork(material, basket), [basket, material]);
-  const blockingAlarms = alarmsBlockingChanges(useAtomValue(currentStatus), {
-    activity: api.AlarmActivity.BasketLoadStation,
-    basketId: basket.basketId,
-  });
-  const changesSuspended = blockingAlarms.length > 0;
+  const changesSuspended =
+    alarmsBlockingChanges(useAtomValue(currentStatus), {
+      activity: api.AlarmActivity.BasketLoadStation,
+      basketId: basket.basketId,
+    }).length > 0;
   const blockedReason = basket.loadStationWork?.confirmationBlockedReason?.trim();
   const instructionWarning = basket.loadStationWork?.instructionWarning?.trim();
   const work = workState.type === "active" ? workState.work : undefined;
@@ -324,23 +324,36 @@ export function BasketLoadStationWorkflow({
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "1fr auto auto",
+          gridTemplateColumns: "minmax(max-content, 1fr) auto auto",
           alignItems: "center",
           columnGap: 4,
         }}
       >
         {title}
-        <Box>
+        <Box
+          role="group"
+          aria-label="Basket confirmation"
+          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+        >
           {work ? (
-            <Button
-              variant="contained"
-              color="secondary"
-              size="large"
-              disabled={submissionDisabled}
-              onClick={() => void submit()}
-            >
-              Confirm
-            </Button>
+            <>
+              <Typography
+                color="error"
+                noWrap
+                sx={{ visibility: changesSuspended ? "visible" : "hidden" }}
+              >
+                System alarm
+              </Typography>
+              <Button
+                variant="contained"
+                color="secondary"
+                size="large"
+                disabled={submissionDisabled}
+                onClick={() => void submit()}
+              >
+                Confirm
+              </Button>
+            </>
           ) : null}
         </Box>
         <Box
@@ -355,11 +368,6 @@ export function BasketLoadStationWorkflow({
         </Box>
       </Box>
       <Stack spacing={2} sx={{ ml: "4em", mr: "4em", mt: 2 }}>
-        {blockingAlarms.map((alarm, idx) => (
-          <Alert key={idx} severity="warning">
-            Instructions unavailable: {alarm.message}
-          </Alert>
-        ))}
         {refreshError?.workId === work?.workId && refreshError && (
           <Alert
             severity="warning"
