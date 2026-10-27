@@ -1073,34 +1073,27 @@ function RebookingNote() {
 function MaterialOperationNotice() {
   const material = useAtomValue(matDetails.inProcessMaterialInDialog);
   const alarms = matDetails.useMaterialBlockingAlarms();
-  if (alarms.length > 0)
-    return (
-      <>
-        {alarms.map((alarm, index) => (
-          <Typography key={index} role="alert" variant="caption" component="p">
-            {alarm.message}
-          </Typography>
-        ))}
-      </>
-    );
-  if (material === null) return null;
-
-  if (material.quarantineAfterUnload) {
-    return (
-      <Typography variant="caption" component="p">
-        Quarantine requested
-      </Typography>
-    );
-  }
-
-  const state = materialOperationState(material);
-  if (state.kind !== "ActiveLoadStationOperation" || state.cancellationId !== null) return null;
-
+  const state = material ? materialOperationState(material) : null;
   return (
-    <Typography variant="caption" component="p">
-      This material is part of the current load/unload operation. Complete the operation or cancel
-      it at the machine control before making other changes.
-    </Typography>
+    <>
+      {alarms.map((alarm, index) => (
+        <Typography key={index} role="alert" variant="caption" component="p">
+          {alarm.message}
+        </Typography>
+      ))}
+      {material?.quarantineAfterUnload ? (
+        <Typography variant="caption" component="p">
+          Quarantine requested
+        </Typography>
+      ) : alarms.length === 0 &&
+        state?.kind === "ActiveLoadStationOperation" &&
+        state.cancellationId === null ? (
+        <Typography variant="caption" component="p">
+          This material is part of the current load/unload operation. Complete the operation or
+          cancel it at the machine control before making other changes.
+        </Typography>
+      ) : null}
+    </>
   );
 }
 

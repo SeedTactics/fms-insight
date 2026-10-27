@@ -106,6 +106,42 @@ const raw = (slot: number) =>
   });
 
 describe("cancel load", () => {
+  test.each([false, true])(
+    "a blocking alarm retains quarantine facts without offering operation instructions: %s",
+    async (quarantineAfterUnload) => {
+      const base: Readonly<api.IInProcessMaterial> = loadingMaterial({ materialId: 101 });
+      const material = new api.InProcessMaterial({ ...base, quarantineAfterUnload });
+      const status: Readonly<api.ICurrentStatus> = createCurrentStatus({ material: [material] });
+      const alarm = new api.CurrentStatusAlarm({
+        code: "status-refresh-failed",
+        message: "Showing retained status.",
+        impact: api.AlarmImpact.SuspendChanges,
+      });
+      vi.spyOn(window, "fetch").mockImplementation(async () => new Response("[]"));
+      registerNetworkBackend();
+      const screen = await renderInsightPage(<MaterialDialog />, {
+        currentStatus: { ...status, alarmDetails: [alarm] },
+        seedStore: (store) =>
+          store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
+      });
+      await expect.element(screen.getByRole("alert")).toHaveTextContent(alarm.message);
+      const quarantineNotice = screen.getByText("Quarantine requested", { exact: true });
+      const operationNotice = screen.getByText(
+        /This material is part of the current load\/unload operation/,
+      );
+      if (quarantineAfterUnload) await expect.element(quarantineNotice).toBeVisible();
+      else await expect.element(quarantineNotice).not.toBeInTheDocument();
+      await expect.element(operationNotice).not.toBeInTheDocument();
+
+      screen.store.set(onLoadCurrentSt, status);
+      await expect.element(screen.getByRole("alert")).not.toBeInTheDocument();
+      if (quarantineAfterUnload) {
+        await expect.element(quarantineNotice).toBeVisible();
+        await expect.element(operationNotice).not.toBeInTheDocument();
+      } else await expect.element(operationNotice).toBeVisible();
+    },
+  );
+
   test("an open quarantine dialog checks the captured material's latest basket", async () => {
     const material = createMaterial({
       materialID: 101,
