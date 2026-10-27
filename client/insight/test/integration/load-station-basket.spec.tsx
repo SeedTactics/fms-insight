@@ -161,7 +161,7 @@ describe("explicit basket station work", () => {
       .toBeVisible();
     await expect
       .element(
-        screen.getByText("Saved action (unavailable): Load into slot A for process 1", {
+        screen.getByText("System alarm", {
           exact: true,
         }),
       )
@@ -231,9 +231,7 @@ describe("explicit basket station work", () => {
           }),
         ],
       });
-      await expect
-        .element(screen.getByText(`Saved action (unavailable): ${actionText}`, { exact: true }))
-        .toBeVisible();
+      await expect.element(screen.getByText("System alarm", { exact: true })).toBeVisible();
       await expect.element(screen.getByText(actionText, { exact: true })).not.toBeInTheDocument();
       await expect.element(screen.getByTestId("material-movement-arrow")).not.toBeInTheDocument();
       await expect.element(screen.getByText("Known part", { exact: true })).toBeVisible();
@@ -279,12 +277,9 @@ describe("explicit basket station work", () => {
       await expect.element(screen.getByText(/Fill with Known part proc 1/)).toBeVisible();
       await expect
         .element(
-          screen.getByText(
-            enabled
-              ? "Load into slot A for process 1"
-              : "Saved action (unavailable): Load into slot A for process 1",
-            { exact: true },
-          ),
+          screen.getByText(enabled ? "Load into slot A for process 1" : "System alarm", {
+            exact: true,
+          }),
         )
         .toBeVisible();
     },

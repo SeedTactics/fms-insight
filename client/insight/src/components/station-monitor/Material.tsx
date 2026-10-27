@@ -255,8 +255,7 @@ export function MaterialAction({
   if (description === null) return null;
   return (
     <MatCardDetail fsize={fsize}>
-      {materialActionIsSuspended(curSt, mat) ? "Saved action (unavailable): " : null}
-      {description}
+      {materialActionIsSuspended(curSt, mat) ? "System alarm" : description}
     </MatCardDetail>
   );
 }

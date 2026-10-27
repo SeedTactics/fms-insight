@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ReactNode, ComponentType, useTransition } from "react";
+import { ReactNode, ComponentType, useId, useState, useTransition } from "react";
 import { Notifications, HelpOutlined, ExitToApp } from "@mui/icons-material";
 import {
   Typography,
@@ -51,6 +51,11 @@ import {
   Select,
   MenuItem,
   FormControl,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import { startOfToday, differenceInDays } from "date-fns";
 import { currentStatus } from "../cell-status/current-status";
@@ -114,15 +119,58 @@ function Brand() {
 
 function Alarms() {
   const alarms = useAtomValue(currentStatus).alarms;
-  const hasAlarms = alarms && alarms.length > 0;
-
-  const alarmTooltip = hasAlarms ? alarms.join(". ") : "No Alarms";
+  const [open, setOpen] = useState(false);
+  const titleId = useId();
+  const count = alarms.length;
+  const alarmLabel = count === 0 ? "No alarms" : `${count} ${count === 1 ? "alarm" : "alarms"}`;
+  const alarmTooltip = count === 1 ? alarms[0] : alarmLabel;
   return (
-    <Tooltip title={alarmTooltip}>
-      <Badge badgeContent={hasAlarms ? alarms.length : 0}>
-        <Notifications color={hasAlarms ? "error" : undefined} />
-      </Badge>
-    </Tooltip>
+    <>
+      <Tooltip title={alarmTooltip}>
+        <IconButton
+          aria-label={alarmLabel}
+          aria-haspopup="dialog"
+          color={count > 0 ? "error" : "inherit"}
+          size="large"
+          onClick={() => setOpen(true)}
+        >
+          <Badge badgeContent={count} color="error">
+            <Notifications />
+          </Badge>
+        </IconButton>
+      </Tooltip>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        aria-labelledby={titleId}
+        fullWidth
+        maxWidth="sm"
+        scroll="paper"
+      >
+        <DialogTitle id={titleId}>System alarms</DialogTitle>
+        <DialogContent dividers>
+          {count === 0 ? (
+            <Typography>No alarms.</Typography>
+          ) : (
+            <List disablePadding>
+              {alarms.map((alarm, index) => (
+                <ListItem key={index} disableGutters divider={index < count - 1}>
+                  <ListItemText
+                    primary={alarm}
+                    slotProps={{
+                      primary: { sx: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } },
+                    }}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 
