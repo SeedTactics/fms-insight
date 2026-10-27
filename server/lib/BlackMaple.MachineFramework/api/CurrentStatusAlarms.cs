@@ -9,7 +9,9 @@ public enum AlarmImpact
 
   /// <summary>
   /// Retain the known data and saved targets, but mark instructions unavailable and disable
-  /// status-dependent changes within the declared scope. Protective actions remain available.
+  /// status-dependent changes within the declared scope. Explicit stop or inhibit commands whose
+  /// eligibility is independent of the uncertain status remain available; quarantine, cancellation,
+  /// and recovery changes still follow their declared scope and current eligibility.
   /// The backend must still validate current command eligibility when a request arrives.
   /// </summary>
   SuspendChanges,

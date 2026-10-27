@@ -12,7 +12,10 @@ export interface AlarmContext {
   readonly basketId?: number;
 }
 
-type StatusAlarms = { readonly alarmDetails?: ReadonlyArray<Readonly<ICurrentStatusAlarm>> | null };
+type StatusAlarms = {
+  readonly alarmDetails?: ReadonlyArray<Readonly<ICurrentStatusAlarm>> | null;
+  readonly material?: ReadonlyArray<Readonly<IInProcessMaterial>>;
+};
 
 function applies(alarm: Readonly<ICurrentStatusAlarm>, context: AlarmContext): boolean {
   return (
@@ -30,14 +33,23 @@ export function alarmsBlockingChanges(
   return (status.alarmDetails ?? []).filter((alarm) => applies(alarm, context));
 }
 
-/** Include every source/target basket in an atomic material operation, even in an open dialog. */
+/** Include captured and current source/target scopes without changing the selected operation. */
 export function alarmsBlockingMaterialChanges(
   status: StatusAlarms,
   material: ReadonlyArray<Readonly<IInProcessMaterial>>,
 ): ReadonlyArray<Readonly<ICurrentStatusAlarm>> {
+  if (!status.alarmDetails?.length) return [];
+  const affectedMaterial = material.flatMap((captured) => {
+    // Anonymous entries share ID -1, so they cannot be matched to a newer material entry.
+    const latest =
+      captured.materialID >= 0
+        ? status.material?.find((candidate) => candidate.materialID === captured.materialID)
+        : undefined;
+    return latest && latest !== captured ? [captured, latest] : [captured];
+  });
   const contexts: ReadonlyArray<AlarmContext> = [
     {},
-    ...material.flatMap((mat) => {
+    ...affectedMaterial.flatMap((mat) => {
       const station =
         mat.action.type === ActionType.LoadingToBasket ||
         mat.action.type === ActionType.UnloadToInProcess ||

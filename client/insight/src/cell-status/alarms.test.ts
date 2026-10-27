@@ -7,7 +7,11 @@ import {
   ActionType,
   type ICurrentStatusAlarm,
 } from "../network/api.js";
-import { alarmsBlockingChanges, materialActionIsSuspended } from "./alarms.js";
+import {
+  alarmsBlockingChanges,
+  alarmsBlockingMaterialChanges,
+  materialActionIsSuspended,
+} from "./alarms.js";
 
 const blocked: Readonly<ICurrentStatusAlarm> = {
   code: "observation-unavailable",
@@ -15,6 +19,57 @@ const blocked: Readonly<ICurrentStatusAlarm> = {
   impact: AlarmImpact.SuspendChanges,
 };
 const station = { activity: AlarmActivity.BasketLoadStation, basketId: 7 };
+
+test.each(["location", "action"])(
+  "captured operations include current material %s scope",
+  (scope) => {
+    const saved = InProcessMaterial.fromJS({
+      MaterialID: 101,
+      Location: { Type: "InBasket", BasketId: 7 },
+      Action: { Type: "Waiting" },
+    });
+    const current = InProcessMaterial.fromJS({
+      MaterialID: 101,
+      Location: scope === "location" ? { Type: "InBasket", BasketId: 8 } : { Type: "Free" },
+      Action:
+        scope === "action" ? { Type: "LoadingToBasket", LoadToBasketId: 8 } : { Type: "Waiting" },
+    });
+    const originalAlarm = { ...blocked, basketId: 7 };
+    const currentAlarm = { ...blocked, basketId: 8 };
+    const otherAlarm = { ...blocked, basketId: 9 };
+    const status = {
+      material: [current],
+      alarmDetails: [originalAlarm, currentAlarm, otherAlarm],
+    };
+    expect(alarmsBlockingMaterialChanges(status, [saved])).toEqual([originalAlarm, currentAlarm]);
+    expect(alarmsBlockingMaterialChanges({ ...status, material: [] }, [saved])).toEqual([
+      originalAlarm,
+    ]);
+    expect(alarmsBlockingMaterialChanges({ ...status, alarmDetails: [] }, [saved])).toEqual([]);
+  },
+);
+
+test("anonymous material does not acquire another anonymous entry's scope", () => {
+  const saved = InProcessMaterial.fromJS({
+    MaterialID: -1,
+    Location: { Type: "Free" },
+    Action: { Type: "LoadingToBasket", LoadToBasketId: 7 },
+  });
+  const other = InProcessMaterial.fromJS({
+    MaterialID: -1,
+    Location: { Type: "Free" },
+    Action: { Type: "LoadingToBasket", LoadToBasketId: 8 },
+  });
+  expect(
+    alarmsBlockingMaterialChanges(
+      {
+        material: [other],
+        alarmDetails: [{ ...blocked, basketId: 8 }],
+      },
+      [saved],
+    ),
+  ).toEqual([]);
+});
 
 test("only explicit blocking impact suspends changes", () => {
   const status = CurrentStatus.fromJS({

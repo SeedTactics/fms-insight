@@ -5,13 +5,14 @@ import { CancelLoadButton } from "../../src/components/station-monitor/CancelLoa
 import { QuarantineMatButton } from "../../src/components/station-monitor/QuarantineButton.js";
 import { MaterialDialog } from "../../src/components/station-monitor/Material.js";
 import { AddToQueueButton } from "../../src/components/station-monitor/QueuesAddMaterial.js";
+import { MultiMaterialDialog } from "../../src/components/station-monitor/BulkRawMaterial.js";
 import {
   InvalidateCycleDialogButton,
   type InvalidateCycleState,
 } from "../../src/components/station-monitor/InvalidateCycle.js";
 import { onLoadCurrentSt } from "../../src/cell-status/loading.js";
 import { materialDialogOpen } from "../../src/cell-status/material-details.js";
-import { registerNetworkBackend } from "../../src/network/backend.js";
+import { LogBackend, registerNetworkBackend } from "../../src/network/backend.js";
 import * as api from "../../src/network/api.js";
 import { renderInsightPage } from "./framework.js";
 import { createCurrentStatus, createMaterial } from "./load-station-testkit.js";
@@ -105,6 +106,103 @@ const raw = (slot: number) =>
   });
 
 describe("cancel load", () => {
+  test("an open quarantine dialog checks the captured material's latest basket", async () => {
+    const material = createMaterial({
+      materialID: 101,
+      jobUnique: "JOB-1",
+      partName: "Part",
+      process: 1,
+      path: 1,
+      location: { type: api.LocType.InBasket, basketId: 7, basketSlot: 1 },
+      action: { type: api.ActionType.Waiting },
+    });
+    const status: Readonly<api.ICurrentStatus> = createCurrentStatus({
+      material: [material],
+      jobs: { "JOB-1": api.ActiveJob.fromJS({ ProcsAndPaths: [{ paths: [{}] }] }) },
+    });
+    registerNetworkBackend();
+    const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+    const screen = await renderInsightPage(<QuarantineMatButton />, {
+      currentStatus: status,
+      fmsInfo: { quarantineQueue: "Quarantine" },
+      seedStore: (store) => store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
+    });
+    await screen.getByRole("button", { name: "Signal for quarantine", exact: true }).click();
+    const dialog = screen.getByRole("dialog");
+    const confirm = dialog.getByRole("button", { name: "Signal for quarantine", exact: true });
+    await expect.element(confirm).toBeEnabled();
+    const captured: Readonly<api.IInProcessMaterial> = material;
+    const moved = new api.InProcessMaterial({
+      ...captured,
+      location: new api.InProcessMaterialLocation({
+        type: api.LocType.InBasket,
+        basketId: 8,
+        basketSlot: 1,
+      }),
+    });
+    const alarm = new api.CurrentStatusAlarm({
+      code: "basket-observation",
+      message: "Basket 8 observation unavailable.",
+      impact: api.AlarmImpact.SuspendChanges,
+      basketId: 8,
+    });
+    screen.store.set(onLoadCurrentSt, { ...status, material: [moved], alarmDetails: [alarm] });
+    await expect.element(confirm).toBeDisabled();
+    await expect.element(dialog.getByRole("alert")).toHaveTextContent(alarm.message);
+    expect(fetch).not.toHaveBeenCalled();
+    screen.store.set(onLoadCurrentSt, { ...status, material: [moved] });
+    await expect.element(confirm).toBeEnabled();
+    await confirm.click();
+    await expect.element(dialog).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/material/101/signal-quarantine"),
+      expect.objectContaining({ method: "PUT" }),
+    );
+  });
+
+  test("bulk removal checks the latest scope while keeping the captured material IDs", async () => {
+    const materialBase: Readonly<api.IInProcessMaterial> = loadingMaterial({ materialId: 101 });
+    const material = new api.InProcessMaterial({
+      ...materialBase,
+      action: new api.InProcessMaterialAction({ type: api.ActionType.Waiting }),
+    });
+    const status: Readonly<api.ICurrentStatus> = createCurrentStatus({ material: [material] });
+    registerNetworkBackend();
+    vi.spyOn(LogBackend, "logForMaterials").mockResolvedValue([]);
+    const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+    const close = vi.fn();
+    const screen = await renderInsightPage(
+      <MultiMaterialDialog material={[material]} closeDialog={close} operator="Operator A" />,
+      { currentStatus: status },
+    );
+    const dialog = screen.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Remove Material", exact: true }).click();
+    await dialog.getByRole("spinbutton", { name: "Quantity to Remove" }).fill("1");
+    const confirm = dialog.getByRole("button", { name: "Remove 1 material", exact: true });
+    const captured: Readonly<api.IInProcessMaterial> = material;
+    const moved = new api.InProcessMaterial({
+      ...captured,
+      location: new api.InProcessMaterialLocation({ type: api.LocType.InBasket, basketId: 8 }),
+    });
+    const alarm = new api.CurrentStatusAlarm({
+      code: "basket-observation",
+      message: "Basket 8 observation unavailable.",
+      impact: api.AlarmImpact.SuspendChanges,
+      basketId: 8,
+    });
+    screen.store.set(onLoadCurrentSt, { ...status, material: [moved], alarmDetails: [alarm] });
+    await expect.element(confirm).toBeDisabled();
+    expect(fetch).not.toHaveBeenCalled();
+    screen.store.set(onLoadCurrentSt, { ...status, material: [moved] });
+    await expect.element(confirm).toBeEnabled();
+    await confirm.click();
+    await expect.poll(() => close.mock.calls.length).toBe(1);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ body: "[101]" }),
+    );
+  });
+
   test("an alarm arriving in an open cancellation dialog disables submission until recovery", async () => {
     const material = loadingMaterial({ materialId: 101, cancellationId: "saved-load" });
     const fetch = vi.spyOn(window, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
