@@ -2,138 +2,111 @@
 title: FMS Station Monitor
 nav: FMS Insight Client > Stations
 description: >-
-  The FMS Insight station monitor pages are used on the factory floor by the operators; these pages
-  assist with loading/unloading, washing, and inspecting material in the FMS.
+  Station pages help operators load, unload, inspect, close out, and manage material on the shop
+  floor.
 ---
 
-# FMS Insight Station Monitor Pages
+Station pages display the [virtual whiteboard of material cards](/fms-insight/material-tracking). A
+card identifies a piece of material by part, serial, workorder, and signaled inspections when those
+details are available. Tap a card to see its history and the actions available at the station. The
+colored symbol identifies the part, and the large final character of the serial helps distinguish
+nearby cards.
 
-The station monitor pages are intended to be used on the shop floor by the operators; these pages
-display the [virtual whiteboard of material sticky notes](material-tracking). Each in-process piece
-of material is represented by a virtual sticky note. On the sticky note, FMS Insight displays the
-part name, serial, assigned workorder, and any signaled inspections. The sticky note can be clicked
-or tapped to open a dialog with more details about the material including the log of events. The
-dialog also allows the operator to notify Insight of changes in the material, such as completing
-wash or assigning a workorder. Finally, the sticky note contains an identicon based on the part name
-and the final number/letter of the serial.
-
-We suggest that computers or mounted tablets be placed next to various stations in the factory,
-perhaps with an attached barcode scanner. The computer or mounted tablet can then be configured to
-open the specific screen for the station by either bookmarking the page or just setting the specific
-page as the homepage for the browser.
+Bookmark the page for each station, including the selected station number and queues. A mounted
+tablet or computer with a [barcode scanner](/fms-insight/client-scanners) lets operators compare the
+display with the material in front of them. Station names, available actions, and terminology can
+differ by installation.
 
 ## System Overview
 
-![Screenshot of System Overview access button](screenshots/insight-station-system-overview-buttons.png)
+The small machine and load-station symbols in the toolbar give a quick view of which stations are
+occupied. Select them to open the system overview. It is also available as a dedicated station page
+or from [Operations](/fms-insight/client-operations#cell).
 
-In the top bar of every station screen, there is a collection of squares and triangles. This
-provides a quick overview of the current state of the system. There is one square for each machine
-and one triangle for each load station. The colors within the squares indicate if a pallet is at the
-inbound, worktable, or outbound position of each machine. The color within the triangle indicates if
-the load station is occupied or not. The icons can be clicked to open up a dialog containing more
-details about the system overview.
+![System overview showing stations, pallets, and material](screenshots/insight-system-overview.png)
 
-![Screenshot of System Overview](screenshots/insight-station-system-overview.png)
-
-The overview shows each machine, load station and pallet in the system and the material currently on
-the pallets. The material can be hovered and clicked to open more details.
+The overview shows equipment, its current location or activity, and the material on it.
+Installations with baskets also show basket positions and contents when supplied by the integration.
+Select a material card for details.
 
 ## Load Station
 
-![Screenshot of Load Station screen](screenshots/insight-load-station.png)
+![Load station showing material movements](screenshots/insight-load-station.png)
 
-On the top toolbar, the specific load station number is set. Insight will display only regions
-relevant to this specific load station, including the material region, the faces of the pallet
-currently at the load station, and a region for completed material. Optionally, the queues dropdown
-on the top toolbar can be used to add additional whiteboard regions to display in addition to the
-pallet regions. Typically we suggest that in-process queues have their own computer with a dedicated
-display, but for queues closely associated with the load station such as a transfer stand, the
-virtual whiteboard region for the queue can be displayed along with the pallet regions.
+Select the load station in the toolbar. Insight shows the relevant material, pallet faces, and
+expected transfers. The toolbar also lets you display nearby queues and recently completed material.
 
-![Screenshot of Load Station Material Dialog](screenshots/insight-load-station-details.png)
+Open a card to review its event history or instructions. The folder button opens the instructions
+for the current load/unload work. Follow the [operator procedures](/fms-insight/operator-procedures)
+if the displayed work cannot be completed as shown.
 
-When a material sticky note is clicked or tapped, a dialog will open with a log of events for the
-piece of material. The dialog can also be opened by [using a scanner](client-scanners) or manually
-entering a serial via the magnifying glass button on the toolbar. In the dialog, a variety of
-actions can be taken for the specific material.
+![Material history and actions at a load station](screenshots/insight-load-station-details.png)
 
-Finally, the lower-right hand corner of the screen contains a brown circular button which when
-clicked will open all load instructions for all material currently being loaded or unloaded.
-Alternatively, in the material dialog, the Instructions button can be clicked to open the
-instructions for only a single piece of material.
+### Basket Work
+
+Where the installation uses baskets, the station can show individual slots and instructions to load,
+unload, or exchange their contents. A slot is a unit of handling and may contain more than one piece
+of material. Arrows and destination labels show the intended movement. An **Unknown** slot is not a
+confirmed empty slot.
+
+![Basket station work with slot instructions and confirmation](screenshots/insight-basket-work.png)
+
+Some basket work is confirmed directly in Insight. Review the displayed slots and complete the
+physical work, then select **Confirm** when it becomes available. The page explains when work is
+waiting or cannot yet be confirmed. If the work changes before confirmation, review the refreshed
+instructions. A request to confirm an empty basket requires checking the physical basket is empty.
+
+### Alarms and Unavailable Actions
+
+The bell in the toolbar opens the alarm list. Some alarms are informational; others suspend changes
+for the affected equipment or material. When changes are suspended, the page displays a warning and
+disables the affected controls. Previously displayed instructions may remain visible as a reference;
+follow the warning and your cell's recovery procedure before resuming work.
+
+Material actions also depend on its current state. For example, a piece involved in an active load
+cannot be removed from a queue as though it were idle. Where **Cancel Load** is offered, review the
+whole instruction listed in its confirmation. See
+[operator procedures](/fms-insight/operator-procedures) for quarantine, cancellation, and recovery.
 
 ## Queues
 
-![Screenshot of Queues Screen](screenshots/insight-queues.png)
+![Queues showing individual material cards](screenshots/insight-queues.png)
 
-The queues screen shows the material currently inside one or more queues. On the top toolbar, one or
-more queues can be selected and the virtual whiteboard regions for the selected queues are then
-displayed. The material in the queue can be re-ordered by clicking and dragging on the 6-dot icon on
-the left of each piece of material. Depending on the configuration and which specific queue is
-selected, material can be added to a queue by clicking the plus icon in the top-right corner.
+Select one or more queues in the toolbar. Drag a card's handle to change its position within a
+queue. Movement between queues and removal are available only when the material's state permits
+them. The order can influence material selection, but job and route requirements also apply.
 
-On raw material queues, the list of in-process jobs and/or unfilled workorders will be displayed in
-a table. This table can be used by the operators to decide which material to run next.
+Depending on the configuration, use the add button or scan a serial to introduce material. Raw
+material queues may also show jobs awaiting material and unfilled workorders. Review the proposed
+job, process, and destination before adding material.
 
-![Screenshot of Queue Material Dialog](screenshots/insight-queue-details.png)
+![Queue material history and available actions](screenshots/insight-queue-details.png)
 
-By clicking or tapping on a material sticky note, a dialog will open with details about the specific
-piece of material. The dialog will have a variety of actions for the specific material. An attached
-[barcode scanner](client-scanners) can also be used to open the material dialog.
+Open a card, scan a barcode, or use the toolbar's serial search to see the material history.
+Removing a card from a queue removes its current queue placement, while preserving the recorded
+history.
 
 ## Inspection
 
-![Screenshot of Inspection Station screen](screenshots/insight-inspection.png)
+![Inspection station with pending and recorded inspections](screenshots/insight-inspection.png)
 
-The inspection screen shows completed material that has been marked for inspection. On the top
-toolbar, a specific inspection type can be selected or all material for inspection can be shown. On
-the left is the virtual whiteboard region for completed but not yet inspected material and on the
-right is material which has completed inspections.
+The inspection page groups recently completed material by pending and recorded inspections. Select
+an inspection type in the toolbar, or view all types. Open a material card to review its path
+through the cell, open instructions, and record success or failure for the relevant inspection.
 
-When a material sticky note is clicked or tapped, a dialog will open with a log of events for the
-piece of material. If a specific inspection type is selected, there will be buttons to mark a piece
-of material as either successfully inspected or failed. When clicked or tapped, this will record an
-event in the log and move the virtual sticky note from the left to the right. The top toolbar on the
-right allows an operator name to be entered and this operator name will be attached to the created
-inspection completed log entry. Finally, the operator can open
-[inspection instructions](part-instructions).
-
-An attached [barcode scanner](client-scanners) can also be used to open the material dialog. This
-allows viewing details and marking as inspected or uninspected any part by scanned serial (even if
-the part is not on the screen).
+The selected operator name is attached to the result. Recording a result does not by itself move
+physical material or decide its disposition; follow the installation's procedure for failed parts.
+Serial lookup also works for material outside the recent display window.
 
 ## Close Out
 
-![Screenshot of Close Out Screen](screenshots/insight-closeout.png)
+![Closeout station showing material awaiting final checks](screenshots/insight-closeout.png)
 
-The close out screen shows completed material from the last 36 hours. On the left is the virtual
-whiteboard region for completed but not yet closed out material and on the right is material which
-has completed closeout. Closeout is optional but intended for any final manual process needed before
-the part can be shipped; typically this includes a final wash or workorder assignment or other
-tasks.
+Closeout is optional and records completion of final manual tasks, such as washing, final checks, or
+workorder assignment. The page shows material unloaded from its final process in the last 48 hours,
+with pending closeouts on one side and closeouts recorded in the last two hours on the other.
 
-When a material sticky note is clicked or tapped, a dialog will open with a log of events for the
-piece of material. There is a button to mark a piece of material as closed out. When clicked or
-tapped, this will record an event in the log and move the virtual sticky note from the left to the
-right. The top toolbar on the right allows an operator name to be entered and this operator name
-will be attached to the created log entry. Finally, the operator can open
-[instructions](part-instructions).
-
-An attached [barcode scanner](client-scanners) can also be used to open the material dialog. This
-allows viewing details and marking as closed out any part by scanned serial (even if the part is not
-on the screen because more than 36 hours has passed).
-
-## System Overview Page
-
-![Screenshot of System Overview Screen](screenshots/insight-system-overview.png)
-
-All station screens have access to the system overview by clicking the system overview button (the
-colored squares and triangles) located in the top toolbar which opens the system overview in a
-dialog. Alternatively, the system overview can be opened as a dedicated page itself. The intention
-of FMS Insight is that each tablet or computer be dedicated to a specific task or station, and thus
-you may consider a dedicated display for the system overview page. (Note, the system overview is
-also available to the operations manager as part of the [Operations Screens](client-operations).)
-
-The system overview shows all the machines, load stations, and pallets. It also shows the material
-on each pallet. The material can be clicked to bring up the details for that specific piece of
-material.
+Open or scan a card to review the history, assign a workorder where supported, open instructions,
+and record the closeout. Depending on the installation, scanning the serial or assigning a workorder
+is required before completion is allowed. The selected operator is recorded with the result. Older
+material can still be found by serial even after its card leaves the recent display.

@@ -2,202 +2,84 @@
 title: Material Tracking
 nav: Procedures > Material Tracking
 description: >-
-  Tracking each piece of material by marking it with a unique serial and barcode is vital by helping
-  operators load/unload material, increase quality, fill workorders, and long-term tracking of
-  material.
+  Keep a shared view of material on the shop floor and connect each piece to its production history,
+  inspections, and workorder.
 ---
 
-# Material Tracking
+Material tracking connects the physical parts on the shop floor with their production records. It
+helps operators identify what to load, gives inspectors the history of the piece in front of them,
+and keeps material visible through manual work between automated operations. Where serials and
+workorders are used, that record also supports traceability after material leaves the cell.
 
-Tracking each piece of material by marking it with a unique serial and barcode is vital for
-operating a system with a mix of automated and manual handling. The key design objectives and goals
-are as follows:
-
-1. Assist the operators with loading and unloading by providing information about what to produce,
-   what material is available, the status of all the in-process material, and load/unload
-   instructions.
-
-2. Increase quality by allow the inspection operator to learn the history of the exact piece of
-   material under test (the pallet, machine, program, date and time, etc.).
-
-3. Track unloaded material through manual processes such as final wash or any in-process work
-   between automated machine cycles.
-
-4. Properly fill workorders, ensuring that all produced material is assigned to a workorder and that
-   enough material is produced to fill workorders on time.
-
-5. Make it as easy as possible for the operators to keep the data in the computers matching the
-   reality of the material on the shop floor.
-
-6. When the data in the computers no longer matches the reality on the shop floor, provide an easy
-   way of rectifying this situation by updating the data in the computers.
-
-7. Provide long-term tracking and part identification for downstream customers.
-
-The key challenge is in points 5 and 6; the system must make the normal, everyday operator tasks
-easy and straightforward but also be robust to the unknown.
+The central requirement is that the computer's view agrees with reality. Normal handling should be
+straightforward, and there must be a clear way to reconcile the record when a part is removed,
+reworked, or loaded differently than expected.
 
 ## Sticky Notes
 
-Consider the following method of tracking material not using a computer. On a whiteboard, divide the
-whiteboard into regions for all the possible places that material could be, so a region for each
-pallet, a region for each in-process transfer stand, a region for material waiting to be inspected,
-a region for material waiting to be washed, a region for in-process queues and conveyors, a region
-for castings, a region for material sent out of the factory for external work, and so on. Any place
-that material could be has a corresponding region on the whiteboard.
+Imagine a whiteboard divided into regions for the places where material can be: pallets, transfer
+stands, raw material queues, inspection areas, and material on hold. Give each piece of material a
+sticky note with its part name and serial. Write its history on the back. As the piece moves around
+the factory, move its note to the corresponding region.
 
-Now for each piece of material, a new sticky note is used. The part name and serial is written on
-the sticky note and on the back is written a log of activity. At the start of the process, a new
-sticky note is created and placed on the whiteboard. As the process unfolds, the sticky note moves
-around on the whiteboard corresponding to the material moving around the factory floor.
+For example, when a part is unloaded after its first process, move its note from the pallet to the
+transfer stand. When the part is loaded for its next process, move the note onto that pallet. Anyone
+can compare the whiteboard with the shop floor to see what is available and what needs attention.
 
-For example, a part just completed process 1 and is waiting on pallet 6 at the load station to be
-unloaded into the transfer stand. The sticky note for the material is currently on the whiteboard in
-the region for pallet 6. As part of the unload operation, the sticky note is moved on the whiteboard
-from the pallet 6 region to the transfer-stand region. (Also, if any material is loaded, its
-corresponding sticky note is moved into the pallet 6 region.) The fact that there is a sticky note
-existing in the transfer stand position on the whiteboard signals to the operators that the pallet
-for the second operation should be brought to the load station. When the pallet for the second
-operation arrives and the material is loaded, the sticky note will then move from the whiteboard
-region for the transfer-stand to the region of the whiteboard for the pallet.
-
-This whiteboard of sticky notes has several great features:
-
-- By centralizing all material on a single whiteboard, it is easy to visualize the entire process
-  and make decisions about what actions to take (what material is available for loading, what
-  material needs to be inspected, what material to wash and assign to a workorder, etc.).
-
-- Operators can at a glance determine if the whiteboard matches the reality on the factory floor. If
-  there is a mismatch, the sticky notes can be moved so that the whiteboard matches reality.
-
-- Operators at a single station can focus only on a section of the whiteboard to carry out their
-  tasks. For example, at the wash station, only the section of the whiteboard corresponding to the
-  wash stand is relevant.
-
-- It is straightforward to accommodate all sorts of material tasks both inside and outside of
-  automation. For example, if a part must be quarantined as potential scrap, its sticky note can be
-  set on the side of the whiteboard. Once examined, if the part is determined to be scrap the sticky
-  note can be thrown in the trash can. If the part needs some re-machining, the sticky note can be
-  added back onto the whiteboard once the re-machining has completed and the part is ready for the
-  remainder of the process.
-
-- By using a metaphor of physical sticky notes, the design provides an intuitive understanding for
-  users. The design is motivated by Google's Material Design, whose founding idea is: "A material
-  metaphor is the unifying theory of a rationalized space and a system of motion. The material is
-  grounded in tactile reality, inspired by the study of paper and ink, yet technologically advanced
-  and open to imagination and magic." In fact, we suggest that operator training start with actual
-  physical sticky notes on a whiteboard before transitioning the training to the computers.
-
-Of course, there is one main downside to using a physical whiteboard; it is tedious for the
-operators. This is solved by keeping the whiteboard and sticky notes in software and using software
-monitoring to automatically move around the sticky notes. We believe that when using automation and
-software as part of process control, you must always start with a design that could be done without
-software. This produces a design which does not force the process to conform to the software but
-allows the software to support the process. It also eases user understanding because it provides a
-straightforward metaphor for the user to understand how the software functions. The software should
-exist just to support the process by removing the tedious and error-prone tasks.
+This is the model used by FMS Insight. Automation and operator input keep the virtual whiteboard
+updated, while each material card provides access to the recorded history.
 
 ## Software-Based Sticky Notes
 
-![Screenshot of Load/Unload Station Screen](screenshots/insight-loadstation-small.jpg)
+![Load station whiteboard with material cards](screenshots/insight-load-station.png)
 
-The tactile metaphor of moving around sticky notes, with one sticky note per piece of material, is
-the basis for the FMS Insight Station Monitor page. See the screenshot above, which shows the
-whiteboard with regions for Raw Material, the two faces on Pallet 1, and Completed Material. Insight
-allows the operator to view a section of the virtual whiteboard of material sticky notes relevant to
-the current station, in this case the load station 1.
+The [station pages](/fms-insight/client-station-monitor) show the section of the whiteboard relevant
+to an operator. The load station shows material to load, unload, or transfer. Queue pages show
+material waiting at a particular location. Inspection and closeout pages group recent material by
+the work still to be recorded.
 
-Insight monitors the machines and automation and moves around the material sticky notes on the
-virtual whiteboard as parts are loaded, unloaded, and machined. Also, by watching the virtual
-whiteboard, Insight can control the pallets. For example, Insight will prevent a pallet from
-arriving at the load station if the transfer stand queue virtual whiteboard region is empty.
+Insight updates cards as it receives events from the cell controller. An operator records manual
+changes where needed, such as adding material to a queue, recording an inspection, or moving waiting
+material to quarantine. A [barcode scanner](/fms-insight/client-scanners) or serial search opens the
+record for a specific piece.
 
-Insight allows the operator to keep the virtual whiteboard in sync with the material on the factory
-floor. Operators can remove virtual material sticky notes from the whiteboard by clicking a button
-and add sticky notes by scanning a barcode or manually entering a serial. Each queue or conveyor or
-place where material is under manual control has a corresponding whiteboard region. By placing a
-computer or tablet at that place in the factory, the operator can at a glance see if the virtual
-whiteboard matches the reality on the factory floor, and if not simply edit the virtual whiteboard
-to match.
+A material record and its serial label are related but distinct. Material can be tracked before a
+serial is assigned, and correcting a label does not transfer another piece's manufacturing history.
+Removing a card from a queue also preserves its history; the serial can be looked up again later.
 
 ## An Example Design
 
-The virtual whiteboard implemented by FMS Insight is versatile and can adjust to a huge variety of
-processes with parts moving in and out of automation and manual handling.
+Consider a part with two machining processes and a manual inspection between them. The first process
+unloads to an inspection input queue. The operator checks the part and, once it is released, records
+its move to an output queue. The second process draws material from that output queue.
 
-For example, consider a process with two cells: a horizontal machining cell and a lathe cell. Parts
-are manually loaded and unloaded and transfer between cells via a conveyor. The conveyor between the
-cells will correspond to a region on the virtual whiteboard. Also, right next to the conveyor, there
-is a computer or mounted tablet with an attached barcode scanner. The computer uses FMS Insight to
-display the region of the whiteboard for the conveyor. As parts are unloaded from one cell, FMS
-Insight automatically moves the corresponding material sticky note from the pallet to the conveyor
-region. Similarly, FMS Insight is configured to monitor the virtual whiteboard region for the
-conveyor to know when to bring pallets to the load station to load material out of the conveyor.
+The queue contents tell the cell which material is available for the next operation. If a part is
+set aside for further investigation, it stays out of the production input queue until it is ready.
+[Quarantine queues](/fms-insight/material-quarantine) can keep that material and its disposition
+visible.
 
-During normal operation, the operator does not need to manually edit the virtual whiteboard. As
-parts are completed in one cell, their sticky notes are moved to the whiteboard region for the
-conveyor and when the material is loaded into the second cell the sticky notes are removed from the
-whiteboard region for the conveyor. The operator can at a glance see that the conveyor matches the
-virtual whiteboard by comparing the conveyor to the computer screen.
+The precise queue moves and inspection actions depend on the installation. Recording an inspection
+result is distinct from moving material between queues. Design the physical handling and software
+steps together so operators know which actions happen automatically and which they must record.
 
-Now consider that some parts are removed from the conveyor temporarily. Perhaps the parts are
-inspected, a part needs some re-machining, or it must travel elsewhere in the factory for a
-specialized operation. When the material is removed from the conveyor, the operator can click a
-button in FMS Insight to remove the sticky note from the virtual whiteboard. FMS Insight will then
-prevent a pallet from arriving to load this missing material. The material eventually returns and
-when it does, the operator can scan the barcode on the part to add the corresponding virtual sticky
-note onto the whiteboard. FMS Insight will then activate the pallet to load this piece of material
-in the second cell.
+## Whiteboard Tracking Design
 
-## Whiteboard tracking design
+Start by mapping the physical flow and walking through it with sample parts or sticky notes. Decide
+where material can wait, who is responsible for it, and what makes it ready for the next operation.
+Then configure the corresponding queues and station views.
 
-FMS Insight requires that you decide on a list of virtual whiteboard regions and how material will
-move between regions. The initial design is best done by using an actual whiteboard in a conference
-room with real sticky notes. Draw regions on the whiteboard, create some sample sticky notes, and
-step through the proposed process, moving the sticky notes around on the whiteboard. This helps
-design the whiteboard regions to configure in FMS Insight, but also highlights potential complicated
-material flow which you might consider changing the process.
+- **Raw material:** a job can assume material is available and create records at the first load, or
+  use an input queue where operators record material before it is loaded.
+- **In-process material:** use queues for transfer stands, conveyors, or manual work between
+  automated processes. Keep the display near the physical location so mismatches are visible.
+- **Pallets and baskets:** the integration supplies their locations, contents, and station work.
+  Where baskets are used, individual slots identify the units of handling.
+- **Inspections and closeout:** these pages help record checks and final manual work. They show
+  recent activity, while serial lookup provides access to older material histories.
+- **Exceptions:** agree how to hold, rework, release, and dispose of material. Use the
+  [operator procedures](/fms-insight/operator-procedures) and the cell's own recovery instructions
+  when a record needs correction.
 
-At the load station, use a computer or mounted tablet running Insight. Insight will display the
-section of the virtual whiteboard for the pallet, plus the region for material being loaded and the
-region to which material is unloaded. Insight will determine based on the whiteboard which specific
-material to load and display it with its serial. The operator should then load the material with the
-specific serial requested by Insight. But, if the serial that Insight wants to load is unavailable,
-the operator can just edit the virtual whiteboard. Insight will automatically adjust with a new
-instruction for the operator. (Hopefully this doesn't happen and the virtual whiteboard is kept in
-sync, but if it does happen it is easy to correct.)
-
-At any place where in-process material is queued outside of control of the automation, create a
-whiteboard region. This could be conveyors between cells or stands for holding parts between
-processes (e.g. large parts which have process 1 and process 2 on different pallets). At each
-location, dedicate a computer or mounted tablet with an attached barcode scanner to view and edit
-the whiteboard region. Insight can be configured to automatically move the virtual sticky notes
-during normal operations as parts are loaded and unloaded into these queues, but the operator can
-use the computer and scanner to adjust the whiteboard region as needed.
-
-For in-process manual operations such as manual CMM stations or custom processes outside the
-automated cell, create two whiteboard regions. One region for the input to the process and one
-region for the output from the process. For example, at an in-process CMM stand, create a whiteboard
-region for the unloaded parts not yet measured. FMS Insight can then be configured to automatically
-move the material sticky note from the pallet to the inbound CMM region. The CMM stand then has a
-computer or mounted tablet showing Insight; the operator can then see the material not yet measured,
-perform the CMM measurement, and if successful, use FMS Insight to transfer the virtual sticky note
-from the inbound region to the outbound region. FMS Insight monitors the outbound region and will
-bring a pallet to the load station once the CMM has completed. Insight will also transfer the sticky
-note from the outbound region to the pallet as part of the load operation.
-
-For raw material, Insight supports two options. Insight can just assume raw material is always
-available in which case Insight will create a new virtual sticky note during the initial loading. In
-this design, the first time a sticky note appears is on the pallet. Alternatively, Insight can be
-configured to draw initial material from a virtual whiteboard region. In this case, when material
-arrives, an operator must scan or add the material into the initial whiteboard region. Once added,
-FMS Insight will then activate the pallet to load this material.
-
-For completed material, Insight automatically adds the sticky notes to regions for signaled
-inspections and final wash. Technically, these could just be configured virtual whiteboard regions
-similar to in-process queues or operations, but inspections and final wash are so common that
-Insight automatically has special regions for them. Each configured inspection type has two regions:
-one for completed parts signaled for inspection but not yet inspected and one region for completed
-inspection. For final wash, Insight also has two regions: one for not yet washed parts and one for
-washed parts. A computer mounted at the inspection and wash stations can show Insight and allow the
-operator to move the virtual sticky note as the inspection or final wash is completed.
+A card's physical location is not enough to decide whether it can be edited. Material already
+involved in a load, unload, or automated transfer is protected from conflicting queue changes.
+Always follow the displayed instruction and available actions when reconciling the whiteboard.

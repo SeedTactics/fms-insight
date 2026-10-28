@@ -2,136 +2,103 @@
 title: FMS Insight Security
 nav: FMS Insight Server > Security
 description: >-
-  The FMS Insight server runs on the cell controller and uses TLS and OpenID Connect.
+  Configure HTTPS, authentication, and network access for the FMS Insight server and browser client.
 ---
 
-# FMS Insight Security
+FMS Insight serves its browser client and HTTP API from the cell's server. The default configuration
+uses HTTP on port 5000 without authentication. Anyone who can reach that port can access data and
+available operations, including changes to jobs and material. Configure access as part of the
+installation's network design.
 
-FMS Insight implements a JSON+REST-based HTTP server and runs on the cell controller. By default,
-FMS Insight listens on port 5000 with no TLS and no authentication; any computer which can connect
-to the port can view data and download jobs.
+## Network Layout
 
-To implement security, we recommend one of two possible variants.
+In a typical Mazak installation, FMS Insight runs directly on the cell-controller computer. Host or
+network firewall rules restrict access to the Insight service to approved factory devices. Browsers
+connect directly to Insight; this arrangement does not require a reverse proxy.
 
-- FMS Insight can be configured to require TLS and require OpenID connect authentication for
-  single-sign-on. This requires the cell controller computer (running FMS Insight) to be directly
-  connected to the existing factory network, but a firewall can be used to only allow access on the
-  specific port running FMS Insight.
-- A cell-local private network containing the machines, cell-controller, and FMS Insight is created.
-  A reverse HTTP proxy connects the cell-local private network to the factory network.
+An alternative is to run FMS Insight on a separate, IT-managed computer with two network cards:
 
-## FMS Insight HTTPS, Authentication, and Firewall
+- One interface connects to a private cell-local network containing the controller, machines, and
+  any robot controllers used by the integration.
+- The other connects to the factory network, where operator tablets, engineering workstations, and
+  scheduling or reporting services reach the Insight web application and API.
 
-In this design, FMS Insight is configured to require TLS/HTTPS and implements authentication using
-OpenID Connect. We have tested with AzureAD, Okta, and Keycloak, but any OpenID/OAuth2 compliant
-identity provider should work. An external firewall is placed between the cell-controller and the
-factory network and is configured to only allow traffic on the FMS Insight port.
+In this arrangement, Insight communicates with equipment on the cell-local network and serves
+clients through its factory-facing address. Factory clients do not need direct access to the
+equipment. Keep the cell-local network isolated from factory and internet routing, and disable IP
+forwarding, NAT, and network bridging on the Insight computer. The two network cards provide the
+connections; firewall and routing policy maintain the separation.
 
-To enable HTTPS, a server certificate must be created and stored in a pfx file. This should be
-signed by the enterprise domain, but could also be a self-signed certificate. Once created, within
-the FMS Insight [config.ini](server-config) file, enable the `TLSCertFile` setting with the path to
-the certificate.
+Agree on the controller connections and network addresses during commissioning. Keep equipment
+addresses stable; a private cell network can use static addresses without depending on factory DNS
+or DHCP. The connections required by each controller integration still need to be configured when
+Insight runs on a separate computer. See the [Mazak integration notes](/fms-insight/mazak).
 
-Within your identity provider, create an application for FMS Insight and create a client. The client
-must require implicit grant flow with no client secret. The Redirect URI for the client must be set
-to the common name from the TLS certificate with a root path. Finally, most identity providers allow
-the administrator to restrict an application to a set of users (e.g. Azure Active Directory allows
-assigning specific users or groups to the application).
+For either layout, allow approved clients to reach only the intended Insight service endpoint.
+Provide both HTTP API and live WebSocket access through that endpoint. If sign-in is enabled,
+browsers also need access to the identity provider, and the service validating tokens needs access
+to its metadata and signing keys. Arrange server and device updates through the site's IT management
+policy. HTTPS and authentication can be provided by Insight itself or by an optional reverse proxy
+as described below.
 
-Once the client has been created, there are four settings in the [config.ini](server-config).
+## HTTPS and Browser Sign-In
 
-- `OpenIDConnectAuthority`: This setting is the path to the well-known configuration document for
-  the identity provider. For example, for AzureAD, this is
-  `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
-- `OpenIDConnectClientID`: This should be the ClientID for the implicit grant flow client. This
-  ClientID is passed to the FMS Insight webpage which then performs the implicit flow grant to
-  obtain a token.
-- `AuthAuthority`: This must be identical to the `OpenIDConnectAuthority`.
-- `AuthTokenAudiences`: This is a list of audiences which the server uses to validate the identity
-  tokens. In almost all cases, the audience matches the ClientID. Multiple audiences are separated
-  by semi-colons.
+For HTTPS directly on Insight, set `TLSCertFile` in the `SERVER` section of
+[config.ini](/fms-insight/server-config) to a PFX certificate file. Use a certificate trusted by the
+client devices and matching the hostname they use to reach Insight. A reverse proxy can instead
+provide the HTTPS endpoint.
 
-## Cell-Local Private Network With Proxy
+The browser client uses OpenID Connect authorization code flow with PKCE. Register it as a public
+browser client without a client secret. Configure the redirect and post-logout URLs to the root of
+the externally visible Insight address, including its scheme, hostname, port if used, and trailing
+slash. The client requests the `openid profile` scopes. Configure the identity provider's browser
+access and token settings to match the installation.
 
-In this design, a cell-local private network is created with a proxy computer to the factory
-network. The design is based on a networking DMZ-setup.
+The client sends the resulting access token to the API. The service validating that token must use
+its issuer and audience; an access token's audience is not necessarily the browser client's ID.
+Restrict who can sign in through the identity provider's application assignments or access policy.
 
-- The machines and cell controller are placed on a private network. This network has no DNS, no
-  DHCP, and no route or access to any other network. IP Addresses are statically assigned.
+## Authentication in FMS Insight
 
-- The cell controller computer runs FMS Insight with no TLS, listening on port 5000.
+The following settings in the `SERVER` section work together:
 
-- The factory provides a computer with two network cards. One network card connects to the
-  cell-local private network and is statically assigned an IP address. The second network card
-  connects to the existing factory network. This computer can join the domain, enable Windows
-  Updates, and use all the typical configuration of the Factory's IT. This computer should deny ALL
-  network traffic to be routed between the cell-local network and the factory network. All
-  communication is proxied (a networking DMZ setup). The factory provides this computer, allowing
-  you to use your preferred supplier and configuration.
+| Setting                  | Purpose                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `OpenIDConnectAuthority` | Identity-provider authority URL used by browsers for discovery and sign-in. This is the authority base URL, not the full discovery-document URL. |
+| `OpenIDConnectClientId`  | Client ID registered for the browser application.                                                                                                |
+| `AuthAuthority`          | Authority used by the server to discover the issuer and signing keys for token validation. Normally the same authority as the browser uses.      |
+| `AuthTokenAudiences`     | Accepted access-token audiences, separated by semicolons.                                                                                        |
 
-- The proxy computer runs a reverse-HTTP-proxy. This can be Nginx, IIS, or something else. We also
-  provide the source code for a small C# reverse-proxy server built using ASP.NET Core and Kestrel
-  (~250 lines of code) which you can use if you wish it. The reverse-proxy implements TLS and
-  requires connections over HTTPS.
+All four settings must be present for Insight's built-in API authentication to be enabled. Setting
+only the browser sign-in options does not protect the API. The server validates tokens for API
+requests and the live event connection. The FMS information endpoint remains available before
+sign-in so clients can discover the login configuration.
 
-- Either the reverse-proxy or FMS Insight itself is configured to require OpenID Connect/OAuth2
-  Authentication. This allows single-sign-on and only authenticated users will then be able to view
-  data and create jobs. FMS Insight has been tested with AzureAD, Okta, and Keycloak, but any OpenID
-  Connect compliant identity provider should work.
+The validating server needs access to the identity provider's discovery document and signing keys,
+including when keys rotate. For an isolated cell network, arrange this access explicitly with the
+installation's IT team. A reachable discovery document alone is insufficient if its advertised key
+endpoint is unreachable.
 
-- Software running on the factory network connects and authenticates with the reverse-proxy, which
-  passes the requests along to FMS Insight running on the cell controller.
+## Optional Reverse Proxy
 
-#### Reverse-Proxy Implemented Authentication
+A reverse proxy can provide the factory-facing HTTPS endpoint for Insight in either layout. It can
+also be the connection between the factory network and an Insight server kept on the cell-local
+network. Clients connect to the proxy's HTTPS address; the proxy forwards HTTP requests and the live
+WebSocket event connection to Insight. Network rules should prevent clients from bypassing the proxy
+to reach an unauthenticated backend.
 
-One option for authentication is for the reverse-proxy to require authentication. The reverse-proxy
-should require OpenID Connect authentication for all routes starting with `/api` except for
-`/api/v1/fms/fms-information`. Our small C# reverse-proxy implements OpenID Connect authentication
-and has been tested with AzureAD, Okta, and Keycloak. Alternatively, Nginx+ or IIS can be configured
-to require authentication.
+Authentication can be enforced at the proxy or by Insight. If the proxy validates tokens, configure
+Insight's `OpenIDConnectAuthority` and `OpenIDConnectClientId` for browser sign-in and configure the
+proxy's issuer and access-token audiences separately. Protect API routes, including
+`/api/v1/events`, while allowing `/api/v1/fms/fms-information` for login discovery. The event
+connection uses a token query parameter, so the proxy must support that authentication path as well
+as bearer tokens on ordinary API requests.
 
-In this scenario, two settings are needed in FMS Insight's [config.ini](server-config):
+If Insight validates tokens instead, configure all four settings above and provide its required
+access to discovery and signing keys. The browser still uses the externally reachable authority and
+Insight address. Source for an example proxy is included in the FMS Insight repository; adapt and
+validate the deployment for the site's network and identity provider.
 
-- `OpenIDConnectAuthority`: This setting is the path to the well-known configuration document for
-  the identity provider. For example, for AzureAD, this is
-  `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
-- `OpenIDConnectClientID`: This is the ClientID for an implicit grant flow client. This ClientID is
-  passed to the FMS Insight webpage which then performs the implicit flow grant to authenticate the
-  user and obtain a token.
-
-These settings are just returned to clients in the `/api/v1/fms/fms-information` route, FMS Insight
-itself does not check the request for a proper JWT token.
-
-Next, the reverse-proxy is configured with TLS certificates and authentication. For our small C#
-reverse-proxy, this is done in the appsettings.json file.
-
-#### FMS Insight Implemented Authentication
-
-If the reverse-proxy does not implement authentication, FMS Insight itself can verify the tokens.
-The main challenge is that the FMS Insight server requires access to the OpenID Connect Authority
-well-known configuration document to be able to obtain the signing keys. For example, in AzureAD,
-the well-known document is
-`https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration` where tenant is
-your tenant GUID. This document is required to be accessible by the FMS Insight server to obtain the
-rotating signing keys of the identity provider. Since FMS Insight is running on the cell-controller
-on the cell-local private network and the proxy computer denies all routed traffic, FMS Insight has
-no direct access to the well-known configuration document.
-
-Thus, the reverse-proxy must also proxy the well-known configuration document. That is, the
-reverse-proxy is configured to first proxy all connections from the factory network to FMS Insight.
-In addition, the reverse-proxy is then also configured to proxy the request from FMS Insight to the
-OpenID Connect configuration document to the real identity provider.
-
-The configuration in FMS Insight's [config.ini](server-config) are as follows:
-
-- `OpenIDConnectAuthority`: The real identity-provided authority URL. For example, for AzureAD, this
-  is `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
-- `OpenIDConnectClientID`: This is the ClientID for an implicit grant flow client. This ClientID is
-  passed to the FMS Insight webpage which then performs the implicit flow grant to authenticate the
-  user and obtain a token.
-- `AuthAuthority`: The path to the reverse-proxy to obtain the OpenID configuration. For example, it
-  could be `http://{reverse-proxy-ip-address}/openid-authority`. The reverse-proxy should then be
-  configured to proxy all paths starting with `/openid-authority/*` to the real identity provider.
-- `AuthTokenAudiences`: This is a list of audiences which the server uses to validate the identity
-  tokens. In almost all cases, the audience matches the ClientID. Multiple audiences are separated
-  by semi-colons. Thus this setting should be all the ClientIDs created separated by semi-colons.
+After configuration changes, restart the relevant services and verify sign-in, ordinary API
+requests, and live updates from a client device. Verify that unauthenticated access is rejected at
+the intended boundary as well.

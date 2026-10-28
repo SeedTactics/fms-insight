@@ -2,52 +2,46 @@
 title: FMS Engineering Daily Monitoring
 nav: FMS Insight Client > Engineering
 description: >-
-  The FMS Insight engineering pages are used by part programming engineers. These pages display
-  information about the past few days of machine cycles and program execution.
+  Review recent machine cycles, compare actual and planned hours, and investigate unusual cycle
+  times.
 ---
 
-# FMS Insight Engineering Pages
-
-The _Engineering_ page is intended for the part programming engineers. We suggest they bookmark this
-page and visit it directly. The page can be used after a new part-program is introduced to closely
-watch the timings of the new program. The page can also be used to stay on top of problematic
-programs which are frequently interrupted. All data available here is also available in the reports
-tab of the [operations page](client-operations). The engineering page just provides a dedicated
-place for engineers to bookmark and visit directly.
+The Engineering pages help part-programming and manufacturing engineers review recent machine
+activity. They are useful after introducing a program or investigating recurring interruptions. The
+same reports are available from [Operations](/fms-insight/client-operations#reports).
 
 ## Cycles
 
-![Screenshot of machine cycles](screenshots/insight-machinecycles.png)
+![Recent machine cycles](screenshots/insight-machinecycles.png)
 
-First, the page contains a tab with a chart of all machine cycles from the past 3 days. The chart
-can be zoomed by clicking and dragging, filtered to specific parts and/or pallets, and toggled to a
-table. Clicking on any point allows more details about the cycle to be loaded. Anything older than 3
-days is available as part of the [monthly review](improve-fms) on the
-[flexibility analysis page](client-efficiency).
+The cycle chart initially shows the past five days. Filter by part, program, pallet, or station,
+zoom to a time range, and select a point to inspect the cycle and its material. A table view makes
+it easier to compare individual records or copy data to a spreadsheet.
+
+Cycle time is elapsed wall-clock time, including interruptions. When a part and program are
+selected, the statistical band shows typical recent times and the horizontal reference line shows
+the expected active time. A persistent difference may mean the planned time needs review; isolated
+long cycles may have a different cause.
+[Monthly cycle analysis](/fms-insight/client-efficiency#machine-cycles) provides a wider view.
 
 ## Hours
 
-![Screenshot of machine hours](screenshots/insight-machinehours.png)
+![Actual and planned machine hours](screenshots/insight-machinehours.png)
 
-In the Hours tab, the planned and actual machine hours for the past 7 days are shown. The data can
-be toggled between a bar chart and a table. Anything older than 7 days is available as part of the
-[monthly review](improve-fms) on the [flexibility analysis page](client-efficiency).
+The Hours view compares active hours credited to recorded cycles with simulated hours for the past
+seven days. These active hours represent expected productive time rather than the full elapsed time
+of interrupted cycles. Switch between the chart and table to compare machines and days. Use the
+[flexibility analysis pages](/fms-insight/client-efficiency) for older periods and broader
+comparisons.
 
 ## Outliers
 
-![Screenshot of Machine outliers](screenshots/insight-machineoutliers.png)
+![Recent machine cycle outliers](screenshots/insight-machineoutliers.png)
 
-On the Outliers tab, there is a table which shows cycles from the last three days which are
-statistical outliers. The outlier detection is based on the
-[median absolute deviation of the median](https://en.wikipedia.org/wiki/Median_absolute_deviation),
-which is more resilient to outliers than the standard deviation. There are two reasons that a
-machine cycle will appear here:
+The Outliers view lists cycles from the past five days whose elapsed time is outside the typical
+range. Insight estimates that range using the median and median absolute deviation, reducing the
+influence of occasional long interruptions.
 
-- If the actual time on the machine is far away from the median actual time, the cycle will be
-  displayed. Cycles of this type indicate that the program was interrupted and took longer than
-  expected.
-- If the expected machine time from the job is far away from the median actual time, the cycle will
-  be displayed. Cycles of this type indicate that the expected time is unrealistic (as long as
-  enough cycles are available to obtain good statistics). In this case, the expected machine time in
-  the flexibility plan should be adjusted to be equal to the median time. Alternatively, perhaps the
-  program should be changed to improve the machine time.
+An outlier is a reason to investigate, not a diagnosis. Review the material history, program,
+tooling, and circumstances of the cycle. Separately compare typical cycle times with the expected
+times used for planning; a consistently unrealistic planned time need not produce an outlier.

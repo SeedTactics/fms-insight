@@ -2,62 +2,45 @@
 title: Operator Instructions
 nav: FMS Insight Server > Instructions
 description: >-
-  The FMS Insight server can be configured to display arbitrary load, unload, wash and inspection
-  instructions to the operator.
+  Make part-specific load, unload, closeout, and inspection documents available from the station
+  pages.
 ---
 
-# FMS Insight Operator Instructions
+Insight can open instructions for the material and operation currently selected on a
+[station page](/fms-insight/client-station-monitor). These are typically PDF documents with the
+site's approved pictures and procedures. They open in a separate browser tab that is reused for
+subsequent requests.
 
-FMS Insight can display load, wash, and inspection instructions to the operator. The instructions
-are documents (typically PDF files) stored on the FMS Insight server, and when the user clicks a
-button in the client the instructions are shown in a new browser tab.
+## Configuration
 
-### Configuration
+For the standard file-based lookup, set `InstructionFilePath` in the `FMS` section of
+[config.ini](/fms-insight/server-config) to a directory on the Insight server. Place
+browser-readable files in that directory and restart the server after changing the setting. An
+installation can also supply its own instruction lookup through a plugin.
 
-The instruction files are kept on the FMS Insight server in a single directory. The directory is
-configured via a [configuration option](server-config) `InstructionFilePath` within the `FMS`
-section. Once configured, this directory should be filled with files that can be displayed in a
-browser (PDF is a good choice). When the user requests an instruction file, the FMS Insight server
-will search the filename of all files inside this directory
+## Instruction Types
 
-### Instruction Types
+Include the part name and instruction type in each filename. For a part named `ABC123`:
 
-There are four instruction types: load, unload, wash, and inspections. Each instruction type will
-search for a different file depending on the page on the
-[station monitor screen](client-station-monitor) and the currently selected part. To create
-instruction files for all possibilities, you should create files as follows:
+| Operation  | Example filename    | Notes                                                                                              |
+| ---------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| Loading    | `ABC123-load.pdf`   | Can include both loading and unloading instructions.                                               |
+| Unloading  | `ABC123-unload.pdf` | If no unload document is found, Insight falls back to the load document.                           |
+| Closeout   | `ABC123-wash.pdf`   | The Close Out page uses the `wash` instruction type, including for final tasks other than washing. |
+| Inspection | `ABC123-CMM.pdf`    | Use the configured inspection type, such as `CMM`, in the filename.                                |
 
-- For each part, create a file with the partname and `load` in the filename. Inside this file, add
-  pictures and text to explain how to load and optionally unload the part from the pallet. For
-  example, for a part named `ABC123`, you could create a file `ABC123-load.pdf` which contains the
-  instructions. When the user is on the Load Station page in FMS Insight, FMS Insight will search
-  for a file with the partname and `load` in the filename, find `ABC123-load.pdf`, and display it to
-  the user.
+When a process number is available, Insight first looks for the part name followed by that process,
+for example `ABC123-2-load.pdf`, then falls back to a part-wide match. The standard lookup uses
+filename substring matching; part-name matching is case-sensitive and instruction-type matching is
+case-insensitive. Keep names unambiguous and verify the document opened for each part and process,
+especially when part names overlap. Do not rely on a particular choice between multiple matches.
 
-- For each part, optionally create a file with the partname and `unload` in the filename. If no file
-  exists with the partname and `unload` in the filename, FMS Insight will fall back to searching for
-  a file with the partname and `load` in the filename. Thus you could just create a single file
-  (e.g. `ABC123-load.pdf`) which contains both the load and unload instructions, or you could create
-  two separate files (e.g. `ABC123-load.pdf` and `ABC123-unload.pdf`).
+## Opening the Instructions
 
-- For each part, create a file with the partname and `wash` in the filename. Inside this file, add
-  pictures and text to explain how to wash and perhaps other tasks at the wash station. For example,
-  for a part named `ABC123`, you could create a file `ABC123-wash.pdf`. Similar to before, when the
-  user is on the Wash page in FMS Insight, this instruction file will be displayed.
+Open a material card and select **Instructions**. The station, selected inspection type, part, and
+process determine the requested document. At a load station, the folder button opens instructions
+for the displayed load/unload work.
 
-- For each part and each inspection type, create a file with the partname and the inspection type in
-  the filename. For example, for a part named `ABC123` and inspection types `CMM` and `3DScan`, you
-  should create two files: `ABC123-CMM.pdf` and `ABC123-3DScan.pdf`. Each file should contain
-  pictures and text to explain how to perform the inspection on this part. When the user is on the
-  Inspection page, FMS Insight will find the file based on the currently selected part and
-  inspection type.
-
-### Opening the instructions
-
-To open the instructions, click on any material card in the
-[station monitor page](client-station-monitor). When clicked, a dialog will appear with details
-about the material. On the bottom of the dialog, there is a button "Instructions". When clicked, FMS
-Insight will search for a file matching the current partname and page (load, wash, or inspection) as
-described above. The instruction file will then be displayed in a new tab. When subsequent
-instructions are requested, the tab will be re-used. Thus the tab does not need to be manually
-closed after each operation.
+If no document is found, check the configured directory, filename, part name, process, and requested
+instruction type. The [server error log](/fms-insight/server-errors) can help diagnose configuration
+problems.
