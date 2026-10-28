@@ -48,6 +48,6 @@
     <PackageReference Include="Serilog.Formatting.Compact" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
-    <PackageReference Include="CsvHelper" />
+    <PackageReference Include="Sep" />
   </ItemGroup>
 </Project>
