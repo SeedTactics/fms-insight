@@ -85,14 +85,10 @@ new scheduling or inspection signaling techniques, or training new operators and
 
 ## Starting Offset and Decrement Priority
 
-The Mazak [config.ini](/fms-insight/server-config) contains a setting `Use Starting Offset` which
-controls how new schedules are added into the cell controller.
-
-When `Use Starting Offset` is enabled, new Mazak schedules will be created with a "Due Date" and
-"Priority" field based on the simulation's prediction of its actual start time. If disabled, a due
-date of January 1, 2008 and priority of 91 is used for all Mazak schedules, effectively disabling
-the use of due dates. Since Mazak uses due dates to decide which part or pallet to start producing
-first, due dates can help smooth production flow.
+The Mazak [config.ini](/fms-insight/server-config) setting `Use Starting Offset For Due Date`
+controls how downloaded schedules receive due dates and priorities. When enabled, Insight uses the
+simulation's projected start times to help order the work. When disabled, downloaded schedules
+receive the same default due date and priority.
 
 Due dates and priorities affect which work Mazak selects and when a pallet is emptied between
 schedules. When enabled, Insight also adjusts the priority of existing unfinished schedules as new
