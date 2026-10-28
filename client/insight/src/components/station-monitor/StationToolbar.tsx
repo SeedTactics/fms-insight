@@ -233,7 +233,8 @@ export function StationToolbar(): ReactNode {
             <em>All</em>
           </MenuItem>
           {LazySeq.of(inspTypes)
-            .sortBy((x) => x)
+            .concat(curInspType ? [curInspType] : [])
+            .distinctAndSortBy((x) => x)
             .map((ty) => (
               <MenuItem key={ty} value={ty}>
                 {ty}

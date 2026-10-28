@@ -2,115 +2,102 @@
 title: Load/Unload Procedures
 nav: Procedures > Operator Load/Unload
 description: >-
-  Implement continuous improvement of a flexible machining system by reviewing targeted metrics
-  which expose cell efficiency and cost per piece.
+  Use FMS Insight to follow load and unload instructions, introduce material, and keep the material
+  record aligned with the shop floor when production does not go as planned.
 ---
 
-# Load/Unload Procedures
+FMS Insight's [station pages](/fms-insight/client-station-monitor) show the material and work
+relevant to each operator. Bookmark the appropriate station and select its queues. The screens use
+the [whiteboard metaphor](/fms-insight/material-tracking): material cards should match the physical
+material at the station. A [barcode scanner](/fms-insight/client-scanners) can help identify a
+particular piece.
 
-FMS Insight provides [targeted pages](client-station-monitor) for operators on the factory floor: a
-page for each load station which shows the material to load or unload, a page for each inspection
-stand showing details about the material to be inspected, a page for the wash station, and finally a
-page for in-process material queue management. These pages use the
-[whiteboard metaphor](material-tracking) for material tracking. We suggest that each station has a
-dedicated display or tablet with the relevant page bookmarked or made the homepage; these pages are
-designed to work on a touchscreen. In addition, each station should have an attached barcode
-scanner.
+Available actions depend on the cell controller and installation. Use these pages to understand the
+general workflow alongside the operating and recovery procedures supplied for your cell.
 
-FMS Insight's load station page will display what the cell controller is expecting to happen at the
-load station. Specifically, the page will display the material to load, the material to unload, and
-the material to transfer between faces (if the pallet has multiple faces). If the operator performs
-all the tasks as specified, the operator presses the load button to signal to the cell controller
-that the load is complete. FMS Insight monitors the cell controller and will update the page.
+## Normal Loading and Unloading
 
-![Screenshot of Load Station screen](screenshots/insight-load-station.png)
+![Load station showing material to load, transfer, and unload](screenshots/insight-load-station.png)
 
-If queues are used for managing material, the load station screen also can show the queues on the
-right hand side. The specific material that is marked as loaded is the first material in the queue
-which matches the job and route details. The material in the queue can be re-ordered by dragging,
-which allows the operator to control which serial is loaded onto the pallet. Note that because the
-cell controller has already assigned a job to the pallet at the load station, the material at the
-front of the queue will not always be the material that is loaded; the first material which matches
-the job is loaded.
+The load station page shows the expected loads, unloads, and transfers between pallet faces or
+basket slots. Check the part, serial, and destination against the physical material. Open a material
+card for its history or instructions.
+
+For a controller-managed pallet, complete the displayed work and use the controller's ready or load
+button according to your cell's procedure. Insight updates when the controller reports that the work
+is complete. Some installations also have
+[basket station work](/fms-insight/client-station-monitor#basket-work) confirmed directly in
+Insight.
+
+Queue order helps choose which eligible material to load. A pallet's assigned job and route also
+constrain the selection, so the first card in a queue is not necessarily the next piece to load.
+Follow the specific material shown in the load instruction.
 
 ## Introducing Raw Material
 
-The jobs control how raw material is introduced. If no raw material queue is set on the job, the
-cell controller will assume that raw material is always available and bring a pallet to be loaded as
-soon as it is empty. FMS Insight is watching the cell controller and will create new material once
-the load is complete.
+Jobs can either assume raw material is available or draw it from a configured input queue. Without
+an input queue, Insight creates material records as the initial loads complete. With an input queue,
+the operator records the available material before it is selected for loading.
 
-Alternatively, the job can be configured with an input queue on the first process. In this case, the
-contents of the queue control when the cell controller will bring a pallet to the load station to be
-loaded. The Queues webpage shows the contents of the queue and allows the operator to scan or enter
-new material into the queue. The page also shows a table of scheduled jobs and shows the quantity of
-parts that still must be loaded.
+![Raw material queues and jobs awaiting material](screenshots/insight-queues-jobs-table.png)
 
-![Screenshot of queues page](screenshots/insight-queues-jobs-table.png)
+Bring the material to its designated location, then use the Queues page to scan or enter it.
+Depending on the installation, material may be entered individually or in bulk, with or without
+serials, and as a casting type or against a particular job. Review the proposed part, job, process,
+and queue before adding it. The jobs and workorders shown on this page help determine what material
+is needed.
 
-The operator should physically bring the casting/raw material to the cell and place it in a
-designated area nearby the load station. Once the material has arrived, the operator can click a
-button on the queues webpage (or scan a barcode) to add the material to the queue. FMS Insight
-supports a variety of techniques controlled by [config settings](server-config): adding raw material
-assigned to a specific job, adding raw material with or without a serial, or bulk adding a large
-quantity of material.
-
-Each physical location on the shop floor which holds material should correspond to a queue in FMS
-Insight. In addition, each queue should have a dedicated display or tablet mounted on the shop floor
-right next to the queue. This display should have the queues page bookmarked or set as the homepage
-and only show the queues page. This allows the operators and supervisors to quickly check at a
-glance that the material on the shop floor matches the material FMS Insight records as in the queue.
+Keep the queue display aligned with the physical queue. Reordering cards changes queue priority;
+moving a card to another queue records a change of location. Material involved in an active load,
+unload, or automated transfer cannot simply be removed or moved to another queue.
 
 ## Quarantine Material
 
-FMS Insight optionally supports the ability to [quarantine material](material-quarantine).
-Quarantined material is material that is temporarily removed from the cell for re-machining, more
-detailed inspection, or some other rework. Material can be quarantined on the queues page by opening
-the material dialog and clicking a button. This moves the material to the quarantine queue where it
-is visible on the supervisor's material page.
+[Quarantine](/fms-insight/material-quarantine) tracks material set aside for inspection, rework, or
+a disposition decision. There are two distinct actions:
 
-A quarantine signal records a request for the backend to handle material when it leaves automation
-control. The signal does not immediately move material or cancel a load. Direct quarantine moves
-material that is waiting in a queue into the configured quarantine queue. The available actions
-depend on the installation and the material's current state. Follow the displayed instructions and
-the installation's procedure before moving physical material.
+- **Quarantine** moves material that is waiting in a queue into the configured quarantine queue.
+- **Signal For Quarantine** records a request for the integration to handle material when it leaves
+  automation control. It does not immediately move the material or cancel a load.
 
-Once the material is ready to be re-introduced into the cell, the operator should bring it back to
-the shop floor. Once the material has arrived, the operator can click a button on the queues webpage
-(or scan the barcode) to add the material into the queue. Once it is back in the queue, the cell
-controller will activate a pallet to load the material.
+Use the action available for the material's current state and follow the installation's instructions
+for the physical move. When released material returns, verify its history and next process before
+adding it to the appropriate production queue.
+
+## When the Displayed Work Cannot Be Completed
+
+Resolve a mismatch before acknowledging completion. Where **Cancel Load** is available, its
+confirmation lists all material in the instruction that will be cancelled and recalculated. It can
+affect more than the card you selected. Review the refreshed instruction before continuing.
+
+Where cancellation is not offered, follow the controller-specific procedure for rejecting or
+changing the load. A quarantine signal is not a substitute for cancelling an instruction. If an
+alarm suspends changes, read the displayed reason and resolve it before continuing with the affected
+work.
 
 ## Recovering From Misload
 
-The load station page displays the load, unload, or reclamp steps that the cell controller is
-expecting the operator to preform. When the operator presses the ready button, both the cell
-controller and FMS Insight (which is watching the cell controller) assumes that these instructions
-took place. FMS Insight will take the material from the input queue and record it as loaded onto the
-pallet. The cell controller will begin moving the pallet to the machine.
+If completion has already been acknowledged, first reconcile the physical cell and controller using
+the installation's recovery procedure. Depending on the integration, material removed from the
+controller's pallet record may appear in a quarantine queue. Check the resulting Insight status
+before making further changes.
 
-If for whatever reason the load instructions can not be followed, ideally the operator should edit
-the cell controller **before** the load is completed. FMS Insight will adjust itself based on
-whatever the cell controller expects to happen and only at the time that the load is completed is
-anything finalized and recorded.
+Where enabled, **Invalidate Cycle** on the Queues page can correct an incorrectly recorded process.
+Look up the serial and review every affected material record in the confirmation. Invalidation
+affects whole events, so it may affect other material recorded on those events. All affected
+material must be removed from queues, including quarantine queues, and be clear of active station
+work and automation control before the correction can proceed. Follow the installation's recovery
+procedure for those pieces as well.
 
-If the load button is pressed, the first step is to adjust the status in the cell controller to
-match what actually happened. FMS Insight is watching the cell controller and when the pallet status
-is adjusted, FMS Insight will move any material that was thought to be loaded on the pallet to the
-quarantine queue. That material can then be re-introduced back into the queue so that the queue in
-FMS Insight matches the material on the shop floor. In addition, FMS Insight allows the ability to
-invalidate the inadvertent load events that were created.
+Corrections proceed from the latest still-valid process backwards, one process at a time. Review the
+refreshed history after each correction. Changing a casting or job assignment first requires
+resolving any later processes. After the correction, add the material back to the appropriate queue
+and verify its next process.
 
-Only the latest still-valid process can be invalidated. For material with recorded processes 1, 2,
-and 3, first invalidate process 3, then review the refreshed history before invalidating process 2
-in a separate action. Continue backwards one process at a time as needed. To change a casting or job
-assignment, first invalidate any later processes in separate actions.
+Invalidated events remain visible in the history but are no longer used to determine the material's
+current production state. Removing material from a queue alone does not invalidate its history.
 
-Invalidation affects whole recorded cycle events and all material listed in the confirmation. The
-original events remain in the event log but no longer contribute to active material reconstruction.
-
-Insight does not reassign recorded pallet manufacturing history from one material identity to
-another. If machining was attributed to the wrong identity, record an explanatory operator note and
-use the installation's traceability exception procedure. Quarantine, invalidation, and readmission
-do not transfer that manufacturing result to a different identity. Do not repeat machining solely to
-repair the record. Ordinary serial-label assignment remains available when the tracked material
-identity is correct and only its label needs correction.
+Insight does not transfer recorded pallet manufacturing history from one material record to another.
+If machining was attributed to the wrong material record, add an explanatory note and use the
+installation's traceability exception procedure. Do not repeat machining solely to repair a record.
+Correcting a serial label on the right material record is a separate operation.

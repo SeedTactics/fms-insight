@@ -2,68 +2,54 @@
 title: Material Quarantine
 nav: Procedures > Material Quarantine
 description: >-
-  FMS Insight can help track and manage material that has been temporarily removed from the FMS cell
-  for re-machining or rework.
+  Track material set aside for inspection, rework, or a disposition decision, and return it to
+  production when it is ready.
 ---
 
-# Material Quarantine
+Quarantine is an optional part of [material tracking](/fms-insight/material-tracking). It keeps
+material that cannot follow the normal production flow visible while someone decides what should
+happen next. Typical reasons include further inspection, rework, or waiting for an engineering
+decision.
 
-FMS Insight provides an optional feature to help track and manage material that has been temporarily
-removed from the cell for re-machining, more detailed inspection, or some other rework. FMS Insight
-displays all the material currently on hold, allows a supervisor/manager to update the status of
-quarantined material, and finally allows the material to be re-introduced to the cell or scrapped.
+## Queues for Material on Hold
 
-The implementation extends the [material tracking](material-tracking) to also include whiteboard
-regions for quarantined material. By default, FMS Insight creates whiteboard regions for each
-pallet, inspection stand, the wash stand, and any in-process queues of material between processes.
-These are the "active" whiteboard regions and contain material which is flowing through the normal
-workflow. FMS Insight keeps these whiteboard regions updated automatically by recording the log of
-automated cell activity. In the [server configuration](server-config), FMS Insight allows you to
-define a list of Queues and this list of queues must contain a queue for each "active" in-process
-queue defined in the flexibility plan and used to hold material in the normal workflow. Any queue
-which is listed inside the flexibility plan is treated by FMS Insight as an "active" queue.
+The installation defines queues for production and for material on hold. These are regions on the
+virtual whiteboard: each queue should have a clear physical meaning and someone responsible for
+keeping it accurate. Queue roles supplied by the integration determine how the pages use them.
 
-To support quarantined material, you can create extra whiteboard regions/queues for the various
-tasks that might be performed on quarantined material. To the list of queues defined in the
-[server configuration](server-config), you can add extra queues to represent the various quarantined
-material tasks. A queue that is not listed inside the flexibility plan is considered as a
-quarantined material queue and FMS Insight will not update the queue automatically. Instead a
-supervisor, manager, or engineer can manually move material between the various quarantined material
-queues to assist with tracking the material. The material can also be moved back into an "active"
-queue to reintroduce it into the cell or removed completely if scrapped.
+The configured initial quarantine queue receives material when it is quarantined. Additional queues
+can describe the next action, such as waiting for inspection or undergoing rework. There is no need
+for a separate queue for every possible problem; choose enough to show who needs to act and where
+the material is.
 
-The [operations](client-operations#material) and [quality](client-quality#quarantine-material)
-webpages allow supervisors, quality engineers and others to manually move material between the
-various quarantined queues, view all the material, add notes, re-introduce material to "active"
-queues, or scrap material. In addition, the [server configuration](server-config) contains a setting
-_QuarantineQueue_ for the initial quarantine queue. Direct quarantine moves material that is waiting
-in a queue into this configured queue. A quarantine signal instead records a request for the backend
-to handle material when it leaves automation control; it does not immediately move material or
-cancel a load. The [operator procedures](operator-procedures#quarantine-material) explain this
-distinction. The available actions depend on the installation and the material's current state.
+![Material awaiting inspection or rework in quarantine queues](screenshots/insight-quarantine.png)
 
-FMS Insight allows arbitrary quarantined material queues, but we suggest you follow a scheme similar
-to the "TODO, In-Progress, Done" Kanban task management/project management technique.
+The [Operations Material page](/fms-insight/client-operations#material) and the
+[Quality Quarantine page](/fms-insight/client-quality#quarantine-material) show material on hold.
+Open a card to review its history or add a note. Where permitted, drag the handle on the card to
+move it between quarantine queues. Use the
+[Queues station page](/fms-insight/client-station-monitor#queues) for changes to production queues.
 
-- _Initial Quarantine_: We suggest a quarantine queue called _Initial Quarantine_. When an operator
-  removes material from a pallet/load station/inspection stand/etc. the material is initially moved
-  into this queue to get it out of the "active" queues and allows the operator to continue with
-  normal operations. A supervisor/manager should then decide what is to be done with this material
-  and move it into a more specific quarantined material queue. The _Initial Quarantine_ queue acts
-  similarly to the TODO column on the task board. Most of the time the _Initial Quarantine_ queue
-  should be empty; if there is anything in the _Initial Quarantine_ queue, it signals to the
-  supervisor that a decision on the material is required and once that decision is made, the
-  material is moved to a more specific quarantine queue, emptying the _Initial Quarantine_ queue.
+## Putting Material on Hold
 
-- In-Progress quarantine queues: each potential action on the material should have a corresponding
-  in-progress quarantined queue. For example, _Rework on Standalone Machines_, _Sent to Foundry_,
-  _Waiting for Customer Inspection_, etc. FMS Insight allows notes to be attached to each piece of
-  material, so you can keep a log or status on each piece of material. Material can move between one
-  or more of these queues while it is quarantined.
+Direct quarantine moves material that is waiting in a queue into the initial quarantine queue.
+Material already involved in station work or under automation control cannot be moved this way.
 
-- Done queues: There are no specific done queues (unlike Kanban task management); instead, if the
-  material is ready to be re-introduced into the normal workflow of the automated handling system,
-  it can be moved back into an "active" queue. If instead the material is scrap, it can be removed
-  from the quarantined queues.
+A quarantine signal is a request for the integration to handle material when it leaves automation
+control. It does not immediately move a card, physically remove a part, or cancel a load. The
+available actions and when a signal takes effect depend on the installation. Follow its procedure
+and check the resulting queue and material status. See the
+[operator procedures](/fms-insight/operator-procedures#quarantine-material) for the distinction
+between signaling, moving, and cancelling work.
 
-![Screenshot of Material screen](screenshots/insight-operations-material.png)
+## Returning or Disposing of Material
+
+Before returning material to production, bring it to the intended location and review the recorded
+part, job, completed processes, and next operation. Then scan or enter its serial on the Queues page
+and add it to the appropriate production queue. If a recorded process must first be corrected,
+follow the [misload recovery procedure](/fms-insight/operator-procedures#recovering-from-misload).
+
+If material will not return, record the disposition using the installation's procedure and remove it
+from the queue. Queue removal means that Insight no longer lists it at that location; it does not
+erase the history or by itself record a scrap decision. Notes can preserve the reason and reference
+any associated quality records.

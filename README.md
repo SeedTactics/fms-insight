@@ -194,3 +194,17 @@ I use VSCode as an editor and there are VSCode tasks for launching vite in devel
 and a debug configuration for launching Chrome. There is also a mock server which I use while
 developing the client. The mock server lives in [server/debug-mock](server/debug-mock/). There is a
 VSCode task for launching the debug mock server.
+
+## Publishing the User Documentation
+
+The `docs/` pages and screenshots are included in the `@seedtactics/insight-client` package without
+rendering their Markdown. They target the consolidated SeedTactics website, whose documentation
+layout renders each frontmatter `title` as the visible H1. The Markdown body starts below that
+title. Links between Insight pages use `/fms-insight/<page>`; image paths are relative to the source
+page.
+
+A publisher must provide that title and route handling. The consolidated website also redirects
+legacy `/docs/fms-insight/<page>` URLs to `/fms-insight/<page>`. A website still using the older
+layout or `/docs/` mounting path needs corresponding changes before consuming these docs. Publishing
+the npm package does not deploy the website; validate the rendered pages when updating its package
+dependency.
