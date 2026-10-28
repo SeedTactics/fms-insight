@@ -1,9 +1,9 @@
 ---
-title: FMS Monthly Flexibility Analysis
-nav: FMS Insight Client > Flexibility Analysis
+title: FMS Insight Analysis
+nav: FMS Insight Client > Analysis
 description: >-
-  Review production, resource use, material flow, and cost allocation over a month to identify
-  opportunities for improvement.
+  Review production, resource use, material flow, and cost allocation over the last 30 days or a
+  calendar month to identify opportunities for improvement.
 ---
 
 The Analysis pages support a [regular review](/fms-insight/improve-fms) of cell performance. Select
@@ -164,10 +164,10 @@ business costs may need to be added in a spreadsheet or ERP report.
 
 ![Resource cost allocation percentages](screenshots/insight-cost-percentages.png)
 
-The Percentages report divides resource use among the parts produced in the selected period. Machine
-and labor shares use active time from recorded cycles; automation shares use unload-cycle counts.
-These weights allocate a share of the total resource cost, including its idle time, to each part
-type.
+The Percentages report allocates resource costs among part types with recorded work during the
+selected period. Machine and labor shares use active time from recorded cycles; automation shares
+use unload-cycle counts. These weights allocate a share of the total resource cost, including its
+idle time, to each part type.
 
 For example, if two part types account for 1,200 and 1,000 active machine hours in a group, their
 shares of that group's cost are approximately 54.5% and 45.5%. The percentages describe how cost is

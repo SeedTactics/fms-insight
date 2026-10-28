@@ -12,9 +12,9 @@ installation's network design.
 
 ## Network Layout
 
-In a typical Mazak installation, FMS Insight runs directly on the cell-controller computer. Host or
-network firewall rules restrict access to the Insight service to approved factory devices. Browsers
-connect directly to Insight; this arrangement does not require a reverse proxy.
+In a typical Mazak installation, FMS Insight runs directly on the cell-controller computer.
+Configure host or network firewall rules so only approved factory devices can reach the Insight
+service. Browsers connect directly to Insight; this arrangement does not require a reverse proxy.
 
 An alternative is to run FMS Insight on a separate, IT-managed computer with two network cards:
 

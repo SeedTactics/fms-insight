@@ -50,6 +50,6 @@ waiting material between permitted queues. Use the
 [Queues station page](/fms-insight/client-station-monitor#queues) when returning released material
 to production.
 
-Queue placement, inspection results, and a scrap or release decision are separate records. Follow
-the installation's disposition procedure so the material's location and quality records remain
-aligned.
+Moving material between queues does not by itself record an inspection result or a decision to scrap
+or release the material. Follow the installation's disposition procedure so the material's location
+and quality records remain aligned.

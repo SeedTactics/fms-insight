@@ -80,6 +80,6 @@ Then configure the corresponding queues and station views.
   [operator procedures](/fms-insight/operator-procedures) and the cell's own recovery instructions
   when a record needs correction.
 
-A card's physical location is not enough to decide whether it can be edited. Material already
-involved in a load, unload, or automated transfer is protected from conflicting queue changes.
-Always follow the displayed instruction and available actions when reconciling the whiteboard.
+A piece's location alone does not determine which actions are available. Material already involved
+in a load, unload, or automated transfer is protected from conflicting queue changes. Always follow
+the displayed instruction and available actions when reconciling the whiteboard.

@@ -18,9 +18,9 @@ provide.
 Select **Load Tools** to request current tool data from the machines. Use the refresh button to load
 it again; the table is a snapshot of the returned data.
 
-For each tool, the summary compares estimated use by the remaining scheduled work with the total
-remaining life across machines and the smallest remaining life on an individual machine. Usage may
-be measured in time, counts, or both, depending on the controller.
+For each tool, the summary compares estimated scheduled use with the remaining tool life on machines
+relevant to the scheduled work. It shows both the combined remaining life and the smallest total on
+an individual machine. Usage may be measured in time, counts, or both, depending on the controller.
 
 Scheduled use is estimated from recent program executions. For a program already running, the
 estimate includes the whole cycle because Insight does not know how far through the program it is. A

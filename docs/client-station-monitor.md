@@ -64,9 +64,9 @@ disables the affected controls. Previously displayed instructions may remain vis
 follow the warning and your cell's recovery procedure before resuming work.
 
 Material actions also depend on its current state. For example, a piece involved in an active load
-cannot be removed from a queue as though it were idle. Where **Cancel Load** is offered, review the
-whole instruction listed in its confirmation. See
-[operator procedures](/fms-insight/operator-procedures) for quarantine, cancellation, and recovery.
+cannot be removed from a queue as though it were idle. Where **Cancel Load** is offered, review all
+work listed in the confirmation dialog. See [operator procedures](/fms-insight/operator-procedures)
+for quarantine, cancellation, and recovery.
 
 ## Queues
 
@@ -90,9 +90,10 @@ history.
 
 ![Inspection station with pending and recorded inspections](screenshots/insight-inspection.png)
 
-The inspection page groups recently completed material by pending and recorded inspections. Select
-an inspection type in the toolbar, or view all types. Open a material card to review its path
-through the cell, open instructions, and record success or failure for the relevant inspection.
+The Inspection page separates material awaiting a requested inspection from material with recorded
+results. Select an inspection type in the toolbar, or view all types. Open a material card to review
+its path through the cell, open instructions, and record success or failure for the relevant
+inspection.
 
 The selected operator name is attached to the result. Recording a result does not by itself move
 physical material or decide its disposition; follow the installation's procedure for failed parts.
@@ -106,7 +107,8 @@ Closeout is optional and records completion of final manual tasks, such as washi
 workorder assignment. The page shows material unloaded from its final process in the last 48 hours,
 with pending closeouts on one side and closeouts recorded in the last two hours on the other.
 
-Open or scan a card to review the history, assign a workorder where supported, open instructions,
-and record the closeout. Depending on the installation, scanning the serial or assigning a workorder
-is required before completion is allowed. The selected operator is recorded with the result. Older
-material can still be found by serial even after its card leaves the recent display.
+Open a material card or scan its serial to review the history, assign a workorder where supported,
+open instructions, and record the closeout. Depending on the installation, scanning the serial or
+assigning a workorder is required before completion is allowed. The selected operator is recorded
+with the result. Older material can still be found by serial even after its card leaves the recent
+display.

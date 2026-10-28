@@ -38,10 +38,10 @@ functions of FMS Insight work (managing jobs, logging events, etc.).
 ### Sized Queues
 
 FMS Insight supports specifying a size for each queue defined in the config file. FMS Insight will
-then hold and unhold pallets that are waiting to be unloaded so that the queue does not exceed the
+then hold and release pallets that are waiting to be unloaded so that the queue does not exceed the
 configured size. Note that by using the [queues page](/fms-insight/client-station-monitor), an
 operator can manually insert more material into the queue beyond the configured size. The configured
-size is only used for holding and unholding pallets.
+size is only used for holding and releasing pallets.
 
 ## Operations
 
@@ -70,7 +70,7 @@ from the Niigata ICC. Program revisions and Niigata ICC program numbers can be s
 For each pallet, the Niigata ICC stores the "Pallet Master", a list of stops that the pallet visits.
 The route starts with LD (load), has a sequence of MC (machining) and RC (reclamp) stops, and ends
 with a UL (unload). Each load, unload, or reclamp stop contains a list of load station numbers to
-use. Each machining stop contains the machines to use plus a list of program to run.
+use. Each machining stop contains the machines to use plus the programs to run.
 
 FMS Insight sets the pallet master steps based on the data in the created jobs. For each available
 pallet, FMS Insight sorts the jobs by date and priority and decides which job should run on the
@@ -173,5 +173,5 @@ was already recorded incorrectly.
 ### Returning Material to Production
 
 Once released material is physically ready, scan or enter its serial on the Queues page. Verify the
-job and next process before adding it to the production queue. Any required history correction must
-be completed before readmission. Insight can then select the material for an appropriate pallet.
+job and next process, and complete any required history correction before adding the material back
+to a production queue. Insight can then select the material for an appropriate pallet.

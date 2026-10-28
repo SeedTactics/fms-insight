@@ -24,8 +24,8 @@ basket slots. Check the part, serial, and destination against the physical mater
 card for its history or instructions.
 
 For a controller-managed pallet, complete the displayed work and use the controller's ready or load
-button according to your cell's procedure. Insight updates when it receives the controller's
-completion. Some installations also have
+button according to your cell's procedure. Insight updates when the controller reports that the work
+is complete. Some installations also have
 [basket station work](/fms-insight/client-station-monitor#basket-work) confirmed directly in
 Insight.
 
@@ -56,8 +56,7 @@ unload, or automated transfer cannot simply be removed or moved to another queue
 [Quarantine](/fms-insight/material-quarantine) tracks material set aside for inspection, rework, or
 a disposition decision. There are two distinct actions:
 
-- **Quarantine Material** moves material that is waiting in a queue into the configured quarantine
-  queue.
+- **Quarantine** moves material that is waiting in a queue into the configured quarantine queue.
 - **Signal For Quarantine** records a request for the integration to handle material when it leaves
   automation control. It does not immediately move the material or cancel a load.
 
@@ -83,25 +82,22 @@ the installation's recovery procedure. Depending on the integration, material re
 controller's pallet record may appear in a quarantine queue. Check the resulting Insight status
 before making further changes.
 
-If an incorrect recorded process needs to be invalidated and your installation enables this action:
+Where enabled, **Invalidate Cycle** on the Queues page can correct an incorrectly recorded process.
+Look up the serial and review every affected material record in the confirmation. Invalidation
+affects whole events, so it may affect other material recorded on those events. All affected
+material must be removed from queues, including quarantine queues, and be clear of active station
+work and automation control before the correction can proceed. Follow the installation's recovery
+procedure for those pieces as well.
 
-1. Remove the affected material from its queue, including a quarantine queue, using the queue's
-   material dialog. It must also be clear of active station work and automation control.
-2. Look up the serial on the Queues page and choose **Invalidate Cycle**. Select the latest
-   still-valid process and review every material identity listed in the confirmation. Invalidation
-   affects whole recorded events, so other material on those events can be affected too. Insight
-   rejects the change if any affected material is still in a queue or otherwise ineligible; review
-   those pieces through the same recovery procedure before proceeding.
-3. Review the refreshed history. If more than one process was recorded incorrectly, work backwards
-   one process at a time. Changing a casting or job assignment first requires resolving any later
-   processes.
-4. Once the record matches the intended recovery state, add the material to the appropriate queue
-   and verify the next process. Do this after invalidation, not before.
+Corrections proceed from the latest still-valid process backwards, one process at a time. Review the
+refreshed history after each correction. Changing a casting or job assignment first requires
+resolving any later processes. After the correction, add the material back to the appropriate queue
+and verify its next process.
 
-Invalidation retains the original events in the log but excludes them from active material
-reconstruction. Removing material from a queue alone does not invalidate its history.
+Invalidated events remain visible in the history but are no longer used to determine the material's
+current production state. Removing material from a queue alone does not invalidate its history.
 
-Insight does not transfer recorded pallet manufacturing history from one material identity to
-another. If machining was attributed to the wrong identity, add an explanatory note and use the
+Insight does not transfer recorded pallet manufacturing history from one material record to another.
+If machining was attributed to the wrong material record, add an explanatory note and use the
 installation's traceability exception procedure. Do not repeat machining solely to repair a record.
-Correcting a serial label on the right material identity is a separate operation.
+Correcting a serial label on the right material record is a separate operation.

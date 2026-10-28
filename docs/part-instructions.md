@@ -29,11 +29,14 @@ Include the part name and instruction type in each filename. For a part named `A
 | Closeout   | `ABC123-wash.pdf`   | The Close Out page uses the `wash` instruction type, including for final tasks other than washing. |
 | Inspection | `ABC123-CMM.pdf`    | Use the configured inspection type, such as `CMM`, in the filename.                                |
 
-When a process number is available, Insight first looks for the part name followed by that process,
-for example `ABC123-2-load.pdf`, then falls back to a part-wide match. The standard lookup uses
-filename substring matching; part-name matching is case-sensitive and instruction-type matching is
-case-insensitive. Keep names unambiguous and verify the document opened for each part and process,
-especially when part names overlap. Do not rely on a particular choice between multiple matches.
+When a process number is available, Insight first searches for the part name followed by that
+process, for example `ABC123-2-load.pdf`. If no match is found, it searches again without the
+process number.
+
+The standard lookup uses filename substring matching; part-name matching is case-sensitive and
+instruction-type matching is case-insensitive. Keep names unambiguous and verify the document opened
+for each part and process, especially when part names overlap. Do not rely on a particular choice
+between multiple matches.
 
 ## Opening the Instructions
 

@@ -22,7 +22,7 @@ can describe the next action, such as waiting for inspection or undergoing rewor
 for a separate queue for every possible problem; choose enough to show who needs to act and where
 the material is.
 
-![Material overview with pallets and queues](screenshots/insight-operations-material.png)
+![Material awaiting inspection or rework in quarantine queues](screenshots/insight-quarantine.png)
 
 The [Operations Material page](/fms-insight/client-operations#material) and the
 [Quality Quarantine page](/fms-insight/client-quality#quarantine-material) show material on hold.

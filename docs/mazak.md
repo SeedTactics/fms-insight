@@ -27,10 +27,10 @@ positions identify controller equipment, while values identify equipment in jobs
 Both job downloads and status/event reads translate through the same map. Station display names are
 maintained separately.
 
-Omitting the list preserves identity numbering. Explicit lists must contain unique positive IDs and
-cover every controller L/U station used. Job routes outside the map are rejected. The old Starting
-Load Station Number setting has been removed and is no longer read; replace it with an explicit list
-when updating configuration.
+If no list is configured, Insight uses the controller's station numbers. Explicit lists must contain
+unique positive IDs and cover every controller L/U station used. Job routes outside the map are
+rejected. The old Starting Load Station Number setting has been removed and is no longer read;
+replace it with an explicit list when updating configuration.
 
 ## Open Database Kit
 
@@ -63,10 +63,8 @@ the parts being loaded and unloaded from each pallet at the load station.
 
 ## Simulation Lab
 
-The Mazak Palletech cell controller software has a great ability to be run in a simulation mode
-without any machines or carts attached. In this mode, the Mazak cell controller software has all
-features active but instead of sending commands to the actual machines and carts, just simulates
-their operation.
+The Mazak controller software can run in simulation mode without connected machines or carts. In
+this mode, its features remain active while it simulates equipment operation.
 
 We recommend that you set up what we call a simulation lab, which consists of two computers in an
 office. One computer will run the Mazak cell controller software in simulation mode, Open Database

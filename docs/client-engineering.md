@@ -7,8 +7,8 @@ description: >-
 ---
 
 The Engineering pages help part-programming and manufacturing engineers review recent machine
-activity. They are useful after introducing a program or investigating recurring interruptions. The
-same reports are available from [Operations](/fms-insight/client-operations#reports).
+activity. They are useful after introducing a program or when investigating recurring interruptions.
+The same reports are available from [Operations](/fms-insight/client-operations#reports).
 
 ## Cycles
 
@@ -31,8 +31,7 @@ long cycles may have a different cause.
 The Hours view compares active hours credited to recorded cycles with simulated hours for the past
 seven days. These active hours represent expected productive time rather than the full elapsed time
 of interrupted cycles. Switch between the chart and table to compare machines and days. Use the
-[flexibility analysis pages](/fms-insight/client-efficiency) for older periods and broader
-comparisons.
+[Analysis pages](/fms-insight/client-efficiency) for older periods and broader comparisons.
 
 ## Outliers
 
@@ -44,4 +43,4 @@ influence of occasional long interruptions.
 
 An outlier is a reason to investigate, not a diagnosis. Review the material history, program,
 tooling, and circumstances of the cycle. Separately compare typical cycle times with the expected
-times used for planning; a consistently unrealistic planned time need not produce an outlier.
+times used for planning; a consistently unrealistic planned time may not appear as an outlier.
