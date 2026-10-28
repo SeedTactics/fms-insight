@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using nietras.SeparatedValues;
 
 namespace BlackMaple.MachineFramework
 {
@@ -135,8 +136,51 @@ namespace BlackMaple.MachineFramework
 
     public static void WriteCSV(TextWriter writer, IEnumerable<LogEntry> es)
     {
-      var csv = new CsvHelper.CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture);
-      csv.WriteRecords(es.SelectMany(ConvertLogToCSV));
+      using var csv = Sep.New(',').Writer().Strict().To(writer, leaveOpen: true);
+      csv.Header.Add([
+        nameof(CSVLogEntry.Counter),
+        nameof(CSVLogEntry.EndTimeUTC),
+        nameof(CSVLogEntry.LogType),
+        nameof(CSVLogEntry.LocationName),
+        nameof(CSVLogEntry.LocationNum),
+        nameof(CSVLogEntry.StartOfCycle),
+        nameof(CSVLogEntry.Pallet),
+        nameof(CSVLogEntry.Program),
+        nameof(CSVLogEntry.Result),
+        nameof(CSVLogEntry.ElapsedTime),
+        nameof(CSVLogEntry.ActiveOperationTime),
+        nameof(CSVLogEntry.MaterialID),
+        nameof(CSVLogEntry.JobUniqueStr),
+        nameof(CSVLogEntry.PartName),
+        nameof(CSVLogEntry.Process),
+        nameof(CSVLogEntry.NumProcesses),
+        nameof(CSVLogEntry.Face),
+        nameof(CSVLogEntry.ProgramDetails),
+      ]);
+      csv.Header.Write();
+
+      foreach (var entry in es.SelectMany(ConvertLogToCSV))
+      {
+        using var row = csv.NewRow();
+        row[nameof(entry.Counter)].Format(entry.Counter);
+        row[nameof(entry.EndTimeUTC)].Set(entry.EndTimeUTC);
+        row[nameof(entry.LogType)].Set(entry.LogType.ToString());
+        row[nameof(entry.LocationName)].Set(entry.LocationName);
+        row[nameof(entry.LocationNum)].Format(entry.LocationNum);
+        row[nameof(entry.StartOfCycle)].Set(entry.StartOfCycle.ToString());
+        row[nameof(entry.Pallet)].Format(entry.Pallet);
+        row[nameof(entry.Program)].Set(entry.Program);
+        row[nameof(entry.Result)].Set(entry.Result);
+        row[nameof(entry.ElapsedTime)].Format(entry.ElapsedTime);
+        row[nameof(entry.ActiveOperationTime)].Format(entry.ActiveOperationTime);
+        row[nameof(entry.MaterialID)].Format(entry.MaterialID);
+        row[nameof(entry.JobUniqueStr)].Set(entry.JobUniqueStr);
+        row[nameof(entry.PartName)].Set(entry.PartName);
+        row[nameof(entry.Process)].Format(entry.Process);
+        row[nameof(entry.NumProcesses)].Format(entry.NumProcesses);
+        row[nameof(entry.Face)].Set(entry.Face);
+        row[nameof(entry.ProgramDetails)].Set(entry.ProgramDetails);
+      }
     }
   }
 }

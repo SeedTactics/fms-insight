@@ -114,7 +114,7 @@ namespace BlackMaple.MachineFramework.Controllers
       var ms = new System.IO.MemoryStream();
       try
       {
-        var tx = new System.IO.StreamWriter(ms);
+        var tx = new System.IO.StreamWriter(ms) { NewLine = "\r\n" };
         CSVLogConverter.WriteCSV(tx, entries);
         tx.Flush();
       }
