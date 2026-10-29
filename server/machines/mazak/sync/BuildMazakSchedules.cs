@@ -44,14 +44,27 @@ namespace MazakMachineInterface
 
     public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(
       MazakCurrentStatus mazakData
+    ) => RemoveCompletedSchedules(mazakData, _ => true);
+
+    public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(
+      MazakCurrentStatus mazakData,
+      Func<MazakScheduleRow, bool> canDelete
+    ) => RemoveSchedules(mazakData, s => s.PlanQuantity == s.CompleteQuantity && canDelete(s));
+
+    // Custom owners may retire incomplete schedules or retain completed routes. The caller
+    // establishes that no material, reservations or equipment work still needs a deleted route,
+    // and serializes the resulting write with downloads and supply edits. This calculation does
+    // not write the controller, archive jobs or record cancellation credit.
+    public static (MazakWriteData, ISet<string>) RemoveSchedules(
+      MazakCurrentStatus mazakData,
+      Func<MazakScheduleRow, bool> shouldDelete
     )
     {
-      //remove all completed production
       var schs = new List<MazakScheduleRow>();
       var savedParts = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules)
       {
-        if (schRow.PlanQuantity == schRow.CompleteQuantity)
+        if (shouldDelete(schRow))
         {
           var newSchRow = schRow with { Command = MazakWriteCommand.Delete };
           schs.Add(newSchRow);
@@ -207,7 +220,7 @@ namespace MazakMachineInterface
       }
 
       int matQty =
-        MazakPart.IsSplitComment(mazakComment) ? 0
+        cfg.UsesInsightJobQuantities(part) || MazakPart.IsSplitComment(mazakComment) ? 0
         : MazakQueues.ShouldSyncronizeJobProcess(part, proc: 1, cfg) ? 0
         : newSchRow.PlanQuantity;
 

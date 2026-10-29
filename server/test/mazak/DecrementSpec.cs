@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
@@ -70,7 +71,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     public DecrementSpec()
     {
       _repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
+        Guid.NewGuid()
       );
 
       _write = Substitute.For<IMazakDB>();
@@ -651,7 +653,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void IncludesNotCopiedJobs()
+    public async Task RefusesPendingJobsUntilDownloadIsConfirmed()
     {
       using var _jobDB = _repoCfg.OpenConnection();
       // uuuu plan 50, completed 30, 5 in proc and 15 not yet started
@@ -720,10 +722,33 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .Select(j => j.UniqueStr)
         .ShouldBe(new[] { "vvvv" });
 
-      DecrementPlanQty.Decrement(_write, _jobDB, st, now);
+      await Assert
+        .That(() => DecrementPlanQty.Decrement(_write, _jobDB, st, now))
+        .Throws<ConflictRequestException>();
+      _write.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+      await Assert.That(_jobDB.LoadDecrementQuantitiesAfter(-1).Count).IsEqualTo(0);
+
+      // Ordinary synchronization must finish the download before this operation can proceed.
+      _jobDB.MarkJobCopiedToSystem("vvvv");
+      st = st with
+      {
+        Schedules = st
+          .Schedules.Append(
+            new MazakScheduleRow
+            {
+              Id = 16,
+              Comment = "vvvv-Insight",
+              PartName = "oooo:1",
+              PlanQuantity = 11,
+              Processes = [],
+            }
+          )
+          .ToImmutableList(),
+      };
+      await Assert.That(DecrementPlanQty.Decrement(_write, _jobDB, st, now)).IsTrue();
 
       var schR = GetSchRows();
-      schR.Count.ShouldBe(1);
+      schR.Count.ShouldBe(2);
       var sch = schR[0];
       sch.Id.ShouldBe(15);
       sch.PlanQuantity.ShouldBe(35);
@@ -795,6 +820,154 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _jobDB
         .LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false)
         .ShouldBeEmpty();
+    }
+
+    private static Job PendingJob(string unique) =>
+      new()
+      {
+        UniqueStr = unique,
+        PartName = "part",
+        Cycles = 3,
+        RouteStartUTC = DateTime.UtcNow.AddHours(-1),
+        RouteEndUTC = DateTime.UtcNow.AddHours(1),
+        Processes = [new ProcessInfo { Paths = [JobLogTest.EmptyPath] }],
+        Archived = false,
+      };
+
+    private static MazakScheduleRow Schedule(string unique, int committed = 0) =>
+      new()
+      {
+        Id = 1,
+        Comment = unique + "-Insight",
+        PartName = "part:1",
+        PlanQuantity = 3,
+        Processes =
+        [
+          new MazakScheduleProcessRow
+          {
+            MazakScheduleRowId = 1,
+            ProcessNumber = 1,
+            ProcessExecuteQuantity = committed,
+          },
+        ],
+      };
+
+    [Test]
+    [Arguments(false, 0, -30)]
+    [Arguments(false, 0, 0)]
+    [Arguments(false, 0, 30)]
+    [Arguments(true, 0, 0)]
+    [Arguments(true, 2, 0)]
+    [Arguments(true, 3, 0)]
+    public async Task RefusesUnconfirmedDownloadsBeforeAnyWrite(
+      bool installed,
+      int committed,
+      int routeDaysFromNow
+    )
+    {
+      using var db = _repoCfg.OpenConnection();
+      var job = PendingJob("unconfirmed") with
+      {
+        RouteStartUTC = DateTime.UtcNow.AddDays(routeDaysFromNow).AddHours(-1),
+        RouteEndUTC = DateTime.UtcNow.AddDays(routeDaysFromNow).AddHours(1),
+      };
+      db.AddJobs(new NewJobs { ScheduleId = "schedule", Jobs = [job] }, null, false);
+      var state = new MazakCurrentStatus
+      {
+        Schedules = installed ? [Schedule(job.UniqueStr, committed)] : [],
+      };
+
+      await Assert
+        .That(() => DecrementPlanQty.Decrement(_write, db, state))
+        .Throws<ConflictRequestException>();
+      _write.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+      await Assert.That(db.LoadDecrementQuantitiesAfter(-1).Count).IsEqualTo(0);
+      await Assert.That(db.LoadJob(job.UniqueStr).CopiedToSystem).IsFalse();
+
+      if (installed)
+      {
+        db.MarkJobCopiedToSystem(job.UniqueStr);
+        await Assert.That(DecrementPlanQty.Decrement(_write, db, state)).IsTrue();
+        await Assert
+          .That(db.LoadDecrementsForJob(job.UniqueStr).Sum(d => d.Quantity))
+          .IsEqualTo(3 - committed);
+      }
+    }
+
+    [Test]
+    [Arguments("manual")]
+    [Arguments("archived")]
+    [Arguments("decremented")]
+    public async Task IneligibleUnconfirmedJobsDoNotBlockBackout(string excluded)
+    {
+      using var db = _repoCfg.OpenConnection();
+      var ignored = PendingJob("ignored") with
+      {
+        ManuallyCreated = excluded == "manual",
+        Archived = excluded == "archived",
+      };
+      db.AddJobs(
+        new NewJobs { ScheduleId = "schedule", Jobs = [ignored, PendingJob("eligible")] },
+        null,
+        false
+      );
+      db.MarkJobCopiedToSystem("eligible");
+      if (excluded == "decremented")
+        db.AddNewDecrement([
+          new NewDecrementQuantity
+          {
+            JobUnique = "ignored",
+            Part = "part",
+            Quantity = 3,
+          },
+        ]);
+      var previous = db.LoadDecrementsForJob("ignored");
+      var state = new MazakCurrentStatus
+      {
+        Schedules = [Schedule("ignored"), Schedule("eligible") with { Id = 2 }],
+      };
+
+      await Assert.That(DecrementPlanQty.Decrement(_write, db, state)).IsTrue();
+      await Assert.That(GetSchRows().Select(s => s.Id)).IsEquivalentTo([2]);
+      await Assert.That(db.LoadDecrementsForJob("ignored")).IsEquivalentTo(previous);
+      await Assert.That(db.LoadDecrementsForJob("eligible").Single().Quantity).IsEqualTo(3);
+    }
+
+    [Test]
+    public async Task RefusesBackoutUntilMazakEventsSettle()
+    {
+      using var db = _repoCfg.OpenConnection();
+      db.AddJobs(new NewJobs { ScheduleId = "schedule", Jobs = [PendingJob("job")] }, null, true);
+      using var sync = new MazakSync(
+        _write,
+        new FMSSettings(),
+        new MazakConfig { DBType = MazakDbType.MazakSmooth }
+      );
+      var state = new MazakState
+      {
+        AllData = new MazakAllDataAndLogs { Schedules = [Schedule("job")] },
+        CurrentStatus = new CurrentStatus
+        {
+          Revision = 0,
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+          Material = [],
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+          Alarms = [],
+        },
+        StateUpdated = true,
+        TimeUntilNextRefresh = TimeSpan.Zero,
+        StoppedBecauseRecentLogEvent = true,
+      };
+      await Assert.That(() => sync.DecrementJobs(db, state)).Throws<ConflictRequestException>();
+      _write.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+      await Assert.That(db.LoadDecrementQuantitiesAfter(-1).Count).IsEqualTo(0);
+
+      await Assert
+        .That(sync.DecrementJobs(db, state with { StoppedBecauseRecentLogEvent = false }))
+        .IsTrue();
+      await Assert.That(db.LoadDecrementsForJob("job").Single().Quantity).IsEqualTo(3);
     }
   }
 }

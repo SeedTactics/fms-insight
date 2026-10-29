@@ -479,6 +479,7 @@ namespace MazakMachineInterface
           DateTime.UtcNow.AddHours(-WriteJobs.JobLookbackHours),
           DateTime.UtcNow
         )
+        .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
         .Where(j =>
           //Check if the copy to the cell succeeded but the DB has not yet been updated.
           //The thread which copies jobs will soon notice and update the database
@@ -490,10 +491,11 @@ namespace MazakMachineInterface
           precedence += 1;
           return j.CloneToDerived<ActiveJob, Job>() with
           {
+            Cycles = Math.Max(0, j.Cycles - (j.Decrements?.Sum(d => d.Quantity) ?? 0)),
             Completed = j
               .Processes.Select(p => ImmutableList.Create(new int[p.Paths.Count]))
               .ToImmutableList(),
-            RemainingToStart = j.Cycles,
+            RemainingToStart = j.Decrements?.Any(d => d.Quantity > 0) == true ? 0 : j.Cycles,
             Decrements = j.Decrements,
             ScheduleId = j.ScheduleId,
             CopiedToSystem = false,
@@ -507,7 +509,10 @@ namespace MazakMachineInterface
         });
 
       var allJobs = jobsByUniq
-        .Values.Select(job => new ActiveJob()
+        .Values.Where(job =>
+          job.DbJob?.Archived != true || !mazakCfg.UsesInsightJobQuantities(job.DbJob)
+        )
+        .Select(job => new ActiveJob()
         {
           UniqueStr = job.UniqueStr,
           RouteStartUTC = job.DbJob?.RouteStartUTC ?? DateTime.Today,
@@ -567,6 +572,51 @@ namespace MazakMachineInterface
         })
         .Concat(notCopied)
         .ToImmutableDictionary(j => j.UniqueStr);
+
+      if (mazakCfg.UseInsightJobQuantities != null)
+      {
+        // Repository accounting survives controller plan increases, split-route deletion and
+        // canceled instructions. The backend projects any additional private reservations via
+        // AdjustCurrentStatus and owns the decision to archive these jobs.
+        var localJobs = new JobCache(jobDB).BuildActiveJobs(material, jobDB);
+        foreach (var local in localJobs.Values.Where(mazakCfg.UsesInsightJobQuantities))
+        {
+          var remainingToStart = local.RemainingToStart;
+          // Actual execution still bounds remaining demand when entry history is incomplete.
+          // Use the locally authorized quantity, not the controller's execution ceiling.
+          if (
+            remainingToStart is { } remaining
+            && jobsByUniq.TryGetValue(local.UniqueStr, out var controller)
+          )
+            remainingToStart = Math.Min(remaining, Math.Max(0, local.Cycles - controller.Started));
+          allJobs = allJobs.SetItem(
+            local.UniqueStr,
+            allJobs.TryGetValue(local.UniqueStr, out var installed)
+              ? installed with
+              {
+                Cycles = local.Cycles,
+                RemainingToStart = remainingToStart,
+                // Keep execution evidence from a controller batch whose logs are still
+                // settling, and history for split routes that have already been removed.
+                Completed = local
+                  .Completed.Select(
+                    (paths, process) =>
+                      paths
+                        .Select(
+                          (count, path) => Math.Max(count, installed.Completed[process][path])
+                        )
+                        .ToImmutableList()
+                  )
+                  .ToImmutableList(),
+                Decrements = EmptyToNull(local.Decrements),
+              }
+              : local with
+              {
+                Decrements = EmptyToNull(local.Decrements),
+              }
+          );
+        }
+      }
 
       return new CurrentStatus()
       {

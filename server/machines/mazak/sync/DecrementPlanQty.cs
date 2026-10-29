@@ -56,8 +56,8 @@ namespace MazakMachineInterface
       // - Finally, the Queues code in Queues.cs will update the material available and remove any allocated castings on
       //   the schedule.
       //
-      // We are protected against crashes and failures:
-      // - If the a failure happens before the decrement quantities are recorded, the next decrement will
+      // After a failure, the caller must synchronize successfully before retrying:
+      // - If a failure happens before the decrement quantities are recorded, the next decrement will
       //   resume and continue reducing the mazak planned quantities.  The decrement quantities are then
       //   calculated by comparing the original job plan quantity with the current mazak schedule quantity, no matter
       //   when the mazak schedule was reduced.
@@ -65,6 +65,20 @@ namespace MazakMachineInterface
       // - If a failure happens after the decrement quantities are recorded, the job will not be decremented again because
       //   the code checks if a previous decrement has happended.  The queues code will keep re-trying to sync the material
       //   quantities with the new scheduled quantities.
+
+      // An installed schedule can still have an unconfirmed download. In that case neither
+      // treating it as pending nor trusting a possibly incomplete set of schedules is safe.
+      // Include pending-only jobs and jobs outside the ordinary download time window.
+      if (
+        jobDB
+          .LoadUnarchivedJobs()
+          .Any(j => !j.ManuallyCreated && !j.CopiedToSystem && !j.Decrements.Any())
+      )
+      {
+        throw new ConflictRequestException(
+          "Cannot back out jobs while a job download is unconfirmed. Wait for Mazak synchronization to finish successfully and retry."
+        );
+      }
 
       var jobs = JobsToDecrement(jobDB, status);
       Log.Debug("Found jobs to decrement {@jobs}", jobs);
@@ -82,7 +96,6 @@ namespace MazakMachineInterface
     {
       public MazakScheduleRow Schedule { get; set; }
       public HistoricJob Job { get; set; }
-      public int Proc1Path { get; set; }
       public int NewPlanQty { get; set; }
       public bool IsSplitProc1 { get; set; }
     }
@@ -109,7 +122,7 @@ namespace MazakMachineInterface
         var job = jobDB.LoadJob(unique);
         if (job == null)
           continue;
-        if (job.ManuallyCreated)
+        if (job.ManuallyCreated || job.Archived)
           continue;
 
         var isSplit = MazakPart.IsSplitComment(sch.Comment);
@@ -150,7 +163,6 @@ namespace MazakMachineInterface
         {
           Schedule = sch,
           Job = job,
-          Proc1Path = 1,
           IsSplitProc1 = isSplit && fmsProc == 1,
           NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty,
         };
@@ -230,23 +242,6 @@ namespace MazakMachineInterface
             }
           );
         }
-      }
-
-      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(
-        DateTime.UtcNow.AddDays(-7),
-        DateTime.UtcNow.AddHours(1),
-        includeDecremented: false
-      );
-      foreach (var j in oldJobs)
-      {
-        decrAmt.Add(
-          new NewDecrementQuantity()
-          {
-            JobUnique = j.UniqueStr,
-            Part = j.PartName,
-            Quantity = j.Cycles,
-          }
-        );
       }
 
       if (decrAmt.Count > 0)

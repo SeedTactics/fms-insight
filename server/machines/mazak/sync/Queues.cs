@@ -137,6 +137,8 @@ namespace MazakMachineInterface
         var job = jdb.LoadJob(unique);
         if (job == null)
           continue;
+        if (cfg.UsesInsightJobQuantities(job))
+          continue;
 
         var isSplit = MazakPart.IsSplitComment(schRow.Comment);
         var fmsProcess = isSplit ? MazakPart.ProcessFromComment(schRow.Comment) : 0;

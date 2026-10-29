@@ -226,6 +226,10 @@ namespace BlackMaple.MachineFramework
     // is deciding what to put onto a pallet
     private readonly Lock _changeLock = new();
 
+    // Protected by _changeLock. A status published before ApplyActions is not sufficient
+    // for decrement if those actions fail, or if a previous decrement needs reconciliation.
+    private bool _decrementReady;
+
     // curStLock protects _lastCurrentStatus and _syncError field
     private readonly Lock _curStLock = new();
     private long _statusRevision;
@@ -336,6 +340,7 @@ namespace BlackMaple.MachineFramework
 
         lock (_changeLock)
         {
+          _decrementReady = false;
           bool actionPerformed = false;
           using var db = _repo.OpenConnection();
           TimeSpan timeUntilNextRefresh;
@@ -395,6 +400,7 @@ namespace BlackMaple.MachineFramework
             }
           }
 
+          _decrementReady = true;
           return timeUntilNextRefresh;
         }
       }
@@ -463,7 +469,6 @@ namespace BlackMaple.MachineFramework
 
     private void DecrementPlannedButNotStartedQty(IRepository jobDB)
     {
-      bool requireStateRefresh = false;
       lock (_changeLock)
       {
         St? st;
@@ -472,16 +477,25 @@ namespace BlackMaple.MachineFramework
           st = _lastCurrentStatus;
         }
 
-        if (st != null)
+        if (!_decrementReady || st == null)
         {
-          var jobsDecremented = _syncState.DecrementJobs(jobDB, st);
-          requireStateRefresh = requireStateRefresh || jobsDecremented;
+          throw new ConflictRequestException(
+            "Cannot back out jobs until cell synchronization completes successfully. Retry after synchronization recovers."
+          );
         }
-      }
 
-      if (requireStateRefresh)
-      {
-        RecalculateCellState();
+        _decrementReady = false;
+        try
+        {
+          _decrementReady = !_syncState.DecrementJobs(jobDB, st);
+        }
+        finally
+        {
+          // A failed controller write can have partial effects. Do not reuse its cached
+          // state, even when no decrement quantities were recorded.
+          if (!_decrementReady)
+            RecalculateCellState();
+        }
       }
     }
     #endregion
