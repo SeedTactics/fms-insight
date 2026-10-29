@@ -664,6 +664,17 @@ namespace BlackMaple.MachineFramework
       IEnumerable<RemovedBooking> removedBookings = null
     );
     ImmutableList<DecrementQuantity> LoadDecrementsForJob(string unique);
+    JobDecrementOperation LoadJobDecrementOperation(string operationId);
+
+    // The caller serializes admission and supplies its authoritative commitments. This atomic
+    // boundary records a completed result (including no-op), positive once-only cancellations,
+    // and release of never-entered raw allocations. Replays return the original result.
+    JobDecrementOperation RecordJobDecrementOperation(
+      string operationId,
+      ImmutableList<NewDecrementQuantity> counts,
+      ImmutableList<RawMaterialToUnallocate> rawMaterial,
+      DateTime nowUTC
+    );
     List<JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId);
     List<JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(DateTime afterUTC);
 

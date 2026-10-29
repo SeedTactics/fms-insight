@@ -15,6 +15,16 @@ archived selected jobs stay out of current status and new downloads even if cont
 copied-to-system flag lag behind archival. The backend can project its additional active
 reservations through `AdjustCurrentStatus`.
 
+Controller completion evidence remains visible while its event batch is settling; repository history
+preserves completion for retired split routes. Actual machining also establishes durable entry when
+its preceding LOAD was unavailable, without synthesizing a LOAD event.
+
+For local cancellation, `RecordJobDecrementOperation` commits positive once-only cancellations,
+release of never-entered raw allocations, and a completed request receipt together. Replays return
+the original batch, including empty results. `LoadJobDecrementOperation` only reads that receipt.
+The backend still owns eligibility, commitment calculation, admission serialization and publication.
+Ordinary `AddNewDecrement` callers retain their existing multiple-entry behavior.
+
 The backend owns supply admission, cancellation, schedule retirement, and job archival for selected
 jobs. Downloads start them with zero material supply. Generic queue reconciliation does not assign
 castings or change supply for them. Generic cleanup retains their schedules, even when completed,

@@ -545,11 +545,12 @@ namespace BlackMaple.MachineFramework
         + "JOIN stations_mat sm ON sm.MaterialID = m.MaterialID "
         + "JOIN stations s ON s.Counter = sm.Counter "
         + "LEFT JOIN mat_path_details mp ON mp.MaterialID = sm.MaterialID AND mp.Process = sm.Process "
-        + "WHERE m.UniqueStr = $uniq AND s.Start = 0 "
-        + "AND s.StationLoc IN ($pallet, $basket)";
+        + "WHERE m.UniqueStr = $uniq AND (s.Start = 0 OR s.StationLoc = $machine) "
+        + "AND s.StationLoc IN ($pallet, $basket, $machine)";
       cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
       cmd.Parameters.Add("pallet", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
       cmd.Parameters.Add("basket", SqliteType.Integer).Value = (int)LogType.BasketLoadUnload;
+      cmd.Parameters.Add("machine", SqliteType.Integer).Value = (int)LogType.MachineCycle;
 
       var entryIds = ImmutableHashSet.CreateBuilder<long>();
       var completed = ImmutableDictionary.CreateBuilder<(int Process, int Path), int>();
@@ -564,7 +565,14 @@ namespace BlackMaple.MachineFramework
         var materialId = reader.GetInt64(3);
         var process = reader.GetInt32(4);
 
-        if (result == "LOAD" && (type == LogType.LoadUnloadCycle || process == 1))
+        // Actual machining establishes entry even when its preceding LOAD was unavailable.
+        // This preserves the existing translator's exact-identity recovery without a synthetic
+        // load event or renewed raw demand. A pallet UNLOAD also proves prior entry.
+        if (
+          type == LogType.MachineCycle
+          || type == LogType.LoadUnloadCycle && result == "UNLOAD"
+          || result == "LOAD" && (type == LogType.LoadUnloadCycle || process == 1)
+        )
           entryIds.Add(materialId);
 
         if (type != LogType.LoadUnloadCycle)

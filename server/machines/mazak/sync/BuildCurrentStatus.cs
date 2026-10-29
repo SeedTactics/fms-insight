@@ -588,10 +588,24 @@ namespace MazakMachineInterface
               {
                 Cycles = local.Cycles,
                 RemainingToStart = local.RemainingToStart,
-                Completed = local.Completed,
-                Decrements = local.Decrements,
+                // Keep execution evidence from a controller batch whose logs are still
+                // settling, and history for split routes that have already been removed.
+                Completed = local
+                  .Completed.Select(
+                    (paths, process) =>
+                      paths
+                        .Select(
+                          (count, path) => Math.Max(count, installed.Completed[process][path])
+                        )
+                        .ToImmutableList()
+                  )
+                  .ToImmutableList(),
+                Decrements = EmptyToNull(local.Decrements),
               }
-              : local
+              : local with
+              {
+                Decrements = EmptyToNull(local.Decrements),
+              }
           );
         }
       }

@@ -121,12 +121,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(44);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(45);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(44);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(45);
       }
 
       CheckSchema(conn1, memDb);

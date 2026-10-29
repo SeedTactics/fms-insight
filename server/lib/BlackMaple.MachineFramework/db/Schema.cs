@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 44;
+    private const int Version = 45;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -287,6 +287,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX job_decrements_unique ON job_decrements(JobUnique)";
         cmd.ExecuteNonQuery();
 
+        CreateJobDecrementOperationTables(cmd);
+
         cmd.CommandText =
           "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
         cmd.ExecuteNonQuery();
@@ -526,6 +528,12 @@ namespace BlackMaple.MachineFramework
           // Only databases created at or upgraded to version 43 have the correlation column.
           if (curVersion == 43)
             Ver43ToVer44(trans);
+
+          if (curVersion < 45)
+          {
+            cmd.Transaction = trans;
+            CreateJobDecrementOperationTables(cmd);
+          }
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1366,6 +1374,13 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE current_basket_slot_data(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, Key TEXT NOT NULL, Value TEXT NOT NULL, PRIMARY KEY(BasketId, Slot, Key))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateJobDecrementOperationTables(IDbCommand cmd)
+    {
+      cmd.CommandText =
+        "CREATE TABLE IF NOT EXISTS job_decrement_operations(OperationId TEXT PRIMARY KEY, TimeUTC INTEGER NOT NULL, DecrementId INTEGER)";
       cmd.ExecuteNonQuery();
     }
 
