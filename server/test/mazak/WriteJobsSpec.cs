@@ -290,6 +290,124 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task BackendOwnsRetirementDuringDownloads(bool missingSchedule)
+    {
+      var retained = new Job
+      {
+        UniqueStr = "uniq1",
+        PartName = "part1",
+        Cycles = 15,
+        RouteStartUTC = fixtureQueueTime.AddHours(-1),
+        RouteEndUTC = fixtureQueueTime.AddDays(1),
+        Archived = false,
+        Processes = [new ProcessInfo { Paths = [JobLogTest.EmptyPath] }],
+      };
+      _jobDB.AddJobs(new NewJobs { ScheduleId = "retained", Jobs = [retained] }, null, true);
+      _jobDB.AddNewDecrement(
+        [
+          new NewDecrementQuantity
+          {
+            JobUnique = retained.UniqueStr,
+            Part = retained.PartName,
+            Quantity = 5,
+          },
+        ],
+        fixtureQueueTime
+      );
+      var pending = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      _jobDB.AddJobs(pending, null, false);
+      var data = missingSchedule
+        ? _initialAllData with
+        {
+          Schedules = _initialAllData.Schedules.Where(s => s.Id != 1).ToImmutableList(),
+        }
+        : _initialAllData;
+      await Assert
+        .That(
+          WriteJobs.SyncFromDatabase(
+            data,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg with
+            {
+              UseInsightJobQuantities = j => j.UniqueStr == retained.UniqueStr,
+            },
+            fixtureQueueTime
+          )
+        )
+        .IsTrue();
+      await Assert.That(FindWrite("Update schedules")).IsNull();
+      await Assert
+        .That(FindWrite("Delete Parts")?.Parts.Any(p => p.PartName == "part1:1:1") ?? false)
+        .IsFalse();
+      await Assert
+        .That(
+          FindWrite("Delete Fixtures")?.Fixtures.Any(f => f.FixtureName == "fixtoremove") ?? false
+        )
+        .IsFalse();
+      await Assert.That(_jobDB.LoadJob(retained.UniqueStr).Archived).IsFalse();
+      await Assert
+        .That(_jobDB.LoadDecrementsForJob(retained.UniqueStr).Sum(d => d.Quantity))
+        .IsEqualTo(5);
+    }
+
+    [Test]
+    [Arguments(5)]
+    [Arguments(8)]
+    public async Task ArchivalSubtractsExistingCancellationCredit(int alreadyCanceled)
+    {
+      var finished = new Job
+      {
+        UniqueStr = "uniq1",
+        PartName = "part1",
+        Cycles = 20,
+        RouteStartUTC = fixtureQueueTime.AddHours(-1),
+        RouteEndUTC = fixtureQueueTime.AddDays(1),
+        Archived = false,
+        Processes = [new ProcessInfo { Paths = [JobLogTest.EmptyPath] }],
+      };
+      _jobDB.AddJobs(new NewJobs { ScheduleId = "finished", Jobs = [finished] }, null, true);
+      _jobDB.AddNewDecrement(
+        [
+          new NewDecrementQuantity
+          {
+            JobUnique = finished.UniqueStr,
+            Part = finished.PartName,
+            Quantity = alreadyCanceled,
+          },
+        ],
+        fixtureQueueTime
+      );
+      var pending = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      _jobDB.AddJobs(pending, null, false);
+      await Assert
+        .That(
+          WriteJobs.SyncFromDatabase(
+            _initialAllData,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg,
+            fixtureQueueTime
+          )
+        )
+        .IsTrue();
+      await Assert.That(_jobDB.LoadJob(finished.UniqueStr).Archived).IsTrue();
+      await Assert
+        .That(_jobDB.LoadDecrementsForJob(finished.UniqueStr).Sum(d => d.Quantity))
+        .IsEqualTo(alreadyCanceled);
+    }
+
+    [Test]
     public async Task BasicCreate()
     {
       var completedJob = new Job()

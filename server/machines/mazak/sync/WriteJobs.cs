@@ -111,7 +111,7 @@ namespace MazakMachineInterface
       }
       else
       {
-        ArchiveOldJobs(db, mazakData, jobs);
+        ArchiveOldJobs(db, mazakData, jobs, mazakCfg);
 
         AddFixturesPalletsParts(mazakData, db, jobs, mazakDb, fmsSt, mazakCfg);
 
@@ -173,7 +173,29 @@ namespace MazakMachineInterface
       }
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
-      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
+      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(
+        mazakData,
+        s =>
+          mazakCfg.UseInsightJobQuantities == null
+          || !MazakPart.IsSailPart(s.PartName, s.Comment)
+          || !mazakCfg.UsesInsightJobQuantities(
+            jobDB.LoadJob(MazakPart.UniqueFromComment(s.Comment))
+          )
+      );
+      if (mazakCfg.UseInsightJobQuantities != null)
+      {
+        // Retiring a schedule does not retire the job or its reusable route definitions.
+        // Keep definitions for backend-owned work until that backend archives the job.
+        savedParts.UnionWith(
+          mazakData
+            .Parts.Where(p => MazakPart.IsSailPart(p.PartName, p.Comment))
+            .Where(p =>
+              jobDB.LoadJob(MazakPart.UniqueFromComment(p.Comment)) is { Archived: false } job
+              && mazakCfg.UsesInsightJobQuantities(job)
+            )
+            .Select(p => p.PartName)
+        );
+      }
       if (transSet.Schedules.Any())
         mazakDb.Save(transSet);
 
@@ -266,7 +288,8 @@ namespace MazakMachineInterface
     private static void ArchiveOldJobs(
       IRepository jobDB,
       MazakCurrentStatus schedules,
-      IEnumerable<Job> toKeep
+      IEnumerable<Job> toKeep,
+      MazakConfig mazakCfg
     )
     {
       var current = new HashSet<string>(toKeep.Select(j => j.UniqueStr));
@@ -302,6 +325,12 @@ namespace MazakMachineInterface
           .Select(j => j.UniqueStr)
       );
 
+      // A controller schedule's completion or disappearance says nothing about retained
+      // basket/station/queue work owned by a custom backend. That backend archives explicitly.
+      current.UnionWith(
+        unarchived.Where(mazakCfg.UsesInsightJobQuantities).Select(j => j.UniqueStr)
+      );
+
       var toArchive = unarchived
         .Where(j => !current.Contains(j.UniqueStr))
         .Select(j => j.UniqueStr);
@@ -310,13 +339,14 @@ namespace MazakMachineInterface
         .Where(j => toArchive.Contains(j.UniqueStr))
         .Select(j =>
         {
-          if (completed.TryGetValue(j.UniqueStr, out var compCnt) && j.Cycles > compCnt)
+          var authorized = j.Cycles - (j.Decrements?.Sum(d => d.Quantity) ?? 0);
+          if (completed.TryGetValue(j.UniqueStr, out var compCnt) && authorized > compCnt)
           {
             return new NewDecrementQuantity()
             {
               JobUnique = j.UniqueStr,
               Part = j.PartName,
-              Quantity = j.Cycles - compCnt,
+              Quantity = authorized - compCnt,
             };
           }
           else

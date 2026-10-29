@@ -162,6 +162,19 @@ namespace MazakMachineInterface
     public bool OverrideFixtureGroupToZero { get; init; } = false;
 
     public Func<IRepository, CurrentStatus, CurrentStatus>? AdjustCurrentStatus { get; init; }
+
+    // Backend-only policy, derived from the job's route/configuration; not an allocator option.
+    // Selected jobs use repository production accounting instead of controller quantities.
+    // Their backend owns supply admission, cancellation, schedule retirement and job archival.
+    // Generic queue reconciliation and automatic schedule deletion/archival leave them alone;
+    // the generic decrement command refuses mixed ownership before changing any jobs.
+    // Null preserves controller-owned quantities for every job. Keep this predicate pure and
+    // stable throughout a job's lifetime. AdjustCurrentStatus can add external reservations.
+    public Func<Job, bool>? UseInsightJobQuantities { get; init; }
+
+    public bool UsesInsightJobQuantities(Job? job) =>
+      job != null && UseInsightJobQuantities?.Invoke(job) == true;
+
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
 

@@ -490,10 +490,11 @@ namespace MazakMachineInterface
           precedence += 1;
           return j.CloneToDerived<ActiveJob, Job>() with
           {
+            Cycles = Math.Max(0, j.Cycles - (j.Decrements?.Sum(d => d.Quantity) ?? 0)),
             Completed = j
               .Processes.Select(p => ImmutableList.Create(new int[p.Paths.Count]))
               .ToImmutableList(),
-            RemainingToStart = j.Cycles,
+            RemainingToStart = j.Decrements?.Any(d => d.Quantity > 0) == true ? 0 : j.Cycles,
             Decrements = j.Decrements,
             ScheduleId = j.ScheduleId,
             CopiedToSystem = false,
@@ -567,6 +568,29 @@ namespace MazakMachineInterface
         })
         .Concat(notCopied)
         .ToImmutableDictionary(j => j.UniqueStr);
+
+      if (mazakCfg.UseInsightJobQuantities != null)
+      {
+        // Repository accounting survives controller plan increases, split-route deletion and
+        // canceled instructions. The backend projects any additional private reservations via
+        // AdjustCurrentStatus and owns the decision to archive these jobs.
+        var localJobs = new JobCache(jobDB).BuildActiveJobs(material, jobDB);
+        foreach (var local in localJobs.Values.Where(mazakCfg.UsesInsightJobQuantities))
+        {
+          allJobs = allJobs.SetItem(
+            local.UniqueStr,
+            allJobs.TryGetValue(local.UniqueStr, out var installed)
+              ? installed with
+              {
+                Cycles = local.Cycles,
+                RemainingToStart = local.RemainingToStart,
+                Completed = local.Completed,
+                Decrements = local.Decrements,
+              }
+              : local
+          );
+        }
+      }
 
       return new CurrentStatus()
       {
