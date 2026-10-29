@@ -121,6 +121,39 @@ public sealed class QuantityOwnershipSpec : IDisposable
   }
 
   [Test]
+  [Arguments(2, 0)]
+  [Arguments(0, 2)]
+  public async Task ControllerStartsBoundLocalDemandWhenEntryHistoryIsMissing(
+    int completed,
+    int executing
+  )
+  {
+    using var repository = _repositories.OpenConnection();
+    var job = Job("local");
+    repository.AddJobs(new NewJobs { ScheduleId = "schedule", Jobs = [job] }, null, true);
+    var data = Data(job);
+    data = data with
+    {
+      Schedules = data
+        .Schedules.Select(s =>
+          s with
+          {
+            PlanQuantity = 40,
+            CompleteQuantity = completed,
+            Processes = s
+              .Processes.Select(p => p with { ProcessExecuteQuantity = executing })
+              .ToImmutableList(),
+          }
+        )
+        .ToImmutableList(),
+    };
+    var status = Status(data).Jobs[job.UniqueStr];
+    await Assert.That(status.Cycles).IsEqualTo(10);
+    await Assert.That(status.Completed[0][0]).IsEqualTo(completed);
+    await Assert.That(status.RemainingToStart).IsEqualTo(8);
+  }
+
+  [Test]
   public async Task CancellationSurvivesCapacityIncreaseAndMissingSchedules()
   {
     using var repository = _repositories.OpenConnection();

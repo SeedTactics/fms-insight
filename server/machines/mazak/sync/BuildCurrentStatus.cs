@@ -581,13 +581,21 @@ namespace MazakMachineInterface
         var localJobs = new JobCache(jobDB).BuildActiveJobs(material, jobDB);
         foreach (var local in localJobs.Values.Where(mazakCfg.UsesInsightJobQuantities))
         {
+          var remainingToStart = local.RemainingToStart;
+          // Actual execution still bounds remaining demand when entry history is incomplete.
+          // Use the locally authorized quantity, not the controller's execution ceiling.
+          if (
+            remainingToStart is { } remaining
+            && jobsByUniq.TryGetValue(local.UniqueStr, out var controller)
+          )
+            remainingToStart = Math.Min(remaining, Math.Max(0, local.Cycles - controller.Started));
           allJobs = allJobs.SetItem(
             local.UniqueStr,
             allJobs.TryGetValue(local.UniqueStr, out var installed)
               ? installed with
               {
                 Cycles = local.Cycles,
-                RemainingToStart = local.RemainingToStart,
+                RemainingToStart = remainingToStart,
                 // Keep execution evidence from a controller batch whose logs are still
                 // settling, and history for split routes that have already been removed.
                 Completed = local
