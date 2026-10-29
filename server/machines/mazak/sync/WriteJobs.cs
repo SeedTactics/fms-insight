@@ -58,6 +58,7 @@ namespace MazakMachineInterface
           now.AddHours(1),
           includeDecremented: false
         )
+        .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
         .GroupBy(j => j.ScheduleId)
         // Only do one schedule at a time
         .MinBy(g => g.Key, StringComparer.Ordinal);

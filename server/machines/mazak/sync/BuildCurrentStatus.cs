@@ -479,6 +479,7 @@ namespace MazakMachineInterface
           DateTime.UtcNow.AddHours(-WriteJobs.JobLookbackHours),
           DateTime.UtcNow
         )
+        .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
         .Where(j =>
           //Check if the copy to the cell succeeded but the DB has not yet been updated.
           //The thread which copies jobs will soon notice and update the database
@@ -508,7 +509,10 @@ namespace MazakMachineInterface
         });
 
       var allJobs = jobsByUniq
-        .Values.Select(job => new ActiveJob()
+        .Values.Where(job =>
+          job.DbJob?.Archived != true || !mazakCfg.UsesInsightJobQuantities(job.DbJob)
+        )
+        .Select(job => new ActiveJob()
         {
           UniqueStr = job.UniqueStr,
           RouteStartUTC = job.DbJob?.RouteStartUTC ?? DateTime.Today,

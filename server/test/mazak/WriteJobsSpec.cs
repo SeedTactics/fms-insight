@@ -358,6 +358,34 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public async Task ArchivedBackendOwnedJobsAreNotDownloaded()
+    {
+      var pending = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      _jobDB.AddJobs(pending, null, false);
+      _jobDB.ArchiveJobs(pending.Jobs.Select(job => job.UniqueStr));
+
+      await Assert
+        .That(
+          WriteJobs.SyncFromDatabase(
+            _initialAllData,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg with
+            {
+              UseInsightJobQuantities = _ => true,
+            },
+            fixtureQueueTime
+          )
+        )
+        .IsFalse();
+      _mazakDbMock.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+    }
+
+    [Test]
     [Arguments(5)]
     [Arguments(8)]
     public async Task ArchivalSubtractsExistingCancellationCredit(int alreadyCanceled)

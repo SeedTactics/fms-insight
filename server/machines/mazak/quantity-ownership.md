@@ -10,8 +10,10 @@ flag. One cell can contain jobs using either policy.
 
 Selected jobs use repository production accounting: accepted cycles minus recorded cancellations,
 durable first entry, and recorded completions. Controller plan increases do not increase demand.
-Current status keeps unarchived selected jobs even when their schedules disappear. The backend can
-project its additional active reservations through `AdjustCurrentStatus`.
+Current status keeps unarchived selected jobs even when their schedules disappear. Explicitly
+archived selected jobs stay out of current status and new downloads even if controller rows or the
+copied-to-system flag lag behind archival. The backend can project its additional active
+reservations through `AdjustCurrentStatus`.
 
 The backend owns supply admission, cancellation, schedule retirement, and job archival for selected
 jobs. Downloads start them with zero material supply. Generic queue reconciliation does not assign

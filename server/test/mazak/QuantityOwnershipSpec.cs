@@ -223,6 +223,42 @@ public sealed class QuantityOwnershipSpec : IDisposable
   [Test]
   [Arguments(false)]
   [Arguments(true)]
+  public async Task ArchivedManagedJobsStayHiddenWithControllerSchedules(bool copied)
+  {
+    using var repository = _repositories.OpenConnection();
+    var local = Job("local") with { RouteStartUTC = DateTime.UtcNow.AddMinutes(-1) };
+    var ordinary = Job("ordinary", backendOwned: false);
+    repository.AddJobs(
+      new NewJobs { ScheduleId = "schedule", Jobs = [local, ordinary] },
+      null,
+      copied
+    );
+    repository.AddNewDecrement(
+      [
+        new NewDecrementQuantity
+        {
+          JobUnique = local.UniqueStr,
+          Part = local.PartName,
+          Quantity = local.Cycles,
+        },
+      ],
+      Now
+    );
+    var controller = Data(local, ordinary);
+    await Assert.That(Status(controller).Jobs[local.UniqueStr].Cycles).IsEqualTo(0);
+
+    // Controller cleanup may lag behind explicit archival. A later or retained observation must
+    // not turn that controller capacity back into active demand for a backend-owned job.
+    repository.ArchiveJob(local.UniqueStr);
+    var archived = Status(controller);
+    await Assert.That(archived.Jobs.ContainsKey(local.UniqueStr)).IsFalse();
+    await Assert.That(archived.Jobs[ordinary.UniqueStr].Cycles).IsEqualTo(ordinary.Cycles);
+    await Assert.That(Status(Data()).Jobs.ContainsKey(local.UniqueStr)).IsFalse();
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
   public async Task PendingControllerJobsDoNotReopenCanceledDemand(bool fullCancellation)
   {
     using var repository = _repositories.OpenConnection();
