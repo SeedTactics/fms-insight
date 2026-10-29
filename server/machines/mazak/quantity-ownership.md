@@ -43,3 +43,10 @@ The existing `ScheduleSafeEdit` command can carry an increased `PlanQuantity`. C
 and rework admission are backend decisions requiring equipment qualification; this policy does not
 implement an invalidation/rework workflow. It introduces no new quantity-decrease path. The
 established controller-owned decrement path remains available to default installations.
+
+Controller-owned backout requires successful synchronization, settled Mazak events, and confirmed
+downloads for all unarchived, non-manual jobs without a previous decrement. Unconfirmed downloads
+cause refusal before any controller edits, including when only pending jobs exist or their route
+dates fall outside the usual download window. Backout does not cancel pending jobs or run downloads
+itself. A failed write can have partial controller effects; the ordinary synchronization loop must
+succeed before retrying. This is a conservative refusal policy, not an atomic controller rollback.

@@ -109,10 +109,11 @@ public sealed class JobAndQueueSpec
   private string _executeActionError = null;
   public event Action NewCellState;
   private bool _expectsDecrement = false;
+  private string _decrementError = null;
 
   public bool AddJobsAsCopiedToSystem => true;
 
-  private async Task StartSyncThread(string extraAlarm = null)
+  private async Task StartSyncThread(string extraAlarm = null, bool checkDecrementAtStartup = false)
   {
     var newCellSt = CreateTaskToWaitForNewStatus();
     _jq = new JobsAndQueuesFromDb<MockCellState>(
@@ -141,6 +142,11 @@ public sealed class JobAndQueueSpec
         Alarms = ["FMS Insight is starting up..."],
       }
     );
+
+    if (checkDecrementAtStartup)
+      await Assert
+        .That(() => ((IJobAndQueueControl)_jq).DecrementJobQuantites(-1))
+        .Throws<ConflictRequestException>();
 
     _jq.StartThread();
 
@@ -218,6 +224,8 @@ public sealed class JobAndQueueSpec
   bool ISynchronizeCellState<MockCellState>.DecrementJobs(IRepository db, MockCellState st)
   {
     _expectsDecrement.ShouldBeTrue();
+    if (_decrementError != null)
+      throw new InvalidOperationException(_decrementError);
     var toDecr = _curSt.CurrentStatus.BuildJobsToDecrement();
     toDecr.ShouldNotBeEmpty();
     db.AddNewDecrement(toDecr, nowUTC: _curSt.CurrentStatus.TimeOfCurrentStatusUTC);
@@ -992,11 +1000,17 @@ public sealed class JobAndQueueSpec
   }
 
   [Test]
-  [Arguments(true)]
-  [Arguments(false)]
-  public async Task Decrement(bool byDate)
+  [Arguments(true, "none")]
+  [Arguments(false, "none")]
+  [Arguments(true, "read")]
+  [Arguments(false, "read")]
+  [Arguments(true, "write")]
+  [Arguments(false, "write")]
+  [Arguments(true, "decrement")]
+  [Arguments(false, "decrement")]
+  public async Task Decrement(bool byDate, string failure)
   {
-    await StartSyncThread();
+    await StartSyncThread(checkDecrementAtStartup: true);
     var now = DateTime.UtcNow;
     using var db = _repo.OpenConnection();
 
@@ -1029,18 +1043,49 @@ public sealed class JobAndQueueSpec
       }
     );
 
-    var newStatusTask = CreateTaskToWaitForNewStatus();
+    List<JobAndDecrementQuantity> Backout() =>
+      byDate
+        ? ((IJobAndQueueControl)_jq).DecrementJobQuantites(DateTime.UtcNow.AddHours(-5))
+        : ((IJobAndQueueControl)_jq).DecrementJobQuantites(-1);
 
-    IEnumerable<JobAndDecrementQuantity> decrs;
+    if (failure != "none")
+    {
+      var errorStatusTask = CreateTaskToWaitForNewStatus();
+      if (failure == "write")
+        _executeActionError = "Controller write failed";
+      else
+        _calculateStateError = "Controller read failed";
+
+      if (failure == "decrement")
+      {
+        _expectsDecrement = true;
+        _decrementError = "Decrement write failed";
+        await Assert.That(Backout).Throws<InvalidOperationException>();
+        _expectsDecrement = false;
+        _decrementError = null;
+        // The failed decrement must request reconciliation even though it recorded no credit.
+      }
+      else
+      {
+        _jq.RecalculateCellState();
+      }
+
+      var failedStatus = await errorStatusTask;
+      await Assert.That(failedStatus.Jobs).IsEquivalentTo(_curSt.CurrentStatus.Jobs);
+      await Assert.That(failedStatus.Alarms.Count).IsEqualTo(1);
+      await Assert.That(Backout).Throws<ConflictRequestException>();
+      await Assert.That(db.LoadDecrementQuantitiesAfter(-1).Count).IsEqualTo(0);
+
+      var recoveredStatusTask = CreateTaskToWaitForNewStatus();
+      _calculateStateError = null;
+      _executeActionError = null;
+      _jq.RecalculateCellState();
+      await Assert.That(await recoveredStatusTask).IsEqualTo(_curSt.CurrentStatus);
+    }
+
+    var newStatusTask = CreateTaskToWaitForNewStatus();
     _expectsDecrement = true;
-    if (byDate)
-    {
-      decrs = ((IJobAndQueueControl)_jq).DecrementJobQuantites(DateTime.UtcNow.AddHours(-5));
-    }
-    else
-    {
-      decrs = ((IJobAndQueueControl)_jq).DecrementJobQuantites(-1);
-    }
+    var decrs = Backout();
 
     decrs.ShouldBe(
       new[]

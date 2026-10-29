@@ -280,7 +280,11 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         "This backend manages job quantities. Use its backout command instead of the Mazak decrement command."
       );
 
-    // TODO: reload AllData to make sure it is up to date?
+    if (st.StoppedBecauseRecentLogEvent)
+      throw new ConflictRequestException(
+        "Cannot back out jobs while Mazak events are still settling. Wait for synchronization to finish and retry."
+      );
+
     return DecrementPlanQty.Decrement(mazakDB, db, st.AllData);
   }
 }
