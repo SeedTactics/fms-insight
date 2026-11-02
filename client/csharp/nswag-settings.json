@@ -1,0 +1,19 @@
+{
+  "namespace": "BlackMaple.FMSInsight.Client",
+  "generateClientClasses": false,
+  "generateClientInterfaces": false,
+  "generateDtoTypes": true,
+  "generateResponseClasses": false,
+  "generateNativeRecords": true,
+  "useRequiredKeyword": true,
+  "writeAccessor": "init",
+  "jsonLibrary": "SystemTextJson",
+  "jsonLibraryVersion": 10.0,
+  "arrayType": "System.Collections.Immutable.ImmutableList",
+  "dictionaryType": "System.Collections.Immutable.ImmutableDictionary",
+  "generateNullableReferenceTypes": true,
+  "generateOptionalPropertiesAsNullable": true,
+  "generateDataAnnotations": false,
+  "dateTimeType": "System.DateTime",
+  "dateType": "System.DateOnly"
+}

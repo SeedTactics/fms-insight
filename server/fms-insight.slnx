@@ -5,6 +5,7 @@
     <Platform Name="x86" />
   </Configurations>
 
+  <Project Path="../client/csharp/BlackMaple.FMSInsight.Client.csproj" />
   <Project Path="./debug-mock/debugmock.csproj" />
   <Project Path="./lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
   <Project Path="./machines/makino/makino.csproj" />

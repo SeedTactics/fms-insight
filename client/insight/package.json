@@ -31,6 +31,8 @@
     "start": "vite",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --browser.headless --project integration",
+    "generate:csharp": "node ../csharp/generate-models.mjs",
+    "check:csharp": "node ../csharp/generate-models.mjs --check",
     "nswag": "./node_modules/nswag/bin/nswag.js aspnetcore2openapi /project:../../server/debug-mock /output:../../server/fms-insight-api.json && ./node_modules/nswag/bin/nswag.js openapi2tsclient /UseAbortSignal:true /input:../../server/fms-insight-api.json /output:src/network/api.ts && node scripts/normalize-generated-api.mjs"
   },
   "dependencies": {

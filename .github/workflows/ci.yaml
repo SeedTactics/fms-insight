@@ -57,6 +57,15 @@ jobs:
       - name: Install client deps
         run: pnpm --dir client/insight install --frozen-lockfile
 
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Check generated C# models
+        run: |
+          dotnet tool restore
+          pnpm --dir client/insight run check:csharp
+
       - name: Client Type Check
         run: pnpm --dir client/insight run type-check
 
