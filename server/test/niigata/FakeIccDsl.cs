@@ -2367,6 +2367,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       using var _logDB = _logDBCfg.OpenConnection();
       {
+        var beforeAssignments = _logDB
+          .GetMaterialInAllQueues()
+          .ToImmutableDictionary(m => m.MaterialID, m => _logDB.GetMaterialDetails(m.MaterialID));
         var evts = new List<LogEntry>();
         Action<LogEntry, string, IRepository> act = (entry, msg, repo) =>
         {
@@ -3029,6 +3032,55 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
                 break;
             }
+          }
+
+          // Raw queue material is assigned when Niigata commits the load. Verify that action
+          // separately from the physical load events, using the prior casting and retained paths.
+          foreach (var previous in beforeAssignments.Values)
+          {
+            var current = _logDB.GetMaterialDetails(previous.MaterialID);
+            if (
+              current == null
+              || string.IsNullOrEmpty(current.JobUnique)
+              || previous.JobUnique == current.JobUnique
+            )
+              continue;
+            expectedLogs.Add(
+              new LogEntry
+              {
+                Counter = -1,
+                Material =
+                [
+                  new LogMaterial
+                  {
+                    MaterialID = current.MaterialID,
+                    JobUniqueStr = current.JobUnique,
+                    PartName = current.PartName,
+                    NumProcesses = current.NumProcesses,
+                    Process = 0,
+                    Face = 0,
+                    Serial = current.Serial ?? "",
+                    Workorder = current.Workorder ?? "",
+                  },
+                ],
+                Pallet = 0,
+                LogType = LogType.CastingAssigned,
+                LocationName = "Casting",
+                LocationNum = 0,
+                Program = "",
+                StartOfCycle = false,
+                EndTimeUTC = _status.TimeOfStatusUTC,
+                Result = current.JobUnique,
+                ElapsedTime = TimeSpan.Zero,
+                ActiveOperationTime = TimeSpan.Zero,
+                ProgramDetails = ImmutableDictionary<string, string>
+                  .Empty.Add(
+                    "Assignment",
+                    JsonSerializer.Serialize(current with { Paths = previous.Paths })
+                  )
+                  .Add("Casting", previous.PartName),
+              }
+            );
           }
 
           if (expectedLogs.Any())

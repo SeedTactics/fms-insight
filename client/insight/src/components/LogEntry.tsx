@@ -166,6 +166,15 @@ function logType(entry: api.ILogEntry, fmsInfo: api.IFMSInfo): string {
     case api.LogType.CancelRebooking:
       return "Cancel Rebooking";
 
+    case api.LogType.CastingAssigned:
+      return "Casting Assigned";
+
+    case api.LogType.CastingUnassigned:
+      return "Casting Unassigned";
+
+    case api.LogType.JobDecrement:
+      return "Job Decrement";
+
     default:
       return "Message";
   }
@@ -456,6 +465,15 @@ function display(props: LogEntryProps, fmsInfo: api.IFMSInfo): ReactNode {
 
     case api.LogType.CancelRebooking:
       return <span>Rebooking {entry.result} canceled</span>;
+
+    case api.LogType.CastingAssigned:
+      return <span>Casting assigned to job {entry.result}</span>;
+
+    case api.LogType.CastingUnassigned:
+      return <span>Casting released from job {entry.result}</span>;
+
+    case api.LogType.JobDecrement:
+      return <span>Job quantities decremented (decrement {entry.result})</span>;
 
     default:
       return <span>{entry.result}</span>;

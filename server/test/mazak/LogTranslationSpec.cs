@@ -4951,6 +4951,49 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 }
       );
 
+      foreach (var material in new[] { mat2, mat3 })
+      {
+        var assignment = new MaterialDetails
+        {
+          MaterialID = material.MaterialID,
+          JobUnique = "uuuu",
+          PartName = "pppp",
+          NumProcesses = 2,
+          Serial = material.ToLogMat().Serial,
+          Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+        };
+        expected.Add(
+          new BlackMaple.MachineFramework.LogEntry
+          {
+            Counter = -1,
+            Material =
+            [
+              material.ToLogMat() with
+              {
+                Process = 0,
+                Face = 0,
+                Path = null,
+                JobUniqueStr = "uuuu",
+                PartName = "pppp",
+                NumProcesses = 2,
+              },
+            ],
+            Pallet = 0,
+            LogType = LogType.CastingAssigned,
+            LocationName = "Casting",
+            LocationNum = 0,
+            Program = "",
+            StartOfCycle = false,
+            EndTimeUTC = t.AddMinutes(5),
+            Result = "uuuu",
+            ElapsedTime = TimeSpan.Zero,
+            ActiveOperationTime = TimeSpan.Zero,
+            ProgramDetails = ImmutableDictionary<string, string>
+              .Empty.Add("Assignment", JsonSerializer.Serialize(assignment))
+              .Add("Casting", "cccc"),
+          }
+        );
+      }
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 

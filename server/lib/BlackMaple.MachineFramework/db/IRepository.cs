@@ -531,6 +531,9 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     );
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);
+
+    /// <summary>Assign an existing raw casting to a job and record the historical action. Repeating the same assignment creates no new event.</summary>
+    void AssignCastingToJob(long matID, string unique, string part, int numProc, DateTime timeUTC);
     void RecordPathForProcess(long matID, int process, int path);
     void CreateMaterialID(long matID, string unique, string part, int numProc);
     MaterialDetails GetMaterialDetails(long matID);
@@ -551,6 +554,16 @@ namespace BlackMaple.MachineFramework
       int proc1Path,
       int numProcesses,
       int count
+    );
+    IReadOnlyList<long> AllocateCastingsInQueue(
+      string queue,
+      string casting,
+      string unique,
+      string part,
+      int proc1Path,
+      int numProcesses,
+      int count,
+      DateTime timeUTC
     );
     void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting);
     bool IsMaterialInQueue(long matId);

@@ -493,11 +493,12 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             if (allocateNew)
             {
-              logDB.SetDetailsForMaterialID(
+              logDB.AssignCastingToJob(
                 mat.MaterialID,
                 face.Job.UniqueStr,
                 face.Job.PartName,
-                face.Job.Processes.Count
+                face.Job.Processes.Count,
+                nowUtc
               );
             }
             pallet.Material.Add(

@@ -76,6 +76,7 @@ export const setLast30Jobs = atom(null, (_, set, history: Readonly<IHistoricData
     oldIds.union(
       LazySeq.ofObject(history.jobs)
         .collect(([, x]) => x.scheduleId)
+        .concat(history.stationUse.map((use) => use.scheduleId))
         .toHashSet((s) => s),
     ),
   );

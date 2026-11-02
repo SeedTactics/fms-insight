@@ -728,6 +728,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var newJ2 = newJ1 with
       {
         ScheduleId = "zzzzzzzzzzzzz",
+        StationUse = newJ1
+          .StationUse?.Select(s => s with { ScheduleId = "zzzzzzzzzzzzz" })
+          .ToImmutableList(),
         Jobs = newJ1
           .Jobs.Select(j => j with { UniqueStr = j.UniqueStr + "-next" })
           .ToImmutableList(),
@@ -819,6 +822,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         newJobs with
         {
           ScheduleId = "zzzzzzzzzzzzz",
+          StationUse = newJobs
+            .StationUse?.Select(s => s with { ScheduleId = "zzzzzzzzzzzzz" })
+            .ToImmutableList(),
           Jobs = ImmutableList.Create(pending, backedOut),
         },
         expectedPreviousScheduleId: newJobs.ScheduleId,

@@ -121,12 +121,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(45);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(45);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
       }
 
       CheckSchema(conn1, memDb);
@@ -1037,6 +1037,8 @@ namespace BlackMaple.FMSInsight.Tests
         cmd.ExecuteNonQuery();
         cmd.CommandText = "UPDATE version SET ver = 43";
         cmd.ExecuteNonQuery();
+        cmd.CommandText = "DROP INDEX sim_station_end_time";
+        cmd.ExecuteNonQuery();
       }
       _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
     }
@@ -1060,6 +1062,73 @@ namespace BlackMaple.FMSInsight.Tests
       using var db = _repo.OpenConnection();
       db.MostRecentLogEntryForForeignID("source-1").ShouldBeEquivalentTo(_recorded);
       db.OriginalMessageByForeignID("source-1").ShouldBe("original");
+    }
+  }
+
+  public sealed class Ver45UpgradeSpec
+  {
+    [Test]
+    public async System.Threading.Tasks.Task AddsSimulationTimeIndexAndRetainsHistory()
+    {
+      var filename = System.IO.Path.Combine(
+        System.IO.Path.GetTempPath(),
+        Guid.NewGuid() + ".sqlite"
+      );
+      var start = new DateTime(2026, 10, 8, 0, 0, 0, DateTimeKind.Utc);
+      try
+      {
+        using (
+          var created = RepositoryConfig.InitializeEventDatabase(null, filename, pooling: false)
+        )
+        using (var db = created.OpenConnection())
+          db.AddJobs(
+            new NewJobs
+            {
+              ScheduleId = "simulation",
+              Jobs = [],
+              StationUse =
+              [
+                new SimulatedStationUtilization
+                {
+                  ScheduleId = "simulation",
+                  StationGroup = "MC",
+                  StationNum = 1,
+                  StartUTC = start,
+                  EndUTC = start.AddHours(1),
+                },
+              ],
+            },
+            null,
+            true
+          );
+        using (var connection = new SqliteConnection("Data Source=" + filename + ";Pooling=False"))
+        {
+          connection.Open();
+          using var command = connection.CreateCommand();
+          command.CommandText = "DROP INDEX sim_station_end_time; UPDATE version SET ver = 45";
+          command.ExecuteNonQuery();
+        }
+        using var upgraded = RepositoryConfig.InitializeEventDatabase(
+          null,
+          filename,
+          pooling: false
+        );
+        using var repository = upgraded.OpenConnection();
+        var history = repository.LoadJobHistory(start, start);
+        await Assert.That(history.StationUse.Count).IsEqualTo(1);
+        await Assert.That(history.StationUse[0].ScheduleId).IsEqualTo("simulation");
+        SchemaUpgradeSpec.Check(filename);
+        // Reopening an already upgraded database must not try to create the index again.
+        using var reopened = RepositoryConfig.InitializeEventDatabase(
+          null,
+          filename,
+          pooling: false
+        );
+      }
+      finally
+      {
+        System.IO.File.Delete(filename);
+      }
     }
   }
 

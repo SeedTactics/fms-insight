@@ -38,6 +38,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
@@ -775,7 +776,14 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1";
+        cmd.CommandText =
+          "SELECT 1 WHERE "
+          + "EXISTS(SELECT 1 FROM jobs WHERE ScheduleId = $sid) OR "
+          + "EXISTS(SELECT 1 FROM sim_station_use WHERE SimId = $sid) OR "
+          + "EXISTS(SELECT 1 FROM sim_day_usage WHERE SimId = $sid) OR "
+          + "EXISTS(SELECT 1 FROM sim_workorders WHERE ScheduleId = $sid) OR "
+          + "EXISTS(SELECT 1 FROM schedule_debug WHERE ScheduleId = $sid) OR "
+          + "EXISTS(SELECT 1 FROM scheduled_parts WHERE ScheduleId = $sid)";
         cmd.Parameters.Add("sid", SqliteType.Text).Value = schID;
 
         object val = cmd.ExecuteScalar();
@@ -794,7 +802,8 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "SELECT EXISTS(SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1) OR "
-          + "EXISTS(SELECT 1 FROM sim_day_usage WHERE SimId = $sid LIMIT 1)";
+          + "EXISTS(SELECT 1 FROM sim_day_usage WHERE SimId = $sid LIMIT 1) OR "
+          + "EXISTS(SELECT 1 FROM sim_station_use WHERE SimId = $sid LIMIT 1)";
         var param = cmd.Parameters.Add("sid", SqliteType.Text);
 
         foreach (var schId in schIDs)
@@ -911,26 +920,20 @@ namespace BlackMaple.MachineFramework
         return "";
       }
 
-      return " AND ScheduleId NOT IN ("
-        + string.Join(",", alreadyKnownSchIds.Select((_, idx) => "$knownSchId" + idx.ToString()))
-        + ")";
+      return " AND ScheduleId NOT IN (SELECT value FROM json_each($knownSchedules))";
     }
 
-    private static void AddKnownScheduleIdParameters(
+    private static void AddKnownScheduleIdParameter(
       SqliteCommand cmd,
       IReadOnlyList<string> alreadyKnownSchIds
     )
     {
-      if (alreadyKnownSchIds == null)
+      if (alreadyKnownSchIds == null || alreadyKnownSchIds.Count == 0)
       {
         return;
       }
 
-      for (var idx = 0; idx < alreadyKnownSchIds.Count; idx++)
-      {
-        cmd.Parameters.Add("knownSchId" + idx.ToString(), SqliteType.Text).Value =
-          alreadyKnownSchIds[idx];
-      }
+      cmd.Parameters.AddWithValue("knownSchedules", JsonSerializer.Serialize(alreadyKnownSchIds));
     }
 
     private RecentHistoricData LoadHistory(
@@ -961,27 +964,39 @@ namespace BlackMaple.MachineFramework
 
         using var jobCmd = _connection.CreateCommand();
         jobCmd.Transaction = trans;
+        // Discover membership once per read transaction. A single JSON parameter avoids SQLite's
+        // parameter limit for long history ranges while reusing the schedule-key indexes below.
+        using var scheduleCmd = _connection.CreateCommand();
+        scheduleCmd.Transaction = trans;
+        scheduleCmd.CommandText = scheduleIdSubquery;
+        configureScheduleIdParameters(scheduleCmd);
+        var scheduleIds = ImmutableList.CreateBuilder<string>();
+        using (var reader = scheduleCmd.ExecuteReader())
+          while (reader.Read())
+            scheduleIds.Add(reader.GetString(0));
+        var scheduleJson = JsonSerializer.Serialize(scheduleIds.ToImmutable());
+        const string selectedSchedules = "SELECT value FROM json_each($schedules)";
         jobCmd.CommandText =
-          "SELECT " + JobProjection + " FROM jobs WHERE ScheduleId IN (" + scheduleIdSubquery + ")";
-        configureScheduleIdParameters(jobCmd);
+          "SELECT " + JobProjection + " FROM jobs WHERE ScheduleId IN (" + selectedSchedules + ")";
+        jobCmd.Parameters.AddWithValue("schedules", scheduleJson);
 
         using var simCmd = _connection.CreateCommand();
         simCmd.Transaction = trans;
         simCmd.CommandText =
           "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, PlanDown, Pallet "
           + " FROM sim_station_use WHERE SimId IN ("
-          + scheduleIdSubquery
+          + selectedSchedules
           + ")";
-        configureScheduleIdParameters(simCmd);
+        simCmd.Parameters.AddWithValue("schedules", scheduleJson);
 
         using var simPartCmd = _connection.CreateCommand();
         simPartCmd.Transaction = trans;
         simPartCmd.CommandText =
           "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path "
           + " FROM sim_station_use_parts WHERE SimId IN ("
-          + scheduleIdSubquery
+          + selectedSchedules
           + ")";
-        configureScheduleIdParameters(simPartCmd);
+        simPartCmd.Parameters.AddWithValue("schedules", scheduleJson);
 
         var history = new RecentHistoricData()
         {
@@ -1047,8 +1062,13 @@ namespace BlackMaple.MachineFramework
     )
     {
       var knownScheduleIds = alreadyKnownSchIds?.Distinct().ToList();
+      // UNION can make SQLite prefer a full schedule-key scan for its ordering. Require the
+      // covering time index so discovery visits the candidate time range instead of all history.
       var scheduleIdSubquery =
-        "SELECT DISTINCT ScheduleId FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND ScheduleId IS NOT NULL"
+        "SELECT ScheduleId FROM ("
+        + "SELECT ScheduleId FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start "
+        + "UNION SELECT SimId AS ScheduleId FROM sim_station_use INDEXED BY sim_station_end_time WHERE StartUTC <= $end AND EndUTC >= $start"
+        + ") WHERE ScheduleId IS NOT NULL"
         + BuildKnownScheduleIdFilter(knownScheduleIds);
       var recent = LoadHistory(
         scheduleIdSubquery,
@@ -1056,7 +1076,7 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
           cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-          AddKnownScheduleIdParameters(cmd, knownScheduleIds);
+          AddKnownScheduleIdParameter(cmd, knownScheduleIds);
         },
         includeRecentSimDayUsage: false,
         alreadyKnownSchIds: knownScheduleIds
@@ -1071,14 +1091,17 @@ namespace BlackMaple.MachineFramework
     {
       var knownScheduleIds = alreadyKnownSchIds?.Distinct().ToList();
       var scheduleIdSubquery =
-        "SELECT DISTINCT ScheduleId FROM jobs WHERE EndUTC >= $start AND ScheduleId IS NOT NULL"
+        "SELECT ScheduleId FROM ("
+        + "SELECT ScheduleId FROM jobs WHERE EndUTC >= $start "
+        + "UNION SELECT SimId AS ScheduleId FROM sim_station_use INDEXED BY sim_station_end_time WHERE EndUTC >= $start"
+        + ") WHERE ScheduleId IS NOT NULL"
         + BuildKnownScheduleIdFilter(knownScheduleIds);
       return LoadHistory(
         scheduleIdSubquery,
         cmd =>
         {
           cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-          AddKnownScheduleIdParameters(cmd, knownScheduleIds);
+          AddKnownScheduleIdParameter(cmd, knownScheduleIds);
         },
         includeRecentSimDayUsage: true,
         alreadyKnownSchIds: knownScheduleIds
@@ -1417,6 +1440,8 @@ namespace BlackMaple.MachineFramework
         }
 
         CheckScheduleIdDoesNotExist(trans, newJobs.ScheduleId);
+        if (newJobs.StationUse?.Any(station => station.ScheduleId != newJobs.ScheduleId) == true)
+          throw new BadRequestException("Station-use rows must belong to the downloaded schedule.");
 
         // add programs first so that the lookup of latest program revision will use newest programs
         var startingUtc = DateTime.UtcNow;
@@ -1978,7 +2003,7 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)partCmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT OR REPLACE INTO sim_station_use(SimId, StationGroup, StationNum, StartUTC, EndUTC, PlanDown, Pallet) "
+          "INSERT INTO sim_station_use(SimId, StationGroup, StationNum, StartUTC, EndUTC, PlanDown, Pallet) "
           + " VALUES($simid,$group,$num,$start,$end,$plandown,$pal)";
         cmd.Parameters.Add("simid", SqliteType.Text);
         cmd.Parameters.Add("group", SqliteType.Text);
@@ -1989,7 +2014,7 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("pal", SqliteType.Integer);
 
         partCmd.CommandText =
-          "INSERT OR REPLACE INTO sim_station_use_parts(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path) "
+          "INSERT INTO sim_station_use_parts(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path) "
           + " VALUES($simid,$group,$num,$start,$end,$job,$proc,$path)";
         partCmd.Parameters.Add("simid", SqliteType.Text);
         partCmd.Parameters.Add("group", SqliteType.Text);
@@ -2293,13 +2318,14 @@ namespace BlackMaple.MachineFramework
       DateTime? nowUTC = null
     )
     {
+      LogEntry decrement = null;
       lock (_cfg)
       {
         using var trans = _connection.BeginTransaction();
         SetArchived(trans, uniqueStrs, archived: true);
         if (newDecrements != null)
         {
-          AddNewDecrement(
+          decrement = AddNewDecrement(
             trans: trans,
             counts: newDecrements,
             removedBookings: null,
@@ -2308,6 +2334,8 @@ namespace BlackMaple.MachineFramework
         }
         trans.Commit();
       }
+      if (decrement != null)
+        _cfg.OnNewLogEntry(decrement, null, this);
     }
 
     public void UnarchiveJob(string UniqueStr)
@@ -2434,10 +2462,11 @@ namespace BlackMaple.MachineFramework
       IEnumerable<RemovedBooking> removedBookings = null
     )
     {
+      LogEntry decrement;
       lock (_cfg)
       {
         using var trans = _connection.BeginTransaction();
-        AddNewDecrement(
+        decrement = AddNewDecrement(
           trans: trans,
           counts: counts,
           removedBookings: removedBookings,
@@ -2445,9 +2474,11 @@ namespace BlackMaple.MachineFramework
         );
         trans.Commit();
       }
+      if (decrement != null)
+        _cfg.OnNewLogEntry(decrement, null, this);
     }
 
-    private void AddNewDecrement(
+    private LogEntry AddNewDecrement(
       IDbTransaction trans,
       IEnumerable<NewDecrementQuantity> counts,
       IEnumerable<RemovedBooking> removedBookings,
@@ -2455,6 +2486,7 @@ namespace BlackMaple.MachineFramework
     )
     {
       var now = nowUTC ?? DateTime.UtcNow;
+      var decrements = ImmutableList.CreateBuilder<JobAndDecrementQuantity>();
       long decrementId = 0;
       using (var cmd = _connection.CreateCommand())
       {
@@ -2489,6 +2521,16 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[4].Value = q.Part;
           cmd.Parameters[5].Value = q.Quantity;
           cmd.ExecuteNonQuery();
+          decrements.Add(
+            new JobAndDecrementQuantity
+            {
+              DecrementId = decrementId,
+              JobUnique = q.JobUnique,
+              TimeUTC = now,
+              Part = q.Part,
+              Quantity = q.Quantity,
+            }
+          );
         }
       }
 
@@ -2511,6 +2553,9 @@ namespace BlackMaple.MachineFramework
           }
         }
       }
+      return decrements.Count == 0
+        ? null
+        : RecordJobDecrement(trans, decrementId, now, decrements.ToImmutable());
     }
 
     public ImmutableList<DecrementQuantity> LoadDecrementsForJob(string unique)

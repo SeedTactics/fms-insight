@@ -351,6 +351,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           e.LogType != LogType.PalletInStocker
           && e.LogType != LogType.PalletOnRotaryInbound
           && e.LogType != LogType.PalletCycle
+          // Assignment evidence is checked in the transition DSL; this helper checks physical cycles.
+          && e.LogType != LogType.CastingAssigned
         )
         .ToList();
       matLogs.Select(e => e.EndTimeUTC).ShouldBeInOrder();

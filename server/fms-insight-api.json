@@ -2462,7 +2462,10 @@
           "Rebooking",
           "CancelRebooking",
           "BasketLoadUnload",
-          "BasketCycle"
+          "BasketCycle",
+          "CastingAssigned",
+          "CastingUnassigned",
+          "JobDecrement"
         ],
         "enum": [
           "LoadUnloadCycle",
@@ -2486,7 +2489,10 @@
           "Rebooking",
           "CancelRebooking",
           "BasketLoadUnload",
-          "BasketCycle"
+          "BasketCycle",
+          "CastingAssigned",
+          "CastingUnassigned",
+          "JobDecrement"
         ]
       },
       "ToolUse": {
