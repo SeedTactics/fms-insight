@@ -108,14 +108,18 @@ namespace BlackMaple.FMSInsight.Tests
     public static void Check(string file1)
     {
       // open a connection to the file to see the upgraded schema
-      using var conn1 = new SqliteConnection("Data Source=" + file1);
+      using var conn1 = new SqliteConnection("Data Source=" + file1 + ";Pooling=False");
+      conn1.Open();
+      Check(conn1);
+    }
 
+    public static void Check(SqliteConnection conn1)
+    {
       // initialize a new memory database to see new schema
       var guid = Guid.NewGuid();
       using var memRepo = RepositoryConfig.InitializeMemoryDB(null, guid);
       using var memDb = new SqliteConnection($"Data Source=file:${guid}?mode=memory&cache=shared");
 
-      conn1.Open();
       memDb.Open();
 
       using (var versionCmd = conn1.CreateCommand())
@@ -1070,65 +1074,57 @@ namespace BlackMaple.FMSInsight.Tests
     [Test]
     public async System.Threading.Tasks.Task AddsSimulationTimeIndexAndRetainsHistory()
     {
-      var filename = System.IO.Path.Combine(
-        System.IO.Path.GetTempPath(),
-        Guid.NewGuid() + ".sqlite"
+      var guid = Guid.NewGuid();
+      using var created = RepositoryConfig.InitializeMemoryDB(null, guid);
+      using var connection = new SqliteConnection(
+        $"Data Source=file:${guid}?mode=memory&cache=shared"
       );
       var start = new DateTime(2026, 10, 8, 0, 0, 0, DateTimeKind.Utc);
-      try
-      {
-        using (
-          var created = RepositoryConfig.InitializeEventDatabase(null, filename, pooling: false)
-        )
-        using (var db = created.OpenConnection())
-          db.AddJobs(
-            new NewJobs
-            {
-              ScheduleId = "simulation",
-              Jobs = [],
-              StationUse =
-              [
-                new SimulatedStationUtilization
-                {
-                  ScheduleId = "simulation",
-                  StationGroup = "MC",
-                  StationNum = 1,
-                  StartUTC = start,
-                  EndUTC = start.AddHours(1),
-                },
-              ],
-            },
-            null,
-            true
-          );
-        using (var connection = new SqliteConnection("Data Source=" + filename + ";Pooling=False"))
-        {
-          connection.Open();
-          using var command = connection.CreateCommand();
-          command.CommandText = "DROP INDEX sim_station_end_time; UPDATE version SET ver = 45";
-          command.ExecuteNonQuery();
-        }
-        using var upgraded = RepositoryConfig.InitializeEventDatabase(
+      using (var db = created.OpenConnection())
+        db.AddJobs(
+          new NewJobs
+          {
+            ScheduleId = "simulation",
+            Jobs = [],
+            StationUse =
+            [
+              new SimulatedStationUtilization
+              {
+                ScheduleId = "simulation",
+                StationGroup = "MC",
+                StationNum = 1,
+                StartUTC = start,
+                EndUTC = start.AddHours(1),
+              },
+            ],
+          },
           null,
-          filename,
-          pooling: false
+          true
         );
-        using var repository = upgraded.OpenConnection();
-        var history = repository.LoadJobHistory(start, start);
-        await Assert.That(history.StationUse.Count).IsEqualTo(1);
-        await Assert.That(history.StationUse[0].ScheduleId).IsEqualTo("simulation");
-        SchemaUpgradeSpec.Check(filename);
-        // Reopening an already upgraded database must not try to create the index again.
-        using var reopened = RepositoryConfig.InitializeEventDatabase(
-          null,
-          filename,
-          pooling: false
-        );
-      }
-      finally
+      connection.Open();
+      using (var command = connection.CreateCommand())
       {
-        System.IO.File.Delete(filename);
+        command.CommandText = "DROP INDEX sim_station_end_time; UPDATE version SET ver = 45";
+        command.ExecuteNonQuery();
       }
+      using var upgraded = RepositoryConfig.InitializeMemoryDB(
+        null,
+        guid,
+        createTables: false,
+        upgradeTables: true
+      );
+      using var repository = upgraded.OpenConnection();
+      var history = repository.LoadJobHistory(start, start);
+      await Assert.That(history.StationUse.Count).IsEqualTo(1);
+      await Assert.That(history.StationUse[0].ScheduleId).IsEqualTo("simulation");
+      SchemaUpgradeSpec.Check(connection);
+      // Reopening an already upgraded database must not try to create the index again.
+      using var reopened = RepositoryConfig.InitializeMemoryDB(
+        null,
+        guid,
+        createTables: false,
+        upgradeTables: true
+      );
     }
   }
 
