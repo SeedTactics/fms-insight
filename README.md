@@ -78,6 +78,10 @@ public static void Main()
 
 ## Server
 
+For repository development, install JavaScript dependencies once from the root with
+`pnpm install --frozen-lockfile`. See [API generation](scripts/README.md) for regenerating the
+OpenAPI document and TypeScript/C# clients with `node scripts/generate-api.ts`.
+
 The server is written in C# and uses ASP.NET Core to expose a HTTP-based JSON and REST-like API. The
 server uses a local SQLite database to store the log and job data. The
 [server/lib/BlackMaple.MachineFramework](server/lib/BlackMaple.MachineFramework) directory contains

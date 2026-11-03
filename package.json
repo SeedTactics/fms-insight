@@ -1,0 +1,21 @@
+{
+  "name": "@seedtactics/insight-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "type-check": "tsc --project scripts/tsconfig.json",
+    "lint": "oxlint --type-aware ."
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "nswag": "14.7.1",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=26"
+  },
+  "packageManager": "pnpm@11.3.0"
+}
