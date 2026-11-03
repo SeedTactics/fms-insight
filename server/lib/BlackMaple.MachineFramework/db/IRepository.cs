@@ -654,7 +654,8 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Adding and Updating Jobs
     // --------------------------------------------------------------------------------
-    void AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
+    /// <summary>Commit a download and return its accepted program revisions, resolved in the same transaction.</summary>
+    NewJobs AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
     void AddPrograms(IEnumerable<NewProgramContent> programs, DateTime startingUtc);
     void UpdateCachedWorkorders(IEnumerable<Workorder> workorders);
     void ArchiveJob(string UniqueStr);

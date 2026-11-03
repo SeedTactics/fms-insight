@@ -80,10 +80,13 @@ schedules with no jobs. A selected schedule returns all its jobs and simulated s
 including intervals outside the requested window. Known-ID filtering applies to simulation-only
 schedules too.
 
-The `newJobs` WebSocket notification contains the original download request. Persistence can resolve
-null, zero or negative program revisions to accepted revisions, so use that notification to trigger
-a planning refresh. The persisted historical response establishes the cached job definition; only a
-complete planning read establishes the schedule as known.
+The `newJobs` WebSocket notification contains accepted jobs and workorder overrides with their
+resolved program references. The internal accepted result also includes resolved program-content
+entries; the socket omits `Programs` and `DebugMessage`. Resolution and persistence use the same
+transaction, and publication follows commit. Older servers published the original request, which
+could still contain null, zero or negative revision references. Historical catch-up still uses
+history/recent reads to recover downloads whose notifications were missed. Durable clients record a
+schedule as known only after storing its complete accepted jobs and simulated station intervals.
 
 Event publication follows commit but can arrive out of counter order across concurrent writers. Use
 live notifications to trigger catch-up, and advance a durable cursor only through ordered
@@ -97,3 +100,11 @@ complete history of every planning artifact, such as workorder simulations or ex
 Time-window coverage does not establish a complete material lifecycle. Corrections outside a window
 can affect previously downloaded events inside it; follow the explicit correction and obtain
 authoritative records as needed. Separate requests need not observe one atomic server snapshot.
+
+## Repository API compatibility
+
+`IRepository.AddJobs` returns the accepted `NewJobs` after committing the download. Source callers
+that do not need the result can ignore it; F# callers use `|> ignore` where a unit result is
+required. Plugins compiled against the previous void signature must be rebuilt when upgrading the
+framework. Installations pinned to the older package keep their existing API.
+`IJobAndQueueControl.AddJobs` and the HTTP API retain their existing signatures.

@@ -1410,7 +1410,7 @@ namespace BlackMaple.MachineFramework
 
     #region "Adding and deleting"
 
-    public void AddJobs(
+    public NewJobs AddJobs(
       NewJobs newJobs,
       string expectedPreviousScheduleId,
       bool addAsCopiedToSystem
@@ -1450,11 +1450,23 @@ namespace BlackMaple.MachineFramework
           startingUtc = newJobs.Jobs[0].RouteStartUTC;
         }
 
-        var negRevisionMap = AddPrograms(trans, newJobs.Programs, startingUtc);
-
-        foreach (var job in newJobs.Jobs)
+        var programs = AddPrograms(trans, newJobs.Programs, startingUtc);
+        var accepted = newJobs with
         {
-          AddJob(trans, job, negRevisionMap, addAsCopiedToSystem, newJobs.ScheduleId);
+          Programs = newJobs.Programs == null ? null : programs.Programs,
+          Jobs = newJobs
+            .Jobs.Select(job => ResolveJobPrograms(trans, job, programs.NegativeRevisions))
+            .ToImmutableList(),
+          CurrentUnfilledWorkorders = newJobs
+            .CurrentUnfilledWorkorders?.Select(workorder =>
+              ResolveWorkorderPrograms(trans, workorder, programs.NegativeRevisions)
+            )
+            .ToImmutableList(),
+        };
+
+        foreach (var job in accepted.Jobs)
+        {
+          AddJob(trans, job, addAsCopiedToSystem, newJobs.ScheduleId);
         }
 
         AddSimulatedStations(trans, newJobs.StationUse);
@@ -1470,9 +1482,9 @@ namespace BlackMaple.MachineFramework
           AddWorkorderSim(trans, newJobs.ScheduleId, newJobs.SimWorkordersFilled);
         }
 
-        if (newJobs.CurrentUnfilledWorkorders != null)
+        if (accepted.CurrentUnfilledWorkorders != null)
         {
-          UpdateCachedWorkorders(trans, newJobs.CurrentUnfilledWorkorders, negRevisionMap);
+          UpdateCachedWorkorders(trans, accepted.CurrentUnfilledWorkorders);
         }
 
         if (newJobs.DebugMessage != null)
@@ -1487,6 +1499,7 @@ namespace BlackMaple.MachineFramework
         }
 
         trans.Commit();
+        return accepted;
       }
     }
 
@@ -1500,13 +1513,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddJob(
-      IDbTransaction trans,
-      Job job,
-      Dictionary<(string prog, long rev), long> negativeRevisionMap,
-      bool addAsCopiedToSystem,
-      string schId
-    )
+    private void AddJob(IDbTransaction trans, Job job, bool addAsCopiedToSystem, string schId)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -1789,34 +1796,6 @@ namespace BlackMaple.MachineFramework
             int routeNum = 0;
             foreach (var entry in path.Stops)
             {
-              long? rev = null;
-              if (!entry.ProgramRevision.HasValue || entry.ProgramRevision.Value == 0)
-              {
-                if (!string.IsNullOrEmpty(entry.Program))
-                {
-                  rev = LatestRevisionForProgram(trans, entry.Program);
-                }
-              }
-              else if (entry.ProgramRevision.Value > 0)
-              {
-                rev = entry.ProgramRevision.Value;
-              }
-              else if (
-                negativeRevisionMap.TryGetValue(
-                  (prog: entry.Program, rev: entry.ProgramRevision.Value),
-                  out long convertedRev
-                )
-              )
-              {
-                rev = convertedRev;
-              }
-              else
-              {
-                throw new BadRequestException(
-                  $"Part {job.PartName}, process {i}, path {j}, stop {routeNum}, "
-                    + "has a negative program revision but no matching negative program revision exists in the downloaded ProgramEntry list"
-                );
-              }
               cmd.Parameters[1].Value = i;
               cmd.Parameters[2].Value = j;
               cmd.Parameters[3].Value = routeNum;
@@ -1825,7 +1804,9 @@ namespace BlackMaple.MachineFramework
               cmd.Parameters[6].Value = string.IsNullOrEmpty(entry.Program)
                 ? DBNull.Value
                 : (object)entry.Program;
-              cmd.Parameters[7].Value = rev != null ? (object)rev : DBNull.Value;
+              cmd.Parameters[7].Value = entry.ProgramRevision.HasValue
+                ? (object)entry.ProgramRevision.Value
+                : DBNull.Value;
               cmd.ExecuteNonQuery();
               routeNum += 1;
             }
@@ -2148,16 +2129,23 @@ namespace BlackMaple.MachineFramework
       lock (_cfg)
       {
         using var trans = _connection.BeginTransaction();
-        UpdateCachedWorkorders(trans, workorders, new Dictionary<(string, long), long>());
+        UpdateCachedWorkorders(
+          trans,
+          workorders
+            .Select(workorder =>
+              ResolveWorkorderPrograms(
+                trans,
+                workorder,
+                ImmutableDictionary<(string prog, long rev), long>.Empty
+              )
+            )
+            .ToImmutableList()
+        );
         trans.Commit();
       }
     }
 
-    private void UpdateCachedWorkorders(
-      SqliteTransaction trans,
-      IEnumerable<Workorder> workorders,
-      Dictionary<(string prog, long rev), long> negativeRevisionMap
-    )
+    private void UpdateCachedWorkorders(SqliteTransaction trans, IEnumerable<Workorder> workorders)
     {
       using var cmd = _connection.CreateCommand();
       using var prgCmd = _connection.CreateCommand();
@@ -2209,35 +2197,6 @@ namespace BlackMaple.MachineFramework
         {
           foreach (var prog in w.Programs)
           {
-            long? rev = null;
-            if (!prog.Revision.HasValue || prog.Revision.Value == 0)
-            {
-              if (!string.IsNullOrEmpty(prog.ProgramName))
-              {
-                rev = LatestRevisionForProgram(trans, prog.ProgramName);
-              }
-            }
-            else if (prog.Revision.Value > 0)
-            {
-              rev = prog.Revision.Value;
-            }
-            else if (
-              negativeRevisionMap.TryGetValue(
-                (prog: prog.ProgramName, rev: prog.Revision.Value),
-                out long convertedRev
-              )
-            )
-            {
-              rev = convertedRev;
-            }
-            else
-            {
-              throw new BadRequestException(
-                $"Workorder {w.WorkorderId} "
-                  + "has a negative program revision but no matching negative program revision exists in the downloaded ProgramEntry list"
-              );
-            }
-
             prgCmd.Parameters[0].Value = w.WorkorderId;
             prgCmd.Parameters[1].Value = w.Part;
             prgCmd.Parameters[2].Value = prog.ProcessNumber;
@@ -2245,7 +2204,9 @@ namespace BlackMaple.MachineFramework
               ? (object)prog.StopIndex.Value
               : DBNull.Value;
             prgCmd.Parameters[4].Value = prog.ProgramName;
-            prgCmd.Parameters[5].Value = rev != null ? (object)rev : DBNull.Value;
+            prgCmd.Parameters[5].Value = prog.Revision.HasValue
+              ? (object)prog.Revision.Value
+              : DBNull.Value;
             prgCmd.ExecuteNonQuery();
           }
         }
@@ -2638,16 +2599,20 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Programs
-    private Dictionary<(string prog, long rev), long> AddPrograms(
+    private (
+      ImmutableDictionary<(string prog, long rev), long> NegativeRevisions,
+      ImmutableList<NewProgramContent> Programs
+    ) AddPrograms(
       IDbTransaction transaction,
       IEnumerable<NewProgramContent> programs,
       DateTime nowUtc
     )
     {
-      if (programs == null || !programs.Any())
-        return new Dictionary<(string prog, long rev), long>();
-
-      var negativeRevisionMap = new Dictionary<(string prog, long rev), long>();
+      var input = programs?.ToImmutableList() ?? [];
+      if (input.IsEmpty)
+        return (ImmutableDictionary<(string prog, long rev), long>.Empty, input);
+      var accepted = input.ToBuilder();
+      var negativeRevisionMap = ImmutableDictionary.CreateBuilder<(string prog, long rev), long>();
 
       using (var checkCmd = _connection.CreateCommand())
       using (var checkMaxCmd = _connection.CreateCommand())
@@ -2684,7 +2649,7 @@ namespace BlackMaple.MachineFramework
         addProgCmd.Parameters.Add("prog", SqliteType.Text);
 
         // positive revisions are either added or checked for match
-        foreach (var prog in programs.Where(p => p.Revision > 0))
+        foreach (var prog in input.Where(p => p.Revision > 0))
         {
           checkCmd.Parameters[0].Value = prog.ProgramName;
           checkCmd.Parameters[1].Value = prog.Revision;
@@ -2719,7 +2684,10 @@ namespace BlackMaple.MachineFramework
 
         // zero and negative revisions are allocated a new number
         foreach (
-          var prog in programs.Where(p => p.Revision <= 0).OrderByDescending(p => p.Revision)
+          var (prog, index) in input
+            .Select((program, index) => (Program: program, Index: index))
+            .Where(p => p.Program.Revision <= 0)
+            .OrderByDescending(p => p.Program.Revision)
         )
         {
           long lastRev;
@@ -2732,6 +2700,7 @@ namespace BlackMaple.MachineFramework
               var lastContent = reader.GetString(1);
               if (lastContent == prog.ProgramContent)
               {
+                accepted[index] = prog with { Revision = lastRev };
                 if (prog.Revision < 0)
                   negativeRevisionMap[(prog: prog.ProgramName, rev: prog.Revision)] = lastRev;
                 continue;
@@ -2755,6 +2724,7 @@ namespace BlackMaple.MachineFramework
                 var lastContent = reader.GetString(1);
                 if (lastContent == prog.ProgramContent)
                 {
+                  accepted[index] = prog with { Revision = reader.GetInt64(0) };
                   if (prog.Revision < 0)
                     negativeRevisionMap[(prog: prog.ProgramName, rev: prog.Revision)] =
                       reader.GetInt64(0);
@@ -2774,12 +2744,13 @@ namespace BlackMaple.MachineFramework
             : (object)prog.ProgramContent;
           addProgCmd.ExecuteNonQuery();
 
+          accepted[index] = prog with { Revision = lastRev + 1 };
           if (prog.Revision < 0)
             negativeRevisionMap[(prog: prog.ProgramName, rev: prog.Revision)] = lastRev + 1;
         }
       }
 
-      return negativeRevisionMap;
+      return (negativeRevisionMap.ToImmutable(), accepted.ToImmutable());
     }
 
     private long? LatestRevisionForProgram(IDbTransaction trans, string program)

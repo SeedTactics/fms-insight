@@ -38,7 +38,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
 using BlackMaple.MachineFramework;
+using Microsoft.Data.Sqlite;
 using Shouldly;
+using TUnit.Assertions.Enums;
 
 namespace BlackMaple.FMSInsight.Tests;
 
@@ -58,6 +60,7 @@ public sealed class JobAndQueueSpec
   }
 
   private readonly RepositoryConfig _repo;
+  private readonly Guid _databaseId = Guid.NewGuid();
   private FMSSettings _settings;
   private ServerSettings _serverSettings;
   private JobsAndQueuesFromDb<MockCellState> _jq;
@@ -66,7 +69,7 @@ public sealed class JobAndQueueSpec
 
   public JobAndQueueSpec()
   {
-    _repo = RepositoryConfig.InitializeMemoryDB(null);
+    _repo = RepositoryConfig.InitializeMemoryDB(null, _databaseId);
     _fixture = new Fixture();
     _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
     _fixture.Customizations.Add(new NullJobArtifactRunDateSpecimenBuilder());
@@ -100,6 +103,293 @@ public sealed class JobAndQueueSpec
     {
       _jq?.Dispose();
     }
+  }
+
+  private static NewJobs RevisionDownload(long? revision) =>
+    new()
+    {
+      ScheduleId = "resolved",
+      Jobs =
+      [
+        new Job
+        {
+          UniqueStr = "resolved-job",
+          PartName = "part",
+          Cycles = 1,
+          Archived = false,
+          RouteStartUTC = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc),
+          RouteEndUTC = new DateTime(2026, 10, 2, 0, 0, 0, DateTimeKind.Utc),
+          Processes =
+          [
+            new ProcessInfo
+            {
+              Paths =
+              [
+                JobLogTest.EmptyPath with
+                {
+                  Stops =
+                  [
+                    new MachiningStop
+                    {
+                      StationGroup = "MC",
+                      Stations = [1],
+                      ExpectedCycleTime = TimeSpan.FromMinutes(1),
+                      Program = "revision-program",
+                      ProgramRevision = revision,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      Programs =
+      [
+        new NewProgramContent
+        {
+          ProgramName = "revision-program",
+          Revision = -1,
+          ProgramContent = "accepted-content",
+        },
+      ],
+      CurrentUnfilledWorkorders =
+      [
+        new Workorder
+        {
+          WorkorderId = "resolved-work",
+          Part = "part",
+          Quantity = 1,
+          Priority = 1,
+          DueDate = new DateTime(2026, 10, 2, 0, 0, 0, DateTimeKind.Utc),
+          Programs =
+          [
+            new ProgramForJobStep
+            {
+              ProgramName = "revision-program",
+              ProcessNumber = 1,
+              Revision = revision,
+            },
+          ],
+        },
+      ],
+    };
+
+  [Test]
+  [Arguments(null, 4L)]
+  [Arguments(0L, 4L)]
+  [Arguments(-1L, 4L)]
+  [Arguments(3L, 3L)]
+  public async Task NewJobsPublishesAcceptedProgramRevisions(long? revision, long expected)
+  {
+    using var db = _repo.OpenConnection();
+    db.AddPrograms(
+      [
+        new NewProgramContent
+        {
+          ProgramName = "revision-program",
+          Revision = 3,
+          ProgramContent = "previous-content",
+        },
+      ],
+      DateTime.UtcNow
+    );
+    await StartSyncThread();
+    var incoming = RevisionDownload(revision);
+    NewJobs published = null;
+    long? visibleRevision = null;
+    _jq.OnNewJobs += accepted =>
+    {
+      using var observer = _repo.OpenConnection();
+      visibleRevision = observer
+        .LoadJob("resolved-job")!
+        .Processes[0]
+        .Paths[0]
+        .Stops[0]
+        .ProgramRevision;
+      published = accepted;
+      // A later writer cannot change the definitions already accepted for this notification.
+      observer.AddPrograms(
+        [
+          new NewProgramContent
+          {
+            ProgramName = "revision-program",
+            Revision = 5,
+            ProgramContent = "later-content",
+          },
+        ],
+        DateTime.UtcNow
+      );
+    };
+    ((IJobAndQueueControl)_jq).AddJobs(incoming, null);
+    await Assert.That(published).IsNotNull();
+    await Assert.That(visibleRevision).IsEqualTo(expected);
+    await Assert
+      .That(published!.Jobs[0].Processes[0].Paths[0].Stops[0].ProgramRevision)
+      .IsEqualTo(expected);
+    await Assert
+      .That(published.CurrentUnfilledWorkorders![0].Programs![0].Revision)
+      .IsEqualTo(expected);
+    await Assert.That(published.Programs![0].Revision).IsEqualTo(4L);
+    await Assert
+      .That(db.LoadJob("resolved-job")!.Processes[0].Paths[0].Stops[0].ProgramRevision)
+      .IsEqualTo(expected);
+    await Assert
+      .That(db.WorkordersById("resolved-work").Single().Programs![0].Revision)
+      .IsEqualTo(expected);
+    await Assert
+      .That(incoming.Jobs[0].Processes[0].Paths[0].Stops[0].ProgramRevision)
+      .IsEqualTo(revision);
+    await Assert
+      .That(incoming.CurrentUnfilledWorkorders![0].Programs![0].Revision)
+      .IsEqualTo(revision);
+    await Assert.That(incoming.Programs![0].Revision).IsEqualTo(-1L);
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task FailedProgramResolutionRollsBackWithoutPublishingJobs(bool invalidWorkorder)
+  {
+    await StartSyncThread();
+    var incoming = RevisionDownload(-1);
+    incoming = invalidWorkorder
+      ? incoming with
+      {
+        CurrentUnfilledWorkorders =
+        [
+          incoming.CurrentUnfilledWorkorders![0] with
+          {
+            Programs = [incoming.CurrentUnfilledWorkorders[0].Programs![0] with { Revision = -2 }],
+          },
+        ],
+      }
+      : incoming with
+      {
+        Jobs = RevisionDownload(-2).Jobs,
+      };
+    var notifications = ImmutableList<NewJobs>.Empty;
+    _jq.OnNewJobs += accepted => notifications = notifications.Add(accepted);
+    await Assert
+      .That(() => ((IJobAndQueueControl)_jq).AddJobs(incoming, null))
+      .Throws<BadRequestException>();
+    using var db = _repo.OpenConnection();
+    await Assert.That(db.LoadJob("resolved-job")).IsNull();
+    await Assert.That(db.WorkordersById("resolved-work")).IsEmpty();
+    await Assert
+      .That(db.LoadProgramRevisionsInDescendingOrderOfRevision("revision-program", 10, null))
+      .IsEmpty();
+    await Assert.That(notifications).IsEmpty();
+  }
+
+  [Test]
+  public async Task AcceptedProgramEntriesPreserveAllocationAndInputOrder()
+  {
+    using var db = _repo.OpenConnection();
+    db.AddPrograms(
+      [
+        new NewProgramContent
+        {
+          ProgramName = "revision-program",
+          Revision = 3,
+          Comment = "old",
+          ProgramContent = "old-content",
+        },
+      ],
+      DateTime.UtcNow
+    );
+    var incoming = RevisionDownload(null) with
+    {
+      Programs =
+      [
+        new NewProgramContent
+        {
+          ProgramName = "revision-program",
+          Revision = -2,
+          Comment = "old",
+          ProgramContent = "old-content",
+        },
+        new NewProgramContent
+        {
+          ProgramName = "revision-program",
+          Revision = 0,
+          Comment = "new",
+          ProgramContent = "new-content",
+        },
+        new NewProgramContent
+        {
+          ProgramName = "revision-program",
+          Revision = -1,
+          Comment = "new",
+          ProgramContent = "new-content",
+        },
+        new NewProgramContent
+        {
+          ProgramName = "other-program",
+          Revision = 7,
+          ProgramContent = "explicit-content",
+        },
+        new NewProgramContent
+        {
+          ProgramName = "revision-program",
+          Revision = 0,
+          ProgramContent = "latest-content",
+        },
+      ],
+    };
+    var accepted = db.AddJobs(incoming, null, false);
+    await Assert
+      .That(accepted.Programs!.Select(program => program.Revision))
+      .IsEquivalentTo([3L, 4L, 4L, 7L, 5L], CollectionOrdering.Matching);
+    foreach (var program in accepted.Programs)
+      await Assert
+        .That(db.LoadProgramContent(program.ProgramName, program.Revision))
+        .IsEqualTo(program.ProgramContent);
+    await Assert
+      .That(accepted.Jobs[0].Processes[0].Paths[0].Stops[0].ProgramRevision)
+      .IsEqualTo(5L);
+    await Assert.That(accepted.CurrentUnfilledWorkorders![0].Programs![0].Revision).IsEqualTo(5L);
+    db.AddPrograms(
+      [
+        new NewProgramContent
+        {
+          ProgramName = "revision-program",
+          Revision = 6,
+          ProgramContent = "later-content",
+        },
+      ],
+      DateTime.UtcNow
+    );
+    await Assert
+      .That(accepted.Jobs[0].Processes[0].Paths[0].Stops[0].ProgramRevision)
+      .IsEqualTo(5L);
+  }
+
+  [Test]
+  public async Task JobDownloadWriteFailureRollsBackWithoutPublishing()
+  {
+    await StartSyncThread();
+    using var connection = new SqliteConnection(
+      $"Data Source=file:${_databaseId}?mode=memory&cache=shared"
+    );
+    connection.Open();
+    using var command = connection.CreateCommand();
+    command.CommandText =
+      "CREATE TRIGGER reject_download BEFORE INSERT ON schedule_debug BEGIN SELECT RAISE(ABORT,'rejected download'); END";
+    command.ExecuteNonQuery();
+    var notifications = ImmutableList<NewJobs>.Empty;
+    _jq.OnNewJobs += accepted => notifications = notifications.Add(accepted);
+    var incoming = RevisionDownload(-1) with { DebugMessage = [1] };
+    await Assert
+      .That(() => ((IJobAndQueueControl)_jq).AddJobs(incoming, null))
+      .Throws<SqliteException>();
+    using var db = _repo.OpenConnection();
+    await Assert.That(db.LoadJob("resolved-job")).IsNull();
+    await Assert.That(db.WorkordersById("resolved-work")).IsEmpty();
+    await Assert
+      .That(db.LoadProgramRevisionsInDescendingOrderOfRevision("revision-program", 10, null))
+      .IsEmpty();
+    await Assert.That(notifications).IsEmpty();
   }
 
   #region Sync Cell State
