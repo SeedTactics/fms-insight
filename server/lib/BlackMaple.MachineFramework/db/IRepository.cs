@@ -630,6 +630,9 @@ namespace BlackMaple.MachineFramework
       DateTime endUTC,
       bool includeDecremented = true
     );
+
+    // Both history reads return complete schedules selected by job-route or station-use overlap.
+    // Only fully stored downloads belong in alreadyKnownSchIds; this progress is independent of log counters.
     HistoricData LoadJobHistory(
       DateTime startUTC,
       DateTime endUTC,
@@ -654,6 +657,7 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Adding and Updating Jobs
     // --------------------------------------------------------------------------------
+    // A schedule ID owns one immutable jobs/routes/simulation download; revised planning needs a new ID.
     /// <summary>Commit a download and return its accepted program revisions, resolved in the same transaction.</summary>
     NewJobs AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
     void AddPrograms(IEnumerable<NewProgramContent> programs, DateTime startingUtc);

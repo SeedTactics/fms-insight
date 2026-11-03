@@ -265,8 +265,7 @@ namespace BlackMaple.MachineFramework
     public string? AllocationAlgorithm { get; init; }
 
     /// <summary>
-    /// Opaque, ephemeral scheduling metadata stored with the job in the same transaction for external
-    /// schedulers. Insight does not interpret these identifiers or use them for production decisions.
+    /// Opaque metadata for external schedulers, stored with the job but not used for production.
     /// Historical job responses contain the current associations, which backout can remove.
     /// </summary>
     [JsonPropertyName("Bookings")]
@@ -297,6 +296,7 @@ namespace BlackMaple.MachineFramework
     public required int Quantity { get; init; }
   }
 
+  // The plan is historical; inherited comments, holds, bookings and archive state remain live.
   public record HistoricJob : Job
   {
     public string? ScheduleId { get; init; }
@@ -306,6 +306,7 @@ namespace BlackMaple.MachineFramework
     // slow or retried delivery does not make pending jobs provisional.
     public required bool CopiedToSystem { get; init; }
 
+    // Legacy per-path rows can share an ID; sum them before reconciling with JobDecrement events.
     public ImmutableList<DecrementQuantity>? Decrements { get; init; }
   }
 

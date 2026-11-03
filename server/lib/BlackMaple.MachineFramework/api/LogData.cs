@@ -132,6 +132,7 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("counter")]
     public required long Counter { get; init; }
 
+    // Identity and paths are joined at read time; casting actions carry a separate assignment snapshot.
     [JsonPropertyName("material")]
     public required ImmutableList<LogMaterial> Material { get; init; }
 
