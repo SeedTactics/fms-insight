@@ -264,6 +264,11 @@ namespace BlackMaple.MachineFramework
 
     public string? AllocationAlgorithm { get; init; }
 
+    /// <summary>
+    /// Opaque, ephemeral scheduling metadata stored with the job in the same transaction for external
+    /// schedulers. Insight does not interpret these identifiers or use them for production decisions.
+    /// Historical job responses contain the current associations, which backout can remove.
+    /// </summary>
     [JsonPropertyName("Bookings")]
     public ImmutableSortedSet<string>? BookingIds { get; init; }
 

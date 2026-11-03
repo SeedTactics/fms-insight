@@ -145,9 +145,39 @@ public sealed class HistoricalActionSpec : IDisposable
     await Assert.That(first.LogType).IsEqualTo(LogType.CastingAssigned);
     await Assert.That(Assignment(first).JobUnique).IsEqualTo("job");
     await Assert.That(first.ProgramDetails!["Casting"]).IsEqualTo("casting");
+    using var connection = new SqliteConnection(
+      $"Data Source=file:${_id}?mode=memory&cache=shared"
+    );
+    connection.Open();
+    using var command = connection.CreateCommand();
+    command.CommandText =
+      "CREATE TRIGGER reject_material_update BEFORE UPDATE ON matdetails BEGIN SELECT RAISE(ABORT,'assignment retry wrote material'); END";
+    command.ExecuteNonQuery();
     db.AssignCastingToJob(material, "job", "part", 2, Now);
-    db.AssignCastingToJob(material, "job", "part", 2, Now.AddMinutes(1));
+    using var reopened = _configuration.OpenConnection();
+    reopened.AssignCastingToJob(material, "job", "part", 2, Now.AddMinutes(1));
     await Assert.That(db.GetRecentLog(first.Counter)).IsEmpty();
+  }
+
+  [Test]
+  [Arguments("other-part", 2)]
+  [Arguments("part", 3)]
+  public async Task SameJobCastingAssignmentRejectsConflictingDetails(string part, int processes)
+  {
+    using var db = _configuration.OpenConnection();
+    var material = db.AllocateMaterialIDForCasting("casting");
+    db.AssignCastingToJob(material, "job", "part", 2, Now);
+    var assigned = db.GetRecentLog(-1).Single();
+    var before = JsonSerializer.Serialize(db.GetMaterialDetails(material));
+    using var reopened = _configuration.OpenConnection();
+    await Assert
+      .That(() => reopened.AssignCastingToJob(material, "job", part, processes, Now.AddMinutes(1)))
+      .Throws<ConflictRequestException>();
+    await Assert.That(JsonSerializer.Serialize(db.GetMaterialDetails(material))).IsEqualTo(before);
+    await Assert.That(db.GetRecentLog(assigned.Counter)).IsEmpty();
+    await Assert
+      .That(JsonSerializer.Serialize(db.GetRecentLog(-1).Single()))
+      .IsEqualTo(JsonSerializer.Serialize(assigned));
   }
 
   [Test]

@@ -15,6 +15,13 @@ provenance, and distinguish these fields from the historical facts maintained by
 Current status is the latest backend snapshot; differences between snapshots do not establish
 historical assignments, decrements or production.
 
+Booking identifiers are opaque, ephemeral scheduling metadata. They are stored with the job for
+external schedulers so the associations participate in the same ACID transaction. Insight persists
+and returns them without interpreting them or using them for production decisions. They belong to
+current status, including when carried by historical job responses. Backout can remove associations;
+those removals are outside historical replay and do not require an event. Original response JSON may
+retain bookings as retrieval provenance; exclude them from maintained analytical history.
+
 ## Casting assignments
 
 `CastingAssigned` records an assignment to a job. `CastingUnassigned` records the release of a raw
@@ -34,7 +41,9 @@ ordinary `material` fields on old log reads join current material details and pa
 reassignment can change those fields; use `details.Assignment` for the historical assignment action.
 Events commit with their assignment changes and are published afterward. An unchanged or failed
 assignment, insufficient-stock attempt, repeated release or replayed cancellation creates no extra
-action. Existing serial marking, workorder assignment and invalidation events retain their meanings.
+action. Repeating an explicit assignment with the same job, part and process count changes nothing;
+contradictory assignment details are rejected. Existing serial marking, workorder assignment and
+invalidation events retain their meanings.
 
 ## Quantity decrements and backouts
 
@@ -59,9 +68,10 @@ advance the controller-import time returned by `MaxLogDate`.
 ## Planning downloads and catch-up
 
 A schedule ID identifies a complete planning download. Accepted jobs/routes and simulation are
-immutable; revised planning uses a fresh schedule ID. Live job-field updates and explicit decrements
-retain their existing behavior. Station-use rows must name their enclosing download's schedule ID. A
-repeated download is rejected rather than modifying an already-known schedule.
+immutable; revised planning uses a fresh schedule ID. Live job-field updates, booking removals and
+explicit decrements retain their existing behavior. Station-use rows must name their enclosing
+download's schedule ID. A repeated download is rejected rather than modifying an already-known
+schedule.
 
 Catch up events after their counter, and retrieve new planning by sending the schedule IDs already
 held to job-history/recent reads. These are separate progress mechanisms. Historical schedule
@@ -69,6 +79,20 @@ selection includes overlapping planned job routes or simulated station intervals
 schedules with no jobs. A selected schedule returns all its jobs and simulated station intervals,
 including intervals outside the requested window. Known-ID filtering applies to simulation-only
 schedules too.
+
+The `newJobs` WebSocket notification contains the original download request. Persistence can resolve
+null, zero or negative program revisions to accepted revisions, so use that notification to trigger
+a planning refresh. The persisted historical response establishes the cached job definition; only a
+complete planning read establishes the schedule as known.
+
+Event publication follows commit but can arrive out of counter order across concurrent writers. Use
+live notifications to trigger catch-up, and advance a durable cursor only through ordered
+`events/recent` results. Commit imported records and their cursor together; the largest counter seen
+on the socket does not establish that earlier counters were received.
+
+History reads provide historical jobs and simulated station intervals for selected schedules. Recent
+reads additionally provide the latest daily-usage simulation. These responses do not provide a
+complete history of every planning artifact, such as workorder simulations or extra-part snapshots.
 
 Time-window coverage does not establish a complete material lifecycle. Corrections outside a window
 can affect previously downloaded events inside it; follow the explicit correction and obtain

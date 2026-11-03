@@ -5068,7 +5068,7 @@ namespace BlackMaple.MachineFramework
       ArgumentException.ThrowIfNullOrEmpty(unique);
       ArgumentException.ThrowIfNullOrEmpty(part);
       ArgumentOutOfRangeException.ThrowIfNegativeOrZero(numProc);
-      LogEntry assignment = null;
+      LogEntry assignment;
       lock (_cfg)
       {
         using (var transaction = _connection.BeginTransaction())
@@ -5083,6 +5083,14 @@ namespace BlackMaple.MachineFramework
             throw new ConflictRequestException(
               "The casting is missing or assigned to another job."
             );
+          if (previous.JobUnique == unique)
+          {
+            if (previous.PartName != part || previous.NumProcesses != numProc)
+              throw new ConflictRequestException(
+                "The casting is assigned to this job with a different part or process count."
+              );
+            return;
+          }
           cmd.CommandText =
             "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
@@ -5090,19 +5098,17 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
           cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
           cmd.ExecuteNonQuery();
-          if (previous.JobUnique != unique)
-            assignment = RecordCastingAssignment(
-              transaction,
-              GetMaterialDetails(matID, transaction),
-              previous.PartName,
-              true,
-              timeUTC
-            );
+          assignment = RecordCastingAssignment(
+            transaction,
+            GetMaterialDetails(matID, transaction),
+            previous.PartName,
+            true,
+            timeUTC
+          );
           transaction.Commit();
         }
       }
-      if (assignment != null)
-        _cfg.OnNewLogEntry(assignment, null, this);
+      _cfg.OnNewLogEntry(assignment, null, this);
     }
 
     public void RecordPathForProcess(long matID, int process, int path)

@@ -532,7 +532,10 @@ namespace BlackMaple.MachineFramework
     );
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);
 
-    /// <summary>Assign an existing raw casting to a job and record the historical action. Repeating the same assignment creates no new event.</summary>
+    /// <summary>
+    /// Assign an existing raw casting to a job and record the historical action. Repeating the same
+    /// job, part and process count changes nothing; contradictory assignment details are rejected.
+    /// </summary>
     void AssignCastingToJob(long matID, string unique, string part, int numProc, DateTime timeUTC);
     void RecordPathForProcess(long matID, int process, int path);
     void CreateMaterialID(long matID, string unique, string part, int numProc);
