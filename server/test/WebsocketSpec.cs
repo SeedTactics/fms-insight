@@ -25,6 +25,118 @@ namespace BlackMaple.FMSInsight.Tests;
 public sealed class WebsocketSpec
 {
   [Test]
+  public async Task NewJobsCarriesAcceptedReferencesWithoutProgramContents()
+  {
+    using var repository = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repository.OpenConnection();
+    var time = new DateTime(2026, 11, 3, 0, 0, 0, DateTimeKind.Utc);
+    var accepted = db.AddJobs(
+      new NewJobs
+      {
+        ScheduleId = "accepted",
+        Jobs =
+        [
+          new Job
+          {
+            UniqueStr = "job",
+            PartName = "part",
+            Cycles = 1,
+            Archived = false,
+            RouteStartUTC = time,
+            RouteEndUTC = time.AddDays(1),
+            Processes =
+            [
+              new ProcessInfo
+              {
+                Paths =
+                [
+                  JobLogTest.EmptyPath with
+                  {
+                    Stops =
+                    [
+                      new MachiningStop
+                      {
+                        StationGroup = "MC",
+                        Stations = [1],
+                        ExpectedCycleTime = TimeSpan.FromMinutes(1),
+                        Program = "program",
+                        ProgramRevision = -1,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        Programs =
+        [
+          new NewProgramContent
+          {
+            ProgramName = "program",
+            Revision = -1,
+            ProgramContent = "program-content",
+          },
+        ],
+        CurrentUnfilledWorkorders =
+        [
+          new Workorder
+          {
+            WorkorderId = "work",
+            Part = "part",
+            Quantity = 1,
+            Priority = 1,
+            DueDate = time.AddDays(1),
+            Programs =
+            [
+              new ProgramForJobStep
+              {
+                ProgramName = "program",
+                ProcessNumber = 1,
+                Revision = -1,
+              },
+            ],
+          },
+        ],
+        DebugMessage = [1, 2],
+      },
+      null,
+      false
+    );
+    var control = Substitute.For<IJobAndQueueControl>();
+    await using var manager = new WebsocketManager(repository, control);
+    using var stopping = new CancellationTokenSource();
+    var socket = new RecordingWebSocket();
+    var handling = manager.HandleWebsocket(socket, stopping.Token);
+    try
+    {
+      await socket.ReceiveStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+      control.OnNewJobs += Raise.Event<NewJobsDelegate>(accepted);
+      await socket.FirstSend.Task.WaitAsync(TimeSpan.FromSeconds(1));
+      var settings = new JsonSerializerOptions();
+      FMSInsightWebHost.JsonSettings(settings);
+      var notification = JsonSerializer
+        .Deserialize<ServerEvent>(socket.Messages.Single(), settings)
+        .NewJobs;
+      await Assert
+        .That(notification.Jobs[0].Processes[0].Paths[0].Stops[0].ProgramRevision)
+        .IsEqualTo(1L);
+      await Assert
+        .That(notification.CurrentUnfilledWorkorders[0].Programs[0].Revision)
+        .IsEqualTo(1L);
+      await Assert.That(notification.Programs).IsNull();
+      await Assert.That(notification.DebugMessage).IsNull();
+      await Assert.That(accepted.Programs[0].Revision).IsEqualTo(1L);
+      await Assert.That(accepted.DebugMessage).IsEquivalentTo(new byte[] { 1, 2 });
+    }
+    finally
+    {
+      stopping.Cancel();
+      await handling.WaitAsync(TimeSpan.FromSeconds(1));
+    }
+  }
+
+  [Test]
   public async Task ActiveWebsocketStopsWhenApplicationStops()
   {
     using var repository = RepositoryConfig.InitializeMemoryDB(null);

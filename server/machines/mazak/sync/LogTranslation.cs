@@ -1082,7 +1082,8 @@ namespace MazakMachineInterface
                   part: job.PartName,
                   proc1Path: 1,
                   numProcesses: job.Processes.Count,
-                  count: fixQty - mats.Count
+                  count: fixQty - mats.Count,
+                  timeUTC: e.TimeUTC
                 )
               );
             }

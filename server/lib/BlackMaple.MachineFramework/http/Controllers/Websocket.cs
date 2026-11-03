@@ -139,6 +139,7 @@ namespace BlackMaple.MachineFramework.Controllers
       _thread.IsBackground = true;
       _thread.Start();
 
+      // Post-commit notifications can arrive out of counter order; durable cursors use events/recent.
       repo.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
       jobAndQueue.OnNewJobs += (jobs) =>
         Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });

@@ -298,6 +298,7 @@ public sealed class QuantityOwnershipSpec : IDisposable
     var pending = Job("pending", backendOwned: false) with
     {
       RouteStartUTC = DateTime.UtcNow.AddMinutes(-1),
+      RouteEndUTC = DateTime.UtcNow.AddDays(1),
     };
     repository.AddJobs(new NewJobs { ScheduleId = "pending", Jobs = [pending] }, null, false);
     var canceled = fullCancellation ? 10 : 8;

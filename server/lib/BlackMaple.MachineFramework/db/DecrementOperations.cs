@@ -63,6 +63,8 @@ internal sealed partial class Repository
   )
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(operationId);
+    JobDecrementOperation result;
+    var events = ImmutableList.CreateBuilder<LogEntry>();
     lock (_cfg)
     {
       using var transaction = _connection!.BeginTransaction();
@@ -96,6 +98,7 @@ internal sealed partial class Repository
       {
         if (!counts.Any(c => c.JobUnique == raw.JobUnique))
           throw new ArgumentException("Released raw allocations must belong to a canceled job.");
+        var assignment = GetMaterialDetails(raw.MaterialID, transaction);
         cmd.CommandText =
           "UPDATE matdetails SET UniqueStr = NULL, PartName = $casting WHERE MaterialID = $material AND UniqueStr = $job "
           + "AND EXISTS (SELECT 1 FROM queues WHERE MaterialID = $material) "
@@ -116,11 +119,12 @@ internal sealed partial class Repository
         cmd.Parameters.Clear();
         cmd.Parameters.AddWithValue("$material", raw.MaterialID);
         cmd.ExecuteNonQuery();
+        events.Add(RecordCastingAssignment(transaction, assignment!, raw.Casting, false, nowUTC));
       }
       long? decrementId = null;
       if (!counts.IsEmpty)
       {
-        AddNewDecrement(transaction, counts, null, nowUTC);
+        events.Add(AddNewDecrement(transaction, counts, null, nowUTC));
         cmd.CommandText = "SELECT MAX(DecrementId) FROM job_decrements";
         cmd.Parameters.Clear();
         decrementId = Convert.ToInt64(cmd.ExecuteScalar());
@@ -132,9 +136,11 @@ internal sealed partial class Repository
       cmd.Parameters.AddWithValue("$time", nowUTC.Ticks);
       cmd.Parameters.AddWithValue("$decrement", (object?)decrementId ?? DBNull.Value);
       cmd.ExecuteNonQuery();
-      var result = LoadJobDecrementOperation(operationId, transaction)!;
+      result = LoadJobDecrementOperation(operationId, transaction)!;
       transaction.Commit();
-      return result;
     }
+    foreach (var entry in events)
+      _cfg.OnNewLogEntry(entry, "", this);
+    return result;
   }
 }

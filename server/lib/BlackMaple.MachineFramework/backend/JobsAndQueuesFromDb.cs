@@ -74,6 +74,8 @@ namespace BlackMaple.MachineFramework
 
     ///Adds new jobs into the cell controller
     void AddJobs(NewJobs jobs, string? expectedPreviousScheduleId);
+
+    /// <summary>Published after acceptance, with the revisions persisted for jobs, workorders and program content.</summary>
     event NewJobsDelegate? OnNewJobs;
 
     void SetJobComment(string jobUnique, string comment);
@@ -576,6 +578,7 @@ namespace BlackMaple.MachineFramework
 
     void IJobAndQueueControl.AddJobs(NewJobs jobs, string? expectedPreviousScheduleId)
     {
+      NewJobs accepted;
       using (var jdb = _repo.OpenConnection())
       {
         Log.Debug("Adding new jobs {@jobs}", jobs);
@@ -587,14 +590,14 @@ namespace BlackMaple.MachineFramework
           throw new BadRequestException(string.Join(Environment.NewLine, errors));
         }
 
-        jdb.AddJobs(
+        accepted = jdb.AddJobs(
           jobs,
           expectedPreviousScheduleId,
           addAsCopiedToSystem: _syncState.AddJobsAsCopiedToSystem
         );
       }
 
-      OnNewJobs?.Invoke(jobs);
+      OnNewJobs?.Invoke(accepted);
 
       RecalculateCellState();
     }

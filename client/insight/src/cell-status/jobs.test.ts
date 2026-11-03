@@ -43,7 +43,7 @@ import {
 } from "../network/api.js";
 import { last30SimProduction, specificMonthSimProduction } from "./sim-production.js";
 import { last30SimStationUse, specificMonthSimStationUse } from "./sim-station-use.js";
-import { last30Jobs, specificMonthJobs } from "./scheduled-jobs.js";
+import { last30Jobs, last30SchIds, specificMonthJobs } from "./scheduled-jobs.js";
 import { fmsInformation } from "../network/server-settings.js";
 import newJobsJson from "../../../../server/debug-mock/sample-data/newjobs.json";
 import { LazySeq } from "@seedtactics/immutable-collections";
@@ -149,4 +149,24 @@ it("stores station labels and parts for simulated station use", () => {
       parts: [{ uniq: "uniq1", proc: 2, path: 1 }],
     },
   ]);
+});
+
+it("remembers simulation-only schedules so reconnect history does not duplicate intervals", () => {
+  const store = createStore();
+  const history: IHistoricData = {
+    jobs: {},
+    stationUse: [
+      new SimulatedStationUtilization({
+        scheduleId: "simulation-only",
+        stationGroup: "MC",
+        stationNum: 1,
+        startUTC: new Date("2026-10-08T12:00:00Z"),
+        endUTC: new Date("2026-10-08T13:00:00Z"),
+      }),
+    ],
+  };
+  store.set(onLoadLast30Jobs, history);
+  expect(store.get(last30SchIds).has("simulation-only")).toBe(true);
+  store.set(onLoadLast30Jobs, history);
+  expect(store.get(last30SimStationUse)).toHaveLength(1);
 });

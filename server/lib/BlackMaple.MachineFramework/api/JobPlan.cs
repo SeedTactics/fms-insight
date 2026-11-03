@@ -228,8 +228,10 @@ namespace BlackMaple.MachineFramework
 
     public required TimeSpan SimulatedAverageFlowTime { get; init; } // average time a part takes to complete the entire sequence
 
+    /// <summary>Live machining hold. This is not a historical record of holds during production.</summary>
     public HoldPattern? HoldMachining { get; init; }
 
+    /// <summary>Live load/unload hold. This is not a historical record of holds during production.</summary>
     public HoldPattern? HoldLoadUnload { get; init; }
 
     public required int PartsPerPallet { get; init; }
@@ -252,14 +254,20 @@ namespace BlackMaple.MachineFramework
 
     public required DateTime RouteEndUTC { get; init; }
 
+    /// <summary>Current archive state, including on historical job responses; not a historical production fact.</summary>
     public required bool Archived { get; init; }
 
     public required string PartName { get; init; }
 
+    /// <summary>Current job comment, including on historical job responses; not the comment at production time.</summary>
     public string? Comment { get; init; }
 
     public string? AllocationAlgorithm { get; init; }
 
+    /// <summary>
+    /// Opaque metadata for external schedulers, stored with the job but not used for production.
+    /// Historical job responses contain the current associations, which backout can remove.
+    /// </summary>
     [JsonPropertyName("Bookings")]
     public ImmutableSortedSet<string>? BookingIds { get; init; }
 
@@ -269,6 +277,7 @@ namespace BlackMaple.MachineFramework
 
     public bool ManuallyCreated { get; init; }
 
+    /// <summary>Live whole-job hold, also carried by the download/input type for compatibility.</summary>
     [JsonPropertyName("HoldEntireJob")]
     public HoldPattern? HoldJob { get; init; }
 
@@ -287,14 +296,17 @@ namespace BlackMaple.MachineFramework
     public required int Quantity { get; init; }
   }
 
+  // The plan is historical; inherited comments, holds, bookings and archive state remain live.
   public record HistoricJob : Job
   {
     public string? ScheduleId { get; init; }
 
+    /// <summary>Current controller delivery state; historical clients must not infer production from it.</summary>
     // Controller delivery progress only. Acceptance into the repository commits the plan;
     // slow or retried delivery does not make pending jobs provisional.
     public required bool CopiedToSystem { get; init; }
 
+    // Legacy per-path rows can share an ID; sum them before reconciling with JobDecrement events.
     public ImmutableList<DecrementQuantity>? Decrements { get; init; }
   }
 

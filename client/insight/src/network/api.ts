@@ -3342,6 +3342,9 @@ export enum LogType {
   CancelRebooking = "CancelRebooking",
   BasketLoadUnload = "BasketLoadUnload",
   BasketCycle = "BasketCycle",
+  CastingAssigned = "CastingAssigned",
+  CastingUnassigned = "CastingUnassigned",
+  JobDecrement = "JobDecrement",
 }
 
 export class ToolUse implements IToolUse {

@@ -112,8 +112,17 @@ namespace BlackMaple.MachineFramework
     CancelRebooking = 115,
     BasketLoadUnload = 116,
     BasketCycle = 117,
+
     // 118 through 128 belonged to removed basket position and beta evidence event types.
     // Keep those values unused.
+    /// <summary>A casting was assigned to a job. Details.Assignment preserves its MaterialDetails at assignment; Details.Casting is its source casting.</summary>
+    CastingAssigned = 129,
+
+    /// <summary>A raw assignment was released. Details.Assignment preserves the released MaterialDetails; Details.Casting is the resulting casting.</summary>
+    CastingUnassigned = 130,
+
+    /// <summary>Committed quantity backout. Details.Decrements is a JSON array of JobAndDecrementQuantity; deduplicate by job and DecrementId.</summary>
+    JobDecrement = 131,
     // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 
@@ -123,6 +132,7 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("counter")]
     public required long Counter { get; init; }
 
+    // Identity and paths are joined at read time; casting actions carry a separate assignment snapshot.
     [JsonPropertyName("material")]
     public required ImmutableList<LogMaterial> Material { get; init; }
 

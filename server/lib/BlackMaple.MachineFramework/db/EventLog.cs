@@ -848,7 +848,12 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT MAX(TimeUTC) FROM stations";
+        // Operator/planning actions do not advance the controller import time cursor.
+        cmd.CommandText =
+          "SELECT MAX(TimeUTC) FROM stations WHERE StationLoc NOT IN ($assigned,$unassigned,$decrement)";
+        cmd.Parameters.AddWithValue("assigned", (int)LogType.CastingAssigned);
+        cmd.Parameters.AddWithValue("unassigned", (int)LogType.CastingUnassigned);
+        cmd.Parameters.AddWithValue("decrement", (int)LogType.JobDecrement);
 
         System.DateTime ret = DateTime.MinValue;
 
@@ -5052,6 +5057,60 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public void AssignCastingToJob(
+      long matID,
+      string unique,
+      string part,
+      int numProc,
+      DateTime timeUTC
+    )
+    {
+      ArgumentException.ThrowIfNullOrEmpty(unique);
+      ArgumentException.ThrowIfNullOrEmpty(part);
+      ArgumentOutOfRangeException.ThrowIfNegativeOrZero(numProc);
+      LogEntry assignment;
+      lock (_cfg)
+      {
+        using (var transaction = _connection.BeginTransaction())
+        using (var cmd = _connection.CreateCommand())
+        {
+          cmd.Transaction = transaction;
+          var previous = GetMaterialDetails(matID, transaction);
+          if (
+            previous == null
+            || !string.IsNullOrEmpty(previous.JobUnique) && previous.JobUnique != unique
+          )
+            throw new ConflictRequestException(
+              "The casting is missing or assigned to another job."
+            );
+          if (previous.JobUnique == unique)
+          {
+            if (previous.PartName != part || previous.NumProcesses != numProc)
+              throw new ConflictRequestException(
+                "The casting is assigned to this job with a different part or process count."
+              );
+            return;
+          }
+          cmd.CommandText =
+            "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
+          cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+          cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+          cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
+          cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
+          cmd.ExecuteNonQuery();
+          assignment = RecordCastingAssignment(
+            transaction,
+            GetMaterialDetails(matID, transaction),
+            previous.PartName,
+            true,
+            timeUTC
+          );
+          transaction.Commit();
+        }
+      }
+      _cfg.OnNewLogEntry(assignment, null, this);
+    }
+
     public void RecordPathForProcess(long matID, int process, int path)
     {
       lock (_cfg)
@@ -5804,11 +5863,33 @@ namespace BlackMaple.MachineFramework
       int proc1Path,
       int numProcesses,
       int count
+    ) =>
+      AllocateCastingsInQueue(
+        queue,
+        casting,
+        unique,
+        part,
+        proc1Path,
+        numProcesses,
+        count,
+        DateTime.UtcNow
+      );
+
+    public IReadOnlyList<long> AllocateCastingsInQueue(
+      string queue,
+      string casting,
+      string unique,
+      string part,
+      int proc1Path,
+      int numProcesses,
+      int count,
+      DateTime timeUTC
     )
     {
+      var matIds = ImmutableList.CreateBuilder<long>();
+      var events = ImmutableList.CreateBuilder<LogEntry>();
       lock (_cfg)
       {
-        var matIds = new List<long>();
         using (var trans = _connection.BeginTransaction())
         using (var cmd = _connection.CreateCommand())
         {
@@ -5832,7 +5913,7 @@ namespace BlackMaple.MachineFramework
           if (matIds.Count != count)
           {
             trans.Rollback();
-            return new List<long>();
+            return ImmutableList<long>.Empty;
           }
 
           cmd.CommandText =
@@ -5859,45 +5940,53 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters[0].Value = matId;
             cmd.ExecuteNonQuery();
           }
+          foreach (var matId in matIds)
+            events.Add(
+              RecordCastingAssignment(
+                trans,
+                GetMaterialDetails(matId, trans),
+                casting,
+                true,
+                timeUTC
+              )
+            );
           trans.Commit();
-          return matIds;
         }
       }
+      foreach (var entry in events)
+        _cfg.OnNewLogEntry(entry, null, this);
+      return matIds.ToImmutable();
     }
 
     public void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting)
     {
+      var events = ImmutableList.CreateBuilder<LogEntry>();
       lock (_cfg)
       {
-        using (var trans = _connection.BeginTransaction())
-        using (var cmd = _connection.CreateCommand())
+        using var trans = _connection.BeginTransaction();
+        var time = DateTime.UtcNow;
+        foreach (var matId in matIds.ToImmutableSortedSet())
         {
+          var assignment = GetMaterialDetails(matId, trans);
+          if (assignment == null)
+            continue;
+          using var cmd = _connection.CreateCommand();
           cmd.Transaction = trans;
-
           cmd.CommandText =
-            "UPDATE matdetails SET UniqueStr = NULL, PartName = $c WHERE MaterialID = $mid";
-          cmd.Parameters.Clear();
-          cmd.Parameters.Add("mid", SqliteType.Integer);
-          cmd.Parameters.Add("c", SqliteType.Text).Value = casting;
-
-          foreach (var matId in matIds)
-          {
-            cmd.Parameters[0].Value = matId;
-            cmd.ExecuteNonQuery();
-          }
-
-          cmd.CommandText = "DELETE FROM mat_path_details WHERE MaterialID = $mid";
-          cmd.Parameters.Clear();
-          cmd.Parameters.Add("mid", SqliteType.Integer);
-
-          foreach (var matId in matIds)
-          {
-            cmd.Parameters[0].Value = matId;
-            cmd.ExecuteNonQuery();
-          }
-          trans.Commit();
+            "UPDATE matdetails SET UniqueStr = NULL, PartName = $casting WHERE MaterialID = $material";
+          cmd.Parameters.AddWithValue("casting", casting);
+          cmd.Parameters.AddWithValue("material", matId);
+          cmd.ExecuteNonQuery();
+          cmd.CommandText = "DELETE FROM mat_path_details WHERE MaterialID = $material";
+          cmd.Parameters.RemoveAt("casting");
+          cmd.ExecuteNonQuery();
+          if (!string.IsNullOrEmpty(assignment.JobUnique))
+            events.Add(RecordCastingAssignment(trans, assignment, casting, false, time));
         }
+        trans.Commit();
       }
+      foreach (var entry in events)
+        _cfg.OnNewLogEntry(entry, null, this);
     }
 
     public bool IsMaterialInQueue(long matId)

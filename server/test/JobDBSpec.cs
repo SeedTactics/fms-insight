@@ -292,8 +292,9 @@ namespace BlackMaple.FMSInsight.Tests
           {
             Jobs = ImmutableDictionary
               .Create<string, HistoricJob>()
+              .Add(job1.UniqueStr, job1history)
               .Add(job2.UniqueStr, job2history),
-            StationUse = job2SimUse,
+            StationUse = job1StatUse.AddRange(job2SimUse),
           }
         );
 
@@ -331,29 +332,44 @@ namespace BlackMaple.FMSInsight.Tests
           {
             Jobs = ImmutableDictionary
               .Create<string, HistoricJob>()
+              .Add(job1.UniqueStr, job1history)
               .Add(job2.UniqueStr, job2history),
-            StationUse = job2SimUse,
+            StationUse = job1StatUse.AddRange(job2SimUse),
             MostRecentSimulationId = schId2,
           }
         );
 
       _jobDB
         .LoadRecentJobHistory(job1.RouteEndUTC.AddHours(1), new[] { schId2 })
-        .ShouldBeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
-            Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
-            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+            Jobs = ImmutableDictionary<string, HistoricJob>.Empty.Add(job1.UniqueStr, job1history),
+            StationUse = job1StatUse,
           }
         );
 
       _jobDB
         .LoadRecentJobHistory(job2.RouteEndUTC.AddHours(1))
-        .ShouldBeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
+            Jobs = ImmutableDictionary<string, HistoricJob>
+              .Empty.Add(job1.UniqueStr, job1history)
+              .Add(job2.UniqueStr, job2history),
+            StationUse = job1StatUse.AddRange(job2SimUse),
+            MostRecentSimulationId = schId2,
+          }
+        );
+
+      // Route bounds can end before simulated use. Only a bound beyond both excludes them.
+      _jobDB
+        .LoadRecentJobHistory(job1StatUse.Concat(job2SimUse).Max(s => s.EndUTC).AddHours(1))
+        .ShouldBeEquivalentTo(
+          new RecentHistoricData
+          {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
-            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+            StationUse = [],
             MostRecentSimulationId = schId2,
           }
         );

@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 45;
+    private const int Version = 46;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -260,6 +260,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, PlanDown INTEGER, Pallet INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
         cmd.ExecuteNonQuery();
+        CreateSimStationTimeIndex(cmd);
 
         cmd.CommandText =
           "CREATE TABLE sim_station_use_parts(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, JobUnique TEXT, Process INTEGER, Path INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path))";
@@ -533,6 +534,12 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
             CreateJobDecrementOperationTables(cmd);
+          }
+
+          if (curVersion < 46 && updateJobsTables)
+          {
+            cmd.Transaction = trans;
+            CreateSimStationTimeIndex(cmd);
           }
 
           //update the version in the database
@@ -1352,6 +1359,13 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText = "DROP INDEX stations_correlation_id";
       cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE stations DROP COLUMN CorrelationId";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateSimStationTimeIndex(IDbCommand cmd)
+    {
+      cmd.CommandText =
+        "CREATE INDEX sim_station_end_time ON sim_station_use(EndUTC, StartUTC, SimId)";
       cmd.ExecuteNonQuery();
     }
 

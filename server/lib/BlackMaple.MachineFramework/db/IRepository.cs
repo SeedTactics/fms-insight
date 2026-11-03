@@ -531,6 +531,12 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     );
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);
+
+    /// <summary>
+    /// Assign an existing raw casting to a job and record the historical action. Repeating the same
+    /// job, part and process count changes nothing; contradictory assignment details are rejected.
+    /// </summary>
+    void AssignCastingToJob(long matID, string unique, string part, int numProc, DateTime timeUTC);
     void RecordPathForProcess(long matID, int process, int path);
     void CreateMaterialID(long matID, string unique, string part, int numProc);
     MaterialDetails GetMaterialDetails(long matID);
@@ -551,6 +557,16 @@ namespace BlackMaple.MachineFramework
       int proc1Path,
       int numProcesses,
       int count
+    );
+    IReadOnlyList<long> AllocateCastingsInQueue(
+      string queue,
+      string casting,
+      string unique,
+      string part,
+      int proc1Path,
+      int numProcesses,
+      int count,
+      DateTime timeUTC
     );
     void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting);
     bool IsMaterialInQueue(long matId);
@@ -614,6 +630,9 @@ namespace BlackMaple.MachineFramework
       DateTime endUTC,
       bool includeDecremented = true
     );
+
+    // Both history reads return complete schedules selected by job-route or station-use overlap.
+    // Only fully stored downloads belong in alreadyKnownSchIds; this progress is independent of log counters.
     HistoricData LoadJobHistory(
       DateTime startUTC,
       DateTime endUTC,
@@ -638,7 +657,9 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Adding and Updating Jobs
     // --------------------------------------------------------------------------------
-    void AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
+    // A schedule ID owns one immutable jobs/routes/simulation download; revised planning needs a new ID.
+    /// <summary>Commit a download and return its accepted program revisions, resolved in the same transaction.</summary>
+    NewJobs AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
     void AddPrograms(IEnumerable<NewProgramContent> programs, DateTime startingUtc);
     void UpdateCachedWorkorders(IEnumerable<Workorder> workorders);
     void ArchiveJob(string UniqueStr);
