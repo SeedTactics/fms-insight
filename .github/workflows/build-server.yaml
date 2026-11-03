@@ -39,8 +39,8 @@ jobs:
       - uses: pnpm/action-setup@v6
         with:
           cache: true
-          cache_dependency_path: client/insight/pnpm-lock.yaml
-          package_json_file: client/insight/package.json
+          cache_dependency_path: pnpm-lock.yaml
+          package_json_file: package.json
 
       - uses: actions/cache@v6
         with:
@@ -105,11 +105,13 @@ jobs:
       # Test and Build
       # ----------------------------------------------------------
 
-      - run: pnpm --dir client/insight install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run type-check
 
       - run: pnpm --dir client/insight run type-check
 
-      - run: pnpm --dir client/insight run lint
+      - run: pnpm run lint
 
       - run: pnpm --dir client/insight run test:unit
 
