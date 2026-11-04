@@ -71,6 +71,7 @@ import * as matDetails from "../../cell-status/material-details.js";
 import { LogEntries } from "../LogEntry.js";
 import {
   inproc_mat_to_summary,
+  last30MaterialSummary,
   MaterialSummaryAndCompletedData,
 } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
@@ -89,6 +90,7 @@ import {
   canAddOrMoveMaterialToQueue,
   canReorderQueuedMaterial,
   materialOperationState,
+  quarantineRoute,
 } from "../../data/material-operation-policy.js";
 
 export class PartIdenticon extends PureComponent<{
@@ -428,24 +430,35 @@ function materialActionDescription(
   return null;
 }
 
-function Warning({ mat }: { mat: Readonly<MaterialSummaryAndCompletedData> }) {
+function Warning({
+  mat,
+  inProcMat,
+}: {
+  readonly mat: Readonly<MaterialSummaryAndCompletedData>;
+  readonly inProcMat?: Readonly<api.IInProcessMaterial>;
+}) {
+  const summary = useAtomValue(last30MaterialSummary).matsById.get(mat.materialID);
+  const reason = inProcMat
+    ? summary?.quarantineSignals?.get(quarantineRoute(inProcMat).process)?.note
+    : undefined;
   let tooltip: string | null = null;
   if (mat.signaledInspections.length > 0) {
     tooltip = "Inspect: " + mat.signaledInspections.join(", ");
   }
   if (mat.quarantineAfterUnload) {
+    const quarantine = "Material will quarantine after unload" + (reason ? `: ${reason}` : "");
     if (tooltip === null) {
-      tooltip = "Material will quarantine after unload";
+      tooltip = quarantine;
     } else {
-      tooltip += "; Material will quarantine after unload";
+      tooltip += `; ${quarantine}`;
     }
   }
   if (tooltip === null) {
     return null;
   } else {
     return (
-      <Tooltip title={tooltip}>
-        <WarningIcon />
+      <Tooltip title={tooltip} describeChild>
+        <WarningIcon titleAccess="Material warnings" />
       </Tooltip>
     );
   }
@@ -730,7 +743,7 @@ const MatCard = function MatCard({
             ) : undefined}
             {hideWarningIcon ? undefined : (
               <div>
-                <Warning mat={mat} />
+                <Warning mat={mat} inProcMat={inProcMat} />
               </div>
             )}
           </Box>
@@ -1069,6 +1082,22 @@ function RebookingNote() {
   return null;
 }
 
+function QuarantineReason({ material }: { readonly material: Readonly<api.IInProcessMaterial> }) {
+  const events = useAtomValue(matDetails.materialInDialogLocalEvents);
+  const process = quarantineRoute(material).process;
+  const quarantine = events.reduce<Readonly<api.ILogEntry> | null>(
+    (latest, event) =>
+      event.type === api.LogType.SignalQuarantine &&
+      event.material.some((m) => m.id === material.materialID && m.proc === process) &&
+      (latest === null || event.counter > latest.counter)
+        ? event
+        : latest,
+    null,
+  );
+  const reason = quarantine?.details?.note?.trim();
+  return reason ? `: ${reason}` : null;
+}
+
 function MaterialOperationNotice() {
   const material = useAtomValue(matDetails.inProcessMaterialInDialog);
   const alarms = matDetails.useMaterialBlockingAlarms();
@@ -1078,6 +1107,12 @@ function MaterialOperationNotice() {
       {material?.quarantineAfterUnload ? (
         <Typography variant="caption" component="p">
           Quarantine requested
+          <ErrorBoundary
+            fallback={null}
+            resetKeys={[material.materialID, quarantineRoute(material).process]}
+          >
+            <QuarantineReason material={material} />
+          </ErrorBoundary>
         </Typography>
       ) : alarms.length === 0 &&
         state?.kind === "ActiveLoadStationOperation" &&
