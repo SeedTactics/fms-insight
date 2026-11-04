@@ -297,11 +297,7 @@ public sealed class InsightCliSpec
       await Assert.That(locked.Exit).IsEqualTo(1);
       await Assert.That((await File.ReadAllBytesAsync(file)).SequenceEqual(before)).IsTrue();
     }
-    using var connection = new SqliteConnection($"Data Source={file};Pooling=False");
-    connection.Open();
-    using var version = connection.CreateCommand();
-    version.CommandText = "PRAGMA user_version=999";
-    version.ExecuteNonQuery();
+    host.ExecuteCacheSql("cache.sqlite", "PRAGMA user_version=999");
     var old = await File.ReadAllBytesAsync(file);
     var schema = await InsightCliSyncSpec.Resume(host, file);
     await Assert.That(schema.Exit).IsEqualTo(1);

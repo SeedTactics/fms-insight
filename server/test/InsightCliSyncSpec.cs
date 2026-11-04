@@ -371,14 +371,10 @@ public sealed class InsightCliSyncSpec
       "SELECT (SELECT value FROM metadata WHERE key='event_counter') cursor,(SELECT json FROM events LIMIT 1) event"
     );
     db.RecordSerialForMaterialID(id, 1, "after", End.AddDays(1));
-    using var connection = new SqliteConnection(
-      $"Data Source={Path.Combine(host.Directory, "cache.sqlite")};Pooling=False"
+    host.ExecuteCacheSql(
+      "cache.sqlite",
+      "CREATE TRIGGER reject_cursor BEFORE INSERT ON metadata WHEN NEW.key='event_counter' BEGIN SELECT RAISE(ABORT,'commit fault'); END"
     );
-    connection.Open();
-    using var fault = connection.CreateCommand();
-    fault.CommandText =
-      "CREATE TRIGGER reject_cursor BEFORE INSERT ON metadata WHEN NEW.key='event_counter' BEGIN SELECT RAISE(ABORT,'commit fault'); END";
-    fault.ExecuteNonQuery();
     var failed = await Resume(host, "cache.sqlite");
     await Assert.That(failed.Exit).IsEqualTo(1);
     using var after = await host.Query(
@@ -386,8 +382,7 @@ public sealed class InsightCliSyncSpec
       "SELECT (SELECT value FROM metadata WHERE key='event_counter') cursor,(SELECT json FROM events LIMIT 1) event"
     );
     await Assert.That(JsonNodeEqual(before, after)).IsTrue();
-    fault.CommandText = "DROP TRIGGER reject_cursor";
-    fault.ExecuteNonQuery();
+    host.ExecuteCacheSql("cache.sqlite", "DROP TRIGGER reject_cursor");
     await Success(Resume(host, "cache.sqlite"));
     using var changed = await host.Query("cache.sqlite", "SELECT serial FROM material");
     await Assert.That(changed.RootElement[0].GetProperty("serial").GetString()).IsEqualTo("after");

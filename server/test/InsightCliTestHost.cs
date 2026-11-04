@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -133,6 +134,24 @@ internal sealed class InsightCliTestHost : IAsyncDisposable
     ]);
     await Assert.That(result.Exit).IsEqualTo(0).Because(result.Errors);
     return JsonDocument.Parse(result.Output);
+  }
+
+  internal void ExecuteCacheSql(string filename, string sql)
+  {
+    // These tests exercise the CLI's cache files. Release SQLite's Windows file handles before
+    // running another command or checking that a rejected operation preserved the file bytes.
+    using var connection = new SqliteConnection(
+      new SqliteConnectionStringBuilder
+      {
+        DataSource = Path.Combine(Directory, filename),
+        Mode = SqliteOpenMode.ReadWrite,
+        Pooling = false,
+      }.ToString()
+    );
+    connection.Open();
+    using var command = connection.CreateCommand();
+    command.CommandText = sql;
+    command.ExecuteNonQuery();
   }
 
   internal static async Task<(int Exit, string Output, string Errors)> Run(
