@@ -235,6 +235,22 @@ internal static class Sync
         .Where(r => InWindow(r, from, to) || cachedCounters.Contains(r.Event.Counter))
         .SelectMany(r => r.Event.Material.Select(m => m.Id))
     );
+    // Shared corrections can introduce further materials. Include their corrections too,
+    // so taking one catch-up response has the same result as syncing between those actions.
+    while (true)
+    {
+      var expanded = relevantMaterials.Union(
+        reads
+          .Where(r =>
+            IsCorrection(r.Event.Type)
+            && r.Event.Material.Any(m => relevantMaterials.Contains(m.Id))
+          )
+          .SelectMany(r => r.Event.Material.Select(m => m.Id))
+      );
+      if (expanded.Count == relevantMaterials.Count)
+        break;
+      relevantMaterials = expanded;
+    }
     var selected = reads
       .Where(r =>
         InWindow(r, from, to)

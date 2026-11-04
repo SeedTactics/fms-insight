@@ -261,6 +261,75 @@ public sealed class InsightCliSyncSpec
   }
 
   [Test]
+  public async Task SharedInvalidationRetainsLaterCorrectionsRegardlessOfSyncTiming()
+  {
+    await using var host = await InsightCliTestHost.Start();
+    using var db = host.Repository.OpenConnection();
+    var first = db.AllocateMaterialID("", "part", 1);
+    var second = db.AllocateMaterialID("", "part", 1);
+    var third = db.AllocateMaterialID("", "part", 1);
+    var unrelated = db.AllocateMaterialID("", "part", 1);
+    db.RecordGeneralMessage([Material(first)], "note", "window", timeUTC: Start);
+    await Success(host.Sync("together.sqlite", Start, End));
+    await Success(host.Sync("separate.sqlite", Start, End));
+    db.RecordMachineEnd(
+      [Material(first), Material(second)],
+      1,
+      "MC",
+      1,
+      "100",
+      "shared outside window",
+      End.AddDays(1),
+      TimeSpan.FromMinutes(3),
+      TimeSpan.FromMinutes(2)
+    );
+    db.InvalidatePalletCycle(first, 1, "operator", End.AddDays(2)).ToImmutableList();
+    await Success(Resume(host, "separate.sqlite"));
+    db.RecordMachineEnd(
+      [Material(second), Material(third)],
+      2,
+      "MC",
+      1,
+      "100",
+      "shared retry outside window",
+      End.AddDays(3),
+      TimeSpan.FromMinutes(3),
+      TimeSpan.FromMinutes(2)
+    );
+    db.InvalidatePalletCycle(second, 1, "operator", End.AddDays(4)).ToImmutableList();
+    await Success(Resume(host, "separate.sqlite"));
+    db.RecordSerialForMaterialID(third, 1, "later-serial", End.AddDays(5));
+    db.RecordSerialForMaterialID(unrelated, 1, "unrelated", End.AddDays(5));
+    await Success(Resume(host, "together.sqlite"));
+    await Success(Resume(host, "separate.sqlite"));
+    using (
+      var actions = await host.Query(
+        "together.sqlite",
+        "SELECT COUNT(*) count FROM events WHERE log_type='PartMark'"
+      )
+    )
+      await Assert.That(actions.RootElement[0].GetProperty("count").GetInt32()).IsEqualTo(1);
+    await Success(Resume(host, "together.sqlite"));
+    await Success(host.Sync("fresh.sqlite", Start, End));
+    foreach (
+      var sql in new[]
+      {
+        "SELECT counter,json,scope FROM events ORDER BY counter",
+        "SELECT * FROM event_material ORDER BY counter,material_id",
+        "SELECT material_id,serial,workorder FROM material ORDER BY material_id",
+        "SELECT value FROM metadata WHERE key='event_counter'",
+      }
+    )
+    {
+      using var together = await host.Query("together.sqlite", sql);
+      using var separate = await host.Query("separate.sqlite", sql);
+      using var fresh = await host.Query("fresh.sqlite", sql);
+      await Assert.That(JsonNodeEqual(together, separate)).IsTrue().Because(sql);
+      await Assert.That(JsonNodeEqual(together, fresh)).IsTrue().Because(sql);
+    }
+  }
+
+  [Test]
   public async Task CastingActionsKeepOriginalAssignmentAndBackendDecrementsAreCountedOnce()
   {
     await using var host = await InsightCliTestHost.Start();
