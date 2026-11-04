@@ -71,6 +71,7 @@ import * as matDetails from "../../cell-status/material-details.js";
 import { LogEntries } from "../LogEntry.js";
 import {
   inproc_mat_to_summary,
+  last30MaterialSummary,
   MaterialSummaryAndCompletedData,
 } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
@@ -429,24 +430,35 @@ function materialActionDescription(
   return null;
 }
 
-function Warning({ mat }: { mat: Readonly<MaterialSummaryAndCompletedData> }) {
+function Warning({
+  mat,
+  inProcMat,
+}: {
+  readonly mat: Readonly<MaterialSummaryAndCompletedData>;
+  readonly inProcMat?: Readonly<api.IInProcessMaterial>;
+}) {
+  const summary = useAtomValue(last30MaterialSummary).matsById.get(mat.materialID);
+  const reason = inProcMat
+    ? summary?.quarantineSignals?.get(quarantineRoute(inProcMat).process)?.note
+    : undefined;
   let tooltip: string | null = null;
   if (mat.signaledInspections.length > 0) {
     tooltip = "Inspect: " + mat.signaledInspections.join(", ");
   }
   if (mat.quarantineAfterUnload) {
+    const quarantine = "Material will quarantine after unload" + (reason ? `: ${reason}` : "");
     if (tooltip === null) {
-      tooltip = "Material will quarantine after unload";
+      tooltip = quarantine;
     } else {
-      tooltip += "; Material will quarantine after unload";
+      tooltip += `; ${quarantine}`;
     }
   }
   if (tooltip === null) {
     return null;
   } else {
     return (
-      <Tooltip title={tooltip}>
-        <WarningIcon />
+      <Tooltip title={tooltip} describeChild>
+        <WarningIcon titleAccess="Material warnings" />
       </Tooltip>
     );
   }
@@ -731,7 +743,7 @@ const MatCard = function MatCard({
             ) : undefined}
             {hideWarningIcon ? undefined : (
               <div>
-                <Warning mat={mat} />
+                <Warning mat={mat} inProcMat={inProcMat} />
               </div>
             )}
           </Box>

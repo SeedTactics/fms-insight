@@ -60,8 +60,14 @@ export interface MaterialSummaryAndCompletedData extends MaterialSummary {
   readonly currently_quarantined?: boolean;
 }
 
+interface QuarantineSignal {
+  readonly counter: number;
+  readonly note: string | undefined;
+}
+
 interface MaterialSummaryFromEvents extends MaterialSummaryAndCompletedData {
   readonly last_event: Date;
+  readonly quarantineSignals?: HashMap<number, QuarantineSignal>;
 }
 
 export interface MatSummaryState {
@@ -224,8 +230,19 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
         mat = { ...mat, closeout_completed: e.endUTC, closeout_failed: e.result === "Failed" };
         break;
 
-      case LogType.SignalQuarantine:
-        mat = { ...mat, quarantineAfterUnload: true };
+      case LogType.SignalQuarantine: {
+        const signals = mat.quarantineSignals ?? HashMap.empty<number, QuarantineSignal>();
+        const previous = signals.get(logMat.proc);
+        mat = {
+          ...mat,
+          quarantineAfterUnload: true,
+          quarantineSignals:
+            previous && previous.counter >= e.counter
+              ? signals
+              : signals.set(logMat.proc, { counter: e.counter, note: e.details?.note?.trim() }),
+        };
+        break;
+      }
     }
 
     mats = mats.set(logMat.id, mat);
@@ -268,7 +285,7 @@ export const updateLast30MatSummary = atom(
       set(last30MaterialSummaryRW, (st) => {
         const newSt = process_event(st, log);
         if (newSt === st || !expire) {
-          return st;
+          return newSt;
         } else {
           return filter_old(addDays(now, -30), newSt);
         }
