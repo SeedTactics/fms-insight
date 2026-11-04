@@ -147,6 +147,12 @@ jobs:
       # Publish
       # ----------------------------------------------------------
 
+      - name: NuGet Login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: JohnLenz
+
       # Try updating npm to get OIDC support?  Was suggested in several issues
       - name: Upgrade npm for OIDC support
         run: npm install -g npm@latest
@@ -163,20 +169,21 @@ jobs:
 
       - name: Publish MachineFramework
         run:
-          dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
+          dotnet nuget push -k ${{ steps.login.outputs.NUGET_API_KEY }} -s
+          https://api.nuget.org/v3/index.json
           server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
       - name: Publish Mazak
         run:
-          dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
-          server\machines\mazak\bin\Release\*.nupkg
+          dotnet nuget push -k ${{ steps.login.outputs.NUGET_API_KEY }} -s
+          https://api.nuget.org/v3/index.json server\machines\mazak\bin\Release\*.nupkg
       - name: Publish Makino
         run:
-          dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
-          server\machines\makino\bin\Release\*.nupkg
+          dotnet nuget push -k ${{ steps.login.outputs.NUGET_API_KEY }} -s
+          https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
       - name: Publish Niigata
         run:
-          dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
-          server\machines\niigata\bin\Release\*.nupkg
+          dotnet nuget push -k ${{ steps.login.outputs.NUGET_API_KEY }} -s
+          https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
 
       # ----------------------------------------------------------
       # Create Release
