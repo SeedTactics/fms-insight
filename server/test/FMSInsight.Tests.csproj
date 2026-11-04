@@ -14,6 +14,7 @@
     />
     <Compile Include="../machines/mazak-proxy/Server.cs" Link="mazak-proxy/Server.cs" />
     <ProjectReference Include="../../client/csharp/BlackMaple.FMSInsight.Client.csproj" />
+    <ProjectReference Include="../../client/cli/insight-cli.csproj" />
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <ProjectReference Include="../debug-mock/debugmock.csproj" />
     <ProjectReference Include="../machines/mazak/mazak.csproj" />
