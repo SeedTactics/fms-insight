@@ -106,7 +106,51 @@ const raw = (slot: number) =>
     },
   });
 
+function quarantineSignal(counter: number, id: number, process: number, note?: string) {
+  return api.LogEntry.fromJS({
+    counter,
+    type: api.LogType.SignalQuarantine,
+    endUTC: "2026-06-01T12:00:00Z",
+    material: [{ id, proc: process, part: "Part", numproc: 2, face: 1 }],
+    details: note === undefined ? undefined : { note },
+  });
+}
+
 describe("cancel load", () => {
+  test.each([undefined, "", "   ", "No completed machining record for returned set"])(
+    "quarantine notice shows only the latest matching request's note: %s",
+    async (note) => {
+      const base: Readonly<api.IInProcessMaterial> = loadingMaterial({ materialId: 101 });
+      const material = new api.InProcessMaterial({ ...base, quarantineAfterUnload: true });
+      const history = [
+        quarantineSignal(20, 101, 1, note),
+        quarantineSignal(10, 101, 1, "Old quarantine reason"),
+        quarantineSignal(30, 101, 2, "Different process reason"),
+        quarantineSignal(40, 102, 1, "Different material reason"),
+      ];
+      registerNetworkBackend();
+      vi.spyOn(LogBackend, "logForMaterial").mockResolvedValue(history);
+      const screen = await renderInsightPage(<MaterialDialog />, {
+        currentStatus: createCurrentStatus({ material: [material] }),
+        seedStore: (store) =>
+          store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
+      });
+
+      // Wait for history to load before checking that an absent note keeps the plain notice.
+      await expect
+        .element(screen.getByText(/signaled for quarantine after unload/).first())
+        .toBeVisible();
+      await expect
+        .element(
+          screen.getByText(
+            note?.trim() ? `Quarantine requested: ${note.trim()}` : "Quarantine requested",
+            { exact: true },
+          ),
+        )
+        .toBeVisible();
+    },
+  );
+
   test.each([false, true])(
     "a blocking alarm retains quarantine facts without offering operation instructions: %s",
     async (quarantineAfterUnload) => {
