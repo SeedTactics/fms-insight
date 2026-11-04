@@ -300,12 +300,12 @@ internal static class Sync
       details = id.HasValue
         ? [Read<MaterialDetails>(response.RootElement.GetRawText())]
         : Read<ImmutableList<MaterialDetails>>(response.RootElement.GetRawText());
+    var detailsFetched = DateTime.UtcNow;
     var ids = details.Select(d => d.MaterialID).ToImmutableHashSet();
     var reads = await Materials(http, ids, cancellationToken);
     using (var transaction = db.BeginTransaction())
     {
-      foreach (var read in reads)
-        StoreEvent(db, transaction, read, "material");
+      // Apply observations in retrieval order: event joins can contain newer identity metadata.
       foreach (var material in details)
         Execute(
           db,
@@ -314,8 +314,10 @@ internal static class Sync
           ("id", material.MaterialID),
           ("serial", material.Serial),
           ("workorder", material.Workorder),
-          ("time", InsightHttp.Time(DateTime.UtcNow))
+          ("time", InsightHttp.Time(detailsFetched))
         );
+      foreach (var read in reads)
+        StoreEvent(db, transaction, read, "material");
       Execute(
         db,
         transaction,

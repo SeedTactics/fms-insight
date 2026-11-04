@@ -566,6 +566,59 @@ public sealed class InsightCliSyncSpec
   }
 
   [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task TargetedHistoryRetainsNewerSerialAndWorkorderThanTheInitialDetails(
+    bool bySerial
+  )
+  {
+    using var repository = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repository.OpenConnection();
+    var id = db.AllocateMaterialID("", "part", 1);
+    db.RecordSerialForMaterialID(id, 1, "old-serial", Start.AddDays(-1));
+    db.RecordWorkorderForMaterialID(Material(id), "old-order", Start.AddDays(-1));
+    var changeBeforeHistory = false;
+    await using var host = await InsightCliTestHost.Start(
+      repository,
+      beforeRequest: context =>
+      {
+        if (!changeBeforeHistory || context.Request.Path != "/api/v1/log/events/for-material")
+          return;
+        changeBeforeHistory = false;
+        db.RecordSerialForMaterialID(id, 1, "new-serial", Start.AddHours(1));
+        db.RecordWorkorderForMaterialID(Material(id), "new-order", Start.AddHours(1));
+      }
+    );
+    await Success(host.Sync("cache.sqlite", Start, End));
+    changeBeforeHistory = true;
+    await Success(
+      InsightCliTestHost.Run([
+        "material",
+        "--server",
+        host.Url,
+        "--database",
+        Path.Combine(host.Directory, "cache.sqlite"),
+        bySerial ? "--serial" : "--id",
+        bySerial ? "old-serial" : id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+      ])
+    );
+    await Assert.That(changeBeforeHistory).IsFalse();
+    using var rows = await host.Query(
+      "cache.sqlite",
+      "SELECT m.serial,m.workorder,m.fetched_utc=e.fetched_utc AS latest_observation,json_extract(e.json,'$.material[0].serial') event_serial,json_extract(e.json,'$.material[0].workorder') event_workorder FROM material m JOIN event_material em USING(material_id) JOIN events e USING(counter) ORDER BY e.counter"
+    );
+    await Assert.That(rows.RootElement.GetArrayLength()).IsEqualTo(4);
+    foreach (var row in rows.RootElement.EnumerateArray())
+    {
+      await Assert.That(row.GetProperty("serial").GetString()).IsEqualTo("new-serial");
+      await Assert.That(row.GetProperty("workorder").GetString()).IsEqualTo("new-order");
+      await Assert.That(row.GetProperty("event_serial").GetString()).IsEqualTo("new-serial");
+      await Assert.That(row.GetProperty("event_workorder").GetString()).IsEqualTo("new-order");
+      await Assert.That(row.GetProperty("latest_observation").GetInt32()).IsEqualTo(1);
+    }
+  }
+
+  [Test]
   public async Task ReassignmentRefreshesJoinedHistoryAndPrunesUnneededReferenceOnlyPlans()
   {
     await using var host = await InsightCliTestHost.Start();
