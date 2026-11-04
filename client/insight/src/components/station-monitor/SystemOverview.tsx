@@ -367,11 +367,8 @@ function useCellOverview(): CellOverview {
 
       for (const lulNum of mach.possibleLoadStations) {
         // remove and lookup old load status
-        let lul: LoadStatus | undefined;
-        loads = loads.alter(lulNum, (s) => {
-          lul = s;
-          return undefined;
-        });
+        const lul = loads.get(lulNum);
+        loads = loads.delete(lulNum);
 
         const allMats = LazySeq.of(lul?.pal?.mats ?? []).toLookup((m) => {
           if (m.action.type === ActionType.Machining) return "Machining";
