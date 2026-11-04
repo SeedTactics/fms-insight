@@ -228,25 +228,27 @@ internal static class Sync
     var cachedMaterials = Numbers(db, "SELECT material_id FROM material");
     var cachedCounters = Numbers(db, "SELECT counter FROM events");
     var jobs = Strings(db, "SELECT job_unique FROM jobs");
+    // A material can first appear in this response. Include its later corrections before
+    // advancing the cursor, even when those actions fall outside the requested window.
+    var relevantMaterials = cachedMaterials.Union(
+      reads
+        .Where(r => InWindow(r, from, to) || cachedCounters.Contains(r.Event.Counter))
+        .SelectMany(r => r.Event.Material.Select(m => m.Id))
+    );
     var selected = reads
       .Where(r =>
         InWindow(r, from, to)
         || cachedCounters.Contains(r.Event.Counter)
-        || IsCorrection(r.Event.Type) && r.Event.Material.Any(m => cachedMaterials.Contains(m.Id))
+        || IsCorrection(r.Event.Type) && r.Event.Material.Any(m => relevantMaterials.Contains(m.Id))
         || r.Event.Type == LogType.JobDecrement
           && Read<ImmutableList<JobAndDecrementQuantity>>(Detail(r.Event, "Decrements"))
             .Any(d => jobs.Contains(d.JobUnique))
       )
       .ToImmutableList();
-    var relevantMaterials = cachedMaterials.Union(
-      selected.SelectMany(r => r.Event.Material.Select(m => m.Id))
-    );
     var selectedCounters = selected.Select(r => r.Event.Counter).ToImmutableHashSet();
-    var refresh = reads
-      .SelectMany(r => r.Event.Material)
-      .Select(m => m.Id)
-      .Where(relevantMaterials.Contains)
-      .ToImmutableHashSet();
+    var refresh = relevantMaterials
+      .Union(selected.SelectMany(r => r.Event.Material.Select(m => m.Id)))
+      .Intersect(reads.SelectMany(r => r.Event.Material.Select(m => m.Id)));
     var refreshed = await Materials(http, refresh, cancellationToken);
     var affectedCached = Numbers(
       db,

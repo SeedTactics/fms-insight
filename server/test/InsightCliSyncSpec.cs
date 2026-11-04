@@ -166,6 +166,101 @@ public sealed class InsightCliSyncSpec
   }
 
   [Test]
+  public async Task NewlyDiscoveredMaterialKeepsOutOfWindowCastingHistoryAndReferencedPlans()
+  {
+    await using var host = await InsightCliTestHost.Start();
+    using var db = host.Repository.OpenConnection();
+    db.RecordGeneralMessage([], "note", "anchor", timeUTC: Start);
+    await Success(host.Sync("cache.sqlite", Start, End));
+    db.AddJobs(
+      new NewJobs
+      {
+        ScheduleId = "outside",
+        Jobs = [Job("first", Start.AddMonths(-1)), Job("second", Start.AddMonths(-1))],
+      },
+      null,
+      false
+    );
+    var id = db.AllocateMaterialIDForCasting("casting");
+    db.RecordAddMaterialToQueue(id, 0, "stock", -1, null, null, Start.AddHours(1))
+      .ToImmutableList();
+    db.AssignCastingToJob(id, "first", "part", 1, End.AddDays(1));
+    db.RecordJobDecrementOperation(
+      "release",
+      [
+        new NewDecrementQuantity
+        {
+          JobUnique = "first",
+          Part = "part",
+          Quantity = 1,
+        },
+      ],
+      [
+        new RawMaterialToUnallocate
+        {
+          MaterialID = id,
+          JobUnique = "first",
+          Casting = "casting",
+        },
+      ],
+      End.AddDays(2)
+    );
+    db.AssignCastingToJob(id, "second", "part", 1, End.AddDays(3));
+    var unrelated = db.AllocateMaterialIDForCasting("casting");
+    db.AssignCastingToJob(unrelated, "first", "part", 1, End.AddDays(4));
+    await Success(Resume(host, "cache.sqlite"));
+    using (
+      var actions = await host.Query(
+        "cache.sqlite",
+        "SELECT action,job_unique FROM casting_actions ORDER BY counter"
+      )
+    )
+    {
+      await Assert.That(actions.RootElement.GetArrayLength()).IsEqualTo(3);
+      await Assert
+        .That(actions.RootElement[0].GetProperty("job_unique").GetString())
+        .IsEqualTo("first");
+      await Assert
+        .That(actions.RootElement[1].GetProperty("action").GetString())
+        .IsEqualTo("CastingUnassigned");
+      await Assert
+        .That(actions.RootElement[1].GetProperty("job_unique").GetString())
+        .IsEqualTo("first");
+      await Assert
+        .That(actions.RootElement[2].GetProperty("job_unique").GetString())
+        .IsEqualTo("second");
+    }
+    using (
+      var context = await host.Query(
+        "cache.sqlite",
+        "SELECT (SELECT COUNT(*) FROM jobs WHERE retrieval='reference') plans,(SELECT COUNT(*) FROM schedules) schedules"
+      )
+    )
+    {
+      await Assert.That(context.RootElement[0].GetProperty("plans").GetInt32()).IsEqualTo(2);
+      await Assert.That(context.RootElement[0].GetProperty("schedules").GetInt32()).IsEqualTo(0);
+    }
+    await Success(Resume(host, "cache.sqlite"));
+    await Success(host.Sync("fresh.sqlite", Start, End));
+    foreach (
+      var sql in new[]
+      {
+        "SELECT counter,json,scope FROM events ORDER BY counter",
+        "SELECT * FROM event_material ORDER BY counter,material_id",
+        "SELECT * FROM casting_actions ORDER BY counter",
+        "SELECT job_unique,plan_json,retrieval FROM jobs ORDER BY job_unique",
+        "SELECT material_id,serial,workorder FROM material ORDER BY material_id",
+        "SELECT value FROM metadata WHERE key='event_counter'",
+      }
+    )
+    {
+      using var actual = await host.Query("cache.sqlite", sql);
+      using var fresh = await host.Query("fresh.sqlite", sql);
+      await Assert.That(JsonNodeEqual(actual, fresh)).IsTrue().Because(sql);
+    }
+  }
+
+  [Test]
   public async Task CastingActionsKeepOriginalAssignmentAndBackendDecrementsAreCountedOnce()
   {
     await using var host = await InsightCliTestHost.Start();
