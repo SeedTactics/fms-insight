@@ -117,6 +117,63 @@ function quarantineSignal(counter: number, id: number, process: number, note?: s
 }
 
 describe("cancel load", () => {
+  test.each([api.ActionType.Loading, api.ActionType.LoadingToBasket])(
+    "quarantine notice uses the destination process during automated %s",
+    async (type) => {
+      const material = createMaterial({
+        materialID: 101,
+        jobUnique: "JOB-1",
+        partName: "Part",
+        process: 1,
+        path: 1,
+        location: { type: api.LocType.InQueue, currentQueue: "Queue A", queuePosition: 1 },
+        quarantineAfterUnload: true,
+        action: { type, automatedTransfer: true, processAfterLoad: 2, pathAfterLoad: 1 },
+      });
+      registerNetworkBackend();
+      vi.spyOn(LogBackend, "logForMaterial").mockResolvedValue([
+        quarantineSignal(10, 101, 1, "Previous process reason"),
+        quarantineSignal(20, 101, 2, "Destination process reason"),
+      ]);
+      const screen = await renderInsightPage(<MaterialDialog />, {
+        currentStatus: createCurrentStatus({ material: [material] }),
+        seedStore: (store) =>
+          store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
+      });
+      await expect
+        .element(
+          screen.getByText("Quarantine requested: Destination process reason", { exact: true }),
+        )
+        .toBeVisible();
+    },
+  );
+
+  test.each([false, true])(
+    "history failure preserves material details and the operation notice: quarantine %s",
+    async (quarantineAfterUnload) => {
+      const base: Readonly<api.IInProcessMaterial> = loadingMaterial({ materialId: 101 });
+      const material = new api.InProcessMaterial({ ...base, quarantineAfterUnload });
+      registerNetworkBackend();
+      vi.spyOn(LogBackend, "logForMaterial").mockRejectedValue(new Error("History unavailable"));
+      const screen = await renderInsightPage(<MaterialDialog />, {
+        currentStatus: createCurrentStatus({ material: [material] }),
+        seedStore: (store) =>
+          store.set(materialDialogOpen, { type: "InProcMat", inproc: material }),
+      });
+      await expect.element(screen.getByText("History unavailable").first()).toBeVisible();
+      await expect.element(screen.getByText(/^Workorder:/)).toBeVisible();
+      await expect
+        .element(
+          screen.getByText(
+            quarantineAfterUnload
+              ? "Quarantine requested"
+              : /This material is part of the current load\/unload operation/,
+          ),
+        )
+        .toBeVisible();
+    },
+  );
+
   test.each([undefined, "", "   ", "No completed machining record for returned set"])(
     "quarantine notice shows only the latest matching request's note: %s",
     async (note) => {

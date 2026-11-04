@@ -89,6 +89,7 @@ import {
   canAddOrMoveMaterialToQueue,
   canReorderQueuedMaterial,
   materialOperationState,
+  quarantineRoute,
 } from "../../data/material-operation-policy.js";
 
 export class PartIdenticon extends PureComponent<{
@@ -1069,27 +1070,37 @@ function RebookingNote() {
   return null;
 }
 
-function MaterialOperationNotice() {
-  const material = useAtomValue(matDetails.inProcessMaterialInDialog);
+function QuarantineReason({ material }: { readonly material: Readonly<api.IInProcessMaterial> }) {
   const events = useAtomValue(matDetails.materialInDialogLocalEvents);
-  const alarms = matDetails.useMaterialBlockingAlarms();
-  const state = material ? materialOperationState(material) : null;
+  const process = quarantineRoute(material).process;
   const quarantine = events.reduce<Readonly<api.ILogEntry> | null>(
     (latest, event) =>
-      material !== null &&
       event.type === api.LogType.SignalQuarantine &&
-      event.material.some((m) => m.id === material.materialID && m.proc === material.process) &&
+      event.material.some((m) => m.id === material.materialID && m.proc === process) &&
       (latest === null || event.counter > latest.counter)
         ? event
         : latest,
     null,
   );
   const reason = quarantine?.details?.note?.trim();
+  return reason ? `: ${reason}` : null;
+}
+
+function MaterialOperationNotice() {
+  const material = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const alarms = matDetails.useMaterialBlockingAlarms();
+  const state = material ? materialOperationState(material) : null;
   return (
     <>
       {material?.quarantineAfterUnload ? (
         <Typography variant="caption" component="p">
-          Quarantine requested{reason ? `: ${reason}` : ""}
+          Quarantine requested
+          <ErrorBoundary
+            fallback={null}
+            resetKeys={[material.materialID, quarantineRoute(material).process]}
+          >
+            <QuarantineReason material={material} />
+          </ErrorBoundary>
         </Typography>
       ) : alarms.length === 0 &&
         state?.kind === "ActiveLoadStationOperation" &&
