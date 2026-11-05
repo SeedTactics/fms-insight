@@ -822,7 +822,16 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           // first time seeing pallet after it loaded, record the pallet cycle and adjust the material on the faces
           palletStateUpdated = true;
-          AddPalletCycle(pallet, loadBegin, currentlyLoading, nowUtc, jobDB);
+          // A missed After-LD may first be observed at RC. Keep the recovered load-end
+          // (written one second after the pallet cycle) ahead of the reclamp start.
+          var completionTime =
+            pallet.Material.Count == 0
+            && pallet.Status.CurrentStep is ReclampStep
+            && pallet.Status.Tracking.BeforeCurrentStep
+            && nowUtc.AddSeconds(-1) >= loadBegin.EndTimeUTC
+              ? nowUtc.AddSeconds(-1)
+              : nowUtc;
+          AddPalletCycle(pallet, loadBegin, currentlyLoading, completionTime, jobDB);
         }
 
         if (pallet.Status.HasWork)
@@ -897,6 +906,26 @@ namespace BlackMaple.FMSInsight.Niigata
       ref bool palletStateUpdated
     )
     {
+      // A poll can miss every state between LD and UL on a route without machining.
+      // Finish the initial load before treating Before-UL as a new unload operation.
+      if (pallet.Status.CurrentStep is UnloadStep && pallet.Material.Count == 0)
+      {
+        var initialLoad = pallet.Log.FirstOrDefault(e =>
+          e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
+        );
+        if (initialLoad != null)
+        {
+          palletStateUpdated = true;
+          // The repository writes load-end one second after the pallet cycle.
+          var completionTime =
+            nowUtc.AddSeconds(-1) >= initialLoad.EndTimeUTC
+              ? nowUtc.AddSeconds(-1)
+              : initialLoad.EndTimeUTC;
+          AddPalletCycle(pallet, initialLoad, currentlyLoading, completionTime, jobDB);
+          pallet.Log = jobDB.CurrentPalletLog(pallet.Status.Master.PalletNum);
+        }
+      }
+
       TimeSpan? elapsedLoadTime = null;
       if (pallet.Status.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
       {
