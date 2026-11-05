@@ -41,13 +41,15 @@ namespace MazakMachineInterface
 {
   public class LogTranslation
   {
+    private const string ToolSnapshotUnavailableKey = "MazakToolSnapshotUnavailable";
     private readonly IRepository repo;
     private readonly MazakAllDataAndLogs mazakData;
     private readonly string machGroupName;
     private readonly FMSSettings fmsSettings;
     private readonly Action<LogChunk> onMazakLog;
     private readonly MazakConfig mazakConfig;
-    private readonly Func<IEnumerable<ToolPocketRow>> loadTools;
+    private readonly ImmutableList<ToolPocketRow> tools;
+    private readonly DateTime? observationTimeUtc;
 
     private LogTranslation(
       IRepository repo,
@@ -56,7 +58,8 @@ namespace MazakMachineInterface
       FMSSettings fmsSettings,
       Action<LogChunk> onMazakLog,
       MazakConfig mazakConfig,
-      Func<IEnumerable<ToolPocketRow>> loadTools
+      ImmutableList<ToolPocketRow> tools,
+      DateTime? observationTimeUtc
     )
     {
       this.repo = repo;
@@ -65,7 +68,8 @@ namespace MazakMachineInterface
       this.fmsSettings = fmsSettings;
       this.onMazakLog = onMazakLog;
       this.mazakConfig = mazakConfig;
-      this.loadTools = loadTools;
+      this.tools = tools;
+      this.observationTimeUtc = observationTimeUtc;
     }
 
     public static HandleEventResult HandleEvents(
@@ -75,7 +79,8 @@ namespace MazakMachineInterface
       FMSSettings fmsSettings,
       Action<LogChunk> onMazakLog,
       MazakConfig mazakConfig,
-      Func<IEnumerable<ToolPocketRow>> loadTools
+      ImmutableList<ToolPocketRow> tools,
+      DateTime? observationTimeUtc = null
     )
     {
       var t = new LogTranslation(
@@ -85,10 +90,19 @@ namespace MazakMachineInterface
         fmsSettings: fmsSettings,
         onMazakLog: onMazakLog,
         mazakConfig: mazakConfig,
-        loadTools: loadTools
+        tools: tools,
+        observationTimeUtc: observationTimeUtc
       );
       return t.Process();
     }
+
+    internal static bool NeedsToolSnapshot(LogEntry e, DateTime nowUtc) =>
+      e.Code switch
+      {
+        LogCode.MachineCycleStart => (nowUtc - e.TimeUTC).Duration() < TimeSpan.FromMinutes(5),
+        LogCode.MachineCycleEnd => (nowUtc - e.TimeUTC).Duration() > TimeSpan.FromSeconds(15),
+        _ => false,
+      };
 
     public record HandleEventResult
     {
@@ -292,7 +306,8 @@ namespace MazakMachineInterface
         {
           // Repository notifications run AFTER SQLite commits. Probe durable face events before
           // falling back: a notification failure must never record a second pallet operation.
-          // If this read itself fails, let Process log/continue rather than risk a duplicate write.
+          // If this read itself fails, let Process report the isolated failure and continue
+          // with other evidence rather than risk a duplicate write.
           if (
             es.All(e =>
               repo.MostRecentLogEntryForForeignID(e.ForeignID) is { } log
@@ -607,9 +622,9 @@ namespace MazakMachineInterface
           }
 
           IEnumerable<ToolSnapshot> pockets = null;
-          if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
+          if (NeedsToolSnapshot(e, observationTimeUtc ?? DateTime.UtcNow))
           {
-            pockets = ToolsToSnapshot(mcNum, loadTools());
+            pockets = ToolsToSnapshot(mcNum, tools);
           }
 
           var machineMats = GetMaterialOnPallet(e, cycle);
@@ -623,9 +638,7 @@ namespace MazakMachineInterface
             timeUTC: e.TimeUTC,
             pockets: pockets,
             foreignId: e.ForeignID,
-            extraData: !progRev.HasValue
-              ? null
-              : new Dictionary<string, string> { { "ProgramRevision", progRev.Value.ToString() } }
+            extraData: MachineEventDetails(progRev, pockets is null)
           );
 
           break;
@@ -645,7 +658,7 @@ namespace MazakMachineInterface
 
           // Tool snapshots take ~5 seconds from the end of the cycle until the updated tools are available in open database kit,
           // so stop processing log entries if the machine cycle end occurred 15 seconds in the past.
-          if (DateTime.UtcNow.Subtract(e.TimeUTC).Duration() <= TimeSpan.FromSeconds(15))
+          if (!NeedsToolSnapshot(e, observationTimeUtc ?? DateTime.UtcNow))
           {
             return false;
           }
@@ -667,7 +680,7 @@ namespace MazakMachineInterface
             elapsed = TimeSpan.Zero;
             toolsAtStart = Enumerable.Empty<ToolSnapshot>();
           }
-          var toolsAtEnd = ToolsToSnapshot(mcNum, loadTools());
+          var toolsAtEnd = ToolsToSnapshot(mcNum, tools);
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
@@ -683,13 +696,14 @@ namespace MazakMachineInterface
               result: "",
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
-              tools: ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd),
+              tools: toolsAtEnd is null
+              || machStart?.ProgramDetails?.ContainsKey(ToolSnapshotUnavailableKey) == true
+                ? null
+                : ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd),
               deleteToolSnapshotsFromCntr: machStart?.Counter,
               pockets: toolsAtEnd,
               foreignId: e.ForeignID,
-              extraData: !progRev.HasValue
-                ? null
-                : new Dictionary<string, string> { { "ProgramRevision", progRev.Value.ToString() } }
+              extraData: MachineEventDetails(progRev, toolsAtEnd is null)
             );
             CheckForInspections(s, machineMats, e.TimeUTC);
           }
@@ -1634,6 +1648,19 @@ namespace MazakMachineInterface
           );
         }
       }
+    }
+
+    private static ImmutableDictionary<string, string> MachineEventDetails(
+      long? programRevision,
+      bool toolsUnavailable
+    )
+    {
+      var details = ImmutableDictionary<string, string>.Empty;
+      if (programRevision is { } revision)
+        details = details.Add("ProgramRevision", revision.ToString());
+      if (toolsUnavailable)
+        details = details.Add(ToolSnapshotUnavailableKey, "true");
+      return details.IsEmpty ? null : details;
     }
 
     private IEnumerable<ToolSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)

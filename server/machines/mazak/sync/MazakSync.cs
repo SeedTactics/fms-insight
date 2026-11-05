@@ -48,6 +48,34 @@ public record MazakState : ICellState
   public required bool StoppedBecauseRecentLogEvent { get; init; }
   public required CurrentStatus CurrentStatus { get; init; }
   public required MazakAllDataAndLogs AllData { get; init; }
+
+  // Insight pallet number whose final load/unload batch is incomplete. Retain this context
+  // alongside AllData when rebuilding status against newer repository facts without replaying logs.
+  public int? PalletWithUnprocessedUnloads { get; init; }
+}
+
+// Acquisition owns no repository connection. Its interval describes observation provenance,
+// not an atomic controller snapshot. Reconciliation combines it with current repository facts.
+public sealed record MazakAcquisition
+{
+  public required DateTime StartedAtUtc { get; init; }
+
+  // The settling reference is captured after controller rows/logs finish loading, before tools.
+  public required DateTime DataLoadedAtUtc { get; init; }
+  public required DateTime CompletedAtUtc { get; init; }
+  public required MazakAllDataAndLogs Data { get; init; }
+
+  // Null means unobserved; an empty list means a successful observation of no tools.
+  public required ImmutableList<ToolPocketRow>? Tools { get; init; }
+  public bool ToolReadFailed { get; init; }
+}
+
+// Retain this receipt across acknowledgment failure. Its watermark is captured at reconciliation,
+// so acknowledging it later cannot consume subsequently committed evidence.
+public sealed record MazakReconciliation
+{
+  public required MazakState State { get; init; }
+  public required string CommittedLogWatermark { get; init; }
 }
 
 public delegate void MazakLogEventDel(LogEntry e, IRepository jobDB);
@@ -69,12 +97,26 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   private readonly IMazakDB mazakDB;
   private readonly FMSSettings settings;
   private readonly MazakConfig mazakConfig;
+  private readonly TimeProvider timeProvider;
+
+  // Last accepted acquisition's tool attempt, independently of manufacturing/status success.
+  private bool lastToolReadFailed;
+  private ImmutableList<CurrentStatusAlarm> ingestionDiagnostics = [];
 
   public MazakSync(IMazakDB mazakDb, FMSSettings settings, MazakConfig mazakConfig)
+    : this(mazakDb, settings, mazakConfig, TimeProvider.System) { }
+
+  public MazakSync(
+    IMazakDB mazakDb,
+    FMSSettings settings,
+    MazakConfig mazakConfig,
+    TimeProvider timeProvider
+  )
   {
     this.mazakDB = mazakDb;
     this.settings = settings;
     this.mazakConfig = mazakConfig;
+    this.timeProvider = timeProvider;
     mazakDB.OnNewEvent += RaiseNewCellState;
   }
 
@@ -171,8 +213,95 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   public MazakState CalculateCellState(IRepository db)
   {
-    var now = DateTime.UtcNow;
-    var mazakData = mazakDB.LoadAllDataAndLogs(MazakLogWatermark(db));
+    var acquisition = AcquireCellState(CaptureLogWatermark(db));
+    var reconciled = ReconcileCellState(db, acquisition);
+    AcknowledgeLogs(reconciled);
+    return reconciled.State;
+  }
+
+  // Capture under the caller's repository/mutation owner, then release that owner before acquiring.
+  public string CaptureLogWatermark(IRepository db) =>
+    // Web/Smooth CSV names begin with LG; exclude other event producers.
+    db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound);
+
+  // Serialize controller acquisition and acknowledgment with the same controller owner. All
+  // enumerables, including tools and nested process rows, finish reading before this returns.
+  public MazakAcquisition AcquireCellState(string afterLogId)
+  {
+    ArgumentNullException.ThrowIfNull(afterLogId);
+    var started = timeProvider.GetUtcNow().UtcDateTime;
+    var data = mazakDB.LoadAllDataAndLogs(afterLogId);
+    data = data with
+    {
+      Logs = data.Logs.ToImmutableList(),
+      Schedules = data
+        .Schedules?.Select(s => s with { Processes = s.Processes.ToImmutableList() })
+        .ToImmutableList(),
+      Parts = data
+        .Parts?.Select(p => p with { Processes = p.Processes.ToImmutableList() })
+        .ToImmutableList(),
+      LoadActions = data
+        .LoadActions?.Select(action =>
+          action with
+          {
+            StationPallet = action.StationPallet is { } pallet
+              ? pallet with
+              {
+                Material = pallet.Material?.ToImmutableList(),
+              }
+              : null,
+          }
+        )
+        .ToImmutableList(),
+      PalletStatuses = data.PalletStatuses?.ToImmutableList(),
+      PalletSubStatuses = data.PalletSubStatuses?.ToImmutableList(),
+      PalletPositions = data.PalletPositions?.ToImmutableList(),
+      Alarms = data.Alarms?.ToImmutableList(),
+      Pallets = data.Pallets?.ToImmutableList(),
+      MainPrograms = data.MainPrograms?.ToImmutableList(),
+      Fixtures = data.Fixtures?.ToImmutableList(),
+    };
+    var dataLoaded = timeProvider.GetUtcNow().UtcDateTime;
+    ImmutableList<ToolPocketRow>? tools = null;
+    var toolReadFailed = false;
+    if (data.Logs.Any(e => LogTranslation.NeedsToolSnapshot(e, dataLoaded)))
+      try
+      {
+        tools = mazakDB.LoadTools().ToImmutableList();
+      }
+      catch (Exception error)
+      {
+        Log.Warning(
+          error,
+          "Unable to observe Mazak tools; continuing manufacturing ingestion without tool measurements"
+        );
+        toolReadFailed = true;
+      }
+    return new MazakAcquisition
+    {
+      StartedAtUtc = started,
+      DataLoadedAtUtc = dataLoaded,
+      CompletedAtUtc = timeProvider.GetUtcNow().UtcDateTime,
+      Data = data,
+      Tools = tools,
+      ToolReadFailed = toolReadFailed,
+    };
+  }
+
+  // No built-in controller I/O. The caller keeps source observations ordered and serializes
+  // resolver/repository effects. Already committed events are omitted, including after a
+  // partial reconciliation failure, while the available observation still contributes status.
+  public MazakReconciliation ReconcileCellState(IRepository db, MazakAcquisition acquisition)
+  {
+    var committed = CaptureLogWatermark(db);
+    if (acquisition.ToolReadFailed || acquisition.Tools is not null)
+      lastToolReadFailed = acquisition.ToolReadFailed;
+    var mazakData = acquisition.Data with
+    {
+      Logs = acquisition
+        .Data.Logs.Where(entry => StringComparer.Ordinal.Compare(entry.ForeignID, committed) > 0)
+        .ToImmutableList(),
+    };
     var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
     var evtResults = LogTranslation.HandleEvents(
@@ -195,45 +324,72 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         }
       },
       mazakConfig: mazakConfig,
-      loadTools: mazakDB.LoadTools
+      tools: acquisition.Tools,
+      observationTimeUtc: acquisition.DataLoadedAtUtc
     );
 
-    mazakDB.DeleteLogs(MazakLogWatermark(db));
-
+    var palletWithUnprocessedUnloads = evtResults.PalletWithMostRecentEventAsLoadUnloadEnd
+      is { } rawPallet
+      ? mazakConfig.TranslatePalletNumber(rawPallet)
+      : (int?)null;
     var st = BuildCurrentStatus.Build(
       db,
       settings,
       mazakConfig,
       mazakData,
       machineGroupName: machineGroupName,
-      evtResults.PalletWithMostRecentEventAsLoadUnloadEnd,
-      now
+      palletWithUnprocessedUnloads,
+      acquisition.StartedAtUtc
     );
 
     if (mazakConfig != null && mazakConfig.AdjustCurrentStatus != null)
     {
       st = mazakConfig.AdjustCurrentStatus(db, st);
     }
+    var diagnostics = ImmutableList<CurrentStatusAlarm>.Empty;
+    if (lastToolReadFailed)
+      diagnostics = diagnostics.Add(
+        new CurrentStatusAlarm
+        {
+          Code = "mazak-tools-unavailable",
+          Message =
+            "The last Mazak tool read failed; manufacturing status continues without tool measurements until a successful tool observation.",
+          Impact = AlarmImpact.Informational,
+        }
+      );
 
-    return new MazakState()
+    foreach (var diagnostic in diagnostics)
+      st = st.AddAlarm(diagnostic);
+    var result = new MazakReconciliation
     {
-      StateUpdated = mazakData.Logs.Count > 0 || evtResults.PalletStatusChanged,
-      TimeUntilNextRefresh =
-        evtResults.StoppedBecauseRecentMachineEvent
-        || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue
-          ? TimeSpan.FromSeconds(15)
-          : TimeSpan.FromMinutes(2),
-      StoppedBecauseRecentLogEvent =
-        evtResults.StoppedBecauseRecentMachineEvent
-        || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue,
-      CurrentStatus = st,
-      AllData = mazakData,
+      CommittedLogWatermark = CaptureLogWatermark(db),
+      State = new MazakState()
+      {
+        StateUpdated =
+          mazakData.Logs.Count > 0
+          || evtResults.PalletStatusChanged
+          || !ingestionDiagnostics.SequenceEqual(diagnostics),
+        TimeUntilNextRefresh =
+          evtResults.StoppedBecauseRecentMachineEvent
+          || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue
+            ? TimeSpan.FromSeconds(15)
+            : TimeSpan.FromMinutes(2),
+        StoppedBecauseRecentLogEvent =
+          evtResults.StoppedBecauseRecentMachineEvent
+          || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue,
+        CurrentStatus = st,
+        AllData = mazakData,
+        PalletWithUnprocessedUnloads = palletWithUnprocessedUnloads,
+      },
     };
+    ingestionDiagnostics = diagnostics;
+    return result;
   }
 
-  private string MazakLogWatermark(IRepository db) =>
-    // Web/Smooth CSV names begin with LG; exclude other event producers.
-    db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound);
+  // Call outside the repository/mutation owner, using its captured progress even if isolated
+  // source records were logged and skipped. Never substitute a later repository watermark.
+  public void AcknowledgeLogs(MazakReconciliation reconciliation) =>
+    mazakDB.DeleteLogs(reconciliation.CommittedLogWatermark);
 
   public bool ApplyActions(IRepository db, MazakState st)
   {

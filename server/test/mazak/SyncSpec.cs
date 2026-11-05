@@ -322,6 +322,9 @@ public sealed class MazakSyncSpec : IDisposable
       DateTime.UtcNow,
       tolerance: TimeSpan.FromSeconds(5)
     );
+    JsonSerializer
+      .Serialize(cellSt.AllData, _jsonSettings)
+      .ShouldBe(JsonSerializer.Serialize(allData, _jsonSettings));
     cellSt.ShouldBeEquivalentTo(
       new MazakState()
       {
@@ -336,7 +339,7 @@ public sealed class MazakSyncSpec : IDisposable
           Workorders = null,
           Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
         },
-        AllData = allData,
+        AllData = cellSt.AllData,
         StoppedBecauseRecentLogEvent = false,
         StateUpdated = true,
         TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
@@ -486,7 +489,9 @@ public sealed class MazakSyncSpec : IDisposable
 
     var st = _sync.CalculateCellState(db);
 
-    st.AllData.ShouldBe(allData);
+    JsonSerializer
+      .Serialize(st.AllData, _jsonSettings)
+      .ShouldBe(JsonSerializer.Serialize(allData, _jsonSettings));
     st.StoppedBecauseRecentLogEvent.ShouldBeTrue();
     st.StateUpdated.ShouldBeTrue();
     st.TimeUntilNextRefresh.ShouldBe(TimeSpan.FromSeconds(15));
@@ -622,6 +627,9 @@ public sealed class MazakSyncSpec : IDisposable
       DateTime.UtcNow,
       tolerance: TimeSpan.FromSeconds(5)
     );
+    JsonSerializer
+      .Serialize(cellSt.AllData, _jsonSettings)
+      .ShouldBe(JsonSerializer.Serialize(allData, _jsonSettings));
     cellSt.ShouldBeEquivalentTo(
       new MazakState()
       {
@@ -657,7 +665,7 @@ public sealed class MazakSyncSpec : IDisposable
           Workorders = null,
           Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
         },
-        AllData = allData,
+        AllData = cellSt.AllData,
         StoppedBecauseRecentLogEvent = false,
         StateUpdated = true,
         TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
