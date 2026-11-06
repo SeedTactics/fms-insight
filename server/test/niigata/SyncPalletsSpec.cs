@@ -136,9 +136,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
+    public enum ReclampPolls
+    {
+      All,
+      AfterReclamp,
+      None,
+    }
+
     private IEnumerable<LogEntry> Step(
       int? skipLoadToUnloadOnPallet = null,
-      bool skipEntireReclamp = false
+      ReclampPolls reclampPolls = ReclampPolls.All
     )
     {
       for (var skipped = 0; ; skipped++)
@@ -150,10 +157,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         if (skipLoadToUnloadOnPallet is not int palNum)
           break;
         var pal = _sim.LoadNiigataStatus().Pallets[palNum - 1];
-        // Miss After-LD and travel, optionally including the entire reclamp.
+        // Miss After-LD and travel, optionally resuming at After-RC or Before-UL.
         if (
           (pal.CurrentStep is LoadStep && !pal.Tracking.BeforeCurrentStep)
-          || (skipEntireReclamp && pal.CurrentStep is ReclampStep)
+          || (
+            pal.CurrentStep is ReclampStep
+            && (
+              reclampPolls == ReclampPolls.None
+              || (reclampPolls == ReclampPolls.AfterReclamp && pal.Tracking.BeforeCurrentStep)
+            )
+          )
           || (
             (pal.CurrentStep is UnloadStep || pal.CurrentStep is ReclampStep)
             && pal.Tracking.BeforeCurrentStep
@@ -196,18 +209,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Test]
-    [Arguments(2, false, false, false)]
-    [Arguments(2, false, true, false)]
-    [Arguments(3, false, false, false)]
-    [Arguments(3, false, true, false)]
-    [Arguments(3, true, false, false)]
-    [Arguments(3, true, true, false)]
-    [Arguments(3, true, true, true)]
+    [Arguments(2, false, false, ReclampPolls.All)]
+    [Arguments(2, false, true, ReclampPolls.All)]
+    [Arguments(3, false, false, ReclampPolls.All)]
+    [Arguments(3, false, true, ReclampPolls.All)]
+    [Arguments(3, true, false, ReclampPolls.All)]
+    [Arguments(3, true, true, ReclampPolls.All)]
+    [Arguments(3, true, true, ReclampPolls.AfterReclamp)]
+    [Arguments(3, true, true, ReclampPolls.None)]
     public async Task FinalProcessWithoutMachining(
       int finalLoadStation,
       bool finalProcessReclamp,
       bool missedPolls,
-      bool missedReclamp
+      ReclampPolls reclampPolls
     )
     {
       InitSim(
@@ -310,7 +324,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           if (step > 1000)
             throw new Exception("Simulation did not drain");
-          var newLogs = Step(missedPolls && noMachining ? 2 : null, missedReclamp && noMachining);
+          var newLogs = Step(
+            missedPolls && noMachining ? 2 : null,
+            noMachining ? reclampPolls : ReclampPolls.All
+          );
           if (newLogs == null)
             break;
           logs = logs.AddRange(newLogs);
@@ -369,7 +386,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ["TestMC"],
                 [],
               ],
-              missedReclampStartProcess: missedReclamp ? 2 : null
+              missedReclampStartProcess: reclampPolls != ReclampPolls.All ? 2 : null
             );
             foreach (
               var reclampEnd in material.Where(e =>
@@ -399,6 +416,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               );
           }
         }
+        var finalLoads = logs.Where(e =>
+            e.LogType == LogType.LoadUnloadCycle
+            && !e.StartOfCycle
+            && e.Result == "LOAD"
+            && e.Material.Any(m => m.Process == 2)
+          )
+          .ToImmutableList();
+        await Assert.That(finalLoads.Count).IsEqualTo(3);
+        await Assert.That(finalLoads.All(e => e.LocationNum == finalLoadStation)).IsTrue();
         await Assert
           .That(
             logs.Where(e =>

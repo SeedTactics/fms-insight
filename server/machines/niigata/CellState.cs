@@ -823,11 +823,10 @@ namespace BlackMaple.FMSInsight.Niigata
           // first time seeing pallet after it loaded, record the pallet cycle and adjust the material on the faces
           palletStateUpdated = true;
           // A missed After-LD may first be observed at RC. Keep the recovered load-end
-          // (written one second after the pallet cycle) ahead of the reclamp start.
+          // (written one second after the pallet cycle) before the reclamp observation.
           var completionTime =
             pallet.Material.Count == 0
             && pallet.Status.CurrentStep is ReclampStep
-            && pallet.Status.Tracking.BeforeCurrentStep
             && nowUtc.AddSeconds(-1) >= loadBegin.EndTimeUTC
               ? nowUtc.AddSeconds(-1)
               : nowUtc;
