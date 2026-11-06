@@ -133,7 +133,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           }
         },
         mazakConfig: mazakCfg,
-        loadTools: () => mazakDataTools
+        tools: mazakDataTools.ToImmutableList()
       );
 
       ret.StoppedBecauseRecentMachineEvent.ShouldBe(expectedMachineEnd);
@@ -174,7 +174,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           }
         },
         mazakConfig: mazakCfg,
-        loadTools: () => mazakDataTools
+        tools: mazakDataTools.ToImmutableList()
       );
     }
 
@@ -528,6 +528,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           ),
         };
       }
+      if ((DateTime.UtcNow - e2.TimeUTC).Duration() >= TimeSpan.FromMinutes(5))
+        expectedLog = expectedLog with
+        {
+          ProgramDetails = (
+            expectedLog.ProgramDetails ?? ImmutableDictionary<string, string>.Empty
+          ).Add("MazakToolSnapshotUnavailable", "true"),
+        };
       expected.Add(expectedLog);
     }
 
@@ -1655,7 +1662,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         settings,
         chunk => raisedByEvent.AddRange(chunk.LulEndChunk ?? [chunk.NonLulEndEvt]),
         mazakCfg,
-        () => mazakDataTools
+        mazakDataTools.ToImmutableList()
       );
 
     private static MazakMachineInterface.LogEntry FollowingEvent(DateTime time, int pallet = 1) =>
