@@ -211,6 +211,13 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     return logMessages;
   }
 
+  // CalculateCellState composes acquisition, reconciliation and acknowledgment; staged callers can
+  // release the repository mutation lock during controller I/O so other work and status can progress.
+  // Hold one controller lock across the staged sequence, taking it before the repository lock,
+  // and hold the repository lock only for watermark capture and reconciliation.
+  // Each controller stream needs its own watermark domain; the repository-wide LG cursor does not
+  // distinguish controllers.
+  // The host owns source-health publication and decides which actions require fresh observations.
   public MazakState CalculateCellState(IRepository db)
   {
     var acquisition = AcquireCellState(CaptureLogWatermark(db));
