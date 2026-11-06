@@ -136,7 +136,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
-    private IEnumerable<LogEntry> Step(int? skipLoadToUnloadOnPallet = null)
+    private IEnumerable<LogEntry> Step(
+      int? skipLoadToUnloadOnPallet = null,
+      bool skipEntireReclamp = false
+    )
     {
       for (var skipped = 0; ; skipped++)
       {
@@ -147,9 +150,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         if (skipLoadToUnloadOnPallet is not int palNum)
           break;
         var pal = _sim.LoadNiigataStatus().Pallets[palNum - 1];
-        // Miss After-LD, including travel to the next RC or UL station.
+        // Miss After-LD and travel, optionally including the entire reclamp.
         if (
           (pal.CurrentStep is LoadStep && !pal.Tracking.BeforeCurrentStep)
+          || (skipEntireReclamp && pal.CurrentStep is ReclampStep)
           || (
             (pal.CurrentStep is UnloadStep || pal.CurrentStep is ReclampStep)
             && pal.Tracking.BeforeCurrentStep
@@ -192,11 +196,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Test]
-    [Arguments(false, false)]
-    [Arguments(true, false)]
-    [Arguments(false, true)]
-    [Arguments(true, true)]
-    public async Task FinalProcessWithoutMachining(bool reclamp, bool missedPolls)
+    [Arguments(false, false, false)]
+    [Arguments(true, false, false)]
+    [Arguments(false, true, false)]
+    [Arguments(true, true, false)]
+    [Arguments(true, true, true)]
+    public async Task FinalProcessWithoutMachining(
+      bool reclamp,
+      bool missedPolls,
+      bool missedReclamp
+    )
     {
       InitSim(
         new NiigataStationNames
@@ -294,7 +303,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           if (step > 1000)
             throw new Exception("Simulation did not drain");
-          var newLogs = Step(missedPolls && noMachining ? 2 : null);
+          var newLogs = Step(missedPolls && noMachining ? 2 : null, missedReclamp && noMachining);
           if (newLogs == null)
             break;
           logs = logs.AddRange(newLogs);
@@ -325,6 +334,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 )
               )
               .IsTrue();
+            var lastCounter = db.GetRecentLog(0).Last().Counter;
+            _sync.CalculateCellState(db);
+            await Assert.That(db.GetRecentLog(lastCounter)).IsEmpty();
           }
         }
         var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material[0].MaterialID);
@@ -349,8 +361,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               [
                 ["TestMC"],
                 [],
-              ]
+              ],
+              missedReclampStart: missedReclamp
             );
+            if (reclamp)
+            {
+              var reclampEnd = material.Single(e =>
+                e.LogType == LogType.LoadUnloadCycle && e.Result == "TestReclamp" && !e.StartOfCycle
+              );
+              await Assert.That(reclampEnd.LocationNum).IsEqualTo(2);
+            }
           }
           else
           {
@@ -575,7 +595,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       bool[] reclamp = null,
       string[][] machGroups = null,
       string castingQueue = null,
-      (string prog, long rev)[][] progs = null
+      (string prog, long rev)[][] progs = null,
+      bool missedReclampStart = false
     )
     {
       var matLogs = logs.Where(e =>
@@ -672,15 +693,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         if (reclamp != null && reclamp[proc - 1])
         {
-          expected.Add(e =>
+          if (!missedReclampStart)
           {
-            e.Pallet.ShouldBeOneOf(pals[proc - 1]);
-            e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
-            e.LogType.ShouldBe(LogType.LoadUnloadCycle);
-            e.Program.ShouldBe("TestReclamp");
-            e.Result.ShouldBe("TestReclamp");
-            e.StartOfCycle.ShouldBeTrue();
-          });
+            expected.Add(e =>
+            {
+              e.Pallet.ShouldBeOneOf(pals[proc - 1]);
+              e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+              e.LogType.ShouldBe(LogType.LoadUnloadCycle);
+              e.Program.ShouldBe("TestReclamp");
+              e.Result.ShouldBe("TestReclamp");
+              e.StartOfCycle.ShouldBeTrue();
+            });
+          }
           expected.Add(e =>
           {
             e.Pallet.ShouldBeOneOf(pals[proc - 1]);

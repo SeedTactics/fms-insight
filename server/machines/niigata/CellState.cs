@@ -1735,7 +1735,7 @@ namespace BlackMaple.FMSInsight.Niigata
               pallet
             );
           }
-          statNum = niigataStat.StatNum;
+          statNum = niigataStat.Location.Num;
         }
         else
         {
