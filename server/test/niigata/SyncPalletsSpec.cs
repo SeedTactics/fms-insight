@@ -36,8 +36,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using Shouldly;
+using TUnit.Assertions.Enums;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -72,7 +74,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int numPals = 10,
       int numMachines = 6,
       int numLoads = 2,
-      Func<IRepository, IJobCache> BuildJobCache = null
+      Func<IRepository, IJobCache> BuildJobCache = null,
+      bool requirePrograms = false
     )
     {
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
@@ -96,7 +99,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         ProgramDirectory = "",
         SQLConnectionString = "",
-        RequireProgramsInJobs = false,
+        RequireProgramsInJobs = requirePrograms,
         StationNames = statNames,
         MachineIPs = [],
         CreateJobCache = BuildJobCache ?? (db => new JobCache(db)),
@@ -133,11 +136,45 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
-    private IEnumerable<LogEntry> Step()
+    public enum ReclampPolls
     {
-      if (!_sim.Step())
+      All,
+      AfterReclamp,
+      None,
+    }
+
+    private IEnumerable<LogEntry> Step(
+      int? skipLoadToUnloadOnPallet = null,
+      ReclampPolls reclampPolls = ReclampPolls.All
+    )
+    {
+      for (var skipped = 0; ; skipped++)
       {
-        return null;
+        if (skipped > 1000)
+          throw new Exception("Polling did not reach unload");
+        if (!_sim.Step())
+          return null;
+        if (skipLoadToUnloadOnPallet is not int palNum)
+          break;
+        var pal = _sim.LoadNiigataStatus().Pallets[palNum - 1];
+        // Miss After-LD and travel, optionally resuming at After-RC or Before-UL.
+        if (
+          (pal.CurrentStep is LoadStep && !pal.Tracking.BeforeCurrentStep)
+          || (
+            pal.CurrentStep is ReclampStep
+            && (
+              reclampPolls == ReclampPolls.None
+              || (reclampPolls == ReclampPolls.AfterReclamp && pal.Tracking.BeforeCurrentStep)
+            )
+          )
+          || (
+            (pal.CurrentStep is UnloadStep || pal.CurrentStep is ReclampStep)
+            && pal.Tracking.BeforeCurrentStep
+            && pal.CurStation.Location.Location != PalletLocationEnum.LoadUnload
+          )
+        )
+          continue;
+        break;
       }
       var lst = new List<LogEntry>();
       Action<LogEntry, string, IRepository> addLog = (e, _, _) => lst.Add(e);
@@ -169,6 +206,283 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         }
       }
       return logs;
+    }
+
+    [Test]
+    [Arguments(2, false, false, ReclampPolls.All)]
+    [Arguments(2, false, true, ReclampPolls.All)]
+    [Arguments(3, false, false, ReclampPolls.All)]
+    [Arguments(3, false, true, ReclampPolls.All)]
+    [Arguments(3, true, false, ReclampPolls.All)]
+    [Arguments(3, true, true, ReclampPolls.All)]
+    [Arguments(3, true, true, ReclampPolls.AfterReclamp)]
+    [Arguments(3, true, true, ReclampPolls.None)]
+    public async Task FinalProcessWithoutMachining(
+      int finalLoadStation,
+      bool finalProcessReclamp,
+      bool missedPolls,
+      ReclampPolls reclampPolls
+    )
+    {
+      InitSim(
+        new NiigataStationNames
+        {
+          ReclampGroupNames = new HashSet<string> { "TestReclamp" },
+          IccMachineToJobMachNames = Enumerable
+            .Range(1, 6)
+            .ToDictionary(mc => mc, mc => (group: "TestMC", num: mc + 100)),
+        },
+        numPals: 2,
+        numLoads: 4,
+        requirePrograms: true
+      );
+      var firstProcessReclamp = finalLoadStation == 3;
+
+      // Complete several cycles, replace both pallet routes with a normal job, then switch back.
+      foreach (
+        var (unique, noMachining) in new[] { ("first", true), ("normal", false), ("again", true) }
+      )
+      {
+        // Normal station-3 routes retain their reclamp before machining.
+        var hasFinalReclamp = finalProcessReclamp || (!noMachining && finalLoadStation == 3);
+        var job = FakeIccDsl
+          .CreateMultiProcSeparatePalletJob(
+            unique: unique,
+            part: unique,
+            qty: 3,
+            priority: 1,
+            partsPerPal: 1,
+            pals1: [1],
+            pals2: [2],
+            load1: [1],
+            unload1: [finalLoadStation],
+            load2: [finalLoadStation],
+            unload2: [4],
+            machs: [1, 2, 3, 4, 5, 6],
+            prog1: "rough",
+            prog1Rev: 5,
+            prog2: "finish",
+            prog2Rev: 8,
+            loadMins1: 5,
+            machMins1: 5,
+            unloadMins1: 5,
+            loadMins2: 5,
+            machMins2: 8,
+            unloadMins2: 5,
+            fixture: "fixture",
+            transQ: "Transfer",
+            reclamp1: firstProcessReclamp ? [2] : null,
+            reclamp2: hasFinalReclamp ? [2] : null
+          )
+          .Item1;
+        if (noMachining)
+        {
+          var proc = job.Processes[1];
+          var path = proc.Paths[0];
+          job = job with
+          {
+            Processes = job.Processes.SetItem(
+              1,
+              proc with
+              {
+                Paths =
+                [
+                  path with
+                  {
+                    Stops = path
+                      .Stops.Where(s => s.StationGroup == "TestReclamp")
+                      .ToImmutableList(),
+                  },
+                ],
+              }
+            ),
+          };
+        }
+        var programs = noMachining
+          ? ImmutableList.Create((prog: "rough", rev: 5L))
+          : ImmutableList.Create((prog: "rough", rev: 5L), (prog: "finish", rev: 8L));
+        var payload = new NewJobs
+        {
+          ScheduleId = unique,
+          Jobs = [job],
+          Programs = programs
+            .Select(p => new NewProgramContent
+            {
+              ProgramName = p.prog,
+              Revision = p.rev,
+              ProgramContent = p.prog,
+            })
+            .ToImmutableList(),
+        };
+        using (var db = _logDBCfg.OpenConnection())
+        {
+          await Assert.That(_sync.CheckNewJobs(db, payload)).IsEmpty();
+        }
+        AddJobs(payload);
+        var logs = ImmutableList<LogEntry>.Empty;
+        for (var step = 0; ; step++)
+        {
+          if (step > 1000)
+            throw new Exception("Simulation did not drain");
+          var newLogs = Step(
+            missedPolls && noMachining ? 2 : null,
+            noMachining ? reclampPolls : ReclampPolls.All
+          );
+          if (newLogs == null)
+            break;
+          logs = logs.AddRange(newLogs);
+          using var db = _logDBCfg.OpenConnection();
+          var intermediateCell = _sync.CalculateCellState(db).CurrentStatus;
+          // Intermediate unload/transfer and RC must never credit final completion.
+          var finalUnloads = logs.Count(e =>
+            e.LogType == LogType.LoadUnloadCycle
+            && !e.StartOfCycle
+            && e.Result == "UNLOAD"
+            && e.Material.Any(m => m.Process == 2)
+          );
+          await Assert.That(intermediateCell.Jobs[unique].Completed[1][0]).IsEqualTo(finalUnloads);
+          var finalPallet = _sim.LoadNiigataStatus().Pallets[1];
+          if (
+            finalPallet.HasWork
+            && finalPallet.CurrentStep is UnloadStep
+            && finalPallet.Tracking.BeforeCurrentStep
+            && finalPallet.CurStation.Location.Location == PalletLocationEnum.LoadUnload
+          )
+          {
+            await Assert
+              .That(
+                intermediateCell.Material.Any(m =>
+                  m.Process == 2
+                  && m.Location.PalletNum == 2
+                  && m.Action.Type == InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                )
+              )
+              .IsTrue();
+            var lastCounter = db.GetRecentLog(0).Last().Counter;
+            _sync.CalculateCellState(db);
+            await Assert.That(db.GetRecentLog(lastCounter)).IsEmpty();
+          }
+        }
+        var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material[0].MaterialID);
+        await Assert.That(byMat.Count).IsEqualTo(3);
+        foreach (var material in byMat)
+        {
+          if (noMachining)
+          {
+            CheckSingleMaterial(
+              material,
+              material.Key,
+              unique,
+              unique,
+              2,
+              [
+                [1],
+                [2],
+              ],
+              queue: "Transfer",
+              reclamp: [firstProcessReclamp, finalProcessReclamp],
+              machGroups:
+              [
+                ["TestMC"],
+                [],
+              ],
+              missedReclampStartProcess: reclampPolls != ReclampPolls.All ? 2 : null
+            );
+            foreach (
+              var reclampEnd in material.Where(e =>
+                e.LogType == LogType.LoadUnloadCycle && e.Result == "TestReclamp" && !e.StartOfCycle
+              )
+            )
+            {
+              await Assert.That(reclampEnd.LocationNum).IsEqualTo(2);
+            }
+          }
+          else
+          {
+            await Assert.That(material.Count(e => e.LogType == LogType.MachineCycle)).IsEqualTo(4);
+            await Assert
+              .That(
+                material
+                  .Where(e =>
+                    e.LogType == LogType.LoadUnloadCycle
+                    && !e.StartOfCycle
+                    && (e.Result == "LOAD" || e.Result == "UNLOAD")
+                  )
+                  .Select(e => (e.Material[0].Process, e.Result))
+              )
+              .IsEquivalentTo(
+                [(1, "LOAD"), (1, "UNLOAD"), (2, "LOAD"), (2, "UNLOAD")],
+                CollectionOrdering.Matching
+              );
+          }
+        }
+        var finalLoads = logs.Where(e =>
+            e.LogType == LogType.LoadUnloadCycle
+            && !e.StartOfCycle
+            && e.Result == "LOAD"
+            && e.Material.Any(m => m.Process == 2)
+          )
+          .ToImmutableList();
+        await Assert.That(finalLoads.Count).IsEqualTo(3);
+        await Assert.That(finalLoads.All(e => e.LocationNum == finalLoadStation)).IsTrue();
+        await Assert
+          .That(
+            logs.Where(e =>
+                e.LogType == LogType.LoadUnloadCycle
+                && e.Result == "UNLOAD"
+                && e.Material.Any(m => m.Process == 2)
+              )
+              .All(e => e.LocationNum == 4)
+          )
+          .IsTrue();
+        var status = _sim.LoadNiigataStatus();
+        ImmutableList<Type> expectedFirstRoute = firstProcessReclamp
+          ? [typeof(LoadStep), typeof(MachiningStep), typeof(ReclampStep), typeof(UnloadStep)]
+          : [typeof(LoadStep), typeof(MachiningStep), typeof(UnloadStep)];
+        await Assert
+          .That(status.Pallets[0].Master.Routes.Select(s => s.GetType()))
+          .IsEquivalentTo(expectedFirstRoute, CollectionOrdering.Matching);
+        await Assert
+          .That(((UnloadStep)status.Pallets[0].Master.Routes[^1]).UnloadStations)
+          .IsEquivalentTo([finalLoadStation]);
+        if (firstProcessReclamp)
+        {
+          await Assert
+            .That(status.Pallets[0].Master.Routes.OfType<ReclampStep>().Single().Reclamp)
+            .IsEquivalentTo([2]);
+        }
+        var finalRoute = status.Pallets[1].Master.Routes;
+        await Assert.That(finalRoute[0] is LoadStep).IsTrue();
+        await Assert
+          .That(((LoadStep)finalRoute[0]).LoadStations)
+          .IsEquivalentTo([finalLoadStation]);
+        await Assert.That(finalRoute[^1] is UnloadStep).IsTrue();
+        await Assert.That(((UnloadStep)finalRoute[^1]).UnloadStations).IsEquivalentTo([4]);
+        ImmutableList<Type> expectedFinalRoute = (noMachining, hasFinalReclamp) switch
+        {
+          (true, false) => [typeof(LoadStep), typeof(UnloadStep)],
+          (true, true) => [typeof(LoadStep), typeof(ReclampStep), typeof(UnloadStep)],
+          (false, false) => [typeof(LoadStep), typeof(MachiningStep), typeof(UnloadStep)],
+          (false, true) =>
+          [
+            typeof(LoadStep),
+            typeof(ReclampStep),
+            typeof(MachiningStep),
+            typeof(UnloadStep),
+          ],
+        };
+        await Assert
+          .That(finalRoute.Select(s => s.GetType()))
+          .IsEquivalentTo(expectedFinalRoute, CollectionOrdering.Matching);
+        await Assert.That(status.Programs.Count).IsEqualTo(unique == "first" ? 1 : 2);
+        await Assert
+          .That(status.Pallets.All(p => p.Master.NoWork && p.Master.RemainingPalletCycles == 0))
+          .IsTrue();
+        using var finalDb = _logDBCfg.OpenConnection();
+        var cell = _sync.CalculateCellState(finalDb).CurrentStatus;
+        await Assert.That(cell.Material).IsEmpty();
+        await Assert.That(cell.Jobs[unique].Completed.SelectMany(c => c)).IsEquivalentTo([3, 3]);
+      }
     }
 
     private void WriteLogs(IEnumerable<MachineFramework.LogEntry> es)
@@ -344,7 +658,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       bool[] reclamp = null,
       string[][] machGroups = null,
       string castingQueue = null,
-      (string prog, long rev)[][] progs = null
+      (string prog, long rev)[][] progs = null,
+      int? missedReclampStartProcess = null
     )
     {
       var matLogs = logs.Where(e =>
@@ -441,15 +756,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         if (reclamp != null && reclamp[proc - 1])
         {
-          expected.Add(e =>
+          if (missedReclampStartProcess != proc)
           {
-            e.Pallet.ShouldBeOneOf(pals[proc - 1]);
-            e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
-            e.LogType.ShouldBe(LogType.LoadUnloadCycle);
-            e.Program.ShouldBe("TestReclamp");
-            e.Result.ShouldBe("TestReclamp");
-            e.StartOfCycle.ShouldBeTrue();
-          });
+            expected.Add(e =>
+            {
+              e.Pallet.ShouldBeOneOf(pals[proc - 1]);
+              e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+              e.LogType.ShouldBe(LogType.LoadUnloadCycle);
+              e.Program.ShouldBe("TestReclamp");
+              e.Result.ShouldBe("TestReclamp");
+              e.StartOfCycle.ShouldBeTrue();
+            });
+          }
           expected.Add(e =>
           {
             e.Pallet.ShouldBeOneOf(pals[proc - 1]);

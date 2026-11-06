@@ -415,12 +415,18 @@ function materialActionDescription(
             In {basketName} {mat.location.basketId}
           </>
         );
-      } else if (
-        mat.location.type === api.LocType.OnPallet &&
-        (mat.lastCompletedMachiningRouteStopIndex === null ||
-          mat.lastCompletedMachiningRouteStopIndex === undefined)
-      ) {
-        return <>Waiting for machining</>;
+      } else if (mat.location.type === api.LocType.OnPallet) {
+        const path =
+          curSt.jobs[mat.jobUnique]?.procsAndPaths?.[mat.process - 1]?.paths?.[mat.path - 1];
+        if (path?.stops?.length === 0) {
+          return <>Waiting</>;
+        }
+        if (
+          mat.lastCompletedMachiningRouteStopIndex === null ||
+          mat.lastCompletedMachiningRouteStopIndex === undefined
+        ) {
+          return <>Waiting for machining</>;
+        }
       }
       break;
 

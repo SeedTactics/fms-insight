@@ -76,6 +76,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.RouteInvalid = false;
           _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentStepNum = 1;
           _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentControlNum = 1;
+          _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.ExecutedStationNumber.Clear();
           break;
 
         case DeletePalletRoute del:
@@ -216,6 +217,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       pal.Master.PalletNum
                     ]
                       .Add(LoadTime);
+                    pal.Tracking.ExecutedStationNumber.Clear();
                     pal.Tracking.CurrentControlNum += 1;
                   },
                 }
@@ -306,8 +308,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             //if on cart, move to machine or buffer
             else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
             {
-              var nextStep = (MachiningStep)pal.Master.Routes[pal.Tracking.CurrentStepNum - 1 + 1];
-              var mach = openIccMach.FirstOrDefault(nextStep.Machines.Contains);
+              var nextStep = pal.Master.Routes[pal.Tracking.CurrentStepNum];
+              var mach = nextStep is MachiningStep machining
+                ? openIccMach.FirstOrDefault(machining.Machines.Contains)
+                : 0;
               if (mach > 0 && !pal.Master.Skip)
               {
                 transitions.Add(
@@ -648,6 +652,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   UpdateStatus = () =>
                   {
                     _lastPalTransition[pal.Master.PalletNum] += ReclampTime;
+                    while (pal.Tracking.ExecutedStationNumber.Count < pal.Tracking.CurrentStepNum)
+                    {
+                      pal.Tracking.ExecutedStationNumber.Add(null);
+                    }
+                    pal.Tracking.ExecutedStationNumber[pal.Tracking.CurrentStepNum - 1] =
+                      pal.CurStation;
                     pal.Tracking.CurrentControlNum += 1;
                   },
                 }
@@ -772,6 +782,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     {
                       pal.Tracking.CurrentStepNum = 1;
                       pal.Tracking.CurrentControlNum = 2;
+                      pal.Tracking.ExecutedStationNumber.Clear();
                     }
                   },
                 }
