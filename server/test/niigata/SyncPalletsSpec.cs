@@ -196,13 +196,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Test]
-    [Arguments(false, false, false)]
-    [Arguments(true, false, false)]
-    [Arguments(false, true, false)]
-    [Arguments(true, true, false)]
-    [Arguments(true, true, true)]
+    [Arguments(2, false, false, false)]
+    [Arguments(2, false, true, false)]
+    [Arguments(3, false, false, false)]
+    [Arguments(3, false, true, false)]
+    [Arguments(3, true, false, false)]
+    [Arguments(3, true, true, false)]
+    [Arguments(3, true, true, true)]
     public async Task FinalProcessWithoutMachining(
-      bool reclamp,
+      int finalLoadStation,
+      bool finalProcessReclamp,
       bool missedPolls,
       bool missedReclamp
     )
@@ -219,12 +222,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         numLoads: 4,
         requirePrograms: true
       );
+      var firstProcessReclamp = finalLoadStation == 3;
 
       // Complete several cycles, replace both pallet routes with a normal job, then switch back.
       foreach (
         var (unique, noMachining) in new[] { ("first", true), ("normal", false), ("again", true) }
       )
       {
+        // Normal station-3 routes retain their reclamp before machining.
+        var hasFinalReclamp = finalProcessReclamp || (!noMachining && finalLoadStation == 3);
         var job = FakeIccDsl
           .CreateMultiProcSeparatePalletJob(
             unique: unique,
@@ -235,8 +241,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             pals1: [1],
             pals2: [2],
             load1: [1],
-            unload1: [3],
-            load2: [reclamp ? 3 : 2],
+            unload1: [finalLoadStation],
+            load2: [finalLoadStation],
             unload2: [4],
             machs: [1, 2, 3, 4, 5, 6],
             prog1: "rough",
@@ -251,7 +257,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             unloadMins2: 5,
             fixture: "fixture",
             transQ: "Transfer",
-            reclamp2: reclamp ? [2] : null
+            reclamp1: firstProcessReclamp ? [2] : null,
+            reclamp2: hasFinalReclamp ? [2] : null
           )
           .Item1;
         if (noMachining)
@@ -356,19 +363,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 [2],
               ],
               queue: "Transfer",
-              reclamp: [false, reclamp],
+              reclamp: [firstProcessReclamp, finalProcessReclamp],
               machGroups:
               [
                 ["TestMC"],
                 [],
               ],
-              missedReclampStart: missedReclamp
+              missedReclampStartProcess: missedReclamp ? 2 : null
             );
-            if (reclamp)
-            {
-              var reclampEnd = material.Single(e =>
+            foreach (
+              var reclampEnd in material.Where(e =>
                 e.LogType == LogType.LoadUnloadCycle && e.Result == "TestReclamp" && !e.StartOfCycle
-              );
+              )
+            )
+            {
               await Assert.That(reclampEnd.LocationNum).IsEqualTo(2);
             }
           }
@@ -402,15 +410,44 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           )
           .IsTrue();
         var status = _sim.LoadNiigataStatus();
+        ImmutableList<Type> expectedFirstRoute = firstProcessReclamp
+          ? [typeof(LoadStep), typeof(MachiningStep), typeof(ReclampStep), typeof(UnloadStep)]
+          : [typeof(LoadStep), typeof(MachiningStep), typeof(UnloadStep)];
+        await Assert
+          .That(status.Pallets[0].Master.Routes.Select(s => s.GetType()))
+          .IsEquivalentTo(expectedFirstRoute, CollectionOrdering.Matching);
+        await Assert
+          .That(((UnloadStep)status.Pallets[0].Master.Routes[^1]).UnloadStations)
+          .IsEquivalentTo([finalLoadStation]);
+        if (firstProcessReclamp)
+        {
+          await Assert
+            .That(status.Pallets[0].Master.Routes.OfType<ReclampStep>().Single().Reclamp)
+            .IsEquivalentTo([2]);
+        }
         var finalRoute = status.Pallets[1].Master.Routes;
         await Assert.That(finalRoute[0] is LoadStep).IsTrue();
-        await Assert.That(((LoadStep)finalRoute[0]).LoadStations).IsEquivalentTo([reclamp ? 3 : 2]);
+        await Assert
+          .That(((LoadStep)finalRoute[0]).LoadStations)
+          .IsEquivalentTo([finalLoadStation]);
         await Assert.That(finalRoute[^1] is UnloadStep).IsTrue();
         await Assert.That(((UnloadStep)finalRoute[^1]).UnloadStations).IsEquivalentTo([4]);
+        ImmutableList<Type> expectedFinalRoute = (noMachining, hasFinalReclamp) switch
+        {
+          (true, false) => [typeof(LoadStep), typeof(UnloadStep)],
+          (true, true) => [typeof(LoadStep), typeof(ReclampStep), typeof(UnloadStep)],
+          (false, false) => [typeof(LoadStep), typeof(MachiningStep), typeof(UnloadStep)],
+          (false, true) =>
+          [
+            typeof(LoadStep),
+            typeof(ReclampStep),
+            typeof(MachiningStep),
+            typeof(UnloadStep),
+          ],
+        };
         await Assert
-          .That(finalRoute.OfType<MachiningStep>().Count())
-          .IsEqualTo(noMachining ? 0 : 1);
-        await Assert.That(finalRoute.OfType<ReclampStep>().Count()).IsEqualTo(reclamp ? 1 : 0);
+          .That(finalRoute.Select(s => s.GetType()))
+          .IsEquivalentTo(expectedFinalRoute, CollectionOrdering.Matching);
         await Assert.That(status.Programs.Count).IsEqualTo(unique == "first" ? 1 : 2);
         await Assert
           .That(status.Pallets.All(p => p.Master.NoWork && p.Master.RemainingPalletCycles == 0))
@@ -596,7 +633,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       string[][] machGroups = null,
       string castingQueue = null,
       (string prog, long rev)[][] progs = null,
-      bool missedReclampStart = false
+      int? missedReclampStartProcess = null
     )
     {
       var matLogs = logs.Where(e =>
@@ -693,7 +730,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         if (reclamp != null && reclamp[proc - 1])
         {
-          if (!missedReclampStart)
+          if (missedReclampStartProcess != proc)
           {
             expected.Add(e =>
             {
