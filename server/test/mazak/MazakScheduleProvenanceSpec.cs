@@ -17,8 +17,10 @@ public sealed class MazakScheduleProvenanceSpec
 {
   private const string OriginalJob = "original-job";
   private const string PeerJob = "peer-job";
+  private const string ReplacementJob = "replacement-job";
   private const string OriginalPart = "part:7:1:2";
   private const string PeerPart = "peer:8:1";
+  private const string ReplacementPart = "replacement:9:1";
   private const string Transfer = "transfer";
   private const string Prepared = "prepared";
   private const string Quarantine = "quarantine";
@@ -31,6 +33,12 @@ public sealed class MazakScheduleProvenanceSpec
       async (filename, device) =>
       {
         var ids = await Initialize(filename, device, constructProvenance: true);
+        await Assert
+          .That(() => device.DeleteOriginalDefinitionsAndReuseScheduleId())
+          .Throws<InvalidOperationException>();
+        // Mazak permits these edits only after physical unloading. Its valid CSV history
+        // reaches Insight later, so recorded occupancy must remain visible in the meantime.
+        device.UnloadOriginal();
         device.DeleteOriginalDefinitionsAndReuseScheduleId();
         var originalEnd = Event(
           "LG20261105-115901-001.csv",
@@ -72,6 +80,13 @@ public sealed class MazakScheduleProvenanceSpec
                 .Select(m => (m.JobUnique, m.Process))
             )
             .IsEquivalentTo([(OriginalJob, 2)]);
+          await Assert
+            .That(
+              state
+                .CurrentStatus.Material.Single(material => material.MaterialID == ids.Original)
+                .Problem
+            )
+            .IsNotNull();
           await AssertEvent(repository, originalEnd, ids.Original, 2, "1002");
           await AssertEvent(repository, peerEnd, ids.Peer, 1, "1001");
           await Assert
@@ -100,6 +115,9 @@ public sealed class MazakScheduleProvenanceSpec
           await Assert.That(device.Logs).IsEmpty();
           await AssertEvent(repository, originalUnload, ids.Original, 2, "UNLOAD");
           await AssertEvent(repository, peerUnload, ids.Peer, 1, "UNLOAD");
+          await Assert
+            .That(MazakMaterialHistory.MaterialOnPallet(repository, repository.CurrentPalletLog(1)))
+            .IsEmpty();
           var summary = repository.GetJobProductionSummary(OriginalJob);
           await Assert.That(summary.AutomationEntryMaterialIds).IsEquivalentTo([ids.Original]);
           await Assert
@@ -135,12 +153,16 @@ public sealed class MazakScheduleProvenanceSpec
   }
 
   [Test]
-  public async Task MissingHistoryRecordsKnownDiscrepancyAndOrdinaryCorrectionPreservesPeerProgress()
+  public async Task MissingHistoryRecordsKnownDiscrepancyAndPreservesPeerProgress()
   {
     await WithDisk(
       async (filename, device) =>
       {
         var ids = await Initialize(filename, device, constructProvenance: false);
+        await Assert
+          .That(() => device.DeleteOriginalDefinitionsAndReuseScheduleId())
+          .Throws<InvalidOperationException>();
+        device.UnloadOriginal();
         device.DeleteOriginalDefinitionsAndReuseScheduleId();
         var missing = Event(
           "LG20261105-115901-001.csv",
@@ -186,22 +208,6 @@ public sealed class MazakScheduleProvenanceSpec
           .That(repository.GetLogForJobUnique(OriginalJob))
           .IsEquivalentTo(beforeCorrection);
 
-        // Confirmed physical removal uses the existing placement marker, so removing the
-        // quarantine queue entry later cannot resurrect the previous pallet assignment.
-        repository
-          .RecordAddMaterialToQueue(
-            ids.Original,
-            2,
-            Quarantine,
-            -1,
-            "operator",
-            MazakMaterialHistory.MissingMaterialReason,
-            Now
-          )
-          .ToImmutableList();
-        await Assert
-          .That(repository.GetMaterialInQueueByUnique(Quarantine, OriginalJob).Single().MaterialID)
-          .IsEqualTo(ids.Original);
         device.ClearAssignments();
         var peerUnload = Event(
           "LG20261105-115911-004.csv",
@@ -220,13 +226,14 @@ public sealed class MazakScheduleProvenanceSpec
         await Assert.That(original.AutomationEntryMaterialIds).IsEquivalentTo([ids.Original]);
         await Assert.That(original.Completed[(1, 1)]).IsEqualTo(1);
         await Assert.That(original.Completed.GetValueOrDefault((2, 1))).IsEqualTo(0);
-        repository
-          .RecordRemoveMaterialFromAllQueues(ids.Original, 2, "operator", Now.AddMinutes(1))
-          .ToImmutableList();
         await Assert.That(repository.IsMaterialInQueue(ids.Original)).IsFalse();
         await Assert
-          .That(MazakMaterialHistory.MaterialOnPallet(repository, repository.CurrentPalletLog(1)))
-          .IsEmpty();
+          .That(
+            MazakMaterialHistory
+              .MaterialOnPallet(repository, repository.CurrentPalletLog(1))
+              .Select(material => material.MaterialID)
+          )
+          .IsEquivalentTo([ids.Original]);
         sync.CalculateCellState(repository);
         await Assert
           .That(repository.GetJobProductionSummary(OriginalJob).Completed.GetValueOrDefault((2, 1)))
@@ -285,6 +292,7 @@ public sealed class MazakScheduleProvenanceSpec
             ]
           ),
           Job(PeerJob, "peer", [new ProcessInfo { Paths = [JobLogTest.EmptyPath] }]),
+          Job(ReplacementJob, "replacement", [new ProcessInfo { Paths = [JobLogTest.EmptyPath] }]),
         ],
       },
       null,
@@ -293,6 +301,7 @@ public sealed class MazakScheduleProvenanceSpec
     if (constructProvenance)
     {
       repository.MarkJobCopiedToSystem(PeerJob);
+      repository.MarkJobCopiedToSystem(ReplacementJob);
       await Assert.That(device.ConstructNewJob(repository)).IsTrue();
       await Assert.That(repository.LoadMazakRouteProvenanceForJob(OriginalJob).Count).IsEqualTo(2);
     }
@@ -676,20 +685,38 @@ public sealed class MazakScheduleProvenanceSpec
         ],
       };
 
-    public void DeleteOriginalDefinitionsAndReuseScheduleId() =>
+    public void DeleteOriginalDefinitionsAndReuseScheduleId()
+    {
+      if (
+        data.PalletSubStatuses.Any(assignment =>
+          assignment.PartName == OriginalPartName && assignment.FixQuantity > 0
+        )
+      )
+        throw new InvalidOperationException(
+          "Mazak refuses definition edits while material is in progress."
+        );
       data = data with
       {
-        Parts = data.Parts.Where(part => part.PartName == PeerPart).ToImmutableList(),
+        Parts = data
+          .Parts.Where(part => part.PartName == PeerPart)
+          .Append(Part(ReplacementPart, ReplacementJob + "-Insight", "1001"))
+          .ToImmutableList(),
         Schedules = data
           .Schedules.Where(schedule => schedule.PartName == PeerPart)
-          .Select(schedule => schedule with { Id = originalScheduleId })
+          .Append(Schedule(originalScheduleId, ReplacementPart, ReplacementJob + "-Insight"))
           .ToImmutableList(),
+      };
+    }
+
+    public void UnloadOriginal() =>
+      data = data with
+      {
         PalletSubStatuses = data
-          .PalletSubStatuses.Select(assignment =>
-            assignment with
-            {
-              ScheduleID = originalScheduleId,
-            }
+          .PalletSubStatuses.Where(assignment => assignment.PalletNumber != 1)
+          .ToImmutableList(),
+        PalletPositions = data
+          .PalletPositions.Select(position =>
+            position.PalletNumber == 1 ? position with { PalletPosition = "S1" } : position
           )
           .ToImmutableList(),
       };

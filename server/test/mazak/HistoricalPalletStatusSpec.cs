@@ -127,6 +127,7 @@ public sealed class HistoricalPalletStatusSpec
   [Arguments(true, false, false)]
   [Arguments(true, true, false)]
   [Arguments(false, false, true, Categories = new[] { "missing-assignment" })]
+  [Arguments(false, true, true, Categories = new[] { "missing-all-native-rows" })]
   public async Task MissingScheduleKeepsP2MaterialVisibleEvenWhenItsNumericIdIsReused(
     bool reused,
     bool missingPallet,
@@ -213,7 +214,10 @@ public sealed class HistoricalPalletStatusSpec
         ]
         : [],
       Pallets = missingPallet ? [] : [new MazakPalletRow { PalletNumber = 1, Fixture = "fixture" }],
-      PalletPositions = [new MazakPalletPositionRow { PalletNumber = 1, PalletPosition = "S1" }],
+      PalletPositions =
+        missingPallet && missingAssignment
+          ? []
+          : [new MazakPalletPositionRow { PalletNumber = 1, PalletPosition = "S1" }],
       PalletSubStatuses = missingAssignment
         ? []
         :
@@ -238,26 +242,65 @@ public sealed class HistoricalPalletStatusSpec
       )
       .IsEquivalentTo([id]);
     await Assert.That(restarted.IsMaterialInQueue(id)).IsFalse();
-    var status = BuildCurrentStatus.Build(
-      restarted,
-      new FMSSettings(),
-      new MazakConfig
-      {
-        DBType = MazakDbType.MazakSmooth,
-        UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
-      },
-      data,
-      "MC",
-      null,
-      now.AddMinutes(1)
-    );
+    CurrentStatus Build() =>
+      BuildCurrentStatus.Build(
+        restarted,
+        new FMSSettings(),
+        new MazakConfig
+        {
+          DBType = MazakDbType.MazakSmooth,
+          UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
+        },
+        data,
+        "MC",
+        null,
+        now.AddMinutes(1)
+      );
+    var status = Build();
 
     var actual = status.Material.Single(material => material.MaterialID == id);
     await Assert.That(actual.JobUnique).IsEqualTo(job.UniqueStr);
     await Assert.That(actual.Process).IsEqualTo(2);
     await Assert.That(actual.Location.PalletNum).IsEqualTo(1);
     await Assert.That(actual.Location.Face).IsEqualTo(1);
+    await Assert.That(status.Material.Count).IsEqualTo(1);
+    await Assert.That(status.Pallets[1].NumFaces).IsEqualTo(1);
+    if (missingAssignment)
+      await Assert.That(actual.Problem).Contains("no matching native assignment");
+    else
+      await Assert.That(actual.Problem).IsNull();
     await Assert.That(status.Jobs[job.UniqueStr].RemainingToStart).IsEqualTo(0);
     await Assert.That(status.Jobs[job.UniqueStr].Completed[1][0]).IsEqualTo(0);
+
+    if (missingAssignment)
+    {
+      restarted
+        .RecordLoadUnloadComplete(
+          toLoad: null,
+          previouslyLoaded: null,
+          toUnload:
+          [
+            new MaterialToUnloadFromFace
+            {
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                id,
+                new UnloadDestination()
+              ),
+              Process = 2,
+              FaceNum = 1,
+              ActiveOperationTime = TimeSpan.Zero,
+            },
+          ],
+          previouslyUnloaded: null,
+          pallet: 1,
+          lulNum: 1,
+          totalElapsed: TimeSpan.Zero,
+          timeUTC: now.AddMinutes(1),
+          externalQueues: null
+        )
+        .ToImmutableList();
+      await Assert.That(Build().Material).IsEmpty();
+      await Assert.That(Build().Material).IsEmpty();
+    }
   }
 }

@@ -10,7 +10,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class WriteJobsSpec
 {
   [Test]
-  public async Task OrphanedActualAssignmentRetainsItsAsBuiltProgramAndFixtureAfterDefinitionsDisappear()
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task OrphanedActualAssignmentRetainsItsAsBuiltProgramAndFixtureAfterDefinitionsDisappear(
+    bool recordedOccupancyOnly
+  )
   {
     const string program = "retained-program";
     var template = DisjointPendingJobs().Jobs[0];
@@ -40,6 +44,44 @@ public sealed partial class WriteJobsSpec
       .Schedules.Single(row => row.PartName == part.PartName);
     var recorded = _jobDB.LoadMazakRouteProvenance(part.PartName, process.ProcessNumber)!;
     await Assert.That(recorded.NativeProgram).IsEqualTo(process.MainProgram);
+    var configuration = recordedOccupancyOnly
+      ? _mazakCfg with
+      {
+        UseInsightJobQuantities = job => job.UniqueStr == original.UniqueStr,
+      }
+      : _mazakCfg;
+    var materialId = -1L;
+    if (recordedOccupancyOnly)
+    {
+      materialId = _jobDB.AllocateMaterialID(
+        original.UniqueStr,
+        original.PartName,
+        original.Processes.Count
+      );
+      _jobDB
+        .RecordLoadUnloadComplete(
+          toLoad:
+          [
+            new MaterialToLoadOntoFace
+            {
+              MaterialIDs = [materialId],
+              Process = recorded.JobProcess,
+              Path = recorded.Path,
+              FaceNum = recorded.NativeProcess,
+              ActiveOperationTime = System.TimeSpan.Zero,
+            },
+          ],
+          previouslyLoaded: null,
+          toUnload: null,
+          previouslyUnloaded: null,
+          pallet: configuration.TranslatePalletNumber(pallet.PalletNumber),
+          lulNum: 1,
+          totalElapsed: System.TimeSpan.Zero,
+          timeUTC: fixtureQueueTime,
+          externalQueues: null
+        )
+        .ToImmutableList();
+    }
     var peer = template with
     {
       UniqueStr = "independent-peer",
@@ -64,24 +106,26 @@ public sealed partial class WriteJobsSpec
     {
       Parts = [],
       Schedules = [],
-      Pallets = [],
+      Pallets = recordedOccupancyOnly ? [pallet] : [],
       Fixtures =
       [
         new MazakFixtureRow { FixtureName = recorded.NativeFixture, Comment = "Insight" },
       ],
-      PalletSubStatuses =
-      [
-        new MazakPalletSubStatusRow
-        {
-          PalletNumber = pallet.PalletNumber,
-          ScheduleID = schedule.Id,
-          PartName = part.PartName,
-          PartProcessNumber = process.ProcessNumber,
-          FixQuantity = 1,
-          // The native fixture field is absent; the original as-built association still knows it.
-          FixtureName = "",
-        },
-      ],
+      PalletSubStatuses = recordedOccupancyOnly
+        ? []
+        :
+        [
+          new MazakPalletSubStatusRow
+          {
+            PalletNumber = pallet.PalletNumber,
+            ScheduleID = schedule.Id,
+            PartName = part.PartName,
+            PartProcessNumber = process.ProcessNumber,
+            FixQuantity = 1,
+            // The native fixture field is absent; the original as-built association still knows it.
+            FixtureName = "",
+          },
+        ],
       MainPrograms = _initialAllData
         .MainPrograms.Concat(
           new[]
@@ -113,7 +157,7 @@ public sealed partial class WriteJobsSpec
           _jobDB,
           _mazakDbMock,
           _settings,
-          _mazakCfg,
+          configuration,
           fixtureQueueTime
         )
       )
@@ -140,6 +184,91 @@ public sealed partial class WriteJobsSpec
           .Any(row => row.FixtureName == recorded.NativeFixture)
       )
       .IsFalse();
+    await Assert
+      .That(
+        writes
+          .SelectMany(write => write.Pallets)
+          .Any(row => row.PalletNumber == pallet.PalletNumber)
+      )
+      .IsFalse();
+
+    if (recordedOccupancyOnly)
+    {
+      // Real handling releases the same resource reservation. History alone must not
+      // retain a retired route or its old program after the material actually leaves.
+      _jobDB
+        .RecordLoadUnloadComplete(
+          toLoad: null,
+          previouslyLoaded: null,
+          toUnload:
+          [
+            new MaterialToUnloadFromFace
+            {
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination>.Empty.Add(
+                materialId,
+                new UnloadDestination()
+              ),
+              Process = recorded.JobProcess,
+              FaceNum = recorded.NativeProcess,
+              ActiveOperationTime = System.TimeSpan.Zero,
+            },
+          ],
+          previouslyUnloaded: null,
+          pallet: configuration.TranslatePalletNumber(pallet.PalletNumber),
+          lulNum: 1,
+          totalElapsed: System.TimeSpan.Zero,
+          timeUTC: fixtureQueueTime.AddMinutes(1),
+          externalQueues: null
+        )
+        .ToImmutableList();
+      var laterPeer = peer with { UniqueStr = "later-independent-peer" };
+      _jobDB.AddJobs(new NewJobs { ScheduleId = "after-unload", Jobs = [laterPeer] }, null, false);
+      _mazakDbMock.ClearReceivedCalls();
+      await Assert
+        .That(
+          WriteJobs.SyncFromDatabase(
+            data,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            configuration,
+            fixtureQueueTime.AddMinutes(1)
+          )
+        )
+        .IsTrue();
+      var afterUnload = _mazakDbMock
+        .ReceivedCalls()
+        .Where(call => call.GetMethodInfo().Name == "Save")
+        .Select(call => (MazakWriteData)call.GetArguments()[0])
+        .ToImmutableList();
+      await Assert
+        .That(
+          afterUnload
+            .SelectMany(write => write.Programs)
+            .Any(row =>
+              row.MainProgram == recorded.NativeProgram && row.Command == MazakWriteCommand.Delete
+            )
+        )
+        .IsTrue();
+      await Assert
+        .That(
+          afterUnload
+            .SelectMany(write => write.Fixtures)
+            .Any(row =>
+              row.FixtureName == recorded.NativeFixture && row.Command == MazakWriteCommand.Delete
+            )
+        )
+        .IsTrue();
+      await Assert
+        .That(
+          afterUnload
+            .SelectMany(write => write.Pallets)
+            .Any(row =>
+              row.PalletNumber == pallet.PalletNumber && row.Command == MazakWriteCommand.Delete
+            )
+        )
+        .IsTrue();
+    }
   }
 
   [Test]

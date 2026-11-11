@@ -511,6 +511,130 @@ namespace MazakMachineInterface
         }
       }
 
+      if (mazakCfg.UseInsightJobQuantities is not null)
+      {
+        // Losing controller metadata is not handling. Retain exact recorded occupancy until
+        // an unload or confirmed physical removal establishes that the material left the pallet.
+        var visibleMaterial = material
+          .Where(mat => mat.MaterialID >= 0)
+          .Select(mat => mat.MaterialID)
+          .ToImmutableHashSet();
+        foreach (
+          var (nativePallet, occupied) in MazakMaterialHistory.SelectedPalletOccupancy(
+            jobDB,
+            mazakData,
+            mazakCfg
+          )
+        )
+        {
+          var pallet = mazakCfg.TranslatePalletNumber(nativePallet);
+          var history = occupied.History;
+          foreach (var recorded in occupied.Material)
+          {
+            if (recorded.MaterialID < 0 || visibleMaterial.Contains(recorded.MaterialID))
+              continue;
+            var retained = jobDB.LoadJob(recorded.JobUniqueStr);
+            if (!mazakCfg.UsesInsightJobQuantities(retained))
+              continue;
+            if (!jobsByUniq.ContainsKey(retained.UniqueStr))
+              jobsByUniq.Add(retained.UniqueStr, RepositoryJob(retained));
+            var details = jobDB.GetMaterialDetails(recorded.MaterialID);
+            var path =
+              details?.Paths is { } paths && paths.TryGetValue(recorded.Process, out var savedPath)
+                ? savedPath
+                : recorded.Path ?? 1;
+            var start = FindMachineStartFromOldCycles(history, recorded.MaterialID);
+            var elapsed = start is not null ? utcNow.Subtract(start.EndTimeUTC) : TimeSpan.Zero;
+            var expected =
+              recorded.Process > 0
+              && recorded.Process <= retained.Processes.Count
+              && path > 0
+              && path <= retained.Processes[recorded.Process - 1].Paths.Count
+                ? retained
+                  .Processes[recorded.Process - 1]
+                  .Paths[path - 1]
+                  .Stops.FirstOrDefault()
+                  ?.ExpectedCycleTime
+                : null;
+            material.Add(
+              new InProcessMaterial
+              {
+                MaterialID = recorded.MaterialID,
+                JobUnique = recorded.JobUniqueStr,
+                PartName = recorded.PartName,
+                Process = recorded.Process,
+                Path = path,
+                Serial = details?.Serial,
+                WorkorderId = details?.Workorder,
+                SignaledInspections = jobDB
+                  .LookupInspectionDecisions(recorded.MaterialID)
+                  .Where(inspection => inspection.Inspect)
+                  .Select(inspection => inspection.InspType)
+                  .Distinct()
+                  .ToImmutableList(),
+                QuarantineAfterUnload = FindSignalQuarantineForMaterial(
+                  recorded.MaterialID,
+                  history
+                )
+                  is not null
+                  ? true
+                  : null,
+                Problem = "Recorded pallet material has no matching native assignment.",
+                LastCompletedMachiningRouteStopIndex = history.Any(entry =>
+                  entry.LogType == LogType.MachineCycle
+                  && !entry.StartOfCycle
+                  && entry.Material.Any(mat =>
+                    mat.MaterialID == recorded.MaterialID && mat.Process == recorded.Process
+                  )
+                )
+                  ? 0
+                  : null,
+                Location = new InProcessMaterialLocation
+                {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  PalletNum = pallet,
+                  Face = recorded.Face,
+                },
+                Action = start is null
+                  ? new InProcessMaterialAction
+                  {
+                    Type = InProcessMaterialAction.ActionType.Waiting,
+                  }
+                  : new InProcessMaterialAction
+                  {
+                    Type = InProcessMaterialAction.ActionType.Machining,
+                    ElapsedMachiningTime = elapsed,
+                    ExpectedRemainingMachiningTime = expected?.Subtract(elapsed) ?? TimeSpan.Zero,
+                  },
+              }
+            );
+            visibleMaterial = visibleMaterial.Add(recorded.MaterialID);
+            if (!palletsByName.ContainsKey(pallet))
+              palletsByName.Add(
+                pallet,
+                new PalletStatus
+                {
+                  PalletNum = pallet,
+                  CurrentPalletLocation = FindPalletLocation(
+                    machineGroupName,
+                    mazakData,
+                    mazakCfg,
+                    nativePallet
+                  ),
+                  FixtureOnPallet = "",
+                  NumFaces = Math.Max(1, recorded.Face),
+                  OnHold = palOnHold is not null && palOnHold.GetValueOrDefault(pallet),
+                }
+              );
+            else
+              palletsByName[pallet] = palletsByName[pallet] with
+              {
+                NumFaces = Math.Max(palletsByName[pallet].NumFaces, recorded.Face),
+              };
+          }
+        }
+      }
+
       // add any pallets on hold that are not currently used in any parts
       foreach (var pal in palOnHold?.Where(p => p.Value) ?? [])
       {

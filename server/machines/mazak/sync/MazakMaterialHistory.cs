@@ -10,6 +10,65 @@ public static class MazakMaterialHistory
   // Persisted event marker: keep its value compatible with existing removal history.
   public const string MissingMaterialReason = "MaterialMissingOnPallet";
 
+  // Keys use native pallet numbers; events and material retain Insight coordinates/identity.
+  // Restrict this projection to selected production. Ordinary manual cells keep their native
+  // assignment model, and an old route alone does not establish occupied material.
+  internal static ImmutableDictionary<
+    int,
+    (
+      ImmutableList<BlackMaple.MachineFramework.LogEntry> History,
+      ImmutableList<LogMaterial> Material
+    )
+  > SelectedPalletOccupancy(IRepository repository, MazakAllData data, MazakConfig configuration)
+  {
+    if (configuration.UseInsightJobQuantities is null)
+      return ImmutableDictionary<
+        int,
+        (ImmutableList<BlackMaple.MachineFramework.LogEntry>, ImmutableList<LogMaterial>)
+      >.Empty;
+    var selectedJobs = repository
+      .LoadUnarchivedJobs()
+      .Where(configuration.UsesInsightJobQuantities)
+      .ToImmutableDictionary(job => job.UniqueStr);
+    var pallets = (data.Pallets ?? [])
+      .Select(pallet => pallet.PalletNumber)
+      .Concat((data.PalletPositions ?? []).Select(pallet => pallet.PalletNumber))
+      .Concat((data.PalletSubStatuses ?? []).Select(pallet => pallet.PalletNumber))
+      .Concat(
+        selectedJobs
+          .Values.SelectMany(job => job.Processes)
+          .SelectMany(process => process.Paths)
+          .SelectMany(path => path.PalletNums ?? [])
+          .Select(configuration.InversePalletNumber)
+      )
+      .Where(pallet => pallet > 0)
+      .ToImmutableSortedSet();
+    var occupied = ImmutableDictionary.CreateBuilder<
+      int,
+      (
+        ImmutableList<BlackMaple.MachineFramework.LogEntry> History,
+        ImmutableList<LogMaterial> Material
+      )
+    >();
+    foreach (var pallet in pallets)
+    {
+      var history = repository
+        .CurrentPalletLog(configuration.TranslatePalletNumber(pallet))
+        .ToImmutableList();
+      var material = MaterialOnPallet(repository, history)
+        .Where(mat =>
+          mat.MaterialID >= 0
+          && configuration.UsesInsightJobQuantities(
+            selectedJobs.GetValueOrDefault(mat.JobUniqueStr) ?? repository.LoadJob(mat.JobUniqueStr)
+          )
+        )
+        .ToImmutableList();
+      if (!material.IsEmpty)
+        occupied.Add(pallet, (history, material));
+    }
+    return occupied.ToImmutable();
+  }
+
   public static ImmutableList<LogMaterial> MaterialOnPallet(
     IRepository repository,
     IEnumerable<BlackMaple.MachineFramework.LogEntry> events

@@ -31,6 +31,17 @@ manufacturing-log diagnostic and use ordinary correction/quarantine. Preserve ac
 material and accepted-operation commitments while independently supported work continues. Missing
 historical metadata alone does not establish an indefinite generic hold or authorize event replay.
 
+Mazak prevents deleting or clearing definitions while material is in progress. Native rows can
+disappear after physical unloading while the valid handling CSV history reaches Insight later. For
+selected jobs, recorded pallet occupancy stays visible with a discrepancy until that history
+resolves it. Download cleanup preserves the recorded pallet and its known route resources during
+this interval. A missing assignment alone neither moves material nor completes its process.
+
+Pallet handling and basket-station completion remain distinct facts. Use the established handling
+flow to establish that material left a pallet; the existing basket-station confirmation records
+completion of its listed tasks. Ordinary queue edits and a basket confirmation do not themselves
+clear outstanding robot execution or invent a pallet unload.
+
 Adding provenance storage preserves existing material IDs, manufacturing records, the event cursor
 and operation receipts. The schema's existing version checks govern binary compatibility. Native
 rows remain controller resources; manufacturing quantity ownership is described

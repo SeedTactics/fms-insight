@@ -65,6 +65,7 @@ namespace MazakMachineInterface
     {
       var protectedResources = (protection ?? MazakResourceProtection.Empty)
         .Union(ProtectOrphanedAssignments(db, mazakData))
+        .Union(ProtectRecordedOccupancy(db, mazakData, mazakCfg))
         .Resolve(mazakData);
       var alreadyDownloadedSchs = mazakData
         .Schedules.Where(s =>
@@ -151,6 +152,47 @@ namespace MazakMachineInterface
       }
 
       return true;
+    }
+
+    private static MazakResourceProtection ProtectRecordedOccupancy(
+      IRepository repository,
+      MazakAllData data,
+      MazakConfig configuration
+    )
+    {
+      var occupied = MazakMaterialHistory.SelectedPalletOccupancy(repository, data, configuration);
+      if (occupied.IsEmpty)
+        return MazakResourceProtection.Empty;
+      var material = occupied.Values.SelectMany(pallet => pallet.Material).ToImmutableList();
+      // History proves the occupied job/process/path, even when the native generation is lost.
+      // Retain its possible as-built variants while that actual material remains; this neither
+      // attributes an old event to a generation nor reserves unrelated historical work.
+      var routes = material
+        .Select(mat => mat.JobUniqueStr)
+        .Distinct()
+        .SelectMany(repository.LoadMazakRouteProvenanceForJob)
+        .Where(route =>
+          material.Any(mat =>
+            mat.JobUniqueStr == route.JobUnique
+            && mat.Process == route.JobProcess
+            && (mat.Path ?? 1) == route.Path
+          )
+        )
+        .ToImmutableList();
+      return new MazakResourceProtection
+      {
+        PalletNumbers = occupied.Keys.ToImmutableHashSet(),
+        JobUniques = material.Select(mat => mat.JobUniqueStr).ToImmutableHashSet(),
+        PartNames = routes.Select(route => route.FullPartName).ToImmutableHashSet(),
+        FixtureNames = routes
+          .Select(route => route.NativeFixture)
+          .Where(name => !string.IsNullOrEmpty(name))
+          .ToImmutableHashSet(),
+        ProgramNames = routes
+          .Select(route => route.NativeProgram)
+          .Where(name => !string.IsNullOrEmpty(name))
+          .ToImmutableHashSet(),
+      };
     }
 
     private static MazakResourceProtection ProtectOrphanedAssignments(
