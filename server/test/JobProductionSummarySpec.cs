@@ -61,6 +61,129 @@ public sealed class JobProductionSummarySpec
       .IsEqualTo(palletEvents.Where(e => e.Result == "UNLOAD").Max(e => e.EndTimeUTC));
   }
 
+  [Test]
+  public async Task TenValidPiecesCanRequireElevenAttemptsWithoutAnotherFirstEntry()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = config.OpenConnection();
+    var start = new DateTime(2026, 9, 1, 10, 0, 0, DateTimeKind.Utc);
+    var ids = Enumerable
+      .Range(0, 10)
+      .Select(_ => db.AllocateMaterialID("job", "part", 1))
+      .ToArray();
+    for (var index = 0; index < 9; index++)
+    {
+      PalletLoad(db, [ids[index]], 1, start.AddMinutes(index * 2));
+      PalletUnload(db, [ids[index]], 1, start.AddMinutes(index * 2 + 1), queue: null);
+    }
+    await AssertProduction(config, entered: 9, completed: 9);
+
+    db.InvalidatePalletCycle(ids[0], 1, "operator", start.AddMinutes(18)).ToImmutableList();
+    await AssertProduction(config, entered: 9, completed: 8);
+
+    PalletLoad(db, [ids[0]], 1, start.AddMinutes(19));
+    PalletUnload(db, [ids[0]], 1, start.AddMinutes(20), queue: null);
+    await AssertProduction(config, entered: 9, completed: 9);
+
+    PalletLoad(db, [ids[9]], 1, start.AddMinutes(21));
+    PalletUnload(db, [ids[9]], 1, start.AddMinutes(22), queue: null);
+    await AssertProduction(config, entered: 10, completed: 10);
+    await Assert.That(db.GetLogForJobUnique("job").Count(e => e.Result == "UNLOAD")).IsEqualTo(11);
+  }
+
+  [Test]
+  public async Task RepeatedInvalidationPreservesEntryAndEarlierProcessOutput()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = config.OpenConnection();
+    var start = new DateTime(2026, 9, 1, 10, 0, 0, DateTimeKind.Utc);
+    var id = db.AllocateMaterialID("job", "part", 2);
+    PalletLoad(db, [id], 1, start);
+    PalletUnload(db, [id], 1, start.AddMinutes(1), queue: null);
+    for (var attempt = 0; attempt < 3; attempt++)
+    {
+      var time = start.AddMinutes(2 + attempt * 3);
+      PalletLoad(db, [id], 2, time);
+      PalletUnload(db, [id], 2, time.AddMinutes(1), queue: null);
+      using (var observation = config.OpenConnection())
+      {
+        var summary = observation.GetJobProductionSummary("job");
+        await Assert.That(summary.AutomationEntryMaterialIds).IsEquivalentTo([id]);
+        await Assert.That(summary.Completed[(1, 1)]).IsEqualTo(1);
+        await Assert.That(summary.Completed[(2, 1)]).IsEqualTo(1);
+      }
+      db.InvalidatePalletCycle(id, 2, "operator", time.AddMinutes(2)).ToImmutableList();
+      using (var observation = config.OpenConnection())
+      {
+        var summary = observation.GetJobProductionSummary("job");
+        await Assert.That(summary.AutomationEntryMaterialIds).IsEquivalentTo([id]);
+        await Assert.That(summary.Completed[(1, 1)]).IsEqualTo(1);
+        await Assert.That(summary.Completed.ContainsKey((2, 1))).IsFalse();
+      }
+    }
+  }
+
+  [Test]
+  public async Task RepeatedValidUnloadsCountOneOutputForEachIdentityAndProcess()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = config.OpenConnection();
+    var start = new DateTime(2026, 9, 1, 10, 0, 0, DateTimeKind.Utc);
+    var id = db.AllocateMaterialID("job", "part", 2);
+    foreach (var process in new[] { 1, 2 })
+    {
+      PalletLoad(db, [id], process, start.AddMinutes(process * 2));
+      PalletUnload(db, [id], process, start.AddMinutes(process * 2 + 1), queue: null);
+      PalletUnload(db, [id], process, start.AddMinutes(process * 2 + 2), queue: null);
+    }
+
+    using var observation = config.OpenConnection();
+    var summary = observation.GetJobProductionSummary("job");
+    await Assert.That(summary.AutomationEntryMaterialIds).IsEquivalentTo([id]);
+    await Assert.That(summary.Completed[(1, 1)]).IsEqualTo(1);
+    await Assert.That(summary.Completed[(2, 1)]).IsEqualTo(1);
+  }
+
+  [Test]
+  public async Task InvalidatedOutputDoesNotFollowReadmissionOntoAnotherPath()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = config.OpenConnection();
+    var start = new DateTime(2026, 9, 1, 10, 0, 0, DateTimeKind.Utc);
+    var id = db.AllocateMaterialID("job", "part", 1);
+    db.RecordPathForProcess(id, 1, 2);
+    PalletLoad(db, [id], 1, start);
+    PalletUnload(db, [id], 1, start.AddMinutes(1), queue: null);
+    await Assert.That(db.GetJobProductionSummary("job").Completed[(1, 2)]).IsEqualTo(1);
+
+    db.InvalidatePalletCycle(id, 1, "operator", start.AddMinutes(2)).ToImmutableList();
+    db.RecordPathForProcess(id, 1, 3);
+    PalletLoad(db, [id], 1, start.AddMinutes(3));
+    using (var observation = config.OpenConnection())
+    {
+      var summary = observation.GetJobProductionSummary("job");
+      await Assert.That(summary.AutomationEntryMaterialIds).IsEquivalentTo([id]);
+      await Assert.That(summary.Completed).IsEmpty();
+    }
+
+    PalletUnload(db, [id], 1, start.AddMinutes(4), queue: null);
+    using (var observation = config.OpenConnection())
+    {
+      var summary = observation.GetJobProductionSummary("job");
+      await Assert.That(summary.AutomationEntryMaterialIds).IsEquivalentTo([id]);
+      await Assert.That(summary.Completed.Count).IsEqualTo(1);
+      await Assert.That(summary.Completed[(1, 3)]).IsEqualTo(1);
+    }
+  }
+
+  private static async Task AssertProduction(RepositoryConfig config, int entered, int completed)
+  {
+    using var observation = config.OpenConnection();
+    var summary = observation.GetJobProductionSummary("job");
+    await Assert.That(summary.AutomationEntryMaterialIds.Count).IsEqualTo(entered);
+    await Assert.That(summary.Completed.GetValueOrDefault((1, 1))).IsEqualTo(completed);
+  }
+
   private static EventLogMaterial Material(long id, int process) =>
     new()
     {
@@ -93,7 +216,13 @@ public sealed class JobProductionSummarySpec
       )
       .ToImmutableList();
 
-  private static void PalletUnload(IRepository db, long[] ids, int process, DateTime time) =>
+  private static void PalletUnload(
+    IRepository db,
+    long[] ids,
+    int process,
+    DateTime time,
+    string queue = "completed"
+  ) =>
     db.RecordLoadUnloadComplete(
         toLoad: null,
         toUnload:
@@ -102,7 +231,7 @@ public sealed class JobProductionSummarySpec
           {
             MaterialIDToDestination = ids.ToImmutableDictionary(
               id => id,
-              _ => new UnloadDestination { Queue = "completed" }
+              _ => queue is null ? null : new UnloadDestination { Queue = queue }
             ),
             FaceNum = 1,
             Process = process,

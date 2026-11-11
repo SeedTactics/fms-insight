@@ -43,7 +43,11 @@ namespace BlackMaple.MachineFramework
 {
   public sealed record JobProductionSummary
   {
+    // Historical first entry remains committed even when machining is invalidated.
     public required ImmutableHashSet<long> AutomationEntryMaterialIds { get; init; }
+
+    // Distinct material IDs with a noninvalidated pallet unload, grouped by process/current path.
+    // Repeated native execution attempts do not each award another valid output.
     public required ImmutableDictionary<(int Process, int Path), int> Completed { get; init; }
     public required DateTime? LastLoadUnloadTime { get; init; }
     public required DateTime? LastUnloadTime { get; init; }

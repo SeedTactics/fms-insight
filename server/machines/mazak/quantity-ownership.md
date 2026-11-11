@@ -9,15 +9,21 @@ lifetime. This policy is internal to the backend; accepted jobs and allocation c
 flag. One cell can contain jobs using either policy.
 
 Selected jobs use repository production accounting: accepted cycles minus recorded cancellations,
-durable first entry, and recorded completions. Controller plan increases do not increase demand.
-Current status keeps unarchived selected jobs even when their schedules disappear. Explicitly
-archived selected jobs stay out of current status and new downloads even if controller rows or the
-copied-to-system flag lag behind archival. The backend can project its additional active
+durable first entry, and recorded completions. Repository completions count distinct material IDs
+with noninvalidated pallet unloads per process/path; repeating an attempt does not award another
+valid piece. Invalidation preserves historical entry. Controller plan increases do not increase
+demand. Current status keeps unarchived selected jobs even when their schedules disappear.
+Explicitly archived selected jobs stay out of current status and new downloads even if controller
+rows or the copied-to-system flag lag behind archival. The backend can project its additional active
 reservations through `AdjustCurrentStatus`.
 
 Controller completion evidence remains visible while its event batch is settling; repository history
 preserves completion for retired split routes. Actual machining also establishes durable entry when
-its preceding LOAD was unavailable, without synthesizing a LOAD event.
+its preceding LOAD was unavailable, without synthesizing a LOAD event. The current status projection
+still takes the greater of repository and native completion, and native started counts still bound
+remaining starts. These fallbacks must be replaced by identity-based unsettled commitments before
+native attempt counts can vary independently during rework or schedule replacement; corrected
+repository output alone does not establish that lifecycle.
 
 For local cancellation, `RecordJobDecrementOperation` commits positive once-only cancellations,
 release of never-entered raw allocations, and a completed request receipt together. Replays return

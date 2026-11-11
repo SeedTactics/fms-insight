@@ -540,7 +540,8 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path "
+        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path, "
+        + "EXISTS (SELECT 1 FROM program_details d WHERE d.Counter = s.Counter AND d.Key = 'PalletCycleInvalidated') "
         + "FROM matdetails m "
         + "JOIN stations_mat sm ON sm.MaterialID = m.MaterialID "
         + "JOIN stations s ON s.Counter = sm.Counter "
@@ -553,7 +554,7 @@ namespace BlackMaple.MachineFramework
       cmd.Parameters.Add("machine", SqliteType.Integer).Value = (int)LogType.MachineCycle;
 
       var entryIds = ImmutableHashSet.CreateBuilder<long>();
-      var completed = ImmutableDictionary.CreateBuilder<(int Process, int Path), int>();
+      var completed = ImmutableHashSet.CreateBuilder<(long MaterialId, int Process, int Path)>();
       DateTime? lastLoadUnload = null;
       DateTime? lastUnload = null;
       using var reader = cmd.ExecuteReader();
@@ -585,16 +586,22 @@ namespace BlackMaple.MachineFramework
         {
           if (lastUnload == null || time > lastUnload.Value)
             lastUnload = time;
-          var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
-          var key = (Process: process, Path: path);
-          completed[key] = completed.GetValueOrDefault(key) + 1;
+          // Entry remains historical even when an attempt is invalidated. Output counts valid
+          // identities, so another unload of the same piece cannot award another completion.
+          if (!reader.GetBoolean(6))
+          {
+            var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
+            completed.Add((materialId, process, path));
+          }
         }
       }
 
       return new JobProductionSummary
       {
         AutomationEntryMaterialIds = entryIds.ToImmutable(),
-        Completed = completed.ToImmutable(),
+        Completed = completed
+          .GroupBy(c => (c.Process, c.Path))
+          .ToImmutableDictionary(group => group.Key, group => group.Count()),
         LastLoadUnloadTime = lastLoadUnload,
         LastUnloadTime = lastUnload,
       };
