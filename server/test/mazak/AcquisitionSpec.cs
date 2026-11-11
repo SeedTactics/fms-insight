@@ -61,7 +61,21 @@ public sealed partial class MazakAcquisitionSpec
     };
     cell.Data = cell.Data with
     {
-      Logs = [earlier, cell.Start, cell.End with { Code = LogCode.LoadBegin }],
+      Logs =
+      [
+        earlier,
+        cell.Start with
+        {
+          Code = LogCode.PalletMoveComplete,
+          TargetPosition = "S1",
+        },
+        cell.End with
+        {
+          Code = LogCode.PalletMoveComplete,
+          TargetPosition = "S2",
+          Pallet = 2,
+        },
+      ],
     };
     using var connection = new SqliteConnection(
       $"Data Source=file:${cell.DatabaseId}?mode=memory&cache=shared"
@@ -93,7 +107,13 @@ public sealed partial class MazakAcquisitionSpec
       .IsEqualTo(0);
     await Assert
       .That(cell.Repository.GetRecentLog(0).Count(e => e.LogType == LogType.LoadUnloadCycle))
-      .IsEqualTo(2);
+      .IsEqualTo(1);
+    await Assert
+      .That(cell.Repository.GetRecentLog(0).Count(e => e.LogType == LogType.PalletInStocker))
+      .IsEqualTo(1);
+    await Assert
+      .That(state.PendingEventBatches.Single().State)
+      .IsEqualTo(ControllerEventBatchState.ReconciliationRequired);
     await Assert.That(cell.Sync.CaptureLogWatermark(cell.Repository)).IsEqualTo(cell.End.ForeignID);
     cell.Native.Received(1).DeleteLogs(cell.End.ForeignID);
     var committed = cell.Repository.GetRecentLog(0).ToImmutableList();
@@ -101,16 +121,36 @@ public sealed partial class MazakAcquisitionSpec
     await Assert.That(cell.Repository.GetRecentLog(0)).IsEquivalentTo(committed);
     sql.CommandText = "DROP TRIGGER reject_event";
     sql.ExecuteNonQuery();
-    var next = cell.Start with { ForeignID = "LG20261105-120000-003.csv" };
-    cell.Data = cell.Data with { Logs = cell.Data.Logs.Append(next).ToImmutableList() };
+    var dependent = cell.Start with
+    {
+      ForeignID = "LG20261105-120000-003.csv",
+      Code = LogCode.PalletMoveComplete,
+      TargetPosition = "S3",
+    };
+    var next = dependent with { ForeignID = "LG20261105-120000-004.csv", Pallet = 3 };
+    cell.Data = cell.Data with
+    {
+      Logs = cell.Data.Logs.ToImmutableList().AddRange([dependent, next]),
+    };
     Poll();
     await Assert
-      .That(cell.Repository.GetRecentLog(0).Count(e => e.LogType == LogType.MachineCycle))
-      .IsEqualTo(1);
+      .That(cell.Repository.GetRecentLog(0).Count(e => e.LogType == LogType.PalletInStocker))
+      .IsEqualTo(2);
     await Assert
       .That(cell.Repository.GetRecentLog(0).Count(e => e.LogType == LogType.LoadUnloadCycle))
-      .IsEqualTo(2);
-    cell.Native.Received(1).DeleteLogs(next.ForeignID);
+      .IsEqualTo(1);
+    using var resumed = cell.NewSynchronizer();
+    using var reopened = cell.Repository.RepoConfig.OpenConnection();
+    var afterRestart = resumed.CalculateCellState(reopened);
+    await Assert
+      .That(afterRestart.PendingEventBatches.Select(b => b.State))
+      .IsEquivalentTo([
+        ControllerEventBatchState.ReconciliationRequired,
+        ControllerEventBatchState.Received,
+      ]);
+    await Assert.That(reopened.MostRecentLogEntryForForeignID(dependent.ForeignID)).IsNull();
+    await Assert.That(reopened.MostRecentLogEntryForForeignID(next.ForeignID)).IsNotNull();
+    cell.Native.Received(2).DeleteLogs(next.ForeignID);
   }
 
   [Test]
@@ -686,18 +726,21 @@ public sealed partial class MazakAcquisitionSpec
       Sync = NewSynchronizer();
     }
 
-    public MazakSync NewSynchronizer() =>
+    public MazakSync NewSynchronizer(MazakConfig? configuration = null) =>
       new(
         Native,
         new FMSSettings(),
-        new MazakConfig
-        {
-          DBType = MazakDbType.MazakSmooth,
-          ProgramDirectory = "unused",
-          CanQuarantineMissingMaterial = _ => false,
-          AdjustCurrentStatus = (_, status) =>
-            FailStatus ? throw new InvalidOperationException("status construction failed") : status,
-        },
+        configuration
+          ?? new MazakConfig
+          {
+            DBType = MazakDbType.MazakSmooth,
+            ProgramDirectory = "unused",
+            CanQuarantineMissingMaterial = _ => false,
+            AdjustCurrentStatus = (_, status) =>
+              FailStatus
+                ? throw new InvalidOperationException("status construction failed")
+                : status,
+          },
         Clock
       );
 

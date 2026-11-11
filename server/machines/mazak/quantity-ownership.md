@@ -1,5 +1,8 @@
 # Job quantity ownership
 
+[Native event history](event-history.md) separates durable receipt from manufacturing application
+and explains protection of unapplied work.
+
 By default, Mazak's schedule quantities drive current job counts, raw supply reconciliation,
 decrement, and completed-schedule cleanup. Existing installations keep this behavior.
 

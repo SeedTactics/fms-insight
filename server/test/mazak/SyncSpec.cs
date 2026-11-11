@@ -349,13 +349,9 @@ public sealed class MazakSyncSpec : IDisposable
     db.MaxForeignID().ShouldBe("external-robot:accepted");
     db.MaxForeignIDInRange("LG", "LH").ShouldBe("LG20240611-040509-002.csv");
 
-    _mazakDB.Received().DeleteLogs("LG20240611-040509-002.csv");
-
-    LogCSVParsing.DeleteLog("LG20240611-040509-002.csv", _tempDir);
-
-    Directory
-      .GetFiles(_tempDir, "*.csv")
-      .ShouldBe([Path.Combine(_tempDir, "LG20240611-040610-003.csv")]);
+    _mazakDB.Received().DeleteLogs("LG20240611-040610-003.csv");
+    LogCSVParsing.DeleteLog("LG20240611-040610-003.csv", _tempDir);
+    Directory.GetFiles(_tempDir, "*.csv").ShouldBeEmpty();
   }
 
   [Test]
@@ -423,7 +419,7 @@ public sealed class MazakSyncSpec : IDisposable
     await Assert.That(state.StoppedBecauseRecentLogEvent).IsFalse();
     await Assert.That(state.TimeUntilNextRefresh).IsEqualTo(TimeSpan.FromMinutes(2));
     await Assert.That(db.MaxForeignIDInRange("LG", "LH")).IsEqualTo("LG20240611-040509-002.csv");
-    _mazakDB.Received().DeleteLogs("LG20240611-040509-002.csv");
+    _mazakDB.Received().DeleteLogs("LG20240611-040510-003.csv");
     // This CSV has no matching job identity; ordinary translation allocates its material
     // and leaves the unrelated queued casting alone.
     await Assert.That(db.GetMaterialInAllQueues().Single().MaterialID).IsEqualTo(materialId);
@@ -515,8 +511,8 @@ public sealed class MazakSyncSpec : IDisposable
       );
 
     db.MaxForeignID().ShouldBe("LG20240611-040506-001.csv");
-
-    _mazakDB.Received().DeleteLogs("LG20240611-040506-001.csv");
+    st.PendingEventBatches.Single().State.ShouldBe(ControllerEventBatchState.Open);
+    _mazakDB.Received().DeleteLogs("LG20240611-040509-002.csv");
   }
 
   [Test]
@@ -561,20 +557,11 @@ public sealed class MazakSyncSpec : IDisposable
     st.TimeUntilNextRefresh.ShouldBe(TimeSpan.FromSeconds(15));
 
     db.MaxForeignID().ShouldBe("LG20240611-040506-001.csv");
-
-    _mazakDB.Received().DeleteLogs("LG20240611-040506-001.csv");
-
-    LogCSVParsing.DeleteLog("LG20240611-040506-001.csv", _tempDir);
-
-    Directory
-      .GetFiles(_tempDir, "*.csv")
-      .ShouldBe(
-        [
-          Path.Combine(_tempDir, "LG20240611-040509-002.csv"),
-          Path.Combine(_tempDir, "LG20240611-040510-003.csv"),
-        ],
-        ignoreOrder: true
-      );
+    st.PendingEventBatches.Select(b => b.BatchId)
+      .ShouldBe(["LG20240611-040509-002.csv", "LG20240611-040510-003.csv"]);
+    _mazakDB.Received().DeleteLogs("LG20240611-040510-003.csv");
+    LogCSVParsing.DeleteLog("LG20240611-040510-003.csv", _tempDir);
+    Directory.GetFiles(_tempDir, "*.csv").ShouldBeEmpty();
   }
 
   [Test]

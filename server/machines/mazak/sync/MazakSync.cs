@@ -52,6 +52,7 @@ public record MazakState : ICellState
   // Insight pallet number whose final load/unload batch is incomplete. Retain this context
   // alongside AllData when rebuilding status against newer repository facts without replaying logs.
   public int? PalletWithUnprocessedUnloads { get; init; }
+  public ImmutableList<ControllerEventBatch> PendingEventBatches { get; init; } = [];
 }
 
 // Acquisition owns no repository connection. Its interval describes observation provenance,
@@ -70,12 +71,13 @@ public sealed record MazakAcquisition
   public bool ToolReadFailed { get; init; }
 }
 
-// Retain this receipt across acknowledgment failure. Its watermark is captured at reconciliation,
-// so acknowledging it later cannot consume subsequently committed evidence.
+// Retain this receipt across acknowledgment failure. ReceivedLogWatermark alone authorizes native
+// deletion; CommittedLogWatermark describes manufacturing progress and is not an ingestion cursor.
 public sealed record MazakReconciliation
 {
   public required MazakState State { get; init; }
   public required string CommittedLogWatermark { get; init; }
+  public required string ReceivedLogWatermark { get; init; }
 }
 
 public delegate void MazakLogEventDel(LogEntry e, IRepository jobDB);
@@ -102,6 +104,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   // Last accepted acquisition's tool attempt, independently of manufacturing/status success.
   private bool lastToolReadFailed;
   private ImmutableList<CurrentStatusAlarm> ingestionDiagnostics = [];
+  private ImmutableList<LogEntry> pendingToolEvents = [];
 
   public MazakSync(IMazakDB mazakDb, FMSSettings settings, MazakConfig mazakConfig)
     : this(mazakDb, settings, mazakConfig, TimeProvider.System) { }
@@ -227,7 +230,19 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   }
 
   // Capture under the caller's repository/mutation owner, then release that owner before acquiring.
-  public string CaptureLogWatermark(IRepository db) =>
+  public string CaptureLogWatermark(IRepository db)
+  {
+    pendingToolEvents = MazakEventInbox
+      .Load(db)
+      .Where(p => p.Batch.State == ControllerEventBatchState.Received)
+      .SelectMany(p => p.Evidence.Events)
+      .ToImmutableList();
+    var received = db.ControllerEventReceiptWatermark(MazakEventInbox.Stream);
+    var committed = CommittedLogWatermark(db);
+    return string.IsNullOrEmpty(received) ? committed : received;
+  }
+
+  private static string CommittedLogWatermark(IRepository db) =>
     // Web/Smooth CSV names begin with LG; exclude other event producers.
     db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound);
 
@@ -271,7 +286,9 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     var dataLoaded = timeProvider.GetUtcNow().UtcDateTime;
     ImmutableList<ToolPocketRow>? tools = null;
     var toolReadFailed = false;
-    if (data.Logs.Any(e => LogTranslation.NeedsToolSnapshot(e, dataLoaded)))
+    if (
+      data.Logs.Concat(pendingToolEvents).Any(e => LogTranslation.NeedsToolSnapshot(e, dataLoaded))
+    )
       try
       {
         tools = mazakDB.LoadTools().ToImmutableList();
@@ -296,18 +313,52 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   }
 
   // No built-in controller I/O. The caller keeps source observations ordered and serializes
-  // resolver/repository effects. Already committed events are omitted, including after a
-  // partial reconciliation failure, while the available observation still contributes status.
+  // resolver/repository effects. Applied batches are omitted; unapplied evidence comes from the
+  // durable inbox independently of native receipt and manufacturing progress.
   public MazakReconciliation ReconcileCellState(IRepository db, MazakAcquisition acquisition)
   {
-    var committed = CaptureLogWatermark(db);
+    var newlyReceived = MazakEventInbox.Receive(
+      db,
+      acquisition.Data,
+      mazakConfig,
+      settings,
+      CommittedLogWatermark(db)
+    );
+    var pending = MazakEventInbox.Load(db);
+    // Applying is committed before any translator side effects. A previous attempt may have
+    // committed some of them: a missing application receipt is never permission to replay it.
+    foreach (
+      var interrupted in pending.Where(p => p.Batch.State == ControllerEventBatchState.Applying)
+    )
+      db.SetControllerEventBatchState(
+        MazakEventInbox.Stream,
+        interrupted.Batch.BatchId,
+        ControllerEventBatchState.ReconciliationRequired,
+        "Application was interrupted; reconcile recorded effects before releasing this work."
+      );
+    pending = MazakEventInbox.Load(db);
+    var byId = pending.ToImmutableDictionary(p => p.Batch.BatchId);
+    var blocked = ImmutableHashSet<string>.Empty;
+    var applied = false;
+    string Id(LogTranslation.LogChunk chunk) => MazakEventInbox.Events(chunk)[0].ForeignID;
+    ImmutableHashSet<string> Scopes(LogTranslation.LogChunk chunk) =>
+      byId[Id(chunk)]
+        .Evidence.Dependencies.Union(
+          MazakEventDependencies.Read(
+            db,
+            acquisition.Data,
+            mazakConfig,
+            settings,
+            MazakEventInbox.Events(chunk)
+          )
+        )
+        .ToImmutableHashSet();
+    void Defer(LogTranslation.LogChunk chunk) => blocked = blocked.Union(Scopes(chunk));
     if (acquisition.ToolReadFailed || acquisition.Tools is not null)
       lastToolReadFailed = acquisition.ToolReadFailed;
     var mazakData = acquisition.Data with
     {
-      Logs = acquisition
-        .Data.Logs.Where(entry => StringComparer.Ordinal.Compare(entry.ForeignID, committed) > 0)
-        .ToImmutableList(),
+      Logs = pending.SelectMany(p => p.Evidence.Events).ToImmutableList(),
     };
     var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
@@ -329,10 +380,94 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         {
           MazakLogEvent?.Invoke(chunk.NonLulEndEvt, db);
         }
+        db.SetControllerEventBatchState(
+          MazakEventInbox.Stream,
+          Id(chunk),
+          ControllerEventBatchState.Applied
+        );
+        applied = true;
       },
       mazakConfig: mazakConfig,
       tools: acquisition.Tools,
-      observationTimeUtc: acquisition.DataLoadedAtUtc
+      observationTimeUtc: acquisition.DataLoadedAtUtc,
+      processing: new LogTranslation.EventProcessing
+      {
+        Chunks = pending.Select(p => p.Chunk).ToImmutableList(),
+        TryBegin = chunk =>
+        {
+          var batch = byId[Id(chunk)].Batch;
+          var scopes = Scopes(chunk);
+          if (
+            batch.State != ControllerEventBatchState.Received
+            || blocked.Count > 0 && MazakEventDependencies.Conflicts(blocked, scopes)
+          )
+          {
+            blocked = blocked.Union(scopes);
+            return false;
+          }
+          var events = MazakEventInbox.Events(chunk);
+          var receivedEvidence = byId[Id(chunk)].Evidence;
+          var reason = MazakEventDependencies.DeferredReasonFromReceipt(
+            db,
+            acquisition.Data,
+            mazakConfig,
+            events,
+            receivedEvidence.Routes,
+            receivedEvidence.SelectedWorkObserved
+          );
+          if (
+            receivedEvidence.UnverifiedMaterialIdentityObserved
+            && (
+              receivedEvidence.SelectedWorkObserved
+              || MazakEventDependencies.HasSelectedWork(db, acquisition.Data, mazakConfig, events)
+            )
+          )
+            reason =
+              "This Insight-owned group includes material events received without verified native identity. Reconcile the retained original evidence before applying it.";
+          if (
+            reason is null
+            && MazakEventDependencies.HasSelectedWork(db, acquisition.Data, mazakConfig, events)
+          )
+            reason = LogTranslation.ExactLoadUnloadBlockedReason(
+              db,
+              mazakData,
+              settings,
+              mazakConfig,
+              chunk
+            );
+          if (reason is not null)
+          {
+            db.SetControllerEventBatchState(
+              MazakEventInbox.Stream,
+              batch.BatchId,
+              ControllerEventBatchState.Received,
+              reason
+            );
+            blocked = blocked.Union(scopes);
+            return false;
+          }
+          db.SetControllerEventBatchState(
+            MazakEventInbox.Stream,
+            batch.BatchId,
+            ControllerEventBatchState.Applying
+          );
+          return true;
+        },
+        Deferred = Defer,
+        Failed = (chunk, _) =>
+        {
+          db.SetControllerEventBatchState(
+            MazakEventInbox.Stream,
+            Id(chunk),
+            ControllerEventBatchState.ReconciliationRequired,
+            "Application failed and may have recorded effects; reconcile this work before continuing its dependent events."
+          );
+          Defer(chunk);
+        },
+        CanComparePallet = pallet =>
+          !blocked.Any(scope => !scope.StartsWith("pallet:", StringComparison.Ordinal))
+          && !blocked.Contains(MazakEventDependencies.Pallet(pallet)),
+      }
     );
 
     var palletWithUnprocessedUnloads = evtResults.PalletWithMostRecentEventAsLoadUnloadEnd
@@ -354,6 +489,26 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       st = mazakConfig.AdjustCurrentStatus(db, st);
     }
     var diagnostics = ImmutableList<CurrentStatusAlarm>.Empty;
+    var remaining = MazakEventInbox.Load(db);
+    foreach (
+      var item in remaining.Where(p =>
+        p.Batch.State == ControllerEventBatchState.ReconciliationRequired
+        || p.Batch.Diagnostic is not null
+      )
+    )
+      diagnostics = diagnostics.Add(
+        new CurrentStatusAlarm
+        {
+          Code =
+            item.Batch.State == ControllerEventBatchState.ReconciliationRequired
+              ? "mazak-event-reconciliation"
+              : "mazak-event-pending",
+          Message =
+            $"Mazak history {item.Batch.BatchId}–{item.Batch.LastEventId} is pending. "
+            + item.Batch.Diagnostic,
+          Impact = AlarmImpact.Informational,
+        }
+      );
     if (lastToolReadFailed)
       diagnostics = diagnostics.Add(
         new CurrentStatusAlarm
@@ -369,15 +524,18 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       st = st.AddAlarm(diagnostic);
     var result = new MazakReconciliation
     {
-      CommittedLogWatermark = CaptureLogWatermark(db),
+      CommittedLogWatermark = CommittedLogWatermark(db),
+      ReceivedLogWatermark = CaptureLogWatermark(db),
       State = new MazakState()
       {
         StateUpdated =
-          mazakData.Logs.Count > 0
+          newlyReceived
+          || applied
           || evtResults.PalletStatusChanged
           || !ingestionDiagnostics.SequenceEqual(diagnostics),
         TimeUntilNextRefresh =
-          evtResults.StoppedBecauseRecentMachineEvent
+          !remaining.IsEmpty
+          || evtResults.StoppedBecauseRecentMachineEvent
           || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue
             ? TimeSpan.FromSeconds(15)
             : TimeSpan.FromMinutes(2),
@@ -387,6 +545,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         CurrentStatus = st,
         AllData = mazakData,
         PalletWithUnprocessedUnloads = palletWithUnprocessedUnloads,
+        PendingEventBatches = remaining.Select(p => p.Batch).ToImmutableList(),
       },
     };
     ingestionDiagnostics = diagnostics;
@@ -394,9 +553,9 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   }
 
   // Call outside the repository/mutation owner, using its captured progress even if isolated
-  // source records were logged and skipped. Never substitute a later repository watermark.
+  // evidence remains unapplied. Never substitute a later manufacturing or receipt watermark.
   public void AcknowledgeLogs(MazakReconciliation reconciliation) =>
-    mazakDB.DeleteLogs(reconciliation.CommittedLogWatermark);
+    mazakDB.DeleteLogs(reconciliation.ReceivedLogWatermark);
 
   public bool ApplyActions(IRepository db, MazakState st)
   {
@@ -443,9 +602,12 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         "This backend manages job quantities. Use its backout command instead of the Mazak decrement command."
       );
 
-    if (st.StoppedBecauseRecentLogEvent)
+    if (
+      st.StoppedBecauseRecentLogEvent
+      || !db.LoadPendingControllerEventBatches(MazakEventInbox.Stream).IsEmpty
+    )
       throw new ConflictRequestException(
-        "Cannot back out jobs while Mazak events are still settling. Wait for synchronization to finish and retry."
+        "Cannot back out jobs while Mazak events are unapplied. Wait for settling or reconcile retained history before retrying."
       );
 
     return DecrementPlanQty.Decrement(mazakDB, db, st.AllData);
