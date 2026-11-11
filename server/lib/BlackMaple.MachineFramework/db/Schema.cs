@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 46;
+    private const int Version = 47;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -110,6 +110,7 @@ namespace BlackMaple.MachineFramework
         CreateBasketOperationTables(cmd);
         CreateBasketContentsTables(cmd);
         CreateMaterialAllocationOperationTables(cmd);
+        CreateControllerEventBatchTables(cmd);
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
         cmd.ExecuteNonQuery();
@@ -540,6 +541,12 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
             CreateSimStationTimeIndex(cmd);
+          }
+
+          if (curVersion < 47)
+          {
+            cmd.Transaction = trans;
+            CreateControllerEventBatchTables(cmd);
           }
 
           //update the version in the database
@@ -1405,6 +1412,19 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE material_allocation_material(IdempotencyKey TEXT NOT NULL, Position INTEGER NOT NULL, MaterialID INTEGER NOT NULL UNIQUE, PRIMARY KEY(IdempotencyKey, Position))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateControllerEventBatchTables(IDbCommand cmd)
+    {
+      cmd.CommandText =
+        "CREATE TABLE controller_event_streams(Stream TEXT PRIMARY KEY, LastEventId TEXT NOT NULL)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE TABLE controller_event_batches(Stream TEXT NOT NULL, BatchId TEXT NOT NULL, LastEventId TEXT NOT NULL, Payload TEXT NOT NULL, State INTEGER NOT NULL, Diagnostic TEXT, PRIMARY KEY(Stream, BatchId))";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX controller_event_batches_pending ON controller_event_batches(Stream, State)";
       cmd.ExecuteNonQuery();
     }
 

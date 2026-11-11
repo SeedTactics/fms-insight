@@ -125,12 +125,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(47);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(47);
       }
 
       CheckSchema(conn1, memDb);
@@ -1043,6 +1043,9 @@ namespace BlackMaple.FMSInsight.Tests
         cmd.ExecuteNonQuery();
         cmd.CommandText = "DROP INDEX sim_station_end_time";
         cmd.ExecuteNonQuery();
+        cmd.CommandText =
+          "DROP TABLE controller_event_batches; DROP TABLE controller_event_streams";
+        cmd.ExecuteNonQuery();
       }
       _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
     }
@@ -1104,7 +1107,8 @@ namespace BlackMaple.FMSInsight.Tests
       connection.Open();
       using (var command = connection.CreateCommand())
       {
-        command.CommandText = "DROP INDEX sim_station_end_time; UPDATE version SET ver = 45";
+        command.CommandText =
+          "DROP INDEX sim_station_end_time; DROP TABLE controller_event_batches; DROP TABLE controller_event_streams; UPDATE version SET ver = 45";
         command.ExecuteNonQuery();
       }
       using var upgraded = RepositoryConfig.InitializeMemoryDB(
