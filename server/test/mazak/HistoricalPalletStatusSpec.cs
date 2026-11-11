@@ -123,12 +123,14 @@ public sealed class HistoricalPalletStatusSpec
   }
 
   [Test]
-  [Arguments(false, false)]
-  [Arguments(true, false)]
-  [Arguments(true, true)]
+  [Arguments(false, false, false)]
+  [Arguments(true, false, false)]
+  [Arguments(true, true, false)]
+  [Arguments(false, false, true, Categories = new[] { "missing-assignment" })]
   public async Task MissingScheduleKeepsP2MaterialVisibleEvenWhenItsNumericIdIsReused(
     bool reused,
-    bool missingPallet
+    bool missingPallet,
+    bool missingAssignment
   )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -212,20 +214,30 @@ public sealed class HistoricalPalletStatusSpec
         : [],
       Pallets = missingPallet ? [] : [new MazakPalletRow { PalletNumber = 1, Fixture = "fixture" }],
       PalletPositions = [new MazakPalletPositionRow { PalletNumber = 1, PalletPosition = "S1" }],
-      PalletSubStatuses =
-      [
-        new MazakPalletSubStatusRow
-        {
-          PalletNumber = 1,
-          ScheduleID = 8,
-          PartName = "part:7:2:2",
-          PartProcessNumber = 1,
-          FixQuantity = 1,
-        },
-      ],
+      PalletSubStatuses = missingAssignment
+        ? []
+        :
+        [
+          new MazakPalletSubStatusRow
+          {
+            PalletNumber = 1,
+            ScheduleID = 8,
+            PartName = "part:7:2:2",
+            PartProcessNumber = 1,
+            FixQuantity = 1,
+          },
+        ],
     };
 
     using var restarted = config.OpenConnection();
+    await Assert
+      .That(
+        MazakMaterialHistory
+          .MaterialOnPallet(restarted, restarted.CurrentPalletLog(1))
+          .Select(material => material.MaterialID)
+      )
+      .IsEquivalentTo([id]);
+    await Assert.That(restarted.IsMaterialInQueue(id)).IsFalse();
     var status = BuildCurrentStatus.Build(
       restarted,
       new FMSSettings(),
