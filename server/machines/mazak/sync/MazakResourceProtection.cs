@@ -73,7 +73,14 @@ public sealed record MazakResourceProtection
     {
       schedules = schedules.Union(data.Schedules.Select(s => s.Id));
       parts = parts.Union(data.Parts.Select(p => p.PartName));
-      pallets = pallets.Union(data.Pallets.Select(p => p.PalletNumber));
+      pallets = pallets
+        .Union(data.Pallets.Select(p => p.PalletNumber))
+        .Union(data.PalletSubStatuses.Select(p => p.PalletNumber))
+        .Union(
+          data.LoadActions.Select(action => action.StationPallet)
+            .OfType<MazakStationPallet>()
+            .Select(p => p.PalletNumber)
+        );
       fixtures = fixtures.Union(data.Fixtures.Select(f => f.FixtureName));
       programs = programs.Union(data.MainPrograms.Select(p => p.MainProgram));
     }
@@ -81,10 +88,22 @@ public sealed record MazakResourceProtection
     {
       var previous = (schedules.Count, parts.Count, pallets.Count, fixtures.Count, jobs.Count);
       foreach (var assignment in data.PalletSubStatuses)
-        if (pallets.Contains(assignment.PalletNumber) || schedules.Contains(assignment.ScheduleID))
+        if (
+          pallets.Contains(assignment.PalletNumber)
+          || schedules.Contains(assignment.ScheduleID)
+          || parts.Contains(assignment.PartName)
+          || fixtures.Contains(assignment.FixtureName)
+        )
         {
           pallets = pallets.Add(assignment.PalletNumber);
           schedules = schedules.Add(assignment.ScheduleID);
+          // Assignments retain their own full identities when schedule or pallet definitions
+          // disappear. Follow those edges in both directions; absent definitions do not release
+          // the surviving assignment or its part, fixture and program dependencies.
+          if (!string.IsNullOrEmpty(assignment.PartName))
+            parts = parts.Add(assignment.PartName);
+          if (!string.IsNullOrEmpty(assignment.FixtureName))
+            fixtures = fixtures.Add(assignment.FixtureName);
         }
       foreach (var schedule in data.Schedules)
       {

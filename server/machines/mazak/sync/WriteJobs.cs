@@ -66,6 +66,12 @@ namespace MazakMachineInterface
       var protectedResources = (protection ?? MazakResourceProtection.Empty)
         .Union(MazakEventInbox.ResourceProtection(db, mazakData))
         .Resolve(mazakData);
+      var alreadyDownloadedSchs = mazakData
+        .Schedules.Where(s =>
+          MazakPart.IsSailPart(s.PartName, s.Comment) && !string.IsNullOrEmpty(s.Comment)
+        )
+        .GroupBy(s => MazakPart.UniqueFromComment(s.Comment))
+        .ToDictionary(g => g.Key, g => g.Count());
       var jobs = db.LoadJobsNotCopiedToSystem(
           now.AddHours(-JobLookbackHours),
           now.AddHours(1),
@@ -73,6 +79,15 @@ namespace MazakMachineInterface
         )
         .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
         .Where(job => !protectedResources.BlocksDownload(job, mazakCfg))
+        .GroupBy(j => j.ScheduleId)
+        .SelectMany(group =>
+          // A resumed group only installs schedules, so it cannot conflict with a program add.
+          group.Any(job => alreadyDownloadedSchs.ContainsKey(job.UniqueStr))
+            ? group
+            : group.Where(job =>
+              !WouldAddReservedProgram(job, db, mazakData, mazakCfg, protectedResources)
+            )
+        )
         .GroupBy(j => j.ScheduleId)
         // Only do one schedule at a time
         .MinBy(g => g.Key, StringComparer.Ordinal);
@@ -88,14 +103,6 @@ namespace MazakMachineInterface
         jobs.Select(j => j.UniqueStr).ToList(),
         mazakData
       );
-
-      // check if a previous download was interrupted during the middle of schedule downloads
-      var alreadyDownloadedSchs = mazakData
-        .Schedules.Where(s =>
-          MazakPart.IsSailPart(s.PartName, s.Comment) && !string.IsNullOrEmpty(s.Comment)
-        )
-        .GroupBy(s => MazakPart.UniqueFromComment(s.Comment))
-        .ToDictionary(g => g.Key, g => g.Count());
 
       bool existsPrev = false;
       var jobsToSchedule = new List<Job>();
@@ -156,6 +163,44 @@ namespace MazakMachineInterface
       {
         return jobDB.LoadMostRecentProgram(program);
       }
+    }
+
+    private static bool WouldAddReservedProgram(
+      Job job,
+      IRepository repository,
+      MazakAllData data,
+      MazakConfig configuration,
+      MazakProtectedResources protection
+    )
+    {
+      if (protection.ProgramNames.IsEmpty)
+        return false;
+      foreach (var process in job.Processes)
+      {
+        // The Mazak constructor supports one path and uses the last machining stop's program.
+        // Invalid routes still go through the normal validation and actionable error path.
+        if (process.Paths.Count != 1 || process.Paths[0].Stops.LastOrDefault() is not { } stop)
+          continue;
+        var program = ConvertJobsToMazakParts.ResolveProgram(
+          stop,
+          data,
+          (name, revision) => LookupProgram(repository, name, revision)
+        );
+        if (
+          program is not null
+          && string.IsNullOrEmpty(program.CellControllerProgramName)
+          && !string.IsNullOrEmpty(program.ProgramName)
+          && protection.ProgramNames.Contains(
+            MazakProcess.CreateMainProgramName(
+              configuration.ProgramDirectory,
+              program.ProgramName,
+              program.Revision
+            )
+          )
+        )
+          return true;
+      }
+      return false;
     }
 
     private static void AddFixturesPalletsParts(

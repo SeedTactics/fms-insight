@@ -363,7 +363,7 @@ public sealed partial class WriteJobsSpec
     );
     var reservedName = Path.Combine(_mazakCfg.ProgramDirectory, "rev1", program + ".EIA");
     await Assert
-      .That(() =>
+      .That(
         WriteJobs.SyncFromDatabase(
           _initialAllData,
           _jobDB,
@@ -374,16 +374,8 @@ public sealed partial class WriteJobsSpec
           new MazakResourceProtection { ProgramNames = [reservedName] }
         )
       )
-      .Throws<ConflictRequestException>();
-    await Assert
-      .That(
-        _mazakDbMock
-          .ReceivedCalls()
-          .Where(c => c.GetMethodInfo().Name == "Save")
-          .SelectMany(c => ((MazakWriteData)c.GetArguments()[0]).Programs)
-          .Any(p => p.MainProgram == reservedName)
-      )
       .IsFalse();
+    _mazakDbMock.DidNotReceive().Save(Arg.Any<MazakWriteData>());
     await Assert.That(_jobDB.LoadJob(job.UniqueStr).CopiedToSystem).IsFalse();
   }
 
@@ -428,5 +420,192 @@ public sealed partial class WriteJobsSpec
       .That(FindWrite("Add Fixtures").Fixtures.All(row => MazakPart.ParseUID(row.FixtureName) != 0))
       .IsTrue();
     await Assert.That(FindWrite("Add Schedules").Schedules.Count).IsGreaterThan(0);
+  }
+
+  [Test]
+  [Arguments("part")]
+  [Arguments("fixture")]
+  [Arguments("schedule")]
+  public async Task SurvivingAssignmentLinksReservedDefinitionsToTheirPhysicalPallet(string seed)
+  {
+    var template = DisjointPendingJobs().Jobs[0];
+    var blocked = template with
+    {
+      UniqueStr = "blocked-pallet",
+      Processes = template
+        .Processes.Select(process =>
+          process with
+          {
+            Paths = process.Paths.Select(path => path with { PalletNums = [5] }).ToImmutableList(),
+          }
+        )
+        .ToImmutableList(),
+    };
+    var peer = template with { UniqueStr = "independent-peer" };
+    var legacy = ProtectedLegacyJob();
+    _jobDB.AddJobs(new NewJobs { ScheduleId = "legacy", Jobs = [legacy] }, null, true);
+    _jobDB.AddJobs(new NewJobs { ScheduleId = "pending", Jobs = [blocked, peer] }, null, false);
+    var data = _initialAllData with
+    {
+      Schedules = [],
+      Pallets = [],
+      PalletSubStatuses =
+      [
+        new MazakPalletSubStatusRow
+        {
+          PalletNumber = 5,
+          ScheduleID = 1,
+          PartName = "part1:1:1",
+          FixtureName = "fixtoremove",
+          // An unsettled assignment with zero quantity still retains its identity.
+          FixQuantity = 0,
+        },
+      ],
+    };
+    await Assert
+      .That(
+        WriteJobs.SyncFromDatabase(
+          data,
+          _jobDB,
+          _mazakDbMock,
+          _settings,
+          _mazakCfg,
+          fixtureQueueTime,
+          new MazakResourceProtection
+          {
+            PartNames = seed == "part" ? ["part1:1:1"] : [],
+            FixtureNames = seed == "fixture" ? ["fixtoremove"] : [],
+            ScheduleIds = seed == "schedule" ? [1] : [],
+          }
+        )
+      )
+      .IsTrue();
+    await Assert.That(_jobDB.LoadJob(blocked.UniqueStr).CopiedToSystem).IsFalse();
+    await Assert.That(_jobDB.LoadJob(peer.UniqueStr).CopiedToSystem).IsTrue();
+    await Assert.That(_jobDB.LoadJob(legacy.UniqueStr).Archived).IsFalse();
+    var writes = _mazakDbMock
+      .ReceivedCalls()
+      .Where(call => call.GetMethodInfo().Name == "Save")
+      .Select(call => (MazakWriteData)call.GetArguments()[0])
+      .ToImmutableList();
+    await Assert
+      .That(writes.SelectMany(write => write.Pallets).Any(pallet => pallet.PalletNumber == 5))
+      .IsFalse();
+    await Assert
+      .That(writes.SelectMany(write => write.Parts).Any(part => part.PartName == "part1:1:1"))
+      .IsFalse();
+    await Assert
+      .That(
+        writes
+          .SelectMany(write => write.Fixtures)
+          .Any(fixture => fixture.FixtureName == "fixtoremove")
+      )
+      .IsFalse();
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task UnscopedRecoveryReservesOrphanEquipmentWorkBeforeIndependentDownloads(
+    bool requestOnly
+  )
+  {
+    var template = DisjointPendingJobs().Jobs[0];
+    var blocked = template with
+    {
+      UniqueStr = "blocked-pallet",
+      Processes = template
+        .Processes.Select(process =>
+          process with
+          {
+            Paths = process.Paths.Select(path => path with { PalletNums = [5] }).ToImmutableList(),
+          }
+        )
+        .ToImmutableList(),
+    };
+    var peer = template with { UniqueStr = "independent-peer" };
+    _jobDB.AddJobs(new NewJobs { ScheduleId = "pending", Jobs = [blocked, peer] }, null, false);
+    // Only the assignment or request retains this work's native identity. Unrelated programs
+    // remain available to the independent job, without any program writes.
+    var data = _initialAllData with
+    {
+      Schedules = [],
+      Parts = [],
+      Pallets = [],
+      Fixtures = [],
+      PalletSubStatuses = requestOnly
+        ? []
+        :
+        [
+          new MazakPalletSubStatusRow
+          {
+            PalletNumber = 5,
+            ScheduleID = 1,
+            PartName = "reserved:0:1",
+            FixtureName = "F:0:1:1",
+            FixQuantity = 3,
+          },
+        ],
+      LoadActions = requestOnly
+        ?
+        [
+          new LoadAction
+          {
+            LoadStation = 1,
+            LoadEvent = true,
+            Part = "reserved",
+            Comment = "reserved-Insight",
+            Process = 1,
+            Qty = 3,
+            StationPallet = new MazakStationPallet
+            {
+              PalletNumber = 5,
+              OnHold = false,
+              Material = [],
+            },
+          },
+        ]
+        : [],
+    };
+    await Assert
+      .That(
+        WriteJobs.SyncFromDatabase(
+          data,
+          _jobDB,
+          _mazakDbMock,
+          _settings,
+          _mazakCfg,
+          fixtureQueueTime,
+          new MazakResourceProtection { SuspendCleanup = true }
+        )
+      )
+      .IsTrue();
+    await Assert.That(_jobDB.LoadJob(blocked.UniqueStr).CopiedToSystem).IsFalse();
+    await Assert.That(_jobDB.LoadJob(blocked.UniqueStr).Archived).IsFalse();
+    await Assert.That(_jobDB.LoadJob(peer.UniqueStr).CopiedToSystem).IsTrue();
+    var writes = _mazakDbMock
+      .ReceivedCalls()
+      .Where(call => call.GetMethodInfo().Name == "Save")
+      .Select(call => (MazakWriteData)call.GetArguments()[0])
+      .ToImmutableList();
+    await Assert
+      .That(writes.SelectMany(write => write.Pallets).Any(pallet => pallet.PalletNumber == 5))
+      .IsFalse();
+    if (!requestOnly)
+    {
+      await Assert
+        .That(writes.SelectMany(write => write.Schedules).Any(schedule => schedule.Id == 1))
+        .IsFalse();
+      await Assert
+        .That(
+          writes
+            .SelectMany(write => write.Fixtures)
+            .Any(fixture => fixture.FixtureName == "F:0:1:1")
+        )
+        .IsFalse();
+      await Assert
+        .That(FindWrite("Add Parts").Parts.All(part => MazakPart.ParseUID(part.PartName) != 0))
+        .IsTrue();
+    }
   }
 }

@@ -279,6 +279,12 @@ namespace MazakMachineInterface
 
   public abstract class MazakProcess
   {
+    internal static string CreateMainProgramName(
+      string programDir,
+      string program,
+      long revision
+    ) => System.IO.Path.Combine(programDir, "rev" + revision.ToString(), program + ".EIA");
+
     public static string CreateMainProgramComment(string program, long revision)
     {
       return "Insight:" + revision.ToString() + ":" + program;
@@ -627,11 +633,10 @@ namespace MazakMachineInterface
                 Command = MazakWriteCommand.Add,
                 ProgramName = proc.PartProgram.ProgramName,
                 ProgramRevision = proc.PartProgram.Revision,
-                MainProgram = System.IO.Path.Combine(
+                MainProgram = MazakProcess.CreateMainProgramName(
                   programDir,
-                  "rev" + proc.PartProgram.Revision.ToString(),
-                  // filenames have a maximum length
-                  proc.PartProgram.ProgramName + ".EIA"
+                  proc.PartProgram.ProgramName,
+                  proc.PartProgram.Revision
                 ),
                 Comment = MazakProcess.CreateMainProgramComment(
                   proc.PartProgram.ProgramName,
@@ -751,6 +756,36 @@ namespace MazakMachineInterface
       int pth,
       ProgramRevision prog
     );
+
+    // Selection and construction must agree whether this stop reuses an installed program or
+    // requires a write. Exact native names take precedence over managed program revisions.
+    internal static ProgramRevision ResolveProgram(
+      MachiningStop stop,
+      MazakAllData mazakData,
+      Func<string, long?, ProgramRevision> lookupProgram
+    )
+    {
+      if (string.IsNullOrEmpty(stop.Program))
+        return null;
+      if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.Program))
+        return new ProgramRevision
+        {
+          ProgramName = "",
+          Revision = 0,
+          CellControllerProgramName = stop.Program,
+        };
+      var program = lookupProgram(stop.Program, stop.ProgramRevision);
+      if (program is null)
+        return null;
+      foreach (var native in mazakData.MainPrograms)
+        if (
+          MazakProcess.TryParseMainProgramComment(native.Comment, out var name, out var revision)
+          && name == program.ProgramName
+          && revision == program.Revision
+        )
+          return program with { CellControllerProgramName = native.MainProgram };
+      return program;
+    }
 
     public static MazakJobs JobsToMazak(
       IEnumerable<Job> jobs,
@@ -1125,51 +1160,19 @@ namespace MazakMachineInterface
             return;
           }
 
-          if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.Program))
+          prog = ResolveProgram(stop, mazakData, lookupProgram);
+          if (prog == null)
           {
-            prog = new ProgramRevision()
-            {
-              ProgramName = "",
-              Revision = 0,
-              CellControllerProgramName = stop.Program,
-            };
-          }
-          else
-          {
-            prog = lookupProgram(stop.Program, stop.ProgramRevision);
-            if (prog == null)
-            {
-              ErrorDuringCreate =
-                "Part "
-                + job.PartName
-                + " program "
-                + stop.Program
-                + (
-                  stop.ProgramRevision.HasValue
-                    ? " rev" + stop.ProgramRevision.Value.ToString()
-                    : ""
-                )
-                + " does not exist in the cell controller.";
-              return;
-            }
-            // check if program already exists
-            foreach (var mp in mazakData.MainPrograms)
-            {
-              if (
-                MazakProcess.TryParseMainProgramComment(
-                  mp.Comment,
-                  out string mpProg,
-                  out long mpRev
-                )
+            ErrorDuringCreate =
+              "Part "
+              + job.PartName
+              + " program "
+              + stop.Program
+              + (
+                stop.ProgramRevision.HasValue ? " rev" + stop.ProgramRevision.Value.ToString() : ""
               )
-              {
-                if (mpProg == prog.ProgramName && mpRev == prog.Revision)
-                {
-                  prog = prog with { CellControllerProgramName = mp.MainProgram };
-                  break;
-                }
-              }
-            }
+              + " does not exist in the cell controller.";
+            return;
           }
         }
 
