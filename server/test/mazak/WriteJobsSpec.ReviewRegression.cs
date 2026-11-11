@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
@@ -16,7 +14,7 @@ public sealed partial class WriteJobsSpec
   [Arguments(false)]
   [Arguments(true)]
   public async Task ReviewSurvivingAssignmentProtectsDefinitionsWhenScheduleAndPalletRowsDisappear(
-    bool usePendingInbox
+    bool reserveSchedule
   )
   {
     var legacy = ProtectedLegacyJob();
@@ -52,50 +50,6 @@ public sealed partial class WriteJobsSpec
         },
       ],
     };
-    if (usePendingInbox)
-    {
-      var events = ImmutableList.Create(
-        new MazakMachineInterface.LogEntry
-        {
-          ForeignID = "LG001",
-          Code = LogCode.PalletMoving,
-          Pallet = 5,
-          TimeUTC = fixtureQueueTime,
-        }
-      );
-      var dependencies = MazakEventDependencies.Read(_jobDB, data, _mazakCfg, _settings, events);
-      await Assert.That(dependencies).IsEquivalentTo([MazakEventDependencies.Pallet(5)]);
-      var evidence = new MazakEventInbox.Evidence
-      {
-        Events = events,
-        Dependencies = dependencies.ToImmutableSortedSet(StringComparer.Ordinal),
-        Routes = [],
-        SelectedWorkObserved = false,
-        UnverifiedMaterialIdentityObserved = false,
-      };
-      _jobDB.ReceiveControllerEventBatches(
-        MazakEventInbox.Stream,
-        [
-          new ControllerEventBatch
-          {
-            BatchId = "LG001",
-            LastEventId = "LG001",
-            State = ControllerEventBatchState.Received,
-            Payload = JsonSerializer.Serialize(evidence),
-          },
-        ]
-      );
-      _jobDB.SetControllerEventBatchState(
-        MazakEventInbox.Stream,
-        "LG001",
-        ControllerEventBatchState.Applying
-      );
-      _jobDB.SetControllerEventBatchState(
-        MazakEventInbox.Stream,
-        "LG001",
-        ControllerEventBatchState.ReconciliationRequired
-      );
-    }
     await Assert
       .That(
         WriteJobs.SyncFromDatabase(
@@ -105,8 +59,8 @@ public sealed partial class WriteJobsSpec
           _settings,
           _mazakCfg,
           fixtureQueueTime,
-          usePendingInbox
-            ? MazakResourceProtection.Empty
+          reserveSchedule
+            ? new MazakResourceProtection { ScheduleIds = [1] }
             : new MazakResourceProtection { PalletNumbers = [5] }
         )
       )

@@ -1,38 +1,31 @@
-# Native event receipt and manufacturing application
+# Mazak schedule provenance
 
-Mazak CSV receipt and manufacturing application are separate durable facts. Native history can be
-acknowledged once its complete payload is saved in the repository, including events awaiting
-settling, identity, or correction. A later manufacturing foreign ID never advances an established
-receipt cursor. The previous manufacturing cursor is used only to bootstrap an installation with no
-inbox. The current stream has the same single-controller-per-repository boundary as the original
-`LG` cursor.
+Durable schedule provenance connects an exact native part identity and native process to its
+Insight job, process, path and program information. Capture that association before Insight removes
+or replaces the native definition, and retain it after deletion and restart. Historical machine and
+load/unload events can then use the recorded route without requiring a currently installed row.
+The existing native part naming format remains in use; recycled numeric schedule IDs alone do not
+establish historical ownership.
 
-Load/unload records remain grouped in their native order. A trailing group stays open until later
-evidence seals it; acknowledging its files does not make it applicable. Sealed groups retain their
-boundaries across restart, even when intervening independent events have already applied.
+Observing an existing definition establishes its current association. A matching row cannot prove
+the owner of every older event carrying a previously reused name. Use the provenance and material
+history actually available, and preserve the distinction between a verified association and an
+unsupported historical inference. Recording provenance does not reset native counts, move material
+or award machining credit.
 
-Pending groups reserve overlapping pallets, native parts, known jobs/material, and queues involved
-in selection or transfer. Unknown dependencies require broader protection. Independent groups can
-progress; dependent groups wait in order. Missing-material comparison must not treat a pallet with
-unapplied evidence as empty. Download, cleanup, and ordinary queue reconciliation preserve the
-resources and commitments of pending work.
+Native CSV processing retains its established behavior: controller acquisition and acknowledgment
+remain ordered by the controller owner; recent events settle and load/unload records retain their
+existing grouping rules. Translation logs isolated errors and continues. The committed
+manufacturing foreign-ID cursor still controls native retention and acknowledgment. There is no
+separate raw-event store, receipt cursor or application-state workflow.
 
-Before translation begins, the repository records `Applying`. Successful application and its
-callbacks then record `Applied`. Translation currently contains several transactions: identity
-selection, manufacturing records, inspections, and notifications can fail at different boundaries.
-An interrupted or failed application therefore requires reconciliation of its actual effects; it is
-never automatically replayed merely because the application receipt is missing. Read-only deferrals
-remain `Received` and retry independently of the native cursor. There is deliberately no blind reset
-from uncertain application to retryable receipt.
+Material identities and actual handling outcomes come from manufacturing history and supported
+equipment observations. Where known exact-material history exposes a discrepancy, record a scoped
+manufacturing-log diagnostic and use ordinary correction/quarantine. Preserve actual pallet,
+material and accepted-operation commitments while independently supported work continues. Missing
+historical metadata alone does not establish an indefinite generic hold or authorize event replay.
 
-Received events retain their observed route definitions and ownership. A changed or newly matching
-row does not authorize interpreting an older selected event. These observations guard retries; they
-do not establish provenance for every legacy event predating the observation. Historical adoption
-and terminal correction must establish their own evidence before releasing such work. The native
-rows remain resources, not manufacturing authority; see [quantity ownership](quantity-ownership.md).
-
-Schema 47 adds the inbox without changing existing material IDs, event records, or operation
-receipts. Older binaries reject the newer schema. Backing up the installation before upgrade
-preserves a recovery option; restoring stale databases while equipment has continued working is not
-a supported downgrade. Raw received evidence is retained; this change introduces no evidence-expiry
-policy.
+Adding provenance storage preserves existing material IDs, manufacturing records, the event cursor
+and operation receipts. The schema's existing version checks govern binary compatibility. Native
+rows remain controller resources; manufacturing quantity ownership is described
+[separately](quantity-ownership.md).

@@ -66,9 +66,9 @@ public sealed partial class WriteJobsSpec
   [Arguments("pallet")]
   [Arguments("unknown")]
   [Arguments("archived")]
-  [Arguments("malformed")]
+  [Arguments("edited-comment")]
   [Arguments("unscoped")]
-  public async Task PendingEvidencePreservesNativeDefinitionsDuringIndependentDownload(string scope)
+  public async Task ReservedWorkPreservesNativeDefinitionsDuringIndependentDownload(string scope)
   {
     var legacy = ProtectedLegacyJob();
     if (scope != "unknown")
@@ -82,7 +82,7 @@ public sealed partial class WriteJobsSpec
     {
       Schedules = _initialAllData
         .Schedules.Select(s =>
-          s.Id == 1 && scope == "malformed" ? s with { Comment = "-InsightS" } : s
+          s.Id == 1 && scope == "edited-comment" ? s with { Comment = "edited" } : s
         )
         .ToImmutableList(),
       PalletSubStatuses =

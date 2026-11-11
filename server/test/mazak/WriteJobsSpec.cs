@@ -1093,8 +1093,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
 
       var repo = Substitute.For<IRepository>();
-      repo.LoadPendingControllerEventBatches(Arg.Any<string>())
-        .Returns(ImmutableList<ControllerEventBatch>.Empty);
       repo.LoadJobsNotCopiedToSystem(
           Arg.Any<DateTime>(),
           Arg.Any<DateTime>(),
@@ -1187,8 +1185,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
 
       var repo = Substitute.For<IRepository>();
-      repo.LoadPendingControllerEventBatches(Arg.Any<string>())
-        .Returns(ImmutableList<ControllerEventBatch>.Empty);
       repo.LoadJobsNotCopiedToSystem(
           Arg.Any<DateTime>(),
           Arg.Any<DateTime>(),

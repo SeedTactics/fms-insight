@@ -50,16 +50,6 @@ namespace MazakMachineInterface
     private readonly MazakConfig mazakConfig;
     private readonly ImmutableList<ToolPocketRow> tools;
     private readonly DateTime? observationTimeUtc;
-    private readonly EventProcessing processing;
-
-    public sealed record EventProcessing
-    {
-      public required ImmutableList<LogChunk> Chunks { get; init; }
-      public required Func<LogChunk, bool> TryBegin { get; init; }
-      public required Action<LogChunk> Deferred { get; init; }
-      public required Action<LogChunk, Exception> Failed { get; init; }
-      public required Func<int, bool> CanComparePallet { get; init; }
-    }
 
     private LogTranslation(
       IRepository repo,
@@ -69,8 +59,7 @@ namespace MazakMachineInterface
       Action<LogChunk> onMazakLog,
       MazakConfig mazakConfig,
       ImmutableList<ToolPocketRow> tools,
-      DateTime? observationTimeUtc,
-      EventProcessing processing
+      DateTime? observationTimeUtc
     )
     {
       this.repo = repo;
@@ -81,7 +70,6 @@ namespace MazakMachineInterface
       this.mazakConfig = mazakConfig;
       this.tools = tools;
       this.observationTimeUtc = observationTimeUtc;
-      this.processing = processing;
     }
 
     public static HandleEventResult HandleEvents(
@@ -92,8 +80,7 @@ namespace MazakMachineInterface
       Action<LogChunk> onMazakLog,
       MazakConfig mazakConfig,
       ImmutableList<ToolPocketRow> tools,
-      DateTime? observationTimeUtc = null,
-      EventProcessing processing = null
+      DateTime? observationTimeUtc = null
     )
     {
       var t = new LogTranslation(
@@ -104,8 +91,7 @@ namespace MazakMachineInterface
         onMazakLog: onMazakLog,
         mazakConfig: mazakConfig,
         tools: tools,
-        observationTimeUtc: observationTimeUtc,
-        processing: processing
+        observationTimeUtc: observationTimeUtc
       );
       return t.Process();
     }
@@ -117,57 +103,6 @@ namespace MazakMachineInterface
         LogCode.MachineCycleEnd => (nowUtc - e.TimeUTC).Duration() > TimeSpan.FromSeconds(15),
         _ => false,
       };
-
-    // Validate selected basket transfers before entering Applying. No manufacturing or identity
-    // mutation is allowed here; an unavailable exact outcome remains retryable Received evidence.
-    internal static string ExactLoadUnloadBlockedReason(
-      IRepository repo,
-      MazakAllDataAndLogs data,
-      FMSSettings settings,
-      MazakConfig configuration,
-      LogChunk chunk
-    )
-    {
-      if (chunk.LulEndChunk is not { } events)
-        return null;
-      if (configuration.ResolveLoadUnloadTransaction is not { } resolve)
-        return "Exact basket transfer resolution is unavailable.";
-      try
-      {
-        var translator = new LogTranslation(
-          repo,
-          data,
-          "",
-          settings,
-          _ => { },
-          configuration,
-          [],
-          null,
-          null
-        );
-        var pallet = configuration.TranslatePalletNumber(events[0].Pallet);
-        var cycle = pallet >= 1 ? repo.CurrentPalletLog(pallet) : [];
-        var context = translator.LoadUnloadContext(
-          events,
-          cycle,
-          pallet,
-          configuration.TranslateLoadStationNumber(events[0].StationNumber)
-        );
-        if (resolve(repo, context) is not MazakLoadUnloadResolution.Resolved exact)
-          return "The exact basket transfer is waiting for its saved operation and outcome evidence.";
-        translator.BuildResolvedLoadUnload(context, exact, cycle);
-        return null;
-      }
-      catch (Exception error)
-      {
-        Log.Warning(
-          error,
-          "Exact basket event is not ready for application: {ForeignId}",
-          events[0].ForeignID
-        );
-        return "The exact basket transfer requires correction of its material or operation evidence.";
-      }
-    }
 
     public record HandleEventResult
     {
@@ -201,7 +136,7 @@ namespace MazakMachineInterface
       public int? PalletForFinalLULEvents { get; init; }
     }
 
-    internal static IEnumerable<LogChunk> ChunkLulEvents(IEnumerable<LogEntry> entries)
+    private static IEnumerable<LogChunk> ChunkLulEvents(IEnumerable<LogEntry> entries)
     {
       // We want to group the LoadEnd and UnloadEnd events together since Mazak creates
       // one event per process/face. Mazak generates the logs serially and always seems to
@@ -211,7 +146,7 @@ namespace MazakMachineInterface
       // chunk is complete and yield it.
       var curChunk = new List<LogEntry>();
 
-      foreach (var e in entries.OrderBy(e => e.ForeignID, StringComparer.Ordinal))
+      foreach (var e in entries.OrderBy(e => e.ForeignID))
       {
         if (e.Code == LogCode.LoadEnd || e.Code == LogCode.UnloadEnd)
         {
@@ -231,7 +166,7 @@ namespace MazakMachineInterface
           else
           {
             // yield the current chunk and start a new one
-            yield return new LogChunk() { LulEndChunk = curChunk.ToImmutableList() };
+            yield return new LogChunk() { LulEndChunk = curChunk };
             curChunk.Clear();
             curChunk.Add(e);
           }
@@ -242,7 +177,7 @@ namespace MazakMachineInterface
           if (curChunk.Count > 0)
           {
             // yield the current chunk and start a new one
-            yield return new LogChunk() { LulEndChunk = curChunk.ToImmutableList() };
+            yield return new LogChunk() { LulEndChunk = curChunk };
             curChunk.Clear();
           }
 
@@ -255,11 +190,7 @@ namespace MazakMachineInterface
         // If the most recent event is a LUL, we may be reading the logs in the middle of
         // Mazak writing them out.  In this case, don't process the events and leave them
         // on disk for the next time we read the logs.
-        yield return new LogChunk()
-        {
-          PalletForFinalLULEvents = curChunk[0].Pallet,
-          LulEndChunk = curChunk.ToImmutableList(),
-        };
+        yield return new LogChunk() { PalletForFinalLULEvents = curChunk[0].Pallet };
       }
     }
 
@@ -268,28 +199,8 @@ namespace MazakMachineInterface
       var stoppedFromMcEvt = false;
       int? palForFinalEvts = null;
 
-      foreach (var e in processing?.Chunks ?? ChunkLulEvents(mazakData.Logs))
+      foreach (var e in ChunkLulEvents(mazakData.Logs))
       {
-        if (e.PalletForFinalLULEvents.HasValue)
-        {
-          palForFinalEvts = e.PalletForFinalLULEvents.Value;
-          processing?.Deferred(e);
-          break;
-        }
-        // Settling is a read-only deferral, not an interrupted application attempt.
-        if (
-          e.NonLulEndEvt is { Code: LogCode.MachineCycleEnd } machineEnd
-          && !NeedsToolSnapshot(machineEnd, observationTimeUtc ?? DateTime.UtcNow)
-        )
-        {
-          stoppedFromMcEvt = true;
-          if (processing is null)
-            break;
-          processing.Deferred(e);
-          continue;
-        }
-        if (processing?.TryBegin(e) == false)
-          continue;
         if (e.LulEndChunk != null)
         {
           try
@@ -299,7 +210,6 @@ namespace MazakMachineInterface
           }
           catch (Exception ex)
           {
-            processing?.Failed(e, ex);
             Log.Error(ex, "Error translating log event at time {t}", e.LulEndChunk[0].TimeUTC);
           }
         }
@@ -319,9 +229,13 @@ namespace MazakMachineInterface
           }
           catch (Exception ex)
           {
-            processing?.Failed(e, ex);
             Log.Error(ex, "Error translating log event at time {t}", e.NonLulEndEvt.TimeUTC);
           }
+        }
+        else if (e.PalletForFinalLULEvents.HasValue)
+        {
+          palForFinalEvts = e.PalletForFinalLULEvents.Value;
+          break;
         }
       }
 
@@ -341,14 +255,6 @@ namespace MazakMachineInterface
 
     private void HandleLoadEnd(IReadOnlyList<LogEntry> es)
     {
-      var requireExact =
-        processing is not null
-        && MazakEventDependencies.HasSelectedWork(
-          repo,
-          mazakData,
-          mazakConfig,
-          es.ToImmutableList()
-        );
       int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
       int loadStation = mazakConfig.TranslateLoadStationNumber(es[0].StationNumber);
       var cycle = pallet >= 1 ? repo.CurrentPalletLog(pallet) : [];
@@ -371,10 +277,6 @@ namespace MazakMachineInterface
           }
           else if (resolution is not MazakLoadUnloadResolution.NotApplicable)
           {
-            if (requireExact)
-              throw new InvalidOperationException(
-                "Selected basket work requires an exact transfer outcome."
-              );
             Log.Error(
               "Unable to resolve exact Mazak L/U {ForeignId}: {Reason}. Using ordinary translation.",
               es[0].ForeignID,
@@ -385,8 +287,6 @@ namespace MazakMachineInterface
         }
         catch (Exception ex)
         {
-          if (requireExact)
-            throw;
           Log.Error(
             ex,
             "Unable to resolve exact Mazak L/U {ForeignId}. Using ordinary translation.",
@@ -430,15 +330,8 @@ namespace MazakMachineInterface
             "Exact Mazak L/U {ForeignId} did not commit. Using ordinary translation.",
             es[0].ForeignID
           );
-          if (requireExact)
-            throw;
         }
       }
-
-      if (requireExact)
-        throw new InvalidOperationException(
-          "Selected basket work requires exact material identities."
-        );
 
       RecordLoadUnload(FindMatToLoad(es, cycle), FindMatToUnload(es, cycle), null);
 
@@ -1472,8 +1365,6 @@ namespace MazakMachineInterface
       bool matMovedToQueue = false;
       foreach (var pal in mazakData.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
       {
-        if (processing?.CanComparePallet(pal.PalletNumber) == false)
-          continue;
         var pallet = mazakConfig.TranslatePalletNumber(pal.PalletNumber);
         if (mazakConfig.CanQuarantineMissingMaterial?.Invoke(pallet) == false)
           continue;

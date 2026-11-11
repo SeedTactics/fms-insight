@@ -64,7 +64,6 @@ namespace MazakMachineInterface
     )
     {
       var protectedResources = (protection ?? MazakResourceProtection.Empty)
-        .Union(MazakEventInbox.ResourceProtection(db, mazakData))
         .Resolve(mazakData);
       var alreadyDownloadedSchs = mazakData
         .Schedules.Where(s =>

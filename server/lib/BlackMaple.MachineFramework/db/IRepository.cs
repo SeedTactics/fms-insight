@@ -95,18 +95,6 @@ namespace BlackMaple.MachineFramework
     string ForeignIDForCounter(long counter);
     string OriginalMessageByForeignID(string foreignID);
 
-    // Receipt is separate from manufacturing application. An open tail may grow until sealed;
-    // sealed payloads and identities remain immutable, including after successful application.
-    string ControllerEventReceiptWatermark(string stream);
-    ImmutableList<ControllerEventBatch> LoadPendingControllerEventBatches(string stream);
-    void ReceiveControllerEventBatches(string stream, ImmutableList<ControllerEventBatch> batches);
-    void SetControllerEventBatchState(
-      string stream,
-      string batchId,
-      ControllerEventBatchState state,
-      string diagnostic = null
-    );
-
     // Most recent refers to event Counter, not time
     LogEntry MostRecentLogEntryForForeignID(string foreignID);
     LogEntry MostRecentLogEntryLessOrEqualToForeignID(string foreignID); // WARNING: uses sqlite default string collate (binary), not lexicographic
