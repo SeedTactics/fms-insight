@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -82,6 +83,13 @@ namespace MazakMachineInterface
       MazakAllData mazakData,
       IEnumerable<Job> jobs,
       MazakConfig cfg
+    ) => AddSchedules(mazakData, jobs, cfg, ImmutableHashSet<int>.Empty);
+
+    public static MazakWriteData AddSchedules(
+      MazakAllData mazakData,
+      IEnumerable<Job> jobs,
+      MazakConfig cfg,
+      ImmutableHashSet<int> reservedScheduleIds
     )
     {
       if (!jobs.Any())
@@ -90,7 +98,8 @@ namespace MazakMachineInterface
       var schs = new List<MazakScheduleRow>();
       var routeStartDate = jobs.First().RouteStartUTC.ToLocalTime().Date;
 
-      var usedScheduleIDs = new HashSet<int>();
+      var usedScheduleIDs = reservedScheduleIds.ToHashSet();
+      usedScheduleIDs.UnionWith((mazakData.PalletSubStatuses ?? []).Select(p => p.ScheduleID));
       var scheduledParts = new HashSet<string>();
       var maxPriMatchingDate = 9;
       foreach (var schRow in mazakData.Schedules)

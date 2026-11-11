@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using Serilog;
@@ -49,13 +50,36 @@ namespace MazakMachineInterface
       MazakConfig cfg
     )
     {
+      var pending = PendingScopes(jdb);
+      if (pending.Contains(MazakEventDependencies.Unknown))
+        return null;
       IEnumerable<ScheduleWithQueues> schs;
-      schs = LoadSchedules(jdb, mazakData, cfg);
+      schs = LoadSchedules(jdb, mazakData, cfg, pending);
       if (!schs.Any())
         return null;
 
       CalculateTargetMatQty(jdb, schs, cfg);
       return UpdateMazakMaterialCounts(schs);
+    }
+
+    private static ImmutableHashSet<string> PendingScopes(IRepository repository)
+    {
+      var pending = MazakEventInbox.Load(repository);
+      return pending
+        .SelectMany(p => p.Evidence.Dependencies)
+        .Concat(
+          pending
+            .SelectMany(p => p.Evidence.Events)
+            .Where(e => !string.IsNullOrEmpty(e.FullPartName))
+            .Select(e => MazakEventDependencies.Part(e.FullPartName))
+        )
+        .Concat(
+          pending
+            .SelectMany(p => p.Evidence.Events)
+            .Where(e => e.Pallet > 0)
+            .Select(e => MazakEventDependencies.Pallet(e.Pallet))
+        )
+        .ToImmutableHashSet(StringComparer.Ordinal);
     }
 
     private class ScheduleWithQueuesProcess
@@ -121,7 +145,8 @@ namespace MazakMachineInterface
     private static IReadOnlyList<ScheduleWithQueues> LoadSchedules(
       IRepository jdb,
       MazakCurrentStatus mazakData,
-      MazakConfig cfg
+      MazakConfig cfg,
+      ImmutableHashSet<string> pending
     )
     {
       var loadOpers = mazakData.LoadActions;
@@ -139,6 +164,33 @@ namespace MazakMachineInterface
           continue;
         if (cfg.UsesInsightJobQuantities(job))
           continue;
+        // Quantity calculation can assign/unassign castings and change repository queues.
+        // Exclude dependent work before constructing targets, rather than filtering its native
+        // edits after those durable effects have already happened.
+        if (!pending.IsEmpty)
+        {
+          var scopes = job
+            .Processes.SelectMany(p => p.Paths)
+            .SelectMany(path => ImmutableList.Create(path.InputQueue, path.OutputQueue))
+            .Where(queue => !string.IsNullOrEmpty(queue))
+            .Select(MazakEventDependencies.Queue)
+            .Concat(
+              (mazakData.PalletSubStatuses ?? [])
+                .Where(p => p.ScheduleID == schRow.Id)
+                .Select(p => MazakEventDependencies.Pallet(p.PalletNumber))
+            )
+            .Concat(
+              job.Processes.SelectMany(p => p.Paths)
+                .SelectMany(path => path.PalletNums ?? [])
+                .Select(cfg.InversePalletNumber)
+                .Select(MazakEventDependencies.Pallet)
+            )
+            .Append(MazakEventDependencies.Job(unique))
+            .Append(MazakEventDependencies.Part(schRow.PartName))
+            .ToImmutableHashSet(StringComparer.Ordinal);
+          if (MazakEventDependencies.Conflicts(pending, scopes))
+            continue;
+        }
 
         var isSplit = MazakPart.IsSplitComment(schRow.Comment);
         var fmsProcess = isSplit ? MazakPart.ProcessFromComment(schRow.Comment) : 0;

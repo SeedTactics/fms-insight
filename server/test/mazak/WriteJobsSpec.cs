@@ -46,7 +46,7 @@ using Shouldly;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
-  public sealed class WriteJobsSpec : IDisposable
+  public sealed partial class WriteJobsSpec : IDisposable
   {
     private readonly RepositoryConfig _repoCfg;
     private readonly IRepository _jobDB;
@@ -1093,6 +1093,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
 
       var repo = Substitute.For<IRepository>();
+      repo.LoadPendingControllerEventBatches(Arg.Any<string>())
+        .Returns(ImmutableList<ControllerEventBatch>.Empty);
       repo.LoadJobsNotCopiedToSystem(
           Arg.Any<DateTime>(),
           Arg.Any<DateTime>(),
@@ -1185,6 +1187,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
 
       var repo = Substitute.For<IRepository>();
+      repo.LoadPendingControllerEventBatches(Arg.Any<string>())
+        .Returns(ImmutableList<ControllerEventBatch>.Empty);
       repo.LoadJobsNotCopiedToSystem(
           Arg.Any<DateTime>(),
           Arg.Any<DateTime>(),
