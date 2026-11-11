@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -201,24 +202,15 @@ namespace MazakMachineInterface
 
     public static string UniqueFromComment(string comment)
     {
+      if (string.IsNullOrEmpty(comment))
+        return "";
       if (comment.EndsWith(CombinedInsightSuffix, StringComparison.Ordinal))
       {
         return comment.Substring(0, comment.Length - CombinedInsightSuffix.Length);
       }
 
       if (IsSplitComment(comment))
-      {
-        var suffixStart = comment.Length - SplitInsightSuffix.Length;
-        var pathSep = comment.LastIndexOf('-', suffixStart - 1);
-        if (pathSep < 0)
-          return comment;
-
-        var procSep = comment.LastIndexOf('-', pathSep - 1);
-        if (procSep < 0)
-          return comment;
-
-        return comment.Substring(0, procSep);
-      }
+        return ReadSplitComment(comment)?.Unique ?? "";
 
       // Old FMS Insights had a -Path, strip it off for backwards compatibility
       int idx = comment.LastIndexOf("-Path");
@@ -238,18 +230,38 @@ namespace MazakMachineInterface
       if (!IsSplitComment(comment))
         return 1;
 
+      return ReadSplitComment(comment)?.Process ?? 1;
+    }
+
+    private static (string Unique, int Process)? ReadSplitComment(string comment)
+    {
       var suffixStart = comment.Length - SplitInsightSuffix.Length;
+      if (suffixStart <= 0)
+        return null;
       var pathSep = comment.LastIndexOf('-', suffixStart - 1);
-      if (pathSep < 0)
-        return 1;
+      if (pathSep <= 0)
+        return null;
 
       var procSep = comment.LastIndexOf('-', pathSep - 1);
-      if (procSep < 0)
-        return 1;
-
-      return int.TryParse(comment.Substring(procSep + 1, pathSep - procSep - 1), out var proc)
-        ? proc
-        : 1;
+      if (
+        procSep <= 0
+        || !int.TryParse(
+          comment.AsSpan(procSep + 1, pathSep - procSep - 1),
+          NumberStyles.None,
+          CultureInfo.InvariantCulture,
+          out var process
+        )
+        || process <= 0
+        || !int.TryParse(
+          comment.AsSpan(pathSep + 1, suffixStart - pathSep - 1),
+          NumberStyles.None,
+          CultureInfo.InvariantCulture,
+          out var path
+        )
+        || path <= 0
+      )
+        return null;
+      return (comment[..procSep], process);
     }
 
     public static MazakCommentInfo ParseCommentInfo(string comment)
