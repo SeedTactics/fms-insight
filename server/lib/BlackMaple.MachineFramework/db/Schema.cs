@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 46;
+    private const int Version = 47;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -289,6 +289,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         CreateJobDecrementOperationTables(cmd);
+        CreateMazakRouteProvenanceTables(cmd);
 
         cmd.CommandText =
           "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
@@ -540,6 +541,12 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
             CreateSimStationTimeIndex(cmd);
+          }
+
+          if (curVersion < 47 && updateJobsTables)
+          {
+            cmd.Transaction = trans;
+            CreateMazakRouteProvenanceTables(cmd);
           }
 
           //update the version in the database
@@ -1359,6 +1366,17 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText = "DROP INDEX stations_correlation_id";
       cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE stations DROP COLUMN CorrelationId";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateMazakRouteProvenanceTables(IDbCommand cmd)
+    {
+      cmd.CommandText =
+        "CREATE TABLE mazak_route_provenance(FullPartName TEXT NOT NULL, NativeProcess INTEGER NOT NULL, JobUnique TEXT NOT NULL, Route TEXT NOT NULL, PRIMARY KEY(FullPartName, NativeProcess))";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "CREATE INDEX mazak_route_job ON mazak_route_provenance(JobUnique)";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "CREATE TABLE mazak_download_uids(Uid INTEGER PRIMARY KEY)";
       cmd.ExecuteNonQuery();
     }
 

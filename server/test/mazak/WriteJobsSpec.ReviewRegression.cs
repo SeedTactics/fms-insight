@@ -11,10 +11,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class WriteJobsSpec
 {
   [Test]
-  [Arguments(false)]
-  [Arguments(true)]
+  [Arguments("pallet")]
+  [Arguments("schedule")]
+  [Arguments("observed-assignment")]
   public async Task ReviewSurvivingAssignmentProtectsDefinitionsWhenScheduleAndPalletRowsDisappear(
-    bool reserveSchedule
+    string reservation
   )
   {
     var legacy = ProtectedLegacyJob();
@@ -50,21 +51,31 @@ public sealed partial class WriteJobsSpec
         },
       ],
     };
-    await Assert
-      .That(
-        WriteJobs.SyncFromDatabase(
+    var downloaded =
+      reservation == "observed-assignment"
+        ? WriteJobs.SyncFromDatabase(
+          data,
+          _jobDB,
+          _mazakDbMock,
+          _settings,
+          _mazakCfg,
+          fixtureQueueTime
+        )
+        : WriteJobs.SyncFromDatabase(
           data,
           _jobDB,
           _mazakDbMock,
           _settings,
           _mazakCfg,
           fixtureQueueTime,
-          reserveSchedule
-            ? new MazakResourceProtection { ScheduleIds = [1] }
-            : new MazakResourceProtection { PalletNumbers = [5] }
-        )
-      )
-      .IsTrue();
+          reservation switch
+          {
+            "schedule" => new MazakResourceProtection { ScheduleIds = [1] },
+            "pallet" => new MazakResourceProtection { PalletNumbers = [5] },
+            _ => MazakResourceProtection.Empty,
+          }
+        );
+    await Assert.That(downloaded).IsTrue();
     var writes = _mazakDbMock
       .ReceivedCalls()
       .Where(call => call.GetMethodInfo().Name == "Save")

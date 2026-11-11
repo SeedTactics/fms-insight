@@ -70,6 +70,26 @@ namespace MazakMachineInterface
       }
     }
 
+    private static CurrentJob RepositoryJob(HistoricJob job) =>
+      new()
+      {
+        UniqueStr = job.UniqueStr,
+        PartName = job.PartName,
+        DbJob = job,
+        Cycles = job.Cycles,
+        Processes = job.Processes.Select(process => process.Paths.ToBuilder()).ToImmutableList(),
+        Completed = job
+          .Processes.Select(process =>
+            Enumerable.Repeat(0, process.Paths.Count).ToImmutableList().ToBuilder()
+          )
+          .ToImmutableList(),
+        Precedence = job
+          .Processes.Select(process =>
+            Enumerable.Repeat(0L, process.Paths.Count).ToImmutableList().ToBuilder()
+          )
+          .ToImmutableList(),
+      };
+
     public static string FindMachineGroupName(IRepository db)
     {
       return db.StationGroupsOnMostRecentSchedule().FirstOrDefault(s => !string.IsNullOrEmpty(s))
@@ -229,7 +249,29 @@ namespace MazakMachineInterface
       var palOnHold = mazakData
         .PalletStatuses?.GroupBy(p => p.PalletNumber)
         .ToDictionary(g => mazakCfg.TranslatePalletNumber(g.Key), g => g.Any(p => p.IsOnHold > 0));
-      foreach (var palRow in mazakData.Pallets)
+      var palletRows = mazakData.Pallets;
+      if (mazakCfg.UseInsightJobQuantities is not null)
+        palletRows = palletRows.Concat(
+          (mazakData.PalletSubStatuses ?? [])
+            .Where(assignment =>
+              assignment.FixQuantity > 0
+              && !mazakData.Pallets.Any(pallet => pallet.PalletNumber == assignment.PalletNumber)
+              && MazakScheduleProvenance.Historical(
+                jobDB,
+                mazakCfg,
+                assignment.PartName,
+                assignment.PartProcessNumber
+              )
+                is not null
+            )
+            .GroupBy(assignment => assignment.PalletNumber)
+            .Select(assignments => new MazakPalletRow
+            {
+              PalletNumber = assignments.Key,
+              Fixture = assignments.First().FixtureName ?? "",
+            })
+        );
+      foreach (var palRow in palletRows)
       {
         if (
           palRow.PalletNumber > 0
@@ -270,21 +312,49 @@ namespace MazakMachineInterface
               continue;
             if (palSub.FixQuantity <= 0)
               continue;
-            if (!jobUniqBySchID.ContainsKey(palSub.ScheduleID))
-              continue;
+            var historical = MazakScheduleProvenance.Historical(
+              jobDB,
+              mazakCfg,
+              palSub.PartName,
+              palSub.PartProcessNumber
+            );
+            CurrentJob job;
+            int palFmsProc;
+            if (historical is not null)
+            {
+              if (!jobsByUniq.TryGetValue(historical.JobUnique, out job))
+              {
+                var retained = jobDB.LoadJob(historical.JobUnique);
+                if (retained is null)
+                  continue;
+                job = RepositoryJob(retained);
+                jobsByUniq.Add(historical.JobUnique, job);
+              }
+              palFmsProc = historical.JobProcess;
+            }
+            else
+            {
+              if (!jobUniqBySchID.TryGetValue(palSub.ScheduleID, out var assignedJob))
+                continue;
+              // An ID may already belong to a replacement row; exact native part identity wins.
+              if (
+                mazakCfg.UsesInsightJobQuantities(jobsByUniq[assignedJob].DbJob)
+                && !string.IsNullOrEmpty(palSub.PartName)
+                && !mazakData.Schedules.Any(schedule =>
+                  schedule.Id == palSub.ScheduleID && schedule.PartName == palSub.PartName
+                )
+              )
+                continue;
+              job = jobsByUniq[assignedJob];
+              palFmsProc = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP)
+                ? splitFP
+                : palSub.PartProcessNumber;
+            }
 
             palletsByName[palName] = palletsByName[palName] with
             {
               NumFaces = Math.Max(palletsByName[palName].NumFaces, palSub.PartProcessNumber),
             };
-
-            var job = jobsByUniq[jobUniqBySchID[palSub.ScheduleID]];
-
-            // For split schedules, the Mazak PartProcessNumber is always 1, but the FMS
-            // job process may be 2+ for later split processes.
-            var palFmsProc = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP)
-              ? splitFP
-              : palSub.PartProcessNumber;
 
             var matIDs = new Queue<long>(
               FindMatIDsFromOldCycles(
@@ -390,7 +460,7 @@ namespace MazakMachineInterface
                   JobUnique = job.UniqueStr,
                   PartName = job.PartName,
                   Process = palFmsProc,
-                  Path = 1,
+                  Path = historical?.Path ?? 1,
                   Serial = matDetails?.Serial,
                   WorkorderId = matDetails?.Workorder,
                   SignaledInspections = jobDB

@@ -57,6 +57,12 @@ namespace BlackMaple.MachineFramework
   {
     RepositoryConfig RepoConfig { get; }
 
+    [return: MaybeNull]
+    MazakRouteProvenance LoadMazakRouteProvenance(string fullPartName, int nativeProcess);
+    ImmutableList<MazakRouteProvenance> LoadMazakRouteProvenanceForJob(string jobUnique);
+    void RecordMazakRouteProvenance(ImmutableList<MazakRouteProvenance> routes);
+    int ReserveMazakDownloadUid(ImmutableHashSet<int> unavailable);
+
     // --------------------------------------------------------------------------------
     // Loading Events
     // --------------------------------------------------------------------------------

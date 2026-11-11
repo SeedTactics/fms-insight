@@ -608,4 +608,72 @@ public sealed partial class WriteJobsSpec
         .IsTrue();
     }
   }
+
+  [Test]
+  [Arguments("intact", false)]
+  [Arguments("empty", false)]
+  [Arguments("missing-schedule", true)]
+  [Arguments("missing-part", true)]
+  [Arguments("missing-pallet", true)]
+  [Arguments("reused-id", true)]
+  [Arguments("changed-comment", true)]
+  [Arguments("changed-fixture", true)]
+  public async Task OnlyBrokenPositiveAssignmentsRequireAutomaticReservations(
+    string condition,
+    bool orphaned
+  )
+  {
+    var data = _initialAllData with
+    {
+      Schedules = condition is "missing-schedule" or "empty"
+        ? []
+        : _initialAllData
+          .Schedules.Select(schedule =>
+            schedule.Id == 1 && condition == "reused-id"
+              ? schedule with
+              {
+                PartName = "other:2:1",
+              }
+              : schedule
+          )
+          .ToImmutableList(),
+      Parts =
+        condition == "missing-part"
+          ? []
+          : _initialAllData
+            .Parts.Select(part =>
+              part.PartName == "part1:1:1" && condition == "changed-comment"
+                ? part with
+                {
+                  Comment = "different-owner-Insight",
+                }
+                : part
+            )
+            .ToImmutableList(),
+      Pallets = condition == "missing-pallet" ? [] : _initialAllData.Pallets,
+      PalletSubStatuses =
+      [
+        new MazakPalletSubStatusRow
+        {
+          PalletNumber = 5,
+          ScheduleID = 1,
+          PartName = "part1:1:1",
+          FixtureName = condition == "changed-fixture" ? "old-fixture" : "fixtoremove",
+          PartProcessNumber = 1,
+          FixQuantity = condition == "empty" ? 0 : 3,
+        },
+      ],
+    };
+    var protection = MazakResourceProtection.ForOrphanedAssignments(data);
+    await Assert.That(protection.PalletNumbers.Contains(5)).IsEqualTo(orphaned);
+    await Assert.That(protection.ScheduleIds.Contains(1)).IsEqualTo(orphaned);
+    await Assert.That(protection.PartNames.Contains("part1:1:1")).IsEqualTo(orphaned);
+    await Assert
+      .That(
+        protection.FixtureNames.Contains(
+          condition == "changed-fixture" ? "old-fixture" : "fixtoremove"
+        )
+      )
+      .IsEqualTo(orphaned);
+  }
 }

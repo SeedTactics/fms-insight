@@ -30,6 +30,68 @@ public sealed record MazakResourceProtection
   // intent are retained; additions may only use resources disjoint from those observations.
   public bool SuspendCleanup { get; init; }
 
+  // Current physical work can outlive its definitions. Reserve only those broken associations;
+  // ordinary intact assignments retain the established shared-pallet download behavior.
+  public static MazakResourceProtection ForOrphanedAssignments(MazakAllData data)
+  {
+    var assignments = (data.PalletSubStatuses ?? [])
+      .Where(assignment => assignment.FixQuantity > 0 && HasMissingDefinition(data, assignment))
+      .ToImmutableList();
+    return assignments.IsEmpty
+      ? Empty
+      : new MazakResourceProtection
+      {
+        PalletNumbers = assignments.Select(a => a.PalletNumber).ToImmutableHashSet(),
+        ScheduleIds = assignments.Select(a => a.ScheduleID).ToImmutableHashSet(),
+        PartNames = assignments
+          .Select(a => a.PartName)
+          .Where(name => !string.IsNullOrEmpty(name))
+          .ToImmutableHashSet(StringComparer.Ordinal),
+        FixtureNames = assignments
+          .Select(a => a.FixtureName)
+          .Where(name => !string.IsNullOrEmpty(name))
+          .ToImmutableHashSet(StringComparer.Ordinal),
+      };
+  }
+
+  private static bool HasMissingDefinition(MazakAllData data, MazakPalletSubStatusRow assignment)
+  {
+    var schedules = (data.Schedules ?? [])
+      .Where(s => s.Id == assignment.ScheduleID)
+      .Take(2)
+      .ToImmutableList();
+    if (
+      schedules.Count != 1
+      || !string.IsNullOrEmpty(assignment.PartName) && schedules[0].PartName != assignment.PartName
+    )
+      return true;
+    var schedule = schedules[0];
+    var parts = (data.Parts ?? [])
+      .Where(p => p.PartName == schedule.PartName)
+      .Take(2)
+      .ToImmutableList();
+    if (parts.Count != 1 || parts[0].Comment != schedule.Comment)
+      return true;
+    if (assignment.PartProcessNumber > 0)
+    {
+      var processes = parts[0]
+        .Processes.Where(p => p.ProcessNumber == assignment.PartProcessNumber)
+        .Take(2)
+        .ToImmutableList();
+      if (
+        processes.Count != 1
+        || !schedule.Processes.Any(p => p.ProcessNumber == assignment.PartProcessNumber)
+        || !string.IsNullOrEmpty(assignment.FixtureName)
+          && processes[0].Fixture != assignment.FixtureName
+      )
+        return true;
+    }
+    return !(data.Pallets ?? []).Any(p =>
+      p.PalletNumber == assignment.PalletNumber
+      && (string.IsNullOrEmpty(assignment.FixtureName) || p.Fixture == assignment.FixtureName)
+    );
+  }
+
   public MazakResourceProtection Union(MazakResourceProtection other) =>
     new()
     {

@@ -942,6 +942,37 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
 
       var start = newJobs.Jobs.First().RouteStartUTC;
+      var initialSchedules = FindWrite("Add Schedules")
+        .Schedules.ToImmutableDictionary(row => row.Comment);
+      async Task CheckRetryGeneration()
+      {
+        var retry = FindWrite("Add Schedules");
+        foreach (var row in retry.Schedules)
+        {
+          await Assert
+            .That(MazakPart.ParseUID(row.PartName))
+            .IsGreaterThan(MazakPart.ParseUID(initialSchedules[row.Comment].PartName));
+          await Assert
+            .That(_jobDB.LoadMazakRouteProvenance(row.PartName, 1)!.JobUnique)
+            .IsEqualTo(MazakPart.UniqueFromComment(row.Comment));
+        }
+        // Generation names deliberately differ after an uncertain attempt. All native scheduling
+        // quantities, routing, priority and other established fields keep the existing contract.
+        await ShouldMatchSnapshot(
+          retry with
+          {
+            Schedules = retry
+              .Schedules.Select(row =>
+                row with
+                {
+                  PartName = initialSchedules[row.Comment].PartName,
+                }
+              )
+              .ToImmutableList(),
+          },
+          "fixtures-queues-schedules"
+        );
+      }
       _jobDB
         .LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
         .Select(j => j.UniqueStr)
@@ -961,7 +992,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         )
         .Message.ShouldBe("Sample error");
 
-      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
+      await CheckRetryGeneration();
       _jobDB
         .LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
         .Select(j => j.UniqueStr)
@@ -977,7 +1008,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         _mazakCfg,
         fixtureQueueTime
       );
-      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
+      await CheckRetryGeneration();
 
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).ShouldBeEmpty();
     }

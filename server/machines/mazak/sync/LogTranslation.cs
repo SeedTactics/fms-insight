@@ -34,6 +34,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json;
 using BlackMaple.MachineFramework;
 using MWI = BlackMaple.MachineFramework;
 
@@ -211,6 +212,7 @@ namespace MazakMachineInterface
           catch (Exception ex)
           {
             Log.Error(ex, "Error translating log event at time {t}", e.LulEndChunk[0].TimeUTC);
+            RecordReconciliationIssue(e.LulEndChunk, ex);
           }
         }
         else if (e.NonLulEndEvt != null)
@@ -230,6 +232,7 @@ namespace MazakMachineInterface
           catch (Exception ex)
           {
             Log.Error(ex, "Error translating log event at time {t}", e.NonLulEndEvt.TimeUTC);
+            RecordReconciliationIssue([e.NonLulEndEvt], ex);
           }
         }
         else if (e.PalletForFinalLULEvents.HasValue)
@@ -253,11 +256,51 @@ namespace MazakMachineInterface
       };
     }
 
+    private void RecordReconciliationIssue(IReadOnlyList<LogEntry> events, Exception error)
+    {
+      if (error is not MazakIdentityException)
+        return;
+      // Keep the native fact and exact known identities without inventing handling or machining.
+      // This follows the existing nonblocking CSV failure policy; it does not create a retry inbox.
+      foreach (var entry in events)
+        try
+        {
+          var pallet = entry.Pallet > 0 ? mazakConfig.TranslatePalletNumber(entry.Pallet) : 0;
+          var material =
+            pallet > 0
+              ? GetAllMaterialOnPallet(repo.CurrentPalletLog(pallet))
+                .Select(EventLogMaterial.FromLogMat)
+              : [];
+          repo.RecordGeneralMessage(
+            mats: material,
+            program: "MazakReconciliation",
+            result: $"Mazak {entry.Code}, part {entry.FullPartName}, pallet {entry.Pallet} needs correction: {error.Message}",
+            pallet: pallet,
+            timeUTC: entry.TimeUTC,
+            foreignId: entry.ForeignID,
+            originalMessage: JsonSerializer.Serialize(entry)
+          );
+        }
+        catch (Exception recordingError)
+        {
+          Log.Error(
+            recordingError,
+            "Unable to retain Mazak reconciliation evidence {ForeignID}",
+            entry.ForeignID
+          );
+        }
+    }
+
     private void HandleLoadEnd(IReadOnlyList<LogEntry> es)
     {
       int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
       int loadStation = mazakConfig.TranslateLoadStationNumber(es[0].StationNumber);
       var cycle = pallet >= 1 ? repo.CurrentPalletLog(pallet) : [];
+      var selectedWork = es.Any(entry =>
+        MazakScheduleProvenance.Historical(repo, mazakConfig, entry.FullPartName, entry.Process)
+          is not null
+        || MazakScheduleProvenance.MayBeSelected(repo, mazakData, mazakConfig, entry.FullPartName)
+      );
       ImmutableList<MaterialToLoadOntoFace> exactLoads = null;
       ImmutableList<MaterialToUnloadFromFace> exactUnloads = null;
       PalletBasketLoadUnloadCompletion basketCompletion = null;
@@ -283,15 +326,19 @@ namespace MazakMachineInterface
               (resolution as MazakLoadUnloadResolution.UnableToResolve)?.Reason
                 ?? "Missing resolution"
             );
+            if (selectedWork)
+              throw new MazakIdentityException(
+                "Saved basket operation does not establish the exact native handling outcome."
+              );
           }
         }
         catch (Exception ex)
         {
-          Log.Error(
-            ex,
-            "Unable to resolve exact Mazak L/U {ForeignId}. Using ordinary translation.",
-            es[0].ForeignID
-          );
+          Log.Error(ex, "Unable to resolve exact Mazak L/U {ForeignId}.", es[0].ForeignID);
+          if (selectedWork)
+            throw new MazakIdentityException(
+              "Exact basket handling did not establish a committed result; reconcile its recorded operation before correcting material."
+            );
         }
       }
 
@@ -325,14 +372,18 @@ namespace MazakMachineInterface
             );
             return;
           }
-          Log.Error(
-            ex,
-            "Exact Mazak L/U {ForeignId} did not commit. Using ordinary translation.",
-            es[0].ForeignID
-          );
+          Log.Error(ex, "Exact Mazak L/U {ForeignId} did not commit.", es[0].ForeignID);
+          if (selectedWork)
+            throw new MazakIdentityException(
+              "Exact basket handling did not establish a committed result; reconcile its recorded operation before correcting material."
+            );
         }
       }
 
+      if (exactLoads is null && selectedWork && es.Any(entry => entry.Code == LogCode.LoadEnd))
+        throw new MazakIdentityException(
+          "Basket load requires exact recorded material ownership; native row metadata cannot authorize new identities."
+        );
       RecordLoadUnload(FindMatToLoad(es, cycle), FindMatToUnload(es, cycle), null);
 
       void RecordLoadUnload(
@@ -374,6 +425,12 @@ namespace MazakMachineInterface
         throw new InvalidOperationException("A L/U chunk must have one pallet and station.");
       MazakLoadUnloadFace Face(LogEntry e)
       {
+        var provenance = MazakScheduleProvenance.Historical(
+          repo,
+          mazakConfig,
+          e.FullPartName,
+          e.Process
+        );
         FindSchedule(e.FullPartName, e.Process, out var unique, out _, out var process);
         return new MazakLoadUnloadFace
         {
@@ -381,7 +438,7 @@ namespace MazakMachineInterface
           PartName = e.JobPartName,
           JobUnique = unique,
           Process = process,
-          Path = 1,
+          Path = provenance?.Path ?? 1,
           Face = e.Process,
           Quantity = e.FixedQuantity,
         };
@@ -854,37 +911,8 @@ namespace MazakMachineInterface
     #endregion
 
     #region Material
-    private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents)
-    {
-      var removals = MazakMaterialHistory.LoadRemovalCounters(
-        repo,
-        oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
-      );
-      // Actual machining can establish identity when the LOAD was unavailable. It fills only
-      // missing identities: an existing LOAD retains its raw face/addressing information.
-      return oldEvents
-        .Where(e => !e.StartOfCycle && e.LogType is LogType.LoadUnloadCycle or LogType.MachineCycle)
-        .OrderBy(e => e.Counter)
-        .Aggregate(
-          ImmutableDictionary<long, LogMaterial>.Empty,
-          (current, e) =>
-            e.Result == "LOAD" || e.LogType == LogType.MachineCycle
-              ? current.SetItems(
-                e.Material.Where(m =>
-                    e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
-                  )
-                  .Where(m =>
-                    !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, e.Counter)
-                  )
-                  .Select(m => KeyValuePair.Create(m.MaterialID, m))
-              )
-            : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
-            : current
-        )
-        .Values.Where(m => !repo.IsMaterialInQueue(m.MaterialID))
-        .OrderBy(m => m.MaterialID)
-        .ToList();
-    }
+    private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents) =>
+      MazakMaterialHistory.MaterialOnPallet(repo, oldEvents).ToList();
 
     private struct LogMaterialAndPath
     {
@@ -909,6 +937,40 @@ namespace MazakMachineInterface
         unique = "";
       }
 
+      var selected = mazakConfig.UsesInsightJobQuantities(GetJob(unique));
+      if (selected)
+      {
+        var actual = GetAllMaterialOnPallet(oldEvents)
+          .Where(mat =>
+            mat.JobUniqueStr == unique && mat.Process == jobProc && mat.Face == e.Process
+          )
+          .Select(mat => mat.MaterialID)
+          .ToImmutableHashSet();
+        foreach (var id in byMatId.Keys.Where(id => !actual.Contains(id)).ToImmutableList())
+          byMatId.Remove(id);
+        if (
+          byMatId.Count != e.FixedQuantity
+          || !actual.SetEquals(byMatId.Keys)
+          || byMatId.Values.Any(mat => repo.GetMaterialDetails(mat.MaterialID)?.JobUnique != unique)
+          || oldEvents.Any(log =>
+            log.EndTimeUTC > e.TimeUTC
+            && log.Result == "LOAD"
+            && log.Material.Any(mat => byMatId.ContainsKey(mat.MaterialID))
+          )
+        )
+          throw new MazakIdentityException(
+            $"Exact material identity for {unique}, process {jobProc} cannot be reconciled on pallet {e.Pallet}."
+          );
+      }
+      else if (
+        string.IsNullOrEmpty(unique)
+        && GetAllMaterialOnPallet(oldEvents)
+          .Any(mat => mazakConfig.UsesInsightJobQuantities(GetJob(mat.JobUniqueStr)))
+      )
+        throw new MazakIdentityException(
+          "Recorded basket material has no proven native route owner."
+        );
+
       var ret = new List<LogMaterialAndPath>();
 
       for (int i = 1; i <= e.FixedQuantity; i += 1)
@@ -918,7 +980,7 @@ namespace MazakMachineInterface
           ret.Add(
             new LogMaterialAndPath()
             {
-              Mat = byMatId.GetValueAtIndex(0),
+              Mat = byMatId.GetValueAtIndex(0) with { Face = e.Process },
               PartName = e.JobPartName,
               Unique = unique,
             }
@@ -958,7 +1020,14 @@ namespace MazakMachineInterface
 
       foreach (var m in ret)
       {
-        repo.RecordPathForProcess(m.Mat.MaterialID, m.Mat.Process, path: 1);
+        repo.RecordPathForProcess(
+          m.Mat.MaterialID,
+          m.Mat.Process,
+          path: MazakScheduleProvenance
+            .Historical(repo, mazakConfig, e.FullPartName, e.Process)
+            ?.Path
+            ?? 1
+        );
       }
 
       return ret;
@@ -1325,11 +1394,23 @@ namespace MazakMachineInterface
       unique = "";
       numProc = proc;
       jobProc = proc;
+      var historical = MazakScheduleProvenance.Historical(repo, mazakConfig, mazakPartName, proc);
+      if (historical is not null)
+      {
+        unique = historical.JobUnique;
+        numProc = historical.NumProcesses;
+        jobProc = historical.JobProcess;
+        return;
+      }
       foreach (var schRow in mazakData.Schedules)
       {
         if (schRow.PartName == mazakPartName && !string.IsNullOrEmpty(schRow.Comment))
         {
           var scheduleComment = MazakPart.ParseCommentInfo(schRow.Comment);
+          if (mazakConfig.UsesInsightJobQuantities(repo.LoadJob(scheduleComment.Unique)))
+            throw new MazakIdentityException(
+              $"Native part {mazakPartName}, process {proc} has no proven historical route."
+            );
           unique = scheduleComment.Unique;
           if (scheduleComment.IsSplit)
           {
@@ -1353,6 +1434,10 @@ namespace MazakMachineInterface
           return;
         }
       }
+      if (MazakScheduleProvenance.MayBeSelected(repo, mazakData, mazakConfig, mazakPartName))
+        throw new MazakIdentityException(
+          $"Native part {mazakPartName}, process {proc} has no proven historical route."
+        );
     }
     #endregion
 
@@ -1373,19 +1458,55 @@ namespace MazakMachineInterface
         // start with everything on the pallet
         List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
 
+        // Losing a native row is not evidence that tracked material physically left this pallet.
+        // Real handling events and explicit queue correction remain available independently.
+        if (
+          matsOnPal.Any(mat =>
+            mazakConfig.UsesInsightJobQuantities(GetJob(mat.JobUniqueStr))
+            && !mazakData.PalletSubStatuses.Any(assignment =>
+              assignment.PalletNumber == pal.PalletNumber
+              && MazakScheduleProvenance.Historical(
+                repo,
+                mazakConfig,
+                assignment.PartName,
+                assignment.PartProcessNumber
+              )
+                is { } route
+              && route.JobUnique == mat.JobUniqueStr
+              && route.JobProcess == mat.Process
+            )
+          )
+        )
+          continue;
+
         foreach (
           var st in mazakData.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber)
         )
         {
           // remove material from matsOnPal that matches this PalletSubStatus
+          var route = MazakScheduleProvenance.Historical(
+            repo,
+            mazakConfig,
+            st.PartName,
+            st.PartProcessNumber
+          );
           var sch = mazakData.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
-          if (sch == null)
+          if (
+            sch is not null
+            && mazakConfig.UsesInsightJobQuantities(
+              GetJob(MazakPart.UniqueFromComment(sch.Comment ?? ""))
+            )
+            && sch.PartName != st.PartName
+          )
+            sch = null;
+          if (route is null && sch is null)
             continue;
-          var scheduleComment = MazakPart.ParseCommentInfo(sch.Comment);
-          if (!scheduleComment.HasUnique)
+          var scheduleComment = MazakPart.ParseCommentInfo(sch?.Comment);
+          var unique = route?.JobUnique ?? scheduleComment.Unique;
+          if (string.IsNullOrEmpty(unique))
             continue;
-          var unique = scheduleComment.Unique;
-          var fmsProc = scheduleComment.JobProcessForMazakProcess(st.PartProcessNumber);
+          var fmsProc =
+            route?.JobProcess ?? scheduleComment.JobProcessForMazakProcess(st.PartProcessNumber);
 
           var matchingMats = matsOnPal
             .Where(m => m.JobUniqueStr == unique && m.Process == fmsProc)
@@ -1529,6 +1650,30 @@ namespace MazakMachineInterface
       out long? rev
     )
     {
+      var historical = MazakScheduleProvenance.Historical(
+        repo,
+        mazakConfig,
+        e.FullPartName,
+        e.Process
+      );
+      if (historical is not null)
+      {
+        if (
+          !string.IsNullOrEmpty(e.Program)
+          && !string.IsNullOrEmpty(historical.NativeProgram)
+          && e.Program != historical.NativeProgram
+        )
+        {
+          progName = e.Program;
+          rev = null;
+        }
+        else
+        {
+          progName = historical.ProgramName ?? historical.NativeProgram;
+          rev = historical.ProgramRevision;
+        }
+        return;
+      }
       if (LookupProgramFromJob(mats, e, out progName, out rev))
       {
         // ok, just return

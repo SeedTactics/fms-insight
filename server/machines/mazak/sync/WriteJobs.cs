@@ -64,6 +64,7 @@ namespace MazakMachineInterface
     )
     {
       var protectedResources = (protection ?? MazakResourceProtection.Empty)
+        .Union(ProtectOrphanedAssignments(db, mazakData))
         .Resolve(mazakData);
       var alreadyDownloadedSchs = mazakData
         .Schedules.Where(s =>
@@ -152,6 +153,40 @@ namespace MazakMachineInterface
       return true;
     }
 
+    private static MazakResourceProtection ProtectOrphanedAssignments(
+      IRepository repository,
+      MazakAllData data
+    )
+    {
+      var physical = MazakResourceProtection.ForOrphanedAssignments(data);
+      if (physical.PalletNumbers.IsEmpty)
+        return physical;
+      // Only actual positive assignments retain these as-built dependencies. Historical routes
+      // alone are not obligations, and a recycled schedule ID cannot establish their ownership.
+      var routes = (data.PalletSubStatuses ?? [])
+        .Where(assignment =>
+          assignment.FixQuantity > 0
+          && physical.PalletNumbers.Contains(assignment.PalletNumber)
+          && !string.IsNullOrEmpty(assignment.PartName)
+          && assignment.PartProcessNumber > 0
+        )
+        .Select(assignment =>
+          repository.LoadMazakRouteProvenance(assignment.PartName, assignment.PartProcessNumber)
+        )
+        .OfType<MazakRouteProvenance>()
+        .ToImmutableList();
+      return physical with
+      {
+        ProgramNames = physical.ProgramNames.Union(
+          routes.Select(route => route.NativeProgram).Where(name => !string.IsNullOrEmpty(name))
+        ),
+        FixtureNames = physical.FixtureNames.Union(
+          routes.Select(route => route.NativeFixture).Where(name => !string.IsNullOrEmpty(name))
+        ),
+        JobUniques = physical.JobUniques.Union(routes.Select(route => route.JobUnique)),
+      };
+    }
+
     private static ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
     {
       if (rev.HasValue)
@@ -212,37 +247,19 @@ namespace MazakMachineInterface
       MazakProtectedResources protection
     )
     {
-      //first allocate a UID to use for this download
-      int UID = 0;
-      while (UID < int.MaxValue)
-      {
-        if (
-          protection.PartNames.Any(name => MazakPart.ParseUID(name) == UID)
-          || protection.FixtureNames.Any(name => MazakPart.ParseUID(name) == UID)
-        )
-          goto found;
-        //check schedule rows for UID
-        foreach (var schRow in mazakData.Schedules)
-        {
-          if (MazakPart.ParseUID(schRow.PartName) == UID)
-            goto found;
-        }
-
-        //check fixture rows for UID
-        foreach (var fixRow in mazakData.Fixtures)
-        {
-          if (MazakPart.ParseUID(fixRow.FixtureName) == UID)
-            goto found;
-        }
-
-        break;
-        found:
-        UID += 1;
-      }
-      if (UID == int.MaxValue)
-      {
-        throw new Exception("Unable to find unused UID");
-      }
+      // Names carried by CSV history outlive native rows. Never reuse a reserved generation.
+      var unavailable = mazakData
+        .Schedules.Select(row => row.PartName)
+        .Concat(mazakData.Parts.Select(row => row.PartName))
+        .Concat(mazakData.Fixtures.Select(row => row.FixtureName))
+        .Concat((mazakData.PalletSubStatuses ?? []).Select(row => row.PartName))
+        .Concat(protection.PartNames)
+        .Concat(protection.FixtureNames)
+        .Where(name => !string.IsNullOrEmpty(name))
+        .Select(MazakPart.ParseUID)
+        .Where(uid => uid >= 0)
+        .ToImmutableHashSet();
+      var UID = jobDB.ReserveMazakDownloadUid(unavailable);
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(
@@ -335,6 +352,7 @@ namespace MazakMachineInterface
 
       //now save the pallets and parts
       transSet = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
+      MazakScheduleProvenance.RecordCreated(jobDB, mazakJobs, transSet);
       SaveProtected(mazakDb, transSet, protection);
     }
 
