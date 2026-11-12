@@ -180,6 +180,104 @@ public sealed class DuplicateDownloadSpec
   }
 
   [Test]
+  [Arguments(10, true, false)]
+  [Arguments(11, true, false)]
+  [Arguments(20, false, false)]
+  [Arguments(10, true, true)]
+  public async Task RetryAfterNativePartChunkRepairsRequiredPalletMappings(
+    int jobCount,
+    bool basket,
+    bool loseMappingResponse
+  )
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var jobs = Enumerable
+      .Range(1, jobCount)
+      .Select(index => PendingJob(basket) with { UniqueStr = "initial-job-" + index })
+      .ToImmutableList();
+    repository.AddJobs(new NewJobs { ScheduleId = "initial-download", Jobs = jobs }, null, false);
+    var device = new DownloadDevice("parts-before-pallet-chunk");
+
+    await Assert.That(() => Sync(device, repository)).Throws<IOException>();
+    // The actual ODK chunker places twenty complete parts before any pallet rows.
+    await Assert.That(device.Data.Parts.Count).IsEqualTo(20);
+    await Assert.That(device.Data.Pallets).IsEmpty();
+    await Assert.That(jobs.All(job => !repository.LoadJob(job.UniqueStr)!.CopiedToSystem)).IsTrue();
+    var installedParts = device.Data.Parts.ToImmutableList();
+    var requiredMappings = installedParts
+      .SelectMany(part =>
+        part.Processes.Select(process =>
+          (
+            Pallet: basket ? MazakPart.ProcessFromComment(part.Comment) : 1,
+            Fixture: process.Fixture
+          )
+        )
+      )
+      .Distinct()
+      .ToImmutableList();
+    device.Native.ClearReceivedCalls();
+
+    if (loseMappingResponse)
+    {
+      var failOnce = true;
+      device
+        .Native.When(native =>
+          native.Save(Arg.Is<MazakWriteData>(write => write.Pallets.Count > 0))
+        )
+        .Do(_ =>
+        {
+          if (failOnce)
+          {
+            failOnce = false;
+            throw new IOException("Pallet mappings installed; response lost.");
+          }
+        });
+      await Assert.That(() => Sync(device, repository)).Throws<IOException>();
+      await Assert.That(device.Data.Schedules).IsEmpty();
+      await Assert
+        .That(jobs.All(job => !repository.LoadJob(job.UniqueStr)!.CopiedToSystem))
+        .IsTrue();
+      await Assert.That(device.Data.Pallets.Count).IsEqualTo(requiredMappings.Count);
+      device.Native.ClearReceivedCalls();
+    }
+    await Assert.That(Sync(device, repository)).IsTrue();
+    var expectedPartCount = jobCount * (basket ? 2 : 1);
+    await Assert.That(device.Data.Parts.Count).IsEqualTo(expectedPartCount);
+    await Assert.That(device.Data.Schedules.Count).IsEqualTo(expectedPartCount);
+    await Assert.That(jobs.All(job => repository.LoadJob(job.UniqueStr)!.CopiedToSystem)).IsTrue();
+    foreach (var part in installedParts)
+      await Assert
+        .That(device.Data.Parts.Single(row => row.PartName == part.PartName))
+        .IsEqualTo(part);
+    if (expectedPartCount == installedParts.Count)
+      device.Native.DidNotReceive().Save(Arg.Is<MazakWriteData>(write => write.Parts.Count > 0));
+    if (loseMappingResponse)
+      device.Native.DidNotReceive().Save(Arg.Is<MazakWriteData>(write => write.Pallets.Count > 0));
+    var missingMappings = requiredMappings
+      .Where(mapping =>
+        !device.Data.Pallets.Any(pallet =>
+          pallet.PalletNumber == mapping.Pallet && pallet.Fixture == mapping.Fixture
+        )
+      )
+      .ToImmutableList();
+    await Assert.That(missingMappings).IsEmpty();
+    // New definitions must not consume the fixture groups still needed by reused definitions.
+    foreach (var mapping in device.Data.Pallets)
+      await Assert.That(mapping.FixtureGroup).IsEqualTo(int.Parse(mapping.Fixture.Split(':')[2]));
+    await Assert
+      .That(
+        device
+          .Data.Pallets.GroupBy(row => row.FixtureGroup)
+          .All(group => group.Select(row => row.Fixture).Distinct().Count() == 1)
+      )
+      .IsTrue();
+    device.Native.ClearReceivedCalls();
+    await Assert.That(Sync(device, repository)).IsFalse();
+    device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+  }
+
+  [Test]
   public async Task TwoProcessOneSchedulesDoNotHideMissingProcessTwo()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -327,6 +425,8 @@ public sealed class DuplicateDownloadSpec
             _failOnce = false;
             throw new IOException("Schedule submission failed before controller admission.");
           }
+          if (_failOnce && failure == "parts-before-pallet-chunk" && write.Prefix == "Add Parts")
+            write = OpenDatabaseKitDB.SplitWriteData(write).First();
           var schedules =
             _failOnce && failure == "schedules-partial" && write.Prefix == "Add Schedules"
               ? write.Schedules.Take(1)

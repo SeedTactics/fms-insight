@@ -206,7 +206,13 @@ namespace MazakMachineInterface
         .Concat(mazakJobs.AllParts.Select(part => part.PartName))
         .ToImmutableHashSet();
       if (!mazakJobs.AllParts.Any())
+      {
+        // Complete pallet transactions even when every part transaction already succeeded.
+        var mappings = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
+        if (mappings.Pallets.Any())
+          mazakDb.Save(mappings);
         return selectedParts;
+      }
 
       if (transSet.Schedules.Any())
         mazakDb.Save(transSet);

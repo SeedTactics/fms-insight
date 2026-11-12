@@ -505,6 +505,7 @@ namespace MazakMachineInterface
     //The representation of the mazak parts and pallets used to create the database rows
     public IEnumerable<MazakPart> AllParts { get; set; }
     internal ImmutableList<MazakPartRow> ReusedParts { get; init; } = [];
+    internal ImmutableList<MazakPalletRow> ReusedPallets { get; init; } = [];
     public IEnumerable<MazakFixture> Fixtures { get; set; }
 
     //fixtures used by either existing or new parts.  Fixtures in the Mazak not in this list
@@ -679,6 +680,14 @@ namespace MazakMachineInterface
           palRows.Add(p);
       }
 
+      palRows.AddRange(
+        ReusedPallets.Where(reused =>
+          !palRows.Any(row =>
+            row.PalletNumber == reused.PalletNumber && row.Fixture == reused.Fixture
+          )
+        )
+      );
+
       return new MazakWriteData()
       {
         Prefix = "Add Parts",
@@ -793,9 +802,12 @@ namespace MazakMachineInterface
           .Where(part => part != null)
           .ToImmutableList()
         : [];
+      var reusedPallets = MissingReusedPallets(allParts, reused, mazakData, mazakCfg);
       savedParts.UnionWith(reused.Select(part => part.PartName));
       allParts = allParts.Where(part => !reused.Any(old => old.Comment == part.Comment)).ToList();
-      var usedMazakFixGroups = new HashSet<int>(mazakData.Pallets.Select(f => f.FixtureGroup));
+      var usedMazakFixGroups = new HashSet<int>(
+        mazakData.Pallets.Concat(reusedPallets).Select(row => row.FixtureGroup)
+      );
       var groups = GroupProcessesIntoFixtures(
         allParts,
         usedMazakFixGroups,
@@ -821,11 +833,48 @@ namespace MazakMachineInterface
         SavedParts = savedParts,
         AllParts = allParts,
         ReusedParts = reused,
+        ReusedPallets = reusedPallets,
         Fixtures = groups,
         UsedFixtures = usedFixtures,
         UsedMainProgramComments = usedProgs,
       };
     }
+
+    private static ImmutableList<MazakPalletRow> MissingReusedPallets(
+      IEnumerable<MazakPart> expectedParts,
+      ImmutableList<MazakPartRow> reused,
+      MazakAllData data,
+      MazakConfig cfg
+    ) =>
+      expectedParts
+        .SelectMany(expected =>
+        {
+          var installed = reused.FirstOrDefault(part => part.Comment == expected.Comment);
+          if (installed == null)
+            return Enumerable.Empty<MazakPalletRow>();
+          return expected.Processes.SelectMany(process =>
+          {
+            var fixture = installed
+              .Processes.Single(row => row.ProcessNumber == process.ProcessNumber)
+              .Fixture;
+            // Part transactions precede pallet transactions. Keep the installed fixture's original
+            // group when completing a missing mapping; generated names contain F:download:group:... .
+            var group =
+              data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
+              ?? int.Parse(
+                fixture.Split(':')[2],
+                System.Globalization.CultureInfo.InvariantCulture
+              );
+            return new MazakFixture
+            {
+              MazakFixtureName = fixture,
+              FixtureGroup = group,
+              Pallets = new HashSet<int>(process.Pallets()),
+            }.CreateDatabasePalletRows(data, cfg, MazakPart.ParseUID(installed.PartName));
+          });
+        })
+        .DistinctBy(row => (row.PalletNumber, row.Fixture))
+        .ToImmutableList();
 
     private static MazakPartRow FindInstalledPart(MazakPart expected, MazakAllData data) =>
       data
