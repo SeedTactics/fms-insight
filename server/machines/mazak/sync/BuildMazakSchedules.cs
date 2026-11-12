@@ -142,6 +142,18 @@ namespace MazakMachineInterface
             schedule.PartName == matchingPart.PartName
           );
           if (conflicting != null)
+          {
+            // If observed in practice, consider isolating this job and continuing unrelated work.
+            // That requires job validity tracking throughout Insight, including queue supply;
+            // retain the synchronization alarm until evidence warrants that broader change.
+            Log.Debug(
+              "Mazak route-comment conflict: job {@job}, selected part {@part}, conflicting schedule {@schedule}, required routes {requiredRoutes}, controller observation {@allData}",
+              part,
+              matchingPart,
+              conflicting,
+              expectedComments,
+              mazakData
+            );
             throw new InvalidOperationException(
               $"Cannot download job '{part.UniqueStr}': Mazak part '{matchingPart.PartName}' "
                 + $"requires route comment '{matchingPart.Comment}', but schedule {conflicting.Id} "
@@ -149,6 +161,7 @@ namespace MazakMachineInterface
                 + "Resolve the conflicting schedule comment on the controller before retrying; "
                 + "its production authorization has been preserved."
             );
+          }
 
           int schid = FindNextScheduleId(usedScheduleIDs);
           int earlierConflicts = CountEarlierConflicts(part, jobs);
