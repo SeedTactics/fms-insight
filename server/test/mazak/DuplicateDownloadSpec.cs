@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
@@ -183,6 +184,7 @@ public sealed class DuplicateDownloadSpec
   [Arguments(10, true, false)]
   [Arguments(11, true, false)]
   [Arguments(20, false, false)]
+  [Arguments(21, false, false)]
   [Arguments(10, true, true)]
   public async Task RetryAfterNativePartChunkRepairsRequiredPalletMappings(
     int jobCount,
@@ -380,12 +382,199 @@ public sealed class DuplicateDownloadSpec
       CompleteQuantity = 3,
     };
     device.Observe(device.Data with { Schedules = [existing] });
-    await Assert.That(Sync(device, repository)).IsTrue();
+    device.Native.ClearReceivedCalls();
+    for (var attempt = 0; attempt < 3; attempt++)
+    {
+      var error = await Assert
+        .That(() => Sync(device, repository))
+        .Throws<InvalidOperationException>();
+      await Assert.That(error!.Message).Contains(job.UniqueStr);
+      await Assert.That(error.Message).Contains(p1.PartName);
+      await Assert.That(error.Message).Contains(p1.Comment);
+      await Assert.That(error.Message).Contains(existing.Comment);
+      await Assert.That(error.Message).Contains("schedule 10");
+      await Assert.That(device.Data.Schedules).IsEquivalentTo([existing]);
+      await Assert.That(repository.LoadJob(job.UniqueStr)!.CopiedToSystem).IsFalse();
+    }
+    device.Native.DidNotReceive().Save(Arg.Is<MazakWriteData>(write => write.Schedules.Count > 0));
+  }
+
+  [Test]
+  public async Task ConflictingAuthorizationReleasesGenericSyncLockAndRecoversWaitingRequests()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    var job = PendingJob(true);
+    var device = new DownloadDevice("schedules");
+    using (var repository = config.OpenConnection())
+    {
+      repository.AddJobs(
+        new NewJobs { ScheduleId = "initial-download", Jobs = [job] },
+        null,
+        false
+      );
+      await Assert.That(() => Sync(device, repository)).Throws<IOException>();
+    }
+    var p1 = device.Data.Parts.Single(part => part.Comment == "initial-job-1-1-InsightS");
+    var existing = new MazakScheduleRow
+    {
+      Id = 10,
+      PartName = p1.PartName,
+      Comment = "initial-job-1-2-InsightS",
+      PlanQuantity = 9,
+      CompleteQuantity = 3,
+    };
+    device.Observe(device.Data with { Schedules = [existing] });
+    using var mazak = new MazakSync(
+      device.Native,
+      new FMSSettings(),
+      new MazakConfig
+      {
+        DBType = MazakDbType.MazakSmooth,
+        UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
+      }
+    );
+    // Stub acquisition/status construction, retaining real Mazak actions and the generic caller.
+    var synchronization = Substitute.For<ISynchronizeCellState<MazakState>>();
+    synchronization
+      .CalculateCellState(Arg.Any<IRepository>())
+      .Returns(_ => new MazakState
+      {
+        StateUpdated = false,
+        TimeUntilNextRefresh = TimeSpan.FromMinutes(1),
+        StoppedBecauseRecentLogEvent = false,
+        CurrentStatus = new CurrentStatus
+        {
+          Revision = 0,
+          TimeOfCurrentStatusUTC = Now,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+          Material = [],
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+          Alarms = [],
+        },
+        AllData = new MazakAllDataAndLogs
+        {
+          Parts = device.Data.Parts,
+          Schedules = device.Data.Schedules,
+          Fixtures = device.Data.Fixtures,
+          Pallets = device.Data.Pallets,
+          MainPrograms = device.Data.MainPrograms,
+          LoadActions = device.Data.LoadActions,
+          PalletStatuses = [],
+          PalletSubStatuses = device.Data.PalletSubStatuses,
+          PalletPositions = device.Data.PalletPositions,
+          Alarms = [],
+          Logs = [],
+        },
+      });
+    var actionPasses = 0;
+    synchronization
+      .ApplyActions(Arg.Any<IRepository>(), Arg.Any<MazakState>())
+      .Returns(call =>
+      {
+        // Bound a regression in the progress loop so a failed test can shut down its host.
+        if (Interlocked.Increment(ref actionPasses) > 5)
+          throw new InvalidOperationException("Synchronization did not stop after five passes");
+        return mazak.ApplyActions(call.Arg<IRepository>(), call.Arg<MazakState>());
+      });
+    using var host = new JobsAndQueuesFromDb<MazakState>(
+      config,
+      new ServerSettings(),
+      new FMSSettings(),
+      synchronization,
+      startThread: false
+    );
+    var failed = new TaskCompletionSource<CurrentStatus>(
+      TaskCreationOptions.RunContinuationsAsynchronously
+    );
+    var retried = new TaskCompletionSource<CurrentStatus>(
+      TaskCreationOptions.RunContinuationsAsynchronously
+    );
+    host.OnNewCurrentStatus += status =>
+    {
+      if (!failed.TrySetResult(status))
+        retried.TrySetResult(status);
+    };
+    host.StartThread();
+    var error = await failed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    await Assert
+      .That(error.Alarms.Single())
+      .Contains("requires route comment '" + p1.Comment + "'");
+    await Assert.That(Volatile.Read(ref actionPasses)).IsEqualTo(1);
+    // This operation needs the same mutation lock; failed synchronization must release it.
+    await Assert
+      .That(async () =>
+        await Task.Run(() => ((IJobAndQueueControl)host).DecrementJobQuantites(0L))
+          .WaitAsync(TimeSpan.FromSeconds(5))
+      )
+      .Throws<ConflictRequestException>();
+    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+    var waiting = host.RecalculateCellStateAndWaitAsync(timeout.Token);
+    var secondError = await retried.Task.WaitAsync(timeout.Token);
+    await Assert.That(secondError.Alarms).IsEquivalentTo(error.Alarms);
+    await Assert.That(Volatile.Read(ref actionPasses)).IsEqualTo(2);
+    await Assert.That(waiting.IsCompleted).IsFalse();
+    await Assert.That(device.Data.Schedules).IsEquivalentTo([existing]);
+    // After operator correction, the queued synchronization request completes and the missing
+    // route is admitted once. The existing schedule's production quantities remain unchanged.
+    device.Observe(device.Data with { Schedules = [existing with { Comment = p1.Comment }] });
+    host.RecalculateCellState();
+    await Assert.That(await waiting).IsTrue();
+    await Assert.That(host.GetCurrentStatus().Alarms).IsEmpty();
     await Assert.That(device.Data.Schedules.Count).IsEqualTo(2);
     await Assert
-      .That(device.Data.Schedules.Single(s => s.PartName == p1.PartName))
-      .IsEqualTo(existing);
-    await Assert.That(repository.LoadJob(job.UniqueStr)!.CopiedToSystem).IsFalse();
+      .That(device.Data.Schedules.Single(schedule => schedule.Id == existing.Id))
+      .IsEqualTo(existing with { Comment = p1.Comment });
+    using var final = config.OpenConnection();
+    await Assert.That(final.LoadJob(job.UniqueStr)!.CopiedToSystem).IsTrue();
+  }
+
+  [Test]
+  public async Task PartialCombinedScheduleBatchPreservesAcceptedAuthorization()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    var jobs = Enumerable
+      .Range(1, 2)
+      .Select(index => PendingJob(false) with { UniqueStr = "combined-job-" + index })
+      .ToImmutableList();
+    var device = new DownloadDevice("schedules-partial");
+    using (var repository = config.OpenConnection())
+    {
+      repository.AddJobs(new NewJobs { ScheduleId = "initial-download", Jobs = jobs }, null, false);
+      await Assert.That(() => Sync(device, repository)).Throws<IOException>();
+      await Assert
+        .That(jobs.All(job => !repository.LoadJob(job.UniqueStr)!.CopiedToSystem))
+        .IsTrue();
+    }
+    var accepted = device.Data.Schedules.Single();
+    // Production can advance before recovery; neither its authorization nor its quantities reset.
+    accepted = accepted with
+    {
+      PlanQuantity = 7,
+      CompleteQuantity = 2,
+      Processes = accepted
+        .Processes.Select(process => process with { ProcessMaterialQuantity = 4 })
+        .ToImmutableList(),
+    };
+    device.Observe(device.Data with { Schedules = [accepted] });
+    device.Native.ClearReceivedCalls();
+    using var restarted = config.OpenConnection();
+    await Assert.That(Sync(device, restarted)).IsTrue();
+    await Assert.That(device.Data.Schedules.Count).IsEqualTo(2);
+    await Assert
+      .That(device.Data.Schedules.Single(schedule => schedule.Id == accepted.Id))
+      .IsEqualTo(accepted);
+    var added = device.Data.Schedules.Single(schedule => schedule.Id != accepted.Id);
+    await Assert.That(added.PlanQuantity).IsEqualTo(9);
+    await Assert.That(added.Processes.Count).IsEqualTo(2);
+    await Assert.That(added.Processes[0].ProcessMaterialQuantity).IsEqualTo(9);
+    await Assert.That(jobs.All(job => restarted.LoadJob(job.UniqueStr)!.CopiedToSystem)).IsTrue();
+    device.Native.Received(1).Save(Arg.Is<MazakWriteData>(write => write.Schedules.Count == 1));
+    device.Native.DidNotReceive().Save(Arg.Is<MazakWriteData>(write => write.Parts.Count > 0));
+    device.Native.ClearReceivedCalls();
+    for (var attempt = 0; attempt < 3; attempt++)
+      await Assert.That(Sync(device, restarted)).IsFalse();
+    device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
   }
 
   private sealed class DownloadDevice

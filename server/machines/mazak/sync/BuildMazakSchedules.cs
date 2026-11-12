@@ -135,11 +135,20 @@ namespace MazakMachineInterface
 
         foreach (var matchingPart in matchingParts)
         {
-          if (
-            scheduledRoutes.Contains(matchingPart.Comment)
-            || mazakData.Schedules.Any(schedule => schedule.PartName == matchingPart.PartName)
-          )
+          if (scheduledRoutes.Contains(matchingPart.Comment))
             continue;
+
+          var conflicting = mazakData.Schedules.FirstOrDefault(schedule =>
+            schedule.PartName == matchingPart.PartName
+          );
+          if (conflicting != null)
+            throw new InvalidOperationException(
+              $"Cannot download job '{part.UniqueStr}': Mazak part '{matchingPart.PartName}' "
+                + $"requires route comment '{matchingPart.Comment}', but schedule {conflicting.Id} "
+                + $"already authorizes it with comment '{conflicting.Comment}'. "
+                + "Resolve the conflicting schedule comment on the controller before retrying; "
+                + "its production authorization has been preserved."
+            );
 
           int schid = FindNextScheduleId(usedScheduleIDs);
           int earlierConflicts = CountEarlierConflicts(part, jobs);

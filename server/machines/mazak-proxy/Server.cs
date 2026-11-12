@@ -41,7 +41,7 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
 
   public interface IHttpServer : IDisposable
   {
-    void AddLoadingHandler<T>(string path, Func<T> handler);
+    void AddLoadingHandler<T>(string path, Func<T> handler, bool allowConcurrent = false);
     void AddPostHandler<T, R>(string path, Func<T, R> handler);
     void Start();
   }
@@ -49,6 +49,10 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
   public sealed class HttpServer : IHttpServer, IDisposable
   {
     private readonly HttpListener _listener;
+
+    // Hold through the complete native operation, even if its HTTP client disconnects. Recovery
+    // reads must wait for all save chunks; competing saves share the native transaction tables.
+    private readonly object _operationLock = new object();
 
     private class PostHandler
     {
@@ -113,16 +117,33 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
       }
     }
 
-    public void AddLoadingHandler<T>(string path, Func<T> handler)
+    public void AddLoadingHandler<T>(string path, Func<T> handler, bool allowConcurrent = false)
     {
-      _loadingHandlers.Add(path, () => handler());
+      _loadingHandlers.Add(
+        path,
+        () =>
+        {
+          if (allowConcurrent)
+            return handler();
+          lock (_operationLock)
+            return handler();
+        }
+      );
     }
 
     public void AddPostHandler<T, R>(string path, Func<T, R> handler)
     {
       _postHandlers.Add(
         path,
-        new PostHandler { BodyType = typeof(T), Handler = t => handler((T)t) }
+        new PostHandler
+        {
+          BodyType = typeof(T),
+          Handler = t =>
+          {
+            lock (_operationLock)
+              return handler((T)t);
+          },
+        }
       );
     }
 
