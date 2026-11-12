@@ -280,6 +280,7 @@ public sealed class ClientModelsSpec
     await Assert.That(assembly == typeof(LogEntry).Assembly).IsFalse();
     await Assert
       .That(assembly.GetReferencedAssemblies())
-      .All(r => r.Name!.StartsWith("System.", StringComparison.Ordinal));
+      // Coverage instrumentation can reference the standard framework facade.
+      .All(r => r.Name == "netstandard" || r.Name!.StartsWith("System.", StringComparison.Ordinal));
   }
 }
