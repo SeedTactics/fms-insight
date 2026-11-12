@@ -190,7 +190,9 @@ public class ProxyService : System.ServiceProcess.ServiceBase
             _onNewData.Reset();
           }
           return evts;
-        }
+        },
+        // Event waiting does not access the database and must not delay reads or saves.
+        allowConcurrent: true
       );
 
       _server.Start();

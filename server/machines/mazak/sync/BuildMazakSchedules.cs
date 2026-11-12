@@ -91,12 +91,13 @@ namespace MazakMachineInterface
       var routeStartDate = jobs.First().RouteStartUTC.ToLocalTime().Date;
 
       var usedScheduleIDs = new HashSet<int>();
-      var scheduledParts = new HashSet<string>();
+      var scheduledRoutes = new HashSet<string>();
       var maxPriMatchingDate = 9;
       foreach (var schRow in mazakData.Schedules)
       {
         usedScheduleIDs.Add(schRow.Id);
-        scheduledParts.Add(schRow.PartName);
+        if (MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
+          scheduledRoutes.Add(schRow.Comment);
         if (schRow.DueDate == routeStartDate)
         {
           maxPriMatchingDate = Math.Max(maxPriMatchingDate, schRow.Priority);
@@ -112,10 +113,11 @@ namespace MazakMachineInterface
         if (part.Cycles <= 0)
           continue;
 
+        var expectedComments = MazakPart.InitialScheduleComments(part);
         var matchingParts = mazakData
           .Parts.Where(partRow =>
             MazakPart.IsSailPart(partRow.PartName, partRow.Comment)
-            && MazakPart.UniqueFromComment(partRow.Comment) == part.UniqueStr
+            && expectedComments.Contains(partRow.Comment)
           )
           .OrderBy(partRow => MazakPart.ProcessFromComment(partRow.Comment))
           .ThenBy(partRow => partRow.PartName)
@@ -133,8 +135,33 @@ namespace MazakMachineInterface
 
         foreach (var matchingPart in matchingParts)
         {
-          if (scheduledParts.Contains(matchingPart.PartName))
+          if (scheduledRoutes.Contains(matchingPart.Comment))
             continue;
+
+          var conflicting = mazakData.Schedules.FirstOrDefault(schedule =>
+            schedule.PartName == matchingPart.PartName
+          );
+          if (conflicting != null)
+          {
+            // If observed in practice, consider isolating this job and continuing unrelated work.
+            // That requires job validity tracking throughout Insight, including queue supply;
+            // retain the synchronization alarm until evidence warrants that broader change.
+            Log.Debug(
+              "Mazak route-comment conflict: job {@job}, selected part {@part}, conflicting schedule {@schedule}, required routes {requiredRoutes}, controller observation {@allData}",
+              part,
+              matchingPart,
+              conflicting,
+              expectedComments,
+              mazakData
+            );
+            throw new InvalidOperationException(
+              $"Cannot download job '{part.UniqueStr}': Mazak part '{matchingPart.PartName}' "
+                + $"requires route comment '{matchingPart.Comment}', but schedule {conflicting.Id} "
+                + $"already authorizes it with comment '{conflicting.Comment}'. "
+                + "Resolve the conflicting schedule comment on the controller before retrying; "
+                + "its production authorization has been preserved."
+            );
+          }
 
           int schid = FindNextScheduleId(usedScheduleIDs);
           int earlierConflicts = CountEarlierConflicts(part, jobs);
@@ -151,7 +178,7 @@ namespace MazakMachineInterface
               cfg
             )
           );
-          scheduledParts.Add(matchingPart.PartName);
+          scheduledRoutes.Add(matchingPart.Comment);
         }
       }
 

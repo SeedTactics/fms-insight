@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using BlackMaple.FMSInsight.Mazak.Proxy;
 
@@ -74,6 +75,117 @@ public sealed class HttpServerSpec
 
     server.Dispose();
     await Task.Delay(TimeSpan.FromMilliseconds(100));
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task DisconnectedSaveSettlesBeforeRecoveryReadsOrCompetingSaves(bool failAfterWrite)
+  {
+    var port = AvailablePort();
+    var url = $"http://127.0.0.1:{port}";
+    using var server = new HttpServer(url + "/");
+    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+    var originalEntered = new TaskCompletionSource(
+      TaskCreationOptions.RunContinuationsAsynchronously
+    );
+    using var releaseOriginal = new ManualResetEventSlim();
+    using var recoveryReadEntered = new ManualResetEventSlim();
+    using var recoverySaveEntered = new ManualResetEventSlim();
+    var controller = "empty";
+    server.AddPostHandler<string, bool>(
+      "/save",
+      operation =>
+      {
+        if (operation == "original")
+        {
+          controller = "partial";
+          originalEntered.TrySetResult();
+          releaseOriginal.Wait(timeout.Token);
+          controller = "settled";
+          if (failAfterWrite)
+            throw new InvalidOperationException(
+              "Save finished applying before its response failed"
+            );
+        }
+        else
+        {
+          recoverySaveEntered.Set();
+          if (controller != "settled")
+            throw new InvalidOperationException(
+              "Competing save entered an unfinished native transaction"
+            );
+        }
+        return true;
+      }
+    );
+    server.AddLoadingHandler(
+      "/all-data",
+      () =>
+      {
+        recoveryReadEntered.Set();
+        return controller;
+      }
+    );
+    // Event waiting remains independent of the database operation gate.
+    using var releasePoll = new ManualResetEventSlim();
+    var pollEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    server.AddLoadingHandler(
+      "/long-poll-events",
+      () =>
+      {
+        pollEntered.TrySetResult();
+        releasePoll.Wait(timeout.Token);
+        return true;
+      },
+      allowConcurrent: true
+    );
+    server.Start();
+    using var client = Client();
+    // All phases share one deadline. A held handler must not release itself just as an HTTP
+    // timeout expires, masking whether recovery really waited for the original operation.
+    client.Timeout = Timeout.InfiniteTimeSpan;
+    using var disconnected = new TcpClient();
+    await disconnected.ConnectAsync(IPAddress.Loopback, port, timeout.Token);
+    var request = Encoding.ASCII.GetBytes(
+      $"POST /save HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Type: application/json\r\nContent-Length: 10\r\nConnection: close\r\n\r\n\"original\""
+    );
+    await disconnected.GetStream().WriteAsync(request, timeout.Token);
+    try
+    {
+      await originalEntered.Task.WaitAsync(timeout.Token);
+      // Dropping the HTTP connection must not release the database operation gate.
+      disconnected.Dispose();
+      var read = client.GetAsync(url + "/all-data", timeout.Token);
+      var save = client.PostAsync(
+        url + "/save",
+        new StringContent("\"recovery\"", Encoding.UTF8, "application/json"),
+        timeout.Token
+      );
+      var poll = client.GetAsync(url + "/long-poll-events", timeout.Token);
+      await pollEntered.Task.WaitAsync(timeout.Token);
+      await Task.Delay(TimeSpan.FromMilliseconds(150), timeout.Token);
+      await Assert.That(recoveryReadEntered.IsSet).IsFalse();
+      await Assert.That(recoverySaveEntered.IsSet).IsFalse();
+      await Assert.That(read.IsCompleted).IsFalse();
+      await Assert.That(save.IsCompleted).IsFalse();
+      releaseOriginal.Set();
+      // A long poll in progress must not hold up database recovery either.
+      using var observed = await read;
+      using var saved = await save;
+      await Assert.That(observed.StatusCode).IsEqualTo(HttpStatusCode.OK);
+      await Assert.That(await observed.Content.ReadAsStringAsync()).IsEqualTo("\"settled\"");
+      await Assert.That(saved.StatusCode).IsEqualTo(HttpStatusCode.OK);
+      await Assert.That(poll.IsCompleted).IsFalse();
+      releasePoll.Set();
+      using var polled = await poll;
+      await Assert.That(polled.StatusCode).IsEqualTo(HttpStatusCode.OK);
+    }
+    finally
+    {
+      releaseOriginal.Set();
+      releasePoll.Set();
+    }
   }
 
   private static HttpClient Client() =>
