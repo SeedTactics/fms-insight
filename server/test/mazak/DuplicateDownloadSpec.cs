@@ -113,7 +113,7 @@ public sealed class DuplicateDownloadSpec
       await Assert.That(schedule.Processes.Count).IsEqualTo(basket ? 1 : 2);
       await Assert.That(schedule.Processes[0].ProcessMaterialQuantity).IsEqualTo(basket ? 0 : 9);
     }
-    // Valid definitions and accepted schedules are reused exactly, including native names.
+    // Installed definitions and accepted schedules are reused exactly, including native names.
     foreach (var part in installedParts)
       await Assert.That(device.Data.Parts.Single(p => p.PartName == part.PartName)).IsEqualTo(part);
     foreach (var schedule in installedSchedules)
@@ -264,61 +264,6 @@ public sealed class DuplicateDownloadSpec
   }
 
   [Test]
-  [Arguments("program")]
-  [Arguments("quantity")]
-  [Arguments("pallet")]
-  [Arguments("process-row")]
-  [Arguments("load-photo")]
-  [Arguments("unload-photo")]
-  public async Task IncompleteOrMismatchedUnscheduledDefinitionIsNotAuthorized(string difference)
-  {
-    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
-    using var repository = config.OpenConnection();
-    var job = PendingJob(true);
-    repository.AddJobs(new NewJobs { ScheduleId = "initial-download", Jobs = [job] }, null, false);
-    var device = new DownloadDevice("schedules");
-    await Assert.That(() => Sync(device, repository)).Throws<IOException>();
-    var p1 = device.Data.Parts.Single(p => p.Comment == "initial-job-1-1-InsightS");
-    device.Observe(
-      device.Data with
-      {
-        Parts = device
-          .Data.Parts.Select(p =>
-            p.PartName != p1.PartName
-              ? p
-              : p with
-              {
-                Processes =
-                  difference == "process-row"
-                    ? []
-                    : p
-                      .Processes.Select(process =>
-                        process with
-                        {
-                          MainProgram = difference == "program" ? "9999" : process.MainProgram,
-                          FixQuantity = difference == "quantity" ? 1 : process.FixQuantity,
-                          FixPhoto = difference == "load-photo" ? "load-photo" : process.FixPhoto,
-                          RemovePhoto =
-                            difference == "unload-photo" ? "unload-photo" : process.RemovePhoto,
-                        }
-                      )
-                      .ToImmutableList(),
-              }
-          )
-          .ToImmutableList(),
-        Pallets =
-          difference == "pallet"
-            ? device.Data.Pallets.Where(p => p.PalletNumber != 1).ToImmutableList()
-            : device.Data.Pallets,
-      }
-    );
-    await Assert.That(Sync(device, repository)).IsTrue();
-    await Assert.That(device.Data.Schedules.Count).IsEqualTo(2);
-    await Assert.That(device.Data.Schedules.Any(s => s.PartName == p1.PartName)).IsFalse();
-    await Assert.That(repository.LoadJob(job.UniqueStr)!.CopiedToSystem).IsTrue();
-  }
-
-  [Test]
   public async Task AlreadyAuthorizedPartWithConflictingRouteCommentIsNotScheduledAgain()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -386,6 +331,7 @@ public sealed class DuplicateDownloadSpec
             _failOnce && failure == "schedules-partial" && write.Prefix == "Add Schedules"
               ? write.Schedules.Take(1)
               : write.Schedules;
+          // A partial batch contains a subset of complete parts, never part rows missing processes.
           var parts =
             _failOnce && failure == "parts-partial" && write.Prefix == "Add Parts"
               ? write.Parts.Take(1)

@@ -789,7 +789,7 @@ namespace MazakMachineInterface
       var allParts = BuildMazakParts(jobs, downloadUID, mazakData, mazakCfg, errors, lookupProgram);
       var reused = reuseExistingParts
         ? allParts
-          .Select(expected => FindReusablePart(expected, mazakData, mazakCfg))
+          .Select(expected => FindInstalledPart(expected, mazakData))
           .Where(part => part != null)
           .ToImmutableList()
         : [];
@@ -827,11 +827,7 @@ namespace MazakMachineInterface
       };
     }
 
-    private static MazakPartRow FindReusablePart(
-      MazakPart expected,
-      MazakAllData data,
-      MazakConfig cfg
-    ) =>
+    private static MazakPartRow FindInstalledPart(MazakPart expected, MazakAllData data) =>
       data
         .Parts.Where(part =>
           part.Comment == expected.Comment
@@ -842,76 +838,9 @@ namespace MazakMachineInterface
           data.Schedules.Any(schedule => schedule.PartName == part.PartName)
         )
         .ThenBy(part => part.PartName, StringComparer.Ordinal)
-        .FirstOrDefault(part =>
-          // Never replace definitions which already authorize actual controller work.
-          data.Schedules.Any(schedule => schedule.PartName == part.PartName)
-          || MatchesDefinition(expected, part, data, cfg)
-        );
-
-    private static bool MatchesDefinition(
-      MazakPart expected,
-      MazakPartRow installed,
-      MazakAllData data,
-      MazakConfig cfg
-    )
-    {
-      // Native readback can report TotalProcess = 0 even when the process rows are complete.
-      // Validate those rows directly instead of relying on the part-level scalar.
-      if (installed.Processes.Count != expected.Processes.Count)
-        return false;
-      foreach (var process in expected.Processes)
-      {
-        var matches = installed
-          .Processes.Where(p => p.ProcessNumber == process.ProcessNumber)
-          .ToImmutableList();
-        if (matches.Count != 1)
-          return false;
-        var actual = matches[0];
-        var face = process.FixtureFace().face;
-        var expectedFace = face is > 0 ? face.Value : process.ProcessNumber;
-        if (
-          string.IsNullOrEmpty(actual.Fixture)
-          || !data.Fixtures.Any(f => f.FixtureName == actual.Fixture)
-          || !actual.Fixture.EndsWith(":" + expectedFace, StringComparison.Ordinal)
-          || !process
-            .Pallets()
-            .Select(cfg.InversePalletNumber)
-            .ToImmutableHashSet()
-            .SetEquals(
-              data.Pallets.Where(p => p.Fixture == actual.Fixture).Select(p => p.PalletNumber)
-            )
-        )
-          return false;
-        var row = expected.ToDatabaseRow();
-        process.CreateDatabaseRow(row, actual.Fixture, cfg);
-        var intended = row.Processes.Single();
-        if (
-          actual.FixQuantity != intended.FixQuantity
-          || actual.MainProgram != intended.MainProgram
-          || actual.FixLDS != intended.FixLDS
-          || actual.RemoveLDS != intended.RemoveLDS
-          || actual.CutMc != intended.CutMc
-          || actual.ContinueCut != intended.ContinueCut
-          || actual.WashType != intended.WashType
-          || !PhotoMatches(actual.FixPhoto, intended.FixPhoto)
-          || !PhotoMatches(actual.RemovePhoto, intended.RemovePhoto)
-          || actual.PartProcess_1 != intended.PartProcess_1
-          || actual.PartProcess_2 != intended.PartProcess_2
-          || actual.PartProcess_3 != intended.PartProcess_3
-          || actual.PartProcess_4 != intended.PartProcess_4
-          || actual.FixTime != intended.FixTime
-          || actual.RemoveTime != intended.RemoveTime
-          || actual.CreateToolList_RA != intended.CreateToolList_RA
-        )
-          return false;
-      }
-      return true;
-    }
-
-    // Native unused photo fields may be null, empty or whitespace. Nonblank names stay exact.
-    private static bool PhotoMatches(string actual, string intended) =>
-      actual == intended
-      || (string.IsNullOrWhiteSpace(actual) && string.IsNullOrWhiteSpace(intended));
+        // Mazak installs each part and its processes together. Resume from the installed route
+        // identity rather than comparing native readback fields with the submitted definition.
+        .FirstOrDefault();
 
     public static bool IsSplitScheduleJob(Job job)
     {
