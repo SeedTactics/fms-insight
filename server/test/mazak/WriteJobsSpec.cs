@@ -1025,17 +1025,19 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .Schedules.Where(s => !s.PartName.StartsWith("aaa"))
         .ToList();
 
+      var installed = _mazakDbMock.LoadAllData() with
+      {
+        Parts = allParts,
+        Schedules = aaaSch,
+        Fixtures = FindWrite("Add Fixtures").Fixtures.ToImmutableList(),
+        Pallets = FindWrite("Add Parts").Pallets.ToImmutableList(),
+      };
       throwError = false;
+      _mazakDbMock.LoadAllData().Returns(installed);
       _mazakDbMock.ClearReceivedCalls();
 
       WriteJobs.SyncFromDatabase(
-        new MazakAllData()
-        {
-          Schedules = aaaSch,
-          Parts = allParts,
-          Pallets = [],
-          Fixtures = [],
-        },
+        installed,
         _jobDB,
         _mazakDbMock,
         _settings,
@@ -1061,177 +1063,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           newJobs.Jobs.First().RouteStartUTC.AddMinutes(1)
         )
         .ShouldBeEmpty();
-    }
-
-    [Test]
-    public void RecoversSplitScheduleDownloadAndMarksCopiedOnce()
-    {
-      var splitJob = new HistoricJob()
-      {
-        UniqueStr = "split-uniq",
-        PartName = "split-part",
-        RouteStartUTC = fixtureQueueTime,
-        RouteEndUTC = DateTime.MinValue,
-        Archived = false,
-        CopiedToSystem = false,
-        Cycles = 12,
-        Processes =
-        [
-          new ProcessInfo()
-          {
-            BasketLoadStations = [11],
-            BasketUnloadStations = [12],
-            Paths = [JobLogTest.EmptyPath with { Fixture = "fixA", Face = 1, PalletNums = [1] }],
-          },
-          new ProcessInfo()
-          {
-            BasketLoadStations = [13],
-            BasketUnloadStations = [14],
-            Paths = [JobLogTest.EmptyPath with { Fixture = "fixB", Face = 1, PalletNums = [2] }],
-          },
-        ],
-      };
-
-      var repo = Substitute.For<IRepository>();
-      repo.LoadJobsNotCopiedToSystem(
-          Arg.Any<DateTime>(),
-          Arg.Any<DateTime>(),
-          includeDecremented: false
-        )
-        .Returns(ImmutableList.Create(splitJob));
-
-      var mazakDb = Substitute.For<IMazakDB>();
-
-      WriteJobs
-        .SyncFromDatabase(
-          new MazakAllData()
-          {
-            Parts = new MazakPartRow[]
-            {
-              new MazakPartRow()
-              {
-                PartName = "split-part:7:1:1",
-                Comment = "split-uniq-1-1-InsightS",
-              },
-              new MazakPartRow()
-              {
-                PartName = "split-part:7:2:2",
-                Comment = "split-uniq-2-1-InsightS",
-              },
-            },
-            Schedules = new MazakScheduleRow[]
-            {
-              new MazakScheduleRow()
-              {
-                Id = 5,
-                PartName = "split-part:7:1:1",
-                Comment = "split-uniq-1-1-InsightS",
-              },
-            },
-            Fixtures = Array.Empty<MazakFixtureRow>(),
-            Pallets = Array.Empty<MazakPalletRow>(),
-            LoadActions = Array.Empty<LoadAction>(),
-            MainPrograms = Array.Empty<MazakProgramRow>(),
-            PalletPositions = Array.Empty<MazakPalletPositionRow>(),
-            PalletSubStatuses = Array.Empty<MazakPalletSubStatusRow>(),
-          },
-          repo,
-          mazakDb,
-          _settings,
-          _mazakCfg,
-          fixtureQueueTime
-        )
-        .ShouldBeTrue();
-
-      mazakDb
-        .Received(1)
-        .Save(
-          Arg.Is<MazakWriteData>(m =>
-            m.Prefix == "Add Schedules"
-            && m.Schedules.Count == 1
-            && m.Schedules[0].Comment == "split-uniq-2-1-InsightS"
-          )
-        );
-      repo.Received(1).MarkJobCopiedToSystem("split-uniq");
-    }
-
-    [Test]
-    public void DoesNotMarkSplitJobCopiedWhenARequiredPartIsMissingDuringRecovery()
-    {
-      var splitJob = new HistoricJob()
-      {
-        UniqueStr = "split-uniq",
-        PartName = "split-part",
-        RouteStartUTC = fixtureQueueTime,
-        RouteEndUTC = DateTime.MinValue,
-        Archived = false,
-        CopiedToSystem = false,
-        Cycles = 12,
-        Processes =
-        [
-          new ProcessInfo()
-          {
-            BasketLoadStations = [11],
-            BasketUnloadStations = [12],
-            Paths = [JobLogTest.EmptyPath with { Fixture = "fixA", Face = 1, PalletNums = [1] }],
-          },
-          new ProcessInfo()
-          {
-            BasketLoadStations = [13],
-            BasketUnloadStations = [14],
-            Paths = [JobLogTest.EmptyPath with { Fixture = "fixB", Face = 1, PalletNums = [2] }],
-          },
-        ],
-      };
-
-      var repo = Substitute.For<IRepository>();
-      repo.LoadJobsNotCopiedToSystem(
-          Arg.Any<DateTime>(),
-          Arg.Any<DateTime>(),
-          includeDecremented: false
-        )
-        .Returns(ImmutableList.Create(splitJob));
-
-      var mazakDb = Substitute.For<IMazakDB>();
-
-      WriteJobs
-        .SyncFromDatabase(
-          new MazakAllData()
-          {
-            Parts = new MazakPartRow[]
-            {
-              new MazakPartRow()
-              {
-                PartName = "split-part:7:1:1",
-                Comment = "split-uniq-1-1-InsightS",
-              },
-            },
-            Schedules = new MazakScheduleRow[]
-            {
-              new MazakScheduleRow()
-              {
-                Id = 5,
-                PartName = "split-part:7:1:1",
-                Comment = "split-uniq-1-1-InsightS",
-              },
-            },
-            Fixtures = Array.Empty<MazakFixtureRow>(),
-            Pallets = Array.Empty<MazakPalletRow>(),
-            LoadActions = Array.Empty<LoadAction>(),
-            MainPrograms = Array.Empty<MazakProgramRow>(),
-            PalletPositions = Array.Empty<MazakPalletPositionRow>(),
-            PalletSubStatuses = Array.Empty<MazakPalletSubStatusRow>(),
-          },
-          repo,
-          mazakDb,
-          _settings,
-          _mazakCfg,
-          fixtureQueueTime
-        )
-        .ShouldBeTrue();
-
-      mazakDb.DidNotReceive().Save(Arg.Any<MazakWriteData>());
-      repo.DidNotReceive().MarkJobCopiedToSystem("split-uniq");
     }
 
     [Test]

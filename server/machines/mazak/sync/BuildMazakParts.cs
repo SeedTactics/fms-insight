@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -133,6 +134,14 @@ namespace MazakMachineInterface
           + SplitPath.GetValueOrDefault(1).ToString()
           + SplitInsightSuffix
         : Job.UniqueStr + CombinedInsightSuffix;
+
+    internal static ImmutableList<string> InitialScheduleComments(Job job) =>
+      ConvertJobsToMazakParts.IsSplitScheduleJob(job)
+        ? Enumerable
+          .Range(1, job.Processes.Count)
+          .Select(process => job.UniqueStr + "-" + process + "-1" + SplitInsightSuffix)
+          .ToImmutableList()
+        : [job.UniqueStr + CombinedInsightSuffix];
 
     public static bool IsSplitComment(string comment)
     {
@@ -495,6 +504,7 @@ namespace MazakMachineInterface
 
     //The representation of the mazak parts and pallets used to create the database rows
     public IEnumerable<MazakPart> AllParts { get; set; }
+    internal ImmutableList<MazakPartRow> ReusedParts { get; init; } = [];
     public IEnumerable<MazakFixture> Fixtures { get; set; }
 
     //fixtures used by either existing or new parts.  Fixtures in the Mazak not in this list
@@ -749,11 +759,42 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
       Func<string, long?, ProgramRevision> lookupProgram,
       IList<string> errors
+    ) =>
+      JobsToMazak(
+        jobs,
+        downloadUID,
+        mazakData,
+        savedParts,
+        mazakCfg,
+        fmsSettings,
+        lookupProgram,
+        errors,
+        reuseExistingParts: false
+      );
+
+    internal static MazakJobs JobsToMazak(
+      IEnumerable<Job> jobs,
+      int downloadUID,
+      MazakAllData mazakData,
+      ISet<string> savedParts,
+      MazakConfig mazakCfg,
+      BlackMaple.MachineFramework.FMSSettings fmsSettings,
+      Func<string, long?, ProgramRevision> lookupProgram,
+      IList<string> errors,
+      bool reuseExistingParts
     )
     {
       Validate(jobs, fmsSettings, errors);
       CheckReusedFixture(mazakData, errors);
       var allParts = BuildMazakParts(jobs, downloadUID, mazakData, mazakCfg, errors, lookupProgram);
+      var reused = reuseExistingParts
+        ? allParts
+          .Select(expected => FindReusablePart(expected, mazakData, mazakCfg))
+          .Where(part => part != null)
+          .ToImmutableList()
+        : [];
+      savedParts.UnionWith(reused.Select(part => part.PartName));
+      allParts = allParts.Where(part => !reused.Any(old => old.Comment == part.Comment)).ToList();
       var usedMazakFixGroups = new HashSet<int>(mazakData.Pallets.Select(f => f.FixtureGroup));
       var groups = GroupProcessesIntoFixtures(
         allParts,
@@ -779,10 +820,93 @@ namespace MazakMachineInterface
         DownloadUID = downloadUID,
         SavedParts = savedParts,
         AllParts = allParts,
+        ReusedParts = reused,
         Fixtures = groups,
         UsedFixtures = usedFixtures,
         UsedMainProgramComments = usedProgs,
       };
+    }
+
+    private static MazakPartRow FindReusablePart(
+      MazakPart expected,
+      MazakAllData data,
+      MazakConfig cfg
+    ) =>
+      data
+        .Parts.Where(part =>
+          part.Comment == expected.Comment
+          && MazakPart.ExtractPartNameFromMazakPartName(part.PartName) == expected.Job.PartName
+          && MazakPart.IsSailPart(part.PartName, part.Comment)
+        )
+        .OrderByDescending(part =>
+          data.Schedules.Any(schedule => schedule.PartName == part.PartName)
+        )
+        .ThenBy(part => part.PartName, StringComparer.Ordinal)
+        .FirstOrDefault(part =>
+          // Never replace definitions which already authorize actual controller work.
+          data.Schedules.Any(schedule => schedule.PartName == part.PartName)
+          || MatchesDefinition(expected, part, data, cfg)
+        );
+
+    private static bool MatchesDefinition(
+      MazakPart expected,
+      MazakPartRow installed,
+      MazakAllData data,
+      MazakConfig cfg
+    )
+    {
+      if (
+        installed.TotalProcess != expected.Processes.Count
+        || installed.Processes.Count != expected.Processes.Count
+      )
+        return false;
+      foreach (var process in expected.Processes)
+      {
+        var matches = installed
+          .Processes.Where(p => p.ProcessNumber == process.ProcessNumber)
+          .ToImmutableList();
+        if (matches.Count != 1)
+          return false;
+        var actual = matches[0];
+        var face = process.FixtureFace().face;
+        var expectedFace = face is > 0 ? face.Value : process.ProcessNumber;
+        if (
+          string.IsNullOrEmpty(actual.Fixture)
+          || !data.Fixtures.Any(f => f.FixtureName == actual.Fixture)
+          || !actual.Fixture.EndsWith(":" + expectedFace, StringComparison.Ordinal)
+          || !process
+            .Pallets()
+            .Select(cfg.InversePalletNumber)
+            .ToImmutableHashSet()
+            .SetEquals(
+              data.Pallets.Where(p => p.Fixture == actual.Fixture).Select(p => p.PalletNumber)
+            )
+        )
+          return false;
+        var row = expected.ToDatabaseRow();
+        process.CreateDatabaseRow(row, actual.Fixture, cfg);
+        var intended = row.Processes.Single();
+        if (
+          actual.FixQuantity != intended.FixQuantity
+          || actual.MainProgram != intended.MainProgram
+          || actual.FixLDS != intended.FixLDS
+          || actual.RemoveLDS != intended.RemoveLDS
+          || actual.CutMc != intended.CutMc
+          || actual.ContinueCut != intended.ContinueCut
+          || actual.WashType != intended.WashType
+          || (actual.FixPhoto ?? "") != (intended.FixPhoto ?? "")
+          || (actual.RemovePhoto ?? "") != (intended.RemovePhoto ?? "")
+          || actual.PartProcess_1 != intended.PartProcess_1
+          || actual.PartProcess_2 != intended.PartProcess_2
+          || actual.PartProcess_3 != intended.PartProcess_3
+          || actual.PartProcess_4 != intended.PartProcess_4
+          || actual.FixTime != intended.FixTime
+          || actual.RemoveTime != intended.RemoveTime
+          || actual.CreateToolList_RA != intended.CreateToolList_RA
+        )
+          return false;
+      }
+      return true;
     }
 
     public static bool IsSplitScheduleJob(Job job)

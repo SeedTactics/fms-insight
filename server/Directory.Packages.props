@@ -30,5 +30,7 @@
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="TUnit" Version="1.80.0" />
     <PackageVersion Include="WireMock.Net" Version="2.21.0" />
+    <!-- WireMock.Net brings in vulnerable WebUtilities 2.3.0. Pin the patched release. https://github.com/advisories/GHSA-6527-9fp8-r4x6 -->
+    <PackageVersion Include="Microsoft.AspNetCore.WebUtilities" Version="2.3.14" />
   </ItemGroup>
 </Project>
