@@ -855,10 +855,9 @@ namespace MazakMachineInterface
       MazakConfig cfg
     )
     {
-      if (
-        installed.TotalProcess != expected.Processes.Count
-        || installed.Processes.Count != expected.Processes.Count
-      )
+      // Native readback can report TotalProcess = 0 even when the process rows are complete.
+      // Validate those rows directly instead of relying on the part-level scalar.
+      if (installed.Processes.Count != expected.Processes.Count)
         return false;
       foreach (var process in expected.Processes)
       {
@@ -894,8 +893,8 @@ namespace MazakMachineInterface
           || actual.CutMc != intended.CutMc
           || actual.ContinueCut != intended.ContinueCut
           || actual.WashType != intended.WashType
-          || (actual.FixPhoto ?? "") != (intended.FixPhoto ?? "")
-          || (actual.RemovePhoto ?? "") != (intended.RemovePhoto ?? "")
+          || !PhotoMatches(actual.FixPhoto, intended.FixPhoto)
+          || !PhotoMatches(actual.RemovePhoto, intended.RemovePhoto)
           || actual.PartProcess_1 != intended.PartProcess_1
           || actual.PartProcess_2 != intended.PartProcess_2
           || actual.PartProcess_3 != intended.PartProcess_3
@@ -908,6 +907,11 @@ namespace MazakMachineInterface
       }
       return true;
     }
+
+    // Native unused photo fields may be null, empty or whitespace. Nonblank names stay exact.
+    private static bool PhotoMatches(string actual, string intended) =>
+      actual == intended
+      || (string.IsNullOrWhiteSpace(actual) && string.IsNullOrWhiteSpace(intended));
 
     public static bool IsSplitScheduleJob(Job job)
     {

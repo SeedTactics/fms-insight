@@ -127,6 +127,59 @@ public sealed class DuplicateDownloadSpec
   }
 
   [Test]
+  [Arguments(true, false, true)]
+  [Arguments(false, true, true)]
+  [Arguments(true, true, true)]
+  [Arguments(true, false, false)]
+  [Arguments(false, true, false)]
+  [Arguments(true, true, false)]
+  public async Task NativeReadbackNormalizationDoesNotRebuildValidInstalledDefinitions(
+    bool unsetTotalProcess,
+    bool blankPhotos,
+    bool basket
+  )
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var job = PendingJob(basket);
+    repository.AddJobs(new NewJobs { ScheduleId = "initial-download", Jobs = [job] }, null, false);
+    var device = new DownloadDevice("schedules");
+    await Assert.That(() => Sync(device, repository)).Throws<IOException>();
+    device.Observe(
+      device.Data with
+      {
+        Parts = device
+          .Data.Parts.Select(part =>
+            part with
+            {
+              TotalProcess = unsetTotalProcess ? 0 : part.TotalProcess,
+              Processes = part
+                .Processes.Select(process =>
+                  process with
+                  {
+                    FixPhoto = blankPhotos ? " " : process.FixPhoto,
+                    RemovePhoto = blankPhotos ? " " : process.RemovePhoto,
+                  }
+                )
+                .ToImmutableList(),
+            }
+          )
+          .ToImmutableList(),
+      }
+    );
+    var installedNames = device.Data.Parts.Select(part => part.PartName).ToImmutableList();
+    device.Native.ClearReceivedCalls();
+
+    await Assert.That(Sync(device, repository)).IsTrue();
+    device.Native.DidNotReceive().Save(Arg.Is<MazakWriteData>(write => write.Parts.Count > 0));
+    await Assert
+      .That(device.Data.Parts.Select(part => part.PartName))
+      .IsEquivalentTo(installedNames);
+    await Assert.That(device.Data.Schedules.Count).IsEqualTo(basket ? 2 : 1);
+    await Assert.That(repository.LoadJob(job.UniqueStr)!.CopiedToSystem).IsTrue();
+  }
+
+  [Test]
   public async Task TwoProcessOneSchedulesDoNotHideMissingProcessTwo()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -215,6 +268,8 @@ public sealed class DuplicateDownloadSpec
   [Arguments("quantity")]
   [Arguments("pallet")]
   [Arguments("process-row")]
+  [Arguments("load-photo")]
+  [Arguments("unload-photo")]
   public async Task IncompleteOrMismatchedUnscheduledDefinitionIsNotAuthorized(string difference)
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -242,6 +297,9 @@ public sealed class DuplicateDownloadSpec
                         {
                           MainProgram = difference == "program" ? "9999" : process.MainProgram,
                           FixQuantity = difference == "quantity" ? 1 : process.FixQuantity,
+                          FixPhoto = difference == "load-photo" ? "load-photo" : process.FixPhoto,
+                          RemovePhoto =
+                            difference == "unload-photo" ? "unload-photo" : process.RemovePhoto,
                         }
                       )
                       .ToImmutableList(),
