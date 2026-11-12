@@ -102,7 +102,15 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
         return;
       try
       {
-        _listener.BeginGetContext(HandleRequest, null);
+        _listener.BeginGetContext(
+          result =>
+          {
+            // Windows can complete an accept inline. Dispatch separately so a later long poll
+            // cannot run nested inside an earlier request while that request rearms acceptance.
+            ThreadPool.QueueUserWorkItem(_ => HandleRequest(result));
+          },
+          null
+        );
       }
       catch (ObjectDisposedException) when (IsDisposed) { }
       catch (HttpListenerException) when (IsDisposed) { }
