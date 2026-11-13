@@ -3,13 +3,17 @@
   "isRoot": true,
   "tools": {
     "csharpier": {
-      "version": "1.3.0",
-      "commands": ["csharpier"],
+      "version": "1.4.0",
+      "commands": [
+        "csharpier"
+      ],
       "rollForward": false
     },
     "dotnet-outdated-tool": {
-      "version": "4.8.1",
-      "commands": ["dotnet-outdated"],
+      "version": "4.9.0",
+      "commands": [
+        "dotnet-outdated"
+      ],
       "rollForward": false
     }
   }

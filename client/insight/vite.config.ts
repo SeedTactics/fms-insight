@@ -26,6 +26,13 @@ export default defineConfig({
     outDir: "dist", // relative to root
     chunkSizeWarningLimit: 1800,
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{ name: "vendor", test: /node_modules/ }],
+        },
+      },
+    },
   },
   test: {
     projects: [

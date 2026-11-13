@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <LangVersion>latest</LangVersion>
     <PackageId>BlackMaple.MachineFramework.DebugMock</PackageId>
     <AssemblyName>BlackMaple.MachineFramework.DebugMock</AssemblyName>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
