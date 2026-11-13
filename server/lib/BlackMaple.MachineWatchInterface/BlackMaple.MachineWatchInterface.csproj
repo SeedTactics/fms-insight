@@ -1,5 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <LangVersion>latest</LangVersion>
     <AssemblyName>BlackMaple.MachineWatchInterface</AssemblyName>
     <PackageId>BlackMaple.MachineWatchInterface</PackageId>
     <OutputType>Library</OutputType>

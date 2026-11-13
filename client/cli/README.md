@@ -4,7 +4,7 @@
 used interactively or from scripts and agents. All server requests are read operations, including
 the job-history POST; SQL queries use a read-only connection.
 
-Run from the repository root with the .NET 10 SDK:
+Run from the repository root with the .NET 11 SDK:
 
 ```sh
 dotnet run --project client/cli -- --help

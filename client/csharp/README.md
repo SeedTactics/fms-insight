@@ -3,7 +3,7 @@
 This client-only library contains immutable records generated from the saved
 [`server/fms-insight-api.json`](../../server/fms-insight-api.json) artifact. It has no reference to
 MachineFramework, ASP.NET Core or a generator runtime. The server retains its own public types.
-Building the library requires only .NET 10. Generation uses Node 26+, the root workspace's locked
+Building the library requires only .NET 11. Generation uses Node 26+, the root workspace's locked
 NSwag package, and the repository's CSharpier tool.
 
 From the repository root, restore the existing tools/dependencies and generate or check the output:
