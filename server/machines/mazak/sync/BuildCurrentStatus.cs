@@ -392,7 +392,7 @@ namespace MazakMachineInterface
               }
               else
               {
-                action = MachiningOrWaiting(matID, job.Processes[palFmsProc - 1][0]);
+                action = MachiningOrWaiting(matID, palFmsProc, job.Processes[palFmsProc - 1][0]);
               }
 
               AddPalletMaterial(
@@ -446,6 +446,7 @@ namespace MazakMachineInterface
                 known.Face,
                 MachiningOrWaiting(
                   known.MaterialID,
+                  known.Process,
                   jobDB
                     .LoadJob(known.JobUniqueStr)
                     ?.Processes.ElementAtOrDefault(known.Process - 1)
@@ -474,7 +475,7 @@ namespace MazakMachineInterface
                   route.JobProcess,
                   route.Path,
                   route.NativeProcess,
-                  MachiningOrWaiting(-1, null)
+                  MachiningOrWaiting(-1, route.JobProcess, null)
                 );
             }
           }
@@ -497,10 +498,16 @@ namespace MazakMachineInterface
               fmsSettings
             );
           }
-          InProcessMaterialAction MachiningOrWaiting(long materialId, ProcPathInfo path)
+          InProcessMaterialAction MachiningOrWaiting(
+            long materialId,
+            int process,
+            ProcPathInfo path
+          )
           {
             var start =
-              materialId >= 0 ? FindMachineStartFromOldCycles(oldCycles, materialId) : null;
+              materialId >= 0
+                ? FindMachineStartFromOldCycles(oldCycles, materialId, process)
+                : null;
             if (start == null)
               return new() { Type = InProcessMaterialAction.ActionType.Waiting };
             var elapsed = utcNow.Subtract(start.EndTimeUTC);
@@ -1499,14 +1506,22 @@ namespace MazakMachineInterface
 
     private static BlackMaple.MachineFramework.LogEntry FindMachineStartFromOldCycles(
       IEnumerable<BlackMaple.MachineFramework.LogEntry> oldCycles,
-      long matId
+      long matId,
+      int process
     )
     {
       BlackMaple.MachineFramework.LogEntry start = null;
 
       foreach (var s in oldCycles.Where(e => e.Material.Any(m => m.MaterialID == matId)))
       {
-        if (s.LogType == LogType.MachineCycle)
+        if (s.LogType == LogType.LoadUnloadCycle && !s.StartOfCycle)
+        {
+          start = null;
+        }
+        else if (
+          s.LogType == LogType.MachineCycle
+          && s.Material.Any(m => m.MaterialID == matId && m.Process == process)
+        )
         {
           if (s.StartOfCycle)
           {

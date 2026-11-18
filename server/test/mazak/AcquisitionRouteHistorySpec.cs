@@ -13,6 +13,107 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class MazakAcquisitionSpec
 {
   [Test]
+  [Arguments(1)]
+  [Arguments(2)]
+  public async Task PartialReloadStartsANewMachiningPlacement(int processAfterLoad)
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var now = cell.Clock.Now.UtcDateTime;
+    var process = new ProcessInfo { Paths = [JobLogTest.EmptyPath with { PalletNums = [1] }] };
+    var job = new Job
+    {
+      UniqueStr = "placement",
+      PartName = "part",
+      Cycles = 1,
+      Archived = false,
+      RouteStartUTC = now.AddHours(-1),
+      RouteEndUTC = now.AddHours(1),
+      Processes = [process, process],
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "placement", Jobs = [job] }, null, true);
+    var route = new MazakRouteIdentity
+    {
+      Source = MazakConfig.DefaultControllerSource,
+      PartName = "part:7:1:1",
+      NativeProcess = 1,
+      JobUnique = job.UniqueStr,
+      JobProcess = 1,
+      Path = 1,
+    };
+    db.ReserveMazakRouteIdentity(route);
+    db.ReserveMazakRouteIdentity(route with { PartName = "part:7:2:2", JobProcess = 2 });
+    var material = db.AllocateMaterialID(job.UniqueStr, job.PartName, 2);
+    var load = new MaterialToLoadOntoFace
+    {
+      MaterialIDs = [material],
+      Process = 1,
+      Path = 1,
+      FaceNum = 1,
+      ActiveOperationTime = TimeSpan.Zero,
+    };
+    db.RecordPartialLoadUnload([load], [], 1, 1, TimeSpan.Zero, now.AddMinutes(-2), null);
+    var machiningMaterial = new EventLogMaterial
+    {
+      MaterialID = material,
+      Process = 1,
+      Face = 1,
+    };
+    db.RecordMachineStart([machiningMaterial], 1, "MC", 1, "1001", now.AddMinutes(-1));
+    cell.Data = cell.Data with
+    {
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "S001" }],
+    };
+    using var sync = cell.NewSynchronizer(configure: config =>
+      config with
+      {
+        UseDurableRouteIdentity = true,
+        UseInsightJobQuantities = accepted => accepted.UniqueStr == job.UniqueStr,
+      }
+    );
+    var retained = sync.CalculateCellState(db).CurrentStatus.Material.Single();
+    await Assert.That(retained.Action.Type).IsEqualTo(InProcessMaterialAction.ActionType.Machining);
+    await Assert.That(retained.Action.ElapsedMachiningTime).IsEqualTo(TimeSpan.FromMinutes(1));
+
+    db.RecordPartialLoadUnload(
+      [load with { Process = processAfterLoad }],
+      [
+        new()
+        {
+          MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination?>.Empty.Add(
+            material,
+            null
+          ),
+          Process = 1,
+          FaceNum = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+        },
+      ],
+      1,
+      1,
+      TimeSpan.Zero,
+      now.AddSeconds(-30),
+      null
+    );
+    var reloaded = sync.CalculateCellState(db).CurrentStatus.Material.Single();
+    await Assert.That(reloaded.Process).IsEqualTo(processAfterLoad);
+    await Assert.That(reloaded.Action.Type).IsEqualTo(InProcessMaterialAction.ActionType.Waiting);
+    await Assert.That(reloaded.Action.ElapsedMachiningTime).IsNull();
+
+    db.RecordMachineStart(
+      [machiningMaterial with { Process = processAfterLoad }],
+      1,
+      "MC",
+      1,
+      "1002",
+      now.AddSeconds(-10)
+    );
+    var started = sync.CalculateCellState(db).CurrentStatus.Material.Single();
+    await Assert.That(started.Action.Type).IsEqualTo(InProcessMaterialAction.ActionType.Machining);
+    await Assert.That(started.Action.ElapsedMachiningTime).IsEqualTo(TimeSpan.FromSeconds(10));
+  }
+
+  [Test]
   public async Task UnidentifiedLoadSurvivesMissingAssignmentAndRestartUntilUnload()
   {
     using var cell = new Cell();
