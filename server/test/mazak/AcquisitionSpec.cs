@@ -16,6 +16,70 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class MazakAcquisitionSpec
 {
   [Test]
+  public async Task ControllersWithTheSameFilenamesReconcileAndAcknowledgeIndependently()
+  {
+    using var original = new Cell();
+    using var added = new Cell();
+    const string source = "second-cell";
+    using var second = added.NewSynchronizer(source, startingPallet: 100);
+    var aLoad = original.Start with { Code = LogCode.LoadEnd, FixedQuantity = 1 };
+    var bLoad = aLoad with { FullPartName = "other-part", JobPartName = "other-part" };
+    var boundary = original.End with { Code = LogCode.LoadBegin };
+    var ahead = boundary with { ForeignID = "LG20261105-120000-003.csv" };
+    var db = original.Repository;
+
+    original.Data = original.Data with { Logs = [aLoad, boundary] };
+    original.Sync.CalculateCellState(db);
+    original.Data = original.Data with { Logs = [aLoad, boundary, ahead] };
+    original.Sync.CalculateCellState(db);
+    await Assert.That(original.Sync.CaptureLogWatermark(db)).IsEqualTo(ahead.ForeignID);
+    await Assert.That(second.CaptureLogWatermark(db)).IsEmpty();
+
+    added.Data = added.Data with { Logs = [bLoad] };
+    var settling = second.CalculateCellState(db);
+    await Assert.That(settling.PalletWithUnprocessedUnloads).IsEqualTo(100);
+    added.Native.Received(1).DeleteLogs("");
+    added.Native.DidNotReceive().DeleteLogs(ahead.ForeignID);
+
+    added.Data = added.Data with { Logs = [bLoad, boundary] };
+    var observed = second.AcquireCellState(second.CaptureLogWatermark(db));
+    await Assert
+      .That(() => original.Sync.ReconcileCellState(db, observed))
+      .Throws<ArgumentException>();
+    var committed = second.ReconcileCellState(db, observed);
+    await Assert.That(committed.CommittedLogWatermark).IsEqualTo(boundary.ForeignID);
+    await Assert.That(() => original.Sync.AcknowledgeLogs(committed)).Throws<ArgumentException>();
+    added.Native.DidNotReceive().DeleteLogs(boundary.ForeignID);
+
+    using var reopened = original.Repositories.OpenConnection();
+    using var restarted = added.NewSynchronizer(source, startingPallet: 100);
+    restarted.CalculateCellState(reopened);
+    added.Native.Received(1).LoadAllDataAndLogs(boundary.ForeignID);
+    added.Native.Received(1).DeleteLogs(boundary.ForeignID);
+    added.Native.DidNotReceive().DeleteLogs(ahead.ForeignID);
+    original.Native.Received(1).DeleteLogs(ahead.ForeignID);
+
+    var loads = reopened
+      .GetRecentLog(0)
+      .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle)
+      .ToImmutableList();
+    await Assert.That(loads.Count).IsEqualTo(2);
+    var originalLoad = reopened.MostRecentLogEntryForForeignID(aLoad.ForeignID);
+    var addedKey = new MazakConfig
+    {
+      DBType = MazakDbType.MazakSmooth,
+      ControllerSource = source,
+    }.LogForeignId(bLoad.ForeignID);
+    var addedLoad = reopened.MostRecentLogEntryForForeignID(addedKey);
+    await Assert.That(originalLoad.Material.Single().PartName).IsEqualTo(aLoad.JobPartName);
+    await Assert.That(addedLoad.Material.Single().PartName).IsEqualTo(bLoad.JobPartName);
+    await Assert.That(addedLoad.Pallet).IsEqualTo(100);
+    await Assert
+      .That(addedLoad.Material.Single().MaterialID)
+      .IsNotEqualTo(originalLoad.Material.Single().MaterialID);
+  }
+
+  [Test]
   [Arguments(false)]
   [Arguments(true)]
   public async Task StatusFailureAfterCommitRecoversAcrossRestartWithoutReplay(bool staged)
@@ -381,10 +445,7 @@ public sealed partial class MazakAcquisitionSpec
       .IsEqualTo("tool-1");
     cell.Native.Received(1).DeleteLogs(cell.Start.ForeignID);
     // Reconciliation has no built-in controller calls, including hidden tool enumerations.
-    cell.Data = cell.Data with
-    {
-      Logs = [],
-    };
+    cell.Data = cell.Data with { Logs = [] };
     var next = cell.Sync.AcquireCellState(cell.Sync.CaptureLogWatermark(cell.Repository));
     cell.Native.ClearReceivedCalls();
     var unchanged = cell.Sync.ReconcileCellState(cell.Repository, next);
@@ -686,13 +747,18 @@ public sealed partial class MazakAcquisitionSpec
       Sync = NewSynchronizer();
     }
 
-    public MazakSync NewSynchronizer() =>
+    public MazakSync NewSynchronizer(
+      string source = MazakConfig.DefaultControllerSource,
+      int startingPallet = 1
+    ) =>
       new(
         Native,
         new FMSSettings(),
         new MazakConfig
         {
           DBType = MazakDbType.MazakSmooth,
+          ControllerSource = source,
+          StartingPalletNumber = startingPallet,
           ProgramDirectory = "unused",
           CanQuarantineMissingMaterial = _ => false,
           AdjustCurrentStatus = (_, status) =>
