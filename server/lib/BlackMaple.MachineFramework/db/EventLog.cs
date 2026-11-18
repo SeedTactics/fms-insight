@@ -540,7 +540,9 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path "
+        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path, "
+        + "EXISTS (SELECT 1 FROM program_details d WHERE d.Counter = s.Counter "
+        + "AND d.Key = 'PalletCycleInvalidated') "
         + "FROM matdetails m "
         + "JOIN stations_mat sm ON sm.MaterialID = m.MaterialID "
         + "JOIN stations s ON s.Counter = sm.Counter "
@@ -585,9 +587,13 @@ namespace BlackMaple.MachineFramework
         {
           if (lastUnload == null || time > lastUnload.Value)
             lastUnload = time;
-          var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
-          var key = (Process: process, Path: path);
-          completed[key] = completed.GetValueOrDefault(key) + 1;
+          // Invalidation can require another attempt. The original physical entry still counts.
+          if (!reader.GetBoolean(6))
+          {
+            var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
+            var key = (Process: process, Path: path);
+            completed[key] = completed.GetValueOrDefault(key) + 1;
+          }
         }
       }
 
@@ -3072,7 +3078,9 @@ namespace BlackMaple.MachineFramework
         {
           elapsed = TimeSpan.FromSeconds(
             Math.Round(
-              totalElapsed.TotalSeconds * face.MaterialIDToDestination.Count / totMatCnt,
+              totMatCnt == 0
+                ? 0
+                : totalElapsed.TotalSeconds * face.MaterialIDToDestination.Count / totMatCnt,
               1
             )
           );
@@ -3247,7 +3255,10 @@ namespace BlackMaple.MachineFramework
         else
         {
           elapsed = TimeSpan.FromSeconds(
-            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt, 1)
+            Math.Round(
+              totMatCnt == 0 ? 0 : totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt,
+              1
+            )
           );
         }
 
@@ -6410,39 +6421,36 @@ namespace BlackMaple.MachineFramework
             int statNum = reader.GetInt32(3);
             int process = reader.GetInt32(4);
 
-            adjustPath(
-              process,
-              mat =>
+            adjustPath(process, mat =>
+            {
+              if (pal > 0)
+                mat = mat with { Pallet = pal };
+
+              switch (logTy)
               {
-                if (pal > 0)
-                  mat = mat with { Pallet = pal };
+                case LogType.LoadUnloadCycle:
+                  if (mat.LoadStation == -1)
+                    mat = mat with { LoadStation = statNum };
+                  else
+                    mat = mat with { UnloadStation = statNum };
+                  break;
 
-                switch (logTy)
-                {
-                  case LogType.LoadUnloadCycle:
-                    if (mat.LoadStation == -1)
-                      mat = mat with { LoadStation = statNum };
-                    else
-                      mat = mat with { UnloadStation = statNum };
-                    break;
-
-                  case LogType.MachineCycle:
-                    mat = mat with
-                    {
-                      Stops = mat.Stops.Add(
-                        new MaterialProcessActualPath.Stop()
-                        {
-                          StationName = statName,
-                          StationNum = statNum,
-                        }
-                      ),
-                    };
-                    break;
-                }
-
-                return mat;
+                case LogType.MachineCycle:
+                  mat = mat with
+                  {
+                    Stops = mat.Stops.Add(
+                      new MaterialProcessActualPath.Stop()
+                      {
+                        StationName = statName,
+                        StationNum = statNum,
+                      }
+                    ),
+                  };
+                  break;
               }
-            );
+
+              return mat;
+            });
           }
         }
       }

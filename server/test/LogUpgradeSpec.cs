@@ -125,12 +125,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(47);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(47);
       }
 
       CheckSchema(conn1, memDb);
@@ -1039,7 +1039,7 @@ namespace BlackMaple.FMSInsight.Tests
         cmd.ExecuteNonQuery();
         cmd.CommandText = "UPDATE stations SET CorrelationId = 'correlation-1'";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "UPDATE version SET ver = 43";
+        cmd.CommandText = "DROP TABLE mazak_route_identity; UPDATE version SET ver = 43";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "DROP INDEX sim_station_end_time";
         cmd.ExecuteNonQuery();
@@ -1104,7 +1104,8 @@ namespace BlackMaple.FMSInsight.Tests
       connection.Open();
       using (var command = connection.CreateCommand())
       {
-        command.CommandText = "DROP INDEX sim_station_end_time; UPDATE version SET ver = 45";
+        command.CommandText =
+          "DROP INDEX sim_station_end_time; DROP TABLE mazak_route_identity; UPDATE version SET ver = 45";
         command.ExecuteNonQuery();
       }
       using var upgraded = RepositoryConfig.InitializeMemoryDB(

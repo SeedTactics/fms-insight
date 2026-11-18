@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 46;
+    private const int Version = 47;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -110,6 +110,7 @@ namespace BlackMaple.MachineFramework
         CreateBasketOperationTables(cmd);
         CreateBasketContentsTables(cmd);
         CreateMaterialAllocationOperationTables(cmd);
+        CreateMazakRouteIdentityTable(cmd);
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
         cmd.ExecuteNonQuery();
@@ -540,6 +541,12 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
             CreateSimStationTimeIndex(cmd);
+          }
+
+          if (curVersion < 47)
+          {
+            cmd.Transaction = trans;
+            CreateMazakRouteIdentityTable(cmd);
           }
 
           //update the version in the database
@@ -1388,6 +1395,19 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE current_basket_slot_data(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, Key TEXT NOT NULL, Value TEXT NOT NULL, PRIMARY KEY(BasketId, Slot, Key))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateMazakRouteIdentityTable(IDbCommand cmd)
+    {
+      cmd.CommandText = """
+        CREATE TABLE mazak_route_identity(
+          Source TEXT NOT NULL, PartName TEXT NOT NULL, NativeProcess INTEGER NOT NULL,
+          JobUnique TEXT NOT NULL, JobProcess INTEGER NOT NULL, Path INTEGER NOT NULL,
+          PRIMARY KEY(Source, PartName, NativeProcess)
+        ) WITHOUT ROWID;
+        CREATE INDEX mazak_route_identity_job ON mazak_route_identity(Source, JobUnique, JobProcess, Path);
+        """;
       cmd.ExecuteNonQuery();
     }
 

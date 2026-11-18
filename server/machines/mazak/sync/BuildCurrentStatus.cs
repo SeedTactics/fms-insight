@@ -115,6 +115,9 @@ namespace MazakMachineInterface
       {
         precedence += 1;
 
+        var route = MazakRouteHistory.Find(jobDB, mazakCfg, schRow.PartName, 1);
+        if (route != null && !MazakRouteHistory.AgreesWithObservation(route, mazakData))
+          continue;
         if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
           continue;
 
@@ -160,46 +163,7 @@ namespace MazakMachineInterface
         if (!jobsByUniq.TryGetValue(jobUnique, out job))
         {
           var dbJob = jobDB.LoadJob(jobUnique);
-          job = new CurrentJob()
-          {
-            UniqueStr = jobUnique,
-            PartName = partName,
-            Cycles = 0,
-            DbJob = dbJob,
-            Processes = Enumerable
-              .Range(1, numProc)
-              .Select(proc =>
-              {
-                var b = ImmutableList.CreateBuilder<ProcPathInfo>();
-                b.Add(
-                  dbJob != null
-                  && proc <= dbJob.Processes.Count
-                  && dbJob.Processes[proc - 1].Paths.Count > 0
-                    ? dbJob.Processes[proc - 1].Paths[0]
-                    : null
-                );
-                return b;
-              })
-              .ToList(),
-            Completed = Enumerable
-              .Range(1, numProc)
-              .Select(_ =>
-              {
-                var b = ImmutableList.CreateBuilder<int>();
-                b.Add(0);
-                return b;
-              })
-              .ToList(),
-            Precedence = Enumerable
-              .Range(1, numProc)
-              .Select(_ =>
-              {
-                var b = ImmutableList.CreateBuilder<long>();
-                b.Add(0);
-                return b;
-              })
-              .ToList(),
-          };
+          job = NewCurrentJob(jobUnique, partName, numProc, dbJob);
           jobsByUniq.Add(jobUnique, job);
         }
         jobUniqBySchID.Add(schRow.Id, jobUnique);
@@ -270,21 +234,54 @@ namespace MazakMachineInterface
               continue;
             if (palSub.FixQuantity <= 0)
               continue;
-            if (!jobUniqBySchID.ContainsKey(palSub.ScheduleID))
-              continue;
+            var route = MazakRouteHistory.Find(
+              jobDB,
+              mazakCfg,
+              palSub.PartName,
+              palSub.PartProcessNumber
+            );
+            CurrentJob job;
+            int palFmsProc;
+            if (route != null)
+            {
+              if (!MazakRouteHistory.AgreesWithObservation(route, mazakData))
+                continue;
+              palFmsProc = route.JobProcess;
+              if (!jobsByUniq.TryGetValue(route.JobUnique, out job))
+              {
+                var accepted = jobDB.LoadJob(route.JobUnique);
+                if (accepted == null || accepted.Processes.Count < palFmsProc)
+                  continue;
+                job = NewCurrentJob(
+                  accepted.UniqueStr,
+                  accepted.PartName,
+                  accepted.Processes.Count,
+                  accepted
+                );
+              }
+            }
+            else
+            {
+              if (!jobUniqBySchID.TryGetValue(palSub.ScheduleID, out var unique))
+                continue;
+              if (
+                mazakCfg.UseDurableRouteIdentity
+                && !string.IsNullOrEmpty(palSub.PartName)
+                && !mazakData.Schedules.Any(s =>
+                  s.Id == palSub.ScheduleID && s.PartName == palSub.PartName
+                )
+              )
+                continue;
+              job = jobsByUniq[unique];
+              palFmsProc = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP)
+                ? splitFP
+                : palSub.PartProcessNumber;
+            }
 
             palletsByName[palName] = palletsByName[palName] with
             {
               NumFaces = Math.Max(palletsByName[palName].NumFaces, palSub.PartProcessNumber),
             };
-
-            var job = jobsByUniq[jobUniqBySchID[palSub.ScheduleID]];
-
-            // For split schedules, the Mazak PartProcessNumber is always 1, but the FMS
-            // job process may be 2+ for later split processes.
-            var palFmsProc = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP)
-              ? splitFP
-              : palSub.PartProcessNumber;
 
             var matIDs = new Queue<long>(
               FindMatIDsFromOldCycles(
@@ -390,7 +387,7 @@ namespace MazakMachineInterface
                   JobUnique = job.UniqueStr,
                   PartName = job.PartName,
                   Process = palFmsProc,
-                  Path = 1,
+                  Path = route?.Path ?? 1,
                   Serial = matDetails?.Serial,
                   WorkorderId = matDetails?.Workorder,
                   SignaledInspections = jobDB
@@ -578,14 +575,18 @@ namespace MazakMachineInterface
         // Repository accounting survives controller plan increases, split-route deletion and
         // canceled instructions. The backend projects any additional private reservations via
         // AdjustCurrentStatus and owns the decision to archive these jobs.
-        var localJobs = new JobCache(jobDB).BuildActiveJobs(material, jobDB);
+        var localJobs = new JobCache(jobDB).BuildActiveJobs(
+          mazakCfg.UseDurableRouteIdentity ? [] : material,
+          jobDB
+        );
         foreach (var local in localJobs.Values.Where(mazakCfg.UsesInsightJobQuantities))
         {
           var remainingToStart = local.RemainingToStart;
           // Actual execution still bounds remaining demand when entry history is incomplete.
           // Use the locally authorized quantity, not the controller's execution ceiling.
           if (
-            remainingToStart is { } remaining
+            !mazakCfg.UseDurableRouteIdentity
+            && remainingToStart is { } remaining
             && jobsByUniq.TryGetValue(local.UniqueStr, out var controller)
           )
             remainingToStart = Math.Min(remaining, Math.Max(0, local.Cycles - controller.Started));
@@ -598,16 +599,18 @@ namespace MazakMachineInterface
                 RemainingToStart = remainingToStart,
                 // Keep execution evidence from a controller batch whose logs are still
                 // settling, and history for split routes that have already been removed.
-                Completed = local
-                  .Completed.Select(
-                    (paths, process) =>
-                      paths
-                        .Select(
-                          (count, path) => Math.Max(count, installed.Completed[process][path])
-                        )
-                        .ToImmutableList()
-                  )
-                  .ToImmutableList(),
+                Completed = mazakCfg.UseDurableRouteIdentity
+                  ? local.Completed
+                  : local
+                    .Completed.Select(
+                      (paths, process) =>
+                        paths
+                          .Select(
+                            (count, path) => Math.Max(count, installed.Completed[process][path])
+                          )
+                          .ToImmutableList()
+                    )
+                    .ToImmutableList(),
                 Decrements = EmptyToNull(local.Decrements),
               }
               : local with
@@ -638,6 +641,53 @@ namespace MazakMachineInterface
         ),
       };
     }
+
+    private static CurrentJob NewCurrentJob(
+      string jobUnique,
+      string partName,
+      int numProc,
+      HistoricJob dbJob
+    ) =>
+      new CurrentJob()
+      {
+        UniqueStr = jobUnique,
+        PartName = partName,
+        Cycles = 0,
+        DbJob = dbJob,
+        Processes = Enumerable
+          .Range(1, numProc)
+          .Select(proc =>
+          {
+            var b = ImmutableList.CreateBuilder<ProcPathInfo>();
+            b.Add(
+              dbJob != null
+              && proc <= dbJob.Processes.Count
+              && dbJob.Processes[proc - 1].Paths.Count > 0
+                ? dbJob.Processes[proc - 1].Paths[0]
+                : null
+            );
+            return b;
+          })
+          .ToList(),
+        Completed = Enumerable
+          .Range(1, numProc)
+          .Select(_ =>
+          {
+            var b = ImmutableList.CreateBuilder<int>();
+            b.Add(0);
+            return b;
+          })
+          .ToList(),
+        Precedence = Enumerable
+          .Range(1, numProc)
+          .Select(_ =>
+          {
+            var b = ImmutableList.CreateBuilder<long>();
+            b.Add(0);
+            return b;
+          })
+          .ToList(),
+      };
 
     private static void CalculateMaxProcAndPath(
       MazakAllData mazakData,

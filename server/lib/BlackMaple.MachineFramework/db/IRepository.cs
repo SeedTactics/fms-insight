@@ -53,6 +53,16 @@ namespace BlackMaple.MachineFramework
   {
     RepositoryConfig RepoConfig { get; }
 
+    // A native route identity survives retirement and can be reserved only once.
+    void ReserveMazakRouteIdentity(MazakRouteIdentity route);
+
+    [return: MaybeNull]
+    MazakRouteIdentity LoadMazakRouteIdentity(string source, string partName, int nativeProcess);
+
+    ImmutableList<MazakRouteIdentity> LoadMazakRouteIdentities(string source, string jobUnique);
+
+    ImmutableHashSet<string> LoadReservedMazakPartNames(string source);
+
     // --------------------------------------------------------------------------------
     // Loading Events
     // --------------------------------------------------------------------------------

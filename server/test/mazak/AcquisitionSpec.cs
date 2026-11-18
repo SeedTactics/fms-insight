@@ -723,10 +723,10 @@ public sealed partial class MazakAcquisitionSpec
         Code = LogCode.MachineCycleEnd,
       };
 
-    public Cell()
+    public Cell(Func<long, string>? serial = null)
     {
       repositories = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings { ConvertMaterialIDToSerial = _ => "" },
+        new SerialSettings { ConvertMaterialIDToSerial = serial ?? (_ => "") },
         DatabaseId
       );
       Repository = repositories.OpenConnection();
@@ -749,21 +749,26 @@ public sealed partial class MazakAcquisitionSpec
 
     public MazakSync NewSynchronizer(
       string source = MazakConfig.DefaultControllerSource,
-      int startingPallet = 1
+      int startingPallet = 1,
+      Func<MazakConfig, MazakConfig>? configure = null
     ) =>
       new(
         Native,
         new FMSSettings(),
-        new MazakConfig
-        {
-          DBType = MazakDbType.MazakSmooth,
-          ControllerSource = source,
-          StartingPalletNumber = startingPallet,
-          ProgramDirectory = "unused",
-          CanQuarantineMissingMaterial = _ => false,
-          AdjustCurrentStatus = (_, status) =>
-            FailStatus ? throw new InvalidOperationException("status construction failed") : status,
-        },
+        (configure ?? (cfg => cfg))(
+          new MazakConfig
+          {
+            DBType = MazakDbType.MazakSmooth,
+            ControllerSource = source,
+            StartingPalletNumber = startingPallet,
+            ProgramDirectory = "unused",
+            CanQuarantineMissingMaterial = _ => false,
+            AdjustCurrentStatus = (_, status) =>
+              FailStatus
+                ? throw new InvalidOperationException("status construction failed")
+                : status,
+          }
+        ),
         Clock
       );
 

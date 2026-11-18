@@ -127,19 +127,17 @@ namespace MazakMachineInterface
 
     public string Comment =>
       IsSplitPart
-        ? Job.UniqueStr
-          + "-"
-          + SplitJobProcess.Value.ToString()
-          + "-"
-          + SplitPath.GetValueOrDefault(1).ToString()
-          + SplitInsightSuffix
+        ? SplitComment(Job.UniqueStr, SplitJobProcess.Value, SplitPath.GetValueOrDefault(1))
         : Job.UniqueStr + CombinedInsightSuffix;
+
+    internal static string SplitComment(string unique, int process, int path) =>
+      $"{unique}-{process}-{path}{SplitInsightSuffix}";
 
     internal static ImmutableList<string> InitialScheduleComments(Job job) =>
       ConvertJobsToMazakParts.IsSplitScheduleJob(job)
         ? Enumerable
           .Range(1, job.Processes.Count)
-          .Select(process => job.UniqueStr + "-" + process + "-1" + SplitInsightSuffix)
+          .Select(process => SplitComment(job.UniqueStr, process, 1))
           .ToImmutableList()
         : [job.UniqueStr + CombinedInsightSuffix];
 
@@ -735,10 +733,7 @@ namespace MazakMachineInterface
           if (!UsedFixtures.Contains(palRow.Fixture))
           {
             //not found, can delete it
-            var newPalRow = palRow with
-            {
-              Command = MazakWriteCommand.Delete,
-            };
+            var newPalRow = palRow with { Command = MazakWriteCommand.Delete };
             palRows.Add(newPalRow);
           }
         }
@@ -859,8 +854,7 @@ namespace MazakMachineInterface
               .Fixture;
             // Part transactions precede pallet transactions. Keep the installed fixture's original
             // group when completing a missing mapping; generated names contain F:download:group:... .
-            var group =
-              data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
+            var group = data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
               ?? int.Parse(
                 fixture.Split(':')[2],
                 System.Globalization.CultureInfo.InvariantCulture

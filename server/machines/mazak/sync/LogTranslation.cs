@@ -258,6 +258,9 @@ namespace MazakMachineInterface
       int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
       int loadStation = mazakConfig.TranslateLoadStationNumber(es[0].StationNumber);
       var cycle = pallet >= 1 ? repo.CurrentPalletLog(pallet) : [];
+      var managed = es.Any(e =>
+        MazakRouteHistory.Find(repo, mazakConfig, e.FullPartName, e.Process) != null
+      );
       ImmutableList<MaterialToLoadOntoFace> exactLoads = null;
       ImmutableList<MaterialToUnloadFromFace> exactUnloads = null;
       PalletBasketLoadUnloadCompletion basketCompletion = null;
@@ -341,6 +344,29 @@ namespace MazakMachineInterface
         PalletBasketLoadUnloadCompletion baskets
       )
       {
+        var elapsed = CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, loadStation);
+        if (
+          managed
+          && (
+            loads.Sum(f => f.MaterialIDs.Count) + unloads.Sum(f => f.MaterialIDToDestination.Count)
+              < es.Sum(e => e.FixedQuantity)
+            || GetAllMaterialOnPallet(cycle)
+              .Any(m => !unloads.Any(u => u.MaterialIDToDestination.ContainsKey(m.MaterialID)))
+          )
+        )
+        {
+          repo.RecordPartialLoadUnload(
+            loads,
+            unloads,
+            loadStation,
+            pallet,
+            elapsed,
+            es[0].TimeUTC,
+            fmsSettings.ExternalQueues,
+            baskets
+          );
+          return;
+        }
         repo.RecordLoadUnloadComplete(
           toLoad: loads,
           previouslyLoaded: null,
@@ -348,12 +374,7 @@ namespace MazakMachineInterface
           previouslyUnloaded: null,
           pallet: pallet,
           lulNum: loadStation,
-          totalElapsed: CalculateElapsed(
-            es[0].TimeUTC,
-            LogType.LoadUnloadCycle,
-            cycle,
-            loadStation
-          ),
+          totalElapsed: elapsed,
           timeUTC: es[0].TimeUTC,
           externalQueues: fmsSettings.ExternalQueues,
           palletBasketCompletion: baskets
@@ -374,14 +395,21 @@ namespace MazakMachineInterface
         throw new InvalidOperationException("A L/U chunk must have one pallet and station.");
       MazakLoadUnloadFace Face(LogEntry e)
       {
-        FindSchedule(e.FullPartName, e.Process, out var unique, out _, out var process);
+        FindSchedule(
+          e.FullPartName,
+          e.Process,
+          out var unique,
+          out _,
+          out var process,
+          out var route
+        );
         return new MazakLoadUnloadFace
         {
           ForeignId = mazakConfig.LogForeignId(e.ForeignID),
           PartName = e.JobPartName,
           JobUnique = unique,
           Process = process,
-          Path = 1,
+          Path = route?.Path ?? 1,
           Face = e.Process,
           Quantity = e.FixedQuantity,
         };
@@ -890,7 +918,26 @@ namespace MazakMachineInterface
 
     private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, IList<MWI.LogEntry> oldEvents)
     {
-      FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc, out int jobProc);
+      FindSchedule(
+        e.FullPartName,
+        e.Process,
+        out string unique,
+        out int numProc,
+        out int jobProc,
+        out var route
+      );
+
+      if (route != null)
+        return GetAllMaterialOnPallet(oldEvents)
+          .Where(m => m.JobUniqueStr == unique && m.Process == jobProc && m.Face == e.Process)
+          .Take(e.FixedQuantity)
+          .Select(m => new LogMaterialAndPath
+          {
+            Mat = EventLogMaterial.FromLogMat(m),
+            Unique = unique,
+            PartName = m.PartName,
+          })
+          .ToList();
 
       var byMatId = ParseMaterialFromPreviousEvents(
         jobPartName: e.JobPartName,
@@ -1029,8 +1076,28 @@ namespace MazakMachineInterface
           e.Process,
           out string unique,
           out int numProc,
-          out int jobProc
+          out int jobProc,
+          out var route
         );
+
+        if (route != null)
+        {
+          // A custom backend supplies exact identities for admission. Keep the observed face
+          // when they are unknown without allocating material or moving unrelated queue stock.
+          toLoad.Add(
+            new MaterialToLoadOntoFace
+            {
+              MaterialIDs = [],
+              Process = jobProc,
+              FaceNum = e.Process,
+              Path = route.Path,
+              ForeignID = mazakConfig.LogForeignId(e.ForeignID),
+              AdditionalData = UnidentifiedQuantity(e.FixedQuantity),
+              ActiveOperationTime = TimeSpan.Zero,
+            }
+          );
+          continue;
+        }
 
         Log.Debug(
           "Found job {unique} with number of procs {numProc} and job proc {jobProc}",
@@ -1225,7 +1292,11 @@ namespace MazakMachineInterface
           continue;
 
         var mats = GetMaterialOnPallet(e, oldEvents);
-        var unloadProcess = mats.Count > 0 ? mats[0].Mat.Process : e.Process;
+        FindSchedule(e.FullPartName, e.Process, out _, out _, out var unloadProcess, out var route);
+        if (mats.Count > 0)
+          unloadProcess = mats[0].Mat.Process;
+        else if (route == null)
+          unloadProcess = e.Process;
 
         var matToQueue = ImmutableDictionary.CreateBuilder<long, UnloadDestination>();
         var unresolvedBasketMaterial = new List<long>();
@@ -1290,6 +1361,13 @@ namespace MazakMachineInterface
             fmsSettings.QuarantineQueue
           );
 
+        var details =
+          route != null && mats.Count < e.FixedQuantity
+            ? UnidentifiedQuantity(e.FixedQuantity - mats.Count)
+            : ImmutableDictionary<string, string>.Empty;
+        if (unresolvedBasketMaterial.Count > 0)
+          details = details.Add("unresolved-basket-handoff", "true");
+
         ret.Add(
           new MaterialToUnloadFromFace()
           {
@@ -1298,10 +1376,7 @@ namespace MazakMachineInterface
             FaceNum = e.Process,
             ActiveOperationTime = CalculateActiveUnloadTime(mats),
             ForeignID = mazakConfig.LogForeignId(e.ForeignID),
-            AdditionalData =
-              unresolvedBasketMaterial.Count > 0
-                ? ImmutableDictionary<string, string>.Empty.Add("unresolved-basket-handoff", "true")
-                : null,
+            AdditionalData = details.IsEmpty ? null : details,
           }
         );
       }
@@ -1309,14 +1384,41 @@ namespace MazakMachineInterface
       return ret;
     }
 
+    private static ImmutableDictionary<string, string> UnidentifiedQuantity(int count) =>
+      ImmutableDictionary<string, string>.Empty.Add(
+        "mazak-unidentified-quantity",
+        count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+      );
+
     public void FindSchedule(
       string mazakPartName,
       int proc,
       out string unique,
       out int numProc,
       out int jobProc
+    ) => FindSchedule(mazakPartName, proc, out unique, out numProc, out jobProc, out _);
+
+    private void FindSchedule(
+      string mazakPartName,
+      int proc,
+      out string unique,
+      out int numProc,
+      out int jobProc,
+      out MazakRouteIdentity route
     )
     {
+      route = MazakRouteHistory.Find(repo, mazakConfig, mazakPartName, proc);
+      if (route != null)
+      {
+        var job = MazakRouteHistory.AgreesWithObservation(route, mazakData)
+          ? GetJob(route.JobUnique)
+          : null;
+        unique = job?.UniqueStr ?? "";
+        numProc = job?.Processes.Count ?? route.JobProcess;
+        jobProc = route.JobProcess;
+        return;
+      }
+
       unique = "";
       numProc = proc;
       jobProc = proc;
@@ -1373,14 +1475,27 @@ namespace MazakMachineInterface
         )
         {
           // remove material from matsOnPal that matches this PalletSubStatus
-          var sch = mazakData.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
-          if (sch == null)
-            continue;
-          var scheduleComment = MazakPart.ParseCommentInfo(sch.Comment);
-          if (!scheduleComment.HasUnique)
-            continue;
-          var unique = scheduleComment.Unique;
-          var fmsProc = scheduleComment.JobProcessForMazakProcess(st.PartProcessNumber);
+          var route = MazakRouteHistory.Find(repo, mazakConfig, st.PartName, st.PartProcessNumber);
+          string unique;
+          int fmsProc;
+          if (route != null)
+          {
+            if (!MazakRouteHistory.AgreesWithObservation(route, mazakData))
+              continue;
+            unique = route.JobUnique;
+            fmsProc = route.JobProcess;
+          }
+          else
+          {
+            var sch = mazakData.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
+            if (sch == null)
+              continue;
+            var scheduleComment = MazakPart.ParseCommentInfo(sch.Comment);
+            if (!scheduleComment.HasUnique)
+              continue;
+            unique = scheduleComment.Unique;
+            fmsProc = scheduleComment.JobProcessForMazakProcess(st.PartProcessNumber);
+          }
 
           var matchingMats = matsOnPal
             .Where(m => m.JobUniqueStr == unique && m.Process == fmsProc)
@@ -1400,6 +1515,19 @@ namespace MazakMachineInterface
         // anything left in matsOnPal disappeared from PalletSubStatuses so should be quarantined
         foreach (var extraMat in matsOnPal)
         {
+          // Missing native rows cannot distinguish a retired definition from removal of its
+          // physical material. Keep its recorded placement until evidence resolves the pallet.
+          if (
+            mazakConfig.UseDurableRouteIdentity
+            && !string.IsNullOrEmpty(extraMat.JobUniqueStr)
+            && repo.LoadMazakRouteIdentities(mazakConfig.ControllerSource, extraMat.JobUniqueStr)
+              .Any(r =>
+                r.JobProcess == extraMat.Process
+                && !mazakData.Schedules.Any(s => s.PartName == r.PartName)
+              )
+          )
+            continue;
+
           repo.RecordAddMaterialToQueue(
             mat: new EventLogMaterial()
             {

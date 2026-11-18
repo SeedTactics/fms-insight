@@ -201,6 +201,10 @@ namespace MazakMachineInterface
     public bool UsesInsightJobQuantities(Job? job) =>
       job != null && UseInsightJobQuantities?.Invoke(job) == true;
 
+    // Enable historical split-route attribution. For Insight-owned jobs, published production
+    // quantities come from manufacturing history; AdjustCurrentStatus can add reservations.
+    public bool UseDurableRouteIdentity { get; init; }
+
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
 
