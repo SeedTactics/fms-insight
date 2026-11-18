@@ -193,7 +193,16 @@ namespace MazakMachineInterface
       var palOnHold = mazakData
         .PalletStatuses?.GroupBy(p => p.PalletNumber)
         .ToDictionary(g => mazakCfg.TranslatePalletNumber(g.Key), g => g.Any(p => p.IsOnHold > 0));
-      foreach (var palRow in mazakData.Pallets)
+      var palletRows = mazakCfg.UseDurableRouteIdentity
+        ? mazakData.Pallets.Concat(
+          mazakData.PalletPositions.Select(p => new MazakPalletRow
+          {
+            PalletNumber = p.PalletNumber,
+            Fixture = "",
+          })
+        )
+        : mazakData.Pallets;
+      foreach (var palRow in palletRows)
       {
         if (
           palRow.PalletNumber > 0
@@ -301,7 +310,6 @@ namespace MazakMachineInterface
               if (matIDs.Count > 0)
                 matID = matIDs.Dequeue();
 
-              var matDetails = jobDB.GetMaterialDetails(matID);
               var currentProcessBeforeLoad =
                 palFmsProc > palSub.PartProcessNumber ? palFmsProc - 1 : palSub.PartProcessNumber;
 
@@ -380,39 +388,52 @@ namespace MazakMachineInterface
                 }
               }
 
-              material.Add(
-                new InProcessMaterial()
-                {
-                  MaterialID = matID,
-                  JobUnique = job.UniqueStr,
-                  PartName = job.PartName,
-                  Process = palFmsProc,
-                  Path = route?.Path ?? 1,
-                  Serial = matDetails?.Serial,
-                  WorkorderId = matDetails?.Workorder,
-                  SignaledInspections = jobDB
-                    .LookupInspectionDecisions(matID)
-                    .Where(x => x.Inspect)
-                    .Select(x => x.InspType)
-                    .Distinct()
-                    .ToImmutableList(),
-                  QuarantineAfterUnload =
-                    FindSignalQuarantineForMaterial(matID, oldCycles) != null ? true : null,
-                  LastCompletedMachiningRouteStopIndex = oldCycles.Any(c =>
-                    c.LogType == LogType.MachineCycle
-                    && !c.StartOfCycle
-                    && c.Material.Any(m => m.MaterialID == matID && m.Process == palFmsProc)
-                  )
-                    ? (int?)0
-                    : null,
-                  Location = new InProcessMaterialLocation()
-                  {
-                    Type = InProcessMaterialLocation.LocType.OnPallet,
-                    PalletNum = palName,
-                    Face = face,
-                  },
-                  Action = action,
-                }
+              AddPalletMaterial(
+                matID,
+                job.UniqueStr,
+                job.PartName,
+                palFmsProc,
+                route?.Path ?? 1,
+                face,
+                action
+              );
+            }
+          }
+
+          if (mazakCfg.UseDurableRouteIdentity)
+          {
+            var alreadyShown = material
+              .Where(m => m.Location.PalletNum == palName)
+              .Select(m => m.MaterialID)
+              .ToImmutableHashSet();
+            foreach (
+              var known in MazakMaterialHistory.CurrentPalletMaterial(jobDB, oldCycles, removals)
+            )
+            {
+              if (
+                known.MaterialID < 0
+                || alreadyShown.Contains(known.MaterialID)
+                || !MazakRouteHistory.HasUnconfirmedPlacement(
+                  jobDB,
+                  mazakCfg,
+                  mazakData,
+                  oldCycles,
+                  known
+                )
+              )
+                continue;
+              palletsByName[palName] = palletsByName[palName] with
+              {
+                NumFaces = Math.Max(palletsByName[palName].NumFaces, known.Face),
+              };
+              AddPalletMaterial(
+                known.MaterialID,
+                known.JobUniqueStr,
+                known.PartName,
+                known.Process,
+                known.Path ?? 1,
+                known.Face,
+                new InProcessMaterialAction { Type = InProcessMaterialAction.ActionType.Waiting }
               );
             }
           }
@@ -433,6 +454,52 @@ namespace MazakMachineInterface
               removals,
               partNameToNumProc,
               fmsSettings
+            );
+          }
+          void AddPalletMaterial(
+            long matID,
+            string unique,
+            string part,
+            int process,
+            int path,
+            int face,
+            InProcessMaterialAction action
+          )
+          {
+            var matDetails = jobDB.GetMaterialDetails(matID);
+            material.Add(
+              new InProcessMaterial()
+              {
+                MaterialID = matID,
+                JobUnique = unique,
+                PartName = part,
+                Process = process,
+                Path = path,
+                Serial = matDetails?.Serial,
+                WorkorderId = matDetails?.Workorder,
+                SignaledInspections = jobDB
+                  .LookupInspectionDecisions(matID)
+                  .Where(x => x.Inspect)
+                  .Select(x => x.InspType)
+                  .Distinct()
+                  .ToImmutableList(),
+                QuarantineAfterUnload =
+                  FindSignalQuarantineForMaterial(matID, oldCycles) != null ? true : null,
+                LastCompletedMachiningRouteStopIndex = oldCycles.Any(c =>
+                  c.LogType == LogType.MachineCycle
+                  && !c.StartOfCycle
+                  && c.Material.Any(m => m.MaterialID == matID && m.Process == process)
+                )
+                  ? (int?)0
+                  : null,
+                Location = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  PalletNum = palName,
+                  Face = face,
+                },
+                Action = action,
+              }
             );
           }
         }

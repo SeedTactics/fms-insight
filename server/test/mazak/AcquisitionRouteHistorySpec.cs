@@ -13,12 +13,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class MazakAcquisitionSpec
 {
   [Test]
-  [Arguments(false, 1)]
-  [Arguments(true, 1)]
-  [Arguments(true, 2)]
+  [Arguments(false, 1, false)]
+  [Arguments(true, 1, false)]
+  [Arguments(true, 2, false)]
+  [Arguments(true, 1, true)]
   public async Task DelayedSplitUnloadSurvivesRetirementAndScheduleIdReuse(
     bool deletePart,
-    int reportedQuantity
+    int reportedQuantity,
+    bool ambiguousIdentities
   )
   {
     using var cell = new Cell(id => "serial-" + id);
@@ -63,12 +65,15 @@ public sealed partial class MazakAcquisitionSpec
       now.AddMinutes(-5),
       out var mark
     );
+    var loaded = ambiguousIdentities
+      ? ImmutableList.Create(material, db.AllocateMaterialID(job.UniqueStr, job.PartName, 2))
+      : ImmutableList.Create(material);
     db.RecordLoadUnloadComplete(
       toLoad:
       [
         new()
         {
-          MaterialIDs = [material],
+          MaterialIDs = loaded,
           Process = 2,
           FaceNum = 1,
           Path = 1,
@@ -94,7 +99,7 @@ public sealed partial class MazakAcquisitionSpec
         {
           var face = context.Unloads.Single();
           resolvedFace = face;
-          return reportedQuantity == 1
+          return reportedQuantity == 1 && !ambiguousIdentities
             ? new MazakLoadUnloadResolution.Resolved
             {
               MaterialForLoads = ImmutableDictionary<string, MazakResolvedLoad>.Empty,
@@ -167,7 +172,7 @@ public sealed partial class MazakAcquisitionSpec
     await Assert.That(before.Jobs[job.UniqueStr].Completed![1][0]).IsEqualTo(0);
     await Assert
       .That(before.Jobs[job.UniqueStr].RemainingToStart.GetValueOrDefault())
-      .IsEqualTo(9L);
+      .IsEqualTo(10L - loaded.Count);
 
     cell.Data = cell.Data with
     {
@@ -181,6 +186,13 @@ public sealed partial class MazakAcquisitionSpec
     await Assert.That(stillOnPallet.JobUnique).IsEqualTo(job.UniqueStr);
     await Assert.That(stillOnPallet.Process).IsEqualTo(2);
     await Assert.That(stillOnPallet.Serial).IsEqualTo(mark.Material.Single().Serial);
+
+    if (deletePart)
+    {
+      cell.Data = cell.Data with { Pallets = [], PalletSubStatuses = [] };
+      var missing = restarted.CalculateCellState(reopened).CurrentStatus;
+      await Assert.That(missing.Material.Select(m => m.MaterialID)).IsEquivalentTo(loaded);
+    }
 
     var unload = cell.Start with
     {
@@ -198,6 +210,14 @@ public sealed partial class MazakAcquisitionSpec
     await Assert.That(resolvedFace.Process).IsEqualTo(2);
     await Assert.That(resolvedFace.Path).IsEqualTo(1);
     var log = reopened.MostRecentLogEntryForForeignID(unload.ForeignID);
+    if (ambiguousIdentities)
+    {
+      await Assert.That(log.Material).IsEmpty();
+      await Assert.That(log.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
+      await Assert.That(complete.Material.Select(m => m.MaterialID)).IsEquivalentTo(loaded);
+      await Assert.That(complete.Jobs[job.UniqueStr].Completed![1][0]).IsEqualTo(0);
+      return;
+    }
     await Assert.That(log.Material.Single().MaterialID).IsEqualTo(material);
     await Assert.That(log.Material.Single().Process).IsEqualTo(2);
     if (reportedQuantity == 2)
@@ -222,10 +242,18 @@ public sealed partial class MazakAcquisitionSpec
       .IsEqualTo(1);
 
     reopened.InvalidatePalletCycle(material, 2, "operator", now);
+    var replacement = route with { PartName = "part:9:2:2" };
+    reopened.ReserveMazakRouteIdentity(replacement);
+    var replacementPart = Part(replacement.PartName, oldPart.Comment);
+    cell.Data = cell.Data with
+    {
+      Parts = [.. cell.Data.Parts, replacementPart],
+      Schedules = [.. cell.Data.Schedules, Schedule(replacementPart, 20, 5) with { Id = 2 }],
+    };
     var invalidated = restarted.CalculateCellState(reopened).CurrentStatus;
     await Assert.That(invalidated.Jobs[job.UniqueStr].Completed![1][0]).IsEqualTo(0);
     await Assert
       .That(invalidated.Jobs[job.UniqueStr].RemainingToStart.GetValueOrDefault())
-      .IsEqualTo(9L);
+      .IsEqualTo(10L - loaded.Count);
   }
 }
