@@ -91,21 +91,26 @@ namespace MazakMachineInterface
     }
 
     public MazakPart(Job j, int downID, int partIdx, int splitJobProcess, int splitPath)
+      : this(
+        j,
+        downID,
+        splitJobProcess,
+        splitPath,
+        SplitPartName(j, downID, partIdx, splitJobProcess)
+      ) { }
+
+    internal MazakPart(Job j, int downID, int splitJobProcess, int splitPath, string partName)
     {
       Job = j;
       DownloadID = downID;
       Processes = new List<MazakProcess>();
       SplitJobProcess = splitJobProcess;
       SplitPath = splitPath;
-      PartName =
-        Job.PartName
-        + ":"
-        + DownloadID.ToString()
-        + ":"
-        + partIdx.ToString()
-        + ":"
-        + splitJobProcess.ToString();
+      PartName = partName;
     }
+
+    internal static string SplitPartName(Job job, int downloadId, int partIndex, int process) =>
+      $"{job.PartName}:{downloadId}:{partIndex}:{process}";
 
     public MazakPartRow ToDatabaseRow()
     {
@@ -574,12 +579,19 @@ namespace MazakMachineInterface
     public MazakWriteData AddFixtureAndProgramDatabaseRows(
       Func<string, long, string> getProgramContent,
       string programDir
+    ) => AddFixtureAndProgramDatabaseRows(UsedFixtures, AllParts, getProgramContent, programDir);
+
+    internal MazakWriteData AddFixtureAndProgramDatabaseRows(
+      IEnumerable<string> fixtures,
+      IEnumerable<MazakPart> parts,
+      Func<string, long, string> getProgramContent,
+      string programDir
     )
     {
       var fixRows = new List<MazakFixtureRow>();
 
       //add new fixtures
-      foreach (string fixture in UsedFixtures)
+      foreach (string fixture in fixtures)
       {
         //check if this fixture exists already... could exist already if we reuse fixtures
         foreach (var fixRow in OldMazakData.Fixtures)
@@ -603,7 +615,7 @@ namespace MazakMachineInterface
 
       // add programs
       var newProgs = new Dictionary<(string name, long rev), NewMazakProgram>();
-      foreach (var part in AllParts)
+      foreach (var part in parts)
       {
         foreach (var proc in part.Processes)
         {
@@ -797,6 +809,76 @@ namespace MazakMachineInterface
           .Where(part => part != null)
           .ToImmutableList()
         : [];
+      return BuildDefinitions(
+        mazakData,
+        downloadUID,
+        savedParts,
+        mazakCfg,
+        errors,
+        allParts,
+        reused
+      );
+    }
+
+    internal static MazakJobs BuildSplitDefinition(
+      IRepository db,
+      MazakAllData data,
+      MazakConfig config,
+      FMSSettings settings,
+      Job job,
+      MazakRouteIdentity identity,
+      MazakPartRow installed,
+      out MazakPart expected
+    )
+    {
+      var errors = new List<string>();
+      Validate([job], settings, errors);
+      var downloadId = MazakPart.ParseUID(identity.PartName);
+      expected = new MazakPart(
+        job,
+        downloadId,
+        identity.JobProcess,
+        identity.Path,
+        identity.PartName
+      );
+      BuildProcFromJob(
+        job,
+        expected,
+        out var error,
+        config,
+        data,
+        (program, revision) => WriteJobs.LookupProgram(db, program, revision),
+        onlyProcess: identity.JobProcess
+      );
+      if (!string.IsNullOrEmpty(error))
+        errors.Add(error);
+      if (errors.Count > 0)
+        throw new BadRequestException(string.Join(Environment.NewLine, errors));
+
+      var definitions = BuildDefinitions(
+        data,
+        downloadId,
+        data.Parts.Select(p => p.PartName).ToHashSet(StringComparer.Ordinal),
+        config,
+        errors,
+        [expected],
+        installed == null ? [] : [installed]
+      );
+      if (errors.Count > 0)
+        throw new BadRequestException(string.Join(Environment.NewLine, errors));
+      return definitions;
+    }
+
+    private static MazakJobs BuildDefinitions(
+      MazakAllData mazakData,
+      int downloadUID,
+      ISet<string> savedParts,
+      MazakConfig mazakCfg,
+      IList<string> errors,
+      List<MazakPart> allParts,
+      ImmutableList<MazakPartRow> reused
+    )
+    {
       var reusedPallets = MissingReusedPallets(allParts, reused, mazakData, mazakCfg);
       savedParts.UnionWith(reused.Select(part => part.PartName));
       allParts = allParts.Where(part => !reused.Any(old => old.Comment == part.Comment)).ToList();

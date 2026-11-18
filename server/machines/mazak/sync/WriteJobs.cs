@@ -104,7 +104,7 @@ namespace MazakMachineInterface
       return true;
     }
 
-    private static ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
+    internal static ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
     {
       if (rev.HasValue)
       {
@@ -116,6 +116,22 @@ namespace MazakMachineInterface
       }
     }
 
+    internal static int FindUnusedDownloadId(MazakAllData data, IRepository db, MazakConfig config)
+    {
+      var used = data
+        .Schedules.Select(s => s.PartName)
+        .Concat(data.Parts.Select(p => p.PartName))
+        .Concat(data.Fixtures.Select(f => f.FixtureName))
+        .Concat(db.LoadReservedMazakPartNames(config.ControllerSource))
+        .Where(name => !string.IsNullOrEmpty(name))
+        .Select(MazakPart.ParseUID)
+        .ToImmutableHashSet();
+      for (var id = 0; id < int.MaxValue; id++)
+        if (!used.Contains(id))
+          return id;
+      throw new InvalidOperationException("Unable to find an unused Mazak download ID.");
+    }
+
     private static ImmutableHashSet<string> AddFixturesPalletsParts(
       MazakAllData mazakData,
       IRepository jobDB,
@@ -125,48 +141,18 @@ namespace MazakMachineInterface
       MazakConfig mazakCfg
     )
     {
-      //first allocate a UID to use for this download
-      int UID = 0;
-      while (UID < int.MaxValue)
-      {
-        //check schedule rows for UID
-        foreach (var schRow in mazakData.Schedules)
-        {
-          if (MazakPart.ParseUID(schRow.PartName) == UID)
-            goto found;
-        }
-
-        if (mazakData.Parts.Any(part => MazakPart.ParseUID(part.PartName) == UID))
-          goto found;
-
-        //check fixture rows for UID
-        foreach (var fixRow in mazakData.Fixtures)
-        {
-          if (MazakPart.ParseUID(fixRow.FixtureName) == UID)
-            goto found;
-        }
-
-        break;
-        found:
-        UID += 1;
-      }
-      if (UID == int.MaxValue)
-      {
-        throw new Exception("Unable to find unused UID");
-      }
+      var UID = FindUnusedDownloadId(mazakData, jobDB, mazakCfg);
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
-      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(
-        mazakData,
-        s =>
-          !jobs.Any(job => MazakPart.UniqueFromComment(s.Comment ?? "") == job.UniqueStr)
-          && (
-            mazakCfg.UseInsightJobQuantities == null
-            || !MazakPart.IsSailPart(s.PartName, s.Comment)
-            || !mazakCfg.UsesInsightJobQuantities(
-              jobDB.LoadJob(MazakPart.UniqueFromComment(s.Comment))
-            )
+      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData, s =>
+        !jobs.Any(job => MazakPart.UniqueFromComment(s.Comment ?? "") == job.UniqueStr)
+        && (
+          mazakCfg.UseInsightJobQuantities == null
+          || !MazakPart.IsSailPart(s.PartName, s.Comment)
+          || !mazakCfg.UsesInsightJobQuantities(
+            jobDB.LoadJob(MazakPart.UniqueFromComment(s.Comment))
           )
+        )
       );
       if (mazakCfg.UseInsightJobQuantities != null)
       {

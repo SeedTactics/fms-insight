@@ -12,7 +12,7 @@ using NSubstitute;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
-public sealed class DuplicateDownloadSpec
+public sealed partial class DuplicateDownloadSpec
 {
   private static readonly DateTime Now = new(2026, 11, 11, 12, 0, 0, DateTimeKind.Utc);
 
@@ -627,7 +627,44 @@ public sealed class DuplicateDownloadSpec
               : write.Parts;
           Data = Data with
           {
-            Schedules = Apply(Data.Schedules, schedules, row => row.Id, row => row.Command),
+            Schedules = Apply(
+              Data.Schedules,
+              schedules
+                .Select(edit =>
+                  edit.Command switch
+                  {
+                    MazakWriteCommand.ScheduleSafeEdit => Data.Schedules.Single(s =>
+                      s.Id == edit.Id
+                    ) with
+                    {
+                      PlanQuantity = edit.PlanQuantity,
+                      DueDate = edit.DueDate,
+                      Priority = edit.Priority,
+                      HoldMode = edit.HoldMode,
+                    },
+                    MazakWriteCommand.ScheduleMaterialEdit => Data.Schedules.Single(s =>
+                      s.Id == edit.Id
+                    ) with
+                    {
+                      Processes = Data
+                        .Schedules.Single(s => s.Id == edit.Id)
+                        .Processes.Select(p =>
+                          p with
+                          {
+                            ProcessMaterialQuantity = edit
+                              .Processes.Single(e => e.ProcessNumber == p.ProcessNumber)
+                              .ProcessMaterialQuantity,
+                          }
+                        )
+                        .ToImmutableList(),
+                    },
+                    _ => edit,
+                  }
+                )
+                .ToImmutableList(),
+              row => row.Id,
+              row => row.Command
+            ),
             Parts = Apply(Data.Parts, parts, row => row.PartName, row => row.Command),
             Pallets = Apply(
               Data.Pallets,
