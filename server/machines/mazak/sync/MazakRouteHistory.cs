@@ -72,14 +72,18 @@ internal static class MazakRouteHistory
       && e.Result == "LOAD"
       && e.Material.Any(m => m.MaterialID == material.MaterialID)
     );
-    if (placement?.ProgramDetails?.TryGetValue(NativePartNameKey, out var name) == true)
-      return !observed.Schedules.Any(s => s.PartName == name);
-
     // Older confirmed loads may predate the exact native name in the manufacturing log.
     var definitions = db.LoadMazakRouteIdentities(config.ControllerSource, material.JobUniqueStr)
       .Where(r => r.JobProcess == material.Process)
       .ToArray();
+    if (placement?.ProgramDetails?.TryGetValue(NativePartNameKey, out var name) == true)
+      return !observed.Schedules.Any(s => s.PartName == name)
+        || definitions.Any(r => r.PartName == name && !AgreesWithObservation(r, observed));
+
     return definitions.Length > 0
-      && definitions.All(r => !observed.Schedules.Any(s => s.PartName == r.PartName));
+      && definitions.All(r =>
+        !observed.Schedules.Any(s => s.PartName == r.PartName)
+        || !AgreesWithObservation(r, observed)
+      );
   }
 }

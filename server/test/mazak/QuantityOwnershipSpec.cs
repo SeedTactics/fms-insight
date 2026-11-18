@@ -397,6 +397,31 @@ public sealed class QuantityOwnershipSpec : IDisposable
     await Assert
       .That(repository.GetJobProductionSummary(local.UniqueStr).AutomationEntryMaterialIds.Count)
       .IsEqualTo(0);
+
+    var mixed = Configuration with
+    {
+      UseDurableRouteIdentity = true,
+      BulkJobFilter = job => job.UniqueStr == ordinary.UniqueStr,
+    };
+    var reserved = data.Schedules.Single();
+    repository.ReserveMazakRouteIdentity(
+      new()
+      {
+        Source = mixed.ControllerSource,
+        PartName = reserved.PartName,
+        NativeProcess = 1,
+        JobUnique = local.UniqueStr,
+        JobProcess = 1,
+        Path = 1,
+      }
+    );
+    var ordinarySchedule = Data(local, ordinary).Schedules.Last() with { PlanQuantity = 0 };
+    var observed = data with
+    {
+      Schedules = [reserved with { Comment = ordinarySchedule.Comment }, ordinarySchedule],
+    };
+    var changes = MazakQueues.CalculateScheduleChanges(repository, observed, mixed);
+    await Assert.That(changes.Schedules.Select(s => s.Id)).IsEquivalentTo([ordinarySchedule.Id]);
   }
 
   [Test]

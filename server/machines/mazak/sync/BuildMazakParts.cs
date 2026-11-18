@@ -884,14 +884,7 @@ namespace MazakMachineInterface
         errors
       );
 
-      var usedFixtures = AssignMazakFixtures(
-        groups,
-        downloadUID,
-        mazakData,
-        savedParts,
-        mazakCfg.UseStartingOffsetForDueDate,
-        errors
-      );
+      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, mazakCfg);
       var usedProgs = CalculateUsedPrograms(mazakData, allParts);
 
       return new MazakJobs()
@@ -928,11 +921,29 @@ namespace MazakMachineInterface
               .Fixture;
             // Part transactions precede pallet transactions. Keep the installed fixture's original
             // group when completing a missing mapping; generated names contain F:download:group:... .
-            var group = data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
-              ?? int.Parse(
-                fixture.Split(':')[2],
-                System.Globalization.CultureInfo.InvariantCulture
-              );
+            var mapping = data.Pallets.FirstOrDefault(row => row.Fixture == fixture);
+            int group;
+            if (mapping != null)
+              group = mapping.FixtureGroup;
+            else if (cfg.OverrideFixtureGroupToZero)
+              group = 0;
+            else
+            {
+              var fixturePieces = fixture.Split(':');
+              if (
+                fixturePieces.Length < 4
+                || fixturePieces[0] != "F"
+                || !int.TryParse(
+                  fixturePieces[2],
+                  System.Globalization.NumberStyles.None,
+                  System.Globalization.CultureInfo.InvariantCulture,
+                  out group
+                )
+              )
+                throw new ConflictRequestException(
+                  $"Installed Mazak part '{installed.PartName}' has no pallet mapping and fixture '{fixture}' does not identify a fixture group."
+                );
+            }
             return new MazakFixture
             {
               MazakFixtureName = fixture,
@@ -1510,8 +1521,7 @@ namespace MazakMachineInterface
       int downloadUID,
       MazakAllData mazakData,
       ISet<string> savedParts,
-      bool useStartingOffsetForDueDate,
-      IList<string> log
+      MazakConfig config
     )
     {
       //First calculate the available fixtures
@@ -1531,9 +1541,9 @@ namespace MazakMachineInterface
       foreach (var fixture in allFixtures)
       {
         //check if we can reuse an existing fixture
-        if (!useStartingOffsetForDueDate)
+        if (!config.UseStartingOffsetForDueDate)
         {
-          CheckExistingFixture(fixture, usedMazakFixtureNames, mazakData);
+          CheckExistingFixture(fixture, usedMazakFixtureNames, mazakData, config);
         }
 
         if (string.IsNullOrEmpty(fixture.MazakFixtureName))
@@ -1576,7 +1586,8 @@ namespace MazakMachineInterface
     private static void CheckExistingFixture(
       MazakFixture fixture,
       ISet<string> availableMazakFixtures,
-      MazakAllData mazakData
+      MazakAllData mazakData,
+      MazakConfig config
     )
     {
       //we need a fixture that exactly matches this pallet list and has all the processes.
@@ -1598,7 +1609,7 @@ namespace MazakMachineInterface
         {
           if (palRow.Fixture == mazakFixtureName)
           {
-            onPallets.Add(palRow.PalletNumber);
+            onPallets.Add(config.TranslatePalletNumber(palRow.PalletNumber));
           }
         }
 

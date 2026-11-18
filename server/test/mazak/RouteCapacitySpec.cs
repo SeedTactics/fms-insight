@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,6 +18,78 @@ public sealed partial class DuplicateDownloadSpec
       UseDurableRouteIdentity = true,
       UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
     };
+
+  [Test]
+  [Arguments("legacy-fixture", false, false)]
+  [Arguments("legacy:7:2:1", false, false)]
+  [Arguments("F:7:invalid:1", false, false)]
+  [Arguments("legacy-fixture", true, false)]
+  [Arguments("legacy-fixture", false, true)]
+  public async Task LegacyAdoptionRequiresAMappedOrIdentifiableFixtureGroup(
+    string fixtureName,
+    bool mapped,
+    bool forceGroupZero
+  )
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, System.Guid.NewGuid());
+    using var db = config.OpenConnection();
+    var job = PendingJob(true);
+    db.AddJobs(new NewJobs { ScheduleId = "legacy", Jobs = [job] }, null, false);
+    var device = new DownloadDevice("");
+    await Assert.That(Sync(device, db)).IsTrue();
+    var part = device.Data.Parts.Single(p => p.Comment == job.UniqueStr + "-2-1-InsightS");
+    var fixture = part.Processes.Single().Fixture;
+    var mapping = device.Data.Pallets.Single(p => p.Fixture == fixture);
+    device.Observe(
+      device.Data with
+      {
+        Parts = device
+          .Data.Parts.Select(p =>
+            p.PartName == part.PartName
+              ? p with
+              {
+                Processes = [p.Processes.Single() with { Fixture = fixtureName }],
+              }
+              : p
+          )
+          .ToImmutableList(),
+        Fixtures = device
+          .Data.Fixtures.Select(f =>
+            f.FixtureName == fixture ? f with { FixtureName = fixtureName } : f
+          )
+          .ToImmutableList(),
+        Pallets = mapped ? [mapping with { Fixture = fixtureName }] : [],
+      }
+    );
+
+    MazakRouteWrite Calculate() =>
+      MazakRouteCapacity.Calculate(
+        db,
+        device.Data,
+        RouteConfig with
+        {
+          OverrideFixtureGroupToZero = forceGroupZero,
+        },
+        new FMSSettings(),
+        job.UniqueStr,
+        process: 2,
+        path: 1,
+        planQuantity: job.Cycles,
+        fullPartName: part.PartName
+      );
+
+    if (mapped)
+      await Assert.That(Calculate().NextWrite).IsNull();
+    else if (forceGroupZero)
+      await Assert.That(Calculate().NextWrite!.Pallets.Single().FixtureGroup).IsEqualTo(0);
+    else
+      await Assert
+        .That(() => Calculate())
+        .Throws<ConflictRequestException>()
+        .WithMessage(
+          $"Installed Mazak part '{part.PartName}' has no pallet mapping and fixture '{fixtureName}' does not identify a fixture group."
+        );
+  }
 
   [Test]
   public async Task InstallsOnlySelectedSplitRouteAndResumesFromObservedPartAfterLostReply()

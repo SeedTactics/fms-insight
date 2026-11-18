@@ -12,13 +12,42 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class DuplicateDownloadSpec
 {
   [Test]
-  public async Task ScopedBulkWritesProtectCustomAndPeerWorkAndRetirementKeepsSharedMapping()
+  [Arguments(0)]
+  [Arguments(100)]
+  public async Task ScopedBulkWritesProtectCustomAndPeerWorkAndRetirementKeepsSharedMapping(
+    int palletOffset
+  )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null);
     using var db = config.OpenConnection();
-    var first = PendingJob(true);
+    Job WithPalletOffset(Job job) =>
+      job with
+      {
+        Processes = job
+          .Processes.Select(process =>
+            process with
+            {
+              Paths = process
+                .Paths.Select(path =>
+                  path with
+                  {
+                    PalletNums = path
+                      .PalletNums.Select(pallet => pallet + palletOffset)
+                      .ToImmutableSortedSet(),
+                  }
+                )
+                .ToImmutableList(),
+            }
+          )
+          .ToImmutableList(),
+      };
+    var first = WithPalletOffset(PendingJob(true));
     var second = first with { UniqueStr = "second-job" };
-    var manual = PendingJob(false) with { UniqueStr = "manual", PartName = "manual-part" };
+    var manual = WithPalletOffset(PendingJob(false)) with
+    {
+      UniqueStr = "manual",
+      PartName = "manual-part",
+    };
     var peerPending = manual with { UniqueStr = "peer-pending" };
     var peerInstalled = manual with { UniqueStr = "peer-installed" };
     var peerMissing = manual with { UniqueStr = "peer-missing" };
@@ -38,6 +67,7 @@ public sealed partial class DuplicateDownloadSpec
     var routeConfig = RouteConfig with
     {
       UseStartingOffsetForDueDate = false,
+      StartingPalletNumber = palletOffset + 1,
       BulkJobFilter = j => j.UniqueStr == manual.UniqueStr,
     };
     var settings = new FMSSettings();
@@ -70,6 +100,7 @@ public sealed partial class DuplicateDownloadSpec
     var fixture = aPart.Processes.Single().Fixture;
     await Assert.That(bPart.Processes.Single().Fixture).IsEqualTo(fixture);
     var sharedMapping = device.Data.Pallets.Single();
+    await Assert.That(sharedMapping.PalletNumber).IsEqualTo(2);
     var peerPart = bPart with
     {
       PartName = "manual-part:7:1",

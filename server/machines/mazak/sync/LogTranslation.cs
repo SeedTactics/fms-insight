@@ -1521,8 +1521,12 @@ namespace MazakMachineInterface
           {
             Log.Warning("Pallet {@pal} has material assigned, but no load event", st);
           }
-          else
+          if (
+            matchingMats.Count >= st.FixQuantity
+            || route != null && mazakConfig.UsesInsightJobQuantities(GetJob(unique))
+          )
           {
+            // An additional native quantity cannot disprove these confirmed serials' placement.
             foreach (var mat in matchingMats)
               matsOnPal.Remove(mat);
           }
