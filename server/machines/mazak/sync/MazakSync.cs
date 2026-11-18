@@ -450,7 +450,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   public bool DecrementJobs(IRepository db, MazakState st)
   {
     if (
-      db.LoadUnarchivedJobs()
+      mazakConfig.BulkJobFilter != null
+      || db.LoadUnarchivedJobs()
         .Any(j => !j.ManuallyCreated && mazakConfig.UsesInsightJobQuantities(j))
     )
       throw new BadRequestException(

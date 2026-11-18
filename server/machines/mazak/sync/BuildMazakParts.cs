@@ -706,52 +706,44 @@ namespace MazakMachineInterface
       };
     }
 
-    public MazakWriteData DeleteOldPartRows()
-    {
-      var partRows = new List<MazakPartRow>();
-      foreach (var partRow in OldMazakData.Parts)
+    public MazakWriteData DeleteOldPartRows() =>
+      DeletePartRows(OldMazakData.Parts, part => !SavedParts.Contains(part.PartName));
+
+    internal static MazakWriteData DeletePartRows(
+      IEnumerable<MazakPartRow> parts,
+      Func<MazakPartRow, bool> canDelete
+    ) =>
+      new()
       {
-        if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
-        {
-          if (!SavedParts.Contains(partRow.PartName))
-          {
-            var newPartRow = partRow with
+        Prefix = "Delete Parts",
+        Parts = parts
+          .Where(part => MazakPart.IsSailPart(part.PartName, part.Comment) && canDelete(part))
+          .Select(part =>
+            part with
             {
               Command = MazakWriteCommand.Delete,
-              TotalProcess = partRow.Processes.Count(),
-              Processes =
-                new List<MazakPartProcessRow>() // when deleting, don't need to add process rows
-              ,
-            };
-            partRows.Add(newPartRow);
-          }
-        }
-      }
-      return new MazakWriteData() { Prefix = "Delete Parts", Parts = partRows };
-    }
+              TotalProcess = part.Processes.Count,
+              Processes = [],
+            }
+          )
+          .ToImmutableList(),
+      };
 
-    public MazakWriteData DeleteOldPalletRows()
-    {
-      var palRows = new List<MazakPalletRow>();
-      foreach (var palRow in OldMazakData.Pallets)
+    public MazakWriteData DeleteOldPalletRows() =>
+      DeletePalletRows(OldMazakData.Pallets, pallet => !UsedFixtures.Contains(pallet.Fixture));
+
+    internal static MazakWriteData DeletePalletRows(
+      IEnumerable<MazakPalletRow> pallets,
+      Func<MazakPalletRow, bool> canDelete
+    ) =>
+      new()
       {
-        int idx = palRow.Fixture.IndexOf(':');
-
-        if (idx >= 0)
-        {
-          //check if this fixture is being used by a new schedule
-          //or is a fixture used by a part in savedParts
-
-          if (!UsedFixtures.Contains(palRow.Fixture))
-          {
-            //not found, can delete it
-            var newPalRow = palRow with { Command = MazakWriteCommand.Delete };
-            palRows.Add(newPalRow);
-          }
-        }
-      }
-      return new MazakWriteData() { Prefix = "Delete Pallets", Pallets = palRows };
-    }
+        Prefix = "Delete Pallets",
+        Pallets = pallets
+          .Where(pallet => pallet.Fixture.Contains(':') && canDelete(pallet))
+          .Select(pallet => pallet with { Command = MazakWriteCommand.Delete })
+          .ToImmutableList(),
+      };
   }
 
   public static class ConvertJobsToMazakParts

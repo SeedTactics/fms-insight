@@ -72,7 +72,10 @@ public static class MazakRouteCapacity
     var allocating = fullPartName == null;
     fullPartName ??= MazakPart.SplitPartName(
       job,
-      WriteJobs.FindUnusedDownloadId(observed, db, config),
+      WriteJobs.FindUnusedDownloadId(
+        observed,
+        db.LoadReservedMazakPartNames(config.ControllerSource)
+      ),
       partIndex: 1,
       process: process
     );

@@ -58,7 +58,11 @@ namespace MazakMachineInterface
           now.AddHours(1),
           includeDecremented: false
         )
-        .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
+        .Where(j =>
+          mazakCfg.BulkJobFilter is { } owns
+            ? !j.Archived && owns(j)
+            : !j.Archived || !mazakCfg.UsesInsightJobQuantities(j)
+        )
         .GroupBy(j => j.ScheduleId)
         // Only do one schedule at a time
         .MinBy(g => g.Key, StringComparer.Ordinal);
@@ -75,6 +79,26 @@ namespace MazakMachineInterface
         mazakData
       );
 
+      var reserved = db.LoadReservedMazakPartNames(mazakCfg.ControllerSource)
+        .WithComparer(StringComparer.OrdinalIgnoreCase);
+      if (!reserved.IsEmpty)
+      {
+        var reservedComments = mazakData
+          .Parts.Where(p => reserved.Contains(p.PartName))
+          .Select(p => p.Comment)
+          .Concat(
+            mazakData.Schedules.Where(s => reserved.Contains(s.PartName)).Select(s => s.Comment)
+          )
+          .ToImmutableHashSet(StringComparer.Ordinal);
+        var conflict = jobs.FirstOrDefault(j =>
+          MazakPart.InitialScheduleComments(j).Any(reservedComments.Contains)
+        );
+        if (conflict != null)
+          throw new ConflictRequestException(
+            $"Bulk download of '{conflict.UniqueStr}' conflicts with a reserved native Mazak part."
+          );
+      }
+
       var pending = jobs.Where(job => !HasAllInitialRoutes(mazakData.Schedules, job))
         .ToImmutableList();
       foreach (var job in jobs.Except(pending))
@@ -82,8 +106,16 @@ namespace MazakMachineInterface
 
       if (!pending.IsEmpty)
       {
-        ArchiveOldJobs(db, mazakData, jobs, mazakCfg);
-        var partNames = AddFixturesPalletsParts(mazakData, db, pending, mazakDb, fmsSt, mazakCfg);
+        ArchiveOldJobs(db, mazakData, jobs, mazakCfg, reserved);
+        var partNames = AddFixturesPalletsParts(
+          mazakData,
+          db,
+          pending,
+          mazakDb,
+          fmsSt,
+          mazakCfg,
+          reserved
+        );
         // A failed native write is not a rollback. Each retry starts from a fresh observation;
         // after successful construction, schedule only the selected definitions, not retained peers.
         mazakData = mazakDb.LoadAllData();
@@ -116,13 +148,13 @@ namespace MazakMachineInterface
       }
     }
 
-    internal static int FindUnusedDownloadId(MazakAllData data, IRepository db, MazakConfig config)
+    internal static int FindUnusedDownloadId(MazakAllData data, IReadOnlySet<string> reserved)
     {
       var used = data
         .Schedules.Select(s => s.PartName)
         .Concat(data.Parts.Select(p => p.PartName))
         .Concat(data.Fixtures.Select(f => f.FixtureName))
-        .Concat(db.LoadReservedMazakPartNames(config.ControllerSource))
+        .Concat(reserved)
         .Where(name => !string.IsNullOrEmpty(name))
         .Select(MazakPart.ParseUID)
         .ToImmutableHashSet();
@@ -138,21 +170,35 @@ namespace MazakMachineInterface
       IEnumerable<Job> jobs,
       IMazakDB mazakDb,
       FMSSettings fmsSt,
-      MazakConfig mazakCfg
+      MazakConfig mazakCfg,
+      IReadOnlySet<string> reserved
     )
     {
-      var UID = FindUnusedDownloadId(mazakData, jobDB, mazakCfg);
+      var UID = FindUnusedDownloadId(mazakData, reserved);
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
+      var scope = mazakCfg.BulkJobFilter;
+      Job ObservedJob(string name, string comment) =>
+        MazakPart.IsSailPart(name, comment)
+          ? jobDB.LoadJob(MazakPart.UniqueFromComment(comment))
+          : null;
+
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData, s =>
-        !jobs.Any(job => MazakPart.UniqueFromComment(s.Comment ?? "") == job.UniqueStr)
-        && (
-          mazakCfg.UseInsightJobQuantities == null
-          || !MazakPart.IsSailPart(s.PartName, s.Comment)
-          || !mazakCfg.UsesInsightJobQuantities(
-            jobDB.LoadJob(MazakPart.UniqueFromComment(s.Comment))
-          )
+      {
+        if (
+          reserved.Contains(s.PartName)
+          || jobs.Any(job => MazakPart.UniqueFromComment(s.Comment ?? "") == job.UniqueStr)
         )
+          return false;
+        var job =
+          scope != null || mazakCfg.UseInsightJobQuantities != null
+            ? ObservedJob(s.PartName, s.Comment)
+            : null;
+        return (scope == null || (job != null && scope(job)))
+          && !mazakCfg.UsesInsightJobQuantities(job);
+      });
+      savedParts.UnionWith(
+        mazakData.Parts.Where(p => reserved.Contains(p.PartName)).Select(p => p.PartName)
       );
       if (mazakCfg.UseInsightJobQuantities != null)
       {
@@ -162,10 +208,20 @@ namespace MazakMachineInterface
           mazakData
             .Parts.Where(p => MazakPart.IsSailPart(p.PartName, p.Comment))
             .Where(p =>
-              jobDB.LoadJob(MazakPart.UniqueFromComment(p.Comment)) is { Archived: false } job
+              ObservedJob(p.PartName, p.Comment) is { Archived: false } job
               && mazakCfg.UsesInsightJobQuantities(job)
             )
             .Select(p => p.PartName)
+        );
+      }
+      if (scope != null)
+      {
+        savedParts.UnionWith(
+          mazakData
+            .Parts.Where(part =>
+              ObservedJob(part.PartName, part.Comment) is not { } job || !scope(job)
+            )
+            .Select(part => part.PartName)
         );
       }
       Log.Debug("Saved Parts: {parts}", savedParts);
@@ -205,18 +261,43 @@ namespace MazakMachineInterface
 
       //delete parts
       transSet = mazakJobs.DeleteOldPartRows();
+      var retiredParts = transSet.Parts.Select(p => p.PartName).ToImmutableHashSet();
       if (transSet.Parts.Any())
       {
         mazakDb.Save(transSet);
       }
 
-      // delete pallets
-      transSet = mazakJobs.DeleteOldPalletRows();
-      mazakDb.Save(transSet);
-
-      //have to delete fixtures after schedule, parts, and pallets are already deleted
-      transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
-      mazakDb.Save(transSet);
+      // Delete mappings and dependencies only after schedules and parts have been deleted.
+      if (scope == null)
+      {
+        mazakDb.Save(mazakJobs.DeleteOldPalletRows());
+        mazakDb.Save(mazakJobs.DeleteFixtureAndProgramDatabaseRows());
+      }
+      else if (!retiredParts.IsEmpty)
+      {
+        // In a shared observation, unreferenced resources can belong to an interrupted
+        // download owned by another writer. Only clean dependencies of this pass's retired parts.
+        var candidates = MazakRouteRetirement.Capture(mazakData, retiredParts);
+        var afterParts = mazakDb.LoadAllData();
+        var mappings = MazakRouteRetirement.RemovePalletMappings(
+          afterParts,
+          candidates,
+          mazakJobs.UsedFixtures
+        );
+        if (mappings.Pallets.Count > 0)
+        {
+          mazakDb.Save(mappings);
+          afterParts = mazakDb.LoadAllData();
+        }
+        var unused = MazakRouteRetirement.RemoveUnusedDependencies(
+          afterParts,
+          candidates,
+          mazakJobs.UsedFixtures,
+          mazakJobs.UsedMainProgramComments
+        );
+        if (unused.Fixtures.Count > 0 || unused.Programs.Count > 0)
+          mazakDb.Save(unused);
+      }
 
       transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
         jobDB.LoadProgramContent,
@@ -264,7 +345,8 @@ namespace MazakMachineInterface
       IRepository jobDB,
       MazakCurrentStatus schedules,
       IEnumerable<Job> toKeep,
-      MazakConfig mazakCfg
+      MazakConfig mazakCfg,
+      IReadOnlySet<string> reserved
     )
     {
       var current = new HashSet<string>(toKeep.Select(j => j.UniqueStr));
@@ -279,7 +361,7 @@ namespace MazakMachineInterface
         if (jobDB.LoadJob(unique) == null)
           continue;
 
-        if (sch.PlanQuantity == sch.CompleteQuantity)
+        if (sch.PlanQuantity == sch.CompleteQuantity && !reserved.Contains(sch.PartName))
         {
           completed[unique] = sch.PlanQuantity;
         }
@@ -307,8 +389,12 @@ namespace MazakMachineInterface
       );
 
       var toArchive = unarchived
-        .Where(j => !current.Contains(j.UniqueStr))
-        .Select(j => j.UniqueStr);
+        .Where(j =>
+          !current.Contains(j.UniqueStr)
+          && (mazakCfg.BulkJobFilter == null || mazakCfg.BulkJobFilter(j))
+        )
+        .Select(j => j.UniqueStr)
+        .ToImmutableHashSet(StringComparer.Ordinal);
 
       var newDecrs = unarchived
         .Where(j => toArchive.Contains(j.UniqueStr))

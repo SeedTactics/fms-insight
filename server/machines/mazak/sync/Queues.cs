@@ -137,7 +137,7 @@ namespace MazakMachineInterface
         var job = jdb.LoadJob(unique);
         if (job == null)
           continue;
-        if (cfg.UsesInsightJobQuantities(job))
+        if (cfg.UsesInsightJobQuantities(job) || cfg.BulkJobFilter?.Invoke(job) == false)
           continue;
 
         var isSplit = MazakPart.IsSplitComment(schRow.Comment);

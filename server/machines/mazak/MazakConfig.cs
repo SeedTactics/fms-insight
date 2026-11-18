@@ -205,6 +205,11 @@ namespace MazakMachineInterface
     // quantities come from manufacturing history; AdjustCurrentStatus can add reservations.
     public bool UseDurableRouteIdentity { get; init; }
 
+    // A shared-repository caller selects jobs owned by this controller's ordinary bulk flow.
+    // Excluded jobs and their observed rows are protected from bulk cleanup and queue writes.
+    // Keep this predicate pure and stable for each job. Null preserves the stock selection.
+    public Func<Job, bool>? BulkJobFilter { get; init; }
+
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
 

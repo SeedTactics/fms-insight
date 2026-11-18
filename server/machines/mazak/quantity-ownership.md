@@ -50,3 +50,34 @@ cause refusal before any controller edits, including when only pending jobs exis
 dates fall outside the usual download window. Backout does not cancel pending jobs or run downloads
 itself. A failed write can have partial controller effects; the ordinary synchronization loop must
 succeed before retrying. This is a conservative refusal policy, not an atomic controller rollback.
+
+## Selected split routes
+
+A custom backend can enable `UseDurableRouteIdentity` alongside `UseInsightJobQuantities` and
+calculate native writes with `MazakRouteCapacity.Calculate`. Pass an accepted job's process and
+path, the planned native quantity, and the material offer justified by the caller. A new schedule
+starts with zero offered material. The calculation reserves the exact native part name in the
+manufacturing repository, then returns the next transaction. Apply it through the serialized
+controller owner and calculate again from fresh readback. Use the same request across a lost
+response. A plan increase uses `ScheduleSafeEdit` with priority, due date and hold copied from
+readback and no schedule process rows. After confirming the plan, the material offer uses the
+ordinary material edit. The caller still owns when a route can accept work and when existing
+capacity must be retired. Use `BulkJobFilter` to select the ordinary jobs owned by this controller
+when the repository also contains custom-managed or peer jobs.
+
+Historical attribution uses the controller source, exact full part name and native process. For
+legacy definitions, the caller can supply a full name for adoption after establishing its ownership.
+A retired name retains its job route in the repository. The published quantities for Insight-owned
+jobs use durable entries and valid unloads. The backend can project its own reservations with
+`AdjustCurrentStatus`.
+
+Use `MazakRouteRetirement.Capture` before deleting parts. Retain the selected names and dependency
+candidates across retries. `MazakRouteRetirement.Calculate` returns the next transaction from a
+complete controller observation. Surviving schedules and parts protect shared dependencies through
+schedule, part, pallet mapping and dependency cleanup stages.
+
+Assign each additional controller a distinct, stable `ControllerSource` independent of its endpoint.
+Keep the original controller on `DefaultControllerSource` to retain its existing LG history. Use
+distinct Insight pallet and station numbering across controllers sharing a repository. Controller
+reads and acknowledgments take raw filenames. Repository correlation uses `MazakConfig.LogForeignId`
+on those filenames.
