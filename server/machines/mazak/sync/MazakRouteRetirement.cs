@@ -191,7 +191,7 @@ public static class MazakRouteRetirement
       .Concat(observed.PalletSubStatuses.Where(s => s.FixQuantity > 0).Select(s => s.FixtureName))
       .ToImmutableHashSet(StringComparer.Ordinal);
 
-  private static bool HasAllScheduledParts(MazakAllData observed)
+  internal static bool HasAllScheduledParts(MazakAllData observed)
   {
     var parts = observed.Parts.Select(p => p.PartName).ToImmutableHashSet(StringComparer.Ordinal);
     return observed.Schedules.All(s => parts.Contains(s.PartName));

@@ -125,12 +125,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(49);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(50);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(49);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(50);
       }
 
       CheckSchema(conn1, memDb);
@@ -1039,7 +1039,8 @@ namespace BlackMaple.FMSInsight.Tests
         cmd.ExecuteNonQuery();
         cmd.CommandText = "UPDATE stations SET CorrelationId = 'correlation-1'";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "DROP TABLE mazak_route_identity; UPDATE version SET ver = 43";
+        cmd.CommandText =
+          "DROP TABLE mazak_route_identity; DROP TABLE mazak_bulk_cleanup; UPDATE version SET ver = 43";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "DROP INDEX sim_station_end_time";
         cmd.ExecuteNonQuery();
@@ -1105,7 +1106,7 @@ namespace BlackMaple.FMSInsight.Tests
       using (var command = connection.CreateCommand())
       {
         command.CommandText =
-          "DROP INDEX sim_station_end_time; DROP TABLE mazak_route_identity; UPDATE version SET ver = 45";
+          "DROP INDEX sim_station_end_time; DROP TABLE mazak_route_identity; DROP TABLE mazak_bulk_cleanup; UPDATE version SET ver = 45";
         command.ExecuteNonQuery();
       }
       using var upgraded = RepositoryConfig.InitializeMemoryDB(
@@ -1155,6 +1156,7 @@ namespace BlackMaple.FMSInsight.Tests
       using (var command = connection.CreateCommand())
       {
         command.CommandText = """
+          DROP TABLE mazak_bulk_cleanup;
           ALTER TABLE mazak_route_identity DROP COLUMN PreparationRequiredProgram;
           ALTER TABLE mazak_route_identity DROP COLUMN PreparationProgram;
           ALTER TABLE mazak_route_identity DROP COLUMN PreparationGroup;

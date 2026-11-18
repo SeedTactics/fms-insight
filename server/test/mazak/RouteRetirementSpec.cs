@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
@@ -129,11 +130,14 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
-  public async Task ScopedCleanupRemovesOnlyOldProgramsUnusedAfterPartDeletion()
+  [Arguments("")]
+  [Arguments("delete-parts-full")]
+  [Arguments("delete-deps-full")]
+  public async Task ScopedCleanupRemovesOnlyOldProgramsUnusedAfterPartDeletion(string failure)
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null);
     using var db = config.OpenConnection();
-    var device = new DownloadDevice("");
+    var device = new DownloadDevice(failure);
     var ordinary = PendingJob(false);
     var completed = ordinary with { UniqueStr = "closed", PartName = "closed-part" };
     var peer = ordinary with { UniqueStr = "peer", PartName = "peer-part" };
@@ -206,18 +210,30 @@ public sealed partial class DuplicateDownloadSpec
       }
     );
     var routeConfig = RouteConfig with { BulkJobFilter = j => j.UniqueStr != peer.UniqueStr };
-    await Assert
-      .That(
-        WriteJobs.SyncFromDatabase(
-          device.Data,
-          db,
-          device.Native,
-          new FMSSettings(),
-          routeConfig,
-          Now
-        )
-      )
-      .IsTrue();
+    bool SyncScoped(IRepository repository) =>
+      WriteJobs.SyncFromDatabase(
+        device.Native.LoadAllData(),
+        repository,
+        device.Native,
+        new FMSSettings(),
+        routeConfig,
+        Now
+      );
+    if (failure.Length > 0)
+    {
+      await Assert.That(() => SyncScoped(db)).Throws<IOException>();
+      await Assert.That(device.Data.Parts).DoesNotContain(old);
+      var saved = db.LoadMazakBulkCleanup(routeConfig.ControllerSource);
+      await Assert.That(saved.Parts).Contains(old.PartName);
+      await Assert.That(saved.Programs).Contains("obsolete-1.eia");
+      await Assert
+        .That(device.Data.MainPrograms.Any(p => p.MainProgram == "obsolete-1.eia"))
+        .IsEqualTo(failure == "delete-parts-full");
+    }
+    using var reopened = config.OpenConnection();
+    await Assert.That(SyncScoped(reopened)).IsTrue();
+    await Assert.That(reopened.LoadMazakBulkCleanup(routeConfig.ControllerSource).Parts).IsEmpty();
+    await Assert.That(SyncScoped(reopened)).IsFalse();
     await Assert.That(device.Data.Parts).DoesNotContain(old);
     await Assert.That(device.Data.Parts).Contains(survivor);
     await Assert

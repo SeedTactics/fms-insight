@@ -696,7 +696,12 @@ public sealed partial class DuplicateDownloadSpec
           if (
             _failOnce
             && (
-              (
+              (failure == "delete-parts-full" && write.Prefix == "Delete Parts")
+              || (
+                failure == "delete-deps-full"
+                && write.Programs.Any(p => p.Command == MazakWriteCommand.Delete)
+              )
+              || (
                 failure.StartsWith("parts-", StringComparison.Ordinal)
                 && write.Prefix == "Add Parts"
               )

@@ -69,7 +69,8 @@ namespace MazakMachineInterface
 
       if (jobs == null)
       {
-        return false;
+        return mazakCfg.BulkJobFilter != null
+          && ResumeScopedCleanup(mazakData, db, mazakDb, mazakCfg);
       }
 
       //there are jobs to copy
@@ -131,6 +132,10 @@ namespace MazakMachineInterface
           mazakDb,
           mazakCfg
         );
+      }
+      else if (mazakCfg.BulkJobFilter != null)
+      {
+        ResumeScopedCleanup(mazakData, db, mazakDb, mazakCfg);
       }
 
       return true;
@@ -249,6 +254,8 @@ namespace MazakMachineInterface
         .ToImmutableHashSet();
       if (!mazakJobs.AllParts.Any())
       {
+        if (scope != null)
+          ResumeScopedCleanup(mazakData, jobDB, mazakDb, mazakCfg, mazakJobs);
         // Complete pallet transactions even when every part transaction already succeeded.
         var mappings = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
         if (mappings.Pallets.Any())
@@ -259,44 +266,60 @@ namespace MazakMachineInterface
       if (transSet.Schedules.Any())
         mazakDb.Save(transSet);
 
-      //delete parts
       transSet = mazakJobs.DeleteOldPartRows();
-      var retiredParts = transSet.Parts.Select(p => p.PartName).ToImmutableHashSet();
-      if (transSet.Parts.Any())
+      if (transSet.Parts.Count > 0)
       {
+        if (scope != null)
+        {
+          var retiredParts = transSet.Parts.Select(p => p.PartName).ToImmutableHashSet();
+          var candidates = MazakRouteRetirement.Capture(mazakData, retiredParts);
+          jobDB.StageMazakBulkCleanup(
+            mazakCfg.ControllerSource,
+            new MazakBulkCleanup
+            {
+              Parts = candidates.PartNames,
+              Fixtures = candidates.FixtureNames,
+              Programs = candidates.MainPrograms,
+            }
+          );
+        }
         mazakDb.Save(transSet);
       }
 
-      // Delete mappings and dependencies only after schedules and parts have been deleted.
       if (scope == null)
       {
-        mazakDb.Save(mazakJobs.DeleteOldPalletRows());
-        mazakDb.Save(mazakJobs.DeleteFixtureAndProgramDatabaseRows());
+        var preparations = jobDB
+          .LoadMazakRoutePreparations(mazakCfg.ControllerSource)
+          .Values.ToImmutableList();
+        var fixtures = preparations
+          .Select(p => p.FixtureName)
+          .ToImmutableHashSet(StringComparer.Ordinal);
+        var programs = preparations
+          .Select(p => p.RequiredProgram ?? p.AddedProgram)
+          .ToImmutableHashSet(StringComparer.Ordinal);
+        var mappings = mazakJobs.DeleteOldPalletRows();
+        mazakDb.Save(
+          mappings with
+          {
+            Pallets = mappings.Pallets.Where(p => !fixtures.Contains(p.Fixture)).ToImmutableList(),
+          }
+        );
+        var dependencies = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
+        mazakDb.Save(
+          dependencies with
+          {
+            Fixtures = dependencies
+              .Fixtures.Where(f => !fixtures.Contains(f.FixtureName))
+              .ToImmutableList(),
+            Programs = dependencies
+              .Programs.Where(p => !programs.Contains(p.MainProgram))
+              .ToImmutableList(),
+          }
+        );
       }
-      else if (!retiredParts.IsEmpty)
+      else
       {
-        // In a shared observation, unreferenced resources can belong to an interrupted
-        // download owned by another writer. Only clean dependencies of this pass's retired parts.
-        var candidates = MazakRouteRetirement.Capture(mazakData, retiredParts);
-        var afterParts = mazakDb.LoadAllData();
-        var mappings = MazakRouteRetirement.RemovePalletMappings(
-          afterParts,
-          candidates,
-          mazakJobs.UsedFixtures
-        );
-        if (mappings.Pallets.Count > 0)
-        {
-          mazakDb.Save(mappings);
-          afterParts = mazakDb.LoadAllData();
-        }
-        var unused = MazakRouteRetirement.RemoveUnusedDependencies(
-          afterParts,
-          candidates,
-          mazakJobs.UsedFixtures,
-          ConvertJobsToMazakParts.RequiredProgramComments(afterParts, mazakJobs.AllParts)
-        );
-        if (unused.Fixtures.Count > 0 || unused.Programs.Count > 0)
-          mazakDb.Save(unused);
+        ResumeScopedCleanup(mazakDb.LoadAllData(), jobDB, mazakDb, mazakCfg, mazakJobs);
       }
 
       transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
@@ -309,6 +332,78 @@ namespace MazakMachineInterface
       transSet = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
       mazakDb.Save(transSet);
       return selectedParts;
+    }
+
+    // Keep the candidates until fresh readback shows no eligible deletions. Programs and
+    // fixtures used by another route remain subject to ordinary retention.
+    private static bool ResumeScopedCleanup(
+      MazakAllData observed,
+      IRepository db,
+      IMazakDB native,
+      MazakConfig config,
+      MazakJobs download = null
+    )
+    {
+      var saved = db.LoadMazakBulkCleanup(config.ControllerSource);
+      if (
+        saved.Parts.IsEmpty
+        || !MazakRouteRetirement.HasAllScheduledParts(observed)
+        || observed.Parts.Any(p => saved.Parts.Contains(p.PartName))
+      )
+        return false;
+      var candidates = new MazakRetirementCandidates
+      {
+        PartNames = [],
+        FixtureNames = saved.Fixtures,
+        MainPrograms = saved.Programs,
+      };
+      var preparations = db.LoadMazakRoutePreparations(config.ControllerSource)
+        .Values.ToImmutableList();
+      var fixtures = (download?.UsedFixtures ?? Enumerable.Empty<string>())
+        .Concat(preparations.Select(p => p.FixtureName))
+        .ToImmutableHashSet(StringComparer.Ordinal);
+      var mappings = MazakRouteRetirement.RemovePalletMappings(observed, candidates, fixtures);
+      var wrote = mappings.Pallets.Count != 0;
+      if (wrote)
+      {
+        native.Save(mappings);
+        observed = native.LoadAllData();
+        if (!MazakRouteRetirement.HasAllScheduledParts(observed))
+          return true;
+        if (
+          MazakRouteRetirement.RemovePalletMappings(observed, candidates, fixtures).Pallets.Count
+          != 0
+        )
+          throw new ConflictRequestException(
+            "Mazak did not confirm scoped pallet mapping deletion."
+          );
+      }
+
+      MazakWriteData Dependencies(MazakAllData view) =>
+        MazakRouteRetirement.RemoveUnusedDependencies(
+          view,
+          candidates,
+          fixtures,
+          MazakRouteRetirement
+            .RequiredProgramComments(view, preparations)
+            .Concat(ConvertJobsToMazakParts.RequiredProgramComments(view, download?.AllParts ?? []))
+        );
+      var unused = Dependencies(observed);
+      if (unused.Fixtures.Count != 0 || unused.Programs.Count != 0)
+      {
+        native.Save(unused);
+        observed = native.LoadAllData();
+        if (!MazakRouteRetirement.HasAllScheduledParts(observed))
+          return true;
+        var unconfirmed = Dependencies(observed);
+        if (unconfirmed.Fixtures.Count != 0 || unconfirmed.Programs.Count != 0)
+          throw new ConflictRequestException(
+            "Mazak did not confirm scoped fixture or program deletion."
+          );
+        wrote = true;
+      }
+      db.CompleteMazakBulkCleanup(config.ControllerSource);
+      return wrote;
     }
 
     private static void AddSchedules(

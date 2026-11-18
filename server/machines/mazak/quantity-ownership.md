@@ -75,8 +75,13 @@ Use the repository-aware overload of `MazakRouteRetirement.Capture` before delet
 includes the fixture and program reserved before a preparation write, even if the part was never
 installed. Retain the selected names and dependency candidates across retries.
 `MazakRouteRetirement.Calculate` returns the next transaction from a complete controller
-observation. Surviving schedules and parts protect shared dependencies through schedule, part,
-pallet mapping and dependency cleanup stages.
+observation. Surviving schedules, parts and active preparations protect their shared fixtures and
+programs, including programs already installed on the controller. The final readback releases the
+preparation so a later installation can choose an available fixture group. The historical part
+identity remains reserved.
+
+Scoped bulk downloads save cleanup candidates before deleting parts. After an uncertain write the
+next pass uses fresh readback to complete cleanup while preserving dependencies still in use.
 
 Assign each additional controller a distinct, stable `ControllerSource` independent of its endpoint.
 Keep the original controller on `DefaultControllerSource` to retain its existing LG history. Use

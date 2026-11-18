@@ -70,6 +70,10 @@ namespace BlackMaple.MachineFramework
     ImmutableDictionary<string, MazakRoutePreparation> LoadMazakRoutePreparations(string source);
     void ReleaseMazakRoutePreparations(string source, IReadOnlySet<string> partNames);
 
+    void StageMazakBulkCleanup(string source, MazakBulkCleanup cleanup);
+    MazakBulkCleanup LoadMazakBulkCleanup(string source);
+    void CompleteMazakBulkCleanup(string source);
+
     ImmutableList<MazakRouteIdentity> LoadMazakRouteIdentities(string source, string jobUnique);
 
     ImmutableHashSet<string> LoadReservedMazakPartNames(string source);

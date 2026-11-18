@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 49;
+    private const int Version = 50;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -113,6 +113,7 @@ namespace BlackMaple.MachineFramework
         CreateMazakRouteIdentityTable(cmd);
         AddMazakRoutePreparationColumns(cmd);
         AddMazakRequiredProgramColumn(cmd);
+        CreateMazakBulkCleanupTable(cmd);
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
         cmd.ExecuteNonQuery();
@@ -561,6 +562,12 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
             AddMazakRequiredProgramColumn(cmd);
+          }
+
+          if (curVersion < 50)
+          {
+            cmd.Transaction = trans;
+            CreateMazakBulkCleanupTable(cmd);
           }
 
           //update the version in the database
@@ -1439,6 +1446,17 @@ namespace BlackMaple.MachineFramework
     {
       cmd.CommandText =
         "ALTER TABLE mazak_route_identity ADD COLUMN PreparationRequiredProgram TEXT";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateMazakBulkCleanupTable(IDbCommand cmd)
+    {
+      cmd.CommandText = """
+        CREATE TABLE mazak_bulk_cleanup(
+          Source TEXT NOT NULL, ResourceKind INTEGER NOT NULL, ResourceName TEXT NOT NULL,
+          PRIMARY KEY(Source, ResourceKind, ResourceName)
+        ) WITHOUT ROWID;
+        """;
       cmd.ExecuteNonQuery();
     }
 
