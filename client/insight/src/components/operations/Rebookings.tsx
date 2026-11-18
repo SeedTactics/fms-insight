@@ -328,7 +328,8 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
   const partNames = useAtomValue(partNamesAtom);
   const [createNew, creating] = useNewRebooking();
 
-  const allowCreate = rebooking.part !== "" && !!rebooking.qty && !isNaN(rebooking.qty);
+  const part = rebooking.part.trim();
+  const allowCreate = part !== "" && (rebooking.qty ?? 0) > 0;
 
   function close() {
     setOpen(false);
@@ -339,7 +340,9 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
     if (!allowCreate) {
       return;
     }
-    createNew(rebooking).then(close).catch(console.log);
+    createNew({ ...rebooking, part })
+      .then(close)
+      .catch(console.log);
   }
 
   return (
@@ -351,24 +354,25 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
             <Autocomplete
               freeSolo
               selectOnFocus
-              clearOnBlur
               handleHomeEndKeys
               disableClearable
+              forcePopupIcon
               options={partNames}
-              value={rebooking.part}
-              onChange={(_, v) => setRebooking((r) => ({ ...r, part: v }))}
+              inputValue={rebooking.part}
+              onInputChange={(_, v) => setRebooking((r) => ({ ...r, part: v }))}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="Part Name"
                   slotProps={{
+                    ...params.slotProps,
                     input: {
                       ...params.slotProps.input,
                       startAdornment: (
                         <>
-                          {rebooking.part !== "" ? (
+                          {part !== "" ? (
                             <InputAdornment position="start">
-                              <PartIdenticon part={rebooking.part} size={25} />
+                              <PartIdenticon part={part} size={25} />
                             </InputAdornment>
                           ) : undefined}
                           {params.slotProps.input?.startAdornment}
@@ -378,8 +382,8 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
                   }}
                 />
               )}
-              renderOption={(props, option) => (
-                <li {...props}>
+              renderOption={({ key, ...props }, option) => (
+                <li key={key} {...props}>
                   <Stack
                     direction="row"
                     spacing="1"
@@ -392,14 +396,6 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
                   </Stack>
                 </li>
               )}
-              filterOptions={(options, params) => {
-                const filtered = options.filter((o) =>
-                  o.toLowerCase().includes(params.inputValue.toLowerCase()),
-                );
-                return filtered.length === 0 && params.inputValue !== ""
-                  ? [params.inputValue]
-                  : filtered;
-              }}
             />
             <TextField
               label="Quantity"
