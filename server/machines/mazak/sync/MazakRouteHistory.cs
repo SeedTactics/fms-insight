@@ -82,6 +82,109 @@ internal static class MazakRouteHistory
     return quantities.Where(p => p.Value > 0).ToImmutableDictionary(StringComparer.Ordinal);
   }
 
+  internal sealed record AmbiguousPlacement
+  {
+    public required int Face { get; init; }
+    public required long Quantity { get; init; }
+    public required long Unidentified { get; init; }
+    public required ImmutableHashSet<long> Candidates { get; init; }
+    public required ImmutableHashSet<long> Departed { get; init; }
+  }
+
+  // Unload quantities are physical evidence even when no serial can be credited. Replay the
+  // affected routes independently of material attribution. A later identified load starts a new
+  // placement for that serial, while an empty face can still have unattributed prior unloads.
+  internal static ImmutableDictionary<string, AmbiguousPlacement> AmbiguousPlacements(
+    IRepository db,
+    MazakConfig config,
+    IEnumerable<BlackMaple.MachineFramework.LogEntry> cycle
+  )
+  {
+    var result = ImmutableDictionary.CreateBuilder<string, AmbiguousPlacement>(
+      StringComparer.Ordinal
+    );
+    if (!config.UseDurableRouteIdentity)
+      return result.ToImmutable();
+    var names = cycle
+      .Where(e => e.ProgramDetails?.ContainsKey(AmbiguousUnloadKey) == true)
+      .Select(e => e.ProgramDetails!.GetValueOrDefault(NativePartNameKey))
+      .Where(n => !string.IsNullOrEmpty(n))
+      .Distinct(StringComparer.Ordinal);
+    foreach (var name in names)
+    {
+      var route = Find(db, config, name, 1);
+      if (route == null)
+        continue;
+      long quantity = 0;
+      var onFace = ImmutableHashSet<long>.Empty;
+      var candidates = ImmutableHashSet<long>.Empty;
+      var departed = ImmutableHashSet<long>.Empty;
+      foreach (var e in cycle)
+      {
+        if (e.StartOfCycle || e.LogType is not (LogType.LoadUnloadCycle or LogType.MachineCycle))
+          continue;
+        var stamp = e.ProgramDetails?.GetValueOrDefault(NativePartNameKey);
+        if (stamp != null && stamp != name)
+          continue;
+        var ids = e
+          .Material.Where(m =>
+            m.JobUniqueStr == route.JobUnique
+            && m.Process == route.JobProcess
+            && m.Face == route.NativeProcess
+            && m.MaterialID >= 0
+          )
+          .Select(m => m.MaterialID)
+          .ToImmutableHashSet();
+        var unidentified =
+          stamp == name
+          && long.TryParse(
+            e.ProgramDetails?.GetValueOrDefault(UnidentifiedQuantityKey),
+            NumberStyles.None,
+            CultureInfo.InvariantCulture,
+            out var count
+          )
+            ? count
+            : 0;
+        if (e.Result == "LOAD")
+        {
+          quantity += ids.Except(onFace.Except(candidates)).Count + unidentified;
+          onFace = onFace.Union(ids);
+          candidates = candidates.Except(ids);
+          departed = departed.Except(ids);
+        }
+        else if (e.LogType == LogType.MachineCycle)
+        {
+          var newIds = ids.Except(onFace).Except(departed);
+          quantity += newIds.Count;
+          onFace = onFace.Union(newIds);
+        }
+        else if (e.Result == "UNLOAD" && (!ids.IsEmpty || stamp == name))
+        {
+          quantity = Math.Max(0, quantity - ids.Count - unidentified);
+          onFace = onFace.Except(ids);
+          candidates = candidates.Except(ids);
+          departed = departed.Except(ids);
+          if (e.ProgramDetails?.ContainsKey(AmbiguousUnloadKey) == true)
+            candidates = candidates.Union(onFace);
+          if (quantity == 0)
+          {
+            departed = departed.Union(candidates);
+            onFace = onFace.Clear();
+          }
+        }
+      }
+      result[route.PartName] = new AmbiguousPlacement
+      {
+        Face = route.NativeProcess,
+        Quantity = quantity,
+        Unidentified = Math.Max(0, quantity - onFace.Count),
+        Candidates = candidates,
+        Departed = departed,
+      };
+    }
+    return result.ToImmutable();
+  }
+
   // An incomplete physical batch or the loss of a native definition leaves the latest known
   // placement in force. New controller work with a reused numeric ID is independent evidence.
   internal static bool HasUnconfirmedPlacement(

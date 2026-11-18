@@ -239,8 +239,17 @@ namespace MazakMachineInterface
           var unidentified = mazakCfg.UseDurableRouteIdentity
             ? MazakRouteHistory.UnidentifiedOnPallet(oldCycles).ToBuilder()
             : null;
+          var ambiguous = MazakRouteHistory.AmbiguousPlacements(jobDB, mazakCfg, oldCycles);
+          var departed = ambiguous.Values.SelectMany(p => p.Departed).ToImmutableHashSet();
+          foreach (var (nativeName, placement) in ambiguous)
+            if (placement.Unidentified > 0)
+              unidentified[nativeName] = placement.Unidentified;
+            else
+              unidentified.Remove(nativeName);
           var confirmed = mazakCfg.UseDurableRouteIdentity
-            ? MazakMaterialHistory.CurrentPalletMaterial(jobDB, oldCycles, removals)
+            ? MazakMaterialHistory
+              .CurrentPalletMaterial(jobDB, oldCycles, removals)
+              .RemoveAll(m => departed.Contains(m.MaterialID))
             : [];
           var facesWithUncertainPlacement = new HashSet<int>();
 
@@ -409,6 +418,14 @@ namespace MazakMachineInterface
 
           if (mazakCfg.UseDurableRouteIdentity)
           {
+            foreach (var placement in ambiguous.Values.Where(p => !p.Candidates.IsEmpty))
+              ReportUncertainPlacement(
+                placement.Face,
+                null,
+                0,
+                placement.Candidates.Order().ToImmutableList(),
+                placement.Quantity
+              );
             var alreadyShown = material
               .Where(m => m.Location.PalletNum == palName)
               .Select(m => m.MaterialID)
@@ -431,7 +448,10 @@ namespace MazakMachineInterface
                 )
               )
                 continue;
-              if (!facesWithUncertainPlacement.Contains(known.Face))
+              if (
+                !facesWithUncertainPlacement.Contains(known.Face)
+                && !ambiguous.Values.Any(p => p.Candidates.Contains(known.MaterialID))
+              )
                 retainedWithoutAssignment.Add(known);
               palletsByName[palName] = palletsByName[palName] with
               {
@@ -525,7 +545,8 @@ namespace MazakMachineInterface
             int face,
             int? nativeQuantity,
             long unidentifiedQuantity,
-            ImmutableList<long> candidates
+            ImmutableList<long> candidates,
+            long? recordedQuantity = null
           )
           {
             var serials = candidates.Select(id =>
@@ -533,8 +554,10 @@ namespace MazakMachineInterface
                 ? serial
                 : $"material {id}"
             );
-            var reported = nativeQuantity is { } n
-              ? $"Mazak reports {n} piece(s)."
+            var reported =
+              recordedQuantity is { } count
+                ? $"Recorded loads and unloads leave {count} piece(s). Unload serial attribution is unresolved."
+              : nativeQuantity is { } n ? $"Mazak reports {n} piece(s)."
               : "Mazak has no matching assignment.";
             var unidentifiedText =
               unidentifiedQuantity > 0

@@ -514,6 +514,35 @@ public sealed partial class MazakAcquisitionSpec
       await Assert.That(log.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
       await Assert.That(complete.Material.Select(m => m.MaterialID)).IsEquivalentTo(loaded);
       await Assert.That(complete.Jobs[job.UniqueStr].Completed![1][0]).IsEqualTo(0);
+      await Assert.That(complete.AlarmDetails!.Single().Message).Contains("leave 1 piece");
+      var boundary = cell.End with { Code = LogCode.LoadBegin };
+      cell.Data = cell.Data with
+      {
+        Logs =
+        [
+          unload with
+          {
+            ForeignID = boundary.ForeignID + "1",
+            TimeUTC = boundary.TimeUTC.AddSeconds(1),
+          },
+          boundary with
+          {
+            ForeignID = boundary.ForeignID + "2",
+            TimeUTC = boundary.TimeUTC.AddSeconds(2),
+          },
+        ],
+      };
+      using var afterRestart = NewSynchronizer();
+      var empty = afterRestart.CalculateCellState(reopened).CurrentStatus;
+      await Assert.That(empty.Material.Where(m => m.Location.PalletNum == 1)).IsEmpty();
+      await Assert.That(empty.AlarmDetails!.Single().Message).Contains("leave 0 piece");
+      await Assert
+        .That(empty.AlarmDetails!.Single().Message)
+        .Contains(mark.Material.Single().Serial!);
+      await Assert.That(empty.Jobs[job.UniqueStr].Completed![1][0]).IsEqualTo(0);
+      await Assert
+        .That(afterRestart.CalculateCellState(reopened).CurrentStatus.AlarmDetails)
+        .IsEquivalentTo(empty.AlarmDetails!);
       return;
     }
     await Assert.That(log.Material.Single().MaterialID).IsEqualTo(material);

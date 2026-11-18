@@ -350,8 +350,10 @@ namespace MazakMachineInterface
           : ImmutableDictionary<string, long>.Empty;
         // Keep the current cycle open while it contains unresolved placement evidence.
         // An unidentified unload might have removed it, but cannot justify a pallet reset.
+        var ambiguous = MazakRouteHistory.AmbiguousPlacements(repo, mazakConfig, cycle);
         if (
-          !unidentified.IsEmpty
+          unidentified.Keys.Any(name => !ambiguous.ContainsKey(name))
+          || ambiguous.Values.Any(p => p.Unidentified > 0)
           || managed
             && (
               loads.Sum(f => f.MaterialIDs.Count)
@@ -904,15 +906,23 @@ namespace MazakMachineInterface
     #endregion
 
     #region Material
-    private ImmutableList<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents) =>
-      MazakMaterialHistory.CurrentPalletMaterial(
-        repo,
-        oldEvents,
-        MazakMaterialHistory.LoadRemovalCounters(
+    private ImmutableList<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents)
+    {
+      var departed = MazakRouteHistory
+        .AmbiguousPlacements(repo, mazakConfig, oldEvents)
+        .Values.SelectMany(p => p.Departed)
+        .ToImmutableHashSet();
+      return MazakMaterialHistory
+        .CurrentPalletMaterial(
           repo,
-          oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
+          oldEvents,
+          MazakMaterialHistory.LoadRemovalCounters(
+            repo,
+            oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
+          )
         )
-      );
+        .RemoveAll(m => departed.Contains(m.MaterialID));
+    }
 
     private struct LogMaterialAndPath
     {
@@ -944,7 +954,12 @@ namespace MazakMachineInterface
           e.Code == LogCode.UnloadEnd
             ? MazakRouteHistory.UnidentifiedOnPallet(oldEvents).GetValueOrDefault(route.PartName)
             : 0;
-        return known.Count + unidentified > e.FixedQuantity
+        var placement = MazakRouteHistory
+          .AmbiguousPlacements(repo, mazakConfig, oldEvents)
+          .GetValueOrDefault(route.PartName);
+        return
+          known.Count + (placement?.Unidentified ?? unidentified) > e.FixedQuantity
+          || placement != null && known.Any(m => placement.Candidates.Contains(m.MaterialID))
           ? []
           : known
             .Select(m => new LogMaterialAndPath
@@ -1386,17 +1401,22 @@ namespace MazakMachineInterface
         if (route != null)
         {
           details = details.Add(MazakRouteHistory.NativePartNameKey, route.PartName);
-          if (
-            mats.Count < e.FixedQuantity
-            && GetAllMaterialOnPallet(oldEvents)
-              .Any(m =>
+          if (mats.Count < e.FixedQuantity)
+          {
+            var candidates = GetAllMaterialOnPallet(oldEvents)
+              .Where(m =>
                 m.JobUniqueStr == route.JobUnique
                 && m.Process == route.JobProcess
                 && m.Face == e.Process
                 && !matToQueue.ContainsKey(m.MaterialID)
               )
-          )
-            details = details.Add(MazakRouteHistory.AmbiguousUnloadKey, "true");
+              .Select(m => m.MaterialID)
+              .ToImmutableList();
+            if (!candidates.IsEmpty)
+              details = details
+                .Add(MazakRouteHistory.AmbiguousUnloadKey, "true")
+                .Add("mazak-unload-candidate-ids", string.Join(",", candidates));
+          }
         }
         if (unresolvedBasketMaterial.Count > 0)
           details = details.Add("unresolved-basket-handoff", "true");
