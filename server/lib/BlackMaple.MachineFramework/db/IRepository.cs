@@ -67,6 +67,9 @@ namespace BlackMaple.MachineFramework
     [return: MaybeNull]
     MazakRouteIdentity LoadMazakRouteIdentity(string source, string partName, int nativeProcess);
 
+    ImmutableDictionary<string, MazakRoutePreparation> LoadMazakRoutePreparations(string source);
+    void ReleaseMazakRoutePreparations(string source, IReadOnlySet<string> partNames);
+
     ImmutableList<MazakRouteIdentity> LoadMazakRouteIdentities(string source, string jobUnique);
 
     ImmutableHashSet<string> LoadReservedMazakPartNames(string source);

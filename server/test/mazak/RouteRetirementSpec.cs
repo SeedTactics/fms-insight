@@ -1,5 +1,6 @@
 #nullable enable
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,6 +12,122 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 
 public sealed partial class DuplicateDownloadSpec
 {
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task RetirementProtectsPeerPreparationAndReleasesItsOwnFixtureGroup(
+    bool peerAlreadyPreparing
+  )
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = config.OpenConnection();
+    var device = new DownloadDevice("");
+    var first = PendingJob(true);
+    var peer = first with { UniqueStr = "peer", PartName = "peer-part" };
+    db.AddJobs(new NewJobs { ScheduleId = "routes", Jobs = [first, peer] }, null, false);
+    var routeConfig = RouteConfig;
+    if (peerAlreadyPreparing)
+    {
+      device.Observe(
+        device.Data with
+        {
+          MainPrograms =
+          [
+            .. device.Data.MainPrograms.Select(p =>
+              p.MainProgram == "1002"
+                ? p with
+                {
+                  Comment = MazakProcess.CreateMainProgramComment("cut", 1),
+                }
+                : p
+            ),
+            new()
+            {
+              MainProgram = "1003",
+              Comment = MazakProcess.CreateMainProgramComment("cut", 2),
+            },
+          ],
+        }
+      );
+    }
+    MazakRouteWrite Step(Job job, IRepository repository) =>
+      MazakRouteCapacity.Calculate(
+        repository,
+        device.Native.LoadAllData(),
+        routeConfig,
+        new FMSSettings(),
+        job.UniqueStr,
+        2,
+        1,
+        3
+      );
+    MazakRouteIdentity Install(Job job, IRepository repository)
+    {
+      for (var i = 0; i < 6; i++)
+      {
+        var next = Step(job, repository);
+        if (next.NextWrite == null)
+          return next.Identity;
+        device.Native.Save(next.NextWrite);
+      }
+      throw new InvalidOperationException("Route installation did not settle.");
+    }
+    var a = Install(first, db);
+    var originalGroup = db.LoadMazakRoutePreparation(a.Source, a.PartName, 1)!.FixtureGroup;
+    if (peerAlreadyPreparing)
+    {
+      var pending = Step(peer, db);
+      await Assert.That(pending.NextWrite!.Fixtures.Count).IsEqualTo(1);
+      await Assert
+        .That(
+          db.LoadMazakRoutePreparation(
+            pending.Identity.Source,
+            pending.Identity.PartName,
+            1
+          )!.RequiredProgram
+        )
+        .IsEqualTo("1002");
+      device.Native.Save(pending.NextWrite);
+    }
+
+    var retirement = MazakRouteRetirement.Capture(
+      db,
+      routeConfig,
+      device.Data,
+      ImmutableHashSet.Create(a.PartName)
+    );
+    using var reopened = config.OpenConnection();
+    for (var i = 0; i < 6; i++)
+    {
+      var next = MazakRouteRetirement.Calculate(
+        reopened,
+        routeConfig,
+        device.Native.LoadAllData(),
+        retirement
+      );
+      if (next == null)
+        break;
+      await Assert.That(reopened.LoadMazakRoutePreparation(a.Source, a.PartName, 1)).IsNotNull();
+      device.Native.Save(next);
+    }
+    await Assert.That(reopened.LoadMazakRoutePreparation(a.Source, a.PartName, 1)).IsNull();
+    await Assert.That(reopened.LoadMazakRouteIdentity(a.Source, a.PartName, 1)).IsEqualTo(a);
+    await Assert.That(device.Data.Parts).IsEmpty();
+    await Assert.That(device.Data.MainPrograms.Any(p => p.MainProgram == "1002")).IsTrue();
+    var installedPeer = Install(peer, reopened);
+    if (!peerAlreadyPreparing)
+    {
+      await Assert
+        .That(reopened.LoadMazakRoutePreparation(a.Source, installedPeer.PartName, 1)!.FixtureGroup)
+        .IsEqualTo(originalGroup);
+      var reinstalled = Install(first, reopened);
+      await Assert.That(reinstalled).IsEqualTo(a);
+      await Assert
+        .That(reopened.LoadMazakRoutePreparation(a.Source, a.PartName, 1)!.FixtureGroup)
+        .IsNotEqualTo(originalGroup);
+    }
+  }
+
   [Test]
   public async Task ScopedCleanupRemovesOnlyOldProgramsUnusedAfterPartDeletion()
   {
@@ -284,31 +401,50 @@ public sealed partial class DuplicateDownloadSpec
 
     var owned = ImmutableHashSet.Create(a.PartName);
     var retiringA = MazakRouteRetirement.Capture(device.Data, owned);
-    var dropSchedule = MazakRouteRetirement.Calculate(device.Data, retiringA)!;
+    var dropSchedule = MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringA)!;
     await Assert.That(dropSchedule.Schedules.Single().Id).IsEqualTo(aSchedule.Id);
     await Assert.That(dropSchedule.Parts).IsEmpty();
     device.Native.Save(dropSchedule);
-    var dropPart = MazakRouteRetirement.Calculate(device.Data, retiringA)!;
+    var dropPart = MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringA)!;
     await Assert.That(dropPart.Parts.Single().PartName).IsEqualTo(a.PartName);
     await Assert.That(dropPart.Pallets).IsEmpty();
     device.Native.Save(dropPart);
-    await Assert.That(MazakRouteRetirement.Calculate(device.Data, retiringA)).IsNull();
+    await Assert
+      .That(MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringA))
+      .IsNull();
     await Assert.That(device.Data.Pallets).Contains(sharedMapping);
 
     var retiringB = MazakRouteRetirement.Capture(device.Data, ImmutableHashSet.Create(b.PartName));
-    device.Native.Save(MazakRouteRetirement.Calculate(device.Data, retiringB)!);
-    device.Native.Save(MazakRouteRetirement.Calculate(device.Data, retiringB)!);
+    device.Native.Save(MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringB)!);
+    device.Native.Save(MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringB)!);
     using var reopened = config.OpenConnection();
     device.Native.ClearReceivedCalls();
-    var dropMapping = MazakRouteRetirement.Calculate(device.Native.LoadAllData(), retiringB)!;
+    var dropMapping = MazakRouteRetirement.Calculate(
+      reopened,
+      routeConfig,
+      device.Native.LoadAllData(),
+      retiringB
+    )!;
     await Assert.That(dropMapping.Pallets.Single().Fixture).IsEqualTo(fixture);
     await Assert.That(dropMapping.Fixtures).IsEmpty();
     device.Native.Save(dropMapping);
-    var dropFixture = MazakRouteRetirement.Calculate(device.Native.LoadAllData(), retiringB)!;
+    var dropFixture = MazakRouteRetirement.Calculate(
+      reopened,
+      routeConfig,
+      device.Native.LoadAllData(),
+      retiringB
+    )!;
     await Assert.That(dropFixture.Fixtures.Single().FixtureName).IsEqualTo(fixture);
     device.Native.Save(dropFixture);
     await Assert
-      .That(MazakRouteRetirement.Calculate(device.Native.LoadAllData(), retiringB))
+      .That(
+        MazakRouteRetirement.Calculate(
+          reopened,
+          routeConfig,
+          device.Native.LoadAllData(),
+          retiringB
+        )
+      )
       .IsNull();
     await Assert
       .That(reopened.LoadMazakRouteIdentity(a.Source, a.PartName, a.NativeProcess))

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.Data.Sqlite;
 
@@ -19,6 +20,7 @@ public sealed record MazakRoutePreparation
   public required string FixtureName { get; init; }
   public required int FixtureGroup { get; init; }
   public string? AddedProgram { get; init; }
+  public string? RequiredProgram { get; init; }
 }
 
 internal sealed partial class Repository
@@ -50,17 +52,19 @@ internal sealed partial class Repository
     cmd.CommandText = """
       INSERT INTO mazak_route_identity(
         Source, PartName, NativeProcess, JobUnique, JobProcess, Path,
-        PreparationFixture, PreparationGroup, PreparationProgram
+        PreparationFixture, PreparationGroup, PreparationProgram, PreparationRequiredProgram
       )
-      VALUES($source, $part, $native, $job, $process, $path, $fixture, $group, $program)
+      VALUES($source, $part, $native, $job, $process, $path, $fixture, $group, $program, $required)
       ON CONFLICT(Source, PartName, NativeProcess) DO UPDATE SET
         PreparationFixture = coalesce(PreparationFixture, excluded.PreparationFixture),
         PreparationGroup = coalesce(PreparationGroup, excluded.PreparationGroup),
-        PreparationProgram = coalesce(PreparationProgram, excluded.PreparationProgram)
+        PreparationProgram = coalesce(PreparationProgram, excluded.PreparationProgram),
+        PreparationRequiredProgram = coalesce(PreparationRequiredProgram, excluded.PreparationRequiredProgram)
       WHERE JobUnique = excluded.JobUnique AND JobProcess = excluded.JobProcess AND Path = excluded.Path
         AND ($fixture IS NULL OR PreparationFixture IS NULL OR PreparationFixture = $fixture)
         AND ($group IS NULL OR PreparationGroup IS NULL OR PreparationGroup = $group)
         AND ($program IS NULL OR PreparationProgram IS NULL OR PreparationProgram = $program)
+        AND ($required IS NULL OR PreparationRequiredProgram IS NULL OR PreparationRequiredProgram = $required)
       """;
     cmd.Parameters.AddWithValue("source", route.Source);
     cmd.Parameters.AddWithValue("part", route.PartName);
@@ -71,6 +75,7 @@ internal sealed partial class Repository
     cmd.Parameters.AddWithValue("fixture", (object?)preparation?.FixtureName ?? DBNull.Value);
     cmd.Parameters.AddWithValue("group", (object?)preparation?.FixtureGroup ?? DBNull.Value);
     cmd.Parameters.AddWithValue("program", (object?)preparation?.AddedProgram ?? DBNull.Value);
+    cmd.Parameters.AddWithValue("required", (object?)preparation?.RequiredProgram ?? DBNull.Value);
     if (cmd.ExecuteNonQuery() != 1)
       throw new ConflictRequestException(
         $"Mazak source '{route.Source}' part '{route.PartName}' process {route.NativeProcess} is already reserved with a different job route or dependency preparation."
@@ -87,7 +92,7 @@ internal sealed partial class Repository
       _connection ?? throw new ObjectDisposedException(nameof(Repository))
     ).CreateCommand();
     cmd.CommandText = """
-      SELECT PreparationFixture, PreparationGroup, PreparationProgram FROM mazak_route_identity
+      SELECT PreparationFixture, PreparationGroup, PreparationProgram, PreparationRequiredProgram FROM mazak_route_identity
       WHERE Source = $source AND PartName = $part AND NativeProcess = $native
         AND PreparationFixture IS NOT NULL
       """;
@@ -95,15 +100,62 @@ internal sealed partial class Repository
     cmd.Parameters.AddWithValue("part", partName);
     cmd.Parameters.AddWithValue("native", nativeProcess);
     using var reader = cmd.ExecuteReader();
-    return reader.Read()
-      ? new MazakRoutePreparation
-      {
-        FixtureName = reader.GetString(0),
-        FixtureGroup = reader.GetInt32(1),
-        AddedProgram = reader.IsDBNull(2) ? null : reader.GetString(2),
-      }
-      : null;
+    return reader.Read() ? ReadPreparation(reader) : null;
   }
+
+  public ImmutableDictionary<string, MazakRoutePreparation> LoadMazakRoutePreparations(
+    string source
+  )
+  {
+    using var cmd = (
+      _connection ?? throw new ObjectDisposedException(nameof(Repository))
+    ).CreateCommand();
+    cmd.CommandText = """
+      SELECT PreparationFixture, PreparationGroup, PreparationProgram, PreparationRequiredProgram, PartName
+      FROM mazak_route_identity
+      WHERE Source = $source AND NativeProcess = 1 AND PreparationFixture IS NOT NULL
+      """;
+    cmd.Parameters.AddWithValue("source", source);
+    using var reader = cmd.ExecuteReader();
+    var preparations = ImmutableDictionary.CreateBuilder<string, MazakRoutePreparation>(
+      StringComparer.Ordinal
+    );
+    while (reader.Read())
+      preparations.Add(reader.GetString(4), ReadPreparation(reader));
+    return preparations.ToImmutable();
+  }
+
+  public void ReleaseMazakRoutePreparations(string source, IReadOnlySet<string> partNames)
+  {
+    if (partNames.Count == 0)
+      return;
+    var connection = _connection ?? throw new ObjectDisposedException(nameof(Repository));
+    using var transaction = connection.BeginTransaction();
+    using var cmd = connection.CreateCommand();
+    cmd.Transaction = transaction;
+    cmd.CommandText = """
+      UPDATE mazak_route_identity SET PreparationFixture = NULL, PreparationGroup = NULL,
+        PreparationProgram = NULL, PreparationRequiredProgram = NULL
+      WHERE Source = $source AND PartName = $part AND NativeProcess = 1 AND PreparationFixture IS NOT NULL
+      """;
+    cmd.Parameters.AddWithValue("source", source);
+    var part = cmd.Parameters.Add("part", SqliteType.Text);
+    foreach (var name in partNames)
+    {
+      part.Value = name;
+      cmd.ExecuteNonQuery();
+    }
+    transaction.Commit();
+  }
+
+  private static MazakRoutePreparation ReadPreparation(SqliteDataReader reader) =>
+    new()
+    {
+      FixtureName = reader.GetString(0),
+      FixtureGroup = reader.GetInt32(1),
+      AddedProgram = reader.IsDBNull(2) ? null : reader.GetString(2),
+      RequiredProgram = reader.IsDBNull(3) ? null : reader.GetString(3),
+    };
 
   public MazakRouteIdentity? LoadMazakRouteIdentity(
     string source,

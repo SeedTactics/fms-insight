@@ -125,12 +125,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(48);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(49);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(48);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(49);
       }
 
       CheckSchema(conn1, memDb);
@@ -1155,6 +1155,7 @@ namespace BlackMaple.FMSInsight.Tests
       using (var command = connection.CreateCommand())
       {
         command.CommandText = """
+          ALTER TABLE mazak_route_identity DROP COLUMN PreparationRequiredProgram;
           ALTER TABLE mazak_route_identity DROP COLUMN PreparationProgram;
           ALTER TABLE mazak_route_identity DROP COLUMN PreparationGroup;
           ALTER TABLE mazak_route_identity DROP COLUMN PreparationFixture;

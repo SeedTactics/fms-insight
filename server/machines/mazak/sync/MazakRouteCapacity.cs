@@ -177,7 +177,14 @@ public static class MazakRouteCapacity
         && preparation.AddedProgram != addProgram
       )
         throw Conflict("The selected program differs from the saved preparation.");
-      preparation = preparation with { AddedProgram = preparation.AddedProgram ?? addProgram };
+      var requiredProgram = expected.Processes.Single().PartProgram.CellControllerProgramName;
+      if (preparation.RequiredProgram != null && preparation.RequiredProgram != requiredProgram)
+        throw Conflict("The required native program differs from the saved preparation.");
+      preparation = preparation with
+      {
+        AddedProgram = preparation.AddedProgram ?? addProgram,
+        RequiredProgram = requiredProgram,
+      };
       var expectedPallets = expected
         .Processes.Single()
         .Pallets()

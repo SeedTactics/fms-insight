@@ -79,11 +79,18 @@ public sealed partial class DuplicateDownloadSpec
         device.Data,
         System.Collections.Immutable.ImmutableHashSet.Create(identity.PartName)
       );
-      var retirement = MazakRouteRetirement.Calculate(device.Data, candidates)!;
+      var retirement = MazakRouteRetirement.Calculate(
+        reopened,
+        routeConfig,
+        device.Data,
+        candidates
+      )!;
       await Assert.That(retirement.Fixtures.Single().FixtureName).IsEqualTo(fixture);
       await Assert.That(retirement.Parts).IsEmpty();
       device.Native.Save(retirement);
-      await Assert.That(MazakRouteRetirement.Calculate(device.Data, candidates)).IsNull();
+      await Assert
+        .That(MazakRouteRetirement.Calculate(reopened, routeConfig, device.Data, candidates))
+        .IsNull();
       await Assert.That(device.Data.Pallets.Single().Fixture).IsEqualTo("peer");
       await Assert
         .That(reopened.LoadMazakRouteIdentity(identity.Source, identity.PartName, 1))

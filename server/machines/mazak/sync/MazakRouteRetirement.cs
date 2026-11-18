@@ -71,6 +71,8 @@ public static class MazakRouteRetirement
   // The caller establishes retirement eligibility. The optional predicate can keep another
   // schedule on a shared definition. Surviving observations always protect their dependencies.
   public static MazakWriteData? Calculate(
+    IRepository db,
+    MazakConfig config,
     MazakAllData observed,
     MazakRetirementCandidates candidates,
     Func<MazakScheduleRow, bool>? shouldRemoveSchedule = null
@@ -90,12 +92,44 @@ public static class MazakRouteRetirement
     if (partDeletes.Parts.Count > 0)
       return partDeletes;
 
-    var pallets = RemovePalletMappings(observed, candidates);
+    var referencedNames = observed
+      .Parts.Select(p => p.PartName)
+      .Concat(survivingParts)
+      .Concat(observed.PalletSubStatuses.Where(s => s.FixQuantity > 0).Select(s => s.PartName));
+    var finishedParts = candidates.PartNames.Except(referencedNames);
+    var active = db.LoadMazakRoutePreparations(config.ControllerSource)
+      .Where(p => !finishedParts.Contains(p.Key))
+      .Select(p => p.Value)
+      .ToImmutableList();
+
+    var protectedFixtures = active.Select(p => p.FixtureName);
+    var pallets = RemovePalletMappings(observed, candidates, protectedFixtures);
     if (pallets.Pallets.Count > 0)
       return pallets;
 
-    var unused = RemoveUnusedDependencies(observed, candidates);
-    return unused.Fixtures.Count > 0 || unused.Programs.Count > 0 ? unused : null;
+    var unused = RemoveUnusedDependencies(
+      observed,
+      candidates,
+      protectedFixtures,
+      RequiredProgramComments(observed, active)
+    );
+    if (unused.Fixtures.Count > 0 || unused.Programs.Count > 0)
+      return unused;
+    if (HasAllScheduledParts(observed))
+      db.ReleaseMazakRoutePreparations(config.ControllerSource, finishedParts);
+    return null;
+  }
+
+  internal static IEnumerable<string> RequiredProgramComments(
+    MazakAllData observed,
+    IEnumerable<MazakRoutePreparation> preparations
+  )
+  {
+    var names = preparations
+      .Select(p => p.RequiredProgram ?? p.AddedProgram)
+      .Where(p => p != null)
+      .ToImmutableHashSet(StringComparer.Ordinal);
+    return observed.MainPrograms.Where(p => names.Contains(p.MainProgram)).Select(p => p.Comment);
   }
 
   internal static MazakWriteData RemovePalletMappings(
