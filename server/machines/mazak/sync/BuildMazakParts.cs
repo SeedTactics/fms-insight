@@ -1402,40 +1402,38 @@ namespace MazakMachineInterface
       IEnumerable<MazakPart> newParts
     )
     {
-      var progsToComment = oldData
-        .MainPrograms.Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
-        .ToDictionary(p => p.MainProgram, p => p.Comment);
-
-      var used = new HashSet<string>();
-      foreach (var part in oldData.Parts)
-      {
-        foreach (var proc in part.Processes)
-        {
-          if (
-            !string.IsNullOrEmpty(proc.MainProgram) && progsToComment.ContainsKey(proc.MainProgram)
-          )
-          {
-            used.Add(progsToComment[proc.MainProgram]);
-          }
-        }
-      }
-      foreach (var part in newParts)
-      {
-        foreach (var proc in part.Processes)
-        {
-          if (!string.IsNullOrEmpty(proc.PartProgram.ProgramName))
-          {
-            used.Add(
-              MazakProcess.CreateMainProgramComment(
-                proc.PartProgram.ProgramName,
-                proc.PartProgram.Revision
-              )
-            );
-          }
-        }
-      }
-
+      var used = RequiredProgramComments(oldData, newParts).ToHashSet(StringComparer.Ordinal);
+      var installed = oldData
+        .Parts.SelectMany(p => p.Processes)
+        .Select(p => p.MainProgram)
+        .ToImmutableHashSet(StringComparer.Ordinal);
+      used.UnionWith(
+        oldData.MainPrograms.Where(p => installed.Contains(p.MainProgram)).Select(p => p.Comment)
+      );
       return used;
+    }
+
+    internal static IEnumerable<string> RequiredProgramComments(
+      MazakAllData observed,
+      IEnumerable<MazakPart> parts
+    )
+    {
+      var programs = parts
+        .SelectMany(p => p.Processes)
+        .Select(p => p.PartProgram)
+        .ToImmutableList();
+      var nativeNames = programs
+        .Where(p => !string.IsNullOrEmpty(p.CellControllerProgramName))
+        .Select(p => p.CellControllerProgramName)
+        .ToImmutableHashSet(StringComparer.Ordinal);
+      return programs
+        .Where(p => !string.IsNullOrEmpty(p.ProgramName))
+        .Select(p => MazakProcess.CreateMainProgramComment(p.ProgramName, p.Revision))
+        .Concat(
+          observed
+            .MainPrograms.Where(p => nativeNames.Contains(p.MainProgram))
+            .Select(p => p.Comment)
+        );
     }
     #endregion
 

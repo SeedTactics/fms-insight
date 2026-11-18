@@ -12,6 +12,103 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class DuplicateDownloadSpec
 {
   [Test]
+  public async Task ScopedCleanupRemovesOnlyOldProgramsUnusedAfterPartDeletion()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = config.OpenConnection();
+    var device = new DownloadDevice("");
+    var ordinary = PendingJob(false);
+    var completed = ordinary with { UniqueStr = "closed", PartName = "closed-part" };
+    var peer = ordinary with { UniqueStr = "peer", PartName = "peer-part" };
+    const string pendingProgram = "pending-1.eia";
+    var process = ordinary.Processes[0];
+    var path = process.Paths[0];
+    ordinary = ordinary with
+    {
+      Processes = ordinary.Processes.SetItem(
+        0,
+        process with
+        {
+          Paths = [path with { Stops = [path.Stops[0] with { Program = pendingProgram }] }],
+        }
+      ),
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "old", Jobs = [completed, peer] }, null, true);
+    db.AddJobs(new NewJobs { ScheduleId = "new", Jobs = [ordinary] }, null, false);
+
+    static MazakPartRow Part(Job job, int generation, params string[] programs)
+    {
+      var name = job.PartName + ":" + generation + ":1";
+      return new MazakPartRow
+      {
+        PartName = name,
+        Comment = job.UniqueStr + "-Insight",
+        Processes = programs
+          .Select(
+            (p, i) =>
+              new MazakPartProcessRow
+              {
+                PartName = name,
+                ProcessNumber = i + 1,
+                MainProgram = p,
+                Fixture = "legacy",
+              }
+          )
+          .ToImmutableList(),
+      };
+    }
+    var old = Part(completed, 6, "obsolete-1.eia", "peer-1.eia", pendingProgram);
+    var survivor = Part(peer, 7, "peer-1.eia");
+    var revisions = new[] { "obsolete", "peer", "pending" }
+      .SelectMany(name =>
+        Enumerable
+          .Range(1, 2)
+          .Select(rev => new MazakProgramRow
+          {
+            MainProgram = $"{name}-{rev}.eia",
+            Comment = MazakProcess.CreateMainProgramComment(name, rev),
+          })
+      )
+      .ToImmutableList();
+    device.Observe(
+      device.Data with
+      {
+        Parts = [old, survivor],
+        Schedules =
+        [
+          new MazakScheduleRow
+          {
+            Id = 1,
+            PartName = old.PartName,
+            Comment = old.Comment,
+            PlanQuantity = 3,
+            CompleteQuantity = 3,
+          },
+        ],
+        MainPrograms = [.. device.Data.MainPrograms, .. revisions],
+      }
+    );
+    var routeConfig = RouteConfig with { BulkJobFilter = j => j.UniqueStr != peer.UniqueStr };
+    await Assert
+      .That(
+        WriteJobs.SyncFromDatabase(
+          device.Data,
+          db,
+          device.Native,
+          new FMSSettings(),
+          routeConfig,
+          Now
+        )
+      )
+      .IsTrue();
+    await Assert.That(device.Data.Parts).DoesNotContain(old);
+    await Assert.That(device.Data.Parts).Contains(survivor);
+    await Assert
+      .That(device.Data.MainPrograms.Where(p => p.Comment.StartsWith("Insight:")))
+      .IsEquivalentTo(revisions.Where(p => p.MainProgram != "obsolete-1.eia"));
+  }
+
+  [Test]
   [Arguments(0)]
   [Arguments(100)]
   public async Task ScopedBulkWritesProtectCustomAndPeerWorkAndRetirementKeepsSharedMapping(

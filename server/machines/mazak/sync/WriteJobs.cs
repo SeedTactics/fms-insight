@@ -293,7 +293,7 @@ namespace MazakMachineInterface
           afterParts,
           candidates,
           mazakJobs.UsedFixtures,
-          mazakJobs.UsedMainProgramComments
+          ConvertJobsToMazakParts.RequiredProgramComments(afterParts, mazakJobs.AllParts)
         );
         if (unused.Fixtures.Count > 0 || unused.Programs.Count > 0)
           mazakDb.Save(unused);

@@ -678,6 +678,20 @@ public sealed partial class DuplicateDownloadSpec
               row => row.FixtureName,
               row => row.Command
             ),
+            MainPrograms = Data
+              .MainPrograms.Where(p =>
+                !write.Programs.Any(edit => edit.MainProgram == p.MainProgram)
+              )
+              .Concat(
+                write
+                  .Programs.Where(p => p.Command == MazakWriteCommand.Add)
+                  .Select(p => new MazakProgramRow
+                  {
+                    MainProgram = p.MainProgram,
+                    Comment = p.Comment,
+                  })
+              )
+              .ToImmutableList(),
           };
           if (
             _failOnce
