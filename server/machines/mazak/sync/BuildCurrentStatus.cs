@@ -251,7 +251,6 @@ namespace MazakMachineInterface
               .CurrentPalletMaterial(jobDB, oldCycles, removals)
               .RemoveAll(m => departed.Contains(m.MaterialID))
             : [];
-          var facesWithUncertainPlacement = new HashSet<int>();
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -270,7 +269,10 @@ namespace MazakMachineInterface
             int palFmsProc;
             if (route != null)
             {
-              if (!MazakRouteHistory.AgreesWithObservation(route, mazakData))
+              if (
+                !MazakRouteHistory.HasLiveSchedule(mazakData, route.PartName)
+                || !MazakRouteHistory.AgreesWithObservation(route, mazakData)
+              )
                 continue;
               palFmsProc = route.JobProcess;
               if (!jobsByUniq.TryGetValue(route.JobUnique, out job))
@@ -310,11 +312,21 @@ namespace MazakMachineInterface
             };
 
             var face = palSub.PartProcessNumber;
+            var definitions =
+              route == null
+                ? []
+                : jobDB
+                  .LoadMazakRouteIdentities(mazakCfg.ControllerSource, route.JobUnique)
+                  .Where(r => r.JobProcess == route.JobProcess && r.Path == route.Path)
+                  .ToImmutableList();
             var matIDs =
               route != null
                 ? confirmed
                   .Where(m =>
-                    m.JobUniqueStr == job.UniqueStr && m.Process == palFmsProc && m.Face == face
+                    m.JobUniqueStr == job.UniqueStr
+                    && m.Process == palFmsProc
+                    && m.Face == face
+                    && MazakRouteHistory.MatchesRecordedPlacement(oldCycles, definitions, m, route)
                   )
                   .Select(m => m.MaterialID)
                   .ToImmutableList()
@@ -333,10 +345,7 @@ namespace MazakMachineInterface
               unidentified.Remove(route.PartName);
             var quantity = Math.Max(palSub.FixQuantity, matIDs.Count + unknown);
             if (route != null && (matIDs.Count != palSub.FixQuantity || unknown > 0))
-            {
-              facesWithUncertainPlacement.Add(face);
               ReportUncertainPlacement(face, palSub.FixQuantity, unknown, matIDs);
-            }
 
             for (var i = 0; i < quantity; i++)
             {
@@ -436,22 +445,16 @@ namespace MazakMachineInterface
               if (
                 known.MaterialID < 0
                 || alreadyShown.Contains(known.MaterialID)
-                || (
-                  !facesWithUncertainPlacement.Contains(known.Face)
-                  && !MazakRouteHistory.HasUnconfirmedPlacement(
-                    jobDB,
-                    mazakCfg,
-                    mazakData,
-                    oldCycles,
-                    known
-                  )
+                || !MazakRouteHistory.HasUnconfirmedPlacement(
+                  jobDB,
+                  mazakCfg,
+                  mazakData,
+                  oldCycles,
+                  known
                 )
               )
                 continue;
-              if (
-                !facesWithUncertainPlacement.Contains(known.Face)
-                && !ambiguous.Values.Any(p => p.Candidates.Contains(known.MaterialID))
-              )
+              if (!ambiguous.Values.Any(p => p.Candidates.Contains(known.MaterialID)))
                 retainedWithoutAssignment.Add(known);
               palletsByName[palName] = palletsByName[palName] with
               {
@@ -484,7 +487,7 @@ namespace MazakMachineInterface
             foreach (var (nativeName, quantity) in unidentified)
             {
               var route = MazakRouteHistory.Find(jobDB, mazakCfg, nativeName, 1);
-              if (route == null)
+              if (route == null || !MazakRouteHistory.HasLiveSchedule(mazakData, nativeName))
                 continue;
               ReportUncertainPlacement(route.NativeProcess, null, quantity, []);
               for (var i = 0L; i < quantity; i++)

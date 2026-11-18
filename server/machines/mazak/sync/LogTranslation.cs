@@ -1580,13 +1580,7 @@ namespace MazakMachineInterface
         foreach (var extraMat in matsOnPal)
         {
           if (
-            MazakRouteHistory.HasUnconfirmedPlacement(
-              repo,
-              mazakConfig,
-              mazakData,
-              oldEvts,
-              extraMat
-            )
+            MazakRouteHistory.DeferMissingMaterial(repo, mazakConfig, mazakData, oldEvts, extraMat)
           )
             continue;
 

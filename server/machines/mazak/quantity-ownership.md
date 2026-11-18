@@ -67,9 +67,11 @@ when the repository also contains custom-managed or peer jobs.
 
 Historical attribution uses the controller source, exact full part name and native process. For
 legacy definitions, the caller can supply a full name for adoption after establishing its ownership.
-A retired name retains its job route in the repository. The published quantities for Insight-owned
-jobs use durable entries and valid unloads. The backend can project its own reservations with
-`AdjustCurrentStatus`.
+Mazak allows schedule deletion after its material clears the system. A retired name retains its job
+route for delayed unload logs. The last recorded placement can still identify those serials when the
+CSV arrives. Live pallet status uses installed schedules for occupancy. The published quantities for
+Insight-owned jobs use durable entries and valid unloads. The backend can project its own
+reservations with `AdjustCurrentStatus`.
 
 Use the repository-aware overload of `MazakRouteRetirement.Capture` before deleting parts. It
 includes the fixture and program reserved before a preparation write, even if the part was never

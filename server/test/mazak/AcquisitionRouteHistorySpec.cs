@@ -12,6 +12,66 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 
 public sealed partial class MazakAcquisitionSpec
 {
+  private static MazakAllDataAndLogs WithInstalledRoute(
+    MazakAllDataAndLogs data,
+    MazakRouteIdentity route,
+    int scheduleId = 1
+  )
+  {
+    var comment = $"{route.JobUnique}-{route.JobProcess}-{route.Path}-InsightS";
+    return data with
+    {
+      Parts =
+      [
+        .. data.Parts,
+        new MazakPartRow
+        {
+          PartName = route.PartName,
+          Comment = comment,
+          Processes =
+          [
+            new()
+            {
+              PartName = route.PartName,
+              ProcessNumber = 1,
+              Fixture = "fixture",
+              FixLDS = "1",
+              RemoveLDS = "1",
+              CutMc = "1",
+              MainProgram = "1001",
+              FixQuantity = 1,
+            },
+          ],
+        },
+      ],
+      Schedules =
+      [
+        .. data.Schedules,
+        new MazakScheduleRow
+        {
+          Id = scheduleId,
+          PartName = route.PartName,
+          Comment = comment,
+          PlanQuantity = 1,
+          Processes = [new() { ProcessNumber = 1 }],
+        },
+      ],
+    };
+  }
+
+  private static MazakPalletSubStatusRow AssignedFace(
+    MazakRouteIdentity route,
+    int scheduleId = 1
+  ) =>
+    new()
+    {
+      PalletNumber = 1,
+      PartName = route.PartName,
+      ScheduleID = scheduleId,
+      PartProcessNumber = route.NativeProcess,
+      FixQuantity = 1,
+    };
+
   [Test]
   [Arguments(1)]
   [Arguments(2)]
@@ -42,7 +102,8 @@ public sealed partial class MazakAcquisitionSpec
       Path = 1,
     };
     db.ReserveMazakRouteIdentity(route);
-    db.ReserveMazakRouteIdentity(route with { PartName = "part:7:2:2", JobProcess = 2 });
+    var laterRoute = route with { PartName = "part:7:2:2", JobProcess = 2 };
+    db.ReserveMazakRouteIdentity(laterRoute);
     var material = db.AllocateMaterialID(job.UniqueStr, job.PartName, 2);
     var load = new MaterialToLoadOntoFace
     {
@@ -60,9 +121,10 @@ public sealed partial class MazakAcquisitionSpec
       Face = 1,
     };
     db.RecordMachineStart([machiningMaterial], 1, "MC", 1, "1001", now.AddMinutes(-1));
-    cell.Data = cell.Data with
+    cell.Data = WithInstalledRoute(WithInstalledRoute(cell.Data, route), laterRoute, 2) with
     {
       PalletPositions = [new() { PalletNumber = 1, PalletPosition = "S001" }],
+      PalletSubStatuses = [AssignedFace(route)],
     };
     using var sync = cell.NewSynchronizer(configure: config =>
       config with
@@ -95,6 +157,13 @@ public sealed partial class MazakAcquisitionSpec
       now.AddSeconds(-30),
       null
     );
+    cell.Data = cell.Data with
+    {
+      PalletSubStatuses =
+      [
+        processAfterLoad == 1 ? AssignedFace(route) : AssignedFace(laterRoute, 2),
+      ],
+    };
     var reloaded = sync.CalculateCellState(db).CurrentStatus.Material.Single();
     await Assert.That(reloaded.Process).IsEqualTo(processAfterLoad);
     await Assert.That(reloaded.Action.Type).IsEqualTo(InProcessMaterialAction.ActionType.Waiting);
@@ -158,19 +227,10 @@ public sealed partial class MazakAcquisitionSpec
       FixedQuantity = 1,
     };
     var next = cell.End with { Code = LogCode.LoadBegin };
-    cell.Data = cell.Data with
+    cell.Data = WithInstalledRoute(cell.Data, route) with
     {
       Logs = [load, next],
-      PalletSubStatuses =
-      [
-        new()
-        {
-          PalletNumber = 1,
-          PartName = route.PartName,
-          PartProcessNumber = 1,
-          FixQuantity = 1,
-        },
-      ],
+      PalletSubStatuses = [AssignedFace(route)],
       PalletPositions = [new() { PalletNumber = 1, PalletPosition = "S001" }],
     };
     static MazakConfig Configure(MazakConfig config) =>
@@ -191,6 +251,7 @@ public sealed partial class MazakAcquisitionSpec
     using var restarted = cell.NewSynchronizer(configure: Configure);
     cell.Data = cell.Data with { Logs = [], PalletSubStatuses = [] };
     var retained = restarted.CalculateCellState(reopened).CurrentStatus;
+    await Assert.That(cell.Data.Schedules.Single().PartName).IsEqualTo(route.PartName);
     await Assert.That(retained.Material.Single().Process).IsEqualTo(2);
     await Assert.That(retained.AlarmDetails!.Single().Message).Contains("1 unidentified piece");
 
@@ -217,11 +278,11 @@ public sealed partial class MazakAcquisitionSpec
   [Test]
   [Arguments(false, 1, false, false, false)]
   [Arguments(true, 1, false, false, false)]
-  [Arguments(true, 2, false, false, false)]
-  [Arguments(true, 1, true, false, false)]
+  [Arguments(false, 2, false, false, false)]
+  [Arguments(false, 1, true, false, false)]
   [Arguments(false, 1, false, true, false)]
   [Arguments(false, 1, false, true, true)]
-  public async Task DelayedSplitUnloadSurvivesRetirementAndScheduleIdReuse(
+  public async Task SplitUnloadUsesTheReservedRouteForLiveAndRetiredSchedules(
     bool deletePart,
     int reportedQuantity,
     bool ambiguousIdentities,
@@ -231,6 +292,8 @@ public sealed partial class MazakAcquisitionSpec
   {
     using var cell = new Cell(id => "serial-" + id);
     var db = cell.Repository;
+    var retireBeforeIngestion =
+      !ambiguousIdentities && !conflictingSchedule && reportedQuantity == 1;
     var now = cell.Clock.Now.UtcDateTime;
     var path = JobLogTest.EmptyPath with { PalletNums = [1], Load = [1], Unload = [1] };
     var process = new ProcessInfo { Paths = [path] };
@@ -337,7 +400,7 @@ public sealed partial class MazakAcquisitionSpec
           new MazakConfig
           {
             DBType = MazakDbType.MazakSmooth,
-            CanQuarantineMissingMaterial = _ => conflictingSchedule,
+            CanQuarantineMissingMaterial = _ => conflictingSchedule || retireBeforeIngestion,
           }
         ),
         cell.Clock
@@ -469,27 +532,37 @@ public sealed partial class MazakAcquisitionSpec
       await Assert.That(cleared.CurrentStatus.AlarmDetails).IsNull();
     }
 
-    cell.Data = cell.Data with
-    {
-      Schedules = deletePart ? [Schedule(newPart, 10, 3)] : [],
-      Parts = deletePart ? [newPart] : [oldPart],
-    };
     using var reopened = cell.Repositories.OpenConnection();
     using var restarted = NewSynchronizer();
-    var retired = restarted.CalculateCellState(reopened).CurrentStatus;
-    var stillOnPallet = retired.Material.Single(m => m.MaterialID == material);
-    await Assert.That(stillOnPallet.JobUnique).IsEqualTo(job.UniqueStr);
-    await Assert.That(stillOnPallet.Process).IsEqualTo(2);
-    await Assert.That(stillOnPallet.Serial).IsEqualTo(mark.Material.Single().Serial);
-
-    if (deletePart)
+    if (retireBeforeIngestion)
     {
-      cell.Data = cell.Data with { Pallets = [], PalletSubStatuses = [] };
-      var missing = restarted.CalculateCellState(reopened).CurrentStatus;
-      await Assert.That(missing.Material.Select(m => m.MaterialID)).IsEquivalentTo(loaded);
-      var machining = missing.Material.Single(m => m.MaterialID == material).Action;
-      await Assert.That(machining.Type).IsEqualTo(InProcessMaterialAction.ActionType.Machining);
-      await Assert.That(machining.ElapsedMachiningTime).IsEqualTo(TimeSpan.FromMinutes(1));
+      // The controller has already completed the physical unload. Its CSV is still in flight
+      // when the now-idle native schedule is deleted and may have its number reused.
+      cell.Data = cell.Data with
+      {
+        PalletSubStatuses = [],
+        Schedules = [Schedule(oldPart, 80, 41)],
+      };
+      cell.Data = cell.Data with
+      {
+        Schedules = deletePart ? [Schedule(newPart, 10, 3)] : [],
+        Parts = deletePart ? [newPart] : [oldPart],
+      };
+      var replacement = route with { PartName = "part:9:2:2" };
+      reopened.ReserveMazakRouteIdentity(replacement);
+      var replacementPart = Part(replacement.PartName, oldPart.Comment);
+      cell.Data = cell.Data with
+      {
+        Parts = [.. cell.Data.Parts, replacementPart],
+        Schedules = [.. cell.Data.Schedules, Schedule(replacementPart, 20, 5) with { Id = 2 }],
+      };
+      var waitingForFile = restarted.CalculateCellState(reopened).CurrentStatus;
+      await Assert.That(waitingForFile.Material).IsEmpty();
+      await Assert.That(reopened.IsMaterialInQueue(material)).IsFalse();
+    }
+    else
+    {
+      await Assert.That(cell.Data.Schedules.Single().PartName).IsEqualTo(route.PartName);
     }
 
     var unload = cell.Start with
@@ -569,14 +642,6 @@ public sealed partial class MazakAcquisitionSpec
       .IsEqualTo(1);
 
     reopened.InvalidatePalletCycle(material, 2, "operator", now);
-    var replacement = route with { PartName = "part:9:2:2" };
-    reopened.ReserveMazakRouteIdentity(replacement);
-    var replacementPart = Part(replacement.PartName, oldPart.Comment);
-    cell.Data = cell.Data with
-    {
-      Parts = [.. cell.Data.Parts, replacementPart],
-      Schedules = [.. cell.Data.Schedules, Schedule(replacementPart, 20, 5) with { Id = 2 }],
-    };
     var invalidated = restarted.CalculateCellState(reopened).CurrentStatus;
     await Assert.That(invalidated.Jobs[job.UniqueStr].Completed![1][0]).IsEqualTo(0);
     await Assert
