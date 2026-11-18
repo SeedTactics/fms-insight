@@ -14,9 +14,29 @@ public sealed record MazakRouteIdentity
   public required int Path { get; init; }
 }
 
+public sealed record MazakRoutePreparation
+{
+  public required string FixtureName { get; init; }
+  public required int FixtureGroup { get; init; }
+  public string? AddedProgram { get; init; }
+}
+
 internal sealed partial class Repository
 {
-  public void ReserveMazakRouteIdentity(MazakRouteIdentity route)
+  public void ReserveMazakRouteIdentity(MazakRouteIdentity route) => Reserve(route, null);
+
+  public void ReserveMazakRoutePreparation(
+    MazakRouteIdentity route,
+    MazakRoutePreparation preparation
+  )
+  {
+    ArgumentNullException.ThrowIfNull(preparation);
+    ArgumentException.ThrowIfNullOrWhiteSpace(preparation.FixtureName);
+    ArgumentOutOfRangeException.ThrowIfNegative(preparation.FixtureGroup);
+    Reserve(route, preparation);
+  }
+
+  private void Reserve(MazakRouteIdentity route, MazakRoutePreparation? preparation)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(route.Source);
     ArgumentException.ThrowIfNullOrWhiteSpace(route.PartName);
@@ -28,10 +48,19 @@ internal sealed partial class Repository
       _connection ?? throw new ObjectDisposedException(nameof(Repository))
     ).CreateCommand();
     cmd.CommandText = """
-      INSERT INTO mazak_route_identity(Source, PartName, NativeProcess, JobUnique, JobProcess, Path)
-      VALUES($source, $part, $native, $job, $process, $path)
-      ON CONFLICT(Source, PartName, NativeProcess) DO UPDATE SET JobUnique = excluded.JobUnique
+      INSERT INTO mazak_route_identity(
+        Source, PartName, NativeProcess, JobUnique, JobProcess, Path,
+        PreparationFixture, PreparationGroup, PreparationProgram
+      )
+      VALUES($source, $part, $native, $job, $process, $path, $fixture, $group, $program)
+      ON CONFLICT(Source, PartName, NativeProcess) DO UPDATE SET
+        PreparationFixture = coalesce(PreparationFixture, excluded.PreparationFixture),
+        PreparationGroup = coalesce(PreparationGroup, excluded.PreparationGroup),
+        PreparationProgram = coalesce(PreparationProgram, excluded.PreparationProgram)
       WHERE JobUnique = excluded.JobUnique AND JobProcess = excluded.JobProcess AND Path = excluded.Path
+        AND ($fixture IS NULL OR PreparationFixture IS NULL OR PreparationFixture = $fixture)
+        AND ($group IS NULL OR PreparationGroup IS NULL OR PreparationGroup = $group)
+        AND ($program IS NULL OR PreparationProgram IS NULL OR PreparationProgram = $program)
       """;
     cmd.Parameters.AddWithValue("source", route.Source);
     cmd.Parameters.AddWithValue("part", route.PartName);
@@ -39,10 +68,41 @@ internal sealed partial class Repository
     cmd.Parameters.AddWithValue("job", route.JobUnique);
     cmd.Parameters.AddWithValue("process", route.JobProcess);
     cmd.Parameters.AddWithValue("path", route.Path);
+    cmd.Parameters.AddWithValue("fixture", (object?)preparation?.FixtureName ?? DBNull.Value);
+    cmd.Parameters.AddWithValue("group", (object?)preparation?.FixtureGroup ?? DBNull.Value);
+    cmd.Parameters.AddWithValue("program", (object?)preparation?.AddedProgram ?? DBNull.Value);
     if (cmd.ExecuteNonQuery() != 1)
       throw new ConflictRequestException(
-        $"Mazak source '{route.Source}' part '{route.PartName}' process {route.NativeProcess} is already reserved for another job route."
+        $"Mazak source '{route.Source}' part '{route.PartName}' process {route.NativeProcess} is already reserved with a different job route or dependency preparation."
       );
+  }
+
+  public MazakRoutePreparation? LoadMazakRoutePreparation(
+    string source,
+    string partName,
+    int nativeProcess
+  )
+  {
+    using var cmd = (
+      _connection ?? throw new ObjectDisposedException(nameof(Repository))
+    ).CreateCommand();
+    cmd.CommandText = """
+      SELECT PreparationFixture, PreparationGroup, PreparationProgram FROM mazak_route_identity
+      WHERE Source = $source AND PartName = $part AND NativeProcess = $native
+        AND PreparationFixture IS NOT NULL
+      """;
+    cmd.Parameters.AddWithValue("source", source);
+    cmd.Parameters.AddWithValue("part", partName);
+    cmd.Parameters.AddWithValue("native", nativeProcess);
+    using var reader = cmd.ExecuteReader();
+    return reader.Read()
+      ? new MazakRoutePreparation
+      {
+        FixtureName = reader.GetString(0),
+        FixtureGroup = reader.GetInt32(1),
+        AddedProgram = reader.IsDBNull(2) ? null : reader.GetString(2),
+      }
+      : null;
   }
 
   public MazakRouteIdentity? LoadMazakRouteIdentity(

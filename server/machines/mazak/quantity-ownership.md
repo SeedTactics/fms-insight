@@ -71,10 +71,12 @@ A retired name retains its job route in the repository. The published quantities
 jobs use durable entries and valid unloads. The backend can project its own reservations with
 `AdjustCurrentStatus`.
 
-Use `MazakRouteRetirement.Capture` before deleting parts. Retain the selected names and dependency
-candidates across retries. `MazakRouteRetirement.Calculate` returns the next transaction from a
-complete controller observation. Surviving schedules and parts protect shared dependencies through
-schedule, part, pallet mapping and dependency cleanup stages.
+Use the repository-aware overload of `MazakRouteRetirement.Capture` before deleting parts. It
+includes the fixture and program reserved before a preparation write, even if the part was never
+installed. Retain the selected names and dependency candidates across retries.
+`MazakRouteRetirement.Calculate` returns the next transaction from a complete controller
+observation. Surviving schedules and parts protect shared dependencies through schedule, part,
+pallet mapping and dependency cleanup stages.
 
 Assign each additional controller a distinct, stable `ControllerSource` independent of its endpoint.
 Keep the original controller on `DefaultControllerSource` to retain its existing LG history. Use

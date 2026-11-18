@@ -129,6 +129,18 @@ public static class MazakRouteCapacity
     )
       throw Conflict("Observed parts or schedules disagree with the selected split route.");
 
+    var preparation = db.LoadMazakRoutePreparation(
+      identity.Source,
+      identity.PartName,
+      identity.NativeProcess
+    );
+    if (
+      preparation != null
+      && installed != null
+      && installed.Processes[0].Fixture != preparation.FixtureName
+    )
+      throw Conflict("The installed part uses a different fixture from its saved preparation.");
+
     var definitions = ConvertJobsToMazakParts.BuildSplitDefinition(
       db,
       observed,
@@ -137,6 +149,7 @@ public static class MazakRouteCapacity
       job,
       identity,
       installed,
+      preparation,
       out var expected
     );
     var fixture = installed?.Processes[0].Fixture ?? definitions.Fixtures.Single().MazakFixtureName;
@@ -149,6 +162,50 @@ public static class MazakRouteCapacity
       config.ProgramDirectory
     );
     var transactions = definitions.CreatePartPalletDatabaseRows(config);
+    if (installed == null && preparation == null)
+    {
+      var chosenGroup = observed.Pallets.FirstOrDefault(p => p.Fixture == fixture)?.FixtureGroup
+        ?? (config.OverrideFixtureGroupToZero ? 0 : definitions.Fixtures.Single().FixtureGroup);
+      preparation = new MazakRoutePreparation { FixtureName = fixture, FixtureGroup = chosenGroup };
+    }
+    if (preparation != null)
+    {
+      var addProgram = dependencies.Programs.SingleOrDefault()?.MainProgram;
+      if (
+        addProgram != null
+        && preparation.AddedProgram != null
+        && preparation.AddedProgram != addProgram
+      )
+        throw Conflict("The selected program differs from the saved preparation.");
+      preparation = preparation with { AddedProgram = preparation.AddedProgram ?? addProgram };
+      var expectedPallets = expected
+        .Processes.Single()
+        .Pallets()
+        .Select(config.InversePalletNumber)
+        .ToImmutableHashSet();
+      if (
+        observed.Pallets.Any(p =>
+          p.Fixture == fixture
+          && (
+            p.FixtureGroup != preparation.FixtureGroup || !expectedPallets.Contains(p.PalletNumber)
+          )
+        )
+      )
+        throw Conflict($"Prepared fixture '{fixture}' has incompatible pallet mappings.");
+      // An out-of-band write can still claim a group while the fixture has no mappings.
+      if (
+        config.UseStartingOffsetForDueDate
+        && preparation.FixtureGroup != 0
+        && observed.Pallets.Any(p =>
+          p.Fixture != fixture
+          && p.FixtureGroup == preparation.FixtureGroup
+          && expectedPallets.Contains(p.PalletNumber)
+        )
+      )
+        throw Conflict(
+          $"Prepared fixture group {preparation.FixtureGroup} is occupied on a selected pallet."
+        );
+    }
     var nativePart = installed ?? transactions.Parts.Single();
     var setSize = Math.Max(1, nativePart.Processes.Single().FixQuantity);
     if (offeredQuantity % setSize != 0)
@@ -180,7 +237,10 @@ public static class MazakRouteCapacity
       );
 
     // No controller writes have occurred. The exact full name survives all subsequent phases.
-    db.ReserveMazakRouteIdentity(identity);
+    if (preparation == null)
+      db.ReserveMazakRouteIdentity(identity);
+    else
+      db.ReserveMazakRoutePreparation(identity, preparation);
     return new MazakRouteWrite { Identity = identity, NextWrite = next };
 
     ConflictRequestException Conflict(string reason) =>

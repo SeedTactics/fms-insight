@@ -55,6 +55,14 @@ namespace BlackMaple.MachineFramework
 
     // A native route identity survives retirement and can be reserved only once.
     void ReserveMazakRouteIdentity(MazakRouteIdentity route);
+    void ReserveMazakRoutePreparation(MazakRouteIdentity route, MazakRoutePreparation preparation);
+
+    [return: MaybeNull]
+    MazakRoutePreparation LoadMazakRoutePreparation(
+      string source,
+      string partName,
+      int nativeProcess
+    );
 
     [return: MaybeNull]
     MazakRouteIdentity LoadMazakRouteIdentity(string source, string partName, int nativeProcess);

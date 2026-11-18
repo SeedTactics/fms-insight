@@ -20,6 +20,94 @@ public sealed partial class DuplicateDownloadSpec
     };
 
   [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task PreparedFixtureCanResumeOrRetireBeforePartExists(bool cancel)
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null);
+    var routeConfig = RouteConfig;
+    var settings = new FMSSettings();
+    var job = PendingJob(true);
+    var device = new DownloadDevice("");
+    MazakRouteWrite Calculate(IRepository db) =>
+      MazakRouteCapacity.Calculate(
+        db,
+        device.Native.LoadAllData(),
+        routeConfig,
+        settings,
+        job.UniqueStr,
+        2,
+        1,
+        3
+      );
+
+    MazakRouteIdentity identity;
+    string fixture;
+    int group;
+    using (var db = config.OpenConnection())
+    {
+      db.AddJobs(new NewJobs { ScheduleId = "selected", Jobs = [job] }, null, false);
+      var first = Calculate(db);
+      identity = first.Identity;
+      fixture = first.NextWrite!.Fixtures.Single().FixtureName;
+      var saved = db.LoadMazakRoutePreparation(identity.Source, identity.PartName, 1);
+      await Assert.That(saved!.FixtureName).IsEqualTo(fixture);
+      group = saved.FixtureGroup;
+      device.Native.Save(first.NextWrite);
+    }
+
+    using var reopened = config.OpenConnection();
+    device.Observe(
+      device.Data with
+      {
+        Pallets =
+        [
+          new()
+          {
+            PalletNumber = 10,
+            Fixture = "peer",
+            FixtureGroupV2 = group,
+          },
+        ],
+      }
+    );
+    if (cancel)
+    {
+      var candidates = MazakRouteRetirement.Capture(
+        reopened,
+        routeConfig,
+        device.Data,
+        System.Collections.Immutable.ImmutableHashSet.Create(identity.PartName)
+      );
+      var retirement = MazakRouteRetirement.Calculate(device.Data, candidates)!;
+      await Assert.That(retirement.Fixtures.Single().FixtureName).IsEqualTo(fixture);
+      await Assert.That(retirement.Parts).IsEmpty();
+      device.Native.Save(retirement);
+      await Assert.That(MazakRouteRetirement.Calculate(device.Data, candidates)).IsNull();
+      await Assert.That(device.Data.Pallets.Single().Fixture).IsEqualTo("peer");
+      await Assert
+        .That(reopened.LoadMazakRouteIdentity(identity.Source, identity.PartName, 1))
+        .IsEqualTo(identity);
+    }
+    else
+    {
+      var safe = device.Data;
+      device.Observe(safe with { Pallets = [safe.Pallets.Single() with { PalletNumber = 2 }] });
+      await Assert.That(() => Calculate(reopened)).Throws<ConflictRequestException>();
+      device.Observe(safe);
+      var resumed = Calculate(reopened);
+      await Assert.That(resumed.NextWrite!.Fixtures).IsEmpty();
+      await Assert
+        .That(resumed.NextWrite.Parts.Single().Processes.Single().Fixture)
+        .IsEqualTo(fixture);
+      device.Native.Save(resumed.NextWrite);
+      await Assert
+        .That(Calculate(reopened).NextWrite!.Pallets.Single().FixtureGroup)
+        .IsEqualTo(group);
+    }
+  }
+
+  [Test]
   [Arguments("legacy-fixture", false, false)]
   [Arguments("legacy:7:2:1", false, false)]
   [Arguments("F:7:invalid:1", false, false)]

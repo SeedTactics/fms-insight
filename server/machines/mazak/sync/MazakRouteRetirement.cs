@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface;
 
@@ -39,6 +40,32 @@ public static class MazakRouteRetirement
         .Where(n => !string.IsNullOrEmpty(n))
         .ToImmutableHashSet(StringComparer.Ordinal),
     };
+  }
+
+  // Include dependencies prepared before the part became visible, even after a restart.
+  public static MazakRetirementCandidates Capture(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    IReadOnlySet<string> ownedPartNames
+  )
+  {
+    var candidates = Capture(observed, ownedPartNames);
+    foreach (var name in ownedPartNames)
+    {
+      var prepared = db.LoadMazakRoutePreparation(config.ControllerSource, name, nativeProcess: 1);
+      if (prepared == null)
+        continue;
+      candidates = candidates with
+      {
+        FixtureNames = candidates.FixtureNames.Add(prepared.FixtureName),
+        MainPrograms =
+          prepared.AddedProgram == null
+            ? candidates.MainPrograms
+            : candidates.MainPrograms.Add(prepared.AddedProgram),
+      };
+    }
+    return candidates;
   }
 
   // The caller establishes retirement eligibility. The optional predicate can keep another

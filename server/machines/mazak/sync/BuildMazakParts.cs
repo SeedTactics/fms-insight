@@ -820,6 +820,7 @@ namespace MazakMachineInterface
       Job job,
       MazakRouteIdentity identity,
       MazakPartRow installed,
+      MazakRoutePreparation preparation,
       out MazakPart expected
     )
     {
@@ -854,7 +855,8 @@ namespace MazakMachineInterface
         config,
         errors,
         [expected],
-        installed == null ? [] : [installed]
+        installed == null ? [] : [installed],
+        preparation
       );
       if (errors.Count > 0)
         throw new BadRequestException(string.Join(Environment.NewLine, errors));
@@ -868,21 +870,48 @@ namespace MazakMachineInterface
       MazakConfig mazakCfg,
       IList<string> errors,
       List<MazakPart> allParts,
-      ImmutableList<MazakPartRow> reused
+      ImmutableList<MazakPartRow> reused,
+      MazakRoutePreparation preparation = null
     )
     {
-      var reusedPallets = MissingReusedPallets(allParts, reused, mazakData, mazakCfg);
+      var reusedPallets = MissingReusedPallets(allParts, reused, mazakData, mazakCfg, preparation);
       savedParts.UnionWith(reused.Select(part => part.PartName));
       allParts = allParts.Where(part => !reused.Any(old => old.Comment == part.Comment)).ToList();
       var usedMazakFixGroups = new HashSet<int>(
         mazakData.Pallets.Concat(reusedPallets).Select(row => row.FixtureGroup)
       );
+      if (mazakCfg.UseDurableRouteIdentity || mazakCfg.BulkJobFilter != null)
+      {
+        // A fixture write may be visible before the corresponding part or pallet rows.
+        var mappedFixtures = mazakData
+          .Pallets.Select(p => p.Fixture)
+          .ToHashSet(StringComparer.Ordinal);
+        foreach (var fixture in mazakData.Fixtures)
+          if (
+            !mappedFixtures.Contains(fixture.FixtureName)
+            && TryReadFixtureGroup(fixture.FixtureName, out var group)
+          )
+            usedMazakFixGroups.Add(group);
+      }
       var groups = GroupProcessesIntoFixtures(
-        allParts,
+        preparation == null ? allParts : [],
         usedMazakFixGroups,
         mazakCfg.UseStartingOffsetForDueDate,
         errors
       );
+      if (preparation != null && allParts.Count > 0)
+      {
+        var process = allParts.Single().Processes.Single();
+        groups.Add(
+          new MazakFixture
+          {
+            MazakFixtureName = preparation.FixtureName,
+            FixtureGroup = preparation.FixtureGroup,
+            Pallets = process.Pallets().ToHashSet(),
+            Processes = [process],
+          }
+        );
+      }
 
       var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, mazakCfg);
       var usedProgs = CalculateUsedPrograms(mazakData, allParts);
@@ -902,11 +931,26 @@ namespace MazakMachineInterface
       };
     }
 
+    private static bool TryReadFixtureGroup(string fixture, out int group)
+    {
+      group = 0;
+      var pieces = fixture.Split(':');
+      return pieces.Length >= 4
+        && pieces[0] == "F"
+        && int.TryParse(
+          pieces[2],
+          System.Globalization.NumberStyles.None,
+          System.Globalization.CultureInfo.InvariantCulture,
+          out group
+        );
+    }
+
     private static ImmutableList<MazakPalletRow> MissingReusedPallets(
       IEnumerable<MazakPart> expectedParts,
       ImmutableList<MazakPartRow> reused,
       MazakAllData data,
-      MazakConfig cfg
+      MazakConfig cfg,
+      MazakRoutePreparation preparation
     ) =>
       expectedParts
         .SelectMany(expected =>
@@ -925,25 +969,14 @@ namespace MazakMachineInterface
             int group;
             if (mapping != null)
               group = mapping.FixtureGroup;
+            else if (preparation?.FixtureName == fixture)
+              group = preparation.FixtureGroup;
             else if (cfg.OverrideFixtureGroupToZero)
               group = 0;
-            else
-            {
-              var fixturePieces = fixture.Split(':');
-              if (
-                fixturePieces.Length < 4
-                || fixturePieces[0] != "F"
-                || !int.TryParse(
-                  fixturePieces[2],
-                  System.Globalization.NumberStyles.None,
-                  System.Globalization.CultureInfo.InvariantCulture,
-                  out group
-                )
-              )
-                throw new ConflictRequestException(
-                  $"Installed Mazak part '{installed.PartName}' has no pallet mapping and fixture '{fixture}' does not identify a fixture group."
-                );
-            }
+            else if (!TryReadFixtureGroup(fixture, out group))
+              throw new ConflictRequestException(
+                $"Installed Mazak part '{installed.PartName}' has no pallet mapping and fixture '{fixture}' does not identify a fixture group."
+              );
             return new MazakFixture
             {
               MazakFixtureName = fixture,
@@ -1541,7 +1574,7 @@ namespace MazakMachineInterface
       foreach (var fixture in allFixtures)
       {
         //check if we can reuse an existing fixture
-        if (!config.UseStartingOffsetForDueDate)
+        if (string.IsNullOrEmpty(fixture.MazakFixtureName) && !config.UseStartingOffsetForDueDate)
         {
           CheckExistingFixture(fixture, usedMazakFixtureNames, mazakData, config);
         }
