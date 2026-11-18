@@ -190,16 +190,16 @@ namespace MazakMachineInterface
       //Now add pallets
       var palletsByName = ImmutableDictionary.CreateBuilder<int, PalletStatus>();
       var material = ImmutableList.CreateBuilder<InProcessMaterial>();
+      var placementAlarms = ImmutableList.CreateBuilder<CurrentStatusAlarm>();
       var palOnHold = mazakData
         .PalletStatuses?.GroupBy(p => p.PalletNumber)
         .ToDictionary(g => mazakCfg.TranslatePalletNumber(g.Key), g => g.Any(p => p.IsOnHold > 0));
       var palletRows = mazakCfg.UseDurableRouteIdentity
         ? mazakData.Pallets.Concat(
-          mazakData.PalletPositions.Select(p => new MazakPalletRow
-          {
-            PalletNumber = p.PalletNumber,
-            Fixture = "",
-          })
+          mazakData
+            .PalletPositions.Select(p => p.PalletNumber)
+            .Concat((mazakData.PalletStatuses ?? []).Select(p => p.PalletNumber))
+            .Select(number => new MazakPalletRow { PalletNumber = number, Fixture = "" })
         )
         : mazakData.Pallets;
       foreach (var palRow in palletRows)
@@ -236,12 +236,18 @@ namespace MazakMachineInterface
             oldCycles.SelectMany(e => e.Material).Select(m => m.MaterialID)
           );
 
+          var unidentified = mazakCfg.UseDurableRouteIdentity
+            ? MazakRouteHistory.UnidentifiedOnPallet(oldCycles).ToBuilder()
+            : null;
+          var confirmed = mazakCfg.UseDurableRouteIdentity
+            ? MazakMaterialHistory.CurrentPalletMaterial(jobDB, oldCycles, removals)
+            : [];
+          var facesWithUncertainPlacement = new HashSet<int>();
+
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
           {
             if (palSub.PalletNumber != palRow.PalletNumber)
-              continue;
-            if (palSub.FixQuantity <= 0)
               continue;
             var route = MazakRouteHistory.Find(
               jobDB,
@@ -249,6 +255,8 @@ namespace MazakMachineInterface
               palSub.PartName,
               palSub.PartProcessNumber
             );
+            if (route == null && palSub.FixQuantity <= 0)
+              continue;
             CurrentJob job;
             int palFmsProc;
             if (route != null)
@@ -292,24 +300,38 @@ namespace MazakMachineInterface
               NumFaces = Math.Max(palletsByName[palName].NumFaces, palSub.PartProcessNumber),
             };
 
-            var matIDs = new Queue<long>(
-              FindMatIDsFromOldCycles(
-                oldCycles,
-                palletWithUnprocessedUnloads == palName,
-                job,
-                palFmsProc,
-                jobDB,
-                removals
-              )
-            );
-
-            for (int i = 1; i <= palSub.FixQuantity; i++)
+            var face = palSub.PartProcessNumber;
+            var matIDs =
+              route != null
+                ? confirmed
+                  .Where(m =>
+                    m.JobUniqueStr == job.UniqueStr && m.Process == palFmsProc && m.Face == face
+                  )
+                  .Select(m => m.MaterialID)
+                  .ToImmutableList()
+                : FindMatIDsFromOldCycles(
+                    oldCycles,
+                    palletWithUnprocessedUnloads == palName,
+                    job,
+                    palFmsProc,
+                    jobDB,
+                    removals
+                  )
+                  .Take(palSub.FixQuantity)
+                  .ToImmutableList();
+            var unknown = route == null ? 0 : unidentified.GetValueOrDefault(route.PartName);
+            if (route != null)
+              unidentified.Remove(route.PartName);
+            var quantity = Math.Max(palSub.FixQuantity, matIDs.Count + unknown);
+            if (route != null && (matIDs.Count != palSub.FixQuantity || unknown > 0))
             {
-              int face = palSub.PartProcessNumber;
-              long matID = -1;
-              if (matIDs.Count > 0)
-                matID = matIDs.Dequeue();
+              facesWithUncertainPlacement.Add(face);
+              ReportUncertainPlacement(face, palSub.FixQuantity, unknown, matIDs);
+            }
 
+            for (var i = 0; i < quantity; i++)
+            {
+              var matID = i < matIDs.Count ? matIDs[i] : -1;
               var currentProcessBeforeLoad =
                 palFmsProc > palSub.PartProcessNumber ? palFmsProc - 1 : palSub.PartProcessNumber;
 
@@ -370,22 +392,7 @@ namespace MazakMachineInterface
               }
               else
               {
-                // detect if machining
-                var start = FindMachineStartFromOldCycles(oldCycles, matID);
-                if (start != null)
-                {
-                  var machStop = job.Processes[palFmsProc - 1][0].Stops.FirstOrDefault();
-                  var elapsedTime = utcNow.Subtract(start.EndTimeUTC);
-                  action = new InProcessMaterialAction()
-                  {
-                    Type = InProcessMaterialAction.ActionType.Machining,
-                    ElapsedMachiningTime = elapsedTime,
-                    ExpectedRemainingMachiningTime =
-                      machStop != null
-                        ? machStop.ExpectedCycleTime.Subtract(elapsedTime)
-                        : TimeSpan.Zero,
-                  };
-                }
+                action = MachiningOrWaiting(matID, job.Processes[palFmsProc - 1][0]);
               }
 
               AddPalletMaterial(
@@ -406,22 +413,26 @@ namespace MazakMachineInterface
               .Where(m => m.Location.PalletNum == palName)
               .Select(m => m.MaterialID)
               .ToImmutableHashSet();
-            foreach (
-              var known in MazakMaterialHistory.CurrentPalletMaterial(jobDB, oldCycles, removals)
-            )
+            var retainedWithoutAssignment = ImmutableList.CreateBuilder<LogMaterial>();
+            foreach (var known in confirmed)
             {
               if (
                 known.MaterialID < 0
                 || alreadyShown.Contains(known.MaterialID)
-                || !MazakRouteHistory.HasUnconfirmedPlacement(
-                  jobDB,
-                  mazakCfg,
-                  mazakData,
-                  oldCycles,
-                  known
+                || (
+                  !facesWithUncertainPlacement.Contains(known.Face)
+                  && !MazakRouteHistory.HasUnconfirmedPlacement(
+                    jobDB,
+                    mazakCfg,
+                    mazakData,
+                    oldCycles,
+                    known
+                  )
                 )
               )
                 continue;
+              if (!facesWithUncertainPlacement.Contains(known.Face))
+                retainedWithoutAssignment.Add(known);
               palletsByName[palName] = palletsByName[palName] with
               {
                 NumFaces = Math.Max(palletsByName[palName].NumFaces, known.Face),
@@ -433,8 +444,38 @@ namespace MazakMachineInterface
                 known.Process,
                 known.Path ?? 1,
                 known.Face,
-                new InProcessMaterialAction { Type = InProcessMaterialAction.ActionType.Waiting }
+                MachiningOrWaiting(
+                  known.MaterialID,
+                  jobDB
+                    .LoadJob(known.JobUniqueStr)
+                    ?.Processes.ElementAtOrDefault(known.Process - 1)
+                    ?.Paths.ElementAtOrDefault((known.Path ?? 1) - 1)
+                )
               );
+            }
+            foreach (var retained in retainedWithoutAssignment.GroupBy(m => m.Face))
+              ReportUncertainPlacement(
+                retained.Key,
+                null,
+                0,
+                retained.Select(m => m.MaterialID).ToImmutableList()
+              );
+            foreach (var (nativeName, quantity) in unidentified)
+            {
+              var route = MazakRouteHistory.Find(jobDB, mazakCfg, nativeName, 1);
+              if (route == null)
+                continue;
+              ReportUncertainPlacement(route.NativeProcess, null, quantity, []);
+              for (var i = 0L; i < quantity; i++)
+                AddPalletMaterial(
+                  -1,
+                  route.JobUnique,
+                  MazakPart.ExtractPartNameFromMazakPartName(nativeName),
+                  route.JobProcess,
+                  route.Path,
+                  route.NativeProcess,
+                  MachiningOrWaiting(-1, null)
+                );
             }
           }
 
@@ -456,6 +497,56 @@ namespace MazakMachineInterface
               fmsSettings
             );
           }
+          InProcessMaterialAction MachiningOrWaiting(long materialId, ProcPathInfo path)
+          {
+            var start =
+              materialId >= 0 ? FindMachineStartFromOldCycles(oldCycles, materialId) : null;
+            if (start == null)
+              return new() { Type = InProcessMaterialAction.ActionType.Waiting };
+            var elapsed = utcNow.Subtract(start.EndTimeUTC);
+            var stop = path?.Stops.FirstOrDefault();
+            return new()
+            {
+              Type = InProcessMaterialAction.ActionType.Machining,
+              ElapsedMachiningTime = elapsed,
+              ExpectedRemainingMachiningTime = stop?.ExpectedCycleTime.Subtract(elapsed)
+                ?? TimeSpan.Zero,
+            };
+          }
+
+          void ReportUncertainPlacement(
+            int face,
+            int? nativeQuantity,
+            long unidentifiedQuantity,
+            ImmutableList<long> candidates
+          )
+          {
+            var serials = candidates.Select(id =>
+              jobDB.GetMaterialDetails(id)?.Serial is { Length: > 0 } serial
+                ? serial
+                : $"material {id}"
+            );
+            var reported = nativeQuantity is { } n
+              ? $"Mazak reports {n} piece(s)."
+              : "Mazak has no matching assignment.";
+            var unidentifiedText =
+              unidentifiedQuantity > 0
+                ? $" Manufacturing history records {unidentifiedQuantity} unidentified piece(s) still unresolved."
+                : "";
+            var candidatesText = candidates.IsEmpty
+              ? ""
+              : $" Candidate identities are {string.Join(", ", serials)}.";
+            placementAlarms.Add(
+              new CurrentStatusAlarm
+              {
+                Code = MazakRouteHistory.PlacementAlarmCode,
+                Message =
+                  $"Pallet {palName} face {face} has unresolved material placement. {reported}{unidentifiedText}{candidatesText}",
+                Impact = AlarmImpact.Informational,
+              }
+            );
+          }
+
           void AddPalletMaterial(
             long matID,
             string unique,
@@ -699,7 +790,9 @@ namespace MazakMachineInterface
         Alarms = (mazakData.Alarms ?? Enumerable.Empty<MazakAlarmRow>())
           .Where(a => !string.IsNullOrEmpty(a.AlarmMessage))
           .Select(a => a.AlarmMessage)
+          .Concat(placementAlarms.Select(a => a.Message))
           .ToImmutableList(),
+        AlarmDetails = placementAlarms.Count > 0 ? placementAlarms.ToImmutable() : null,
         Workorders = jobDB.GetActiveWorkorders(
           additionalWorkorders: material
             .Select(m => m.WorkorderId)

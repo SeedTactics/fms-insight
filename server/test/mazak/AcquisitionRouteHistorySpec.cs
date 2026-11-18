@@ -13,6 +13,107 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class MazakAcquisitionSpec
 {
   [Test]
+  public async Task UnidentifiedLoadSurvivesMissingAssignmentAndRestartUntilUnload()
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var route = new MazakRouteIdentity
+    {
+      Source = MazakConfig.DefaultControllerSource,
+      PartName = "part:7:2:2",
+      NativeProcess = 1,
+      JobUnique = "selected",
+      JobProcess = 2,
+      Path = 1,
+    };
+    db.ReserveMazakRouteIdentity(route);
+
+    var process = new ProcessInfo { Paths = [JobLogTest.EmptyPath with { PalletNums = [1] }] };
+    db.AddJobs(
+      new NewJobs
+      {
+        ScheduleId = "test",
+        Jobs =
+        [
+          new Job
+          {
+            UniqueStr = route.JobUnique,
+            PartName = "part",
+            Cycles = 1,
+            Archived = false,
+            RouteStartUTC = cell.Clock.Now.UtcDateTime.AddHours(-1),
+            RouteEndUTC = cell.Clock.Now.UtcDateTime.AddHours(1),
+            Processes = [process, process],
+          },
+        ],
+      },
+      null,
+      true
+    );
+    var load = cell.Start with
+    {
+      Code = LogCode.LoadEnd,
+      FullPartName = route.PartName,
+      FixedQuantity = 1,
+    };
+    var next = cell.End with { Code = LogCode.LoadBegin };
+    cell.Data = cell.Data with
+    {
+      Logs = [load, next],
+      PalletSubStatuses =
+      [
+        new()
+        {
+          PalletNumber = 1,
+          PartName = route.PartName,
+          PartProcessNumber = 1,
+          FixQuantity = 1,
+        },
+      ],
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "S001" }],
+    };
+    static MazakConfig Configure(MazakConfig config) =>
+      config with
+      {
+        UseDurableRouteIdentity = true,
+      };
+    using (var sync = cell.NewSynchronizer(configure: Configure))
+    {
+      var loaded = sync.CalculateCellState(db).CurrentStatus;
+      var card = loaded.Material.Single();
+      await Assert.That(card.MaterialID).IsEqualTo(-1L);
+      await Assert.That(card.Location.PalletNum).IsEqualTo(1);
+      await Assert.That(loaded.AlarmDetails!.Single().Message).Contains("1 unidentified piece");
+    }
+
+    using var reopened = cell.Repositories.OpenConnection();
+    using var restarted = cell.NewSynchronizer(configure: Configure);
+    cell.Data = cell.Data with { Logs = [], PalletSubStatuses = [] };
+    var retained = restarted.CalculateCellState(reopened).CurrentStatus;
+    await Assert.That(retained.Material.Single().Process).IsEqualTo(2);
+    await Assert.That(retained.AlarmDetails!.Single().Message).Contains("1 unidentified piece");
+
+    cell.Data = cell.Data with
+    {
+      Logs =
+      [
+        load with
+        {
+          Code = LogCode.UnloadEnd,
+          ForeignID = next.ForeignID + "1",
+        },
+        next with
+        {
+          ForeignID = next.ForeignID + "2",
+        },
+      ],
+    };
+    var resolved = restarted.CalculateCellState(reopened).CurrentStatus;
+    await Assert.That(resolved.Material).IsEmpty();
+    await Assert.That(resolved.AlarmDetails).IsNull();
+  }
+
+  [Test]
   [Arguments(false, 1, false, false, false)]
   [Arguments(true, 1, false, false, false)]
   [Arguments(true, 2, false, false, false)]
@@ -190,12 +291,36 @@ public sealed partial class MazakAcquisitionSpec
         },
       ],
     };
+    db.RecordMachineStart(
+      [
+        new()
+        {
+          MaterialID = material,
+          Process = 2,
+          Face = 1,
+        },
+      ],
+      pallet: 1,
+      statName: "MC",
+      statNum: 1,
+      program: "1001",
+      timeUTC: now.AddMinutes(-1)
+    );
     using var sync = NewSynchronizer();
     var before = sync.CalculateCellState(db).CurrentStatus;
     await Assert.That(before.Jobs[job.UniqueStr].Completed![1][0]).IsEqualTo(0);
     await Assert
       .That(before.Jobs[job.UniqueStr].RemainingToStart.GetValueOrDefault())
       .IsEqualTo(10L - loaded.Count);
+
+    if (ambiguousIdentities)
+    {
+      await Assert.That(before.Material.Select(m => m.MaterialID)).IsEquivalentTo(loaded);
+      var alarm = before.AlarmDetails!.Single();
+      await Assert.That(alarm.Message).Contains("Mazak reports 1 piece");
+      await Assert.That(alarm.Message).Contains(mark.Material.Single().Serial!);
+      await Assert.That(alarm.Message).Contains($"material {loaded[1]}");
+    }
 
     if (conflictingSchedule)
     {
@@ -225,17 +350,22 @@ public sealed partial class MazakAcquisitionSpec
       {
         PalletSubStatuses = assignments.Select(s => s with { FixQuantity = 2 }).ToImmutableList(),
       };
-      var additionalQuantity = sync.CalculateCellState(db).CurrentStatus;
+      var additional = sync.CalculateCellState(db);
+      await Assert.That(additional.StateUpdated).IsTrue();
+      var additionalQuantity = additional.CurrentStatus;
       await Assert.That(db.IsMaterialInQueue(material)).IsFalse();
       await Assert
         .That(additionalQuantity.Material.Single(m => m.MaterialID == material).Serial)
         .IsEqualTo(mark.Material.Single().Serial);
-      sync.CalculateCellState(db);
+      await Assert.That(sync.CalculateCellState(db).StateUpdated).IsFalse();
       await Assert.That(db.GetMaterialInAllQueues()).IsEmpty();
       await Assert
         .That(db.GetLogForMaterial(material).Any(e => e.Program == "MaterialMissingOnPallet"))
         .IsFalse();
       cell.Data = cell.Data with { PalletSubStatuses = assignments };
+      var cleared = sync.CalculateCellState(db);
+      await Assert.That(cleared.StateUpdated).IsTrue();
+      await Assert.That(cleared.CurrentStatus.AlarmDetails).IsNull();
     }
 
     cell.Data = cell.Data with
@@ -256,6 +386,9 @@ public sealed partial class MazakAcquisitionSpec
       cell.Data = cell.Data with { Pallets = [], PalletSubStatuses = [] };
       var missing = restarted.CalculateCellState(reopened).CurrentStatus;
       await Assert.That(missing.Material.Select(m => m.MaterialID)).IsEquivalentTo(loaded);
+      var machining = missing.Material.Single(m => m.MaterialID == material).Action;
+      await Assert.That(machining.Type).IsEqualTo(InProcessMaterialAction.ActionType.Machining);
+      await Assert.That(machining.ElapsedMachiningTime).IsEqualTo(TimeSpan.FromMinutes(1));
     }
 
     var unload = cell.Start with

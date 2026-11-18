@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -11,7 +13,9 @@ internal static class MazakRouteHistory
 {
   private static readonly Serilog.ILogger Log = Serilog.Log.ForContext(typeof(MazakRouteHistory));
 
+  internal const string PlacementAlarmCode = "mazak-pallet-placement-unconfirmed";
   internal const string NativePartNameKey = "mazak-native-part-name";
+  internal const string AmbiguousUnloadKey = "mazak-unidentified-unload-ambiguous";
   internal const string UnidentifiedQuantityKey = "mazak-unidentified-quantity";
 
   internal static MazakRouteIdentity? Find(
@@ -47,6 +51,35 @@ internal static class MazakRouteHistory
 
     bool SameName(string name) =>
       string.Equals(name, route.PartName, StringComparison.OrdinalIgnoreCase);
+  }
+
+  internal static ImmutableDictionary<string, long> UnidentifiedOnPallet(
+    IEnumerable<BlackMaple.MachineFramework.LogEntry> cycle
+  )
+  {
+    var quantities = ImmutableDictionary.CreateBuilder<string, long>(StringComparer.Ordinal);
+    foreach (var e in cycle)
+    {
+      if (
+        e.LogType != LogType.LoadUnloadCycle
+        || e.StartOfCycle
+        || e.ProgramDetails?.TryGetValue(NativePartNameKey, out var name) != true
+        || string.IsNullOrEmpty(name)
+        || !e.ProgramDetails.TryGetValue(UnidentifiedQuantityKey, out var quantity)
+        || !int.TryParse(quantity, NumberStyles.None, CultureInfo.InvariantCulture, out var count)
+        || count <= 0
+      )
+        continue;
+      if (e.Result == "LOAD")
+        quantities[name] = quantities.GetValueOrDefault(name) + count;
+      else if (
+        e.Result == "UNLOAD"
+        && !e.ProgramDetails.ContainsKey(AmbiguousUnloadKey)
+        && quantities.TryGetValue(name, out var previous)
+      )
+        quantities[name] = Math.Max(0, previous - count);
+    }
+    return quantities.Where(p => p.Value > 0).ToImmutableDictionary(StringComparer.Ordinal);
   }
 
   // An incomplete physical batch or the loss of a native definition leaves the latest known

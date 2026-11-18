@@ -362,9 +362,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     {
       st = mazakConfig.AdjustCurrentStatus(db, st);
     }
-    var diagnostics = ImmutableList<CurrentStatusAlarm>.Empty;
     if (lastToolReadFailed)
-      diagnostics = diagnostics.Add(
+      st = st.AddAlarm(
         new CurrentStatusAlarm
         {
           Code = "mazak-tools-unavailable",
@@ -374,8 +373,11 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         }
       );
 
-    foreach (var diagnostic in diagnostics)
-      st = st.AddAlarm(diagnostic);
+    // A placement discrepancy can change on a status read without any new CSV events.
+    var diagnostics = (st.AlarmDetails ?? [])
+      .Where(a => a.Code is "mazak-tools-unavailable" or MazakRouteHistory.PlacementAlarmCode)
+      .OrderBy(a => a.Message, StringComparer.Ordinal)
+      .ToImmutableList();
     var result = new MazakReconciliation
     {
       CommittedLogWatermark = CaptureLogWatermark(db),

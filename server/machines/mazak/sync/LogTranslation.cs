@@ -345,14 +345,21 @@ namespace MazakMachineInterface
       )
       {
         var elapsed = CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, loadStation);
+        var unidentified = mazakConfig.UseDurableRouteIdentity
+          ? MazakRouteHistory.UnidentifiedOnPallet(cycle)
+          : ImmutableDictionary<string, long>.Empty;
+        // Keep the current cycle open while it contains unresolved placement evidence.
+        // An unidentified unload might have removed it, but cannot justify a pallet reset.
         if (
-          managed
-          && (
-            loads.Sum(f => f.MaterialIDs.Count) + unloads.Sum(f => f.MaterialIDToDestination.Count)
-              < es.Sum(e => e.FixedQuantity)
-            || GetAllMaterialOnPallet(cycle)
-              .Any(m => !unloads.Any(u => u.MaterialIDToDestination.ContainsKey(m.MaterialID)))
-          )
+          !unidentified.IsEmpty
+          || managed
+            && (
+              loads.Sum(f => f.MaterialIDs.Count)
+                + unloads.Sum(f => f.MaterialIDToDestination.Count)
+                < es.Sum(e => e.FixedQuantity)
+              || GetAllMaterialOnPallet(cycle)
+                .Any(m => !unloads.Any(u => u.MaterialIDToDestination.ContainsKey(m.MaterialID)))
+            )
         )
         {
           repo.RecordPartialLoadUnload(
@@ -933,7 +940,11 @@ namespace MazakMachineInterface
           .Where(m => m.JobUniqueStr == unique && m.Process == jobProc && m.Face == e.Process)
           .ToImmutableList();
         // A smaller count cannot identify a subset of an occupied face.
-        return known.Count > e.FixedQuantity
+        var unidentified =
+          e.Code == LogCode.UnloadEnd
+            ? MazakRouteHistory.UnidentifiedOnPallet(oldEvents).GetValueOrDefault(route.PartName)
+            : 0;
+        return known.Count + unidentified > e.FixedQuantity
           ? []
           : known
             .Select(m => new LogMaterialAndPath
@@ -1373,7 +1384,20 @@ namespace MazakMachineInterface
             ? UnidentifiedQuantity(e.FixedQuantity - mats.Count)
             : ImmutableDictionary<string, string>.Empty;
         if (route != null)
+        {
           details = details.Add(MazakRouteHistory.NativePartNameKey, route.PartName);
+          if (
+            mats.Count < e.FixedQuantity
+            && GetAllMaterialOnPallet(oldEvents)
+              .Any(m =>
+                m.JobUniqueStr == route.JobUnique
+                && m.Process == route.JobProcess
+                && m.Face == e.Process
+                && !matToQueue.ContainsKey(m.MaterialID)
+              )
+          )
+            details = details.Add(MazakRouteHistory.AmbiguousUnloadKey, "true");
+        }
         if (unresolvedBasketMaterial.Count > 0)
           details = details.Add("unresolved-basket-handoff", "true");
 
