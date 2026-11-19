@@ -4,14 +4,18 @@
 used interactively or from scripts and agents. All server requests are read operations, including
 the job-history POST; SQL queries use a read-only connection.
 
-Run from the repository root with the .NET 11 SDK:
+Install the tool with the .NET 11 SDK and run `insight-cli --help`.
 
 ```sh
-dotnet run --project client/cli -- --help
+dotnet tool install --global BlackMaple.FMSInsight.Cli
 ```
 
-The examples below use `insight-cli`; during development substitute
-`dotnet run --project client/cli --`. Publishing executable downloads is deferred.
+Windows x64 and Linux x64 get self-contained executables. Other supported platforms use the portable
+build with the .NET 11 runtime. To redistribute the standalone Windows CLI, copy `insight-cli.exe`,
+`README.md` and `LICENSE` from `tools/any/win-x64/` in `BlackMaple.FMSInsight.Cli.win-x64`.
+
+When running from the repository root during development, substitute
+`dotnet run --project client/cli --` for `insight-cli` in the examples below.
 
 ```sh
 insight-cli sync --server http://cell-controller:5000 --database study.sqlite \

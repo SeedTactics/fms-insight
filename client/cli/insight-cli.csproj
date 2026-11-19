@@ -6,14 +6,24 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>insight-cli</AssemblyName>
-    <IsPackable>false</IsPackable>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>insight-cli</ToolCommandName>
+    <RuntimeIdentifiers>win-x64;linux-x64;any</RuntimeIdentifiers>
+    <PackageId>BlackMaple.FMSInsight.Cli</PackageId>
+    <Authors>John Lenz</Authors>
+    <Description>Read-only command-line client for querying FMS Insight production history.</Description>
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../csharp/BlackMaple.FMSInsight.Client.csproj" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <None Include="../../LICENSE" Link="LICENSE" CopyToPublishDirectory="PreserveNewest" />
-    <None Update="README.md" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="README.md" Pack="true" PackagePath="/" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
