@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using MWI = BlackMaple.MachineFramework;
@@ -42,6 +43,7 @@ namespace MazakMachineInterface
   public class LogTranslation
   {
     private const string ToolSnapshotUnavailableKey = "MazakToolSnapshotUnavailable";
+    private const string ToolSnapshotMachineKey = "MazakToolSnapshotMachine";
     private readonly IRepository repo;
     private readonly MazakAllDataAndLogs mazakData;
     private readonly string machGroupName;
@@ -679,7 +681,13 @@ namespace MazakMachineInterface
             timeUTC: e.TimeUTC,
             pockets: pockets,
             foreignId: mazakConfig.LogForeignId(e.ForeignID),
-            extraData: MachineEventDetails(progRev, pockets is null)
+            extraData: MachineEventDetails(
+              progRev,
+              pockets is null,
+              toolSnapshotMachine: pockets is not null && mcNum != e.StationNumber
+                ? e.StationNumber
+                : null
+            )
           );
 
           break;
@@ -720,6 +728,19 @@ namespace MazakMachineInterface
             var earlierPlacement = !cycle.Any(log => log.Counter == machStart.Counter);
             // Current tool readback can include wear from a later placement.
             var toolsAtEnd = earlierPlacement ? null : ToolsToSnapshot(e.StationNumber, tools);
+            // Older starts on remapped machines used the mapped number to read raw tool rows.
+            var baselineMachine = machStart.ProgramDetails?.GetValueOrDefault(
+              ToolSnapshotMachineKey
+            );
+            var baselineMatches = baselineMachine is null
+              ? mcNum == e.StationNumber
+              : int.TryParse(
+                baselineMachine,
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out var raw
+              )
+                && raw == e.StationNumber;
             List<LogMaterialAndPath> machineMats;
             string progName;
             long? progRev;
@@ -758,7 +779,11 @@ namespace MazakMachineInterface
               result: "",
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
+              // Without a saved baseline for this machine, the comparison can charge wear
+              // from earlier cycles or another machine.
               tools: toolsAtEnd is null
+              || !baselineMatches
+              || !toolsAtStart.Any()
               || machStart?.ProgramDetails?.ContainsKey(ToolSnapshotUnavailableKey) == true
                 ? null
                 : ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd),
@@ -1891,7 +1916,8 @@ namespace MazakMachineInterface
     private static ImmutableDictionary<string, string> MachineEventDetails(
       long? programRevision,
       bool toolsUnavailable,
-      bool earlierPlacement = false
+      bool earlierPlacement = false,
+      int? toolSnapshotMachine = null
     )
     {
       var details = ImmutableDictionary<string, string>.Empty;
@@ -1899,6 +1925,11 @@ namespace MazakMachineInterface
         details = details.Add("ProgramRevision", revision.ToString());
       if (toolsUnavailable)
         details = details.Add(ToolSnapshotUnavailableKey, "true");
+      if (toolSnapshotMachine is int machine)
+        details = details.Add(
+          ToolSnapshotMachineKey,
+          machine.ToString(CultureInfo.InvariantCulture)
+        );
       if (earlierPlacement)
         details = details.Add(MWI.LogEntry.PriorPalletPlacementKey, "true");
       return details.IsEmpty ? null : details;

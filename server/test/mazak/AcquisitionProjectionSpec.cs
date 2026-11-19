@@ -127,6 +127,50 @@ public sealed partial class MazakAcquisitionSpec
   }
 
   [Test]
+  public async Task RemappedMachineEndSkipsAnOlderBaselineWithoutRawMachineIdentity()
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var start = cell.Start;
+    // Before the mapping fix, raw machine 1 mapped to 2 and read tool rows from raw machine 2.
+    db.RecordMachineStart(
+      mats: [],
+      pallet: start.Pallet,
+      statName: "MC",
+      statNum: 2,
+      program: start.Program,
+      timeUTC: start.TimeUTC,
+      pockets:
+      [
+        new()
+        {
+          ToolName = "tool-1",
+          Pocket = 1,
+          CurrentUse = TimeSpan.FromSeconds(15),
+        },
+      ],
+      foreignId: start.ForeignID
+    );
+
+    using var synchronization = cell.NewSynchronizer(configure: cfg =>
+      cfg with
+      {
+        MachineNumbers = [2, 1],
+      }
+    );
+    cell.Data = cell.Data with { Logs = [cell.End] };
+    synchronization.CalculateCellState(db);
+
+    var end = db.MostRecentLogEntryForForeignID(cell.End.ForeignID);
+    await Assert.That(end.LocationNum).IsEqualTo(2);
+    await Assert.That(end.ElapsedTime).IsEqualTo(cell.End.TimeUTC - start.TimeUTC);
+    await Assert.That(end.Tools).IsNull();
+    await Assert
+      .That(db.ToolPocketSnapshotForCycle(end.Counter).Single().CurrentUse)
+      .IsEqualTo(TimeSpan.FromSeconds(60));
+  }
+
+  [Test]
   [Arguments(1)]
   [Arguments(101)]
   public async Task PendingLoadUnloadProjectionRetainsItsPalletAndCurrentQueueFacts(
