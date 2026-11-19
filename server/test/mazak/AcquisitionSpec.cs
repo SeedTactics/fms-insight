@@ -80,6 +80,31 @@ public sealed partial class MazakAcquisitionSpec
   }
 
   [Test]
+  public async Task DirectLogTranslationUsesTheConfiguredMachineGroup()
+  {
+    using var cell = new Cell();
+    var start = cell.Start;
+    const string configuredGroup = "configured-group";
+
+    LogTranslation.HandleEvents(
+      cell.Repository,
+      cell.Data with
+      {
+        Logs = [start],
+      },
+      machGroupName: "group-from-latest-schedule",
+      new FMSSettings(),
+      _ => { },
+      new MazakConfig { DBType = MazakDbType.MazakSmooth, MachineGroupName = configuredGroup },
+      cell.Tools,
+      observationTimeUtc: cell.Clock.Now.UtcDateTime
+    );
+
+    var recorded = cell.Repository.MostRecentLogEntryForForeignID(start.ForeignID);
+    await Assert.That(recorded.LocationName).IsEqualTo(configuredGroup);
+  }
+
+  [Test]
   [Arguments(false)]
   [Arguments(true)]
   public async Task StatusFailureAfterCommitRecoversAcrossRestartWithoutReplay(bool staged)
