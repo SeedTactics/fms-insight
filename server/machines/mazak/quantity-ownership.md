@@ -109,3 +109,8 @@ Keep the original controller on `DefaultControllerSource` to retain its existing
 distinct Insight pallet and station numbering across controllers sharing a repository. Controller
 reads and acknowledgments take raw filenames. Repository correlation uses `MazakConfig.LogForeignId`
 on those filenames.
+
+Set `MazakConfig.MachineGroupName` to the machining station group in that controller's job routes
+when cells use different groups. This keeps new machining events, pallet locations, and tool queries
+on the controller's group as other cells publish jobs. Leaving it unset uses the latest accepted
+schedule as before.

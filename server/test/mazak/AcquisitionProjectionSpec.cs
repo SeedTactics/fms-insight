@@ -15,7 +15,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class MazakAcquisitionSpec
 {
   [Test]
-  public async Task MachineEndRetainsItsStartGroupWhenTheLatestScheduleChanges()
+  [Arguments(null)]
+  [Arguments("configured-group")]
+  public async Task MachiningAndStatusUseTheControllerGroupWhenConfigured(string? group)
   {
     using var cell = new Cell();
     var db = cell.Repository;
@@ -48,27 +50,67 @@ public sealed partial class MazakAcquisitionSpec
     }
 
     db.AddJobs(Schedule("first", "original-group"), null, addAsCopiedToSystem: true);
-    using var synchronization = cell.NewSynchronizer(configure: cfg =>
-      cfg with
-      {
-        UseDurableRouteIdentity = true,
-      }
-    );
-    cell.Data = cell.Data with { Logs = [cell.Start] };
+    var configuration = new MazakConfig
+    {
+      DBType = MazakDbType.MazakSmooth,
+      MachineGroupName = group,
+      UseDurableRouteIdentity = true,
+    };
+    var settings = new FMSSettings();
+    using var synchronization = new MazakSync(cell.Native, settings, configuration, cell.Clock);
+    cell.Data = cell.Data with
+    {
+      Logs = [cell.Start],
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "M013" }],
+    };
     synchronization.CalculateCellState(db);
     var start = db.MostRecentLogEntryForForeignID(cell.Start.ForeignID);
-    await Assert.That(start.LocationName).IsEqualTo("original-group");
+    await Assert.That(start.LocationName).IsEqualTo(group ?? "original-group");
 
     // Another schedule changes the repository's inferred group while this run remains open.
     db.AddJobs(Schedule("second", "another-group"), "first", addAsCopiedToSystem: true);
-    await Assert.That(BuildCurrentStatus.FindMachineGroupName(db)).IsEqualTo("another-group");
+    var inferred = BuildCurrentStatus.FindMachineGroupName(db);
+    await Assert.That(inferred).IsEqualTo("another-group");
     cell.Data = cell.Data with { Logs = [cell.End] };
-    synchronization.CalculateCellState(db);
+    var state = synchronization.CalculateCellState(db);
     var end = db.MostRecentLogEntryForForeignID(cell.End.ForeignID);
     await Assert.That(end).IsNotNull();
     await Assert.That(end.LocationName).IsEqualTo(start.LocationName);
     await Assert.That(end.ElapsedTime).IsEqualTo(cell.End.TimeUTC - cell.Start.TimeUTC);
     await Assert.That(synchronization.CaptureLogWatermark(db)).IsEqualTo(cell.End.ForeignID);
+
+    var expectedGroup = group ?? "another-group";
+    var rebuilt = BuildCurrentStatus.Build(
+      db,
+      settings,
+      configuration,
+      state.AllData,
+      inferred,
+      state.PalletWithUnprocessedUnloads,
+      state.CurrentStatus.TimeOfCurrentStatusUTC
+    );
+    await Assert
+      .That(state.CurrentStatus.Pallets[1].CurrentPalletLocation.StationGroup)
+      .IsEqualTo(expectedGroup);
+    await Assert
+      .That(rebuilt.Pallets[1].CurrentPalletLocation.StationGroup)
+      .IsEqualTo(expectedGroup);
+    var control = new MazakMachineControl(cell.Repositories, cell.Native, configuration);
+    await Assert
+      .That(control.CurrentToolsInMachines().Single().MachineGroupName)
+      .IsEqualTo(expectedGroup);
+
+    cell.Clock.Now = cell.Clock.Now.AddMinutes(1);
+    var next = cell.Start with
+    {
+      ForeignID = "LG20261105-120030-003.csv",
+      TimeUTC = cell.Clock.Now.UtcDateTime.AddSeconds(-30),
+    };
+    cell.Data = cell.Data with { Logs = [next] };
+    synchronization.CalculateCellState(db);
+    await Assert
+      .That(db.MostRecentLogEntryForForeignID(next.ForeignID).LocationName)
+      .IsEqualTo(expectedGroup);
   }
 
   [Test]
