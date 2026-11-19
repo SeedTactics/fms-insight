@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Runtime.Serialization.Json;
 using System.Threading;
@@ -100,7 +101,7 @@ public class MazakProxyDB : IMazakDB, IDisposable
   }
 
   #region HTTP
-  private Exception HandleAggregateException(AggregateException ex)
+  private IOException HandleAggregateException(AggregateException ex)
   {
     // Log the full error
     Log.Error(ex, "Error communicating with mazak proxy");
@@ -126,7 +127,7 @@ public class MazakProxyDB : IMazakDB, IDisposable
       }
     }
 
-    return new Exception(msg);
+    return new IOException(msg, ex);
   }
 
   private async Task<T> LoadAsync<T>(string path, CancellationToken cancel)

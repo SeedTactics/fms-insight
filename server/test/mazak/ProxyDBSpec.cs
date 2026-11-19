@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
@@ -141,7 +142,7 @@ public sealed class ProxyDBspec : IDisposable
       .RespondWith(Response.Create().WithStatusCode(500).WithBody("The error text\n another line"));
 
     Should
-      .Throw<Exception>(() => _db.LoadAllData())
+      .Throw<IOException>(() => _db.LoadAllData())
       .Message.ShouldBe($"Error communicating with mazak proxy at {_server.Url}/: The error text");
   }
 
