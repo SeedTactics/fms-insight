@@ -85,7 +85,6 @@ internal static class MazakRouteHistory
   internal sealed record AmbiguousPlacement
   {
     public required int Face { get; init; }
-    public required long Quantity { get; init; }
     public required long Unidentified { get; init; }
     public required ImmutableHashSet<long> Candidates { get; init; }
     public required ImmutableHashSet<long> Departed { get; init; }
@@ -176,7 +175,6 @@ internal static class MazakRouteHistory
       result[route.PartName] = new AmbiguousPlacement
       {
         Face = route.NativeProcess,
-        Quantity = quantity,
         Unidentified = Math.Max(0, quantity - onFace.Count),
         Candidates = candidates,
         Departed = departed,
@@ -184,9 +182,6 @@ internal static class MazakRouteHistory
     }
     return result.ToImmutable();
   }
-
-  internal static bool HasLiveSchedule(MazakAllData observed, string partName) =>
-    observed.Schedules.Any(s => s.PartName == partName);
 
   internal static bool MatchesRecordedPlacement(
     IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,
@@ -197,49 +192,6 @@ internal static class MazakRouteHistory
   {
     var nativeName = RecordedNativeName(cycle, material.MaterialID);
     return nativeName != null ? nativeName == liveRoute.PartName : definitions.Count == 1;
-  }
-
-  internal static bool HasUnconfirmedPlacement(
-    IRepository db,
-    MazakConfig config,
-    MazakAllData observed,
-    IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,
-    LogMaterial material
-  ) =>
-    PlacementDefinitions(db, config, cycle, material)
-      .Any(r =>
-        HasLiveSchedule(observed, r.PartName) && HasIncompletePlacementEvidence(observed, cycle, r)
-      );
-
-  private static bool HasIncompletePlacementEvidence(
-    MazakAllData observed,
-    IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,
-    MazakRouteIdentity route
-  ) =>
-    !AgreesWithObservation(route, observed)
-    || cycle.Any(e =>
-      e.ProgramDetails?.GetValueOrDefault(NativePartNameKey) == route.PartName
-      && e.ProgramDetails.ContainsKey(UnidentifiedQuantityKey)
-    );
-
-  private static IEnumerable<MazakRouteIdentity> PlacementDefinitions(
-    IRepository db,
-    MazakConfig config,
-    IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,
-    LogMaterial material
-  )
-  {
-    if (!config.UseDurableRouteIdentity || string.IsNullOrEmpty(material.JobUniqueStr))
-      return [];
-
-    var nativeName = RecordedNativeName(cycle, material.MaterialID);
-    // Older confirmed loads may predate the exact native name in the manufacturing log.
-    return db.LoadMazakRouteIdentities(config.ControllerSource, material.JobUniqueStr)
-      .Where(r =>
-        r.JobProcess == material.Process
-        && r.NativeProcess == material.Face
-        && (nativeName == null || r.PartName == nativeName)
-      );
   }
 
   private static string? RecordedNativeName(

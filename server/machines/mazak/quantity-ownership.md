@@ -78,6 +78,11 @@ and the owner allows reconciliation. Insight-owned jobs retain their repository 
 unloads while material is outside Mazak, including when it is in baskets. The backend can project
 its own reservations with `AdjustCurrentStatus`.
 
+For reserved routes, native pallet assignments supply the current quantity. Insight history supplies
+serial candidates, and unresolved attribution is reported separately. An unload request or a CSV
+batch still settling can explain a discrepancy without adding material to the pallet. A custom
+handling owner can keep its outstanding-transfer guard active until its CSV arrives.
+
 Use the repository-aware overload of `MazakRouteRetirement.Capture` before deleting parts. It
 includes the fixture and program reserved before a preparation write, even if the part was never
 installed. Retain the selected names and dependency candidates across retries.

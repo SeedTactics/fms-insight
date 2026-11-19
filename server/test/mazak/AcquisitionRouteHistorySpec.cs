@@ -384,7 +384,7 @@ public sealed partial class MazakAcquisitionSpec
   }
 
   [Test]
-  public async Task UnidentifiedLoadSurvivesMissingAssignmentAndRestartUntilUnload()
+  public async Task UnidentifiedLoadStaysInHistoryWhileAnEmptyPalletCanHaveAPendingTransfer()
   {
     using var cell = new Cell();
     var db = cell.Repository;
@@ -451,26 +451,49 @@ public sealed partial class MazakAcquisitionSpec
     using var reopened = cell.Repositories.OpenConnection();
     using var restarted = cell.NewSynchronizer(configure: Configure);
     cell.Data = cell.Data with { Logs = [], PalletSubStatuses = [] };
-    var retained = restarted.CalculateCellState(reopened).CurrentStatus;
+    var empty = restarted.CalculateCellState(reopened).CurrentStatus;
     await Assert.That(cell.Data.Schedules.Single().PartName).IsEqualTo(route.PartName);
-    await Assert.That(retained.Material.Single().Process).IsEqualTo(2);
-    await Assert.That(retained.AlarmDetails!.Single().Message).Contains("1 unidentified piece");
+    await Assert.That(empty.Material).IsEmpty();
+    await Assert.That(empty.AlarmDetails).IsNull();
+    await Assert
+      .That(
+        reopened.MostRecentLogEntryForForeignID(load.ForeignID).ProgramDetails![
+          "mazak-unidentified-quantity"
+        ]
+      )
+      .IsEqualTo("1");
 
     cell.Data = cell.Data with
     {
-      Logs =
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "LS01" }],
+      LoadActions =
       [
-        load with
+        new()
         {
-          Code = LogCode.UnloadEnd,
-          ForeignID = next.ForeignID + "1",
-        },
-        next with
-        {
-          ForeignID = next.ForeignID + "2",
+          LoadStation = 1,
+          Part = "part",
+          Comment = "selected-2-1-InsightS",
+          Process = 1,
+          Qty = 1,
         },
       ],
     };
+    var waitingForAssignment = restarted.CalculateCellState(reopened).CurrentStatus;
+    await Assert.That(waitingForAssignment.Material).IsEmpty();
+    await Assert
+      .That(waitingForAssignment.AlarmDetails!.Single().Message)
+      .Contains("without a matching pallet assignment");
+
+    var unload = load with { Code = LogCode.UnloadEnd, ForeignID = next.ForeignID + "1" };
+    cell.Data = cell.Data with { Logs = [unload], LoadActions = [] };
+    var settling = restarted.CalculateCellState(reopened);
+    await Assert.That(settling.PalletWithUnprocessedUnloads).IsEqualTo(1);
+    await Assert.That(settling.CurrentStatus.Material).IsEmpty();
+    await Assert
+      .That(settling.CurrentStatus.AlarmDetails!.Single().Message)
+      .Contains("still settling");
+
+    cell.Data = cell.Data with { Logs = [unload, next with { ForeignID = next.ForeignID + "2" }] };
     var resolved = restarted.CalculateCellState(reopened).CurrentStatus;
     await Assert.That(resolved.Material).IsEmpty();
     await Assert.That(resolved.AlarmDetails).IsNull();
@@ -682,7 +705,7 @@ public sealed partial class MazakAcquisitionSpec
 
     if (ambiguousIdentities)
     {
-      await Assert.That(before.Material.Select(m => m.MaterialID)).IsEquivalentTo(loaded);
+      await Assert.That(before.Material.Single().MaterialID).IsEqualTo(-1L);
       var alarm = before.AlarmDetails!.Single();
       await Assert.That(alarm.Message).Contains("Mazak reports 1 piece");
       await Assert.That(alarm.Message).Contains(mark.Material.Single().Serial!);
@@ -698,12 +721,14 @@ public sealed partial class MazakAcquisitionSpec
       };
       var conflicted = sync.CalculateCellState(db).CurrentStatus;
       await Assert.That(db.IsMaterialInQueue(material)).IsFalse();
-      var retained = conflicted.Material.Single(m => m.MaterialID == material);
+      var unassigned = conflicted.Material.Single();
+      await Assert.That(unassigned.MaterialID).IsEqualTo(-1L);
       await Assert
-        .That(retained.Location.Type)
+        .That(unassigned.Location.Type)
         .IsEqualTo(InProcessMaterialLocation.LocType.OnPallet);
-      await Assert.That(retained.Process).IsEqualTo(2);
-      await Assert.That(retained.Serial).IsEqualTo(mark.Material.Single().Serial);
+      await Assert
+        .That(conflicted.AlarmDetails!.Single().Message)
+        .Contains(mark.Material.Single().Serial!);
       await Assert
         .That(db.GetLogForMaterial(material).Any(e => e.Program == "MaterialMissingOnPallet"))
         .IsFalse();
@@ -762,7 +787,8 @@ public sealed partial class MazakAcquisitionSpec
       // The handling owner still has an outstanding unload. A poll can observe the empty pallet
       // before Mazak publishes the CSV that identifies the transfer.
       transferPending = true;
-      restarted.CalculateCellState(reopened);
+      var awaitingHistory = restarted.CalculateCellState(reopened);
+      await Assert.That(awaitingHistory.CurrentStatus.Material).IsEmpty();
       await Assert.That(reopened.GetMaterialInAllQueues()).IsEmpty();
     }
     else
@@ -779,7 +805,7 @@ public sealed partial class MazakAcquisitionSpec
     cell.Data = cell.Data with
     {
       Logs = [unload, cell.End with { Code = LogCode.LoadBegin }],
-      PalletSubStatuses = [],
+      PalletSubStatuses = ambiguousIdentities ? [AssignedFace(route)] : [],
     };
     var complete = restarted.CalculateCellState(reopened).CurrentStatus;
     transferPending = false;
@@ -791,12 +817,15 @@ public sealed partial class MazakAcquisitionSpec
     {
       await Assert.That(log.Material).IsEmpty();
       await Assert.That(log.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
-      await Assert.That(complete.Material.Select(m => m.MaterialID)).IsEquivalentTo(loaded);
+      await Assert.That(complete.Material.Single().MaterialID).IsEqualTo(-1L);
       await Assert.That(complete.Jobs[job.UniqueStr].Completed![1][0]).IsEqualTo(0);
-      await Assert.That(complete.AlarmDetails!.Single().Message).Contains("leave 1 piece");
+      await Assert
+        .That(complete.AlarmDetails!.Any(a => a.Message.Contains("Mazak reports 1 piece")))
+        .IsTrue();
       var boundary = cell.End with { Code = LogCode.LoadBegin };
       cell.Data = cell.Data with
       {
+        PalletSubStatuses = [],
         Logs =
         [
           unload with
@@ -814,7 +843,9 @@ public sealed partial class MazakAcquisitionSpec
       using var afterRestart = NewSynchronizer();
       var empty = afterRestart.CalculateCellState(reopened).CurrentStatus;
       await Assert.That(empty.Material.Where(m => m.Location.PalletNum == 1)).IsEmpty();
-      await Assert.That(empty.AlarmDetails!.Single().Message).Contains("leave 0 piece");
+      await Assert
+        .That(empty.AlarmDetails!.Single().Message)
+        .Contains("unresolved serial attribution");
       await Assert
         .That(empty.AlarmDetails!.Single().Message)
         .Contains(mark.Material.Single().Serial!);

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
+using NSubstitute;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
@@ -430,5 +431,201 @@ public sealed partial class DuplicateDownloadSpec
     await Assert
       .That(() => Calculate(reopened, planned: 6, offered: 3))
       .Throws<ConflictRequestException>();
+  }
+
+  [Test]
+  public async Task UnidentifiedLoadDoesNotReappearAfterIdleRouteIsRecreated()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = config.OpenConnection();
+    var job = PendingJob(true);
+    db.AddJobs(new NewJobs { ScheduleId = "review", Jobs = [job] }, null, true);
+    var device = new DownloadDevice("");
+    var routeConfig = RouteConfig;
+    var settings = new FMSSettings { QuarantineQueue = "quarantine" };
+    MazakRouteIdentity Install()
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        var next = MazakRouteCapacity.Calculate(
+          db,
+          device.Data,
+          routeConfig,
+          settings,
+          job.UniqueStr,
+          2,
+          1,
+          3
+        );
+        if (next.NextWrite == null)
+          return next.Identity;
+        device.Native.Save(next.NextWrite);
+      }
+      throw new InvalidOperationException("Installation failed to settle.");
+    }
+    var route = Install();
+    var offer = MazakRouteCapacity.Calculate(
+      db,
+      device.Data,
+      routeConfig,
+      settings,
+      job.UniqueStr,
+      2,
+      1,
+      3,
+      offeredQuantity: 3
+    );
+    device.Native.Save(offer.NextWrite!);
+    var time = Now.AddMinutes(-2);
+    var load = new MazakMachineInterface.LogEntry
+    {
+      ForeignID = "LG20261119-090000-001.csv",
+      TimeUTC = time,
+      Code = LogCode.LoadEnd,
+      Pallet = 2,
+      StationNumber = 1,
+      FullPartName = route.PartName,
+      JobPartName = job.PartName,
+      Process = 1,
+      Program = "1002",
+      FixedQuantity = 3,
+    };
+    var boundary = load with
+    {
+      ForeignID = "LG20261119-090100-002.csv",
+      TimeUTC = time.AddMinutes(1),
+      Code = LogCode.LoadBegin,
+      FixedQuantity = 0,
+    };
+    ImmutableList<MazakMachineInterface.LogEntry> logs = [load, boundary];
+    device
+      .Native.LoadAllDataAndLogs(Arg.Any<string>())
+      .Returns(call => new MazakAllDataAndLogs
+      {
+        Parts = device.Data.Parts,
+        Schedules = device.Data.Schedules,
+        Fixtures = device.Data.Fixtures,
+        Pallets = device.Data.Pallets,
+        MainPrograms = device.Data.MainPrograms,
+        LoadActions = device.Data.LoadActions,
+        PalletStatuses = [],
+        PalletSubStatuses = device.Data.PalletSubStatuses,
+        PalletPositions = device.Data.PalletPositions,
+        Alarms = [],
+        Logs = logs.Where(e => StringComparer.Ordinal.Compare(e.ForeignID, call.Arg<string>()) > 0)
+          .ToImmutableList(),
+      });
+    device.Observe(
+      device.Data with
+      {
+        Schedules = device
+          .Data.Schedules.Select(s =>
+            s with
+            {
+              Processes = s
+                .Processes.Select(p =>
+                  p with
+                  {
+                    ProcessMaterialQuantity = 0,
+                    ProcessExecuteQuantity = 3,
+                  }
+                )
+                .ToImmutableList(),
+            }
+          )
+          .ToImmutableList(),
+        PalletSubStatuses =
+        [
+          new()
+          {
+            PalletNumber = 2,
+            PartName = route.PartName,
+            ScheduleID = device.Data.Schedules.Single().Id,
+            PartProcessNumber = 1,
+            FixQuantity = 3,
+          },
+        ],
+        PalletPositions = [new() { PalletNumber = 2, PalletPosition = "S002" }],
+      }
+    );
+    using var sync = new MazakSync(device.Native, settings, routeConfig);
+    var loaded = sync.CalculateCellState(db).CurrentStatus;
+    await Assert.That(loaded.Material.Count).IsEqualTo(3);
+    await Assert.That(loaded.Material.All(m => m.MaterialID == -1)).IsTrue();
+    await Assert.That(loaded.AlarmDetails!.Single().Message).Contains("3 unidentified piece");
+    await Assert
+      .That(
+        db.MostRecentLogEntryForForeignID(load.ForeignID).ProgramDetails![
+          "mazak-unidentified-quantity"
+        ]
+      )
+      .IsEqualTo("3");
+
+    // The operator physically removes this set and clears its native assignment without UNLOAD.
+    // No material remains in Mazak, and every native ready/executing/bad count is zero.
+    logs = [];
+    device.Observe(
+      device.Data with
+      {
+        PalletSubStatuses = [],
+        Schedules = device
+          .Data.Schedules.Select(s =>
+            s with
+            {
+              Processes = s
+                .Processes.Select(p => p with { ProcessExecuteQuantity = 0 })
+                .ToImmutableList(),
+            }
+          )
+          .ToImmutableList(),
+      }
+    );
+    await Assert.That(device.Data.LoadActions).IsEmpty();
+    await Assert
+      .That(
+        device
+          .Data.Schedules.SelectMany(s => s.Processes)
+          .All(p =>
+            p.ProcessMaterialQuantity == 0
+            && p.ProcessExecuteQuantity == 0
+            && p.ProcessBadQuantity == 0
+          )
+      )
+      .IsTrue();
+    var retirement = MazakRouteRetirement.Capture(
+      db,
+      routeConfig,
+      device.Data,
+      ImmutableHashSet.Create(route.PartName)
+    );
+    for (var i = 0; i < 10; i++)
+    {
+      var next = MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retirement);
+      if (next == null)
+        break;
+      device.Native.Save(next);
+    }
+    await Assert.That(device.Data.Schedules).IsEmpty();
+    await Assert.That(device.Data.Parts).IsEmpty();
+    await Assert.That(sync.CalculateCellState(db).CurrentStatus.Material).IsEmpty();
+
+    var installedAgain = Install();
+    await Assert.That(installedAgain).IsEqualTo(route);
+    await Assert.That(device.Data.PalletSubStatuses).IsEmpty();
+    await Assert.That(device.Data.LoadActions).IsEmpty();
+    await Assert
+      .That(device.Data.Schedules.Single().Processes.Single().ProcessMaterialQuantity)
+      .IsEqualTo(0);
+    using var afterReprepare = new MazakSync(device.Native, settings, routeConfig);
+    var fresh = afterReprepare.CalculateCellState(db).CurrentStatus;
+    await Assert.That(fresh.Material).IsEmpty();
+    await Assert.That(fresh.AlarmDetails).IsNull();
+    await Assert
+      .That(
+        db.MostRecentLogEntryForForeignID(load.ForeignID).ProgramDetails![
+          "mazak-unidentified-quantity"
+        ]
+      )
+      .IsEqualTo("3");
   }
 }
