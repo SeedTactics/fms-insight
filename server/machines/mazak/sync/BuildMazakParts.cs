@@ -135,7 +135,7 @@ namespace MazakMachineInterface
         ? SplitComment(Job.UniqueStr, SplitJobProcess.Value, SplitPath.GetValueOrDefault(1))
         : Job.UniqueStr + CombinedInsightSuffix;
 
-    internal static string SplitComment(string unique, int process, int path) =>
+    public static string SplitComment(string unique, int process, int path) =>
       $"{unique}-{process}-{path}{SplitInsightSuffix}";
 
     internal static ImmutableList<string> InitialScheduleComments(Job job) =>
