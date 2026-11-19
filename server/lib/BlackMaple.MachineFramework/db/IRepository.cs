@@ -72,7 +72,7 @@ namespace BlackMaple.MachineFramework
 
     void StageMazakBulkCleanup(string source, MazakBulkCleanup cleanup);
     MazakBulkCleanup LoadMazakBulkCleanup(string source);
-    void CompleteMazakBulkCleanup(string source);
+    void CompleteMazakBulkCleanup(string source, MazakBulkCleanup pending = null);
 
     ImmutableList<MazakRouteIdentity> LoadMazakRouteIdentities(string source, string jobUnique);
 

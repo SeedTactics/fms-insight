@@ -96,7 +96,8 @@ identity remains reserved.
 
 Scoped bulk downloads save cleanup candidates before deleting parts. After an uncertain write, the
 next pass uses fresh readback to recheck ownership and references and finish eligible cleanup.
-Cleanup can resume independently after the incoming job leaves the download window.
+Cleanup can resume independently after the incoming job leaves the download window. Candidates
+blocked only by an active station request remain pending for the next pass.
 
 Assign each additional controller a distinct, stable `ControllerSource` independent of its endpoint.
 Keep the original controller on `DefaultControllerSource` to retain its existing LG history. Use

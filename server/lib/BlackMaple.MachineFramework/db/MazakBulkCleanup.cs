@@ -25,6 +25,17 @@ internal sealed partial class Repository
   {
     var connection = _connection ?? throw new ObjectDisposedException(nameof(Repository));
     using var trans = connection.BeginTransaction();
+    InsertMazakBulkCleanup(connection, trans, source, cleanup);
+    trans.Commit();
+  }
+
+  private static void InsertMazakBulkCleanup(
+    SqliteConnection connection,
+    SqliteTransaction trans,
+    string source,
+    MazakBulkCleanup cleanup
+  )
+  {
     using var cmd = connection.CreateCommand();
     cmd.Transaction = trans;
     cmd.CommandText = """
@@ -45,7 +56,6 @@ internal sealed partial class Repository
       name.Value = item.Name;
       cmd.ExecuteNonQuery();
     }
-    trans.Commit();
   }
 
   public MazakBulkCleanup LoadMazakBulkCleanup(string source)
@@ -79,13 +89,17 @@ internal sealed partial class Repository
     };
   }
 
-  public void CompleteMazakBulkCleanup(string source)
+  public void CompleteMazakBulkCleanup(string source, MazakBulkCleanup? pending = null)
   {
-    using var cmd = (
-      _connection ?? throw new ObjectDisposedException(nameof(Repository))
-    ).CreateCommand();
+    var connection = _connection ?? throw new ObjectDisposedException(nameof(Repository));
+    using var trans = connection.BeginTransaction();
+    using var cmd = connection.CreateCommand();
+    cmd.Transaction = trans;
     cmd.CommandText = "DELETE FROM mazak_bulk_cleanup WHERE Source = $source";
     cmd.Parameters.AddWithValue("source", source);
     cmd.ExecuteNonQuery();
+    if (pending != null)
+      InsertMazakBulkCleanup(connection, trans, source, pending);
+    trans.Commit();
   }
 }

@@ -370,18 +370,27 @@ namespace MazakMachineInterface
         .LoadActions.Where(a => a.Qty > 0)
         .Select(a => (a.Part, a.Comment))
         .ToImmutableHashSet();
-      var parts = MazakJobs.DeletePartRows(observed.Parts, part =>
+      var eligible = MazakJobs.DeletePartRows(observed.Parts, part =>
         saved.Parts.Contains(part.PartName)
         && !reserved.Contains(part.PartName)
         && !plans.Contains(part.PartName)
         && !referenced.Contains(part.PartName)
-        && !requestedRoutes.Contains(
-          (MazakPart.ExtractPartNameFromMazakPartName(part.PartName), part.Comment)
-        )
         && db.LoadJob(MazakPart.UniqueFromComment(part.Comment)) is { } job
         && scope?.Invoke(job) == true
         && !config.UsesInsightJobQuantities(job)
       );
+      bool HasRequest(MazakPartRow part) =>
+        requestedRoutes.Contains(
+          (MazakPart.ExtractPartNameFromMazakPartName(part.PartName), part.Comment)
+        );
+      var deferred = eligible
+        .Parts.Where(HasRequest)
+        .Select(p => p.PartName)
+        .ToImmutableHashSet(StringComparer.Ordinal);
+      var parts = eligible with
+      {
+        Parts = eligible.Parts.Where(p => !deferred.Contains(p.PartName)).ToImmutableList(),
+      };
       var wrote = parts.Parts.Count > 0;
       if (wrote)
       {
@@ -447,7 +456,23 @@ namespace MazakMachineInterface
           );
         wrote = true;
       }
-      db.CompleteMazakBulkCleanup(config.ControllerSource);
+      // Load actions identify a family of native parts. Once the request settles, recheck
+      // the exact saved part names from fresh readback rather than losing the cleanup intent.
+      var remaining = MazakRouteRetirement.Capture(
+        observed,
+        deferred.Intersect(observed.Parts.Select(p => p.PartName))
+      );
+      db.CompleteMazakBulkCleanup(
+        config.ControllerSource,
+        remaining.PartNames.IsEmpty
+          ? null
+          : new MazakBulkCleanup
+          {
+            Parts = remaining.PartNames,
+            Fixtures = saved.Fixtures.Intersect(remaining.FixtureNames),
+            Programs = saved.Programs.Intersect(remaining.MainPrograms),
+          }
+      );
       return wrote;
     }
 

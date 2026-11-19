@@ -167,6 +167,7 @@ public sealed partial class DuplicateDownloadSpec
   [Arguments("delete-parts-before-apply", "ownership")]
   [Arguments("delete-parts-before-apply", "schedule")]
   [Arguments("delete-parts-before-apply", "pallet")]
+  [Arguments("delete-parts-before-apply", "request")]
   public async Task ScopedCleanupRemovesOnlyOldProgramsUnusedAfterPartDeletion(
     string failure,
     string protection
@@ -271,8 +272,41 @@ public sealed partial class DuplicateDownloadSpec
         .IsEqualTo(failure != "delete-deps-full");
     }
 
+    MazakPartRow? sibling = null;
     switch (protection)
     {
+      case "request":
+        sibling = Part(completed, 8, "peer-1.eia");
+        device.Observe(
+          device.Data with
+          {
+            Parts = [.. device.Data.Parts, sibling],
+            Schedules =
+            [
+              new()
+              {
+                Id = 9,
+                PartName = sibling.PartName,
+                Comment = sibling.Comment,
+                PlanQuantity = 1,
+                Processes = [new() { ProcessNumber = 1, ProcessMaterialQuantity = 1 }],
+              },
+            ],
+            LoadActions =
+            [
+              new()
+              {
+                LoadEvent = true,
+                LoadStation = 1,
+                Part = completed.PartName,
+                Comment = sibling.Comment,
+                Process = 1,
+                Qty = 1,
+              },
+            ],
+          }
+        );
+        break;
       case "ownership":
         routeConfig = routeConfig with { BulkJobFilter = j => j.UniqueStr == ordinary.UniqueStr };
         break;
@@ -312,12 +346,40 @@ public sealed partial class DuplicateDownloadSpec
     }
 
     using var reopened = config.OpenConnection();
-    var canDelete = protection.Length == 0;
+    if (sibling != null)
+    {
+      await Assert.That(SyncScoped(reopened, retryTime)).IsFalse();
+      await Assert.That(device.Data.Parts).Contains(old);
+      var deferred = reopened.LoadMazakBulkCleanup(routeConfig.ControllerSource);
+      await Assert.That(deferred.Parts).IsEquivalentTo([old.PartName]);
+      await Assert.That(deferred.Programs).Contains("obsolete-1.eia");
+      var active = device.Data.Schedules.Single();
+      device.Observe(
+        device.Data with
+        {
+          LoadActions = [],
+          Schedules =
+          [
+            active with
+            {
+              CompleteQuantity = 1,
+              Processes = [active.Processes.Single() with { ProcessMaterialQuantity = 0 }],
+            },
+          ],
+        }
+      );
+    }
+    var canDelete = protection.Length == 0 || sibling != null;
     await Assert.That(SyncScoped(reopened, retryTime)).IsEqualTo(canDelete);
     await Assert.That(reopened.LoadMazakBulkCleanup(routeConfig.ControllerSource).Parts).IsEmpty();
     await Assert.That(SyncScoped(reopened, retryTime)).IsFalse();
     await Assert.That(device.Data.Parts.Contains(old)).IsEqualTo(!canDelete);
     await Assert.That(device.Data.Parts).Contains(survivor);
+    if (sibling != null)
+    {
+      await Assert.That(device.Data.Parts).Contains(sibling);
+      await Assert.That(device.Data.Schedules.Single().PartName).IsEqualTo(sibling.PartName);
+    }
     if (beforeDelete)
       await Assert.That(reopened.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsFalse();
     var expectedPrograms = canDelete
