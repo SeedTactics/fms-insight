@@ -63,9 +63,11 @@ several controllers share a repository.
 
 The calculation reserves the exact native part name in the manufacturing repository and returns the
 next transaction. Apply it through the serialized controller owner and calculate again from fresh
-readback, including after a lost reply. A new schedule starts with zero offered material. An
-existing schedule keeps its current offer. An increase to the plan uses `ScheduleSafeEdit` with the
-observed priority, due date and hold.
+readback, including after a lost reply. `MazakRouteCapacity.Preview` runs the same checks and plans
+the next write without saving reservations. Use `Calculate` before applying a write.
+
+A new schedule starts with zero offered material. An existing schedule keeps its current offer. An
+increase to the plan uses `ScheduleSafeEdit` with the observed priority, due date and hold.
 
 When material is ready, pass the observed schedule row and the available piece count to
 `MazakRouteCapacity.SetMaterialQuantity`. The caller owns admission, including which pieces make up

@@ -22,6 +22,48 @@ public sealed partial class DuplicateDownloadSpec
     };
 
   [Test]
+  public async Task RoutePreviewPlansTheSameWriteWithoutReservingNativeResources()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var job = PendingJob(true);
+    repository.AddJobs(new NewJobs { ScheduleId = "preview", Jobs = [job] }, null, false);
+    var device = new DownloadDevice("");
+    var settings = new FMSSettings();
+    var preview = MazakRouteCapacity.Preview(
+      repository,
+      device.Data,
+      RouteConfig,
+      settings,
+      job.UniqueStr,
+      2,
+      1,
+      3
+    );
+    await Assert
+      .That(repository.LoadMazakRouteIdentities(RouteConfig.ControllerSource, job.UniqueStr))
+      .IsEmpty();
+    await Assert
+      .That(repository.LoadMazakRoutePreparations(RouteConfig.ControllerSource))
+      .IsEmpty();
+    var write = MazakRouteCapacity.Calculate(
+      repository,
+      device.Data,
+      RouteConfig,
+      settings,
+      job.UniqueStr,
+      2,
+      1,
+      3
+    );
+    await Assert.That(write.Identity).IsEqualTo(preview.Identity);
+    await Assert.That(write.NextWrite).IsEquivalentTo(preview.NextWrite);
+    await Assert
+      .That(repository.LoadMazakRouteIdentities(RouteConfig.ControllerSource, job.UniqueStr))
+      .IsEquivalentTo([preview.Identity]);
+  }
+
+  [Test]
   [Arguments(false)]
   [Arguments(true)]
   public async Task PreparedFixtureGroupSurvivesRestartBeforeAnyNativeWrite(bool ordinaryPeer)

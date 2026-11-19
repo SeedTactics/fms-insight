@@ -30,6 +30,57 @@ public static class MazakRouteCapacity
     int path,
     int planQuantity,
     string? fullPartName = null
+  ) =>
+    Plan(
+      db,
+      observed,
+      config,
+      settings,
+      jobUnique,
+      process,
+      path,
+      planQuantity,
+      fullPartName,
+      reserve: true
+    );
+
+  // Use the same qualification and next-write calculation for decisions that must leave the
+  // repository untouched. Call Calculate again under the controller owner before any native write.
+  public static MazakRouteWrite Preview(
+    IRepository db,
+    MazakAllData observed,
+    MazakConfig config,
+    FMSSettings settings,
+    string jobUnique,
+    int process,
+    int path,
+    int planQuantity,
+    string? fullPartName = null
+  ) =>
+    Plan(
+      db,
+      observed,
+      config,
+      settings,
+      jobUnique,
+      process,
+      path,
+      planQuantity,
+      fullPartName,
+      reserve: false
+    );
+
+  private static MazakRouteWrite Plan(
+    IRepository db,
+    MazakAllData observed,
+    MazakConfig config,
+    FMSSettings settings,
+    string jobUnique,
+    int process,
+    int path,
+    int planQuantity,
+    string? fullPartName,
+    bool reserve
   )
   {
     ArgumentOutOfRangeException.ThrowIfNegativeOrZero(planQuantity);
@@ -236,10 +287,13 @@ public static class MazakRouteCapacity
       );
 
     // No controller writes have occurred. The exact full name survives all subsequent phases.
-    if (preparation != null && preparation != savedPreparation)
-      db.ReserveMazakRoutePreparation(identity, preparation);
-    else if (existing == null)
-      db.ReserveMazakRouteIdentity(identity);
+    if (reserve)
+    {
+      if (preparation != null && preparation != savedPreparation)
+        db.ReserveMazakRoutePreparation(identity, preparation);
+      else if (existing == null)
+        db.ReserveMazakRouteIdentity(identity);
+    }
     return new MazakRouteWrite { Identity = identity, NextWrite = next };
 
     ConflictRequestException Conflict(string reason) =>
