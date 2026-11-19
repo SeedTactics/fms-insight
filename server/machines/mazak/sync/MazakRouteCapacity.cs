@@ -15,6 +15,41 @@ public sealed record MazakRouteWrite
 
 public static class MazakRouteCapacity
 {
+  // Count physical loads, including attempts whose subsequent machining was invalidated.
+  // The caller supplies the history boundary for the native schedule being accounted for.
+  public static long RecordedLoadQuantity(
+    IRepository db,
+    MazakConfig config,
+    MazakRouteIdentity route,
+    long afterCounter
+  )
+  {
+    if (route.Source != config.ControllerSource)
+      throw new ArgumentException(
+        "The route belongs to a different Mazak controller.",
+        nameof(route)
+      );
+    var sourcePrefix = config.LogForeignId("LG");
+    return db.GetLogForJobUnique(route.JobUnique)
+      .Where(entry =>
+        entry.Counter > afterCounter
+        && entry.LogType == LogType.LoadUnloadCycle
+        && !entry.StartOfCycle
+        && entry.Result == "LOAD"
+        && entry.ForeignID?.StartsWith(sourcePrefix, StringComparison.Ordinal) == true
+        && entry.ProgramDetails?.GetValueOrDefault(MazakRouteHistory.NativePartNameKey)
+          == route.PartName
+      )
+      .Sum(entry =>
+        (long)
+          entry.Material.Count(material =>
+            material.JobUniqueStr == route.JobUnique
+            && material.Process == route.JobProcess
+            && (material.Path ?? 1) == route.Path
+          )
+      );
+  }
+
   // Serialize with the controller's bulk writer and other edits. Save at most NextWrite, then
   // recalculate from a fresh observation even if the write failed or its reply was lost. The
   // calculation prepares native capacity. Material admission is a separate caller decision.

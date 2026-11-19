@@ -396,6 +396,11 @@ public sealed partial class MazakAcquisitionSpec
     var invalidated = sync.CalculateCellState(db).CurrentStatus.Jobs[job.UniqueStr];
     await Assert.That(invalidated.Completed![0][0]).IsEqualTo(0);
     await Assert.That(invalidated.RemainingToStart).IsEqualTo(0L);
+    var beforeReplacement = db.GetLogForJobUnique(job.UniqueStr).Max(entry => entry.Counter);
+    await Assert.That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, 0)).IsEqualTo(1L);
+    await Assert
+      .That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, beforeReplacement))
+      .IsEqualTo(0L);
 
     var candidates = MazakRouteRetirement.Capture(
       db,
@@ -428,6 +433,10 @@ public sealed partial class MazakAcquisitionSpec
     var reworked = Transfer(LogCode.UnloadEnd, 5).Jobs[job.UniqueStr];
     await Assert.That(reworked.Completed![0][0]).IsEqualTo(1);
     await Assert.That(reworked.RemainingToStart).IsEqualTo(0L);
+    await Assert.That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, 0)).IsEqualTo(2L);
+    await Assert
+      .That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, beforeReplacement))
+      .IsEqualTo(1L);
     await Assert
       .That(db.GetJobProductionSummary(job.UniqueStr).AutomationEntryMaterialIds)
       .IsEquivalentTo([id]);
