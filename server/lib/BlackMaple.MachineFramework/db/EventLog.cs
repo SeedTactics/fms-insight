@@ -726,39 +726,58 @@ namespace BlackMaple.MachineFramework
           "SELECT MAX(Counter) FROM stations where Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Result = 'PalletCycle'";
         cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
 
-        var counter = cmd.ExecuteScalar();
-
-        if (counter == DBNull.Value)
+        var cycleCondition = "";
+        if (cmd.ExecuteScalar() is long counter)
         {
-          cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
-            + " FROM stations s "
-            + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND "
-            + ignoreInvalidEventCondition
-            + " ORDER BY Counter ASC";
-          using (var reader = cmd.ExecuteReader())
-          {
-            return LoadLog(reader, trans).ToList();
-          }
+          cycleCondition = (includeLastPalletCycleEvt ? "Counter >=" : "Counter >") + " $cntr AND ";
+          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         }
-        else
-        {
-          cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
-            + " FROM stations s "
-            + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Counter "
-            + (includeLastPalletCycleEvt ? ">=" : ">")
-            + " $cntr AND "
-            + ignoreInvalidEventCondition
-            + " ORDER BY Counter ASC";
-          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
-
-          using (var reader = cmd.ExecuteReader())
-          {
-            return LoadLog(reader, trans).ToList();
-          }
-        }
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
+          + " FROM stations s WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND "
+          + cycleCondition
+          + ignoreInvalidEventCondition
+          + " AND NOT EXISTS (SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = $priorPlacement)"
+          + " ORDER BY Counter ASC";
+        cmd.Parameters.Add("priorPlacement", SqliteType.Text).Value =
+          LogEntry.PriorPalletPlacementKey;
+        using var reader = cmd.ExecuteReader();
+        return LoadLog(reader, trans).ToList();
       }
+    }
+
+    public LogEntry FindPalletMachineStart(
+      int pallet,
+      string stationGroup,
+      int station,
+      DateTime asOfUtc
+    )
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      // A completed transfer or a recorded end rules out an older start. Compare controller
+      // event times so a delayed end can still match the run before a later transfer.
+      cmd.CommandText =
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
+        + " FROM stations s WHERE Pallet = $pal AND TimeUTC <= $time AND "
+        + " ((StationLoc = $machine AND StationName = $group AND StationNum = $station) OR (StationLoc = $transfer AND Start = 0)) AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY TimeUTC DESC, Counter DESC LIMIT 1";
+      cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
+      cmd.Parameters.Add("machine", SqliteType.Integer).Value = (int)LogType.MachineCycle;
+      cmd.Parameters.Add("transfer", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+      cmd.Parameters.Add("group", SqliteType.Text).Value = stationGroup;
+      cmd.Parameters.Add("station", SqliteType.Integer).Value = station;
+      cmd.Parameters.Add("time", SqliteType.Integer).Value = asOfUtc.Ticks;
+
+      LogEntry result;
+      using (var reader = cmd.ExecuteReader())
+      {
+        result = LoadLog(reader, trans).FirstOrDefault();
+      }
+      trans.Commit();
+      return result is { LogType: LogType.MachineCycle, StartOfCycle: true } ? result : null;
     }
 
     public List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false)

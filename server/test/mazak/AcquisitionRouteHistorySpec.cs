@@ -73,6 +73,177 @@ public sealed partial class MazakAcquisitionSpec
     };
 
   [Test]
+  [Arguments(false, false)]
+  [Arguments(true, false)]
+  [Arguments(true, true)]
+  public async Task DelayedMachineEndUsesTheOriginalRunAfterAnEmptyObservation(
+    bool replacementLoaded,
+    bool endBelongsToReplacementWithMissingStart
+  )
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var now = cell.Clock.Now.UtcDateTime;
+    var process = new ProcessInfo { Paths = [JobLogTest.EmptyPath with { PalletNums = [1] }] };
+    var job = new Job
+    {
+      UniqueStr = "delayed-machine-end",
+      PartName = "part",
+      Cycles = 3,
+      Archived = false,
+      RouteStartUTC = now.AddHours(-1),
+      RouteEndUTC = now.AddHours(1),
+      Processes = [process],
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "delayed-machine-end", Jobs = [job] }, null, true);
+    var route = new MazakRouteIdentity
+    {
+      Source = MazakConfig.DefaultControllerSource,
+      PartName = "part:7:1:1",
+      NativeProcess = 1,
+      JobUnique = job.UniqueStr,
+      JobProcess = 1,
+      Path = 1,
+    };
+    db.ReserveMazakRouteIdentity(route);
+    var original = db.AllocateMaterialID(job.UniqueStr, job.PartName, 1);
+    var load = new MaterialToLoadOntoFace
+    {
+      MaterialIDs = [original],
+      Process = 1,
+      Path = 1,
+      FaceNum = 1,
+      ActiveOperationTime = TimeSpan.Zero,
+      AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+        "mazak-native-part-name",
+        route.PartName
+      ),
+    };
+    db.RecordPartialLoadUnload(
+      [load with { AdditionalData = load.AdditionalData.Add("mazak-unidentified-quantity", "1") }],
+      [],
+      1,
+      1,
+      TimeSpan.Zero,
+      now.AddMinutes(-14),
+      null
+    );
+    var start = cell.Start with
+    {
+      ForeignID = "LG20261105-114700-001.csv",
+      TimeUTC = now.AddMinutes(-13),
+      FullPartName = route.PartName,
+      FixedQuantity = 2,
+    };
+    cell.Data = WithInstalledRoute(cell.Data, route) with
+    {
+      Logs = [start],
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "S001" }],
+      PalletSubStatuses = [AssignedFace(route) with { FixQuantity = 2 }],
+    };
+    MazakConfig Configure(MazakConfig cfg) =>
+      cfg with
+      {
+        UseDurableRouteIdentity = true,
+        UseInsightJobQuantities = j => j.UniqueStr == job.UniqueStr,
+        CanQuarantineMissingMaterial = _ => true,
+      };
+    using var sync = cell.NewSynchronizer(configure: Configure);
+    sync.CalculateCellState(db);
+    var recordedStart = db.MostRecentLogEntryForForeignID(start.ForeignID);
+    await Assert.That(recordedStart.Material.Single().MaterialID).IsEqualTo(original);
+
+    // The run finishes, then the operator clears the pallet before the end CSV is available.
+    cell.Data = cell.Data with { Logs = [], PalletSubStatuses = [] };
+    await Assert.That(sync.CalculateCellState(db).CurrentStatus.Material).IsEmpty();
+    await Assert
+      .That(db.CurrentPalletLog(1).Count(e => e.Program == "MazakPalletObservedEmpty"))
+      .IsEqualTo(1);
+
+    var replacement = db.AllocateMaterialID(job.UniqueStr, job.PartName, 1);
+    if (replacementLoaded)
+    {
+      db.RecordLoadUnloadComplete(
+        [load with { MaterialIDs = [replacement] }],
+        [],
+        [],
+        [],
+        1,
+        1,
+        TimeSpan.Zero,
+        now.AddSeconds(10),
+        null
+      );
+      if (!endBelongsToReplacementWithMissingStart)
+        db.RecordMachineStart(
+          [
+            new EventLogMaterial
+            {
+              MaterialID = replacement,
+              Face = 1,
+              Process = 1,
+            },
+          ],
+          1,
+          recordedStart.LocationName,
+          1,
+          recordedStart.Program,
+          now.AddSeconds(20)
+        );
+      cell.Data = cell.Data with { PalletSubStatuses = [AssignedFace(route)] };
+    }
+
+    cell.Clock.Now = cell.Clock.Now.AddMinutes(1);
+    var end = start with
+    {
+      ForeignID = endBelongsToReplacementWithMissingStart
+        ? "LG20261105-120040-002.csv"
+        : "LG20261105-115700-002.csv",
+      TimeUTC = endBelongsToReplacementWithMissingStart ? now.AddSeconds(40) : now.AddMinutes(-3),
+      Code = LogCode.MachineCycleEnd,
+    };
+    cell.Data = cell.Data with { Logs = [end] };
+    using var reopened = cell.Repositories.OpenConnection();
+    using var restarted = cell.NewSynchronizer(configure: Configure);
+    var status = restarted.CalculateCellState(reopened).CurrentStatus;
+    var recordedEnd = reopened.MostRecentLogEntryForForeignID(end.ForeignID);
+    if (endBelongsToReplacementWithMissingStart)
+    {
+      // The old run is still open in history, but a completed LOAD separates it from this end.
+      await Assert.That(recordedEnd).IsNull();
+      await Assert.That(status.Material.Single().MaterialID).IsEqualTo(replacement);
+      return;
+    }
+    await Assert.That(recordedEnd).IsNotNull();
+    await Assert.That(recordedEnd.ElapsedTime).IsEqualTo(TimeSpan.FromMinutes(10));
+    await Assert.That(recordedEnd.Program).IsEqualTo(recordedStart.Program);
+    await Assert.That(recordedEnd.Material.Single().MaterialID).IsEqualTo(original);
+    await Assert
+      .That(reopened.GetLogForMaterial(original).Any(e => e.Counter == recordedEnd.Counter))
+      .IsTrue();
+    await Assert
+      .That(
+        reopened
+          .CurrentPalletLog(1, includeLastPalletCycleEvt: true)
+          .Any(e => e.Counter == recordedEnd.Counter)
+      )
+      .IsFalse();
+    if (replacementLoaded)
+    {
+      var active = status.Material.Single();
+      await Assert.That(active.MaterialID).IsEqualTo(replacement);
+      await Assert.That(active.Action.Type).IsEqualTo(InProcessMaterialAction.ActionType.Machining);
+    }
+    else
+    {
+      await Assert.That(status.Material).IsEmpty();
+      await Assert
+        .That(reopened.CurrentPalletLog(1).Count(e => e.Program == "MazakPalletObservedEmpty"))
+        .IsEqualTo(1);
+    }
+  }
+
+  [Test]
   public async Task ScheduleCanDisappearWithAllMaterialStillInBaskets()
   {
     using var cell = new Cell();

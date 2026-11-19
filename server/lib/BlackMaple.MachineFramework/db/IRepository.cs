@@ -98,6 +98,9 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
+
+    [return: MaybeNull]
+    LogEntry FindPalletMachineStart(int pallet, string stationGroup, int station, DateTime asOfUtc);
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
 
     [return: MaybeNull]
