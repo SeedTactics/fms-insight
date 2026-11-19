@@ -17,7 +17,7 @@ public static class MazakRouteCapacity
 {
   // Serialize with the controller's bulk writer and other edits. Save at most NextWrite, then
   // recalculate from a fresh observation even if the write failed or its reply was lost. The
-  // caller chooses when to expose material and ensures editing the observed offer is safe.
+  // calculation prepares native capacity. Material admission is a separate caller decision.
   // An explicit name can select a saved definition or adopt a live legacy definition whose
   // historical ownership the caller can establish. A retired legacy name needs a reservation.
   public static MazakRouteWrite Calculate(
@@ -29,13 +29,10 @@ public static class MazakRouteCapacity
     int process,
     int path,
     int planQuantity,
-    int offeredQuantity = 0,
     string? fullPartName = null
   )
   {
     ArgumentOutOfRangeException.ThrowIfNegativeOrZero(planQuantity);
-    ArgumentOutOfRangeException.ThrowIfNegative(offeredQuantity);
-    ArgumentOutOfRangeException.ThrowIfGreaterThan(offeredQuantity, planQuantity);
 
     var job = db.LoadJob(jobUnique);
     if (
@@ -43,14 +40,13 @@ public static class MazakRouteCapacity
       || job == null
       || job.Archived
       || !config.UsesInsightJobQuantities(job)
-      || !ConvertJobsToMazakParts.IsSplitScheduleJob(job)
       || process <= 0
       || process > job.Processes.Count
       || path != 1
       || job.Processes.Any(p => p.Paths.Count != 1)
     )
       throw new BadRequestException(
-        $"Job '{jobUnique}' process {process} path {path} must be an accepted, Insight-owned split Mazak route."
+        $"Job '{jobUnique}' process {process} path {path} must be an accepted, Insight-owned Mazak route with one path per process."
       );
 
     var comment = MazakPart.SplitComment(jobUnique, process, path);
@@ -129,11 +125,12 @@ public static class MazakRouteCapacity
     )
       throw Conflict("Observed parts or schedules disagree with the selected split route.");
 
-    var preparation = db.LoadMazakRoutePreparation(
+    var savedPreparation = db.LoadMazakRoutePreparation(
       identity.Source,
       identity.PartName,
       identity.NativeProcess
     );
+    var preparation = savedPreparation;
     if (
       preparation != null
       && installed != null
@@ -213,10 +210,6 @@ public static class MazakRouteCapacity
           $"Prepared fixture group {preparation.FixtureGroup} is occupied on a selected pallet."
         );
     }
-    var nativePart = installed ?? transactions.Parts.Single();
-    var setSize = Math.Max(1, nativePart.Processes.Single().FixQuantity);
-    if (offeredQuantity % setSize != 0)
-      throw Conflict("Offered material must consist of whole pallet sets.");
     if (installed != null)
     {
       var expectedRow = expected.ToDatabaseRow();
@@ -239,15 +232,14 @@ public static class MazakRouteCapacity
         job,
         identity,
         schedules.SingleOrDefault(),
-        planQuantity,
-        offeredQuantity
+        planQuantity
       );
 
     // No controller writes have occurred. The exact full name survives all subsequent phases.
-    if (preparation == null)
-      db.ReserveMazakRouteIdentity(identity);
-    else
+    if (preparation != null && preparation != savedPreparation)
       db.ReserveMazakRoutePreparation(identity, preparation);
+    else if (existing == null)
+      db.ReserveMazakRouteIdentity(identity);
     return new MazakRouteWrite { Identity = identity, NextWrite = next };
 
     ConflictRequestException Conflict(string reason) =>
@@ -291,8 +283,7 @@ public static class MazakRouteCapacity
     Job job,
     MazakRouteIdentity route,
     MazakScheduleRow? schedule,
-    int planned,
-    int offered
+    int planned
   )
   {
     if (schedule == null)
@@ -308,10 +299,6 @@ public static class MazakRouteCapacity
     if (planned < schedule.PlanQuantity)
       throw new ConflictRequestException(
         $"Reducing Mazak schedule {schedule.Id} requires retirement or backout."
-      );
-    if (offered > 0 && committed + offered > planned)
-      throw new ConflictRequestException(
-        $"Offered material must fit Mazak schedule {schedule.Id}'s remaining plan."
       );
     if (planned > schedule.PlanQuantity)
     {
@@ -333,7 +320,28 @@ public static class MazakRouteCapacity
         ],
       };
     }
-    return process.ProcessMaterialQuantity == offered
+    return null;
+  }
+
+  // Set the outstanding offer on a freshly observed split schedule. After an uncertain write
+  // the owner must recalculate what is still available to load: Mazak may have consumed it.
+  public static MazakWriteData? SetMaterialQuantity(MazakScheduleRow schedule, int offeredQuantity)
+  {
+    ArgumentOutOfRangeException.ThrowIfNegative(offeredQuantity);
+    if (
+      !MazakPart.IsSplitComment(schedule.Comment)
+      || schedule.Processes is not [{ ProcessNumber: 1 } process]
+    )
+      throw new BadRequestException(
+        "Material admission requires a single-process split Mazak schedule."
+      );
+    var committed =
+      (long)schedule.CompleteQuantity + process.ProcessExecuteQuantity + process.ProcessBadQuantity;
+    if (offeredQuantity > 0 && committed + offeredQuantity > schedule.PlanQuantity)
+      throw new ConflictRequestException(
+        $"Offered material must fit Mazak schedule {schedule.Id}'s remaining plan."
+      );
+    return process.ProcessMaterialQuantity == offeredQuantity
       ? null
       : new MazakWriteData
       {
@@ -343,7 +351,7 @@ public static class MazakRouteCapacity
           schedule with
           {
             Command = MazakWriteCommand.ScheduleMaterialEdit,
-            Processes = [process with { ProcessMaterialQuantity = offered }],
+            Processes = [process with { ProcessMaterialQuantity = offeredQuantity }],
           },
         ],
       };

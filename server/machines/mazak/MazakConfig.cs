@@ -45,6 +45,8 @@ namespace MazakMachineInterface
   // the FMS manufacturing process (which can differ for split schedules). Path is currently 1.
   public sealed record MazakLoadUnloadFace
   {
+    // Present for a reserved native definition, including events received after retirement.
+    public MazakRouteIdentity? RouteIdentity { get; init; }
     public required string ForeignId { get; init; }
     public required string PartName { get; init; }
     public required string JobUnique { get; init; }
@@ -216,7 +218,8 @@ namespace MazakMachineInterface
 
     // A shared-repository caller selects jobs owned by this controller's ordinary bulk flow.
     // Excluded jobs and their observed rows are protected from bulk cleanup and queue writes.
-    // Keep this predicate pure and stable for each job. Null preserves the stock selection.
+    // With durable route identity enabled, the default leaves Insight-owned jobs to the caller.
+    // Keep this predicate pure and stable for each job.
     public Func<Job, bool>? BulkJobFilter { get; init; }
 
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
@@ -241,7 +244,8 @@ namespace MazakMachineInterface
     public Func<int, bool>? CanQuarantineMissingMaterial { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
-    public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
+    public int TranslatePalletNumber(int mazakPallet) =>
+      mazakPallet > 0 ? mazakPallet - 1 + StartingPalletNumber : mazakPallet;
 
     // Convert FMS Insight pallet number back to Mazak-internal number
     public int InversePalletNumber(int fmsPallet) => fmsPallet - StartingPalletNumber + 1;

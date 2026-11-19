@@ -80,6 +80,15 @@ public static class MazakRouteRetirement
     var (scheduleDeletes, survivingParts) = BuildMazakSchedules.RemoveSchedules(observed, s =>
       candidates.PartNames.Contains(s.PartName) && shouldRemoveSchedule?.Invoke(s) != false
     );
+    var busy = scheduleDeletes.Schedules.FirstOrDefault(s =>
+      s.Processes.Count == 0
+      || s.Processes.Any(p => p.ProcessMaterialQuantity != 0 || p.ProcessExecuteQuantity != 0)
+      || observed.PalletSubStatuses.Any(p => p.ScheduleID == s.Id && p.FixQuantity > 0)
+    );
+    if (busy != null)
+      throw new ConflictRequestException(
+        $"Mazak schedule {busy.Id} can retire only after readback shows zero ready and executing material on every process and no material on a pallet."
+      );
     if (scheduleDeletes.Schedules.Count > 0)
       return scheduleDeletes;
 

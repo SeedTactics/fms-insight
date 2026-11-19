@@ -59,10 +59,12 @@ namespace MazakMachineInterface
           includeDecremented: false
         )
         .Where(j =>
-          mazakCfg.BulkJobFilter is { } owns
-            ? !j.Archived && owns(j)
-            : !j.Archived || !mazakCfg.UsesInsightJobQuantities(j)
-        )
+        {
+          if (mazakCfg.BulkJobFilter is { } owns)
+            return !j.Archived && owns(j);
+          return !mazakCfg.UsesInsightJobQuantities(j)
+            || (!j.Archived && !mazakCfg.UseDurableRouteIdentity);
+        })
         .GroupBy(j => j.ScheduleId)
         // Only do one schedule at a time
         .MinBy(g => g.Key, StringComparer.Ordinal);

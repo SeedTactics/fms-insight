@@ -15,9 +15,10 @@ archived selected jobs stay out of current status and new downloads even if cont
 copied-to-system flag lag behind archival. The backend can project its additional active
 reservations through `AdjustCurrentStatus`.
 
-Controller completion evidence remains visible while its event batch is settling; repository history
-preserves completion for retired split routes. Actual machining also establishes durable entry when
-its preceding LOAD was unavailable, without synthesizing a LOAD event.
+On the ordinary download path, controller completion evidence remains visible while its event batch
+is settling. For Insight-owned jobs using durable route identity, only valid repository unloads
+contribute to completion. Actual machining also establishes durable entry when its preceding LOAD
+was unavailable.
 
 For local cancellation, `RecordJobDecrementOperation` commits positive once-only cancellations,
 release of never-entered raw allocations, and a completed request receipt together. Replays return
@@ -53,17 +54,29 @@ succeed before retrying. This is a conservative refusal policy, not an atomic co
 
 ## Selected split routes
 
-A custom backend can enable `UseDurableRouteIdentity` alongside `UseInsightJobQuantities` and
-calculate native writes with `MazakRouteCapacity.Calculate`. Pass an accepted job's process and
-path, the planned native quantity, and the material offer justified by the caller. A new schedule
-starts with zero offered material. The calculation reserves the exact native part name in the
-manufacturing repository, then returns the next transaction. Apply it through the serialized
-controller owner and calculate again from fresh readback. Use the same request across a lost
-response. A plan increase uses `ScheduleSafeEdit` with priority, due date and hold copied from
-readback and no schedule process rows. After confirming the plan, the material offer uses the
-ordinary material edit. The caller still owns when a route can accept work and when existing
-capacity must be retired. Use `BulkJobFilter` to select the ordinary jobs owned by this controller
-when the repository also contains custom-managed or peer jobs.
+A custom backend enables `UseDurableRouteIdentity` and selects its jobs with
+`UseInsightJobQuantities`. Pass an accepted job, process, path and planned native quantity to
+`MazakRouteCapacity.Calculate`. The backend can select an individual process for any such job with
+one path per process, including parts that return through a queue. The ordinary bulk download skips
+these jobs by default. Set `BulkJobFilter` to select the jobs for this controller's bulk writer when
+several controllers share a repository.
+
+The calculation reserves the exact native part name in the manufacturing repository and returns the
+next transaction. Apply it through the serialized controller owner and calculate again from fresh
+readback, including after a lost reply. A new schedule starts with zero offered material. An
+existing schedule keeps its current offer. An increase to the plan uses `ScheduleSafeEdit` with the
+observed priority, due date and hold.
+
+When material is ready, pass the observed schedule row and the available piece count to
+`MazakRouteCapacity.SetMaterialQuantity`. The caller owns admission, including which pieces make up
+a set. After an uncertain material edit, read the controller and the staging evidence again before
+calculating the next offer. Replaying the old quantity after Mazak consumed it could offer the same
+pieces twice.
+
+The preparation API manages one live schedule per selected route. For example, after a piece is
+invalidated and returned to a queue, the owner can retire the empty schedule and prepare another
+against the same part definition. The exact load resolver supplies the existing material ID. The
+repeated unload restores its valid completion and the piece counts as one entry.
 
 Historical attribution uses the controller source, exact full part name and native process. For
 legacy definitions, the caller can supply a full name for adoption after establishing its ownership.
@@ -94,10 +107,12 @@ Use the repository-aware overload of `MazakRouteRetirement.Capture` before delet
 includes the fixture and program reserved before a preparation write, even if the part was never
 installed. Retain the selected names and dependency candidates across retries.
 `MazakRouteRetirement.Calculate` returns the next transaction from a complete controller
-observation. Surviving schedules, parts and active preparations protect their shared fixtures and
-programs, including programs already installed on the controller. The final readback releases the
-preparation so a later installation can choose an available fixture group. The historical part
-identity remains reserved.
+observation. It refuses a selected schedule deletion while a process has material ready or
+executing, or a pallet still reports a positive assignment. An empty schedule may retire with
+unequal planned and completed counts. Surviving schedules, parts and active preparations protect
+their shared fixtures and programs, including programs already installed on the controller. The
+final readback releases the preparation so a later installation can choose an available fixture
+group. The historical part identity remains reserved.
 
 Scoped bulk downloads save cleanup candidates before deleting parts. After an uncertain write, the
 next pass uses fresh readback to recheck ownership and references and finish eligible cleanup.

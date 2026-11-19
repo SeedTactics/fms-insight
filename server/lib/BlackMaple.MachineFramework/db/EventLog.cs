@@ -541,8 +541,9 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path, "
-        + "EXISTS (SELECT 1 FROM program_details d WHERE d.Counter = s.Counter "
-        + "AND d.Key = 'PalletCycleInvalidated') "
+        + "CASE WHEN s.StationLoc = $pallet AND s.Result = 'UNLOAD' THEN EXISTS "
+        + "(SELECT 1 FROM program_details d WHERE d.Counter = s.Counter "
+        + "AND d.Key = 'PalletCycleInvalidated') ELSE 0 END "
         + "FROM matdetails m "
         + "JOIN stations_mat sm ON sm.MaterialID = m.MaterialID "
         + "JOIN stations s ON s.Counter = sm.Counter "
@@ -758,9 +759,15 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
       // An observed empty pallet also separates runs when the transfer CSV is missing.
       // A delayed end can still match a run that ended before the empty observation.
+      // Any valid start bounds the time search. Find one via the pallet/counter index, then
+      // seek the latest eligible physical event via the time index, including late arrivals.
       cmd.CommandText =
         "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
-        + " FROM stations s WHERE Pallet = $pal AND TimeUTC <= $time AND "
+        + " FROM stations s INDEXED BY stations_idx WHERE Pallet = $pal AND TimeUTC BETWEEN "
+        + " (SELECT s.TimeUTC FROM stations s WHERE Pallet = $pal AND StationLoc = $machine "
+        + " AND StationNum = $station AND Start = 1 AND TimeUTC <= $time AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY Counter DESC LIMIT 1) AND $time AND "
         + " ((StationLoc = $machine AND StationNum = $station)"
         + " OR (StationLoc = $transfer AND Start = 0) OR (StationLoc = $message AND Program = $placementEnd)) AND "
         + ignoreInvalidEventCondition

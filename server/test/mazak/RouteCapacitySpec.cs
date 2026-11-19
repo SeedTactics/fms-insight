@@ -302,10 +302,18 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
-  public async Task InstallsOnlySelectedSplitRouteAndResumesFromObservedPartAfterLostReply()
+  [Arguments(true)]
+  [Arguments(false)]
+  public async Task InstallsOnlySelectedSplitRouteAndResumesFromObservedPartAfterLostReply(
+    bool basket
+  )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null);
-    var job = PendingJob(true);
+    var job = PendingJob(basket);
+    var routeConfig = RouteConfig with
+    {
+      UseInsightJobQuantities = j => j.UniqueStr == job.UniqueStr,
+    };
     var manual = PendingJob(false) with { UniqueStr = "manual", PartName = "manual-part" };
     var device = new DownloadDevice("parts-full");
     var manualPart = new MazakPartRow
@@ -322,17 +330,16 @@ public sealed partial class DuplicateDownloadSpec
     };
     device.Observe(device.Data with { Parts = [manualPart], Schedules = [manualSchedule] });
 
-    MazakRouteWrite Calculate(IRepository db, int planned = 3, int offered = 0) =>
+    MazakRouteWrite Calculate(IRepository db, int planned = 3) =>
       MazakRouteCapacity.Calculate(
         db,
         device.Native.LoadAllData(),
-        RouteConfig,
+        routeConfig,
         new FMSSettings(),
         job.UniqueStr,
         process: 2,
         path: 1,
-        planQuantity: planned,
-        offeredQuantity: offered
+        planQuantity: planned
       );
 
     MazakRouteIdentity identity;
@@ -340,6 +347,18 @@ public sealed partial class DuplicateDownloadSpec
     {
       db.AddJobs(new NewJobs { ScheduleId = "group", Jobs = [job] }, null, false);
       db.AddJobs(new NewJobs { ScheduleId = "manual", Jobs = [manual] }, null, true);
+      await Assert
+        .That(
+          WriteJobs.SyncFromDatabase(
+            device.Data,
+            db,
+            device.Native,
+            new FMSSettings(),
+            routeConfig,
+            Now
+          )
+        )
+        .IsFalse();
       var fixtures = Calculate(db);
       identity = fixtures.Identity;
       await Assert
@@ -360,7 +379,7 @@ public sealed partial class DuplicateDownloadSpec
     var mapping = Calculate(reopened);
     await Assert.That(mapping.Identity).IsEqualTo(identity);
     await Assert.That(mapping.NextWrite!.Parts.Count).IsEqualTo(0);
-    await Assert.That(mapping.NextWrite.Pallets.Single().PalletNumber).IsEqualTo(2);
+    await Assert.That(mapping.NextWrite.Pallets.Single().PalletNumber).IsEqualTo(basket ? 2 : 1);
     device.Native.Save(mapping.NextWrite);
     var add = Calculate(reopened).NextWrite!.Schedules.Single();
     await Assert.That(add.Id).IsEqualTo(2);
@@ -369,7 +388,7 @@ public sealed partial class DuplicateDownloadSpec
     device.Native.Save(new MazakWriteData { Schedules = [add] });
     await Assert.That(Calculate(reopened).NextWrite).IsNull();
 
-    var increase = Calculate(reopened, planned: 6, offered: 3).NextWrite!;
+    var increase = Calculate(reopened, planned: 6).NextWrite!;
     var row = increase.Schedules.Single();
     await Assert.That(row.Command).IsEqualTo(MazakWriteCommand.ScheduleSafeEdit);
     await Assert.That(row.Id).IsEqualTo(add.Id);
@@ -379,7 +398,12 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(row.HoldMode).IsEqualTo(add.HoldMode);
     await Assert.That(row.Processes).IsEmpty();
     device.Native.Save(increase);
-    var offer = Calculate(reopened, planned: 6, offered: 3).NextWrite!;
+    MazakWriteData? Offer(int count) =>
+      MazakRouteCapacity.SetMaterialQuantity(
+        device.Data.Schedules.Single(s => s.Id == add.Id),
+        count
+      );
+    var offer = Offer(3)!;
     await Assert
       .That(offer.Schedules.Single().Command)
       .IsEqualTo(MazakWriteCommand.ScheduleMaterialEdit);
@@ -387,7 +411,8 @@ public sealed partial class DuplicateDownloadSpec
       .That(offer.Schedules.Single().Processes.Single().ProcessMaterialQuantity)
       .IsEqualTo(3);
     device.Native.Save(offer);
-    await Assert.That(Calculate(reopened, planned: 6, offered: 3).NextWrite).IsNull();
+    await Assert.That(Calculate(reopened, planned: 6).NextWrite).IsNull();
+    await Assert.That(Offer(3)).IsNull();
 
     await Assert.That(device.Data.Parts.Count()).IsEqualTo(2);
     await Assert
@@ -401,9 +426,17 @@ public sealed partial class DuplicateDownloadSpec
     var installed = device.Data.Parts.Single(p => p.PartName == identity.PartName);
     var (offeredRoute, _) = BuildMazakSchedules.RemoveSchedules(device.Data, s => s.Id == add.Id);
     await Assert.That(() => device.Native.Save(offeredRoute)).Throws<InvalidOperationException>();
-    device.Native.Save(Calculate(reopened, planned: 6, offered: 0).NextWrite!);
-    var (retire, _) = BuildMazakSchedules.RemoveSchedules(device.Data, s => s.Id == add.Id);
-    device.Native.Save(retire);
+    var candidates = MazakRouteRetirement.Capture(
+      reopened,
+      routeConfig,
+      device.Data,
+      ImmutableHashSet.Create(identity.PartName)
+    );
+    MazakWriteData? Retire() =>
+      MazakRouteRetirement.Calculate(reopened, routeConfig, device.Data, candidates);
+    await Assert.That(Retire).Throws<ConflictRequestException>();
+    device.Native.Save(Offer(0)!);
+    device.Native.Save(Retire()!);
     var recreated = Calculate(reopened);
     var replacement = recreated.NextWrite!.Schedules.Single();
     await Assert.That(replacement.Command).IsEqualTo(MazakWriteCommand.Add);
@@ -428,9 +461,7 @@ public sealed partial class DuplicateDownloadSpec
         ],
       }
     );
-    await Assert
-      .That(() => Calculate(reopened, planned: 6, offered: 3))
-      .Throws<ConflictRequestException>();
+    await Assert.That(() => Calculate(reopened, planned: 6)).Throws<ConflictRequestException>();
   }
 
   [Test]
@@ -479,18 +510,7 @@ public sealed partial class DuplicateDownloadSpec
       throw new InvalidOperationException("Installation failed to settle.");
     }
     var route = Install();
-    var offer = MazakRouteCapacity.Calculate(
-      db,
-      device.Data,
-      routeConfig,
-      settings,
-      job.UniqueStr,
-      2,
-      1,
-      3,
-      offeredQuantity: 3
-    );
-    device.Native.Save(offer.NextWrite!);
+    device.Native.Save(MazakRouteCapacity.SetMaterialQuantity(device.Data.Schedules.Single(), 3)!);
     var time = Now.AddMinutes(-2);
     var load = new MazakMachineInterface.LogEntry
     {
@@ -716,18 +736,7 @@ public sealed partial class DuplicateDownloadSpec
           },
     };
     using var nextSync = new MazakSync(device.Native, settings, exact);
-    var newOffer = MazakRouteCapacity.Calculate(
-      db,
-      device.Data,
-      routeConfig,
-      settings,
-      job.UniqueStr,
-      2,
-      1,
-      3,
-      offeredQuantity: 3
-    );
-    device.Native.Save(newOffer.NextWrite!);
+    device.Native.Save(MazakRouteCapacity.SetMaterialQuantity(device.Data.Schedules.Single(), 3)!);
     var readSchedule = device.Data.Schedules.Single();
     device.Observe(
       device.Data with

@@ -358,17 +358,23 @@ namespace MazakMachineInterface
               //check for unloading or transfer
               // The pallet substatus reports Mazak face/process 1 for every split schedule. For
               // split transfers beyond proc-1, recover the pre-load FMS process from the schedule.
-              var loadNext = CheckLoadOfNextProcess(
-                currentLoads,
-                job.UniqueStr,
-                currentProcessBeforeLoad,
-                palLoc
-              );
+              // Managed processes load independently. A request for P2 can select a different
+              // piece from the one unloading P1 at the same station.
+              var loadNext =
+                route != null
+                  ? null
+                  : CheckLoadOfNextProcess(
+                    currentLoads,
+                    job.UniqueStr,
+                    currentProcessBeforeLoad,
+                    palLoc
+                  );
               var unload = CheckUnload(
                 currentLoads,
                 job.UniqueStr,
                 palSub.PartProcessNumber,
-                palLoc
+                palLoc,
+                route
               );
 
               var action = new InProcessMaterialAction()
@@ -468,7 +474,8 @@ namespace MazakMachineInterface
               oldCycles,
               removals,
               partNameToNumProc,
-              fmsSettings
+              fmsSettings,
+              mazakCfg
             );
           }
           InProcessMaterialAction MachiningOrWaiting(
@@ -1067,7 +1074,8 @@ namespace MazakMachineInterface
       List<LoadAction> currentLoads,
       string unique,
       int process,
-      PalletLocation loc
+      PalletLocation loc,
+      MazakRouteIdentity route
     )
     {
       if (loc.Location != PalletLocationEnum.LoadUnload)
@@ -1080,6 +1088,10 @@ namespace MazakMachineInterface
           && loc.Num == act.LoadStation
           && !string.IsNullOrEmpty(act.Comment)
           && unique == MazakPart.UniqueFromComment(act.Comment)
+          && (
+            route == null
+            || act.Comment == MazakPart.SplitComment(route.JobUnique, route.JobProcess, route.Path)
+          )
           && process == act.Process
           && act.Qty >= 1
         )
@@ -1109,7 +1121,8 @@ namespace MazakMachineInterface
       List<BlackMaple.MachineFramework.LogEntry> oldCycles,
       IReadOnlyDictionary<long, long> removals,
       IReadOnlyDictionary<string, int> partNameToNumProc,
-      FMSSettings fmsSettings
+      FMSSettings fmsSettings,
+      MazakConfig config
     )
     {
       var queuedMats = new Dictionary<(string uniq, int proc), List<QueuedMaterial>>();
@@ -1277,6 +1290,8 @@ namespace MazakMachineInterface
           // Check for queued material
           List<BlackMaple.MachineFramework.QueuedMaterial> queuedMat = null;
           jobsByUniq.TryGetValue(uniq, out var job);
+          var managed =
+            config.UseDurableRouteIdentity && config.UsesInsightJobQuantities(job?.DbJob);
           if (job != null)
           {
             // add loads on process 1 into the job started.  Loads on other
@@ -1287,7 +1302,7 @@ namespace MazakMachineInterface
             }
 
             var queue = job.Processes[fmsOperationProc - 1][0].InputQueue;
-            if (!string.IsNullOrEmpty(queue))
+            if (!managed && !string.IsNullOrEmpty(queue))
             {
               var key = (uniq: uniq, proc: fmsOperationProc);
               if (queuedMats.ContainsKey(key))
@@ -1348,7 +1363,7 @@ namespace MazakMachineInterface
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
                 LoadOntoPalletNum = palletName,
-                LoadOntoFace = fmsOperationProc,
+                LoadOntoFace = managed ? operation.Process : fmsOperationProc,
                 ProcessAfterLoad = fmsOperationProc,
                 PathAfterLoad = 1,
                 ElapsedLoadUnloadTime = elapsedLoadTime,

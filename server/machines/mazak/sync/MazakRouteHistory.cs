@@ -264,7 +264,7 @@ internal static class MazakRouteHistory
   }
 
   internal static bool MatchesRecordedPlacement(
-    IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,
+    IEnumerable<BlackMaple.MachineFramework.LogEntry> cycle,
     IReadOnlyCollection<MazakRouteIdentity> definitions,
     LogMaterial material,
     MazakRouteIdentity liveRoute
@@ -274,8 +274,8 @@ internal static class MazakRouteHistory
     return nativeName != null ? nativeName == liveRoute.PartName : definitions.Count == 1;
   }
 
-  private static string? RecordedNativeName(
-    IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,
+  internal static string? RecordedNativeName(
+    IEnumerable<BlackMaple.MachineFramework.LogEntry> cycle,
     long materialId
   ) =>
     cycle

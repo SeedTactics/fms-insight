@@ -24,7 +24,7 @@ public sealed partial class MazakAcquisitionSpec
     using var second = added.NewSynchronizer(source, startingPallet: 100);
     var aLoad = original.Start with { Code = LogCode.LoadEnd, FixedQuantity = 1 };
     var bLoad = aLoad with { FullPartName = "other-part", JobPartName = "other-part" };
-    var boundary = original.End with { Code = LogCode.LoadBegin };
+    var boundary = original.End with { Code = LogCode.LoadBegin, Pallet = -1 };
     var ahead = boundary with { ForeignID = "LG20261105-120000-003.csv" };
     var db = original.Repository;
 
@@ -65,12 +65,19 @@ public sealed partial class MazakAcquisitionSpec
       .ToImmutableList();
     await Assert.That(loads.Count).IsEqualTo(2);
     var originalLoad = reopened.MostRecentLogEntryForForeignID(aLoad.ForeignID);
-    var addedKey = new MazakConfig
+    var addedConfig = new MazakConfig
     {
       DBType = MazakDbType.MazakSmooth,
       ControllerSource = source,
-    }.LogForeignId(bLoad.ForeignID);
-    var addedLoad = reopened.MostRecentLogEntryForForeignID(addedKey);
+    };
+    var addedLoad = reopened.MostRecentLogEntryForForeignID(
+      addedConfig.LogForeignId(bLoad.ForeignID)
+    );
+    await Assert
+      .That(
+        reopened.MostRecentLogEntryForForeignID(addedConfig.LogForeignId(boundary.ForeignID)).Pallet
+      )
+      .IsEqualTo(0);
     await Assert.That(originalLoad.Material.Single().PartName).IsEqualTo(aLoad.JobPartName);
     await Assert.That(addedLoad.Material.Single().PartName).IsEqualTo(bLoad.JobPartName);
     await Assert.That(addedLoad.Pallet).IsEqualTo(100);

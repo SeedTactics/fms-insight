@@ -277,7 +277,7 @@ namespace MazakMachineInterface
           var resolution = resolve(repo, context);
           if (resolution is MazakLoadUnloadResolution.Resolved exact)
           {
-            (exactLoads, exactUnloads) = BuildResolvedLoadUnload(context, exact, cycle, es);
+            (exactLoads, exactUnloads) = BuildResolvedLoadUnload(context, exact, cycle);
             basketCompletion = exact.BasketCompletion;
           }
           else if (resolution is not MazakLoadUnloadResolution.NotApplicable)
@@ -413,6 +413,7 @@ namespace MazakMachineInterface
         );
         return new MazakLoadUnloadFace
         {
+          RouteIdentity = route,
           ForeignId = mazakConfig.LogForeignId(e.ForeignID),
           PartName = e.JobPartName,
           JobUnique = unique,
@@ -439,8 +440,7 @@ namespace MazakMachineInterface
     ) BuildResolvedLoadUnload(
       MazakLoadUnloadContext context,
       MazakLoadUnloadResolution.Resolved exact,
-      List<MWI.LogEntry> cycle,
-      IReadOnlyList<LogEntry> rawEvents
+      List<MWI.LogEntry> cycle
     )
     {
       var faces = context.Loads.Concat(context.Unloads).ToImmutableList();
@@ -466,20 +466,14 @@ namespace MazakMachineInterface
       var unloaded = ImmutableHashSet<long>.Empty;
       var toLoad = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
       var toUnload = ImmutableList.CreateBuilder<MaterialToUnloadFromFace>();
-      var managedPartNames = mazakConfig.UseDurableRouteIdentity
-        ? rawEvents
-          .Where(e => MazakRouteHistory.Find(repo, mazakConfig, e.FullPartName, e.Process) != null)
-          .ToImmutableDictionary(e => mazakConfig.LogForeignId(e.ForeignID), e => e.FullPartName)
-        : ImmutableDictionary<string, string>.Empty;
-
-      ImmutableDictionary<string, string> WithPartName(
+      static ImmutableDictionary<string, string> WithPartName(
         MazakLoadUnloadFace face,
         ImmutableDictionary<string, string> details
       ) =>
-        managedPartNames.TryGetValue(face.ForeignId, out var name)
+        face.RouteIdentity is { } route
           ? (details ?? ImmutableDictionary<string, string>.Empty).SetItem(
             MazakRouteHistory.NativePartNameKey,
-            name
+            route.PartName
           )
           : details;
 
@@ -494,6 +488,9 @@ namespace MazakMachineInterface
             !onPallet.TryGetValue(id, out var mat)
             || mat.Face != face.Face
             || mat.Process != face.Process
+            || face.RouteIdentity is { } route
+              && MazakRouteHistory.RecordedNativeName(cycle, id) is { } name
+              && name != route.PartName
             || repo.IsMaterialInQueue(id)
           ) || destinations.Keys.Any(unloaded.Contains)
         )
@@ -521,6 +518,10 @@ namespace MazakMachineInterface
         var group in context.Unloads.GroupBy(f => (f.Face, f.Process, f.JobUnique, f.PartName))
       )
       {
+        // A managed transfer can remove a known subset of a face. Each serial and raw
+        // quantity was validated above; RecordPartialLoadUnload retains the other serials.
+        if (group.All(f => f.RouteIdentity != null))
+          continue;
         var expected = onPallet
           .Values.Where(m =>
             m.Face == group.Key.Face
@@ -962,8 +963,16 @@ namespace MazakMachineInterface
       {
         if (string.IsNullOrEmpty(unique))
           return [];
+        var definitions = repo.LoadMazakRouteIdentities(route.Source, unique)
+          .Where(r => r.JobProcess == jobProc && r.Path == route.Path)
+          .ToImmutableList();
         var known = GetAllMaterialOnPallet(oldEvents)
-          .Where(m => m.JobUniqueStr == unique && m.Process == jobProc && m.Face == e.Process)
+          .Where(m =>
+            m.JobUniqueStr == unique
+            && m.Process == jobProc
+            && m.Face == e.Process
+            && MazakRouteHistory.MatchesRecordedPlacement(oldEvents, definitions, m, route)
+          )
           .ToImmutableList();
         // A smaller count cannot identify a subset of an occupied face.
         var unidentified =
@@ -1424,6 +1433,10 @@ namespace MazakMachineInterface
                 m.JobUniqueStr == route.JobUnique
                 && m.Process == route.JobProcess
                 && m.Face == e.Process
+                && !(
+                  MazakRouteHistory.RecordedNativeName(oldEvents, m.MaterialID) is { } name
+                  && name != route.PartName
+                )
                 && !matToQueue.ContainsKey(m.MaterialID)
               )
               .Select(m => m.MaterialID)

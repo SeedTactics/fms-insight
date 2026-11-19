@@ -14,6 +14,50 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class DuplicateDownloadSpec
 {
   [Test]
+  [Arguments(0, 0, 0)]
+  [Arguments(1, 0, 0)]
+  [Arguments(0, 1, 0)]
+  [Arguments(0, 0, 1)]
+  public async Task SelectedRetirementChecksEveryProcessAndAssignedPallet(
+    int ready,
+    int executing,
+    int onPallet
+  )
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = config.OpenConnection();
+    var schedule = new MazakScheduleRow
+    {
+      Id = 1,
+      PartName = "part:1:1",
+      PlanQuantity = 10,
+      CompleteQuantity = 4,
+      Processes =
+      [
+        new() { ProcessNumber = 1 },
+        new()
+        {
+          ProcessNumber = 2,
+          ProcessMaterialQuantity = ready,
+          ProcessExecuteQuantity = executing,
+          ProcessBadQuantity = 1,
+        },
+      ],
+    };
+    var view = new DownloadDevice("").Data with
+    {
+      Schedules = [schedule],
+      PalletSubStatuses = [new() { ScheduleID = schedule.Id, FixQuantity = onPallet }],
+    };
+    var candidates = MazakRouteRetirement.Capture(view, ImmutableHashSet.Create(schedule.PartName));
+    MazakWriteData? Retire() => MazakRouteRetirement.Calculate(db, RouteConfig, view, candidates);
+    if (ready + executing + onPallet > 0)
+      await Assert.That(Retire).Throws<ConflictRequestException>();
+    else
+      await Assert.That(Retire()!.Schedules.Single().Command).IsEqualTo(MazakWriteCommand.Delete);
+  }
+
+  [Test]
   [Arguments(false, false)]
   [Arguments(true, false)]
   [Arguments(true, true)]

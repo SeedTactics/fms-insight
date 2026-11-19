@@ -73,6 +73,373 @@ public sealed partial class MazakAcquisitionSpec
     };
 
   [Test]
+  public async Task ManagedNextProcessRequestDoesNotSelectThePieceOnThePalletOrTheFirstInQueue()
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var process = new ProcessInfo { Paths = [JobLogTest.EmptyPath] };
+    var job = new Job
+    {
+      UniqueStr = "managed",
+      PartName = "part",
+      Cycles = 2,
+      Archived = false,
+      RouteStartUTC = cell.Clock.Now.UtcDateTime,
+      RouteEndUTC = cell.Clock.Now.UtcDateTime.AddHours(1),
+      Processes =
+      [
+        process,
+        new() { Paths = [JobLogTest.EmptyPath with { InputQueue = "staging" }] },
+      ],
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "batch", Jobs = [job] }, null, true);
+    var p1 = new MazakRouteIdentity
+    {
+      Source = MazakConfig.DefaultControllerSource,
+      PartName = "part:1:1:1",
+      NativeProcess = 1,
+      JobUnique = job.UniqueStr,
+      JobProcess = 1,
+      Path = 1,
+    };
+    var p2 = p1 with { PartName = "part:2:1:2", JobProcess = 2 };
+    db.ReserveMazakRouteIdentity(p1);
+    db.ReserveMazakRouteIdentity(p2);
+    var queued = db.AllocateMaterialID(job.UniqueStr, job.PartName, 2);
+    db.RecordAddMaterialToQueue(queued, 1, "staging", -1, null, "staging");
+    var p2Action = new LoadAction
+    {
+      LoadStation = 1,
+      Part = "part",
+      Comment = "managed-2-1-InsightS",
+      Process = 1,
+      Qty = 1,
+    };
+    cell.Data = WithInstalledRoute(WithInstalledRoute(cell.Data, p1), p2, 2) with
+    {
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "LS01" }],
+      PalletSubStatuses = [AssignedFace(p1)],
+      LoadActions = [p2Action with { LoadEvent = true }, p2Action with { LoadEvent = false }],
+    };
+    using var sync = cell.NewSynchronizer(configure: cfg =>
+      cfg with
+      {
+        UseDurableRouteIdentity = true,
+        UseInsightJobQuantities = _ => true,
+      }
+    );
+    var status = sync.CalculateCellState(db).CurrentStatus;
+    await Assert
+      .That(status.Material.Single(m => m.Location.PalletNum == 1).Action.Type)
+      .IsEqualTo(InProcessMaterialAction.ActionType.Waiting);
+    var load = status.Material.Single(m =>
+      m.Action.Type == InProcessMaterialAction.ActionType.Loading
+    );
+    await Assert.That(load.MaterialID).IsEqualTo(-1L);
+    await Assert.That(load.Action.ProcessAfterLoad).IsEqualTo(2);
+    await Assert.That(load.Action.LoadOntoFace).IsEqualTo(1);
+    await Assert
+      .That(status.Material.Single(m => m.MaterialID == queued).Location.CurrentQueue)
+      .IsEqualTo("staging");
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task ExactPartialUnloadUsesTheLoadedDefinition(bool unloadForRetiredDefinition)
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var now = cell.Clock.Now.UtcDateTime;
+    var job = new Job
+    {
+      UniqueStr = "managed",
+      PartName = "part",
+      Cycles = 2,
+      Archived = false,
+      RouteStartUTC = now.AddHours(-1),
+      RouteEndUTC = now.AddDays(1),
+      Processes = [new() { Paths = [JobLogTest.EmptyPath] }],
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "batch", Jobs = [job] }, null, true);
+    var route = new MazakRouteIdentity
+    {
+      Source = MazakConfig.DefaultControllerSource,
+      PartName = "part:2:1:1",
+      NativeProcess = 1,
+      JobUnique = job.UniqueStr,
+      JobProcess = 1,
+      Path = 1,
+    };
+    var retired = route with { PartName = "part:1:1:1" };
+    db.ReserveMazakRouteIdentity(route);
+    db.ReserveMazakRouteIdentity(retired);
+    var first = db.AllocateMaterialID(job.UniqueStr, job.PartName, 1);
+    var second = db.AllocateMaterialID(job.UniqueStr, job.PartName, 1);
+    db.RecordLoadUnloadComplete(
+      [
+        new()
+        {
+          MaterialIDs = [first, second],
+          Process = 1,
+          FaceNum = 1,
+          Path = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+          AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+            "mazak-native-part-name",
+            route.PartName
+          ),
+        },
+      ],
+      null,
+      [],
+      null,
+      1,
+      1,
+      TimeSpan.Zero,
+      now.AddMinutes(-5),
+      null
+    );
+    var eventRoute = unloadForRetiredDefinition ? retired : route;
+    var unload = cell.Start with
+    {
+      Code = LogCode.UnloadEnd,
+      FullPartName = eventRoute.PartName,
+      FixedQuantity = 1,
+    };
+    cell.Data = WithInstalledRoute(cell.Data, route) with
+    {
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "LS01" }],
+      PalletSubStatuses =
+      [
+        AssignedFace(route) with
+        {
+          FixQuantity = unloadForRetiredDefinition ? 2 : 1,
+        },
+      ],
+      Logs = [unload, cell.End with { Code = LogCode.LoadBegin }],
+    };
+    MazakRouteIdentity? resolvedRoute = null;
+    using var sync = cell.NewSynchronizer(configure: cfg =>
+      cfg with
+      {
+        UseDurableRouteIdentity = true,
+        UseInsightJobQuantities = _ => true,
+        ResolveLoadUnloadTransaction = (_, ctx) =>
+        {
+          var face = ctx.Unloads.Single();
+          resolvedRoute = face.RouteIdentity;
+          return new MazakLoadUnloadResolution.Resolved
+          {
+            MaterialForLoads = ImmutableDictionary<string, MazakResolvedLoad>.Empty,
+            MaterialForUnloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty.Add(
+              face.ForeignId,
+              new MazakResolvedUnload
+              {
+                MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination?>.Empty.Add(
+                  first,
+                  null
+                ),
+              }
+            ),
+          };
+        },
+      }
+    );
+    var status = sync.CalculateCellState(db).CurrentStatus;
+    await Assert.That(resolvedRoute).IsEqualTo(eventRoute);
+    await Assert
+      .That(db.MostRecentLogEntryForForeignID(unload.ForeignID).Material.Select(m => m.MaterialID))
+      .IsEquivalentTo(unloadForRetiredDefinition ? [] : new[] { first });
+    await Assert
+      .That(status.Material.Select(m => m.MaterialID))
+      .IsEquivalentTo(unloadForRetiredDefinition ? [first, second] : new[] { second });
+    await Assert
+      .That(status.Jobs[job.UniqueStr].Completed![0][0])
+      .IsEqualTo(unloadForRetiredDefinition ? 0 : 1);
+  }
+
+  [Test]
+  public async Task ReplacementScheduleRunsAnInvalidatedPieceFromAQueue()
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var now = cell.Clock.Now.UtcDateTime;
+    var path = JobLogTest.EmptyPath with
+    {
+      Load = [1],
+      Unload = [1],
+      PalletNums = [1],
+      PartsPerPallet = 1,
+      Stops =
+      [
+        new()
+        {
+          StationGroup = "MC",
+          Stations = [1],
+          Program = "1001",
+          ExpectedCycleTime = TimeSpan.FromMinutes(1),
+        },
+      ],
+    };
+    var job = new Job
+    {
+      UniqueStr = "rework",
+      PartName = "part",
+      Cycles = 1,
+      Archived = false,
+      RouteStartUTC = now.AddHours(-1),
+      RouteEndUTC = now.AddDays(1),
+      Processes = [new() { Paths = [path] }],
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "batch", Jobs = [job] }, null, true);
+    var id = db.AllocateMaterialID(job.UniqueStr, job.PartName, 1);
+    var route = new MazakRouteIdentity
+    {
+      Source = MazakConfig.DefaultControllerSource,
+      PartName = "part:7:1:1",
+      NativeProcess = 1,
+      JobUnique = job.UniqueStr,
+      JobProcess = 1,
+      Path = 1,
+    };
+    db.ReserveMazakRouteIdentity(route);
+    cell.Data = WithInstalledRoute(cell.Data, route) with
+    {
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "LS01" }],
+      Pallets =
+      [
+        new()
+        {
+          PalletNumber = 1,
+          Fixture = "fixture",
+          FixtureGroupV2 = 1,
+        },
+      ],
+      Fixtures = [new() { FixtureName = "fixture" }],
+      MainPrograms = [new() { MainProgram = "1001" }],
+    };
+    var config = new MazakConfig
+    {
+      DBType = MazakDbType.MazakSmooth,
+      UseDurableRouteIdentity = true,
+      UseInsightJobQuantities = _ => true,
+      ResolveLoadUnloadTransaction = (_, ctx) =>
+        new MazakLoadUnloadResolution.Resolved
+        {
+          MaterialForLoads = ctx.Loads.ToImmutableDictionary(
+            f => f.ForeignId,
+            _ => new MazakResolvedLoad { MaterialIds = [id] }
+          ),
+          MaterialForUnloads = ctx.Unloads.ToImmutableDictionary(
+            f => f.ForeignId,
+            _ => new MazakResolvedUnload
+            {
+              MaterialIDToDestination = ImmutableDictionary<long, UnloadDestination?>.Empty.Add(
+                id,
+                null
+              ),
+            }
+          ),
+        },
+    };
+    var settings = new FMSSettings();
+    using var sync = new MazakSync(cell.Native, settings, config, cell.Clock);
+    CurrentStatus Transfer(LogCode code, int minute)
+    {
+      var loaded = code == LogCode.LoadEnd;
+      var observed = cell.Data.Schedules.Single();
+      var transfer = cell.Start with
+      {
+        Code = code,
+        FullPartName = route.PartName,
+        FixedQuantity = 1,
+        TimeUTC = now.AddMinutes(minute),
+        ForeignID = $"LG-transfer-{minute}-001.csv",
+      };
+      cell.Data = cell.Data with
+      {
+        Schedules =
+        [
+          observed with
+          {
+            CompleteQuantity = loaded ? 0 : 1,
+            Processes =
+            [
+              observed.Processes.Single() with
+              {
+                ProcessMaterialQuantity = 0,
+                ProcessExecuteQuantity = loaded ? 1 : 0,
+              },
+            ],
+          },
+        ],
+        PalletSubStatuses = loaded ? [AssignedFace(route, observed.Id)] : [],
+        Logs =
+        [
+          transfer,
+          transfer with
+          {
+            Code = LogCode.LoadBegin,
+            ForeignID = $"LG-transfer-{minute}-002.csv",
+          },
+        ],
+      };
+      return sync.CalculateCellState(db).CurrentStatus;
+    }
+    Transfer(LogCode.LoadEnd, 1);
+    var completed = Transfer(LogCode.UnloadEnd, 2);
+    await Assert.That(completed.Jobs[job.UniqueStr].Completed![0][0]).IsEqualTo(1);
+
+    db.InvalidatePalletCycle(id, 1, "operator", now.AddMinutes(3));
+    db.RecordAddMaterialToQueue(id, 0, "rework", -1, "operator", "rework", now.AddMinutes(3));
+    var invalidated = sync.CalculateCellState(db).CurrentStatus.Jobs[job.UniqueStr];
+    await Assert.That(invalidated.Completed![0][0]).IsEqualTo(0);
+    await Assert.That(invalidated.RemainingToStart).IsEqualTo(0L);
+
+    var candidates = MazakRouteRetirement.Capture(
+      db,
+      config,
+      cell.Data,
+      ImmutableHashSet.Create(route.PartName)
+    );
+    var retire = MazakRouteRetirement.Calculate(db, config, cell.Data, candidates)!;
+    await Assert.That(retire.Schedules.Single().Command).IsEqualTo(MazakWriteCommand.Delete);
+    cell.Data = cell.Data with { Schedules = [] };
+    var repeat = MazakRouteCapacity.Calculate(
+      db,
+      cell.Data,
+      config,
+      settings,
+      job.UniqueStr,
+      1,
+      1,
+      1
+    );
+    var replacement = repeat.NextWrite!.Schedules.Single();
+    await Assert.That(replacement.PartName).IsEqualTo(route.PartName);
+    await Assert.That(replacement.Processes.Single().ProcessMaterialQuantity).IsEqualTo(0);
+    var offer = MazakRouteCapacity.SetMaterialQuantity(replacement, 1)!;
+    cell.Data = cell.Data with { Schedules = [offer.Schedules.Single()] };
+
+    var reloaded = Transfer(LogCode.LoadEnd, 4);
+    await Assert.That(reloaded.Material.Single().MaterialID).IsEqualTo(id);
+    await Assert.That(db.IsMaterialInQueue(id)).IsFalse();
+    var reworked = Transfer(LogCode.UnloadEnd, 5).Jobs[job.UniqueStr];
+    await Assert.That(reworked.Completed![0][0]).IsEqualTo(1);
+    await Assert.That(reworked.RemainingToStart).IsEqualTo(0L);
+    await Assert
+      .That(db.GetJobProductionSummary(job.UniqueStr).AutomationEntryMaterialIds)
+      .IsEquivalentTo([id]);
+    await Assert
+      .That(
+        db.GetLogForMaterial(id, includeInvalidatedCycles: true)
+          .Count(e => e.Result == "UNLOAD" && !e.StartOfCycle)
+      )
+      .IsEqualTo(2);
+  }
+
+  [Test]
   [Arguments(false, false)]
   [Arguments(true, false)]
   [Arguments(true, true)]
