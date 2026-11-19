@@ -881,9 +881,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Test]
-    [Arguments(true)]
-    [Arguments(false)]
-    public async Task ArtifactWithoutFixtureUsesPalletAlone(bool artifactFirst)
+    [Arguments(true, false)]
+    [Arguments(false, false)]
+    [Arguments(true, true)]
+    [Arguments(false, true)]
+    public async Task ArtifactUsesPalletAlone(bool artifactFirst, bool artifactHasFixture)
     {
       InitSim(
         new NiigataStationNames
@@ -917,11 +919,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           )
           .Item1;
 
-      var artifact = CreateJob("artifact", artifactFirst ? 2 : 1, null, 0)
+      var fixturelessArtifact = CreateJob("artifact", artifactFirst ? 2 : 1, null, 0)
         .AdjustAllPaths(path => path with { Face = null }) with
       {
         ArtifactRunDate = new DateOnly(2026, 1, 5),
       };
+      var artifact = artifactHasFixture
+        ? fixturelessArtifact.AdjustAllPaths(path => path with { Fixture = "fixture", Face = 2 })
+        : fixturelessArtifact;
       var production = CreateJob("production", artifactFirst ? 1 : 2, "fixture", 5);
       var payload = new NewJobs
       {
@@ -941,25 +946,33 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using (var db = _logDBCfg.OpenConnection())
       {
         await Assert.That(_sync.CheckNewJobs(db, payload)).IsEmpty();
-        var unmarked = payload with { Jobs = [artifact with { ArtifactRunDate = null }] };
+        var unmarked = payload with
+        {
+          Jobs = [fixturelessArtifact with { ArtifactRunDate = null }],
+        };
         await Assert
           .That(_sync.CheckNewJobs(db, unmarked))
+          .IsEquivalentTo(["Part artifact does not have an assigned fixture"]);
+        var multiProcess = fixturelessArtifact with
+        {
+          Processes = fixturelessArtifact.Processes.Add(production.Processes.Single()),
+        };
+        await Assert
+          .That(_sync.CheckNewJobs(db, payload with { Jobs = [multiProcess] }))
           .IsEquivalentTo(["Part artifact does not have an assigned fixture"]);
       }
 
       AddJobs(payload);
-      var loads = Run()
-        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
-        .Select(e => e.Material.Select(m => m.JobUniqueStr).ToImmutableList())
+      var palletCycles = Run()
+        .Where(e => e.LogType == LogType.PalletCycle && e.StartOfCycle)
+        .Select(e => e.Material.Single().JobUniqueStr)
         .ToImmutableList();
 
-      await Assert.That(loads.Count).IsEqualTo(2);
-      await Assert.That(loads.All(load => load.Count == 1)).IsTrue();
       ImmutableList<string> expectedOrder = artifactFirst
         ? ["artifact", "production"]
         : ["production", "artifact"];
       await Assert
-        .That(loads.Select(load => load.Single()))
+        .That(palletCycles)
         .IsEquivalentTo(expectedOrder, CollectionOrdering.Matching);
     }
 
