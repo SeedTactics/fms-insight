@@ -257,7 +257,7 @@ namespace MazakMachineInterface
     {
       int pallet = mazakConfig.TranslatePalletNumber(es[0].Pallet);
       int loadStation = mazakConfig.TranslateLoadStationNumber(es[0].StationNumber);
-      var cycle = pallet >= 1 ? repo.CurrentPalletLog(pallet) : [];
+      var cycle = pallet >= 1 ? MazakRouteHistory.CurrentPlacement(repo, mazakConfig, pallet) : [];
       var managed = es.Any(e =>
         MazakRouteHistory.Find(repo, mazakConfig, e.FullPartName, e.Process) != null
       );
@@ -345,15 +345,12 @@ namespace MazakMachineInterface
       )
       {
         var elapsed = CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, loadStation);
-        var unidentified = mazakConfig.UseDurableRouteIdentity
-          ? MazakRouteHistory.UnidentifiedOnPallet(cycle)
-          : ImmutableDictionary<string, long>.Empty;
-        // Keep the current cycle open while it contains unresolved placement evidence.
-        // An unidentified unload might have removed it, but cannot justify a pallet reset.
+        // Keep the current placement open while its unidentified quantity is unresolved.
+        // A settled empty observation can end it without recording an unload.
         var ambiguous = MazakRouteHistory.AmbiguousPlacements(repo, mazakConfig, cycle);
         if (
-          unidentified.Keys.Any(name => !ambiguous.ContainsKey(name))
-          || ambiguous.Values.Any(p => p.Unidentified > 0)
+          mazakConfig.UseDurableRouteIdentity
+            && MazakRouteHistory.HasUnidentifiedMaterial(cycle, ambiguous)
           || managed
             && (
               loads.Sum(f => f.MaterialIDs.Count)
@@ -615,7 +612,7 @@ namespace MazakMachineInterface
       var eventPallet = Math.Max(0, translatedPallet);
       var cycle = new List<MWI.LogEntry>();
       if (translatedPallet >= 1)
-        cycle = repo.CurrentPalletLog(translatedPallet);
+        cycle = MazakRouteHistory.CurrentPlacement(repo, mazakConfig, translatedPallet);
 
       Log.Debug(
         "Handling mazak event {@event} with pallets {@palletPos} with {@contents}",
@@ -1509,27 +1506,25 @@ namespace MazakMachineInterface
     #region Compare Status With Events
     private bool CheckPalletStatusMatchesLogs()
     {
-      if (string.IsNullOrEmpty(fmsSettings.QuarantineQueue))
+      var canQuarantine = !string.IsNullOrEmpty(fmsSettings.QuarantineQueue);
+      if (!canQuarantine && !mazakConfig.UseDurableRouteIdentity)
         return false;
 
-      bool matMovedToQueue = false;
+      bool changed = false;
       foreach (var pal in mazakData.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
       {
         var pallet = mazakConfig.TranslatePalletNumber(pal.PalletNumber);
         if (mazakConfig.CanQuarantineMissingMaterial?.Invoke(pallet) == false)
           continue;
-        var oldEvts = repo.CurrentPalletLog(pallet);
+        var oldEvts = MazakRouteHistory.CurrentPlacement(repo, mazakConfig, pallet);
 
-        // start with everything on the pallet
-        var matsOnPal = GetAllMaterialOnPallet(oldEvts).ToList();
+        var assigned = mazakData
+          .PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber && s.FixQuantity > 0)
+          .ToImmutableList();
+        var matsOnPal = canQuarantine ? GetAllMaterialOnPallet(oldEvts).ToList() : [];
 
-        foreach (
-          var st in mazakData.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber)
-        )
+        foreach (var st in canQuarantine ? assigned : [])
         {
-          if (st.FixQuantity <= 0)
-            continue;
-
           // Remove material accounted for by a positive native pallet assignment.
           var route = MazakRouteHistory.Find(repo, mazakConfig, st.PartName, st.PartProcessNumber);
           string unique;
@@ -1599,11 +1594,30 @@ namespace MazakMachineInterface
             operatorName: null,
             reason: MazakMaterialHistory.MissingMaterialReason
           );
-          matMovedToQueue = true;
+          changed = true;
+        }
+
+        if (mazakConfig.UseDurableRouteIdentity && assigned.IsEmpty)
+        {
+          var ambiguous = MazakRouteHistory.AmbiguousPlacements(repo, mazakConfig, oldEvts);
+          if (
+            MazakRouteHistory.HasUnidentifiedMaterial(oldEvts, ambiguous)
+            || ambiguous.Values.Any(p => p.Candidates.Except(p.Departed).Any())
+          )
+          {
+            repo.RecordGeneralMessage(
+              mats: [],
+              program: MazakRouteHistory.ObservedEmptyProgram,
+              result: "Mazak reports no material assigned to this pallet.",
+              pallet: pallet,
+              timeUTC: observationTimeUtc
+            );
+            changed = true;
+          }
         }
       }
 
-      return matMovedToQueue;
+      return changed;
     }
     #endregion
 

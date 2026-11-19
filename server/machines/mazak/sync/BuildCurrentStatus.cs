@@ -230,7 +230,7 @@ namespace MazakMachineInterface
             }
           );
 
-          var oldCycles = jobDB.CurrentPalletLog(palName);
+          var oldCycles = MazakRouteHistory.CurrentPlacement(jobDB, mazakCfg, palName);
           var removals = MazakMaterialHistory.LoadRemovalCounters(
             jobDB,
             oldCycles.SelectMany(e => e.Material).Select(m => m.MaterialID)

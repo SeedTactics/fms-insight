@@ -81,7 +81,9 @@ its own reservations with `AdjustCurrentStatus`.
 For reserved routes, native pallet assignments supply the current quantity. Insight history supplies
 serial candidates, and unresolved attribution is reported separately. An unload request or a CSV
 batch still settling can explain a discrepancy without adding material to the pallet. A custom
-handling owner can keep its outstanding-transfer guard active until its CSV arrives.
+handling owner can keep its outstanding-transfer guard active until its CSV arrives. Once logs
+settle, an empty observation outside the load station ends unresolved placement history for the next
+transfer. The original load or unload remains in the manufacturing log.
 
 Use the repository-aware overload of `MazakRouteRetirement.Capture` before deleting parts. It
 includes the fixture and program reserved before a preparation write, even if the part was never

@@ -18,6 +18,23 @@ internal static class MazakRouteHistory
   internal const string AmbiguousUnloadKey = "mazak-unidentified-unload-ambiguous";
   internal const string UnidentifiedQuantityKey = "mazak-unidentified-quantity";
 
+  internal const string ObservedEmptyProgram = "MazakPalletObservedEmpty";
+
+  internal static List<BlackMaple.MachineFramework.LogEntry> CurrentPlacement(
+    IRepository db,
+    MazakConfig config,
+    int pallet
+  )
+  {
+    var events = db.CurrentPalletLog(pallet);
+    if (!config.UseDurableRouteIdentity)
+      return events;
+    var boundary = events.FindLastIndex(e =>
+      e.LogType == LogType.GeneralMessage && e.Program == ObservedEmptyProgram
+    );
+    return boundary < 0 ? events : events.GetRange(boundary + 1, events.Count - boundary - 1);
+  }
+
   internal static MazakRouteIdentity? Find(
     IRepository db,
     MazakConfig config,
@@ -81,6 +98,13 @@ internal static class MazakRouteHistory
     }
     return quantities.Where(p => p.Value > 0).ToImmutableDictionary(StringComparer.Ordinal);
   }
+
+  internal static bool HasUnidentifiedMaterial(
+    IEnumerable<BlackMaple.MachineFramework.LogEntry> cycle,
+    IReadOnlyDictionary<string, AmbiguousPlacement> ambiguous
+  ) =>
+    UnidentifiedOnPallet(cycle).Keys.Any(name => !ambiguous.ContainsKey(name))
+    || ambiguous.Values.Any(p => p.Unidentified > 0);
 
   internal sealed record AmbiguousPlacement
   {

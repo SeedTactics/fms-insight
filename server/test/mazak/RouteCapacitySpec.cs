@@ -434,14 +434,19 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
-  public async Task UnidentifiedLoadDoesNotReappearAfterIdleRouteIsRecreated()
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task RecreatedRouteClosesTheNextPlacementAfterAnUnidentifiedSetWasRemoved(
+    bool exactUnload
+  )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
     using var db = config.OpenConnection();
     var job = PendingJob(true);
     db.AddJobs(new NewJobs { ScheduleId = "review", Jobs = [job] }, null, true);
     var device = new DownloadDevice("");
-    var routeConfig = RouteConfig;
+    var transferPending = false;
+    var routeConfig = RouteConfig with { CanQuarantineMissingMaterial = _ => !transferPending };
     var settings = new FMSSettings { QuarantineQueue = "quarantine" };
     MazakRouteIdentity Install()
     {
@@ -592,6 +597,18 @@ public sealed partial class DuplicateDownloadSpec
           )
       )
       .IsTrue();
+    transferPending = true;
+    await Assert.That(sync.CalculateCellState(db).CurrentStatus.Material).IsEmpty();
+    await Assert
+      .That(db.CurrentPalletLog(2).Any(e => e.Program == "MazakPalletObservedEmpty"))
+      .IsFalse();
+    transferPending = false;
+    sync.CalculateCellState(db);
+    sync.CalculateCellState(db);
+    await Assert
+      .That(db.CurrentPalletLog(2).Count(e => e.Program == "MazakPalletObservedEmpty"))
+      .IsEqualTo(1);
+
     var retirement = MazakRouteRetirement.Capture(
       db,
       routeConfig,
@@ -620,6 +637,171 @@ public sealed partial class DuplicateDownloadSpec
     var fresh = afterReprepare.CalculateCellState(db).CurrentStatus;
     await Assert.That(fresh.Material).IsEmpty();
     await Assert.That(fresh.AlarmDetails).IsNull();
+    await Assert
+      .That(
+        db.MostRecentLogEntryForForeignID(load.ForeignID).ProgramDetails![
+          "mazak-unidentified-quantity"
+        ]
+      )
+      .IsEqualTo("3");
+
+    var ids = Enumerable
+      .Range(1, 3)
+      .Select(i => db.AllocateMaterialID(job.UniqueStr, job.PartName, 2))
+      .ToImmutableList();
+    var exact = routeConfig with
+    {
+      ResolveLoadUnloadTransaction = (_, ctx) =>
+        !exactUnload && !ctx.Unloads.IsEmpty
+          ? new MazakLoadUnloadResolution.NotApplicable()
+          : new MazakLoadUnloadResolution.Resolved
+          {
+            MaterialForLoads = ctx.Loads.ToImmutableDictionary(
+              f => f.ForeignId,
+              _ => new MazakResolvedLoad { MaterialIds = ids }
+            ),
+            MaterialForUnloads = ctx.Unloads.ToImmutableDictionary(
+              f => f.ForeignId,
+              _ => new MazakResolvedUnload
+              {
+                MaterialIDToDestination = ids.ToImmutableDictionary(
+                  id => id,
+                  id => (UnloadDestination?)null
+                ),
+              }
+            ),
+          },
+    };
+    using var nextSync = new MazakSync(device.Native, settings, exact);
+    var newOffer = MazakRouteCapacity.Calculate(
+      db,
+      device.Data,
+      routeConfig,
+      settings,
+      job.UniqueStr,
+      2,
+      1,
+      3,
+      offeredQuantity: 3
+    );
+    device.Native.Save(newOffer.NextWrite!);
+    var readSchedule = device.Data.Schedules.Single();
+    device.Observe(
+      device.Data with
+      {
+        PalletSubStatuses =
+        [
+          new()
+          {
+            PalletNumber = 2,
+            PartName = route.PartName,
+            ScheduleID = readSchedule.Id,
+            PartProcessNumber = 1,
+            FixQuantity = 3,
+          },
+        ],
+        Schedules =
+        [
+          readSchedule with
+          {
+            Processes =
+            [
+              readSchedule.Processes.Single() with
+              {
+                ProcessMaterialQuantity = 0,
+                ProcessExecuteQuantity = 3,
+              },
+            ],
+          },
+        ],
+      }
+    );
+    var newLoad = load with
+    {
+      ForeignID = "LG20261119-090200-003.csv",
+      TimeUTC = time.AddMinutes(2),
+    };
+    logs =
+    [
+      newLoad,
+      boundary with
+      {
+        ForeignID = "LG20261119-090300-004.csv",
+        TimeUTC = time.AddMinutes(3),
+      },
+    ];
+    var withNew = nextSync.CalculateCellState(db).CurrentStatus;
+    await Assert.That(withNew.Material.Select(m => m.MaterialID)).IsEquivalentTo(ids);
+    await Assert
+      .That(db.MostRecentLogEntryForForeignID(newLoad.ForeignID).Material.Select(m => m.MaterialID))
+      .IsEquivalentTo(ids);
+    logs =
+    [
+      load with
+      {
+        Code = LogCode.MachineCycleStart,
+        ForeignID = "LG20261119-090400-004a.csv",
+        TimeUTC = time.AddMinutes(4),
+        StationNumber = 1,
+      },
+      load with
+      {
+        Code = LogCode.MachineCycleEnd,
+        ForeignID = "LG20261119-090900-004b.csv",
+        TimeUTC = time.AddMinutes(9),
+        StationNumber = 1,
+      },
+    ];
+    nextSync.CalculateCellState(db);
+    await Assert
+      .That(db.MostRecentLogEntryForForeignID(logs[1].ForeignID).Material.Select(m => m.MaterialID))
+      .IsEquivalentTo(ids);
+    var newUnload = load with
+    {
+      Code = LogCode.UnloadEnd,
+      ForeignID = "LG20261119-091000-005.csv",
+      TimeUTC = time.AddMinutes(10),
+    };
+    logs =
+    [
+      newUnload,
+      boundary with
+      {
+        ForeignID = "LG20261119-091100-006.csv",
+        TimeUTC = time.AddMinutes(11),
+      },
+    ];
+    device.Observe(
+      device.Data with
+      {
+        PalletSubStatuses = [],
+        Schedules =
+        [
+          readSchedule with
+          {
+            CompleteQuantity = 3,
+            Processes =
+            [
+              readSchedule.Processes.Single() with
+              {
+                ProcessMaterialQuantity = 0,
+                ProcessExecuteQuantity = 0,
+              },
+            ],
+          },
+        ],
+      }
+    );
+    nextSync.CalculateCellState(db);
+    await Assert
+      .That(
+        db.MostRecentLogEntryForForeignID(newUnload.ForeignID).Material.Select(m => m.MaterialID)
+      )
+      .IsEquivalentTo(ids);
+    await Assert
+      .That(db.GetRecentLog(0).Count(e => e.LogType == LogType.PalletCycle && !e.StartOfCycle))
+      .IsEqualTo(1);
+    await Assert.That(db.GetJobProductionSummary(job.UniqueStr).Completed[(2, 1)]).IsEqualTo(3);
     await Assert
       .That(
         db.MostRecentLogEntryForForeignID(load.ForeignID).ProgramDetails![
