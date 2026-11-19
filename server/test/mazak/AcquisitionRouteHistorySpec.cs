@@ -566,6 +566,7 @@ public sealed partial class MazakAcquisitionSpec
       externalQueues: null
     );
     MazakLoadUnloadFace? resolvedFace = null;
+    bool transferPending = false;
     MazakConfig Configure(MazakConfig config) =>
       config with
       {
@@ -601,7 +602,8 @@ public sealed partial class MazakAcquisitionSpec
           new MazakConfig
           {
             DBType = MazakDbType.MazakSmooth,
-            CanQuarantineMissingMaterial = _ => conflictingSchedule || retireBeforeIngestion,
+            CanQuarantineMissingMaterial = _ =>
+              !transferPending && (conflictingSchedule || retireBeforeIngestion),
           }
         ),
         cell.Clock
@@ -757,6 +759,11 @@ public sealed partial class MazakAcquisitionSpec
         Parts = [.. cell.Data.Parts, replacementPart],
         Schedules = [.. cell.Data.Schedules, Schedule(replacementPart, 20, 5) with { Id = 2 }],
       };
+      // The handling owner still has an outstanding unload. A poll can observe the empty pallet
+      // before Mazak publishes the CSV that identifies the transfer.
+      transferPending = true;
+      restarted.CalculateCellState(reopened);
+      await Assert.That(reopened.GetMaterialInAllQueues()).IsEmpty();
     }
     else
     {
@@ -775,6 +782,7 @@ public sealed partial class MazakAcquisitionSpec
       PalletSubStatuses = [],
     };
     var complete = restarted.CalculateCellState(reopened).CurrentStatus;
+    transferPending = false;
     await Assert.That(resolvedFace!.JobUnique).IsEqualTo(job.UniqueStr);
     await Assert.That(resolvedFace.Process).IsEqualTo(2);
     await Assert.That(resolvedFace.Path).IsEqualTo(1);

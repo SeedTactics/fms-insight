@@ -14,10 +14,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class DuplicateDownloadSpec
 {
   [Test]
-  [Arguments(false)]
-  [Arguments(true)]
+  [Arguments(false, false)]
+  [Arguments(true, false)]
+  [Arguments(true, true)]
   public async Task RetirementProtectsPeerPreparationAndReleasesItsOwnFixtureGroup(
-    bool peerAlreadyPreparing
+    bool peerAlreadyPreparing,
+    bool cancelPreparedPeer
   )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null);
@@ -115,6 +117,34 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(reopened.LoadMazakRouteIdentity(a.Source, a.PartName, 1)).IsEqualTo(a);
     await Assert.That(device.Data.Parts).IsEmpty();
     await Assert.That(device.Data.MainPrograms.Any(p => p.MainProgram == "1002")).IsTrue();
+    if (cancelPreparedPeer)
+    {
+      var pendingPeer = reopened.LoadMazakRouteIdentities(a.Source, peer.UniqueStr).Single();
+      var peerRetirement = MazakRouteRetirement.Capture(
+        reopened,
+        routeConfig,
+        device.Data,
+        ImmutableHashSet.Create(pendingPeer.PartName)
+      );
+      for (var i = 0; i < 6; i++)
+      {
+        var next = MazakRouteRetirement.Calculate(
+          reopened,
+          routeConfig,
+          device.Native.LoadAllData(),
+          peerRetirement
+        );
+        if (next == null)
+          break;
+        device.Native.Save(next);
+      }
+      await Assert.That(device.Data.MainPrograms.Any(p => p.MainProgram == "1002")).IsFalse();
+      await Assert.That(device.Data.MainPrograms.Any(p => p.MainProgram == "1003")).IsTrue();
+      await Assert
+        .That(reopened.LoadMazakRoutePreparation(a.Source, pendingPeer.PartName, 1))
+        .IsNull();
+      return;
+    }
     var installedPeer = Install(peer, reopened);
     if (!peerAlreadyPreparing)
     {

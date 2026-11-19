@@ -241,7 +241,11 @@ namespace MazakMachineInterface
         fmsSettings: fmsSt,
         lookupProgram: (prog, rev) => LookupProgram(jobDB, prog, rev),
         errors: jobErrs,
-        reuseExistingParts: true
+        reuseExistingParts: true,
+        preparedFixtureGroups: jobDB
+          .LoadMazakRoutePreparations(mazakCfg.ControllerSource)
+          .Values.Select(p => p.FixtureGroup)
+          .ToImmutableHashSet()
       );
       if (jobErrs.Count != 0)
       {

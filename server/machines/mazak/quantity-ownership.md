@@ -67,12 +67,16 @@ when the repository also contains custom-managed or peer jobs.
 
 Historical attribution uses the controller source, exact full part name and native process. For
 legacy definitions, the caller can supply a full name for adoption after establishing its ownership.
-Mazak allows schedule deletion after its material clears the system. A retired name retains its job
-route for unload logs that arrive after deletion. Pallet reconciliation uses native pallet
-assignments after settling the available logs. When an operator removes material and clears its
-assignment in Mazak, Insight quarantines the missing serials if configured. Insight-owned jobs
-retain their repository quantities and valid unloads while material is outside Mazak, including when
-it is in baskets. The backend can project its own reservations with `AdjustCurrentStatus`.
+Mazak requires all material for the schedule to clear its pallets and the rest of the system, and
+every schedule process to have zero Material ready to load, before its UI or API allows deletion. A
+retired name retains its job route for unload logs that arrive after deletion. Pallet reconciliation
+uses native pallet assignments after settling the available logs. An empty assignment can become
+visible before its unload CSV. A handling owner awaiting that transfer should return false from
+`CanQuarantineMissingMaterial` for the pallet until it settles the outcome. When an operator removes
+material and clears its assignment in Mazak, Insight quarantines the missing serials if configured
+and the owner allows reconciliation. Insight-owned jobs retain their repository quantities and valid
+unloads while material is outside Mazak, including when it is in baskets. The backend can project
+its own reservations with `AdjustCurrentStatus`.
 
 Use the repository-aware overload of `MazakRouteRetirement.Capture` before deleting parts. It
 includes the fixture and program reserved before a preparation write, even if the part was never

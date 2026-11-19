@@ -1,5 +1,6 @@
 #nullable enable
 
+using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -18,6 +19,119 @@ public sealed partial class DuplicateDownloadSpec
       UseDurableRouteIdentity = true,
       UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
     };
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task PreparedFixtureGroupSurvivesRestartBeforeAnyNativeWrite(bool ordinaryPeer)
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    var first = PendingJob(true);
+    var peer = PendingJob(!ordinaryPeer) with { UniqueStr = "peer" };
+    if (ordinaryPeer)
+      peer = peer with
+      {
+        Processes = peer
+          .Processes.Select(process =>
+            process with
+            {
+              Paths = process
+                .Paths.Select(path => path with { PalletNums = [2] })
+                .ToImmutableList(),
+            }
+          )
+          .ToImmutableList(),
+      };
+    var routeConfig = RouteConfig with
+    {
+      ControllerSource = "prepared-cell",
+      BulkJobFilter = ordinaryPeer ? job => job.UniqueStr == peer.UniqueStr : null,
+    };
+    var settings = new FMSSettings();
+    var device = new DownloadDevice("");
+    MazakRouteWrite Step(Job job, IRepository repository) =>
+      MazakRouteCapacity.Calculate(
+        repository,
+        device.Native.LoadAllData(),
+        routeConfig,
+        settings,
+        job.UniqueStr,
+        process: 2,
+        path: 1,
+        planQuantity: 3
+      );
+    MazakRouteIdentity Install(Job job, IRepository repository)
+    {
+      for (var step = 0; step < 6; step++)
+      {
+        var next = Step(job, repository);
+        if (next.NextWrite == null)
+          return next.Identity;
+        device.Native.Save(next.NextWrite);
+      }
+      throw new InvalidOperationException("Selected route failed to converge.");
+    }
+
+    MazakRouteIdentity firstIdentity;
+    MazakRoutePreparation firstPreparation;
+    using (var repository = config.OpenConnection())
+    {
+      repository.AddJobs(
+        new NewJobs { ScheduleId = "prepared-routes", Jobs = [first, peer] },
+        null,
+        false
+      );
+      var pending = Step(first, repository);
+      firstIdentity = pending.Identity;
+      firstPreparation = repository.LoadMazakRoutePreparation(
+        firstIdentity.Source,
+        firstIdentity.PartName,
+        firstIdentity.NativeProcess
+      )!;
+      await Assert
+        .That(pending.NextWrite!.Fixtures.Single().FixtureName)
+        .IsEqualTo(firstPreparation.FixtureName);
+      await Assert.That(device.Data.Fixtures).IsEmpty();
+      await Assert.That(device.Data.Parts).IsEmpty();
+      await Assert.That(device.Data.Pallets).IsEmpty();
+    }
+
+    // The service stopped after saving the preparation and before sending its first write.
+    using var reopened = config.OpenConnection();
+    if (ordinaryPeer)
+    {
+      await Assert
+        .That(
+          WriteJobs.SyncFromDatabase(
+            device.Native.LoadAllData(),
+            reopened,
+            device.Native,
+            settings,
+            routeConfig,
+            Now
+          )
+        )
+        .IsTrue();
+      await Assert.That(reopened.LoadJob(peer.UniqueStr)!.CopiedToSystem).IsTrue();
+    }
+    else
+      Install(peer, reopened);
+    await Assert.That(device.Data.Pallets.Count).IsGreaterThan(0);
+    await Assert
+      .That(device.Data.Pallets.All(p => p.FixtureGroup != firstPreparation.FixtureGroup))
+      .IsTrue();
+
+    var resumed = Step(first, reopened);
+    await Assert.That(resumed.Identity).IsEqualTo(firstIdentity);
+    await Assert
+      .That(resumed.NextWrite!.Fixtures.Single().FixtureName)
+      .IsEqualTo(firstPreparation.FixtureName);
+    device.Native.Save(resumed.NextWrite);
+    await Assert.That(Install(first, reopened)).IsEqualTo(firstIdentity);
+    await Assert
+      .That(device.Data.Pallets.Single(p => p.Fixture == firstPreparation.FixtureName).FixtureGroup)
+      .IsEqualTo(firstPreparation.FixtureGroup);
+  }
 
   [Test]
   [Arguments(false)]
@@ -284,6 +398,8 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(reopened.LoadJob(job.UniqueStr)!.CopiedToSystem).IsFalse();
 
     var installed = device.Data.Parts.Single(p => p.PartName == identity.PartName);
+    var (offeredRoute, _) = BuildMazakSchedules.RemoveSchedules(device.Data, s => s.Id == add.Id);
+    await Assert.That(() => device.Native.Save(offeredRoute)).Throws<InvalidOperationException>();
     device.Native.Save(Calculate(reopened, planned: 6, offered: 0).NextWrite!);
     var (retire, _) = BuildMazakSchedules.RemoveSchedules(device.Data, s => s.Id == add.Id);
     device.Native.Save(retire);

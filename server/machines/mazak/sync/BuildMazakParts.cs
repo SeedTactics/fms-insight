@@ -789,7 +789,8 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
       Func<string, long?, ProgramRevision> lookupProgram,
       IList<string> errors,
-      bool reuseExistingParts
+      bool reuseExistingParts,
+      ImmutableHashSet<int> preparedFixtureGroups = null
     )
     {
       Validate(jobs, fmsSettings, errors);
@@ -808,7 +809,8 @@ namespace MazakMachineInterface
         mazakCfg,
         errors,
         allParts,
-        reused
+        reused,
+        preparedFixtureGroups: preparedFixtureGroups
       );
     }
 
@@ -856,7 +858,10 @@ namespace MazakMachineInterface
         errors,
         [expected],
         installed == null ? [] : [installed],
-        preparation
+        preparation,
+        db.LoadMazakRoutePreparations(config.ControllerSource)
+          .Values.Select(p => p.FixtureGroup)
+          .ToImmutableHashSet()
       );
       if (errors.Count > 0)
         throw new BadRequestException(string.Join(Environment.NewLine, errors));
@@ -871,7 +876,8 @@ namespace MazakMachineInterface
       IList<string> errors,
       List<MazakPart> allParts,
       ImmutableList<MazakPartRow> reused,
-      MazakRoutePreparation preparation = null
+      MazakRoutePreparation preparation = null,
+      ImmutableHashSet<int> preparedFixtureGroups = null
     )
     {
       var reusedPallets = MissingReusedPallets(allParts, reused, mazakData, mazakCfg, preparation);
@@ -880,6 +886,7 @@ namespace MazakMachineInterface
       var usedMazakFixGroups = new HashSet<int>(
         mazakData.Pallets.Concat(reusedPallets).Select(row => row.FixtureGroup)
       );
+      usedMazakFixGroups.UnionWith(preparedFixtureGroups ?? []);
       if (mazakCfg.UseDurableRouteIdentity || mazakCfg.BulkJobFilter != null)
       {
         // A fixture write may be visible before the corresponding part or pallet rows.

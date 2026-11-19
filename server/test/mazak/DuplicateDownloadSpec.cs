@@ -620,6 +620,19 @@ public sealed partial class DuplicateDownloadSpec
             _failOnce && failure == "schedules-partial" && write.Prefix == "Add Schedules"
               ? write.Schedules.Take(1)
               : write.Schedules;
+          foreach (var deletion in schedules.Where(s => s.Command == MazakWriteCommand.Delete))
+          {
+            var current = Data.Schedules.FirstOrDefault(s => s.Id == deletion.Id);
+            if (
+              current?.Processes.Any(p =>
+                p.ProcessMaterialQuantity > 0 || p.ProcessExecuteQuantity > 0
+              ) == true
+              || Data.PalletSubStatuses.Any(s => s.ScheduleID == deletion.Id && s.FixQuantity > 0)
+            )
+              throw new InvalidOperationException(
+                $"Mazak schedule {deletion.Id} still has material in the system."
+              );
+          }
           // A partial batch contains a subset of complete parts, never part rows missing processes.
           var parts =
             _failOnce && failure == "parts-partial" && write.Prefix == "Add Parts"

@@ -56,13 +56,12 @@ public static class MazakRouteRetirement
       var prepared = db.LoadMazakRoutePreparation(config.ControllerSource, name, nativeProcess: 1);
       if (prepared == null)
         continue;
+      var program = prepared.AddedProgram ?? prepared.RequiredProgram;
       candidates = candidates with
       {
         FixtureNames = candidates.FixtureNames.Add(prepared.FixtureName),
         MainPrograms =
-          prepared.AddedProgram == null
-            ? candidates.MainPrograms
-            : candidates.MainPrograms.Add(prepared.AddedProgram),
+          program == null ? candidates.MainPrograms : candidates.MainPrograms.Add(program),
       };
     }
     return candidates;
