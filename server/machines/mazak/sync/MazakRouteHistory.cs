@@ -106,6 +106,49 @@ internal static class MazakRouteHistory
     UnidentifiedOnPallet(cycle).Keys.Any(name => !ambiguous.ContainsKey(name))
     || ambiguous.Values.Any(p => p.Unidentified > 0);
 
+  internal static ImmutableHashSet<string> UnresolvedRoutes(
+    IEnumerable<BlackMaple.MachineFramework.LogEntry> cycle,
+    IReadOnlyDictionary<string, AmbiguousPlacement> ambiguous
+  ) =>
+    UnidentifiedOnPallet(cycle)
+      .Keys.Where(name => !ambiguous.ContainsKey(name))
+      .Concat(
+        ambiguous
+          .Where(p => p.Value.Unidentified > 0 || p.Value.Candidates.Except(p.Value.Departed).Any())
+          .Select(p => p.Key)
+      )
+      .ToImmutableHashSet(StringComparer.Ordinal);
+
+  internal static bool AllPlacementSchedulesRetired(
+    IRepository db,
+    MazakConfig config,
+    IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,
+    IEnumerable<LogMaterial> material,
+    IReadOnlySet<string> unresolvedRoutes,
+    IEnumerable<MazakScheduleRow> schedules
+  )
+  {
+    var live = schedules
+      .Select(s => s.PartName)
+      .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+    return unresolvedRoutes.All(name => Find(db, config, name, 1) != null && !live.Contains(name))
+      && material.All(m =>
+      {
+        var definitions = db.LoadMazakRouteIdentities(config.ControllerSource, m.JobUniqueStr)
+          .Where(r =>
+            r.JobProcess == m.Process
+            && r.NativeProcess == m.Face
+            && (m.Path == null || m.Path == r.Path)
+          );
+        var recorded = RecordedNativeName(cycle, m.MaterialID);
+        var candidates = definitions
+          .Where(r => recorded == null || r.PartName == recorded)
+          .Take(2)
+          .ToImmutableList();
+        return candidates.Count == 1 && !live.Contains(candidates[0].PartName);
+      });
+  }
+
   internal sealed record AmbiguousPlacement
   {
     public required int Face { get; init; }

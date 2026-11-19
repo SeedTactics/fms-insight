@@ -434,10 +434,17 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
-  [Arguments(false)]
-  [Arguments(true)]
-  public async Task RecreatedRouteClosesTheNextPlacementAfterAnUnidentifiedSetWasRemoved(
-    bool exactUnload
+  [Arguments(false, false, false)]
+  [Arguments(true, false, false)]
+  [Arguments(false, true, false)]
+  [Arguments(true, true, false)]
+  [Arguments(false, false, true)]
+  [Arguments(true, false, true)]
+  [Arguments(true, true, true)]
+  public async Task RecreatedRouteClosesTheNextPlacementAfterAnOperatorCorrection(
+    bool exactUnload,
+    bool correctionAtLoadStation,
+    bool identifiedWithoutQuarantine
   )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -447,7 +454,10 @@ public sealed partial class DuplicateDownloadSpec
     var device = new DownloadDevice("");
     var transferPending = false;
     var routeConfig = RouteConfig with { CanQuarantineMissingMaterial = _ => !transferPending };
-    var settings = new FMSSettings { QuarantineQueue = "quarantine" };
+    var settings = new FMSSettings
+    {
+      QuarantineQueue = identifiedWithoutQuarantine ? null : "quarantine",
+    };
     MazakRouteIdentity Install()
     {
       for (var i = 0; i < 10; i++)
@@ -553,18 +563,36 @@ public sealed partial class DuplicateDownloadSpec
         PalletPositions = [new() { PalletNumber = 2, PalletPosition = "S002" }],
       }
     );
-    using var sync = new MazakSync(device.Native, settings, routeConfig);
+    var original = identifiedWithoutQuarantine
+      ? Enumerable
+        .Range(1, 3)
+        .Select(_ => db.AllocateMaterialID(job.UniqueStr, job.PartName, 2))
+        .ToImmutableList()
+      : [];
+    var initialConfig = identifiedWithoutQuarantine
+      ? routeConfig with
+      {
+        ResolveLoadUnloadTransaction = (_, ctx) =>
+          new MazakLoadUnloadResolution.Resolved
+          {
+            MaterialForLoads = ctx.Loads.ToImmutableDictionary(
+              f => f.ForeignId,
+              _ => new MazakResolvedLoad { MaterialIds = original }
+            ),
+            MaterialForUnloads = ImmutableDictionary<string, MazakResolvedUnload>.Empty,
+          },
+      }
+      : routeConfig;
+    using var sync = new MazakSync(device.Native, settings, initialConfig);
     var loaded = sync.CalculateCellState(db).CurrentStatus;
     await Assert.That(loaded.Material.Count).IsEqualTo(3);
-    await Assert.That(loaded.Material.All(m => m.MaterialID == -1)).IsTrue();
-    await Assert.That(loaded.AlarmDetails!.Single().Message).Contains("3 unidentified piece");
-    await Assert
-      .That(
-        db.MostRecentLogEntryForForeignID(load.ForeignID).ProgramDetails![
-          "mazak-unidentified-quantity"
-        ]
-      )
-      .IsEqualTo("3");
+    if (identifiedWithoutQuarantine)
+      await Assert.That(loaded.Material.Select(m => m.MaterialID)).IsEquivalentTo(original);
+    else
+    {
+      await Assert.That(loaded.Material.All(m => m.MaterialID == -1)).IsTrue();
+      await Assert.That(loaded.AlarmDetails!.Single().Message).Contains("3 unidentified piece");
+    }
 
     // The operator physically removes this set and clears its native assignment without UNLOAD.
     // No material remains in Mazak, and every native ready/executing/bad count is zero.
@@ -573,6 +601,10 @@ public sealed partial class DuplicateDownloadSpec
       device.Data with
       {
         PalletSubStatuses = [],
+        PalletPositions =
+        [
+          new() { PalletNumber = 2, PalletPosition = correctionAtLoadStation ? "LS01" : "S002" },
+        ],
         Schedules = device
           .Data.Schedules.Select(s =>
             s with
@@ -607,7 +639,7 @@ public sealed partial class DuplicateDownloadSpec
     sync.CalculateCellState(db);
     await Assert
       .That(db.CurrentPalletLog(2).Count(e => e.Program == "MazakPalletObservedEmpty"))
-      .IsEqualTo(1);
+      .IsEqualTo(correctionAtLoadStation ? 0 : 1);
 
     var retirement = MazakRouteRetirement.Capture(
       db,
@@ -624,7 +656,17 @@ public sealed partial class DuplicateDownloadSpec
     }
     await Assert.That(device.Data.Schedules).IsEmpty();
     await Assert.That(device.Data.Parts).IsEmpty();
+    transferPending = true;
+    sync.CalculateCellState(db);
+    await Assert
+      .That(db.CurrentPalletLog(2).Count(e => e.Program == "MazakPalletObservedEmpty"))
+      .IsEqualTo(correctionAtLoadStation ? 0 : 1);
+    transferPending = false;
     await Assert.That(sync.CalculateCellState(db).CurrentStatus.Material).IsEmpty();
+    await Assert
+      .That(db.CurrentPalletLog(2).Count(e => e.Program == "MazakPalletObservedEmpty"))
+      .IsEqualTo(1);
+    await Assert.That(db.GetJobProductionSummary(job.UniqueStr).Completed).IsEmpty();
 
     var installedAgain = Install();
     await Assert.That(installedAgain).IsEqualTo(route);
@@ -637,13 +679,14 @@ public sealed partial class DuplicateDownloadSpec
     var fresh = afterReprepare.CalculateCellState(db).CurrentStatus;
     await Assert.That(fresh.Material).IsEmpty();
     await Assert.That(fresh.AlarmDetails).IsNull();
-    await Assert
-      .That(
-        db.MostRecentLogEntryForForeignID(load.ForeignID).ProgramDetails![
-          "mazak-unidentified-quantity"
-        ]
-      )
-      .IsEqualTo("3");
+    var originalLoad = db.MostRecentLogEntryForForeignID(load.ForeignID);
+    if (identifiedWithoutQuarantine)
+    {
+      await Assert.That(originalLoad.Material.Select(m => m.MaterialID)).IsEquivalentTo(original);
+      await Assert.That(db.GetMaterialInAllQueues()).IsEmpty();
+    }
+    else
+      await Assert.That(originalLoad.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("3");
 
     var ids = Enumerable
       .Range(1, 3)
@@ -799,15 +842,13 @@ public sealed partial class DuplicateDownloadSpec
       )
       .IsEquivalentTo(ids);
     await Assert
-      .That(db.GetRecentLog(0).Count(e => e.LogType == LogType.PalletCycle && !e.StartOfCycle))
+      .That(
+        db.GetRecentLog(0)
+          .Count(e =>
+            e.LogType == LogType.PalletCycle && !e.StartOfCycle && e.EndTimeUTC >= newUnload.TimeUTC
+          )
+      )
       .IsEqualTo(1);
     await Assert.That(db.GetJobProductionSummary(job.UniqueStr).Completed[(2, 1)]).IsEqualTo(3);
-    await Assert
-      .That(
-        db.MostRecentLogEntryForForeignID(load.ForeignID).ProgramDetails![
-          "mazak-unidentified-quantity"
-        ]
-      )
-      .IsEqualTo("3");
   }
 }
