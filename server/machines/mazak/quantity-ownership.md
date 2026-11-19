@@ -92,8 +92,9 @@ programs, including programs already installed on the controller. The final read
 preparation so a later installation can choose an available fixture group. The historical part
 identity remains reserved.
 
-Scoped bulk downloads save cleanup candidates before deleting parts. After an uncertain write the
-next pass uses fresh readback to complete cleanup while preserving dependencies still in use.
+Scoped bulk downloads save cleanup candidates before deleting parts. After an uncertain write, the
+next pass uses fresh readback to recheck ownership and references and finish eligible cleanup.
+Cleanup can resume independently after the incoming job leaves the download window.
 
 Assign each additional controller a distinct, stable `ControllerSource` independent of its endpoint.
 Keep the original controller on `DefaultControllerSource` to retain its existing LG history. Use

@@ -273,7 +273,9 @@ namespace MazakMachineInterface
       transSet = mazakJobs.DeleteOldPartRows();
       if (transSet.Parts.Count > 0)
       {
-        if (scope != null)
+        if (scope == null)
+          mazakDb.Save(transSet);
+        else
         {
           var retiredParts = transSet.Parts.Select(p => p.PartName).ToImmutableHashSet();
           var candidates = MazakRouteRetirement.Capture(mazakData, retiredParts);
@@ -287,7 +289,6 @@ namespace MazakMachineInterface
             }
           );
         }
-        mazakDb.Save(transSet);
       }
 
       if (scope == null)
@@ -349,12 +350,52 @@ namespace MazakMachineInterface
     )
     {
       var saved = db.LoadMazakBulkCleanup(config.ControllerSource);
-      if (
-        saved.Parts.IsEmpty
-        || !MazakRouteRetirement.HasAllScheduledParts(observed)
-        || observed.Parts.Any(p => saved.Parts.Contains(p.PartName))
-      )
+      if (saved.Parts.IsEmpty || !MazakRouteRetirement.HasAllScheduledParts(observed))
         return false;
+
+      // The original download may be gone. Use the saved selection while rechecking
+      // present ownership, pallet assignments and surviving native references.
+      var scope = config.BulkJobFilter;
+      var reserved = db.LoadReservedMazakPartNames(config.ControllerSource)
+        .WithComparer(StringComparer.OrdinalIgnoreCase);
+      var plans = download
+        ?.ReusedParts.Select(p => p.PartName)
+        .ToImmutableHashSet(StringComparer.Ordinal)
+        ?? ImmutableHashSet<string>.Empty;
+      var referenced = observed
+        .Schedules.Select(s => s.PartName)
+        .Concat(observed.PalletSubStatuses.Where(s => s.FixQuantity > 0).Select(s => s.PartName))
+        .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+      var requestedRoutes = observed
+        .LoadActions.Where(a => a.Qty > 0)
+        .Select(a => (a.Part, a.Comment))
+        .ToImmutableHashSet();
+      var parts = MazakJobs.DeletePartRows(observed.Parts, part =>
+        saved.Parts.Contains(part.PartName)
+        && !reserved.Contains(part.PartName)
+        && !plans.Contains(part.PartName)
+        && !referenced.Contains(part.PartName)
+        && !requestedRoutes.Contains(
+          (MazakPart.ExtractPartNameFromMazakPartName(part.PartName), part.Comment)
+        )
+        && db.LoadJob(MazakPart.UniqueFromComment(part.Comment)) is { } job
+        && scope?.Invoke(job) == true
+        && !config.UsesInsightJobQuantities(job)
+      );
+      var wrote = parts.Parts.Count > 0;
+      if (wrote)
+      {
+        native.Save(parts);
+        observed = native.LoadAllData();
+        var deleted = parts
+          .Parts.Select(p => p.PartName)
+          .ToImmutableHashSet(StringComparer.Ordinal);
+        if (observed.Parts.Any(p => deleted.Contains(p.PartName)))
+          throw new ConflictRequestException("Mazak did not confirm scoped part deletion.");
+        if (!MazakRouteRetirement.HasAllScheduledParts(observed))
+          return true;
+      }
+
       var candidates = new MazakRetirementCandidates
       {
         PartNames = [],
@@ -367,10 +408,10 @@ namespace MazakMachineInterface
         .Concat(preparations.Select(p => p.FixtureName))
         .ToImmutableHashSet(StringComparer.Ordinal);
       var mappings = MazakRouteRetirement.RemovePalletMappings(observed, candidates, fixtures);
-      var wrote = mappings.Pallets.Count != 0;
-      if (wrote)
+      if (mappings.Pallets.Count != 0)
       {
         native.Save(mappings);
+        wrote = true;
         observed = native.LoadAllData();
         if (!MazakRouteRetirement.HasAllScheduledParts(observed))
           return true;

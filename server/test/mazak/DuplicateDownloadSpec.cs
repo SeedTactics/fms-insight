@@ -609,6 +609,11 @@ public sealed partial class DuplicateDownloadSpec
         .Do(call =>
         {
           var write = call.Arg<MazakWriteData>();
+          if (_failOnce && failure == "delete-parts-before-apply" && write.Prefix == "Delete Parts")
+          {
+            _failOnce = false;
+            throw new IOException("The controller did not apply the part deletion.");
+          }
           if (_failOnce && failure == "schedules" && write.Prefix == "Add Schedules")
           {
             _failOnce = false;

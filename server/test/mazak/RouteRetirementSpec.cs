@@ -160,10 +160,17 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
-  [Arguments("")]
-  [Arguments("delete-parts-full")]
-  [Arguments("delete-deps-full")]
-  public async Task ScopedCleanupRemovesOnlyOldProgramsUnusedAfterPartDeletion(string failure)
+  [Arguments("", "")]
+  [Arguments("delete-parts-full", "")]
+  [Arguments("delete-deps-full", "")]
+  [Arguments("delete-parts-before-apply", "")]
+  [Arguments("delete-parts-before-apply", "ownership")]
+  [Arguments("delete-parts-before-apply", "schedule")]
+  [Arguments("delete-parts-before-apply", "pallet")]
+  public async Task ScopedCleanupRemovesOnlyOldProgramsUnusedAfterPartDeletion(
+    string failure,
+    string protection
+  )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null);
     using var db = config.OpenConnection();
@@ -240,35 +247,87 @@ public sealed partial class DuplicateDownloadSpec
       }
     );
     var routeConfig = RouteConfig with { BulkJobFilter = j => j.UniqueStr != peer.UniqueStr };
-    bool SyncScoped(IRepository repository) =>
+    var beforeDelete = failure == "delete-parts-before-apply";
+    var retryTime = beforeDelete ? Now.AddDays(10) : Now;
+    bool SyncScoped(IRepository repository, DateTime time) =>
       WriteJobs.SyncFromDatabase(
         device.Native.LoadAllData(),
         repository,
         device.Native,
         new FMSSettings(),
         routeConfig,
-        Now
+        time
       );
     if (failure.Length > 0)
     {
-      await Assert.That(() => SyncScoped(db)).Throws<IOException>();
-      await Assert.That(device.Data.Parts).DoesNotContain(old);
+      await Assert.That(() => SyncScoped(db, Now)).Throws<IOException>();
+      await Assert.That(device.Data.Parts.Contains(old)).IsEqualTo(beforeDelete);
+      await Assert.That(device.Data.Schedules).IsEmpty();
       var saved = db.LoadMazakBulkCleanup(routeConfig.ControllerSource);
       await Assert.That(saved.Parts).Contains(old.PartName);
       await Assert.That(saved.Programs).Contains("obsolete-1.eia");
       await Assert
         .That(device.Data.MainPrograms.Any(p => p.MainProgram == "obsolete-1.eia"))
-        .IsEqualTo(failure == "delete-parts-full");
+        .IsEqualTo(failure != "delete-deps-full");
     }
+
+    switch (protection)
+    {
+      case "ownership":
+        routeConfig = routeConfig with { BulkJobFilter = j => j.UniqueStr == ordinary.UniqueStr };
+        break;
+      case "schedule":
+        device.Observe(
+          device.Data with
+          {
+            Schedules =
+            [
+              new()
+              {
+                Id = 9,
+                PartName = old.PartName,
+                Comment = old.Comment,
+                PlanQuantity = 1,
+              },
+            ],
+          }
+        );
+        break;
+      case "pallet":
+        device.Observe(
+          device.Data with
+          {
+            PalletSubStatuses =
+            [
+              new()
+              {
+                PartName = old.PartName,
+                PalletNumber = 1,
+                FixQuantity = 1,
+              },
+            ],
+          }
+        );
+        break;
+    }
+
     using var reopened = config.OpenConnection();
-    await Assert.That(SyncScoped(reopened)).IsTrue();
+    var canDelete = protection.Length == 0;
+    await Assert.That(SyncScoped(reopened, retryTime)).IsEqualTo(canDelete);
     await Assert.That(reopened.LoadMazakBulkCleanup(routeConfig.ControllerSource).Parts).IsEmpty();
-    await Assert.That(SyncScoped(reopened)).IsFalse();
-    await Assert.That(device.Data.Parts).DoesNotContain(old);
+    await Assert.That(SyncScoped(reopened, retryTime)).IsFalse();
+    await Assert.That(device.Data.Parts.Contains(old)).IsEqualTo(!canDelete);
     await Assert.That(device.Data.Parts).Contains(survivor);
+    if (beforeDelete)
+      await Assert.That(reopened.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsFalse();
+    var expectedPrograms = canDelete
+      ? revisions.Where(p =>
+        p.MainProgram != "obsolete-1.eia" && (!beforeDelete || p.MainProgram != pendingProgram)
+      )
+      : revisions;
     await Assert
       .That(device.Data.MainPrograms.Where(p => p.Comment.StartsWith("Insight:")))
-      .IsEquivalentTo(revisions.Where(p => p.MainProgram != "obsolete-1.eia"));
+      .IsEquivalentTo(expectedPrograms);
   }
 
   [Test]
