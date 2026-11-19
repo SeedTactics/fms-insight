@@ -52,6 +52,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var programs = icc.LoadPrograms().Values;
       foreach (var j in jobs.Jobs)
       {
+        var fixtureRequired = j.ArtifactRunDate is null || j.Processes.Count != 1;
         for (var proc = 1; proc <= j.Processes.Count; proc++)
         {
           for (var path = 1; path <= j.Processes[proc - 1].Paths.Count; path++)
@@ -65,7 +66,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add("Part " + j.PartName + " does not have any assigned load stations");
             }
-            if (string.IsNullOrEmpty(pathData.Fixture))
+            if (fixtureRequired && string.IsNullOrEmpty(pathData.Fixture))
             {
               errors.Add("Part " + j.PartName + " does not have an assigned fixture");
             }

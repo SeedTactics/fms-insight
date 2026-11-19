@@ -294,7 +294,11 @@ namespace BlackMaple.FMSInsight.Niigata
       var newFace = potentialNewPath.PathInfo.Face ?? 0;
       foreach (var otherPath in alreadyLoading)
       {
-        if (!string.IsNullOrEmpty(newFixture) && newFixture != otherPath.PathInfo.Fixture)
+        if (
+          potentialNewPath.Job.ArtifactRunDate.HasValue
+          || otherPath.Job.ArtifactRunDate.HasValue
+          || (!string.IsNullOrEmpty(newFixture) && newFixture != otherPath.PathInfo.Fixture)
+        )
           return false;
         seenFaces.Add(otherPath.PathInfo.Face ?? 0);
       }
