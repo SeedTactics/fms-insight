@@ -147,6 +147,27 @@ jobs:
           dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}"
           /p:FileVersion="${{ env.FILE_VERSION }}" server/machines/niigata
 
+      - name: Pack Insight CLI tool
+        run:
+          dotnet pack client/cli -c Release -p:Version="${{ env.NEW_VERSION_NUM }}"
+          -p:FileVersion="${{ env.FILE_VERSION }}" -o client/cli/bin/Release/packages
+      - name: Install packaged Insight CLI tool
+        run:
+          dotnet tool install BlackMaple.FMSInsight.Cli --version "${{ env.NEW_VERSION_NUM }}"
+          --source ./client/cli/bin/Release/packages --tool-path "$env:RUNNER_TEMP/insight-cli-tool"
+      - name: Test standalone Windows Insight CLI with SQLite
+        shell: pwsh
+        run: |
+          $package = Get-Item "client/cli/bin/Release/packages/BlackMaple.FMSInsight.Cli.win-x64.$env:NEW_VERSION_NUM.nupkg"
+          $exe = Join-Path $env:RUNNER_TEMP "insight-cli.exe"
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
+          [System.IO.Compression.ZipFileExtensions]::ExtractToFile($archive.GetEntry("tools/any/win-x64/insight-cli.exe"), $exe)
+          $archive.Dispose()
+          $result = & $exe query --database (New-TemporaryFile).FullName --sql "SELECT 1 AS ok"
+          if ($LASTEXITCODE -ne 0 -or ($result | ConvertFrom-Json).ok -ne 1) {
+            throw "Packaged Insight CLI failed its SQLite query."
+          }
+
       # ----------------------------------------------------------
       # Publish
       # ----------------------------------------------------------
@@ -188,6 +209,16 @@ jobs:
         run:
           dotnet nuget push -k ${{ steps.login.outputs.NUGET_API_KEY }} -s
           https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
+      - name: Publish Insight CLI platform packages
+        working-directory: client/cli/bin/Release/packages
+        run:
+          dotnet nuget push "BlackMaple.FMSInsight.Cli.*.$env:NEW_VERSION_NUM.nupkg" -k ${{
+          steps.login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+      - name: Publish Insight CLI tool
+        working-directory: client/cli/bin/Release/packages
+        run:
+          dotnet nuget push "BlackMaple.FMSInsight.Cli.$env:NEW_VERSION_NUM.nupkg" -k ${{
+          steps.login.outputs.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
 
       # ----------------------------------------------------------
       # Create Release
