@@ -128,9 +128,14 @@ internal static class MazakRouteHistory
     IEnumerable<MazakScheduleRow> schedules
   )
   {
-    var live = schedules
+    var observedSchedules = schedules.ToImmutableList();
+    var live = observedSchedules
       .Select(s => s.PartName)
       .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+    var liveSplitComments = observedSchedules
+      .Select(s => s.Comment)
+      .Where(MazakPart.IsSplitComment)
+      .ToImmutableHashSet(StringComparer.Ordinal);
     return unresolvedRoutes.All(name => Find(db, config, name, 1) != null && !live.Contains(name))
       && material.All(m =>
       {
@@ -143,9 +148,17 @@ internal static class MazakRouteHistory
         var recorded = RecordedNativeName(cycle, m.MaterialID);
         var candidates = definitions
           .Where(r => recorded == null || r.PartName == recorded)
-          .Take(2)
           .ToImmutableList();
-        return candidates.Count == 1 && !live.Contains(candidates[0].PartName);
+        return !candidates.IsEmpty
+          && candidates.All(r =>
+            !live.Contains(r.PartName)
+            && (
+              recorded != null
+              || !liveSplitComments.Contains(
+                MazakPart.SplitComment(r.JobUnique, r.JobProcess, r.Path)
+              )
+            )
+          );
       });
   }
 

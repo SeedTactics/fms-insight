@@ -99,8 +99,14 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
 
+    // For controllers where the pallet and machine numbers identify the physical run.
     [return: MaybeNull]
-    LogEntry FindPalletMachineStart(int pallet, string stationGroup, int station, DateTime asOfUtc);
+    LogEntry FindPalletMachineStart(
+      int pallet,
+      int station,
+      DateTime asOfUtc,
+      string placementEndProgram
+    );
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
 
     [return: MaybeNull]

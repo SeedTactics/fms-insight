@@ -76,8 +76,9 @@ public sealed partial class MazakAcquisitionSpec
   [Arguments(false, false)]
   [Arguments(true, false)]
   [Arguments(true, true)]
+  [Arguments(false, true)]
   public async Task DelayedMachineEndUsesTheOriginalRunAfterAnEmptyObservation(
-    bool replacementLoaded,
+    bool replacementLoadRecorded,
     bool endBelongsToReplacementWithMissingStart
   )
   {
@@ -149,11 +150,17 @@ public sealed partial class MazakAcquisitionSpec
         CanQuarantineMissingMaterial = _ => true,
       };
     using var sync = cell.NewSynchronizer(configure: Configure);
+    cell.Tools = [cell.Tools.Single() with { LifeUsed = 100 }];
+    cell.Clock.Now = new DateTimeOffset(start.TimeUTC);
     sync.CalculateCellState(db);
     var recordedStart = db.MostRecentLogEntryForForeignID(start.ForeignID);
     await Assert.That(recordedStart.Material.Single().MaterialID).IsEqualTo(original);
+    await Assert
+      .That(db.ToolPocketSnapshotForCycle(recordedStart.Counter).Single().CurrentUse)
+      .IsEqualTo(TimeSpan.FromSeconds(100));
 
     // The run finishes, then the operator clears the pallet before the end CSV is available.
+    cell.Clock.Now = new DateTimeOffset(now);
     cell.Data = cell.Data with { Logs = [], PalletSubStatuses = [] };
     await Assert.That(sync.CalculateCellState(db).CurrentStatus.Material).IsEmpty();
     await Assert
@@ -161,7 +168,7 @@ public sealed partial class MazakAcquisitionSpec
       .IsEqualTo(1);
 
     var replacement = db.AllocateMaterialID(job.UniqueStr, job.PartName, 1);
-    if (replacementLoaded)
+    if (replacementLoadRecorded)
     {
       db.RecordLoadUnloadComplete(
         [load with { MaterialIDs = [replacement] }],
@@ -190,9 +197,11 @@ public sealed partial class MazakAcquisitionSpec
           recordedStart.Program,
           now.AddSeconds(20)
         );
-      cell.Data = cell.Data with { PalletSubStatuses = [AssignedFace(route)] };
     }
+    if (replacementLoadRecorded || endBelongsToReplacementWithMissingStart)
+      cell.Data = cell.Data with { PalletSubStatuses = [AssignedFace(route)] };
 
+    cell.Tools = [cell.Tools.Single() with { LifeUsed = replacementLoadRecorded ? 145 : 110 }];
     cell.Clock.Now = cell.Clock.Now.AddMinutes(1);
     var end = start with
     {
@@ -209,15 +218,22 @@ public sealed partial class MazakAcquisitionSpec
     var recordedEnd = reopened.MostRecentLogEntryForForeignID(end.ForeignID);
     if (endBelongsToReplacementWithMissingStart)
     {
-      // The old run is still open in history, but a completed LOAD separates it from this end.
+      // The observed empty pallet separates the runs even when the new LOAD CSV was lost.
       await Assert.That(recordedEnd).IsNull();
-      await Assert.That(status.Material.Single().MaterialID).IsEqualTo(replacement);
+      await Assert
+        .That(status.Material.Single().MaterialID)
+        .IsEqualTo(replacementLoadRecorded ? replacement : -1);
       return;
     }
     await Assert.That(recordedEnd).IsNotNull();
     await Assert.That(recordedEnd.ElapsedTime).IsEqualTo(TimeSpan.FromMinutes(10));
     await Assert.That(recordedEnd.Program).IsEqualTo(recordedStart.Program);
     await Assert.That(recordedEnd.Material.Single().MaterialID).IsEqualTo(original);
+    await Assert.That(recordedEnd.Tools).IsNull();
+    await Assert.That(reopened.ToolPocketSnapshotForCycle(recordedEnd.Counter)).IsEmpty();
+    await Assert
+      .That(recordedEnd.ProgramDetails!["MazakToolSnapshotUnavailable"])
+      .IsEqualTo("true");
     await Assert
       .That(reopened.GetLogForMaterial(original).Any(e => e.Counter == recordedEnd.Counter))
       .IsTrue();
@@ -228,7 +244,7 @@ public sealed partial class MazakAcquisitionSpec
           .Any(e => e.Counter == recordedEnd.Counter)
       )
       .IsFalse();
-    if (replacementLoaded)
+    if (replacementLoadRecorded)
     {
       var active = status.Material.Single();
       await Assert.That(active.MaterialID).IsEqualTo(replacement);

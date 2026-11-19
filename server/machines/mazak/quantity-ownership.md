@@ -85,8 +85,10 @@ handling owner can keep its outstanding-transfer guard active until its CSV arri
 settle, an empty observation outside the load station ends the placement even when there is no
 quarantine queue. At the load station, the observation also needs to confirm that every schedule
 associated with the prior placement has retired and the station has no request. The transfer guard
-applies in either location. Earlier loads remain in manufacturing history, and a delayed machining
-end can still complete its original run using the start time and material from that run.
+applies in either location. Earlier loads remain in manufacturing history. A delayed machining end
+dated before the empty observation can complete its original run using that run's start and serials.
+Its tool usage is unknown once the pallet placement has changed. An end dated after the observation
+requires evidence of a subsequent start, even when the new load CSV is missing.
 
 Use the repository-aware overload of `MazakRouteRetirement.Capture` before deleting parts. It
 includes the fixture and program reserved before a preparation write, even if the part was never

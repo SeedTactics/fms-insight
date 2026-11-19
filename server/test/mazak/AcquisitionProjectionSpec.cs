@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using NSubstitute;
@@ -13,6 +14,63 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 
 public sealed partial class MazakAcquisitionSpec
 {
+  [Test]
+  public async Task MachineEndRetainsItsStartGroupWhenTheLatestScheduleChanges()
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    NewJobs Schedule(string id, string group)
+    {
+      var path = JobLogTest.EmptyPath with
+      {
+        Stops =
+        [
+          new()
+          {
+            StationGroup = group,
+            Stations = [1],
+            Program = "1001",
+            ExpectedCycleTime = TimeSpan.FromMinutes(1),
+          },
+        ],
+      };
+      var job = new Job
+      {
+        UniqueStr = id,
+        PartName = "part",
+        Cycles = 1,
+        Archived = false,
+        RouteStartUTC = cell.Clock.Now.UtcDateTime.AddHours(-1),
+        RouteEndUTC = cell.Clock.Now.UtcDateTime.AddHours(1),
+        Processes = [new() { Paths = [path] }],
+      };
+      return new NewJobs { ScheduleId = id, Jobs = [job] };
+    }
+
+    db.AddJobs(Schedule("first", "original-group"), null, addAsCopiedToSystem: true);
+    using var synchronization = cell.NewSynchronizer(configure: cfg =>
+      cfg with
+      {
+        UseDurableRouteIdentity = true,
+      }
+    );
+    cell.Data = cell.Data with { Logs = [cell.Start] };
+    synchronization.CalculateCellState(db);
+    var start = db.MostRecentLogEntryForForeignID(cell.Start.ForeignID);
+    await Assert.That(start.LocationName).IsEqualTo("original-group");
+
+    // Another schedule changes the repository's inferred group while this run remains open.
+    db.AddJobs(Schedule("second", "another-group"), "first", addAsCopiedToSystem: true);
+    await Assert.That(BuildCurrentStatus.FindMachineGroupName(db)).IsEqualTo("another-group");
+    cell.Data = cell.Data with { Logs = [cell.End] };
+    synchronization.CalculateCellState(db);
+    var end = db.MostRecentLogEntryForForeignID(cell.End.ForeignID);
+    await Assert.That(end).IsNotNull();
+    await Assert.That(end.LocationName).IsEqualTo(start.LocationName);
+    await Assert.That(end.ElapsedTime).IsEqualTo(cell.End.TimeUTC - cell.Start.TimeUTC);
+    await Assert.That(synchronization.CaptureLogWatermark(db)).IsEqualTo(cell.End.ForeignID);
+  }
+
   [Test]
   [Arguments(1)]
   [Arguments(101)]

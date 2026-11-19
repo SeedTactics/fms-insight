@@ -729,13 +729,13 @@ namespace MazakMachineInterface
             elapsed = TimeSpan.Zero;
             toolsAtStart = Enumerable.Empty<ToolSnapshot>();
           }
-          var toolsAtEnd = ToolsToSnapshot(mcNum, tools);
-
           if (elapsed > TimeSpan.FromSeconds(30))
           {
             // The run can end in the CSV after Insight has moved on to another placement.
             // Use the original machining context and keep that end out of placement replay.
             var earlierPlacement = !cycle.Any(log => log.Counter == machStart.Counter);
+            // Current tool readback can include wear from a later placement.
+            var toolsAtEnd = earlierPlacement ? null : ToolsToSnapshot(mcNum, tools);
             List<LogMaterialAndPath> machineMats;
             string progName;
             long? progRev;
@@ -765,7 +765,9 @@ namespace MazakMachineInterface
             var s = repo.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
               pallet: eventPallet,
-              statName: machGroupName,
+              statName: mazakConfig.UseDurableRouteIdentity
+                ? machStart.LocationName
+                : machGroupName,
               statNum: mcNum,
               program: progName,
               timeUTC: e.TimeUTC,
@@ -1720,7 +1722,12 @@ namespace MazakMachineInterface
     {
       if (mazakConfig.UseDurableRouteIdentity && pallet > 0)
       {
-        return repo.FindPalletMachineStart(pallet, machGroupName, statNum, timeUtc);
+        return repo.FindPalletMachineStart(
+          pallet,
+          statNum,
+          timeUtc,
+          MazakRouteHistory.ObservedEmptyProgram
+        );
       }
 
       return oldEvents.LastOrDefault(old =>
