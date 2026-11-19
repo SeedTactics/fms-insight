@@ -1527,14 +1527,17 @@ namespace MazakMachineInterface
           var st in mazakData.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber)
         )
         {
-          // remove material from matsOnPal that matches this PalletSubStatus
+          if (st.FixQuantity <= 0)
+            continue;
+
+          // Remove material accounted for by a positive native pallet assignment.
           var route = MazakRouteHistory.Find(repo, mazakConfig, st.PartName, st.PartProcessNumber);
           string unique;
           int fmsProc;
           if (route != null)
           {
-            if (!MazakRouteHistory.AgreesWithObservation(route, mazakData))
-              continue;
+            // The exact native part name is physical assignment evidence even if a live
+            // schedule comment disagrees. Status still reports the attribution conflict.
             unique = route.JobUnique;
             fmsProc = route.JobProcess;
           }
@@ -1558,7 +1561,11 @@ namespace MazakMachineInterface
           }
 
           var matchingMats = matsOnPal
-            .Where(m => m.JobUniqueStr == unique && m.Process == fmsProc)
+            .Where(m =>
+              m.JobUniqueStr == unique
+              && m.Process == fmsProc
+              && (route == null || m.Face == st.PartProcessNumber)
+            )
             .ToList();
 
           if (matchingMats.Count < st.FixQuantity)
@@ -1576,14 +1583,10 @@ namespace MazakMachineInterface
           }
         }
 
-        // anything left in matsOnPal disappeared from PalletSubStatuses so should be quarantined
+        // With controller events settled, an operator correction can clear the assignment
+        // without an unload event. Preserve that correction regardless of schedule lifecycle.
         foreach (var extraMat in matsOnPal)
         {
-          if (
-            MazakRouteHistory.DeferMissingMaterial(repo, mazakConfig, mazakData, oldEvts, extraMat)
-          )
-            continue;
-
           repo.RecordAddMaterialToQueue(
             mat: new EventLogMaterial()
             {

@@ -211,27 +211,6 @@ internal static class MazakRouteHistory
         HasLiveSchedule(observed, r.PartName) && HasIncompletePlacementEvidence(observed, cycle, r)
       );
 
-  // A retired route has cleared Mazak. Keep Insight's last recorded placement available for
-  // delayed CSV attribution without projecting it as current occupancy or moving it to a queue.
-  internal static bool DeferMissingMaterial(
-    IRepository db,
-    MazakConfig config,
-    MazakAllData observed,
-    IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,
-    LogMaterial material
-  )
-  {
-    var definitions = PlacementDefinitions(db, config, cycle, material).ToImmutableList();
-    return !definitions.IsEmpty
-      && (
-        definitions.Any(r => !HasLiveSchedule(observed, r.PartName))
-        || definitions.Any(r =>
-          HasLiveSchedule(observed, r.PartName)
-          && HasIncompletePlacementEvidence(observed, cycle, r)
-        )
-      );
-  }
-
   private static bool HasIncompletePlacementEvidence(
     MazakAllData observed,
     IReadOnlyList<BlackMaple.MachineFramework.LogEntry> cycle,

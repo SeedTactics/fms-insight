@@ -269,10 +269,7 @@ namespace MazakMachineInterface
             int palFmsProc;
             if (route != null)
             {
-              if (
-                !MazakRouteHistory.HasLiveSchedule(mazakData, route.PartName)
-                || !MazakRouteHistory.AgreesWithObservation(route, mazakData)
-              )
+              if (!MazakRouteHistory.AgreesWithObservation(route, mazakData))
                 continue;
               palFmsProc = route.JobProcess;
               if (!jobsByUniq.TryGetValue(route.JobUnique, out job))

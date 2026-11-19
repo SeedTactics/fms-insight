@@ -73,6 +73,207 @@ public sealed partial class MazakAcquisitionSpec
     };
 
   [Test]
+  public async Task ScheduleCanDisappearWithAllMaterialStillInBaskets()
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var now = cell.Clock.Now.UtcDateTime;
+    var process = new ProcessInfo
+    {
+      BasketLoadStations = [1],
+      BasketUnloadStations = [1],
+      Paths = [JobLogTest.EmptyPath with { PalletNums = [1] }],
+    };
+    var job = new Job
+    {
+      UniqueStr = "basket-job",
+      PartName = "part",
+      Cycles = 2,
+      Archived = false,
+      RouteStartUTC = now.AddHours(-1),
+      RouteEndUTC = now.AddHours(1),
+      Processes = [process, process],
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "basket-only", Jobs = [job] }, null, true);
+    var route = new MazakRouteIdentity
+    {
+      Source = MazakConfig.DefaultControllerSource,
+      PartName = "part:7:1:1",
+      NativeProcess = 1,
+      JobUnique = job.UniqueStr,
+      JobProcess = 1,
+      Path = 1,
+    };
+    db.ReserveMazakRouteIdentity(route);
+    var material = db.AllocateMaterialID(job.UniqueStr, job.PartName, 2);
+    var contents = new BasketContents
+    {
+      BasketId = 7,
+      Slots = ImmutableSortedDictionary<int, BasketSlotContents>.Empty.Add(
+        1,
+        new BasketSlotContents { Material = [new() { MaterialID = material, Process = 1 }] }
+      ),
+    };
+    db.RecordBasketStationOperation(
+      new BasketStationOperation
+      {
+        Transfers =
+        [
+          new BasketStationTransfer.LoadOntoBasket
+          {
+            BasketId = 7,
+            Material =
+            [
+              new()
+              {
+                MaterialID = material,
+                Process = 1,
+                Face = 1,
+              },
+            ],
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+        ],
+        CycleBoundaries = [],
+        ContentsChanges =
+        [
+          new()
+          {
+            BasketId = 7,
+            Expected = null,
+            Result = contents,
+          },
+        ],
+      },
+      lulNum: 1,
+      totalElapsed: TimeSpan.Zero,
+      timeUTC: now,
+      externalQueues: null,
+      idempotencyKey: "basket-only-load"
+    );
+    cell.Data = WithInstalledRoute(cell.Data, route);
+    static MazakConfig Configure(MazakConfig config) =>
+      config with
+      {
+        UseDurableRouteIdentity = true,
+        UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
+      };
+    using var sync = cell.NewSynchronizer(configure: Configure);
+    var before = sync.CalculateCellState(db).CurrentStatus;
+    await Assert.That(before.Jobs[job.UniqueStr].RemainingToStart).IsEqualTo(1L);
+
+    // The basket remains outside Mazak. Its contents never populated a native pallet assignment.
+    cell.Data = cell.Data with { Schedules = [], Parts = [] };
+    using var reopened = cell.Repositories.OpenConnection();
+    using var restarted = cell.NewSynchronizer(configure: Configure);
+    var after = restarted.CalculateCellState(reopened).CurrentStatus;
+    await Assert.That(after.Jobs[job.UniqueStr].RemainingToStart).IsEqualTo(1L);
+    await Assert.That(after.Jobs[job.UniqueStr].Completed![0][0]).IsEqualTo(0);
+    await Assert
+      .That(reopened.GetBasketContents(7)!.Slots[1].Material.Single().MaterialID)
+      .IsEqualTo(material);
+    await Assert.That(reopened.GetMaterialInAllQueues()).IsEmpty();
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task OperatorCorrectionQuarantinesRemovedMaterialEvenIfItsScheduleWasRetired(
+    bool retireAfterCorrection
+  )
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var now = cell.Clock.Now.UtcDateTime;
+    var process = new ProcessInfo { Paths = [JobLogTest.EmptyPath with { PalletNums = [1] }] };
+    var job = new Job
+    {
+      UniqueStr = "managed",
+      PartName = "part",
+      Cycles = 1,
+      Archived = false,
+      RouteStartUTC = now.AddHours(-1),
+      RouteEndUTC = now.AddHours(1),
+      Processes = [process, process],
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "manual-correction", Jobs = [job] }, null, true);
+    var route = new MazakRouteIdentity
+    {
+      Source = MazakConfig.DefaultControllerSource,
+      PartName = "part:7:2:2",
+      NativeProcess = 1,
+      JobUnique = job.UniqueStr,
+      JobProcess = 2,
+      Path = 1,
+    };
+    db.ReserveMazakRouteIdentity(route);
+    var material = db.AllocateMaterialID(job.UniqueStr, job.PartName, 2);
+    db.RecordPartialLoadUnload(
+      [
+        new MaterialToLoadOntoFace
+        {
+          MaterialIDs = [material],
+          Process = 2,
+          Path = 1,
+          FaceNum = 1,
+          ActiveOperationTime = TimeSpan.Zero,
+          AdditionalData = ImmutableDictionary<string, string>.Empty.Add(
+            "mazak-native-part-name",
+            route.PartName
+          ),
+        },
+      ],
+      [],
+      1,
+      1,
+      TimeSpan.Zero,
+      now.AddMinutes(-2),
+      null
+    );
+    cell.Data = WithInstalledRoute(cell.Data, route) with
+    {
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "S001" }],
+      PalletSubStatuses = [AssignedFace(route)],
+    };
+    using var sync = new MazakSync(
+      cell.Native,
+      new FMSSettings { QuarantineQueue = "quarantine" },
+      new MazakConfig
+      {
+        DBType = MazakDbType.MazakSmooth,
+        UseDurableRouteIdentity = true,
+        UseInsightJobQuantities = j => j.UniqueStr == job.UniqueStr,
+      },
+      cell.Clock
+    );
+    var initial = sync.CalculateCellState(db).CurrentStatus;
+    await Assert
+      .That(initial.Material.Single(m => m.Location.PalletNum == 1).MaterialID)
+      .IsEqualTo(material);
+    await Assert.That(db.GetMaterialInAllQueues()).IsEmpty();
+
+    // The operator physically removed the material and then cleared the native assignment.
+    // Mazak can now permit retirement. The correction generates no normal UNLOAD.
+    cell.Data = cell.Data with { PalletSubStatuses = [] };
+    if (retireAfterCorrection)
+      cell.Data = cell.Data with { Schedules = [], Parts = [] };
+    var corrected = sync.CalculateCellState(db);
+    await Assert.That(corrected.StateUpdated).IsTrue();
+    await Assert
+      .That(corrected.CurrentStatus.Material.Where(m => m.Location.PalletNum == 1))
+      .IsEmpty();
+    var quarantined = db.GetMaterialInAllQueues().Single();
+    await Assert.That(quarantined.MaterialID).IsEqualTo(material);
+    await Assert.That(quarantined.Queue).IsEqualTo("quarantine");
+    await Assert.That(db.GetJobProductionSummary(job.UniqueStr).Completed).IsEmpty();
+
+    sync.CalculateCellState(db);
+    var correction = db.GetLogForMaterial(material)
+      .Single(e => e.Program == MazakMaterialHistory.MissingMaterialReason);
+    await Assert.That(correction.Material.Single().Process).IsEqualTo(2);
+  }
+
+  [Test]
   [Arguments(1)]
   [Arguments(2)]
   public async Task PartialReloadStartsANewMachiningPlacement(int processAfterLoad)
@@ -556,9 +757,6 @@ public sealed partial class MazakAcquisitionSpec
         Parts = [.. cell.Data.Parts, replacementPart],
         Schedules = [.. cell.Data.Schedules, Schedule(replacementPart, 20, 5) with { Id = 2 }],
       };
-      var waitingForFile = restarted.CalculateCellState(reopened).CurrentStatus;
-      await Assert.That(waitingForFile.Material).IsEmpty();
-      await Assert.That(reopened.IsMaterialInQueue(material)).IsFalse();
     }
     else
     {
@@ -620,6 +818,8 @@ public sealed partial class MazakAcquisitionSpec
     }
     await Assert.That(log.Material.Single().MaterialID).IsEqualTo(material);
     await Assert.That(log.Material.Single().Process).IsEqualTo(2);
+    if (retireBeforeIngestion)
+      await Assert.That(reopened.GetMaterialInAllQueues()).IsEmpty();
     if (reportedQuantity == 2)
     {
       await Assert.That(log.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
