@@ -71,8 +71,12 @@ public static class MazakManagedScheduleControl
   ) =>
     PlanMaterialOffer(db, config, observed, jobUnique, process, quantity, confirmWithdrawal: false);
 
-  /// <summary>Write zero ready material to a verified route, even when readback already shows zero.</summary>
-  /// <remarks>Use this when the caller lost a withdrawal reply and needs an acknowledged write.</remarks>
+  /// <summary>Plan a zero offer for a verified route, even when readback already shows zero.</summary>
+  /// <remarks>
+  /// Use fresh readback to retry a withdrawal whose reply was lost. Save the edit, await the
+  /// controller's acknowledgment, and reconcile settled readback before releasing any reservation
+  /// associated with the offer.
+  /// </remarks>
   public static MazakWriteData WithdrawMaterialOffer(
     IRepository db,
     MazakConfig config,

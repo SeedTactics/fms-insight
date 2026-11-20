@@ -81,6 +81,11 @@ Insight demand and the current offer intact. Serialize the writes with the contr
 acquisition and download owner. After an uncertain write, acquire fresh readback and recompute the
 authorized offer before writing again, since the controller may have consumed it.
 
+If a withdrawal reply was lost and the intended offer is still zero, `WithdrawMaterialOffer` plans a
+zero edit against fresh, verified readback even if the controller already shows zero. The backend
+saves the edit, waits for the controller to acknowledge it, and reconciles settled readback before
+releasing any reservation associated with the offer.
+
 `RecordedLoads` reports physical loads within the confirmed schedule's history, including
 invalidated attempts and separately identified and unidentified quantities. Adopted schedules
 without a recorded creation boundary have unknown attempt totals. Valid Insight completions come
