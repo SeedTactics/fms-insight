@@ -82,11 +82,17 @@ internal static partial class ManagedMazakSchedules
       binding.Comment,
       binding.ConfirmedScheduleId
     );
-    if (inspection.Part is { } part && !ProcessDefinitions(part).SequenceEqual(binding.Processes))
-      throw new ConflictRequestException(
-        $"Mazak job '{job.UniqueStr}' has changed fixtures or programs for route '{binding.Comment}'."
-      );
+    if (inspection.Part is { } part)
+      VerifyInstalledProcesses(part, binding);
     return inspection;
+  }
+
+  private static void VerifyInstalledProcesses(MazakPartRow part, MazakManagedSchedule binding)
+  {
+    if (!ProcessDefinitions(part).SequenceEqual(binding.Processes))
+      throw new ConflictRequestException(
+        $"Mazak job '{binding.JobUnique}' has changed fixtures or programs for route '{binding.Comment}'."
+      );
   }
 
   private static ImmutableList<MazakManagedProcess> ProcessDefinitions(MazakPartRow part) =>
@@ -239,8 +245,16 @@ internal static partial class ManagedMazakSchedules
     // If Mazak installed the part, its original definition remains authoritative. A missing
     // provisional part can be planned again under the same name, retaining earlier dependencies
     // in case only their native transactions succeeded.
-    if (observed.Parts.Any(p => p.PartName == planned.PartName && p.Comment == planned.Comment))
+    if (
+      observed.Parts.FirstOrDefault(p =>
+        p.PartName == planned.PartName && p.Comment == planned.Comment
+      ) is
+      { } installedPart
+    )
+    {
+      VerifyInstalledProcesses(installedPart, saved);
       return;
+    }
     var (_, row) = Inspect(observed, job, saved);
     if (row is not null || saved.ConfirmedScheduleId.HasValue)
       throw new ConflictRequestException(

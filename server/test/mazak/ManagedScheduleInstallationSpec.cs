@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
+using NSubstitute;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
@@ -105,6 +106,34 @@ public sealed partial class DuplicateDownloadSpec
     await Assert
       .That(added.SelectMany(s => s.Processes).All(p => p.ProcessMaterialQuantity == 0))
       .IsTrue();
+  }
+
+  [Test]
+  public async Task RetryRejectsAChangedFixtureBeforeWritingPalletMappings()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var device = new DownloadDevice("parts-full");
+    var job = PendingJob(true);
+    db.AddJobs(new NewJobs { ScheduleId = "pending", Jobs = [job] }, null, false);
+    await Assert.That(() => Sync(device, db)).Throws<IOException>();
+
+    var parts = device.Data.Parts.OrderBy(p => p.Comment).ToArray();
+    var changed = parts[0] with
+    {
+      Processes =
+      [
+        parts[0].Processes.Single() with
+        {
+          Fixture = parts[1].Processes.Single().Fixture,
+        },
+      ],
+    };
+    device.Observe(device.Data with { Parts = [changed, parts[1]] });
+    device.Native.ClearReceivedCalls();
+    using var reopened = repositories.OpenConnection();
+    await Assert.That(() => Sync(device, reopened)).Throws<ConflictRequestException>();
+    device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
   }
 
   [Test]
