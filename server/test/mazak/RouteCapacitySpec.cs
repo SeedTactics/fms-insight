@@ -236,17 +236,16 @@ public sealed partial class DuplicateDownloadSpec
         device.Data,
         System.Collections.Immutable.ImmutableHashSet.Create(identity.PartName)
       );
-      var retirement = MazakRouteRetirement.Calculate(
-        reopened,
-        routeConfig,
-        device.Data,
-        candidates
-      )!;
+      var retirement = MazakRouteRetirement
+        .Calculate(reopened, routeConfig, device.Data, candidates)
+        .NextWrite!;
       await Assert.That(retirement.Fixtures.Single().FixtureName).IsEqualTo(fixture);
       await Assert.That(retirement.Parts).IsEmpty();
       device.Native.Save(retirement);
       await Assert
-        .That(MazakRouteRetirement.Calculate(reopened, routeConfig, device.Data, candidates))
+        .That(
+          MazakRouteRetirement.Calculate(reopened, routeConfig, device.Data, candidates).NextWrite
+        )
         .IsNull();
       await Assert.That(device.Data.Pallets.Single().Fixture).IsEqualTo("peer");
       await Assert
@@ -475,7 +474,7 @@ public sealed partial class DuplicateDownloadSpec
       ImmutableHashSet.Create(identity.PartName)
     );
     MazakWriteData? Retire() =>
-      MazakRouteRetirement.Calculate(reopened, routeConfig, device.Data, candidates);
+      MazakRouteRetirement.Calculate(reopened, routeConfig, device.Data, candidates).NextWrite;
     await Assert.That(Retire).Throws<ConflictRequestException>();
     device.Native.Save(Offer(0)!);
     device.Native.Save(Retire()!);
@@ -711,7 +710,7 @@ public sealed partial class DuplicateDownloadSpec
     );
     for (var i = 0; i < 10; i++)
     {
-      var next = MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retirement);
+      var next = MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retirement).NextWrite;
       if (next == null)
         break;
       device.Native.Save(next);

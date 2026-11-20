@@ -18,7 +18,7 @@ public sealed partial class DuplicateDownloadSpec
   [Arguments(1, 0, 0)]
   [Arguments(0, 1, 0)]
   [Arguments(0, 0, 1)]
-  public async Task SelectedRetirementChecksEveryProcessAndAssignedPallet(
+  public async Task SelectedRetirementChecksReadyExecutingAndAssignedMaterial(
     int ready,
     int executing,
     int onPallet
@@ -26,18 +26,28 @@ public sealed partial class DuplicateDownloadSpec
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null);
     using var db = config.OpenConnection();
+    var route = new MazakRouteIdentity
+    {
+      Source = RouteConfig.ControllerSource,
+      PartName = "part:1:1:1",
+      NativeProcess = 1,
+      JobUnique = "retire",
+      JobProcess = 1,
+      Path = 1,
+    };
+    db.ReserveMazakRouteIdentity(route);
     var schedule = new MazakScheduleRow
     {
       Id = 1,
-      PartName = "part:1:1",
+      PartName = route.PartName,
+      Comment = MazakPart.SplitComment(route.JobUnique, route.JobProcess, route.Path),
       PlanQuantity = 10,
       CompleteQuantity = 4,
       Processes =
       [
-        new() { ProcessNumber = 1 },
         new()
         {
-          ProcessNumber = 2,
+          ProcessNumber = 1,
           ProcessMaterialQuantity = ready,
           ProcessExecuteQuantity = executing,
           ProcessBadQuantity = 1,
@@ -49,12 +59,75 @@ public sealed partial class DuplicateDownloadSpec
       Schedules = [schedule],
       PalletSubStatuses = [new() { ScheduleID = schedule.Id, FixQuantity = onPallet }],
     };
-    var candidates = MazakRouteRetirement.Capture(view, ImmutableHashSet.Create(schedule.PartName));
-    MazakWriteData? Retire() => MazakRouteRetirement.Calculate(db, RouteConfig, view, candidates);
+    var candidates = MazakRouteRetirement.Capture(
+      db,
+      RouteConfig,
+      view,
+      ImmutableHashSet.Create(schedule.PartName)
+    );
+    MazakRetirementStep Retire() =>
+      MazakRouteRetirement.Calculate(db, RouteConfig, view, candidates);
     if (ready + executing + onPallet > 0)
       await Assert.That(Retire).Throws<ConflictRequestException>();
     else
-      await Assert.That(Retire()!.Schedules.Single().Command).IsEqualTo(MazakWriteCommand.Delete);
+    {
+      var step = Retire();
+      await Assert.That(step.Progress).IsEqualTo(MazakRetirementProgress.WriteRequired);
+      await Assert
+        .That(step.NextWrite!.Schedules.Single().Command)
+        .IsEqualTo(MazakWriteCommand.Delete);
+    }
+  }
+
+  [Test]
+  public async Task RetirementWaitsForReadbackAndRefusesChangedOwnership()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = config.OpenConnection();
+    var route = new MazakRouteIdentity
+    {
+      Source = RouteConfig.ControllerSource,
+      PartName = "part:1:1:1",
+      NativeProcess = 1,
+      JobUnique = "retire",
+      JobProcess = 1,
+      Path = 1,
+    };
+    db.ReserveMazakRoutePreparation(route, new() { FixtureName = "F:5:1:1", FixtureGroup = 1 });
+    var view = new DownloadDevice("").Data;
+    var candidates = MazakRouteRetirement.Capture(
+      db,
+      RouteConfig,
+      view,
+      ImmutableHashSet.Create(route.PartName)
+    );
+    var foreignRow = new MazakScheduleRow
+    {
+      Id = 1,
+      PartName = route.PartName,
+      Comment = MazakPart.SplitComment("other", 1, 1),
+      Processes = [new() { ProcessNumber = 1 }],
+    };
+    var changed = view with { Schedules = [foreignRow] };
+    await Assert
+      .That(() => MazakRouteRetirement.Calculate(db, RouteConfig, changed, candidates))
+      .Throws<ConflictRequestException>();
+    await Assert
+      .That(() => MazakRouteRetirement.RemoveSchedule(db, RouteConfig, changed, route))
+      .Throws<ConflictRequestException>();
+    var peer = RouteConfig with { ControllerSource = "peer" };
+    db.ReserveMazakRouteIdentity(route with { Source = peer.ControllerSource });
+    await Assert
+      .That(() => MazakRouteRetirement.Calculate(db, peer, view, candidates))
+      .Throws<ArgumentException>();
+    var incomplete = view with { Schedules = [foreignRow with { PartName = "peer:3:1" }] };
+    var waiting = MazakRouteRetirement.Calculate(db, RouteConfig, incomplete, candidates);
+    await Assert.That(waiting.Progress).IsEqualTo(MazakRetirementProgress.WaitingForReadback);
+    await Assert.That(waiting.NextWrite).IsNull();
+    await Assert.That(db.LoadMazakRoutePreparation(route.Source, route.PartName, 1)).IsNotNull();
+    var complete = MazakRouteRetirement.Calculate(db, RouteConfig, view, candidates);
+    await Assert.That(complete.Progress).IsEqualTo(MazakRetirementProgress.Complete);
+    await Assert.That(db.LoadMazakRoutePreparation(route.Source, route.PartName, 1)).IsNull();
   }
 
   [Test]
@@ -146,12 +219,9 @@ public sealed partial class DuplicateDownloadSpec
     using var reopened = config.OpenConnection();
     for (var i = 0; i < 6; i++)
     {
-      var next = MazakRouteRetirement.Calculate(
-        reopened,
-        routeConfig,
-        device.Native.LoadAllData(),
-        retirement
-      );
+      var next = MazakRouteRetirement
+        .Calculate(reopened, routeConfig, device.Native.LoadAllData(), retirement)
+        .NextWrite;
       if (next == null)
         break;
       await Assert.That(reopened.LoadMazakRoutePreparation(a.Source, a.PartName, 1)).IsNotNull();
@@ -172,12 +242,9 @@ public sealed partial class DuplicateDownloadSpec
       );
       for (var i = 0; i < 6; i++)
       {
-        var next = MazakRouteRetirement.Calculate(
-          reopened,
-          routeConfig,
-          device.Native.LoadAllData(),
-          peerRetirement
-        );
+        var next = MazakRouteRetirement
+          .Calculate(reopened, routeConfig, device.Native.LoadAllData(), peerRetirement)
+          .NextWrite;
         if (next == null)
           break;
         device.Native.Save(next);
@@ -611,50 +678,54 @@ public sealed partial class DuplicateDownloadSpec
       .IsFalse();
 
     var owned = ImmutableHashSet.Create(a.PartName);
-    var retiringA = MazakRouteRetirement.Capture(device.Data, owned);
-    var dropSchedule = MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringA)!;
+    var retiringA = MazakRouteRetirement.Capture(db, routeConfig, device.Data, owned);
+    var dropSchedule = MazakRouteRetirement
+      .Calculate(db, routeConfig, device.Data, retiringA)
+      .NextWrite!;
     await Assert.That(dropSchedule.Schedules.Single().Id).IsEqualTo(aSchedule.Id);
     await Assert.That(dropSchedule.Parts).IsEmpty();
     device.Native.Save(dropSchedule);
-    var dropPart = MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringA)!;
+    var dropPart = MazakRouteRetirement
+      .Calculate(db, routeConfig, device.Data, retiringA)
+      .NextWrite!;
     await Assert.That(dropPart.Parts.Single().PartName).IsEqualTo(a.PartName);
     await Assert.That(dropPart.Pallets).IsEmpty();
     device.Native.Save(dropPart);
     await Assert
-      .That(MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringA))
+      .That(MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringA).NextWrite)
       .IsNull();
     await Assert.That(device.Data.Pallets).Contains(sharedMapping);
 
-    var retiringB = MazakRouteRetirement.Capture(device.Data, ImmutableHashSet.Create(b.PartName));
-    device.Native.Save(MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringB)!);
-    device.Native.Save(MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringB)!);
+    var retiringB = MazakRouteRetirement.Capture(
+      db,
+      routeConfig,
+      device.Data,
+      ImmutableHashSet.Create(b.PartName)
+    );
+    device.Native.Save(
+      MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringB).NextWrite!
+    );
+    device.Native.Save(
+      MazakRouteRetirement.Calculate(db, routeConfig, device.Data, retiringB).NextWrite!
+    );
     using var reopened = config.OpenConnection();
     device.Native.ClearReceivedCalls();
-    var dropMapping = MazakRouteRetirement.Calculate(
-      reopened,
-      routeConfig,
-      device.Native.LoadAllData(),
-      retiringB
-    )!;
+    var dropMapping = MazakRouteRetirement
+      .Calculate(reopened, routeConfig, device.Native.LoadAllData(), retiringB)
+      .NextWrite!;
     await Assert.That(dropMapping.Pallets.Single().Fixture).IsEqualTo(fixture);
     await Assert.That(dropMapping.Fixtures).IsEmpty();
     device.Native.Save(dropMapping);
-    var dropFixture = MazakRouteRetirement.Calculate(
-      reopened,
-      routeConfig,
-      device.Native.LoadAllData(),
-      retiringB
-    )!;
+    var dropFixture = MazakRouteRetirement
+      .Calculate(reopened, routeConfig, device.Native.LoadAllData(), retiringB)
+      .NextWrite!;
     await Assert.That(dropFixture.Fixtures.Single().FixtureName).IsEqualTo(fixture);
     device.Native.Save(dropFixture);
     await Assert
       .That(
-        MazakRouteRetirement.Calculate(
-          reopened,
-          routeConfig,
-          device.Native.LoadAllData(),
-          retiringB
-        )
+        MazakRouteRetirement
+          .Calculate(reopened, routeConfig, device.Native.LoadAllData(), retiringB)
+          .NextWrite
       )
       .IsNull();
     await Assert

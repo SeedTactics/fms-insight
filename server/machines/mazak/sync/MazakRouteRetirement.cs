@@ -10,16 +10,29 @@ namespace MazakMachineInterface;
 
 public sealed record MazakRetirementCandidates
 {
+  public string? ControllerSource { get; init; }
   public required ImmutableHashSet<string> PartNames { get; init; }
   public required ImmutableHashSet<string> FixtureNames { get; init; }
   public required ImmutableHashSet<string> MainPrograms { get; init; }
 }
 
+public enum MazakRetirementProgress
+{
+  WriteRequired,
+  WaitingForReadback,
+  Complete,
+}
+
+public sealed record MazakRetirementStep(
+  MazakRetirementProgress Progress,
+  MazakWriteData? NextWrite
+);
+
 public static class MazakRouteRetirement
 {
   // Capture before deleting any part. Retain the candidates across retries, and recalculate
   // each phase using the controller owner's fresh, complete observation.
-  public static MazakRetirementCandidates Capture(
+  internal static MazakRetirementCandidates Capture(
     MazakAllData observed,
     IReadOnlySet<string> ownedPartNames
   )
@@ -50,7 +63,11 @@ public static class MazakRouteRetirement
     IReadOnlySet<string> ownedPartNames
   )
   {
-    var candidates = Capture(observed, ownedPartNames);
+    VerifyOwnership(db, config, observed, ownedPartNames);
+    var candidates = Capture(observed, ownedPartNames) with
+    {
+      ControllerSource = config.ControllerSource,
+    };
     foreach (var name in ownedPartNames)
     {
       var prepared = db.LoadMazakRoutePreparation(config.ControllerSource, name, nativeProcess: 1);
@@ -67,38 +84,138 @@ public static class MazakRouteRetirement
     return candidates;
   }
 
-  // The caller establishes retirement eligibility. The optional predicate can keep another
-  // schedule on a shared definition. Surviving observations always protect their dependencies.
-  public static MazakWriteData? Calculate(
+  // Check the saved native identity before relying on readback for route decisions.
+  public static ImmutableList<MazakScheduleRow> VerifyOwnership(
     IRepository db,
     MazakConfig config,
     MazakAllData observed,
-    MazakRetirementCandidates candidates,
-    Func<MazakScheduleRow, bool>? shouldRemoveSchedule = null
+    IReadOnlySet<string> ownedPartNames
+  ) =>
+    ownedPartNames
+      .Select(name =>
+        db.LoadMazakRouteIdentity(config.ControllerSource, name, 1)
+        ?? throw new ConflictRequestException(
+          $"Native part '{name}' has no reserved route on Mazak controller '{config.ControllerSource}'."
+        )
+      )
+      .Select(route => FindOwnedSchedule(db, config, observed, route))
+      .OfType<MazakScheduleRow>()
+      .ToImmutableList();
+
+  internal static MazakScheduleRow? FindOwnedSchedule(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    MazakRouteIdentity route
   )
   {
-    var (scheduleDeletes, survivingParts) = BuildMazakSchedules.RemoveSchedules(observed, s =>
-      candidates.PartNames.Contains(s.PartName) && shouldRemoveSchedule?.Invoke(s) != false
-    );
-    var busy = scheduleDeletes.Schedules.FirstOrDefault(s =>
-      s.Processes.Count == 0
-      || s.Processes.Any(p => p.ProcessMaterialQuantity != 0 || p.ProcessExecuteQuantity != 0)
-      || observed.PalletSubStatuses.Any(p => p.ScheduleID == s.Id && p.FixQuantity > 0)
-    );
-    if (busy != null)
-      throw new ConflictRequestException(
-        $"Mazak schedule {busy.Id} can retire only after readback shows zero ready and executing material on every process and no material on a pallet."
+    if (route.Source != config.ControllerSource)
+      throw new ArgumentException(
+        "The route belongs to a different Mazak controller.",
+        nameof(route)
       );
+    if (
+      route.NativeProcess != 1
+      || route.Path != 1
+      || db.LoadMazakRouteIdentity(route.Source, route.PartName, route.NativeProcess) != route
+    )
+      throw new ConflictRequestException(
+        $"Native part '{route.PartName}' has no matching reserved split route."
+      );
+
+    var comment = MazakPart.SplitComment(route.JobUnique, route.JobProcess, route.Path);
+    bool MatchingName(string name) =>
+      string.Equals(name, route.PartName, StringComparison.OrdinalIgnoreCase);
+    bool Relevant(string name, string observedComment) =>
+      MatchingName(name) || observedComment == comment;
+    bool Owns(string name, string observedComment) =>
+      name == route.PartName
+      && observedComment == comment
+      && MazakPart.IsSailPart(name, observedComment);
+    ConflictRequestException Conflict(string name, string observedComment) =>
+      new(
+        $"Mazak job '{route.JobUnique}' has a conflicting definition for part '{name}'. Mazak reported the route comment '{observedComment}'."
+      );
+
+    var parts = observed
+      .Parts.Where(p => Relevant(p.PartName, p.Comment))
+      .Take(2)
+      .ToImmutableList();
+    foreach (var part in parts)
+      if (
+        parts.Count != 1
+        || !Owns(part.PartName, part.Comment)
+        || part.Processes is not [{ ProcessNumber: 1 }]
+      )
+        throw Conflict(part.PartName, part.Comment);
+    var schedules = observed
+      .Schedules.Where(s => Relevant(s.PartName, s.Comment))
+      .Take(2)
+      .ToImmutableList();
+    foreach (var row in schedules)
+      if (
+        schedules.Count != 1
+        || !Owns(row.PartName, row.Comment)
+        || row.Processes is not [{ ProcessNumber: 1 }]
+        || observed.Schedules.Count(s => s.Id == row.Id) != 1
+      )
+        throw Conflict(row.PartName, row.Comment);
+    return schedules.SingleOrDefault();
+  }
+
+  // Remove a verified idle schedule and keep the native definition for future capacity.
+  public static MazakWriteData? RemoveSchedule(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    MazakRouteIdentity route
+  )
+  {
+    var row = FindOwnedSchedule(db, config, observed, route);
+    if (row == null)
+      return null;
+    CheckIdle(observed, row);
+    return BuildMazakSchedules.RemoveSchedules(observed, schedule => schedule.Id == row.Id).Item1;
+  }
+
+  // The caller establishes production eligibility. Recalculate after each write using fresh
+  // readback from the same controller. A waiting step leaves the preparation reserved.
+  public static MazakRetirementStep Calculate(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    MazakRetirementCandidates candidates
+  )
+  {
+    if (candidates.ControllerSource != config.ControllerSource)
+      throw new ArgumentException(
+        "The retirement belongs to a different Mazak controller.",
+        nameof(candidates)
+      );
+    var rows = VerifyOwnership(db, config, observed, candidates.PartNames);
+    foreach (var row in rows)
+      CheckIdle(observed, row);
+    var scheduled = rows.Select(row => row.Id).ToImmutableHashSet();
+    var (scheduleDeletes, survivingParts) = BuildMazakSchedules.RemoveSchedules(observed, s =>
+      scheduled.Contains(s.Id)
+    );
     if (scheduleDeletes.Schedules.Count > 0)
-      return scheduleDeletes;
+      return Write(scheduleDeletes);
+
+    if (
+      !HasAllScheduledParts(observed)
+      || observed.PalletSubStatuses.Any(s =>
+        s.FixQuantity > 0
+        && candidates.PartNames.WithComparer(StringComparer.OrdinalIgnoreCase).Contains(s.PartName)
+      )
+    )
+      return new(MazakRetirementProgress.WaitingForReadback, null);
 
     var partDeletes = MazakJobs.DeletePartRows(observed.Parts, p =>
-      candidates.PartNames.Contains(p.PartName)
-      && !survivingParts.Contains(p.PartName)
-      && !observed.PalletSubStatuses.Any(s => s.PartName == p.PartName && s.FixQuantity > 0)
+      candidates.PartNames.Contains(p.PartName) && !survivingParts.Contains(p.PartName)
     );
     if (partDeletes.Parts.Count > 0)
-      return partDeletes;
+      return Write(partDeletes);
 
     var referencedNames = observed
       .Parts.Select(p => p.PartName)
@@ -113,7 +230,7 @@ public static class MazakRouteRetirement
     var protectedFixtures = active.Select(p => p.FixtureName);
     var pallets = RemovePalletMappings(observed, candidates, protectedFixtures);
     if (pallets.Pallets.Count > 0)
-      return pallets;
+      return Write(pallets);
 
     var unused = RemoveUnusedDependencies(
       observed,
@@ -122,10 +239,29 @@ public static class MazakRouteRetirement
       RequiredProgramComments(observed, active)
     );
     if (unused.Fixtures.Count > 0 || unused.Programs.Count > 0)
-      return unused;
-    if (HasAllScheduledParts(observed))
-      db.ReleaseMazakRoutePreparations(config.ControllerSource, finishedParts);
-    return null;
+      return Write(unused);
+    db.ReleaseMazakRoutePreparations(config.ControllerSource, finishedParts);
+    return new(MazakRetirementProgress.Complete, null);
+  }
+
+  private static MazakRetirementStep Write(MazakWriteData data) =>
+    new(MazakRetirementProgress.WriteRequired, data);
+
+  private static void CheckIdle(MazakAllData observed, MazakScheduleRow row)
+  {
+    if (
+      row.Processes.Any(p => p.ProcessMaterialQuantity != 0 || p.ProcessExecuteQuantity != 0)
+      || observed.PalletSubStatuses.Any(p =>
+        p.FixQuantity > 0
+        && (
+          p.ScheduleID == row.Id
+          || string.Equals(p.PartName, row.PartName, StringComparison.OrdinalIgnoreCase)
+        )
+      )
+    )
+      throw new ConflictRequestException(
+        $"Mazak schedule {row.Id} can retire only after readback shows zero ready and executing material on every process and no material on a pallet."
+      );
   }
 
   internal static IEnumerable<string> RequiredProgramComments(

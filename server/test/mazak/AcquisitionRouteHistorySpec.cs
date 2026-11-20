@@ -402,14 +402,9 @@ public sealed partial class MazakAcquisitionSpec
       .That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, beforeReplacement))
       .IsEqualTo(0L);
 
-    var candidates = MazakRouteRetirement.Capture(
-      db,
-      config,
-      cell.Data,
-      ImmutableHashSet.Create(route.PartName)
-    );
-    var retire = MazakRouteRetirement.Calculate(db, config, cell.Data, candidates)!;
+    var retire = MazakRouteRetirement.RemoveSchedule(db, config, cell.Data, route)!;
     await Assert.That(retire.Schedules.Single().Command).IsEqualTo(MazakWriteCommand.Delete);
+    await Assert.That(retire.Parts).IsEmpty();
     cell.Data = cell.Data with { Schedules = [] };
     var repeat = MazakRouteCapacity.Calculate(
       db,

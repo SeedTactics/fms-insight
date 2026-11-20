@@ -76,9 +76,10 @@ calculating the next offer. Replaying the old quantity after Mazak consumed it c
 pieces twice.
 
 The preparation API manages one live schedule per selected route. For example, after a piece is
-invalidated and returned to a queue, the owner can retire the empty schedule and prepare another
-against the same part definition. The exact load resolver supplies the existing material ID. The
-repeated unload restores its valid completion and the piece counts as one entry.
+invalidated and returned to a queue, use `MazakRouteRetirement.RemoveSchedule` to remove the
+verified idle schedule and keep its definition. A lower plan also requires removing the schedule and
+creating its replacement. The exact load resolver supplies the existing material ID. The repeated
+unload restores its valid completion and the piece counts as one entry.
 
 Historical attribution uses the controller source, exact full part name and native process. For
 legacy definitions, the caller can supply a full name for adoption after establishing its ownership.
@@ -105,16 +106,17 @@ dated before the empty observation can complete its original run using that run'
 Its tool usage is unknown once the pallet placement has changed. An end dated after the observation
 requires evidence of a subsequent start, even when the new load CSV is missing.
 
-Use the repository-aware overload of `MazakRouteRetirement.Capture` before deleting parts. It
-includes the fixture and program reserved before a preparation write, even if the part was never
-installed. Retain the selected names and dependency candidates across retries.
-`MazakRouteRetirement.Calculate` returns the next transaction from a complete controller
-observation. It refuses a selected schedule deletion while a process has material ready or
-executing, or a pallet still reports a positive assignment. An empty schedule may retire with
-unequal planned and completed counts. Surviving schedules, parts and active preparations protect
-their shared fixtures and programs, including programs already installed on the controller. The
-final readback releases the preparation so a later installation can choose an available fixture
-group. The historical part identity remains reserved.
+Use `MazakRouteRetirement.Capture` before deleting parts. It includes the fixture and program
+reserved before a preparation write, even if the part was never installed. Retain the
+controller-bound candidates across retries. Use readback from that controller.
+`MazakRouteRetirement.Calculate` verifies the most recent rows against their reserved routes. Apply
+its next write, continue waiting for complete readback, or close the intent when it reports
+completion. It refuses a selected schedule deletion while a process has material ready or executing,
+or a pallet still reports a positive assignment. An empty schedule may retire with unequal planned
+and completed counts. Surviving schedules, parts and active preparations protect their shared
+fixtures and programs, including programs already installed on the controller. The final readback
+releases the preparation so a later installation can choose an available fixture group. The
+historical part identity remains reserved.
 
 Scoped bulk downloads save cleanup candidates before deleting parts. After an uncertain write, the
 next pass uses fresh readback to recheck ownership and references and finish eligible cleanup.
