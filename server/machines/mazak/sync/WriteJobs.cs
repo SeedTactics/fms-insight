@@ -422,7 +422,10 @@ namespace MazakMachineInterface
         }
       }
 
-      var unarchived = jobDB.LoadUnarchivedJobs();
+      var unarchived = jobDB
+        .LoadUnarchivedJobs()
+        .Where(j => mazakCfg.BulkJobFilter?.Invoke(j) != false)
+        .ToImmutableList();
 
       // Accepted jobs remain committed while controller delivery is pending, including
       // jobs outside this pass's download window or selected schedule group.

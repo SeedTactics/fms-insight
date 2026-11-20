@@ -20,6 +20,49 @@ public sealed partial class DuplicateDownloadSpec
     };
 
   [Test]
+  [Arguments(true)]
+  [Arguments(false)]
+  public async Task EachControllerArchivesOnlyItsOwnJobs(bool manualFirst)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var settings = new FMSSettings();
+    var ordinary = PendingJob(false) with { UniqueStr = "ordinary" };
+    var managed = PendingJob(true) with { UniqueStr = "managed" };
+    var manual = new DownloadDevice("");
+    var robot = new DownloadDevice("");
+    var manualConfig = new MazakConfig
+    {
+      DBType = MazakDbType.MazakSmooth,
+      ControllerSource = "manual",
+      BulkJobFilter = job => job.UniqueStr == ordinary.UniqueStr,
+    };
+    var robotConfig = ManagedConfig() with
+    {
+      ControllerSource = "robot",
+      BulkJobFilter = job => job.UniqueStr == managed.UniqueStr,
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [ordinary, managed] }, null, false);
+    void Poll(DownloadDevice device, MazakConfig config) =>
+      WriteJobs.SyncFromDatabase(device.Data, db, device.Native, settings, config, Now);
+    if (manualFirst)
+    {
+      Poll(manual, manualConfig);
+      Poll(robot, robotConfig);
+    }
+    else
+    {
+      Poll(robot, robotConfig);
+      Poll(manual, manualConfig);
+    }
+    await Assert.That(manual.Data.Schedules.Single().CompleteQuantity).IsEqualTo(0);
+    await Assert.That(db.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(db.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(db.LoadJob(ordinary.UniqueStr)!.Archived).IsFalse();
+    await Assert.That(db.LoadJob(managed.UniqueStr)!.Archived).IsFalse();
+  }
+
+  [Test]
   public async Task CompletedManagedScheduleTakesNineAttemptsForSixValidCompletions()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null);
