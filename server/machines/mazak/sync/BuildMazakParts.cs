@@ -283,7 +283,7 @@ namespace MazakMachineInterface
 
     public static bool IsInsightMainProgram(string mainProgramComment)
     {
-      return mainProgramComment.StartsWith("Insight:");
+      return mainProgramComment?.StartsWith("Insight:", StringComparison.Ordinal) == true;
     }
 
     public static bool TryParseMainProgramComment(
@@ -292,7 +292,7 @@ namespace MazakMachineInterface
       out long rev
     )
     {
-      if (mainProgramComment.StartsWith("Insight:"))
+      if (IsInsightMainProgram(mainProgramComment))
       {
         mainProgramComment = mainProgramComment.Substring(8);
         var idx = mainProgramComment.IndexOf(':');
@@ -1165,7 +1165,7 @@ namespace MazakMachineInterface
     //Func<int, int, bool> only introduced in .NET 3.5
     private delegate bool MatchFunc(int proc, int path);
 
-    private static void BuildProcFromJob(
+    internal static void BuildProcFromJob(
       Job job,
       MazakPart mazak,
       out string ErrorDuringCreate,
@@ -1264,7 +1264,7 @@ namespace MazakMachineInterface
       }
     }
 
-    internal static ProgramRevision ResolveProgram(
+    private static ProgramRevision ResolveProgram(
       MazakAllData data,
       string name,
       long? revision,

@@ -103,40 +103,23 @@ internal static partial class ManagedMazakSchedules
 
   private static void VerifyProgramForAdoption(
     IRepository db,
+    MazakConfig config,
     MazakAllData data,
     Job job,
     MazakPartRow part
   )
   {
-    var route = MazakPart.ParseCommentInfo(part.Comment);
-    foreach (var process in part.Processes)
-    {
-      var jobProcess = route.JobProcessForMazakProcess(process.ProcessNumber);
-      var stop = job.Processes[jobProcess - 1].Paths[0].Stops.LastOrDefault();
-      var expected = stop?.Program is { Length: > 0 } name
-        ? ConvertJobsToMazakParts.ResolveProgram(
-          data,
-          name,
-          stop.ProgramRevision,
-          (program, revision) => WriteJobs.LookupProgram(db, program, revision)
-        )
-        : null;
-      if (
-        expected?.CellControllerProgramName is not { } native
-        || !data.MainPrograms.Any(program => program.MainProgram == native)
-        || process.MainProgram != native
-      )
-        throw new ConflictRequestException(
-          $"Mazak job '{job.UniqueStr}' process {jobProcess} cannot adopt native part '{part.PartName}' with program '{process.MainProgram}'. It requires the installed program for '{stop?.Program}'."
-        );
-    }
+    if (ExecutionConflict(db, data, config, job, part, checkExecutionFields: false) is { } conflict)
+      throw new ConflictRequestException(conflict);
   }
 
   internal static string? ExecutionConflict(
+    IRepository db,
     MazakAllData data,
     MazakConfig config,
     Job job,
-    MazakPartRow part
+    MazakPartRow part,
+    bool checkExecutionFields = true
   )
   {
     var route = MazakPart.ParseCommentInfo(part.Comment);
@@ -145,24 +128,22 @@ internal static partial class ManagedMazakSchedules
       ? new MazakPart(job, download, 0, route.FmsProcess, 1)
       : new MazakPart(job, download, 0);
     expectedPart.PartName = part.PartName;
-    foreach (var process in part.Processes.OrderBy(p => p.ProcessNumber))
+    ConvertJobsToMazakParts.BuildProcFromJob(
+      job,
+      expectedPart,
+      out var error,
+      config,
+      data,
+      (program, revision) => WriteJobs.LookupProgram(db, program, revision),
+      onlyProcess: route.IsSplit ? route.FmsProcess : null
+    );
+    if (!string.IsNullOrEmpty(error))
+      return $"Mazak controller '{config.ControllerSource}' cannot verify native part '{part.PartName}' for job '{job.UniqueStr}': {error}";
+
+    foreach (var expectedProcess in expectedPart.Processes)
     {
-      var jobProcess = route.JobProcessForMazakProcess(process.ProcessNumber);
-      var path = job.Processes[jobProcess - 1].Paths[0];
-      var stop = path.Stops.Last();
-      var program = new ProgramRevision
-      {
-        ProgramName = stop.Program ?? "",
-        Revision = stop.ProgramRevision ?? 0,
-        CellControllerProgramName = process.MainProgram,
-      };
-      var expectedProcess = config.ProcessFromJob?.Invoke(
-        expectedPart,
-        process.ProcessNumber,
-        1,
-        program
-      ) ?? new MazakProcessFromJob(expectedPart, process.ProcessNumber, 1, program);
-      expectedPart.Processes.Add(expectedProcess);
+      var process = part.Processes.Single(p => p.ProcessNumber == expectedProcess.ProcessNumber);
+      var jobProcess = expectedProcess.JobProcessNumber;
       var row = expectedPart.ToDatabaseRow();
       try
       {
@@ -173,6 +154,35 @@ internal static partial class ManagedMazakSchedules
         return $"Mazak controller '{config.ControllerSource}' cannot map the stations for job '{job.UniqueStr}', process {jobProcess}.";
       }
       var expected = row.Processes.Single();
+      var required = expectedProcess.PartProgram;
+      if (
+        string.IsNullOrEmpty(expected.MainProgram)
+        || process.MainProgram != expected.MainProgram
+        || !data.MainPrograms.Any(native =>
+          native.MainProgram == expected.MainProgram
+          && (
+            string.IsNullOrEmpty(required.ProgramName)
+            || (
+              MazakProcess.TryParseMainProgramComment(
+                native.Comment,
+                out var name,
+                out var revision
+              )
+              && name == required.ProgramName
+              && revision == required.Revision
+            )
+          )
+        )
+      )
+      {
+        var requiredProgram = string.IsNullOrEmpty(required.ProgramName)
+          ? expected.MainProgram
+          : $"'{required.ProgramName}' revision {required.Revision}";
+        return $"Mazak controller '{config.ControllerSource}' cannot verify the program for job '{job.UniqueStr}', process {jobProcess}, native part '{part.PartName}'. The part references '{process.MainProgram}', and the route requires {requiredProgram}.";
+      }
+
+      if (!checkExecutionFields)
+        continue;
       var mappings = data
         .Pallets.Where(p => p.Fixture == process.Fixture)
         .Select(p => p.PalletNumber);
@@ -225,7 +235,7 @@ internal static partial class ManagedMazakSchedules
         if (part is not null && row is not null)
         {
           if (saved is null)
-            VerifyProgramForAdoption(db, observed, job!, part);
+            VerifyProgramForAdoption(db, config, observed, job!, part);
           db.RecordMazakManagedSchedule(
             saved is null
               ? Definition(config, job!, part, row.Id, beforeLoadCounter: null)
@@ -256,7 +266,7 @@ internal static partial class ManagedMazakSchedules
     {
       var (installed, schedule) = Inspect(observed, job, planned.PartName, planned.Comment, null);
       if (installed is not null)
-        VerifyProgramForAdoption(db, observed, job, installed);
+        VerifyProgramForAdoption(db, config, observed, job, installed);
       db.RecordMazakManagedSchedule(
         Definition(
           config,
@@ -397,7 +407,7 @@ internal static partial class ManagedMazakSchedules
               {
                 var (part, schedule) = Inspect(data, job, route);
                 if (part is not null && schedule is not null)
-                  return ExecutionConflict(data, config, job, part);
+                  return ExecutionConflict(db, data, config, job, part);
               }
               catch (ConflictRequestException conflict)
               {

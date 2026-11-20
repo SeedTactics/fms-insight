@@ -135,10 +135,148 @@ public sealed partial class DuplicateDownloadSpec
       )
       .Throws<ConflictRequestException>();
 
-    ManagedMazakSchedules.ConfirmObserved(db, config, original);
+    device.Observe(original);
+    ManagedMazakSchedules.ConfirmObserved(db, config, device.Data);
+    var offer = MazakManagedScheduleControl.SetMaterialOffer(
+      db,
+      config,
+      device.Data,
+      job.UniqueStr,
+      2,
+      1
+    );
+    await Assert.That(offer).IsNotNull();
+    if (namedRevision)
+    {
+      device.Native.Save(offer!);
+      // A previously saved program number cannot override the controller's current revision.
+      db.SetCellControllerProgramForProgram("op2", 7, "1012");
+      device.Observe(
+        device.Data with
+        {
+          MainPrograms = device
+            .Data.MainPrograms.Select(p =>
+              p.MainProgram == "1012" ? p with { Comment = "Insight:8:op2" } : p
+            )
+            .ToImmutableList(),
+        }
+      );
+      await Assert
+        .That(() =>
+          MazakManagedScheduleControl.SetMaterialOffer(db, config, device.Data, job.UniqueStr, 2, 2)
+        )
+        .Throws<ConflictRequestException>()
+        .WithMessageContaining("revision 7");
+      var withdrawal = MazakManagedScheduleControl.SetMaterialOffer(
+        db,
+        config,
+        device.Data,
+        job.UniqueStr,
+        2,
+        0
+      );
+      await Assert.That(withdrawal!.Schedules.Single().Id).IsEqualTo(schedule.Id);
+      await Assert
+        .That(withdrawal.Schedules.Single().Processes.Single().ProcessMaterialQuantity)
+        .IsEqualTo(0);
+    }
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task AdoptionAndSupplyUseTheConfiguredProcessProgram(bool overrideRow)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var job = PendingJob(true);
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
+    var config = ManagedConfig() with
+    {
+      ProcessFromJob = (part, process, path, program) =>
+        overrideRow
+          ? new RemappedProgramProcess(part, process, path, program)
+          : new MazakProcessFromJob(
+            part,
+            process,
+            path,
+            program with
+            {
+              CellControllerProgramName = "1002",
+            }
+          ),
+    };
+    WriteJobs.SyncFromDatabase(
+      device.Data,
+      db,
+      device.Native,
+      new FMSSettings(),
+      config with
+      {
+        UseInsightJobQuantities = null,
+        ProcessFromJob = null,
+      },
+      Now
+    );
+    var first = device.Data.Parts.Single(p => p.Comment == "initial-job-1-1-InsightS");
+    await Assert.That(first.Processes.Single().MainProgram).IsEqualTo("1001");
+    ManagedMazakSchedules.ConfirmObserved(db, config, device.Data);
     await Assert
-      .That(MazakManagedScheduleControl.SetMaterialOffer(db, config, original, job.UniqueStr, 2, 1))
+      .That(db.LoadMazakManagedSchedule(config.ControllerSource, first.PartName))
+      .IsNull();
+
+    device.Observe(
+      device.Data with
+      {
+        Parts = device
+          .Data.Parts.Select(p =>
+            p == first
+              ? p with
+              {
+                Processes = [p.Processes.Single() with { MainProgram = "1002" }],
+              }
+              : p
+          )
+          .ToImmutableList(),
+      }
+    );
+    ManagedMazakSchedules.ConfirmObserved(db, config, device.Data);
+    await Assert
+      .That(
+        MazakManagedScheduleControl.SetMaterialOffer(db, config, device.Data, job.UniqueStr, 1, 1)
+      )
       .IsNotNull();
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.SetMaterialOffer(
+          db,
+          config with
+          {
+            ProcessFromJob = null,
+          },
+          device.Data,
+          job.UniqueStr,
+          1,
+          1
+        )
+      )
+      .Throws<ConflictRequestException>()
+      .WithMessageContaining("1001");
+  }
+
+  private sealed class RemappedProgramProcess(
+    MazakPart part,
+    int process,
+    int path,
+    ProgramRevision program
+  ) : MazakProcessFromJob(part, process, path, program)
+  {
+    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakConfig config)
+    {
+      base.CreateDatabaseRow(newPart, fixture, config);
+      newPart.Processes[^1] = newPart.Processes[^1] with { MainProgram = "1002" };
+    }
   }
 
   [Test]

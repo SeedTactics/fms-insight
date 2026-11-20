@@ -68,7 +68,7 @@ public static class MazakManagedScheduleControl
       throw new BadRequestException("A combined Mazak schedule admits material at process 1.");
     if (
       quantity > 0
-      && ManagedMazakSchedules.ExecutionConflict(observed, config, job, part) is { } conflict
+      && ManagedMazakSchedules.ExecutionConflict(db, observed, config, job, part) is { } conflict
     )
       throw new ConflictRequestException(conflict);
     var first = schedule.Processes.Single(p => p.ProcessNumber == 1);
