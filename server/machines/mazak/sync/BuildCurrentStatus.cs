@@ -264,6 +264,9 @@ namespace MazakMachineInterface
             jobDB,
             oldCycles.SelectMany(e => e.Material).Select(m => m.MaterialID)
           );
+          var managedPlacement = mazakCfg.UseInsightJobQuantities is null
+            ? null
+            : MazakMaterialHistory.ReplayPalletPlacement(oldCycles, removals);
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -295,7 +298,9 @@ namespace MazakMachineInterface
                 job,
                 palFmsProc,
                 jobDB,
-                removals
+                removals,
+                mazakCfg.UsesInsightJobQuantities(job.DbJob) ? managedPlacement : null,
+                palSub.PartProcessNumber
               )
             );
 
@@ -436,6 +441,8 @@ namespace MazakMachineInterface
               jobsByUniq,
               oldCycles,
               removals,
+              mazakCfg,
+              managedPlacement,
               partNameToNumProc,
               fmsSettings
             );
@@ -905,6 +912,8 @@ namespace MazakMachineInterface
       IReadOnlyDictionary<string, CurrentJob> jobsByUniq,
       List<BlackMaple.MachineFramework.LogEntry> oldCycles,
       IReadOnlyDictionary<long, long> removals,
+      MazakConfig config,
+      MazakMaterialHistory.PalletPlacement managedPlacement,
       IReadOnlyDictionary<string, int> partNameToNumProc,
       FMSSettings fmsSettings
     )
@@ -936,7 +945,16 @@ namespace MazakMachineInterface
         var fmsUnloadProc = unloadComment.JobProcessForMazakProcess(unload.Process);
 
         var matIDs = new Queue<long>(
-          FindMatIDsFromOldCycles(oldCycles, false, job, fmsUnloadProc, log, removals)
+          FindMatIDsFromOldCycles(
+            oldCycles,
+            false,
+            job,
+            fmsUnloadProc,
+            log,
+            removals,
+            config.UsesInsightJobQuantities(job?.DbJob) ? managedPlacement : null,
+            unload.Process
+          )
         );
 
         InProcessMaterialAction loadAction = null;
@@ -1210,13 +1228,30 @@ namespace MazakMachineInterface
       CurrentJob job,
       int proc,
       IRepository log,
-      IReadOnlyDictionary<long, long> removals
+      IReadOnlyDictionary<long, long> removals,
+      MazakMaterialHistory.PalletPlacement managedPlacement,
+      int face
     )
     {
       if (job == null)
       {
         return Enumerable.Empty<long>();
       }
+
+      if (managedPlacement is not null)
+        return hasPendingLoads
+          ? []
+          : managedPlacement
+            .Verified.Where(m =>
+              m.MaterialID >= 0
+              && m.Face == face
+              && m.JobUniqueStr == job.UniqueStr
+              && m.Process == proc
+              && !log.IsMaterialInQueue(m.MaterialID)
+            )
+            .Select(m => m.MaterialID)
+            .Order()
+            .ToImmutableList();
 
       if (hasPendingLoads)
       {

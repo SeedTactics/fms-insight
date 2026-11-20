@@ -12,6 +12,142 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class DuplicateDownloadSpec
 {
   [Test]
+  [Arguments("raw quantities")]
+  [Arguments("exact remainder")]
+  [Arguments("settled empty observation")]
+  public async Task AmbiguousUnloadCannotAttributeOldSerialsToTheNextLoad(string disposition)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var config = ManagedConfig();
+    var job = PendingJob(true);
+    var device = new DownloadDevice("");
+    var settings = new FMSSettings { QuarantineQueue = "quarantine" };
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
+    await Assert.That(Sync(device, db)).IsTrue();
+    var route = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
+    var fixture = device
+      .Data.Parts.Single(p => p.PartName == route.PartName)
+      .Processes.Single()
+      .Fixture;
+    MazakAllData Observation(int quantity) =>
+      device.Data with
+      {
+        PalletPositions = [new() { PalletNumber = 2, PalletPosition = "LS011" }],
+        PalletSubStatuses =
+          quantity == 0
+            ? []
+            :
+            [
+              new()
+              {
+                PalletNumber = 2,
+                ScheduleID = route.Id,
+                PartName = route.PartName,
+                PartProcessNumber = 1,
+                FixtureName = fixture,
+                FixQuantity = quantity,
+              },
+            ],
+      };
+    ImmutableList<long> Allocate(int count) =>
+      Enumerable
+        .Range(0, count)
+        .Select(_ => db.AllocateMaterialID(job.UniqueStr, job.PartName, 2))
+        .ToImmutableList();
+    var original = Allocate(3);
+    var next = Allocate(3);
+    var sequence = 0;
+    BlackMaple.MachineFramework.LogEntry Transfer(
+      IRepository repository,
+      LogCode code,
+      int moved,
+      MazakAllData observed,
+      ImmutableList<long>? exact = null
+    ) =>
+      TranslateManagedTransfer(
+        repository,
+        config,
+        settings,
+        observed,
+        route,
+        job.PartName,
+        code,
+        moved,
+        ++sequence,
+        exact
+      );
+
+    var firstLoad = Transfer(db, LogCode.LoadEnd, 3, Observation(3), original);
+    await Assert.That(firstLoad.Material.Select(m => m.MaterialID)).IsEquivalentTo(original);
+    var unknown = Transfer(db, LogCode.UnloadEnd, 1, Observation(2));
+    await Assert.That(unknown.Material).IsEmpty();
+    await Assert.That(unknown.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
+
+    using var reopened = repositories.OpenConnection();
+    var status = BuildCurrentStatus.Build(
+      reopened,
+      settings,
+      config,
+      Observation(2),
+      "MC",
+      null,
+      Now
+    );
+    await Assert
+      .That(status.Material.Where(m => m.Location.PalletNum == 2).Select(m => m.MaterialID))
+      .IsEquivalentTo([-1L, -1L]);
+
+    var resolved = disposition == "exact remainder" ? original.RemoveAt(0) : [];
+    if (disposition == "settled empty observation")
+    {
+      var empty = Observation(0);
+      var busy = empty with
+      {
+        LoadActions =
+        [
+          new()
+          {
+            Comment = route.Comment,
+            LoadStation = 1,
+            Qty = 2,
+          },
+        ],
+      };
+      Transfer(reopened, LogCode.LoadBegin, 0, busy);
+      await Assert
+        .That(reopened.CurrentPalletLog(2).Any(e => e.Counter == unknown.Counter))
+        .IsTrue();
+      Transfer(reopened, LogCode.LoadBegin, 0, empty);
+      await Assert
+        .That(reopened.CurrentPalletLog(2).Any(e => e.Counter == unknown.Counter))
+        .IsFalse();
+      await Assert
+        .That(reopened.MostRecentLogEntryForForeignID(unknown.ForeignID).Material)
+        .IsEmpty();
+    }
+    else
+    {
+      var last = Transfer(
+        reopened,
+        LogCode.UnloadEnd,
+        2,
+        Observation(0),
+        resolved.IsEmpty ? null : resolved
+      );
+      await Assert.That(last.Material.Select(m => m.MaterialID)).IsEquivalentTo(resolved);
+    }
+
+    var newLoad = Transfer(reopened, LogCode.LoadEnd, 3, Observation(3), next);
+    await Assert.That(newLoad.Material.Select(m => m.MaterialID)).IsEquivalentTo(next);
+    var newUnload = Transfer(reopened, LogCode.UnloadEnd, 3, Observation(0));
+    await Assert.That(newUnload.Material.Select(m => m.MaterialID)).IsEquivalentTo(next);
+    await Assert
+      .That(reopened.GetJobProductionSummary(job.UniqueStr).Completed[(2, 1)])
+      .IsEqualTo(3 + resolved.Count);
+  }
+
+  [Test]
   public async Task ManagedExactOneOfThreeUnloadKeepsAttribution()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());

@@ -51,26 +51,30 @@ unset uses the group inferred from the latest accepted schedule.
 
 The downloader saves the native route identity before its first controller write and confirms the
 schedule from readback. An interrupted installation can finish beyond the normal download window.
-After a partial cancellation, managed jobs can still download at zero offer for the remaining work.
-Archival also cleans up a partial installation with no confirmed schedule. A confirmed route retains
-the same full native part name and schedule number through the job's active life, including at
-planned equals completed. A missing or conflicting route raises a route-specific alarm for backend
-disposition.
+Adopting a schedule with no installation record requires the native program to match the job's
+program and revision under the normal download rules. After a partial cancellation, managed jobs can
+still download at zero offer for the remaining work. Archival also cleans up a partial installation
+with no confirmed schedule. A confirmed route retains the same full native part name and schedule
+number through the job's active life, including at planned equals completed. A missing or
+conflicting route raises a route-specific alarm for backend disposition.
 
 Use `MazakManagedScheduleControl.EnsurePlan` with an absolute minimum quantity and
 `SetMaterialOffer` with the currently authorized ready quantity. A combined schedule admits material
 at process 1. Positive offers require the installed fixture quantity, pallet mappings, and eligible
-stations to match the job route. The plan is a native execution ceiling. Increasing it leaves
-Insight demand and the current offer intact. Serialize the writes with the controller's normal
-acquisition and download owner. After an uncertain write, acquire fresh readback and recompute the
-authorized offer before writing again, since the controller may have consumed it.
+stations to match the job route. Withdrawal remains available when the schedule's identity is
+verified and its execution definition has changed. The plan is a native execution ceiling.
+Increasing it leaves Insight demand and the current offer intact. Serialize the writes with the
+controller's normal acquisition and download owner. After an uncertain write, acquire fresh readback
+and recompute the authorized offer before writing again, since the controller may have consumed it.
 
 `RecordedLoads` reports physical loads within the confirmed schedule's history, including
 invalidated attempts and separately identified and unidentified quantities. Adopted schedules
 without a recorded creation boundary have unknown attempt totals. Valid Insight completions come
 from repository manufacturing history. The exact transfer resolver supplies material IDs for managed
-loads. A physical count alone leaves the serials unidentified. Historical native part identity
-remains available for late events after retirement and schedule number reuse.
+loads. After an unidentified unload, pallet status leaves the affected serials unknown. Exact
+transfer evidence can identify individual pieces, and settled empty readback ends placement without
+adding completion credit. Historical native part identity remains available for late events after
+retirement and schedule number reuse.
 
 Settle the backend's outstanding transfers and withdraw offers before archiving the Insight job.
 Archival authorizes the ordinary synchronization loop to clean up the route, including an idle
