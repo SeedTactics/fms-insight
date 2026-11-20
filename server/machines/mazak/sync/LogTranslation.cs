@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using MWI = BlackMaple.MachineFramework;
@@ -42,6 +43,7 @@ namespace MazakMachineInterface
   public class LogTranslation
   {
     private const string ToolSnapshotUnavailableKey = "MazakToolSnapshotUnavailable";
+    private const string ToolSnapshotMachineKey = "MazakToolSnapshotMachine";
     private readonly IRepository repo;
     private readonly MazakAllDataAndLogs mazakData;
     private readonly string machGroupName;
@@ -64,7 +66,7 @@ namespace MazakMachineInterface
     {
       this.repo = repo;
       this.mazakData = mazakData;
-      this.machGroupName = machGroupName;
+      this.machGroupName = mazakConfig.MachineGroupName ?? machGroupName;
       this.fmsSettings = fmsSettings;
       this.onMazakLog = onMazakLog;
       this.mazakConfig = mazakConfig;
@@ -310,7 +312,7 @@ namespace MazakMachineInterface
           // with other evidence rather than risk a duplicate write.
           if (
             es.All(e =>
-              repo.MostRecentLogEntryForForeignID(e.ForeignID) is { } log
+              repo.MostRecentLogEntryForForeignID(mazakConfig.LogForeignId(e.ForeignID)) is { } log
               && log.LogType == LogType.LoadUnloadCycle
               && !log.StartOfCycle
               && log.Pallet == pallet
@@ -377,7 +379,7 @@ namespace MazakMachineInterface
         FindSchedule(e.FullPartName, e.Process, out var unique, out _, out var process);
         return new MazakLoadUnloadFace
         {
-          ForeignId = e.ForeignID,
+          ForeignId = mazakConfig.LogForeignId(e.ForeignID),
           PartName = e.JobPartName,
           JobUnique = unique,
           Process = process,
@@ -432,8 +434,7 @@ namespace MazakMachineInterface
 
       foreach (var face in context.Unloads)
       {
-        var resolved =
-          exact.MaterialForUnloads[face.ForeignId]
+        var resolved = exact.MaterialForUnloads[face.ForeignId]
           ?? throw new InvalidOperationException("Resolved unload must not be null.");
         var destinations = resolved.MaterialIDToDestination;
         ValidateOwnedMaterial(face, destinations?.Keys.ToImmutableList());
@@ -488,8 +489,7 @@ namespace MazakMachineInterface
       }
       foreach (var face in context.Loads)
       {
-        var resolved =
-          exact.MaterialForLoads[face.ForeignId]
+        var resolved = exact.MaterialForLoads[face.ForeignId]
           ?? throw new InvalidOperationException("Resolved load must not be null.");
         var ids = resolved.MaterialIds;
         ValidateOwnedMaterial(face, ids);
@@ -591,7 +591,7 @@ namespace MazakMachineInterface
             pallet: eventPallet,
             lulNum: mazakConfig.TranslateLoadStationNumber(e.StationNumber),
             timeUTC: e.TimeUTC,
-            foreignId: e.ForeignID
+            foreignId: mazakConfig.LogForeignId(e.ForeignID)
           );
 
           break;
@@ -604,27 +604,19 @@ namespace MazakMachineInterface
             pallet: eventPallet,
             lulNum: mazakConfig.TranslateLoadStationNumber(e.StationNumber),
             timeUTC: e.TimeUTC,
-            foreignId: e.ForeignID
+            foreignId: mazakConfig.LogForeignId(e.ForeignID)
           );
 
           break;
 
         case LogCode.MachineCycleStart:
         {
-          int mcNum = e.StationNumber;
-          if (
-            mazakConfig.MachineNumbers != null
-            && mcNum > 0
-            && mcNum <= mazakConfig.MachineNumbers.Count
-          )
-          {
-            mcNum = mazakConfig.MachineNumbers[mcNum - 1];
-          }
+          int mcNum = mazakConfig.TranslateMachineNumber(e.StationNumber);
 
           IEnumerable<ToolSnapshot> pockets = null;
           if (NeedsToolSnapshot(e, observationTimeUtc ?? DateTime.UtcNow))
           {
-            pockets = ToolsToSnapshot(mcNum, tools);
+            pockets = ToolsToSnapshot(e.StationNumber, tools);
           }
 
           var machineMats = GetMaterialOnPallet(e, cycle);
@@ -637,8 +629,14 @@ namespace MazakMachineInterface
             program: progName,
             timeUTC: e.TimeUTC,
             pockets: pockets,
-            foreignId: e.ForeignID,
-            extraData: MachineEventDetails(progRev, pockets is null)
+            foreignId: mazakConfig.LogForeignId(e.ForeignID),
+            extraData: MachineEventDetails(
+              progRev,
+              pockets is null,
+              toolSnapshotMachine: pockets is not null && mcNum != e.StationNumber
+                ? e.StationNumber
+                : null
+            )
           );
 
           break;
@@ -646,15 +644,7 @@ namespace MazakMachineInterface
 
         case LogCode.MachineCycleEnd:
         {
-          int mcNum = e.StationNumber;
-          if (
-            mazakConfig.MachineNumbers != null
-            && mcNum > 0
-            && mcNum <= mazakConfig.MachineNumbers.Count
-          )
-          {
-            mcNum = mazakConfig.MachineNumbers[mcNum - 1];
-          }
+          int mcNum = mazakConfig.TranslateMachineNumber(e.StationNumber);
 
           // Tool snapshots take ~5 seconds from the end of the cycle until the updated tools are available in open database kit,
           // so stop processing log entries if the machine cycle end occurred 15 seconds in the past.
@@ -663,7 +653,9 @@ namespace MazakMachineInterface
             return false;
           }
 
-          var machStart = FindMachineStart(e, cycle, mcNum);
+          var machStart = cycle.LastOrDefault(log =>
+            log.LogType == LogType.MachineCycle && log.StartOfCycle && log.LocationNum == mcNum
+          );
           TimeSpan elapsed;
           IEnumerable<ToolSnapshot> toolsAtStart;
           if (machStart != null)
@@ -678,12 +670,19 @@ namespace MazakMachineInterface
               e
             );
             elapsed = TimeSpan.Zero;
-            toolsAtStart = Enumerable.Empty<ToolSnapshot>();
+            toolsAtStart = [];
           }
-          var toolsAtEnd = ToolsToSnapshot(mcNum, tools);
+          var toolsAtEnd = ToolsToSnapshot(e.StationNumber, tools);
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
+            // Older starts on remapped machines could have captured another machine's pockets.
+            var baselineMachine = machStart.ProgramDetails?.GetValueOrDefault(
+              ToolSnapshotMachineKey
+            );
+            var baselineMatches = baselineMachine is null
+              ? mcNum == e.StationNumber
+              : baselineMachine == e.StationNumber.ToString(CultureInfo.InvariantCulture);
             var machineMats = GetMaterialOnPallet(e, cycle);
             LookupProgram(machineMats, e, out var progName, out var progRev);
             var s = repo.RecordMachineEnd(
@@ -697,12 +696,13 @@ namespace MazakMachineInterface
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
               tools: toolsAtEnd is null
+              || !baselineMatches
               || machStart?.ProgramDetails?.ContainsKey(ToolSnapshotUnavailableKey) == true
                 ? null
                 : ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd),
               deleteToolSnapshotsFromCntr: machStart?.Counter,
               pockets: toolsAtEnd,
-              foreignId: e.ForeignID,
+              foreignId: mazakConfig.LogForeignId(e.ForeignID),
               extraData: MachineEventDetails(progRev, toolsAtEnd is null)
             );
             CheckForInspections(s, machineMats, e.TimeUTC);
@@ -722,15 +722,7 @@ namespace MazakMachineInterface
 
         case LogCode.StartRotatePalletIntoMachine:
         {
-          int mcNum = e.StationNumber;
-          if (
-            mazakConfig.MachineNumbers != null
-            && mcNum > 0
-            && mcNum <= mazakConfig.MachineNumbers.Count
-          )
-          {
-            mcNum = mazakConfig.MachineNumbers[mcNum - 1];
-          }
+          int mcNum = mazakConfig.TranslateMachineNumber(e.StationNumber);
           repo.RecordPalletDepartRotaryInbound(
             mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
             pallet: eventPallet,
@@ -739,7 +731,7 @@ namespace MazakMachineInterface
             timeUTC: e.TimeUTC,
             rotateIntoWorktable: true,
             elapsed: CalculateElapsed(e.TimeUTC, LogType.PalletOnRotaryInbound, cycle, mcNum),
-            foreignId: e.ForeignID
+            foreignId: mazakConfig.LogForeignId(e.ForeignID)
           );
           break;
         }
@@ -755,17 +747,10 @@ namespace MazakMachineInterface
           {
             if (
               LastEventWasRotaryDropoff(cycle)
-              && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum)
+              && int.TryParse(e.FromPosition.Substring(1, 2), out var mazakMachine)
             )
             {
-              if (
-                mazakConfig.MachineNumbers != null
-                && mcNum > 0
-                && mcNum <= mazakConfig.MachineNumbers.Count
-              )
-              {
-                mcNum = mazakConfig.MachineNumbers[mcNum - 1];
-              }
+              var mcNum = mazakConfig.TranslateMachineNumber(mazakMachine);
               repo.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: eventPallet,
@@ -774,7 +759,7 @@ namespace MazakMachineInterface
                 rotateIntoWorktable: false,
                 timeUTC: e.TimeUTC,
                 elapsed: CalculateElapsed(e.TimeUTC, LogType.PalletOnRotaryInbound, cycle, mcNum),
-                foreignId: e.ForeignID
+                foreignId: mazakConfig.LogForeignId(e.ForeignID)
               );
             }
           }
@@ -793,7 +778,7 @@ namespace MazakMachineInterface
                 timeUTC: e.TimeUTC,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
                 elapsed: CalculateElapsed(e.TimeUTC, LogType.PalletInStocker, cycle, stockerNum),
-                foreignId: e.ForeignID
+                foreignId: mazakConfig.LogForeignId(e.ForeignID)
               );
             }
           }
@@ -808,23 +793,15 @@ namespace MazakMachineInterface
             && e.TargetPosition.EndsWith("1")
           )
           {
-            if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
+            if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mazakMachine))
             {
-              if (
-                mazakConfig.MachineNumbers != null
-                && mcNum > 0
-                && mcNum <= mazakConfig.MachineNumbers.Count
-              )
-              {
-                mcNum = mazakConfig.MachineNumbers[mcNum - 1];
-              }
               repo.RecordPalletArriveRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: eventPallet,
                 statName: machGroupName,
-                statNum: mcNum,
+                statNum: mazakConfig.TranslateMachineNumber(mazakMachine),
                 timeUTC: e.TimeUTC,
-                foreignId: e.ForeignID
+                foreignId: mazakConfig.LogForeignId(e.ForeignID)
               );
             }
           }
@@ -842,7 +819,7 @@ namespace MazakMachineInterface
                 stockerNum: stockerNum,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
                 timeUTC: e.TimeUTC,
-                foreignId: e.ForeignID
+                foreignId: mazakConfig.LogForeignId(e.ForeignID)
               );
             }
           }
@@ -865,22 +842,19 @@ namespace MazakMachineInterface
       return oldEvents
         .Where(e => !e.StartOfCycle && e.LogType is LogType.LoadUnloadCycle or LogType.MachineCycle)
         .OrderBy(e => e.Counter)
-        .Aggregate(
-          ImmutableDictionary<long, LogMaterial>.Empty,
-          (current, e) =>
-            e.Result == "LOAD" || e.LogType == LogType.MachineCycle
-              ? current.SetItems(
-                e.Material.Where(m =>
-                    e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
-                  )
-                  .Where(m =>
-                    !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, e.Counter)
-                  )
-                  .Select(m => KeyValuePair.Create(m.MaterialID, m))
-              )
-            : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
-            : current
-        )
+        .Aggregate(ImmutableDictionary<long, LogMaterial>.Empty, (current, e) => e.Result == "LOAD"
+          || e.LogType == LogType.MachineCycle
+            ? current.SetItems(
+              e.Material.Where(m =>
+                  e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
+                )
+                .Where(m =>
+                  !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, e.Counter)
+                )
+                .Select(m => KeyValuePair.Create(m.MaterialID, m))
+            )
+          : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
+          : current)
         .Values.Where(m => !repo.IsMaterialInQueue(m.MaterialID))
         .OrderBy(m => m.MaterialID)
         .ToList();
@@ -1209,7 +1183,7 @@ namespace MazakMachineInterface
             FaceNum = e.Process,
             Path = 1,
             ActiveOperationTime = CalculateActiveLoadTime(job, jobProc, e.FixedQuantity),
-            ForeignID = e.ForeignID,
+            ForeignID = mazakConfig.LogForeignId(e.ForeignID),
           }
         );
       }
@@ -1302,7 +1276,7 @@ namespace MazakMachineInterface
             Process = unloadProcess,
             FaceNum = e.Process,
             ActiveOperationTime = CalculateActiveUnloadTime(mats),
-            ForeignID = e.ForeignID,
+            ForeignID = mazakConfig.LogForeignId(e.ForeignID),
             AdditionalData =
               unresolvedBasketMaterial.Count > 0
                 ? ImmutableDictionary<string, string>.Empty.Add("unresolved-basket-handoff", "true")
@@ -1445,17 +1419,6 @@ namespace MazakMachineInterface
         }
       }
       return lastWasDropoff;
-    }
-
-    private static MWI.LogEntry FindMachineStart(
-      LogEntry e,
-      IList<MWI.LogEntry> oldEvents,
-      int statNum
-    )
-    {
-      return oldEvents.LastOrDefault(old =>
-        old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum
-      );
     }
 
     private static TimeSpan CalculateElapsed(
@@ -1652,7 +1615,8 @@ namespace MazakMachineInterface
 
     private static ImmutableDictionary<string, string> MachineEventDetails(
       long? programRevision,
-      bool toolsUnavailable
+      bool toolsUnavailable,
+      int? toolSnapshotMachine = null
     )
     {
       var details = ImmutableDictionary<string, string>.Empty;
@@ -1660,16 +1624,24 @@ namespace MazakMachineInterface
         details = details.Add("ProgramRevision", revision.ToString());
       if (toolsUnavailable)
         details = details.Add(ToolSnapshotUnavailableKey, "true");
+      if (toolSnapshotMachine is { } machine)
+        details = details.Add(
+          ToolSnapshotMachineKey,
+          machine.ToString(CultureInfo.InvariantCulture)
+        );
       return details.IsEmpty ? null : details;
     }
 
-    private IEnumerable<ToolSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
+    private IEnumerable<ToolSnapshot> ToolsToSnapshot(
+      int mazakMachine,
+      IEnumerable<ToolPocketRow> tools
+    )
     {
       if (tools == null)
         return null;
       return tools
         .Where(t =>
-          t.MachineNumber == machine
+          t.MachineNumber == mazakMachine
           && (t.IsToolDataValid ?? false)
           && t.PocketNumber.HasValue
           && !string.IsNullOrEmpty(t.GroupNo)

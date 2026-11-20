@@ -289,6 +289,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       cfg.InversePalletNumber(1).ShouldBe(1);
 
       cfg = cfg with { StartingPalletNumber = 101 };
+      cfg.TranslatePalletNumber(-1).ShouldBe(-1);
+      cfg.TranslatePalletNumber(0).ShouldBe(0);
       cfg.TranslatePalletNumber(1).ShouldBe(101);
       cfg.TranslatePalletNumber(3).ShouldBe(103);
       cfg.InversePalletNumber(101).ShouldBe(1);

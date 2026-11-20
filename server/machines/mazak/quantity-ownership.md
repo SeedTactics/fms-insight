@@ -50,3 +50,9 @@ cause refusal before any controller edits, including when only pending jobs exis
 dates fall outside the usual download window. Backout does not cancel pending jobs or run downloads
 itself. A failed write can have partial controller effects; the ordinary synchronization loop must
 succeed before retrying. This is a conservative refusal policy, not an atomic controller rollback.
+
+## Sharing a repository between controllers
+
+Give each controller a stable `ControllerSource`. Keep the original controller on
+`DefaultControllerSource` so it resumes from its existing CSV filenames. Set `MachineGroupName`
+when controllers use different machining station groups.

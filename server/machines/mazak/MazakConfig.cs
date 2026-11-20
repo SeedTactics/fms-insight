@@ -123,6 +123,41 @@ namespace MazakMachineInterface
     public bool WaitForAllCastings { get; init; } = false;
     public bool SynchronizeRawMaterialInQueues { get; init; } = true;
 
+    // Keep the original controller on this source when adding another controller to an
+    // existing repository. It owns the unqualified LG history and continues using those keys.
+    public const string DefaultControllerSource = "default";
+    private string _controllerSource = DefaultControllerSource;
+    public string ControllerSource
+    {
+      get => _controllerSource;
+      init
+      {
+        if (
+          string.IsNullOrEmpty(value)
+          || value.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-' && c != '_' && c != '.')
+        )
+          throw new ArgumentException(
+            "The Mazak controller source must contain only ASCII letters, digits, dots, underscores or hyphens."
+          );
+        _controllerSource = value;
+      }
+    }
+
+    internal string LogKeyPrefix =>
+      ControllerSource == DefaultControllerSource ? "" : $"Mazak:{ControllerSource}:";
+
+    // Converts a raw CSV filename from the controller or MazakLogEvent to its repository key.
+    public string LogForeignId(string filename) => LogKeyPrefix + filename;
+
+    // Match the station group in this controller's job routes when sharing a repository.
+    // Null keeps the group inferred from the latest accepted schedule.
+    private string? _machineGroupName;
+    public string? MachineGroupName
+    {
+      get => _machineGroupName;
+      init => _machineGroupName = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
     public ImmutableList<int>? MachineNumbers { get; init; } = null;
     public int StartingPalletNumber { get; init; } = 1;
 
@@ -197,10 +232,16 @@ namespace MazakMachineInterface
     public Func<int, bool>? CanQuarantineMissingMaterial { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
-    public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
+    public int TranslatePalletNumber(int mazakPallet) =>
+      mazakPallet > 0 ? mazakPallet - 1 + StartingPalletNumber : mazakPallet;
 
     // Convert FMS Insight pallet number back to Mazak-internal number
     public int InversePalletNumber(int fmsPallet) => fmsPallet - StartingPalletNumber + 1;
+
+    internal int TranslateMachineNumber(int mazakMachine) =>
+      MachineNumbers != null && mazakMachine > 0 && mazakMachine <= MachineNumbers.Count
+        ? MachineNumbers[mazakMachine - 1]
+        : mazakMachine;
 
     // Convert Mazak-internal load station number to FMS Insight load station number
     public int TranslateLoadStationNumber(int mazakLul) =>
@@ -317,6 +358,7 @@ namespace MazakMachineInterface
         ProxyDBUri = proxyUri,
         LogCSVPath = logPath,
         LoadCSVPath = loadPath,
+        MachineGroupName = cfg.GetValue<string>("Machine Group Name"),
         MachineNumbers = machineNumbers.Count > 0 ? machineNumbers.ToImmutable() : null,
         ProgramDirectory = cfg.GetValue<string?>("Program Directory") ?? "C:\\NCProgs",
         UseStartingOffsetForDueDate = Convert.ToBoolean(
