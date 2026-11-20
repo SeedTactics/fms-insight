@@ -728,12 +728,7 @@ namespace MazakMachineInterface
         {
           if (c != '0')
           {
-            int num = int.Parse(c.ToString());
-            if (mazakCfg.MachineNumbers != null && num > 0 && num <= mazakCfg.MachineNumbers.Count)
-            {
-              num = mazakCfg.MachineNumbers[num - 1];
-            }
-            machines.Add(num);
+            machines.Add(mazakCfg.TranslateMachineNumber(int.Parse(c.ToString())));
           }
         }
 
@@ -1384,16 +1379,11 @@ namespace MazakMachineInterface
       else if (pos.StartsWith("M"))
       {
         //M023 means machine 2, on the table (M021 is is the input pos, M022 is the output pos)
-        int num = Convert.ToInt32(pos[2].ToString());
-        if (cfg.MachineNumbers != null && num > 0 && num <= cfg.MachineNumbers.Count)
-        {
-          num = cfg.MachineNumbers[num - 1];
-        }
         return new PalletLocation()
         {
           Location = pos[3] == '3' ? PalletLocationEnum.Machine : PalletLocationEnum.MachineQueue,
           StationGroup = machName,
-          Num = num,
+          Num = cfg.TranslateMachineNumber(Convert.ToInt32(pos[2].ToString())),
         };
       }
       else if (pos.StartsWith("S"))

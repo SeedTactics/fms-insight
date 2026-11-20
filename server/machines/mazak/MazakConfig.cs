@@ -241,6 +241,11 @@ namespace MazakMachineInterface
     // Convert FMS Insight pallet number back to Mazak-internal number
     public int InversePalletNumber(int fmsPallet) => fmsPallet - StartingPalletNumber + 1;
 
+    internal int TranslateMachineNumber(int mazakMachine) =>
+      MachineNumbers != null && mazakMachine > 0 && mazakMachine <= MachineNumbers.Count
+        ? MachineNumbers[mazakMachine - 1]
+        : mazakMachine;
+
     // Convert Mazak-internal load station number to FMS Insight load station number
     public int TranslateLoadStationNumber(int mazakLul) =>
       LoadStationNumbers == null ? mazakLul

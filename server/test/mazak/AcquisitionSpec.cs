@@ -180,6 +180,8 @@ public sealed partial class MazakAcquisitionSpec
   [Test]
   [Arguments(false, "start")]
   [Arguments(true, "start")]
+  [Arguments(false, "empty-start")]
+  [Arguments(true, "empty-start")]
   [Arguments(false, "end")]
   [Arguments(true, "end")]
   [Arguments(false, "empty-end")]
@@ -202,8 +204,11 @@ public sealed partial class MazakAcquisitionSpec
       return result.State;
     }
     cell.Data = cell.Data with { Logs = [cell.Start] };
+    var availableTools = cell.Tools;
     if (failure == "start")
       cell.BeforeTools = () => throw new IOException("private tool error detail");
+    if (failure == "empty-start")
+      cell.Tools = [];
     var starting = Poll();
     await Assert
       .That(
@@ -213,7 +218,7 @@ public sealed partial class MazakAcquisitionSpec
     var start = cell.Repository.GetRecentLog(0).Single(e => e.LogType == LogType.MachineCycle);
     await Assert
       .That(cell.Repository.ToolPocketSnapshotForCycle(start.Counter).Count())
-      .IsEqualTo(failure == "start" ? 0 : 1);
+      .IsEqualTo(failure is "start" or "empty-start" ? 0 : 1);
     using var restarted = cell.NewSynchronizer();
     using var reopened = cell.Repository.RepoConfig.OpenConnection();
     sync = restarted;
@@ -223,7 +228,7 @@ public sealed partial class MazakAcquisitionSpec
     cell.Tools =
       failure == "empty-end"
         ? []
-        : cell.Tools.Select(t => t with { LifeUsed = 120 }).ToImmutableList();
+        : availableTools.Select(t => t with { LifeUsed = 120 }).ToImmutableList();
     var following = cell.End with
     {
       Code = LogCode.LoadBegin,
@@ -238,7 +243,7 @@ public sealed partial class MazakAcquisitionSpec
     await Assert.That(end.Tools?.Count ?? 0).IsEqualTo(failure == "empty-end" ? 1 : 0);
     await Assert
       .That(repository.ToolPocketSnapshotForCycle(end.Counter).Count())
-      .IsEqualTo(failure == "start" ? 1 : 0);
+      .IsEqualTo(failure is "start" or "empty-start" ? 1 : 0);
     if (failure == "empty-end")
       await Assert.That(end.Tools!.Single().ToolChangeOccurred).IsTrue();
     await Assert

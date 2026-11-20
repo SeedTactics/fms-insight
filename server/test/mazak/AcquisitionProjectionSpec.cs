@@ -48,7 +48,7 @@ public sealed partial class MazakAcquisitionSpec
                       new()
                       {
                         StationGroup = stationGroup,
-                        Stations = [1],
+                        Stations = [101],
                         Program = "1001",
                         ExpectedCycleTime = TimeSpan.FromMinutes(1),
                       },
@@ -61,14 +61,26 @@ public sealed partial class MazakAcquisitionSpec
         ],
       };
     db.AddJobs(Schedule("first", "original-group"), null, addAsCopiedToSystem: true);
-    var config = new MazakConfig { DBType = MazakDbType.MazakSmooth, MachineGroupName = group };
+    var config = new MazakConfig
+    {
+      DBType = MazakDbType.MazakSmooth,
+      MachineGroupName = group,
+      MachineNumbers = [101],
+    };
     var settings = new FMSSettings();
     using var synchronization = new MazakSync(cell.Native, settings, config, cell.Clock);
-    cell.Data = cell.Data with { Logs = [cell.Start, cell.End] };
+    cell.Data = cell.Data with { Logs = [cell.Start] };
     synchronization.CalculateCellState(db);
-    await Assert
-      .That(db.MostRecentLogEntryForForeignID(cell.Start.ForeignID).LocationName)
-      .IsEqualTo("original-group");
+    var start = db.MostRecentLogEntryForForeignID(cell.Start.ForeignID);
+    await Assert.That(start.LocationName).IsEqualTo("original-group");
+    await Assert.That(start.LocationNum).IsEqualTo(101);
+    var pocket = cell.Tools.Single();
+    cell.Tools = [pocket with { LifeUsed = pocket.LifeUsed + 12 }];
+    cell.Data = cell.Data with { Logs = [cell.End] };
+    synchronization.CalculateCellState(db);
+    var end = db.MostRecentLogEntryForForeignID(cell.End.ForeignID);
+    await Assert.That(end.LocationNum).IsEqualTo(101);
+    await Assert.That(end.Tools?.Single().ToolUseDuringCycle).IsEqualTo(TimeSpan.FromSeconds(12));
 
     db.AddJobs(Schedule("second", "peer-group"), "first", addAsCopiedToSystem: true);
     cell.Clock.Now = cell.Clock.Now.AddMinutes(1);
@@ -102,9 +114,67 @@ public sealed partial class MazakAcquisitionSpec
       .That(state.CurrentStatus.Pallets[1].CurrentPalletLocation.StationGroup)
       .IsEqualTo(expected);
     await Assert.That(rebuilt.Pallets[1].CurrentPalletLocation.StationGroup).IsEqualTo(expected);
+    var tool = control.CurrentToolsInMachines().Single();
+    await Assert.That(tool.MachineGroupName).IsEqualTo(expected);
+    await Assert.That(tool.MachineNum).IsEqualTo(101);
+    await Assert.That(control.CurrentToolsInMachine(expected, 101)).IsEquivalentTo([tool]);
+    var direct = next with { ForeignID = "LG20261105-120030-004.csv" };
+    LogTranslation.HandleEvents(
+      db,
+      cell.Data with
+      {
+        Logs = [direct],
+      },
+      "peer-group",
+      settings,
+      _ => { },
+      config,
+      cell.Tools,
+      cell.Clock.Now.UtcDateTime
+    );
     await Assert
-      .That(control.CurrentToolsInMachines().Single().MachineGroupName)
+      .That(db.MostRecentLogEntryForForeignID(direct.ForeignID).LocationName)
       .IsEqualTo(expected);
+  }
+
+  [Test]
+  public async Task InFlightRunKeepsItsElapsedTimeWhenTheToolBaselineHasNoMachineIdentity()
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var start = cell.Start;
+    db.RecordMachineStart(
+      mats: [],
+      pallet: start.Pallet,
+      statName: "MC",
+      statNum: 2,
+      program: start.Program,
+      timeUTC: start.TimeUTC,
+      pockets:
+      [
+        new()
+        {
+          ToolName = "tool-1",
+          Pocket = 1,
+          CurrentUse = TimeSpan.FromSeconds(15),
+        },
+      ],
+      foreignId: start.ForeignID
+    );
+    using var sync = new MazakSync(
+      cell.Native,
+      new FMSSettings(),
+      new MazakConfig { DBType = MazakDbType.MazakSmooth, MachineNumbers = [2, 1] },
+      cell.Clock
+    );
+    cell.Data = cell.Data with { Logs = [cell.End] };
+    sync.CalculateCellState(db);
+    var end = db.MostRecentLogEntryForForeignID(cell.End.ForeignID);
+    await Assert.That(end.ElapsedTime).IsEqualTo(cell.End.TimeUTC - start.TimeUTC);
+    await Assert.That(end.Tools).IsNull();
+    await Assert
+      .That(db.ToolPocketSnapshotForCycle(end.Counter).Single().CurrentUse)
+      .IsEqualTo(TimeSpan.FromSeconds(60));
   }
 
   [Test]
