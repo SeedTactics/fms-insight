@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using NSubstitute;
@@ -13,6 +14,99 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 
 public sealed partial class MazakAcquisitionSpec
 {
+  [Test]
+  [Arguments(null)]
+  [Arguments("original-group")]
+  public async Task ControllerGroupSurvivesANewerPeerSchedule(string? group)
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    NewJobs Schedule(string id, string stationGroup) =>
+      new()
+      {
+        ScheduleId = id,
+        Jobs =
+        [
+          new Job
+          {
+            UniqueStr = id,
+            PartName = "part",
+            Cycles = 1,
+            Archived = false,
+            RouteStartUTC = cell.Clock.Now.UtcDateTime.AddHours(-1),
+            RouteEndUTC = cell.Clock.Now.UtcDateTime.AddHours(1),
+            Processes =
+            [
+              new()
+              {
+                Paths =
+                [
+                  JobLogTest.EmptyPath with
+                  {
+                    Stops =
+                    [
+                      new()
+                      {
+                        StationGroup = stationGroup,
+                        Stations = [1],
+                        Program = "1001",
+                        ExpectedCycleTime = TimeSpan.FromMinutes(1),
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+    db.AddJobs(Schedule("first", "original-group"), null, addAsCopiedToSystem: true);
+    var config = new MazakConfig { DBType = MazakDbType.MazakSmooth, MachineGroupName = group };
+    var settings = new FMSSettings();
+    using var synchronization = new MazakSync(cell.Native, settings, config, cell.Clock);
+    cell.Data = cell.Data with { Logs = [cell.Start, cell.End] };
+    synchronization.CalculateCellState(db);
+    await Assert
+      .That(db.MostRecentLogEntryForForeignID(cell.Start.ForeignID).LocationName)
+      .IsEqualTo("original-group");
+
+    db.AddJobs(Schedule("second", "peer-group"), "first", addAsCopiedToSystem: true);
+    cell.Clock.Now = cell.Clock.Now.AddMinutes(1);
+    var next = cell.Start with
+    {
+      ForeignID = "LG20261105-120030-003.csv",
+      TimeUTC = cell.Clock.Now.UtcDateTime.AddSeconds(-30),
+    };
+    cell.Data = cell.Data with
+    {
+      Logs = [next],
+      Pallets = [new() { PalletNumber = 1, Fixture = "fixture" }],
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "M013" }],
+    };
+    var state = synchronization.CalculateCellState(db);
+    var rebuilt = BuildCurrentStatus.Build(
+      db,
+      settings,
+      config,
+      state.AllData,
+      "peer-group",
+      null,
+      cell.Clock.Now.UtcDateTime
+    );
+    var control = new MazakMachineControl(cell.Repositories, cell.Native, config);
+    var expected = group ?? "peer-group";
+    await Assert
+      .That(db.MostRecentLogEntryForForeignID(next.ForeignID).LocationName)
+      .IsEqualTo(expected);
+    await Assert
+      .That(state.CurrentStatus.Pallets[1].CurrentPalletLocation.StationGroup)
+      .IsEqualTo(expected);
+    await Assert.That(rebuilt.Pallets[1].CurrentPalletLocation.StationGroup).IsEqualTo(expected);
+    await Assert
+      .That(control.CurrentToolsInMachines().Single().MachineGroupName)
+      .IsEqualTo(expected);
+  }
+
   [Test]
   [Arguments(1)]
   [Arguments(101)]

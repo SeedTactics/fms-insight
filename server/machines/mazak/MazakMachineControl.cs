@@ -88,7 +88,8 @@ namespace MazakMachineInterface
       string machineGroupName;
       using (var db = jobDbCfg.OpenConnection())
       {
-        machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
+        machineGroupName = mazakCfg?.MachineGroupName
+          ?? BuildCurrentStatus.FindMachineGroupName(db);
       }
 
       return readData

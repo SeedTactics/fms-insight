@@ -318,7 +318,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         .Data.Logs.Where(entry => StringComparer.Ordinal.Compare(entry.ForeignID, committed) > 0)
         .ToImmutableList(),
     };
-    var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
+    var machineGroupName = mazakConfig.MachineGroupName
+      ?? BuildCurrentStatus.FindMachineGroupName(db);
 
     ManagedMazakSchedules.ConfirmObserved(db, mazakConfig, mazakData);
     var evtResults = LogTranslation.HandleEvents(

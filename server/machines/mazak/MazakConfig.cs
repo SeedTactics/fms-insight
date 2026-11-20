@@ -149,6 +149,15 @@ namespace MazakMachineInterface
     // Converts a raw CSV filename from the controller or MazakLogEvent to its repository key.
     public string LogForeignId(string filename) => LogKeyPrefix + filename;
 
+    // Match the station group in this controller's job routes when sharing a repository.
+    // Null keeps the group inferred from the latest accepted schedule.
+    private string? _machineGroupName;
+    public string? MachineGroupName
+    {
+      get => _machineGroupName;
+      init => _machineGroupName = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
     public ImmutableList<int>? MachineNumbers { get; init; } = null;
     public int StartingPalletNumber { get; init; } = 1;
 
@@ -347,6 +356,7 @@ namespace MazakMachineInterface
         ProxyDBUri = proxyUri,
         LogCSVPath = logPath,
         LoadCSVPath = loadPath,
+        MachineGroupName = cfg.GetValue<string>("Machine Group Name"),
         MachineNumbers = machineNumbers.Count > 0 ? machineNumbers.ToImmutable() : null,
         ProgramDirectory = cfg.GetValue<string?>("Program Directory") ?? "C:\\NCProgs",
         UseStartingOffsetForDueDate = Convert.ToBoolean(

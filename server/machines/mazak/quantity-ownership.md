@@ -45,6 +45,10 @@ each. When two controllers share a repository, set `BulkJobFilter` for each cont
 jobs and give each controller a stable `ControllerSource`. The original controller retains its usual
 CSV history on `DefaultControllerSource`.
 
+Set `MazakConfig.MachineGroupName` to the machining station group on each controller when the groups
+differ. The override applies to machining events, pallet locations, and tool queries. Leaving it
+unset uses the group inferred from the latest accepted schedule.
+
 The downloader saves the native route identity before its first controller write and confirms the
 schedule from readback. An interrupted installation can finish beyond the normal download window.
 Archival also cleans up a partial installation with no confirmed schedule. A confirmed route retains

@@ -86,6 +86,8 @@ namespace MazakMachineInterface
       DateTime utcNow
     )
     {
+      machineGroupName = mazakCfg.MachineGroupName ?? machineGroupName;
+
       //Load process and path numbers
       CalculateMaxProcAndPath(
         mazakData,
