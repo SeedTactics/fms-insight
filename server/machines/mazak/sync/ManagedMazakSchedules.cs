@@ -137,11 +137,9 @@ internal static partial class ManagedMazakSchedules
   )
   {
     var route = MazakPart.ParseCommentInfo(comment);
-    var download = MazakPart.ParseUID(partName);
     var expectedPart = route.IsSplit
-      ? new MazakPart(job, download, 0, route.FmsProcess, 1)
-      : new MazakPart(job, download, 0);
-    expectedPart.PartName = partName;
+      ? MazakPart.FromNativeName(job, partName, route.FmsProcess, 1)
+      : MazakPart.FromNativeName(job, partName, null, null);
     ConvertJobsToMazakParts.BuildProcFromJob(
       job,
       expectedPart,

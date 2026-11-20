@@ -83,29 +83,39 @@ namespace MazakMachineInterface
     public readonly int? SplitPath;
 
     public MazakPart(Job j, int downID, int partIdx)
-    {
-      Job = j;
-      DownloadID = downID;
-      Processes = new List<MazakProcess>();
-      PartName = Job.PartName + ":" + DownloadID.ToString() + ":" + partIdx.ToString();
-    }
+      : this(j, downID, $"{j.PartName}:{downID}:{partIdx}", null, null) { }
 
     public MazakPart(Job j, int downID, int partIdx, int splitJobProcess, int splitPath)
+      : this(
+        j,
+        downID,
+        $"{j.PartName}:{downID}:{partIdx}:{splitJobProcess}",
+        splitJobProcess,
+        splitPath
+      ) { }
+
+    private MazakPart(
+      Job job,
+      int downloadID,
+      string partName,
+      int? splitJobProcess,
+      int? splitPath
+    )
     {
-      Job = j;
-      DownloadID = downID;
+      Job = job;
+      DownloadID = downloadID;
       Processes = new List<MazakProcess>();
       SplitJobProcess = splitJobProcess;
       SplitPath = splitPath;
-      PartName =
-        Job.PartName
-        + ":"
-        + DownloadID.ToString()
-        + ":"
-        + partIdx.ToString()
-        + ":"
-        + splitJobProcess.ToString();
+      PartName = partName;
     }
+
+    internal static MazakPart FromNativeName(
+      Job job,
+      string partName,
+      int? splitJobProcess,
+      int? splitPath
+    ) => new(job, ParseUID(partName), partName, splitJobProcess, splitPath);
 
     public MazakPartRow ToDatabaseRow()
     {
@@ -121,7 +131,7 @@ namespace MazakMachineInterface
       return newPartRow;
     }
 
-    public string PartName { get; internal set; }
+    public string PartName { get; }
 
     public bool IsSplitPart => SplitJobProcess.HasValue;
 
@@ -793,10 +803,15 @@ namespace MazakMachineInterface
     {
       Validate(jobs, fmsSettings, errors);
       CheckReusedFixture(mazakData, errors);
-      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, mazakCfg, errors, lookupProgram);
-      foreach (var expected in allParts)
-        if (reservedPartNames?.TryGetValue(expected.Comment, out var reserved) == true)
-          expected.PartName = reserved;
+      var allParts = BuildMazakParts(
+        jobs,
+        downloadUID,
+        mazakData,
+        mazakCfg,
+        errors,
+        lookupProgram,
+        reservedPartNames
+      );
       var reused = reuseExistingParts
         ? allParts
           .Select(expected =>
@@ -1100,9 +1115,15 @@ namespace MazakMachineInterface
       MazakAllData mazakData,
       MazakConfig mazakCfg,
       IList<string> log,
-      Func<string, long?, ProgramRevision> lookupProgram
+      Func<string, long?, ProgramRevision> lookupProgram,
+      IReadOnlyDictionary<string, string> reservedPartNames
     )
     {
+      MazakPart UseReservedIdentity(MazakPart part) =>
+        reservedPartNames?.TryGetValue(part.Comment, out var reserved) == true
+          ? MazakPart.FromNativeName(part.Job, reserved, part.SplitJobProcess, part.SplitPath)
+          : part;
+
       var ret = new List<MazakPart>();
       int partIdx = 1;
 
@@ -1125,7 +1146,7 @@ namespace MazakMachineInterface
         {
           for (int proc = 1; proc <= job.Processes.Count; proc++)
           {
-            var mazakPart = new MazakPart(job, downloadID, partIdx, proc, 1);
+            var mazakPart = UseReservedIdentity(new MazakPart(job, downloadID, partIdx, proc, 1));
             partIdx += 1;
             BuildProcFromJob(
               job,
@@ -1145,7 +1166,7 @@ namespace MazakMachineInterface
         }
         else
         {
-          var mazakPart = new MazakPart(job, downloadID, partIdx);
+          var mazakPart = UseReservedIdentity(new MazakPart(job, downloadID, partIdx));
           partIdx += 1;
           BuildProcFromJob(job, mazakPart, out string error, mazakCfg, mazakData, lookupProgram);
 

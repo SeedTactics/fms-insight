@@ -40,6 +40,71 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task RetryingPartInstallationKeepsTheIdentityUsedByTheProcessHook(bool split)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var job = PendingJob(split);
+    var device = new DownloadDevice("");
+    var config = ManagedConfig() with
+    {
+      UseInsightJobQuantities = _ => true,
+      ProcessFromJob = (part, process, path, program) =>
+        new MazakProcessFromJob(
+          part,
+          process,
+          path,
+          part.DownloadID == 0 && MazakPart.ParseUID(part.PartName) == 0
+            ? program
+            : program with
+            {
+              CellControllerProgramName = "1002",
+            }
+        ),
+    };
+    var settings = new FMSSettings();
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
+    bool Poll(IRepository repository) =>
+      WriteJobs.SyncFromDatabase(device.Data, repository, device.Native, settings, config, Now);
+
+    device.BeforeSave = write =>
+    {
+      if (write.Parts.Any(part => part.Command == MazakWriteCommand.Add))
+        throw new IOException("Part installation failed before applying the write.");
+    };
+    await Assert.That(() => Poll(db)).Throws<IOException>();
+    await Assert.That(device.Data.Parts).IsEmpty();
+    var reserved = db.LoadMazakManagedSchedules(config.ControllerSource);
+    await Assert.That(reserved.Count).IsEqualTo(split ? 2 : 1);
+    device.BeforeSave = null!;
+
+    using var reopened = repositories.OpenConnection();
+    await Assert.That(Poll(reopened)).IsTrue();
+    await Assert.That(reopened.LoadJob(job.UniqueStr)!.CopiedToSystem).IsTrue();
+    foreach (var route in reserved)
+    {
+      var installed = device.Data.Parts.Single(part => part.PartName == route.PartName);
+      await Assert
+        .That(installed.Processes.Select(process => process.MainProgram))
+        .IsEquivalentTo(route.Processes.Select(process => process.Program));
+    }
+    await Assert
+      .That(
+        MazakManagedScheduleControl.SetMaterialOffer(
+          reopened,
+          config,
+          device.Data,
+          job.UniqueStr,
+          1,
+          1
+        )
+      )
+      .IsNotNull();
+  }
+
+  [Test]
   [Arguments(true)]
   [Arguments(false)]
   public async Task ManagedDownloadRequiresRemainingDemandAfterBackout(bool interrupted)
