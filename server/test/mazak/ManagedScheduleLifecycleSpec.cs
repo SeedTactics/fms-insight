@@ -21,6 +21,79 @@ public sealed partial class DuplicateDownloadSpec
     };
 
   [Test]
+  [Arguments("pieces per fixture")]
+  [Arguments("eligible machines")]
+  [Arguments("eligible load stations")]
+  [Arguments("eligible unload stations")]
+  [Arguments("eligible pallets")]
+  public async Task MaterialOfferRequiresTheInstalledExecutionRoute(string mismatch)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = repositories.OpenConnection();
+    var device = new DownloadDevice("");
+    var config = ManagedConfig();
+    var job = PendingJob(true);
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
+    await Assert.That(Sync(device, db)).IsTrue();
+
+    var offer = MazakManagedScheduleControl.SetMaterialOffer(
+      db,
+      config,
+      device.Data,
+      job.UniqueStr,
+      2,
+      1
+    )!;
+    device.Native.Save(offer);
+    var partName = offer.Schedules.Single().PartName;
+    var part = device.Data.Parts.Single(p => p.PartName == partName);
+    var process = part.Processes.Single();
+    var changed = mismatch switch
+    {
+      "pieces per fixture" => process with { FixQuantity = 1 },
+      "eligible machines" => process with { CutMc = "2" },
+      "eligible load stations" => process with { FixLDS = "2" },
+      "eligible unload stations" => process with { RemoveLDS = "2" },
+      _ => process,
+    };
+    var observed = device.Data with
+    {
+      Parts = device
+        .Data.Parts.Select(p => p.PartName == partName ? p with { Processes = [changed] } : p)
+        .ToImmutableList(),
+      Pallets =
+        mismatch == "eligible pallets"
+          ? device.Data.Pallets.Where(p => p.Fixture != process.Fixture).ToImmutableList()
+          : device.Data.Pallets,
+    };
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.SetMaterialOffer(db, config, observed, job.UniqueStr, 2, 2)
+      )
+      .Throws<ConflictRequestException>()
+      .WithMessageContaining(mismatch);
+    var alarm = ManagedMazakSchedules
+      .Diagnostics(db, config, observed)
+      .Single(a => a.Code == "mazak-managed-schedule-unavailable");
+    await Assert.That(alarm.Message).Contains(mismatch);
+    await Assert.That(alarm.Message).Contains(partName);
+    await Assert
+      .That(MazakManagedScheduleControl.SetMaterialOffer(db, config, observed, job.UniqueStr, 1, 1))
+      .IsNotNull();
+    var withdrawal = MazakManagedScheduleControl.SetMaterialOffer(
+      db,
+      config,
+      observed,
+      job.UniqueStr,
+      2,
+      0
+    );
+    await Assert
+      .That(withdrawal!.Schedules.Single().Processes.Single().ProcessMaterialQuantity)
+      .IsEqualTo(0);
+  }
+
+  [Test]
   [Arguments(true)]
   [Arguments(false)]
   public async Task EachControllerArchivesOnlyItsOwnJobs(bool manualFirst)

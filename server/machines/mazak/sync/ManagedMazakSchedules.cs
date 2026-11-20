@@ -95,6 +95,67 @@ internal static partial class ManagedMazakSchedules
       .Select(p => new MazakManagedProcess(p.ProcessNumber, p.Fixture, p.MainProgram))
       .ToImmutableList();
 
+  internal static string? ExecutionConflict(
+    MazakAllData data,
+    MazakConfig config,
+    Job job,
+    MazakPartRow part
+  )
+  {
+    var route = MazakPart.ParseCommentInfo(part.Comment);
+    var download = MazakPart.ParseUID(part.PartName);
+    var expectedPart = route.IsSplit
+      ? new MazakPart(job, download, 0, route.FmsProcess, 1)
+      : new MazakPart(job, download, 0);
+    expectedPart.PartName = part.PartName;
+    foreach (var process in part.Processes.OrderBy(p => p.ProcessNumber))
+    {
+      var jobProcess = route.JobProcessForMazakProcess(process.ProcessNumber);
+      var path = job.Processes[jobProcess - 1].Paths[0];
+      var stop = path.Stops.Last();
+      var program = new ProgramRevision
+      {
+        ProgramName = stop.Program ?? "",
+        Revision = stop.ProgramRevision ?? 0,
+        CellControllerProgramName = process.MainProgram,
+      };
+      var expectedProcess = config.ProcessFromJob?.Invoke(
+        expectedPart,
+        process.ProcessNumber,
+        1,
+        program
+      ) ?? new MazakProcessFromJob(expectedPart, process.ProcessNumber, 1, program);
+      expectedPart.Processes.Add(expectedProcess);
+      var row = expectedPart.ToDatabaseRow();
+      try
+      {
+        expectedProcess.CreateDatabaseRow(row, process.Fixture, config);
+      }
+      catch (Exception ex) when (ex is ArgumentOutOfRangeException or IndexOutOfRangeException)
+      {
+        return $"Mazak controller '{config.ControllerSource}' cannot map the stations for job '{job.UniqueStr}', process {jobProcess}.";
+      }
+      var expected = row.Processes.Single();
+      var mappings = data
+        .Pallets.Where(p => p.Fixture == process.Fixture)
+        .Select(p => p.PalletNumber);
+      var mismatch =
+        process.FixQuantity != expected.FixQuantity ? "pieces per fixture"
+        : process.CutMc?.Trim() != expected.CutMc?.Trim() ? "eligible machines"
+        : process.FixLDS?.Trim() != expected.FixLDS?.Trim() ? "eligible load stations"
+        : process.RemoveLDS?.Trim() != expected.RemoveLDS?.Trim() ? "eligible unload stations"
+        : process.ContinueCut != expected.ContinueCut ? "continue-cut settings"
+        : !mappings
+          .ToImmutableHashSet()
+          .SetEquals(expectedProcess.Pallets().Select(config.InversePalletNumber))
+          ? "eligible pallets"
+        : null;
+      if (mismatch is not null)
+        return $"Mazak controller '{config.ControllerSource}' has different {mismatch} for job '{job.UniqueStr}', process {jobProcess}, native part '{part.PartName}'. Check the controller before admitting material.";
+    }
+    return null;
+  }
+
   public static void ConfirmObserved(IRepository db, MazakConfig config, MazakAllData observed)
   {
     if (config.UseInsightJobQuantities is null)
@@ -276,10 +337,10 @@ internal static partial class ManagedMazakSchedules
       .SelectMany(job =>
         MazakPart
           .InitialScheduleComments(job)
-          .Where(comment =>
+          .Select(comment =>
           {
             var route = bindings[job.UniqueStr].SingleOrDefault(r => r.Comment == comment);
-            return route?.ConfirmedScheduleId is not null
+            var unavailable = route?.ConfirmedScheduleId is not null
               ? ConfirmedRouteUnavailable(data, job, route)
               : job.CopiedToSystem
                 || route is not null
@@ -287,12 +348,22 @@ internal static partial class ManagedMazakSchedules
                     s.Comment == comment
                     || string.Equals(s.PartName, route.PartName, StringComparison.OrdinalIgnoreCase)
                   );
+            if (unavailable)
+              return $"Mazak controller '{config.ControllerSource}' has no verified schedule for job '{job.UniqueStr}', route '{comment}'. Check the controller before admitting material.";
+            return route?.ConfirmedScheduleId is not null
+              ? ExecutionConflict(
+                data,
+                config,
+                job,
+                data.Parts.Single(p => p.PartName == route.PartName)
+              )
+              : null;
           })
-          .Select(comment => new CurrentStatusAlarm
+          .OfType<string>()
+          .Select(message => new CurrentStatusAlarm
           {
             Code = "mazak-managed-schedule-unavailable",
-            Message =
-              $"Mazak controller '{config.ControllerSource}' has no verified schedule for job '{job.UniqueStr}', route '{comment}'. Check the controller before admitting material.",
+            Message = message,
             Impact = AlarmImpact.Informational,
           })
       )

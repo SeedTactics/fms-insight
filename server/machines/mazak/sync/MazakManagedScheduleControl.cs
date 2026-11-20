@@ -56,9 +56,14 @@ public static class MazakManagedScheduleControl
   )
   {
     ArgumentOutOfRangeException.ThrowIfNegative(quantity);
-    var (binding, schedule) = Verify(db, config, observed, jobUnique, process);
+    var (job, binding, part, schedule) = Verify(db, config, observed, jobUnique, process);
     if (!MazakPart.IsSplitComment(binding.Comment) && process != 1)
       throw new BadRequestException("A combined Mazak schedule admits material at process 1.");
+    if (
+      quantity > 0
+      && ManagedMazakSchedules.ExecutionConflict(observed, config, job, part) is { } conflict
+    )
+      throw new ConflictRequestException(conflict);
     var first = schedule.Processes.Single(p => p.ProcessNumber == 1);
     var committed =
       (long)schedule.CompleteQuantity
@@ -172,13 +177,12 @@ public static class MazakManagedScheduleControl
     return (job, binding);
   }
 
-  private static (MazakManagedSchedule Binding, MazakScheduleRow Schedule) Verify(
-    IRepository db,
-    MazakConfig config,
-    MazakAllData observed,
-    string jobUnique,
-    int process
-  )
+  private static (
+    Job Job,
+    MazakManagedSchedule Binding,
+    MazakPartRow Part,
+    MazakScheduleRow Schedule
+  ) Verify(IRepository db, MazakConfig config, MazakAllData observed, string jobUnique, int process)
   {
     var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: false);
     var (part, schedule) = ManagedMazakSchedules.Inspect(observed, job, binding);
@@ -186,6 +190,6 @@ public static class MazakManagedScheduleControl
       throw new ConflictRequestException(
         $"Mazak job '{jobUnique}' is missing the installed definition or schedule for route '{binding.Comment}'."
       );
-    return (binding, schedule);
+    return (job, binding, part, schedule);
   }
 }

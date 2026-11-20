@@ -54,10 +54,11 @@ disposition.
 
 Use `MazakManagedScheduleControl.EnsurePlan` with an absolute minimum quantity and
 `SetMaterialOffer` with the currently authorized ready quantity. A combined schedule admits material
-at process 1. The plan is a native execution ceiling. Increasing it leaves Insight demand and the
-current offer intact. Serialize the writes with the controller's normal acquisition and download
-owner. After an uncertain write, acquire fresh readback and recompute the authorized offer before
-writing again, since the controller may have consumed it.
+at process 1. Positive offers require the installed fixture quantity, pallet mappings, and eligible
+stations to match the job route. The plan is a native execution ceiling. Increasing it leaves
+Insight demand and the current offer intact. Serialize the writes with the controller's normal
+acquisition and download owner. After an uncertain write, acquire fresh readback and recompute the
+authorized offer before writing again, since the controller may have consumed it.
 
 `RecordedLoads` reports physical loads within the confirmed schedule's history, including
 invalidated attempts and separately identified and unidentified quantities. Adopted schedules
