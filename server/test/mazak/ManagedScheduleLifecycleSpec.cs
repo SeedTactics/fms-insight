@@ -137,7 +137,14 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
-  public async Task OrdinaryDownloadPreservesNativeRowsClaimedByAPeer()
+  [Arguments("peer-Insight", "peer-Insight")]
+  [Arguments("unknown-job-Insight", "unknown-job-Insight")]
+  [Arguments("unknown-job-Insight", null)]
+  [Arguments("peer-Insight", "operator schedule")]
+  public async Task OrdinaryDownloadPreservesNativeRowsOutsideItsScope(
+    string partComment,
+    string? scheduleComment
+  )
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null);
     using var db = repositories.OpenConnection();
@@ -154,15 +161,28 @@ public sealed partial class DuplicateDownloadSpec
       WriteJobs.SyncFromDatabase(device.Data, db, device.Native, new FMSSettings(), c, Now);
     await Assert.That(Poll(config)).IsTrue();
     var schedule = device.Data.Schedules.Single();
-    var completed = schedule with { CompleteQuantity = schedule.PlanQuantity };
-    var part = device.Data.Parts.Single();
-    device.Observe(device.Data with { Schedules = [completed] });
+    var completed = schedule with
+    {
+      CompleteQuantity = schedule.PlanQuantity,
+      Comment = scheduleComment,
+    };
+    var part = device.Data.Parts.Single() with { Comment = partComment };
+    device.Observe(
+      device.Data with
+      {
+        Parts = [part],
+        Schedules = scheduleComment is null ? [] : [completed],
+      }
+    );
 
     db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [local] }, null, false);
     await Assert
       .That(Poll(config with { BulkJobFilter = job => job.UniqueStr == local.UniqueStr }))
       .IsTrue();
-    await Assert.That(device.Data.Schedules.Single(s => s.Id == completed.Id)).IsEqualTo(completed);
+    if (scheduleComment is not null)
+      await Assert
+        .That(device.Data.Schedules.Single(s => s.Id == completed.Id))
+        .IsEqualTo(completed);
     await Assert.That(device.Data.Parts.Single(p => p.PartName == part.PartName)).IsEqualTo(part);
     await Assert.That(db.LoadJob(peer.UniqueStr)!.Archived).IsFalse();
   }
