@@ -362,6 +362,34 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public long MaxLogCounter()
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText = "SELECT COALESCE(MAX(Counter), 0) FROM stations";
+      return (long)cmd.ExecuteScalar();
+    }
+
+    public IEnumerable<LogEntry> GetRecentLogForProgramDetail(
+      long afterCounter,
+      string key,
+      string value
+    )
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.ForeignID "
+        + " FROM stations s JOIN program_details d ON d.Counter = s.Counter AND d.Key = $key "
+        + " WHERE s.Counter > $counter AND d.Value = $value ORDER BY s.Counter ASC";
+      cmd.Parameters.Add("counter", SqliteType.Integer).Value = afterCounter;
+      cmd.Parameters.Add("key", SqliteType.Text).Value = key;
+      cmd.Parameters.Add("value", SqliteType.Text).Value = value;
+      using var reader = cmd.ExecuteReader();
+      foreach (var entry in LoadLog(reader, trans))
+        yield return entry;
+    }
+
     public LogEntry MostRecentLogEntryForForeignID(string foreignID)
     {
       using (var trans = _connection.BeginTransaction())
@@ -6410,39 +6438,36 @@ namespace BlackMaple.MachineFramework
             int statNum = reader.GetInt32(3);
             int process = reader.GetInt32(4);
 
-            adjustPath(
-              process,
-              mat =>
+            adjustPath(process, mat =>
+            {
+              if (pal > 0)
+                mat = mat with { Pallet = pal };
+
+              switch (logTy)
               {
-                if (pal > 0)
-                  mat = mat with { Pallet = pal };
+                case LogType.LoadUnloadCycle:
+                  if (mat.LoadStation == -1)
+                    mat = mat with { LoadStation = statNum };
+                  else
+                    mat = mat with { UnloadStation = statNum };
+                  break;
 
-                switch (logTy)
-                {
-                  case LogType.LoadUnloadCycle:
-                    if (mat.LoadStation == -1)
-                      mat = mat with { LoadStation = statNum };
-                    else
-                      mat = mat with { UnloadStation = statNum };
-                    break;
-
-                  case LogType.MachineCycle:
-                    mat = mat with
-                    {
-                      Stops = mat.Stops.Add(
-                        new MaterialProcessActualPath.Stop()
-                        {
-                          StationName = statName,
-                          StationNum = statNum,
-                        }
-                      ),
-                    };
-                    break;
-                }
-
-                return mat;
+                case LogType.MachineCycle:
+                  mat = mat with
+                  {
+                    Stops = mat.Stops.Add(
+                      new MaterialProcessActualPath.Stop()
+                      {
+                        StationName = statName,
+                        StationNum = statNum,
+                      }
+                    ),
+                  };
+                  break;
               }
-            );
+
+              return mat;
+            });
           }
         }
       }

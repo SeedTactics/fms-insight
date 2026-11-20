@@ -63,6 +63,15 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
+    long MaxLogCounter();
+    IEnumerable<LogEntry> GetRecentLogForProgramDetail(long afterCounter, string key, string value);
+    ImmutableList<MazakManagedSchedule> LoadMazakManagedSchedules(
+      string source,
+      bool includeRetired = false
+    );
+    MazakManagedSchedule LoadMazakManagedSchedule(string source, string nativePart);
+    void RecordMazakManagedSchedule(MazakManagedSchedule schedule);
+    void RetireMazakManagedSchedule(string source, string nativePart);
     JobProductionSummary GetJobProductionSummary(string jobUnique);
     IEnumerable<LogEntry> CompletedUnloadsSince(long counter);
     IEnumerable<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true);

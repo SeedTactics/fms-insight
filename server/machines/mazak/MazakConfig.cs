@@ -201,6 +201,9 @@ namespace MazakMachineInterface
     public bool UsesInsightJobQuantities(Job? job) =>
       job != null && UseInsightJobQuantities?.Invoke(job) == true;
 
+    // Give each controller the jobs assigned to its native download and cleanup.
+    public Func<Job, bool>? BulkJobFilter { get; init; }
+
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
 
