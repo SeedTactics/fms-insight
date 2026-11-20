@@ -182,6 +182,75 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task RefusedArchiveDeletionLetsOtherRoutesRetireAfterFreshReadback()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var device = new DownloadDevice("");
+    var first = PendingJob(true);
+    var peer = first with { UniqueStr = "other", PartName = "other-part" };
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [first, peer] }, null, false);
+    await Assert.That(Sync(device, db)).IsTrue();
+    db.ArchiveJobs([first.UniqueStr, peer.UniqueStr]);
+    var rejected = device.Data.Schedules.Single(s => s.Comment == "initial-job-1-1-InsightS");
+    var config = ManagedConfig();
+    var reads = 0;
+    var readAtRefusal = -1;
+    var peerReadAfterRefusal = false;
+    device
+      .Native.LoadAllData()
+      .Returns(_ =>
+      {
+        ++reads;
+        return device.Data;
+      });
+    device.BeforeSave = write =>
+    {
+      if (write.Schedules.Any(s => s.Id == rejected.Id))
+      {
+        readAtRefusal = reads;
+        throw new IOException("Mazak refused deletion.");
+      }
+      if (write.Schedules.Any(s => s.Comment.StartsWith("other-", StringComparison.Ordinal)))
+        peerReadAfterRefusal = readAtRefusal >= 0 && reads > readAtRefusal;
+    };
+    bool Poll() =>
+      WriteJobs.SyncFromDatabase(device.Data, db, device.Native, new FMSSettings(), config, Now);
+    for (
+      var poll = 0;
+      poll < 15
+        && db.LoadMazakManagedSchedules(config.ControllerSource, jobUnique: peer.UniqueStr).Count
+          > 0;
+      ++poll
+    )
+    {
+      try
+      {
+        await Assert.That(Poll()).IsTrue();
+      }
+      catch (IOException)
+        when (db.LoadMazakManagedSchedules(
+            config.ControllerSource,
+            jobUnique: peer.UniqueStr
+          ).IsEmpty
+        )
+      {
+        // After independent cleanup finishes, the remaining refusal can surface normally.
+        break;
+      }
+    }
+    await Assert.That(peerReadAfterRefusal).IsTrue();
+    await Assert.That(device.Data.Schedules.Single().Id).IsEqualTo(rejected.Id);
+    await Assert
+      .That(db.LoadMazakManagedSchedules(config.ControllerSource, jobUnique: peer.UniqueStr))
+      .IsEmpty();
+
+    device.BeforeSave = null!;
+    for (var poll = 0; poll < 8 && Poll(); ++poll) { }
+    await Assert.That(db.LoadMazakManagedSchedules(config.ControllerSource)).IsEmpty();
+  }
+
+  [Test]
   public async Task ArchivedInstallationFreesFixtureCapacityForAPendingDownload()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null);

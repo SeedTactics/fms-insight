@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface;
@@ -18,13 +19,47 @@ internal static partial class ManagedMazakSchedules
   {
     if (config.UseInsightJobQuantities is null)
       return false;
+    var rejected = ImmutableHashSet<string>.Empty;
+    ExceptionDispatchInfo? firstRejection = null;
+    while (PlanCleanup(db, config, data, rejected) is { } next)
+    {
+      try
+      {
+        controller.Save(next.Write);
+        return true;
+      }
+      catch (Exception ex)
+      {
+        firstRejection ??= ExceptionDispatchInfo.Capture(ex);
+        rejected = rejected.Add(next.PartName);
+        BuildMazakSchedules.Log.Warning(
+          ex,
+          "Could not clean up archived Mazak part {Part} on {Controller}",
+          next.PartName,
+          config.ControllerSource
+        );
+        // The write may already have taken effect. Recheck dependencies before trying a peer route.
+        data = controller.LoadAllData();
+      }
+    }
+    firstRejection?.Throw();
+    return false;
+  }
+
+  private static (string PartName, MazakWriteData Write)? PlanCleanup(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData data,
+    ImmutableHashSet<string> rejected
+  )
+  {
     var partNames = data.Parts.Select(p => p.PartName).ToImmutableHashSet(StringComparer.Ordinal);
     if (data.PalletSubStatuses is null || data.Schedules.Any(s => !partNames.Contains(s.PartName)))
-      return false;
+      return null;
 
     var occupied = data.PalletSubStatuses.Where(s => s.FixQuantity > 0).ToImmutableList();
     var routes = db.LoadMazakManagedSchedules(config.ControllerSource);
-    foreach (var route in routes)
+    foreach (var route in routes.Where(r => !rejected.Contains(r.PartName)))
     {
       var job = db.LoadJob(route.JobUnique);
       if (!Owns(config, job) || !job.Archived)
@@ -61,19 +96,21 @@ internal static partial class ManagedMazakSchedules
           )
         )
           continue;
-        controller.Save(BuildMazakSchedules.RemoveSchedules(data, s => s.Id == schedule.Id).Item1);
-        return true;
+        return (
+          route.PartName,
+          BuildMazakSchedules.RemoveSchedules(data, s => s.Id == schedule.Id).Item1
+        );
       }
       if (part is not null)
       {
-        controller.Save(
+        return (
+          route.PartName,
           new MazakWriteData
           {
             Prefix = "Delete archived managed part",
             Parts = [MazakJobs.PartDelete(part)],
           }
         );
-        return true;
       }
 
       var otherRoutes = routes.Where(r => r.PartName != route.PartName).ToImmutableList();
@@ -89,14 +126,14 @@ internal static partial class ManagedMazakSchedules
         .ToImmutableList();
       if (!mappings.IsEmpty)
       {
-        controller.Save(
+        return (
+          route.PartName,
           new MazakWriteData
           {
             Prefix = "Delete archived managed pallet mappings",
             Pallets = mappings,
           }
         );
-        return true;
       }
       usedFixtures.UnionWith(data.Pallets.Select(p => p.Fixture));
       var usedPrograms = remainingProcesses
@@ -123,13 +160,12 @@ internal static partial class ManagedMazakSchedules
       };
       if (dependencies.Fixtures.Count != 0 || dependencies.Programs.Count != 0)
       {
-        controller.Save(dependencies);
-        return true;
+        return (route.PartName, dependencies);
       }
       // Surviving named dependencies can be shared or retained by the standard program policy.
       db.RetireMazakManagedSchedule(config.ControllerSource, route.PartName);
       routes = routes.Remove(route);
     }
-    return false;
+    return null;
   }
 }

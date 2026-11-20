@@ -602,6 +602,7 @@ public sealed partial class DuplicateDownloadSpec
 
     public void Observe(MazakAllData observation) => Data = observation;
 
+    public Action<MazakWriteData> BeforeSave { get; set; }
     public Action<MazakWriteData> AfterSave { get; set; }
 
     private bool _failOnce = true;
@@ -614,6 +615,7 @@ public sealed partial class DuplicateDownloadSpec
         .Do(call =>
         {
           var write = call.Arg<MazakWriteData>();
+          BeforeSave?.Invoke(write);
           if (_failOnce && failure == "schedules" && write.Prefix == "Add Schedules")
           {
             _failOnce = false;
