@@ -1,11 +1,15 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework;
+
+public sealed record MazakManagedProcess(int Process, string? Fixture, string? Program);
 
 public sealed record MazakManagedSchedule
 {
@@ -15,8 +19,11 @@ public sealed record MazakManagedSchedule
   public required string Comment { get; init; }
   public required int? ConfirmedScheduleId { get; init; }
   public required long? BeforeLoadCounter { get; init; }
-  public required ImmutableHashSet<string> Fixtures { get; init; }
-  public required ImmutableHashSet<string> Programs { get; init; }
+  public required ImmutableList<MazakManagedProcess> Processes { get; init; }
+  public IEnumerable<string> Fixtures =>
+    Processes.Select(p => p.Fixture).OfType<string>().Where(s => s.Length > 0);
+  public IEnumerable<string> Programs =>
+    Processes.Select(p => p.Program).OfType<string>().Where(s => s.Length > 0);
   public bool Retired { get; init; }
 }
 
@@ -24,12 +31,18 @@ internal sealed partial class Repository
 {
   public ImmutableList<MazakManagedSchedule> LoadMazakManagedSchedules(
     string source,
-    bool includeRetired = false
+    bool includeRetired = false,
+    string? jobUnique = null
   )
   {
     using var cmd = ManagedScheduleCommand();
-    cmd.CommandText = SelectManagedSchedules + (includeRetired ? "" : " AND Retired = 0");
+    cmd.CommandText =
+      SelectManagedSchedules
+      + (includeRetired ? "" : " AND Retired = 0")
+      + (jobUnique == null ? "" : " AND JobUnique = $job");
     cmd.Parameters.AddWithValue("$source", source);
+    if (jobUnique != null)
+      cmd.Parameters.AddWithValue("$job", jobUnique);
     using var reader = cmd.ExecuteReader();
     var schedules = ImmutableList.CreateBuilder<MazakManagedSchedule>();
     while (reader.Read())
@@ -52,8 +65,8 @@ internal sealed partial class Repository
     using var cmd = ManagedScheduleCommand();
     cmd.CommandText = """
       INSERT INTO mazak_managed_schedule
-        (Source, PartName, JobUnique, Comment, ConfirmedId, BeforeLoadCounter, Fixtures, Programs)
-      VALUES ($source, $part, $job, $comment, $id, $counter, $fixtures, $programs)
+        (Source, PartName, JobUnique, Comment, ConfirmedId, BeforeLoadCounter, Processes)
+      VALUES ($source, $part, $job, $comment, $id, $counter, $processes)
       ON CONFLICT (Source, PartName) DO UPDATE SET
         ConfirmedId = coalesce(ConfirmedId, excluded.ConfirmedId)
       WHERE JobUnique = excluded.JobUnique AND Comment = excluded.Comment
@@ -66,8 +79,7 @@ internal sealed partial class Repository
     cmd.Parameters.AddWithValue("$comment", schedule.Comment);
     cmd.Parameters.AddWithValue("$id", (object?)schedule.ConfirmedScheduleId ?? DBNull.Value);
     cmd.Parameters.AddWithValue("$counter", (object?)schedule.BeforeLoadCounter ?? DBNull.Value);
-    cmd.Parameters.AddWithValue("$fixtures", JsonSerializer.Serialize(schedule.Fixtures));
-    cmd.Parameters.AddWithValue("$programs", JsonSerializer.Serialize(schedule.Programs));
+    cmd.Parameters.AddWithValue("$processes", JsonSerializer.Serialize(schedule.Processes));
     if (cmd.ExecuteNonQuery() != 1)
       throw new ConflictRequestException(
         $"Native part '{schedule.PartName}' is reserved for another schedule."
@@ -85,7 +97,7 @@ internal sealed partial class Repository
   }
 
   private const string SelectManagedSchedules = """
-    SELECT PartName, JobUnique, Comment, ConfirmedId, BeforeLoadCounter, Fixtures, Programs, Retired
+    SELECT PartName, JobUnique, Comment, ConfirmedId, BeforeLoadCounter, Processes, Retired
     FROM mazak_managed_schedule WHERE Source = $source
     """;
 
@@ -101,8 +113,7 @@ internal sealed partial class Repository
       Comment = row.GetString(2),
       ConfirmedScheduleId = row.IsDBNull(3) ? null : row.GetInt32(3),
       BeforeLoadCounter = row.IsDBNull(4) ? null : row.GetInt64(4),
-      Fixtures = JsonSerializer.Deserialize<ImmutableHashSet<string>>(row.GetString(5))!,
-      Programs = JsonSerializer.Deserialize<ImmutableHashSet<string>>(row.GetString(6))!,
-      Retired = row.GetInt64(7) != 0,
+      Processes = JsonSerializer.Deserialize<ImmutableList<MazakManagedProcess>>(row.GetString(5))!,
+      Retired = row.GetInt64(6) != 0,
     };
 }

@@ -160,7 +160,7 @@ public static class MazakManagedScheduleControl
       );
     var comments = MazakPart.InitialScheduleComments(job);
     var comment = comments.Count == 1 ? comments[0] : comments[process - 1];
-    var binding = db.LoadMazakManagedSchedules(config.ControllerSource, includeRetired)
+    var binding = db.LoadMazakManagedSchedules(config.ControllerSource, includeRetired, jobUnique)
       .SingleOrDefault(r => r.JobUnique == jobUnique && r.Comment == comment);
     if (binding?.ConfirmedScheduleId is null)
       throw new ConflictRequestException(
@@ -178,13 +178,7 @@ public static class MazakManagedScheduleControl
   )
   {
     var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: false);
-    var (part, schedule) = ManagedMazakSchedules.Inspect(
-      observed,
-      job,
-      binding.PartName,
-      binding.Comment,
-      binding.ConfirmedScheduleId
-    );
+    var (part, schedule) = ManagedMazakSchedules.Inspect(observed, job, binding);
     if (part is null || schedule is null)
       throw new ConflictRequestException(
         $"Mazak job '{jobUnique}' is missing the installed definition or schedule for route '{binding.Comment}'."

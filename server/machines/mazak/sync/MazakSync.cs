@@ -320,6 +320,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     };
     var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
+    ManagedMazakSchedules.ConfirmObserved(db, mazakConfig, mazakData);
     var evtResults = LogTranslation.HandleEvents(
       db,
       mazakData,

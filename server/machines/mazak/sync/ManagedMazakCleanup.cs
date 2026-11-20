@@ -32,13 +32,7 @@ internal static partial class ManagedMazakSchedules
       MazakScheduleRow? schedule;
       try
       {
-        (part, schedule) = Inspect(
-          data,
-          job,
-          route.PartName,
-          route.Comment,
-          route.ConfirmedScheduleId
-        );
+        (part, schedule) = Inspect(data, job, route);
       }
       catch (ConflictRequestException conflict)
       {

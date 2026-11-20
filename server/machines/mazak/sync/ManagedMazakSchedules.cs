@@ -67,12 +67,36 @@ internal static partial class ManagedMazakSchedules
     return (parts.SingleOrDefault(), schedules.SingleOrDefault());
   }
 
+  public static (MazakPartRow? Part, MazakScheduleRow? Schedule) Inspect(
+    MazakAllData data,
+    Job job,
+    MazakManagedSchedule binding
+  )
+  {
+    var inspection = Inspect(
+      data,
+      job,
+      binding.PartName,
+      binding.Comment,
+      binding.ConfirmedScheduleId
+    );
+    if (inspection.Part is { } part && !ProcessDefinitions(part).SequenceEqual(binding.Processes))
+      throw new ConflictRequestException(
+        $"Mazak job '{job.UniqueStr}' has changed fixtures or programs for route '{binding.Comment}'."
+      );
+    return inspection;
+  }
+
+  private static ImmutableList<MazakManagedProcess> ProcessDefinitions(MazakPartRow part) =>
+    part
+      .Processes.OrderBy(p => p.ProcessNumber)
+      .Select(p => new MazakManagedProcess(p.ProcessNumber, p.Fixture, p.MainProgram))
+      .ToImmutableList();
+
   public static void ConfirmObserved(IRepository db, MazakConfig config, MazakAllData observed)
   {
     if (config.UseInsightJobQuantities is null)
       return;
-    var bindings = db.LoadMazakManagedSchedules(config.ControllerSource, includeRetired: true)
-      .ToLookup(r => r.Comment);
     foreach (var schedule in observed.Schedules)
     {
       if (!MazakPart.IsSailPart(schedule.PartName, schedule.Comment))
@@ -81,13 +105,23 @@ internal static partial class ManagedMazakSchedules
       if (!Owns(config, job))
         continue;
       var saved = db.LoadMazakManagedSchedule(config.ControllerSource, schedule.PartName);
-      if (saved is null && bindings.Contains(schedule.Comment))
+      if (
+        saved is null
+        && db.LoadMazakManagedSchedules(
+            config.ControllerSource,
+            includeRetired: true,
+            jobUnique: job!.UniqueStr
+          )
+          .Any(binding => binding.Comment == schedule.Comment)
+      )
         continue;
       if (saved is { ConfirmedScheduleId: not null } or { Retired: true })
         continue;
       try
       {
-        var (part, row) = Inspect(observed, job!, schedule.PartName, schedule.Comment, null);
+        var (part, row) = saved is null
+          ? Inspect(observed, job!, schedule.PartName, schedule.Comment, null)
+          : Inspect(observed, job!, saved);
         if (part is not null && row is not null)
           db.RecordMazakManagedSchedule(
             saved is null
@@ -148,27 +182,18 @@ internal static partial class ManagedMazakSchedules
       Comment = part.Comment,
       ConfirmedScheduleId = confirmed,
       BeforeLoadCounter = beforeLoadCounter,
-      Fixtures = part
-        .Processes.Select(p => p.Fixture)
-        .Where(s => !string.IsNullOrEmpty(s))
-        .ToImmutableHashSet(),
-      Programs = part
-        .Processes.Select(p => p.MainProgram)
-        .Where(s => !string.IsNullOrEmpty(s))
-        .ToImmutableHashSet(),
+      Processes = ProcessDefinitions(part),
     };
 
-  public static bool ConfirmedRouteMissing(MazakAllData data, Job job, MazakManagedSchedule route)
+  public static bool ConfirmedRouteUnavailable(
+    MazakAllData data,
+    Job job,
+    MazakManagedSchedule route
+  )
   {
     try
     {
-      var (part, schedule) = Inspect(
-        data,
-        job,
-        route.PartName,
-        route.Comment,
-        route.ConfirmedScheduleId
-      );
+      var (part, schedule) = Inspect(data, job, route);
       return part is null || schedule is null;
     }
     catch (ConflictRequestException)
@@ -195,8 +220,13 @@ internal static partial class ManagedMazakSchedules
           {
             var route = bindings[job.UniqueStr].SingleOrDefault(r => r.Comment == comment);
             return route?.ConfirmedScheduleId is not null
-              ? ConfirmedRouteMissing(data, job, route)
-              : job.CopiedToSystem;
+              ? ConfirmedRouteUnavailable(data, job, route)
+              : job.CopiedToSystem
+                || route is not null
+                  && data.Schedules.Any(s =>
+                    s.Comment == comment
+                    || string.Equals(s.PartName, route.PartName, StringComparison.OrdinalIgnoreCase)
+                  );
           })
           .Select(comment => new CurrentStatusAlarm
           {

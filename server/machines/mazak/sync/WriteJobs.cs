@@ -56,8 +56,7 @@ namespace MazakMachineInterface
       ManagedMazakSchedules.ConfirmObserved(db, mazakCfg, mazakData);
       var routes = mazakCfg.UseInsightJobQuantities is null
         ? []
-        : db.LoadMazakManagedSchedules(mazakCfg.ControllerSource, includeRetired: true);
-      var confirmed = routes.Where(r => r.ConfirmedScheduleId.HasValue).ToLookup(r => r.JobUnique);
+        : db.LoadMazakManagedSchedules(mazakCfg.ControllerSource);
       var jobs = db.LoadJobsNotCopiedToSystem(
           now.AddHours(-JobLookbackHours),
           now.AddHours(1),
@@ -67,9 +66,17 @@ namespace MazakMachineInterface
         .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
         .Where(j =>
           !mazakCfg.UsesInsightJobQuantities(j)
-          || confirmed[j.UniqueStr]
+          || db.LoadMazakManagedSchedules(
+              mazakCfg.ControllerSource,
+              includeRetired: true,
+              jobUnique: j.UniqueStr
+            )
             .All(route =>
-              !route.Retired && !ManagedMazakSchedules.ConfirmedRouteMissing(mazakData, j, route)
+              !route.Retired
+              && (
+                !route.ConfirmedScheduleId.HasValue
+                || !ManagedMazakSchedules.ConfirmedRouteUnavailable(mazakData, j, route)
+              )
             )
         )
         .GroupBy(j => j.ScheduleId)
@@ -108,7 +115,7 @@ namespace MazakMachineInterface
         // A failed native write is not a rollback. Each retry starts from a fresh observation;
         // after successful construction, schedule only the selected definitions, not retained peers.
         mazakData = mazakDb.LoadAllData();
-        AddSchedules(
+        var wroteSchedules = AddSchedules(
           mazakData with
           {
             Parts = mazakData
@@ -120,6 +127,12 @@ namespace MazakMachineInterface
           mazakDb,
           mazakCfg
         );
+        if (
+          !wroteSchedules
+          && jobs.All(mazakCfg.UsesInsightJobQuantities)
+          && pending.Count == jobs.Count()
+        )
+          return ManagedMazakSchedules.Cleanup(db, mazakCfg, mazakData, mazakDb);
       }
 
       return true;
@@ -148,13 +161,17 @@ namespace MazakMachineInterface
     )
     {
       //first allocate a UID to use for this download
-      var retiredUIDs = routes
+      var reservedUIDs = (
+        mazakCfg.UseInsightJobQuantities is null
+          ? []
+          : jobDB.LoadMazakManagedSchedules(mazakCfg.ControllerSource, includeRetired: true)
+      )
         .Select(route => MazakPart.ParseUID(route.PartName))
         .ToImmutableHashSet();
       int UID = 0;
       while (UID < int.MaxValue)
       {
-        if (retiredUIDs.Contains(UID))
+        if (reservedUIDs.Contains(UID))
           goto found;
         //check schedule rows for UID
         foreach (var schRow in mazakData.Schedules)
@@ -270,7 +287,7 @@ namespace MazakMachineInterface
       var retainedFixtures = routes
         .Where(r => !r.Retired)
         .SelectMany(r => r.Fixtures)
-        .Concat(mazakData.PalletSubStatuses.Select(p => p.FixtureName))
+        .Concat(mazakData.PalletSubStatuses?.Select(p => p.FixtureName) ?? [])
         .ToImmutableHashSet();
       if (mazakCfg.UseInsightJobQuantities is not null)
         transSet = transSet with
@@ -304,7 +321,7 @@ namespace MazakMachineInterface
       return selectedParts;
     }
 
-    private static void AddSchedules(
+    private static bool AddSchedules(
       MazakAllData mazakData,
       IRepository jobDB,
       IReadOnlyList<Job> jobs,
@@ -346,7 +363,9 @@ namespace MazakMachineInterface
             )
           )
             jobDB.MarkJobCopiedToSystem(job.UniqueStr);
+        return true;
       }
+      return false;
     }
 
     private static bool HasAllInitialRoutes(

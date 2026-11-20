@@ -191,8 +191,9 @@ namespace MazakMachineInterface
 
     // Backend-only policy, derived from the job's route/configuration; not an allocator option.
     // Selected jobs use repository production accounting instead of controller quantities.
-    // Their backend owns supply admission, cancellation, schedule retirement and job archival.
-    // Generic queue reconciliation and automatic schedule deletion/archival leave them alone;
+    // Their backend owns supply admission, cancellation and job archival. The adapter retains
+    // the native schedules until the job is archived, then cleans up from settled readback.
+    // Generic queue reconciliation leaves these jobs alone;
     // the generic decrement command refuses mixed ownership before changing any jobs.
     // Null preserves controller-owned quantities for every job. Keep this predicate pure and
     // stable throughout a job's lifetime. AdjustCurrentStatus can add external reservations.

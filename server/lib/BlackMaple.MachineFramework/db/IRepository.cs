@@ -67,7 +67,8 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetRecentLogForProgramDetail(long afterCounter, string key, string value);
     ImmutableList<MazakManagedSchedule> LoadMazakManagedSchedules(
       string source,
-      bool includeRetired = false
+      bool includeRetired = false,
+      string jobUnique = null
     );
     MazakManagedSchedule LoadMazakManagedSchedule(string source, string nativePart);
     void RecordMazakManagedSchedule(MazakManagedSchedule schedule);

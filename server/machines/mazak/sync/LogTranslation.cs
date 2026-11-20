@@ -343,31 +343,35 @@ namespace MazakMachineInterface
       )
       {
         repo.RecordLoadUnloadComplete(
-          toLoad: loads
-            .Select(load =>
-              load with
-              {
-                AdditionalData = ManagedTransferDetails(
-                  load.ForeignID,
-                  load.MaterialIDs.Count,
-                  load.AdditionalData
-                ),
-              }
-            )
-            .ToImmutableList(),
+          toLoad: mazakConfig.UseInsightJobQuantities is null
+            ? loads
+            : loads
+              .Select(load =>
+                load with
+                {
+                  AdditionalData = ManagedTransferDetails(
+                    load.ForeignID,
+                    load.MaterialIDs.Count,
+                    load.AdditionalData
+                  ),
+                }
+              )
+              .ToImmutableList(),
           previouslyLoaded: null,
-          toUnload: unloads
-            .Select(unload =>
-              unload with
-              {
-                AdditionalData = ManagedTransferDetails(
-                  unload.ForeignID,
-                  unload.MaterialIDToDestination.Count,
-                  unload.AdditionalData
-                ),
-              }
-            )
-            .ToImmutableList(),
+          toUnload: mazakConfig.UseInsightJobQuantities is null
+            ? unloads
+            : unloads
+              .Select(unload =>
+                unload with
+                {
+                  AdditionalData = ManagedTransferDetails(
+                    unload.ForeignID,
+                    unload.MaterialIDToDestination.Count,
+                    unload.AdditionalData
+                  ),
+                }
+              )
+              .ToImmutableList(),
           previouslyUnloaded: null,
           pallet: pallet,
           lulNum: loadStation,
@@ -1314,7 +1318,9 @@ namespace MazakMachineInterface
           continue;
 
         var mats = GetMaterialOnPallet(e, oldEvents);
-        FindSchedule(e.FullPartName, e.Process, out _, out _, out var jobProcess);
+        var jobProcess = e.Process;
+        if (ManagedBinding(e.FullPartName) is not null)
+          FindSchedule(e.FullPartName, e.Process, out _, out _, out jobProcess);
         var unloadProcess = mats.Count > 0 ? mats[0].Mat.Process : jobProcess;
 
         var matToQueue = ImmutableDictionary.CreateBuilder<long, UnloadDestination>();

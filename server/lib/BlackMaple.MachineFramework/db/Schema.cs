@@ -1401,15 +1401,14 @@ namespace BlackMaple.MachineFramework
     private static void CreateMazakManagedScheduleTable(IDbCommand cmd)
     {
       cmd.CommandText = """
-        CREATE TABLE mazak_managed_schedule (
+        CREATE TABLE IF NOT EXISTS mazak_managed_schedule (
           Source TEXT NOT NULL,
           PartName TEXT NOT NULL COLLATE NOCASE,
           JobUnique TEXT NOT NULL,
           Comment TEXT NOT NULL,
           ConfirmedId INTEGER NULL,
           BeforeLoadCounter INTEGER NULL,
-          Fixtures TEXT NOT NULL,
-          Programs TEXT NOT NULL,
+          Processes TEXT NOT NULL,
           Retired INTEGER NOT NULL DEFAULT 0 CHECK (Retired IN (0, 1)),
           PRIMARY KEY (Source, PartName),
           UNIQUE (Source, JobUnique, Comment)
