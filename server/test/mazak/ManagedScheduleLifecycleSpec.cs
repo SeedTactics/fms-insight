@@ -419,7 +419,7 @@ public sealed partial class DuplicateDownloadSpec
       .Throws<ConflictRequestException>()
       .WithMessageContaining(mismatch);
     var alarm = ManagedMazakSchedules
-      .Diagnostics(db, config, observed)
+      .Diagnostics(db, config, observed, Now)
       .Single(a => a.Code == "mazak-managed-schedule-unavailable");
     await Assert.That(alarm.Message).Contains(mismatch);
     await Assert.That(alarm.Message).Contains(partName);

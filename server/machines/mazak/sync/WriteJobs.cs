@@ -44,6 +44,17 @@ namespace MazakMachineInterface
 
     public const int JobLookbackHours = 2 * 24;
 
+    internal static (DateTime EarliestEnd, DateTime LatestStart) DownloadWindow(DateTime now) =>
+      (now.AddHours(-JobLookbackHours), now.AddHours(1));
+
+    // A backend can cancel unstarted demand while admitted pieces still need their routes.
+    internal static bool HasDownloadDemand(HistoricJob job, MazakConfig config) =>
+      job.Decrements is not { Count: > 0 }
+      || (
+        config.UsesInsightJobQuantities(job)
+        && job.Decrements.Sum(d => (long)d.Quantity) < job.Cycles
+      );
+
     public static bool SyncFromDatabase(
       MazakAllData mazakData,
       IRepository db,
@@ -69,23 +80,17 @@ namespace MazakMachineInterface
       var routes = mazakCfg.UseInsightJobQuantities is null
         ? []
         : db.LoadMazakManagedSchedules(mazakCfg.ControllerSource);
+      var window = DownloadWindow(now);
       var jobs = db.LoadJobsNotCopiedToSystem(
-          now.AddHours(-JobLookbackHours),
-          now.AddHours(1),
+          window.EarliestEnd,
+          window.LatestStart,
           includeDecremented: mazakCfg.UseInsightJobQuantities is not null
         )
         .Concat(InterruptedManagedDownloads(db, mazakCfg, mazakData, routes))
         .DistinctBy(j => j.UniqueStr)
         .Where(j => mazakCfg.BulkJobFilter?.Invoke(j) != false)
         .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
-        // A backend can cancel unstarted demand while admitted pieces still need their routes.
-        .Where(j =>
-          j.Decrements is not { Count: > 0 }
-          || (
-            mazakCfg.UsesInsightJobQuantities(j)
-            && j.Decrements.Sum(d => (long)d.Quantity) < j.Cycles
-          )
-        )
+        .Where(j => HasDownloadDemand(j, mazakCfg))
         .Where(j =>
           !mazakCfg.UsesInsightJobQuantities(j)
           || ManagedMazakSchedules.CanContinueDownload(db, mazakCfg, mazakData, j)

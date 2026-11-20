@@ -1204,79 +1204,10 @@ namespace MazakMachineInterface
 
       foreach (var proc in processes)
       {
-        // checked above that only a single path
-        var info = job.Processes[proc - 1].Paths[0];
-
-        foreach (var station in info.Load.Concat(info.Unload))
+        var (prog, error) = ResolveProcessRoute(job, proc, mazakCfg, mazakData, lookupProgram);
+        if (error != null)
         {
-          try
-          {
-            mazakCfg.InverseLoadStationNumber(station);
-          }
-          catch (ArgumentOutOfRangeException)
-          {
-            ErrorDuringCreate = "Part " + job.PartName + " has an unmapped load station " + station;
-            return;
-          }
-        }
-
-        //Check this proc and path has a program
-        bool has1Stop = false;
-        ProgramRevision prog = null;
-        foreach (var stop in info.Stops)
-        {
-          has1Stop = true;
-          if (stop.Stations.Count == 0)
-          {
-            ErrorDuringCreate = "Part " + job.PartName + " has no stations assigned.";
-            return;
-          }
-
-          if (mazakCfg.MachineNumbers != null)
-          {
-            foreach (var stat in stop.Stations)
-            {
-              if (!mazakCfg.MachineNumbers.Contains(stat))
-              {
-                ErrorDuringCreate =
-                  "Part " + job.PartName + " has an invalid machine number " + stat.ToString();
-                return;
-              }
-            }
-          }
-
-          if (stop.Program == null || stop.Program == "")
-          {
-            ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
-            return;
-          }
-
-          prog = ResolveProgram(
-            mazakData,
-            stop.Program,
-            stop.ProgramRevision,
-            lookupProgram,
-            allowUnversionedNativeName: stop.ProgramRevision is null or 0
-              || !mazakCfg.UsesInsightJobQuantities(job)
-          );
-          if (prog == null)
-          {
-            ErrorDuringCreate =
-              "Part "
-              + job.PartName
-              + " program "
-              + stop.Program
-              + (
-                stop.ProgramRevision.HasValue ? " rev" + stop.ProgramRevision.Value.ToString() : ""
-              )
-              + " does not exist in the cell controller.";
-            return;
-          }
-        }
-
-        if (!has1Stop)
-        {
-          ErrorDuringCreate = "Part " + job.PartName + " has no machines assigned";
+          ErrorDuringCreate = error;
           return;
         }
 
@@ -1290,6 +1221,62 @@ namespace MazakMachineInterface
           mazak.Processes.Add(new MazakProcessFromJob(mazak, mazakProc, 1, prog, jobProcess: proc));
         }
       }
+    }
+
+    internal static (ProgramRevision Program, string Error) ResolveProcessRoute(
+      Job job,
+      int process,
+      MazakConfig config,
+      MazakAllData data,
+      Func<string, long?, ProgramRevision> lookupProgram
+    )
+    {
+      if (job.Processes[process - 1].Paths is not [var path])
+        return (null, $"Part {job.PartName} requires one Mazak path for process {process}.");
+      foreach (var station in path.Load.Concat(path.Unload))
+      {
+        try
+        {
+          config.InverseLoadStationNumber(station);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+          return (null, $"Part {job.PartName} has an unmapped load station {station}");
+        }
+      }
+
+      if (path.Stops.Count == 0)
+        return (null, $"Part {job.PartName} has no machines assigned");
+      ProgramRevision program = null;
+      foreach (var stop in path.Stops)
+      {
+        if (stop.Stations.Count == 0)
+          return (null, $"Part {job.PartName} has no stations assigned.");
+        if (config.MachineNumbers is { } machines)
+          foreach (var station in stop.Stations)
+            if (!machines.Contains(station))
+              return (null, $"Part {job.PartName} has an invalid machine number {station}");
+        if (string.IsNullOrEmpty(stop.Program))
+          return (null, $"Part {job.PartName} has no programs.");
+
+        program = ResolveProgram(
+          data,
+          stop.Program,
+          stop.ProgramRevision,
+          lookupProgram,
+          allowUnversionedNativeName: stop.ProgramRevision is null or 0
+            || !config.UsesInsightJobQuantities(job)
+        );
+        if (program == null)
+        {
+          var revision = stop.ProgramRevision is { } rev ? $" rev{rev}" : "";
+          return (
+            null,
+            $"Part {job.PartName} program {stop.Program}{revision} does not exist in the cell controller."
+          );
+        }
+      }
+      return (program, null);
     }
 
     private static ProgramRevision ResolveProgram(

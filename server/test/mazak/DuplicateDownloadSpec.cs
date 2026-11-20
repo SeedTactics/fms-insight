@@ -302,7 +302,7 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(Sync(device, repository)).IsFalse();
     await Assert.That(repository.LoadJob(job.UniqueStr)!.CopiedToSystem).IsFalse();
     var alarm = ManagedMazakSchedules
-      .Diagnostics(repository, ManagedConfig(), device.Data)
+      .Diagnostics(repository, ManagedConfig(), device.Data, Now)
       .Single();
     await Assert.That(alarm.Message).Contains("schedule 10");
     await Assert.That(alarm.Message).Contains("schedule 11");
@@ -394,7 +394,7 @@ public sealed partial class DuplicateDownloadSpec
     {
       await Assert.That(Sync(device, repository)).IsFalse();
       var error = ManagedMazakSchedules
-        .Diagnostics(repository, ManagedConfig(), device.Data)
+        .Diagnostics(repository, ManagedConfig(), device.Data, Now)
         .Single();
       await Assert.That(error.Message).Contains(job.UniqueStr);
       await Assert.That(error.Message).Contains(p1.PartName);

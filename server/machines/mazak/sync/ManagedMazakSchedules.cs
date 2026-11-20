@@ -127,36 +127,6 @@ internal static partial class ManagedMazakSchedules
       throw new ConflictRequestException(conflict);
   }
 
-  private static (MazakPart Part, string? Problem) BuildExpectedPart(
-    IRepository db,
-    MazakAllData data,
-    MazakConfig config,
-    Job job,
-    string partName,
-    string comment
-  )
-  {
-    var route = MazakPart.ParseCommentInfo(comment);
-    var expectedPart = route.IsSplit
-      ? MazakPart.FromNativeName(job, partName, route.FmsProcess, 1)
-      : MazakPart.FromNativeName(job, partName, null, null);
-    ConvertJobsToMazakParts.BuildProcFromJob(
-      job,
-      expectedPart,
-      out var error,
-      config,
-      data,
-      (program, revision) => WriteJobs.LookupProgram(db, program, revision),
-      onlyProcess: route.IsSplit ? route.FmsProcess : null
-    );
-    return (
-      expectedPart,
-      string.IsNullOrEmpty(error)
-        ? null
-        : $"Mazak controller '{config.ControllerSource}' cannot verify native part '{partName}' for job '{job.UniqueStr}': {error}"
-    );
-  }
-
   internal static string? ExecutionConflict(
     IRepository db,
     MazakAllData data,
@@ -166,16 +136,21 @@ internal static partial class ManagedMazakSchedules
     bool checkExecutionFields = true
   )
   {
-    var (expectedPart, problem) = BuildExpectedPart(
-      db,
-      data,
-      config,
+    var route = MazakPart.ParseCommentInfo(part.Comment);
+    var expectedPart = route.IsSplit
+      ? MazakPart.FromNativeName(job, part.PartName, route.FmsProcess, 1)
+      : MazakPart.FromNativeName(job, part.PartName, null, null);
+    ConvertJobsToMazakParts.BuildProcFromJob(
       job,
-      part.PartName,
-      part.Comment
+      expectedPart,
+      out var error,
+      config,
+      data,
+      (program, revision) => WriteJobs.LookupProgram(db, program, revision),
+      onlyProcess: route.IsSplit ? route.FmsProcess : null
     );
-    if (problem is not null)
-      return problem;
+    if (error is not null)
+      return $"Mazak controller '{config.ControllerSource}' cannot verify native part '{part.PartName}' for job '{job.UniqueStr}'. {error}";
     foreach (var expectedProcess in expectedPart.Processes)
     {
       var process = part.Processes.Single(p => p.ProcessNumber == expectedProcess.ProcessNumber);
@@ -464,20 +439,34 @@ internal static partial class ManagedMazakSchedules
       )
         return unavailable;
 
-      if (part is null && binding is not null)
-        return BuildExpectedPart(db, data, config, job, binding.PartName, comment).Problem;
+      if (part is null)
+      {
+        var route = MazakPart.ParseCommentInfo(comment);
+        foreach (var nativeProcess in NativeProcesses(job, comment))
+        {
+          var (_, error) = ConvertJobsToMazakParts.ResolveProcessRoute(
+            job,
+            route.JobProcessForMazakProcess(nativeProcess),
+            config,
+            data,
+            (program, revision) => WriteJobs.LookupProgram(db, program, revision)
+          );
+          if (error is not null)
+            return $"Mazak controller '{config.ControllerSource}' cannot download job '{job.UniqueStr}' on route '{comment}'. {error}";
+        }
+        return null;
+      }
 
       if (
-        part is not null
-        && ExecutionConflict(
+        ExecutionConflict(
           db,
           data,
           config,
           job,
           part,
           checkExecutionFields: !forDownload && binding?.ConfirmedScheduleId is not null
-        )
-          is { } mismatch
+        ) is
+        { } mismatch
       )
         return mismatch;
 
@@ -494,7 +483,8 @@ internal static partial class ManagedMazakSchedules
   public static ImmutableList<CurrentStatusAlarm> Diagnostics(
     IRepository db,
     MazakConfig config,
-    MazakAllData data
+    MazakAllData data,
+    DateTime observationTimeUtc
   )
   {
     if (config.UseInsightJobQuantities is null)
@@ -505,6 +495,7 @@ internal static partial class ManagedMazakSchedules
       .Parts.Select(p => p.Comment)
       .Concat(data.Schedules.Select(s => s.Comment))
       .ToImmutableHashSet();
+    var window = WriteJobs.DownloadWindow(observationTimeUtc);
     return db.LoadUnarchivedJobs()
       .Where(j =>
         Owns(config, j)
@@ -512,6 +503,11 @@ internal static partial class ManagedMazakSchedules
           j.CopiedToSystem
           || bindings.Contains(j.UniqueStr)
           || MazakPart.InitialScheduleComments(j).Any(observedComments.Contains)
+          || (
+            j.RouteEndUTC >= window.EarliestEnd
+            && j.RouteStartUTC <= window.LatestStart
+            && WriteJobs.HasDownloadDemand(j, config)
+          )
         )
       )
       .SelectMany(job =>

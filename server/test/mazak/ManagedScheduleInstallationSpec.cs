@@ -198,7 +198,9 @@ public sealed partial class DuplicateDownloadSpec
     device.Native.ClearReceivedCalls();
     using var reopened = repositories.OpenConnection();
     await Assert.That(Sync(device, reopened)).IsFalse();
-    var alarm = ManagedMazakSchedules.Diagnostics(reopened, ManagedConfig(), device.Data).Single();
+    var alarm = ManagedMazakSchedules
+      .Diagnostics(reopened, ManagedConfig(), device.Data, Now)
+      .Single();
     await Assert.That(alarm.Message).Contains("changed fixtures or programs");
     await Assert.That(alarm.Message).Contains(parts[1].Processes.Single().Fixture);
     device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
@@ -315,7 +317,7 @@ public sealed partial class DuplicateDownloadSpec
     for (var i = 0; i < 3; ++i)
       await Assert.That(Poll()).IsFalse();
     await Assert.That(device.Data.Parts.Single(p => p.PartName == route.PartName)).IsEqualTo(wrong);
-    var alarm = ManagedMazakSchedules.Diagnostics(reopened, config, device.Data).Single();
+    var alarm = ManagedMazakSchedules.Diagnostics(reopened, config, device.Data, pollAt).Single();
     await Assert.That(alarm.Message).Contains(managed.UniqueStr);
     await Assert.That(alarm.Message).Contains(route.PartName);
     await Assert
@@ -332,19 +334,32 @@ public sealed partial class DuplicateDownloadSpec
     );
     await Assert.That(Poll()).IsTrue();
     await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsTrue();
-    await Assert.That(ManagedMazakSchedules.Diagnostics(reopened, config, device.Data)).IsEmpty();
+    await Assert
+      .That(ManagedMazakSchedules.Diagnostics(reopened, config, device.Data, pollAt))
+      .IsEmpty();
   }
 
   [Test]
-  public async Task MissingProgramOnAnUninstalledRouteLetsIndependentJobsDownload()
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task MissingProgramOnAnUninstalledRouteLetsIndependentJobsDownload(bool interrupted)
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
     using var db = repositories.OpenConnection();
     var managed = PendingJob(true);
-    var device = new DownloadDevice("parts-partial");
-    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed] }, null, false);
-    await Assert.That(() => Sync(device, db)).Throws<IOException>();
-    await Assert.That(device.Data.Parts.Single().Processes.Single().MainProgram).IsEqualTo("1001");
+    var device = new DownloadDevice(interrupted ? "parts-partial" : "");
+    var config = ManagedConfig();
+    var accepted = new NewJobs { ScheduleId = "first", Jobs = [managed] };
+    using var mazak = new MazakSync(device.Native, new FMSSettings(), config);
+    await Assert.That(mazak.CheckNewJobs(db, accepted)).IsEmpty();
+    db.AddJobs(accepted, null, false);
+    if (interrupted)
+    {
+      await Assert.That(() => Sync(device, db)).Throws<IOException>();
+      await Assert
+        .That(device.Data.Parts.Single().Processes.Single().MainProgram)
+        .IsEqualTo("1001");
+    }
     var programs = device.Data.MainPrograms;
     device.Observe(
       device.Data with
@@ -353,7 +368,18 @@ public sealed partial class DuplicateDownloadSpec
       }
     );
 
-    var retryAt = managed.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1);
+    var retryAt = interrupted ? managed.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1) : Now;
+    if (!interrupted)
+      await Assert
+        .That(
+          ManagedMazakSchedules.Diagnostics(
+            db,
+            config,
+            device.Data,
+            managed.RouteStartUTC.AddHours(-2)
+          )
+        )
+        .IsEmpty();
     var ordinary = PendingJob(false);
     var peer = ordinary with
     {
@@ -365,7 +391,6 @@ public sealed partial class DuplicateDownloadSpec
     };
     db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [peer] }, null, false);
     using var reopened = repositories.OpenConnection();
-    var config = ManagedConfig();
     bool Poll() =>
       WriteJobs.SyncFromDatabase(
         device.Data,
@@ -378,14 +403,17 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(Poll()).IsTrue();
     await Assert.That(reopened.LoadJob(peer.UniqueStr)!.CopiedToSystem).IsTrue();
     await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsFalse();
-    var alarm = ManagedMazakSchedules.Diagnostics(reopened, config, device.Data).Single();
+    await Assert.That(Poll()).IsFalse();
+    var alarm = ManagedMazakSchedules.Diagnostics(reopened, config, device.Data, retryAt).Single();
     await Assert.That(alarm.Message).Contains(managed.UniqueStr);
     await Assert.That(alarm.Message).Contains("1002");
 
     device.Observe(device.Data with { MainPrograms = programs });
     await Assert.That(Poll()).IsTrue();
     await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsTrue();
-    await Assert.That(ManagedMazakSchedules.Diagnostics(reopened, config, device.Data)).IsEmpty();
+    await Assert
+      .That(ManagedMazakSchedules.Diagnostics(reopened, config, device.Data, retryAt))
+      .IsEmpty();
   }
 
   [Test]

@@ -364,7 +364,12 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     {
       st = mazakConfig.AdjustCurrentStatus(db, st);
     }
-    var diagnostics = ManagedMazakSchedules.Diagnostics(db, mazakConfig, mazakData);
+    var diagnostics = ManagedMazakSchedules.Diagnostics(
+      db,
+      mazakConfig,
+      mazakData,
+      acquisition.StartedAtUtc
+    );
     if (lastToolReadFailed)
       diagnostics = diagnostics.Add(
         new CurrentStatusAlarm
