@@ -511,9 +511,27 @@ public sealed partial class DuplicateDownloadSpec
       2,
       0
     );
+    var zero = withdrawal!.Schedules.Single();
+    await Assert.That(zero.Processes.Single().ProcessMaterialQuantity).IsEqualTo(0);
+    var zeroReadback = observed with
+    {
+      Schedules = observed
+        .Schedules.Select(row => row.Id == zero.Id ? zero : row)
+        .ToImmutableList(),
+    };
     await Assert
-      .That(withdrawal!.Schedules.Single().Processes.Single().ProcessMaterialQuantity)
-      .IsEqualTo(0);
+      .That(
+        MazakManagedScheduleControl.SetMaterialOffer(db, config, zeroReadback, job.UniqueStr, 2, 0)
+      )
+      .IsNull();
+    var repeat = MazakManagedScheduleControl.WithdrawMaterialOffer(
+      db,
+      config,
+      zeroReadback,
+      job.UniqueStr,
+      2
+    );
+    await Assert.That(repeat.Schedules).IsEquivalentTo(withdrawal.Schedules);
   }
 
   [Test]

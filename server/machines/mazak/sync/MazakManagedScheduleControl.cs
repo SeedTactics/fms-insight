@@ -68,6 +68,27 @@ public static class MazakManagedScheduleControl
     string jobUnique,
     int process,
     int quantity
+  ) =>
+    PlanMaterialOffer(db, config, observed, jobUnique, process, quantity, confirmWithdrawal: false);
+
+  /// <summary>Write zero ready material to a verified route, even when readback already shows zero.</summary>
+  /// <remarks>Use this when the caller lost a withdrawal reply and needs an acknowledged write.</remarks>
+  public static MazakWriteData WithdrawMaterialOffer(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    string jobUnique,
+    int process
+  ) => PlanMaterialOffer(db, config, observed, jobUnique, process, 0, confirmWithdrawal: true)!;
+
+  private static MazakWriteData? PlanMaterialOffer(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    string jobUnique,
+    int process,
+    int quantity,
+    bool confirmWithdrawal
   )
   {
     ArgumentOutOfRangeException.ThrowIfNegative(quantity);
@@ -97,7 +118,7 @@ public static class MazakManagedScheduleControl
       throw new ConflictRequestException(
         $"Offered material exceeds the remaining plan for Mazak schedule {schedule.Id}."
       );
-    return first.ProcessMaterialQuantity == quantity
+    return !confirmWithdrawal && first.ProcessMaterialQuantity == quantity
       ? null
       : new MazakWriteData
       {
