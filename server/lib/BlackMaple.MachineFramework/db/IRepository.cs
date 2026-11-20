@@ -85,6 +85,8 @@ namespace BlackMaple.MachineFramework
       long lastSeenCounter,
       DateTime? expectedEndUTCofLastSeen = null
     );
+    long MaxLogCounter();
+    IEnumerable<LogEntry> GetRecentLogForProgramDetail(long afterCounter, string key, string value);
     IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);

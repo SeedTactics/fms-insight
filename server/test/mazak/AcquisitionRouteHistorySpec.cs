@@ -396,10 +396,12 @@ public sealed partial class MazakAcquisitionSpec
     var invalidated = sync.CalculateCellState(db).CurrentStatus.Jobs[job.UniqueStr];
     await Assert.That(invalidated.Completed![0][0]).IsEqualTo(0);
     await Assert.That(invalidated.RemainingToStart).IsEqualTo(0L);
-    var beforeReplacement = db.GetLogForJobUnique(job.UniqueStr).Max(entry => entry.Counter);
-    await Assert.That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, 0)).IsEqualTo(1L);
+    var beforeReplacement = db.MaxLogCounter();
     await Assert
-      .That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, beforeReplacement))
+      .That(MazakRouteCapacity.RecordedLoads(db, config, route, 0).PhysicalQuantity)
+      .IsEqualTo(1L);
+    await Assert
+      .That(MazakRouteCapacity.RecordedLoads(db, config, route, beforeReplacement).PhysicalQuantity)
       .IsEqualTo(0L);
 
     var retire = MazakRouteRetirement.RemoveSchedule(db, config, cell.Data, route)!;
@@ -428,9 +430,11 @@ public sealed partial class MazakAcquisitionSpec
     var reworked = Transfer(LogCode.UnloadEnd, 5).Jobs[job.UniqueStr];
     await Assert.That(reworked.Completed![0][0]).IsEqualTo(1);
     await Assert.That(reworked.RemainingToStart).IsEqualTo(0L);
-    await Assert.That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, 0)).IsEqualTo(2L);
     await Assert
-      .That(MazakRouteCapacity.RecordedLoadQuantity(db, config, route, beforeReplacement))
+      .That(MazakRouteCapacity.RecordedLoads(db, config, route, 0).PhysicalQuantity)
+      .IsEqualTo(2L);
+    await Assert
+      .That(MazakRouteCapacity.RecordedLoads(db, config, route, beforeReplacement).PhysicalQuantity)
       .IsEqualTo(1L);
     await Assert
       .That(db.GetJobProductionSummary(job.UniqueStr).AutomationEntryMaterialIds)
@@ -1020,6 +1024,50 @@ public sealed partial class MazakAcquisitionSpec
         ]
       )
       .IsEqualTo("1");
+    var config = Configure(new MazakConfig { DBType = MazakDbType.MazakSmooth });
+    var persistedLoad = reopened.MostRecentLogEntryForForeignID(load.ForeignID);
+    var peer = config with { ControllerSource = "peer" };
+    reopened.RecordLoadUnloadComplete(
+      toLoad:
+      [
+        new MaterialToLoadOntoFace
+        {
+          MaterialIDs = [],
+          Process = route.JobProcess,
+          FaceNum = route.NativeProcess,
+          Path = route.Path,
+          ForeignID = peer.LogForeignId(load.ForeignID),
+          AdditionalData = persistedLoad.ProgramDetails!,
+          ActiveOperationTime = TimeSpan.Zero,
+        },
+      ],
+      previouslyLoaded: [],
+      toUnload: [],
+      previouslyUnloaded: [],
+      lulNum: 2,
+      pallet: 2,
+      totalElapsed: TimeSpan.Zero,
+      timeUTC: persistedLoad.EndTimeUTC,
+      externalQueues: ImmutableDictionary<string, string>.Empty
+    );
+    var recorded = MazakRouteCapacity.RecordedLoads(reopened, config, route, 0);
+    await Assert.That(recorded.IdentifiedQuantity).IsEqualTo(0L);
+    await Assert.That(recorded.UnidentifiedQuantity).IsEqualTo(1L);
+    await Assert.That(recorded.PhysicalQuantity).IsEqualTo(1L);
+    await Assert
+      .That(
+        MazakRouteCapacity
+          .RecordedLoads(reopened, config, route, persistedLoad.Counter)
+          .PhysicalQuantity
+      )
+      .IsEqualTo(0L);
+    await Assert
+      .That(
+        MazakRouteCapacity
+          .RecordedLoads(reopened, peer, route with { Source = "peer" }, persistedLoad.Counter)
+          .UnidentifiedQuantity
+      )
+      .IsEqualTo(1L);
 
     cell.Data = cell.Data with
     {

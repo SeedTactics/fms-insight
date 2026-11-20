@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -13,11 +14,16 @@ public sealed record MazakRouteWrite
   public required MazakWriteData? NextWrite { get; init; }
 }
 
+public sealed record MazakRouteLoadAccounting(long IdentifiedQuantity, long UnidentifiedQuantity)
+{
+  public long PhysicalQuantity => IdentifiedQuantity + UnidentifiedQuantity;
+}
+
 public static class MazakRouteCapacity
 {
   // Count physical loads, including attempts whose subsequent machining was invalidated.
   // The caller supplies the history boundary for the native schedule being accounted for.
-  public static long RecordedLoadQuantity(
+  public static MazakRouteLoadAccounting RecordedLoads(
     IRepository db,
     MazakConfig config,
     MazakRouteIdentity route,
@@ -30,24 +36,39 @@ public static class MazakRouteCapacity
         nameof(route)
       );
     var sourcePrefix = config.LogForeignId("LG");
-    return db.GetLogForJobUnique(route.JobUnique)
+    var loads = db.GetRecentLogForProgramDetail(
+        afterCounter,
+        MazakRouteHistory.NativePartNameKey,
+        route.PartName
+      )
       .Where(entry =>
-        entry.Counter > afterCounter
-        && entry.LogType == LogType.LoadUnloadCycle
+        entry.LogType == LogType.LoadUnloadCycle
         && !entry.StartOfCycle
         && entry.Result == "LOAD"
         && entry.ForeignID?.StartsWith(sourcePrefix, StringComparison.Ordinal) == true
-        && entry.ProgramDetails?.GetValueOrDefault(MazakRouteHistory.NativePartNameKey)
-          == route.PartName
-      )
-      .Sum(entry =>
-        (long)
-          entry.Material.Count(material =>
-            material.JobUniqueStr == route.JobUnique
-            && material.Process == route.JobProcess
-            && (material.Path ?? 1) == route.Path
-          )
       );
+    long identified = 0;
+    long unidentified = 0;
+    foreach (var entry in loads)
+    {
+      identified += entry.Material.Count(material =>
+        material.MaterialID >= 0
+        && material.JobUniqueStr == route.JobUnique
+        && material.Process == route.JobProcess
+        && material.Face == route.NativeProcess
+        && (material.Path ?? 1) == route.Path
+      );
+      if (
+        int.TryParse(
+          entry.ProgramDetails?.GetValueOrDefault(MazakRouteHistory.UnidentifiedQuantityKey),
+          NumberStyles.None,
+          CultureInfo.InvariantCulture,
+          out var quantity
+        )
+      )
+        unidentified += quantity;
+    }
+    return new(identified, unidentified);
   }
 
   // Serialize with the controller's bulk writer and other edits. Save at most NextWrite, then

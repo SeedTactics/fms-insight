@@ -81,6 +81,12 @@ verified idle schedule and keep its definition. A lower plan also requires remov
 creating its replacement. The exact load resolver supplies the existing material ID. The repeated
 unload restores its valid completion and the piece counts as one entry.
 
+Capture the repository's `MaxLogCounter` before creating a schedule. `RecordedLoads` counts physical
+load attempts for the controller and exact route after that boundary, including attempts later
+invalidated and loads whose material IDs could not be established. It reports identified and
+unidentified quantities separately so the backend can account for physical attempts while deciding
+whether it has enough serial evidence to admit more work.
+
 Historical attribution uses the controller source, exact full part name and native process. For
 legacy definitions, the caller can supply a full name for adoption after establishing its ownership.
 Mazak requires all material for the schedule to clear its pallets and the rest of the system, and
