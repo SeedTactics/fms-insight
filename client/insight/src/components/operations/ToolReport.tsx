@@ -117,16 +117,19 @@ const VerticalSeperator = styled("span")({
 function FormatMinAndCnt({
   min,
   cnt,
+  unavailable,
   showZero,
   extraMin,
   extraCnt,
 }: {
   min: number | null | undefined;
   cnt: number | null | undefined;
+  unavailable?: boolean;
   showZero?: boolean;
   extraMin?: string | null;
   extraCnt?: string | null;
 }) {
+  if (unavailable) return "Unknown";
   min ??= 0;
   cnt ??= 0;
 
@@ -165,9 +168,9 @@ function FormatMinAndCnt({
   }
 }
 
-function PartDetailTable({ tool, machine }: { tool: ToolReport; machine?: string }) {
+function PartDetailTable({ tool, machine }: { tool: ToolReport; machine?: ToolInMachine }) {
   const parts = machine
-    ? LazySeq.of(tool.parts).filter((p) => p.machines.has(machine))
+    ? LazySeq.of(tool.parts).filter((p) => p.machines.has(machine.machineName))
     : LazySeq.of(tool.parts);
 
   return (
@@ -192,7 +195,11 @@ function PartDetailTable({ tool, machine }: { tool: ToolReport; machine?: string
       <TableBody>
         {parts.isEmpty() ? (
           <TableRow>
-            <TableCell colSpan={5}>No programs use this machine</TableCell>
+            <TableCell colSpan={machine ? 5 : 6}>
+              {machine?.usageHistoryUnavailable
+                ? "Program use is unknown for this machine."
+                : "No programs use this machine"}
+            </TableCell>
           </TableRow>
         ) : (
           parts.map((p, idx) => (
@@ -351,6 +358,7 @@ function ToolSummaryHeader() {
 
 function ToolSummaryRow({ tool }: { tool: ToolReport }) {
   const [open, setOpen] = useState<boolean>(false);
+  const historyAvailable = !tool.machines.some((m) => m.usageHistoryUnavailable);
 
   const machinesWithSomePart = LazySeq.of(tool.machines).filter((m) =>
     tool.parts.some((p) => p.machines.has(m.machineName)),
@@ -384,8 +392,11 @@ function ToolSummaryRow({ tool }: { tool: ToolReport }) {
     <>
       <ToolTableRow
         $noBorderBottom
-        $highlightedRow={schUseMin > totalRemainMin || schUseCnt > totalRemainCnt}
+        $highlightedRow={
+          historyAvailable && (schUseMin > totalRemainMin || schUseCnt > totalRemainCnt)
+        }
         $noticeRow={
+          historyAvailable &&
           schUseMin <= totalRemainMin &&
           schUseCnt <= totalRemainCnt &&
           ((minRemainMin && schUseMin > minRemainMin.remainMin) ||
@@ -399,15 +410,20 @@ function ToolSummaryRow({ tool }: { tool: ToolReport }) {
         </TableCell>
         <TableCell>{tool.toolName}</TableCell>
         <TableCell align="right">
-          <FormatMinAndCnt min={schUseMin} cnt={schUseCnt} />
+          <FormatMinAndCnt min={schUseMin} cnt={schUseCnt} unavailable={!historyAvailable} />
         </TableCell>
         <TableCell align="right">
-          <FormatMinAndCnt min={totalRemainMin} cnt={totalRemainCnt} />
+          <FormatMinAndCnt
+            min={totalRemainMin}
+            cnt={totalRemainCnt}
+            unavailable={!historyAvailable}
+          />
         </TableCell>
         <TableCell align="right">
           <FormatMinAndCnt
             min={minRemainMin?.remainMin}
             cnt={minRemainCnt?.remainCnt}
+            unavailable={!historyAvailable}
             showZero
             extraMin={minRemainMin?.mach}
             extraCnt={minRemainCnt?.mach}
@@ -522,7 +538,11 @@ function ToolMachineRow({ report, pocket }: { report: ToolReport; pocket: ToolIn
         <TableCell align="right">{pocket.pocket}</TableCell>
         {showSerial ? <TableCell>{pocket.serial ?? ""}</TableCell> : undefined}
         <TableCell align="right">
-          <FormatMinAndCnt min={schMins} cnt={schCnts} />
+          <FormatMinAndCnt
+            min={schMins}
+            cnt={schCnts}
+            unavailable={pocket.usageHistoryUnavailable}
+          />
         </TableCell>
         <TableCell align="right">
           <FormatMinAndCnt min={pocket.currentUseMinutes} cnt={pocket.currentUseCnt} />
@@ -538,7 +558,7 @@ function ToolMachineRow({ report, pocket }: { report: ToolReport; pocket: ToolIn
       <TableRow>
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={numCols}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <PartDetailTable tool={report} machine={pocket.machineName} />
+            <PartDetailTable tool={report} machine={pocket} />
           </Collapse>
         </TableCell>
       </TableRow>

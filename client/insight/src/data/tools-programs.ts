@@ -93,6 +93,7 @@ function averageToolUse(
 
 export type ToolInMachine = {
   readonly machineName: string;
+  readonly usageHistoryUnavailable?: boolean;
   readonly pocket: number;
   readonly serial?: string;
   readonly currentUseMinutes: number | null;
@@ -160,6 +161,7 @@ export function calcToolReport(
   toolsInMach: ReadonlyArray<Readonly<IToolInMachine>>,
   usage: ToolUsage,
   includeStop: (stop: IMachiningStop) => boolean = () => true,
+  historyGroups: ReadonlySet<string> | null = null,
 ): ReadonlyArray<ToolReport> {
   let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
@@ -202,7 +204,9 @@ export function calcToolReport(
     }
   }
 
-  const parts = LazySeq.of(averageToolUse(usage, false))
+  const attributedUsage =
+    historyGroups === null ? usage : usage.filter((_, op) => historyGroups.has(op.statGroup));
+  const parts = LazySeq.of(averageToolUse(attributedUsage, false))
     .flatMap(([partAndProg, tools]) => {
       const qty = window.bmsToolReportOverridePartQuantity ?? partPlannedQtys.get(partAndProg);
       if (qty !== undefined && qty > 0) {
@@ -215,7 +219,7 @@ export function calcToolReport(
               scheduledUseMinutes: tool.cycleUsageMinutes,
               // if no counts, just estimate as 1
               scheduledUseCnt: tool.cycleUsageCnt === 0 ? 1 : tool.cycleUsageCnt,
-              machines: usage.get(partAndProg)?.machines ?? OrderedSet.empty<string>(),
+              machines: attributedUsage.get(partAndProg)?.machines ?? OrderedSet.empty<string>(),
             },
           };
         });
@@ -270,6 +274,8 @@ export function calcToolReport(
 
           return {
             machineName,
+            usageHistoryUnavailable:
+              historyGroups !== null && !historyGroups.has(m.machineGroupName),
             pocket: m.pocket,
             serial: m.serial,
             currentUseMinutes,
@@ -319,13 +325,12 @@ export const currentToolReport = atom<ReadonlyArray<ToolReport> | null>((get) =>
   const inventory = get(toolReportInventory);
   if (inventory.time === null) return null;
   const source = get(machineReportSource);
-  const groups = get(machineReportHistoryGroups);
-  const usage = get(last30ToolUse);
   return calcToolReport(
     get(currentStatus),
     inventory.rows,
-    groups === null ? usage : usage.filter((_, op) => groups.has(op.statGroup)),
+    get(last30ToolUse),
     (stop) => machineReportIncludesStop(source, stop),
+    get(machineReportHistoryGroups),
   );
 });
 
@@ -364,12 +369,19 @@ function buildToolReportHTML(tools: Iterable<ToolReport>): string {
   table += "</tr></thead>\n<tbody>\n";
 
   for (const tool of tools) {
+    const historyAvailable = !tool.machines.some((m) => m.usageHistoryUnavailable);
+    const parts = LazySeq.of(tool.parts);
+    const scheduledMinutes = historyAvailable
+      ? parts.sumBy((p) => p.scheduledUseMinutes * p.quantity).toFixed(1)
+      : "Unknown";
+    const scheduledCount = historyAvailable
+      ? parts.sumBy((p) => p.scheduledUseCnt * p.quantity).toFixed(1)
+      : "Unknown";
     for (const mach of tool.machines) {
       table += `<tr><td>${tool.toolName}</td><td>${mach.machineName}</td><td>${mach.pocket}</td>`;
 
       if (showTime) {
-        const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
-        table += "<td>" + schUse.toFixed(1) + "</td>";
+        table += "<td>" + scheduledMinutes + "</td>";
 
         table +=
           "<td>" + (mach.currentUseMinutes ? mach.currentUseMinutes.toFixed(1) : "") + "</td>";
@@ -378,8 +390,7 @@ function buildToolReportHTML(tools: Iterable<ToolReport>): string {
       }
 
       if (showCnts) {
-        const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
-        table += "<td>" + schUse.toFixed(1) + "</td>";
+        table += "<td>" + scheduledCount + "</td>";
 
         table += "<td>" + (mach.currentUseCnt ? mach.currentUseCnt.toFixed(1) : "") + "</td>";
         table += "<td>" + (mach.lifetimeCnt ? mach.lifetimeCnt.toFixed(1) : "") + "</td>";
