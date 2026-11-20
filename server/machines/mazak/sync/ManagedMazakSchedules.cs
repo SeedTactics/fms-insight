@@ -127,21 +127,21 @@ internal static partial class ManagedMazakSchedules
       throw new ConflictRequestException(conflict);
   }
 
-  internal static string? ExecutionConflict(
+  private static (MazakPart Part, string? Problem) BuildExpectedPart(
     IRepository db,
     MazakAllData data,
     MazakConfig config,
     Job job,
-    MazakPartRow part,
-    bool checkExecutionFields = true
+    string partName,
+    string comment
   )
   {
-    var route = MazakPart.ParseCommentInfo(part.Comment);
-    var download = MazakPart.ParseUID(part.PartName);
+    var route = MazakPart.ParseCommentInfo(comment);
+    var download = MazakPart.ParseUID(partName);
     var expectedPart = route.IsSplit
       ? new MazakPart(job, download, 0, route.FmsProcess, 1)
       : new MazakPart(job, download, 0);
-    expectedPart.PartName = part.PartName;
+    expectedPart.PartName = partName;
     ConvertJobsToMazakParts.BuildProcFromJob(
       job,
       expectedPart,
@@ -151,9 +151,33 @@ internal static partial class ManagedMazakSchedules
       (program, revision) => WriteJobs.LookupProgram(db, program, revision),
       onlyProcess: route.IsSplit ? route.FmsProcess : null
     );
-    if (!string.IsNullOrEmpty(error))
-      return $"Mazak controller '{config.ControllerSource}' cannot verify native part '{part.PartName}' for job '{job.UniqueStr}': {error}";
+    return (
+      expectedPart,
+      string.IsNullOrEmpty(error)
+        ? null
+        : $"Mazak controller '{config.ControllerSource}' cannot verify native part '{partName}' for job '{job.UniqueStr}': {error}"
+    );
+  }
 
+  internal static string? ExecutionConflict(
+    IRepository db,
+    MazakAllData data,
+    MazakConfig config,
+    Job job,
+    MazakPartRow part,
+    bool checkExecutionFields = true
+  )
+  {
+    var (expectedPart, problem) = BuildExpectedPart(
+      db,
+      data,
+      config,
+      job,
+      part.PartName,
+      part.Comment
+    );
+    if (problem is not null)
+      return problem;
     foreach (var expectedProcess in expectedPart.Processes)
     {
       var process = part.Processes.Single(p => p.ProcessNumber == expectedProcess.ProcessNumber);
@@ -441,6 +465,9 @@ internal static partial class ManagedMazakSchedules
         && (binding?.ConfirmedScheduleId is not null || job.CopiedToSystem)
       )
         return unavailable;
+
+      if (part is null && binding is not null)
+        return BuildExpectedPart(db, data, config, job, binding.PartName, comment).Problem;
 
       if (
         part is not null

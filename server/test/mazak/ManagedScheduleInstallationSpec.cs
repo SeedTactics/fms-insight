@@ -259,6 +259,59 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task MissingProgramOnAnUninstalledRouteLetsIndependentJobsDownload()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var managed = PendingJob(true);
+    var device = new DownloadDevice("parts-partial");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed] }, null, false);
+    await Assert.That(() => Sync(device, db)).Throws<IOException>();
+    await Assert.That(device.Data.Parts.Single().Processes.Single().MainProgram).IsEqualTo("1001");
+    var programs = device.Data.MainPrograms;
+    device.Observe(
+      device.Data with
+      {
+        MainPrograms = programs.Where(p => p.MainProgram != "1002").ToImmutableList(),
+      }
+    );
+
+    var retryAt = managed.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1);
+    var ordinary = PendingJob(false);
+    var peer = ordinary with
+    {
+      UniqueStr = "peer",
+      PartName = "peer-part",
+      Processes = [ordinary.Processes[0]],
+      RouteStartUTC = retryAt,
+      RouteEndUTC = retryAt.AddDays(1),
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [peer] }, null, false);
+    using var reopened = repositories.OpenConnection();
+    var config = ManagedConfig();
+    bool Poll() =>
+      WriteJobs.SyncFromDatabase(
+        device.Data,
+        reopened,
+        device.Native,
+        new FMSSettings(),
+        config,
+        retryAt
+      );
+    await Assert.That(Poll()).IsTrue();
+    await Assert.That(reopened.LoadJob(peer.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsFalse();
+    var alarm = ManagedMazakSchedules.Diagnostics(reopened, config, device.Data).Single();
+    await Assert.That(alarm.Message).Contains(managed.UniqueStr);
+    await Assert.That(alarm.Message).Contains("1002");
+
+    device.Observe(device.Data with { MainPrograms = programs });
+    await Assert.That(Poll()).IsTrue();
+    await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(ManagedMazakSchedules.Diagnostics(reopened, config, device.Data)).IsEmpty();
+  }
+
+  [Test]
   public async Task ArchiveAfterUnacknowledgedPartInstallationCleansNativeDefinitions()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
