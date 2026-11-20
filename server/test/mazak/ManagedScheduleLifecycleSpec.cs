@@ -327,7 +327,7 @@ public sealed partial class DuplicateDownloadSpec
       }
     );
     db.ArchiveJob(job.UniqueStr);
-    void Guard(int ready, int executing, bool assigned, bool requested)
+    void Guard(int ready, int executing, int? fixedQuantity, bool requested)
     {
       device.Observe(
         device.Data with
@@ -350,13 +350,15 @@ public sealed partial class DuplicateDownloadSpec
                 : s
             )
             .ToImmutableList(),
-          PalletSubStatuses = assigned
+          PalletSubStatuses = fixedQuantity.HasValue
             ?
             [
               new()
               {
                 ScheduleID = p2.Id,
                 PartName = p2.PartName,
+                FixQuantity = fixedQuantity.Value,
+                FixtureName = fixture,
                 PalletNumber = 2,
               },
             ]
@@ -376,20 +378,22 @@ public sealed partial class DuplicateDownloadSpec
       );
     }
     foreach (
-      var guard in new[]
+      var guard in new (int Ready, int Executing, int? FixedQuantity, bool Requested)[]
       {
-        (1, 0, false, false),
-        (0, 1, false, false),
-        (0, 0, true, false),
-        (0, 0, false, true),
+        (1, 0, null, false),
+        (0, 1, null, false),
+        (0, 0, 3, false),
+        (0, 0, null, true),
       }
     )
     {
-      Guard(guard.Item1, guard.Item2, guard.Item3, guard.Item4);
-      Poll(db);
+      Guard(guard.Ready, guard.Executing, guard.FixedQuantity, guard.Requested);
+      // Let cleanup finish the other split route before checking this route's guard.
+      for (var i = 0; i < 8 && Poll(db); i++) { }
+      await Assert.That(Poll(db)).IsFalse();
       await Assert.That(device.Data.Schedules.Any(s => s.Id == p2.Id)).IsTrue();
     }
-    Guard(0, 0, false, false);
+    Guard(0, 0, 0, false);
     device.AfterSave = write =>
     {
       if (write.Schedules.Any(s => s.Id == p2.Id && s.Command == MazakWriteCommand.Delete))

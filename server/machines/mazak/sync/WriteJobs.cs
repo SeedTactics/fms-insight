@@ -287,7 +287,10 @@ namespace MazakMachineInterface
       var retainedFixtures = routes
         .Where(r => !r.Retired)
         .SelectMany(r => r.Fixtures)
-        .Concat(mazakData.PalletSubStatuses?.Select(p => p.FixtureName) ?? [])
+        .Concat(
+          mazakData.PalletSubStatuses?.Where(p => p.FixQuantity > 0).Select(p => p.FixtureName)
+            ?? []
+        )
         .ToImmutableHashSet();
       if (mazakCfg.UseInsightJobQuantities is not null)
         transSet = transSet with

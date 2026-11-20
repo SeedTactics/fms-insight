@@ -19,9 +19,10 @@ internal static partial class ManagedMazakSchedules
     if (config.UseInsightJobQuantities is null)
       return false;
     var partNames = data.Parts.Select(p => p.PartName).ToImmutableHashSet(StringComparer.Ordinal);
-    if (data.Schedules.Any(s => !partNames.Contains(s.PartName)))
+    if (data.PalletSubStatuses is null || data.Schedules.Any(s => !partNames.Contains(s.PartName)))
       return false;
 
+    var occupied = data.PalletSubStatuses.Where(s => s.FixQuantity > 0).ToImmutableList();
     var routes = db.LoadMazakManagedSchedules(config.ControllerSource);
     foreach (var route in routes)
     {
@@ -46,7 +47,7 @@ internal static partial class ManagedMazakSchedules
           || string.Equals(a.Part, route.PartName, StringComparison.OrdinalIgnoreCase)
           || (string.IsNullOrEmpty(a.Comment) && a.Part == job.PartName)
         )
-        || data.PalletSubStatuses.Any(a =>
+        || occupied.Any(a =>
           string.Equals(a.PartName, route.PartName, StringComparison.OrdinalIgnoreCase)
           || schedule is not null && a.ScheduleID == schedule.Id
         )
@@ -79,7 +80,7 @@ internal static partial class ManagedMazakSchedules
       var remainingProcesses = data.Parts.SelectMany(p => p.Processes).ToImmutableList();
       var usedFixtures = remainingProcesses
         .Select(p => p.Fixture)
-        .Concat(data.PalletSubStatuses.Select(a => a.FixtureName))
+        .Concat(occupied.Select(a => a.FixtureName))
         .Concat(otherRoutes.SelectMany(r => r.Fixtures))
         .ToHashSet(StringComparer.Ordinal);
       var mappings = data
