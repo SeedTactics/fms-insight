@@ -78,7 +78,7 @@ namespace MazakMachineInterface
 
       if (jobs == null)
       {
-        return false;
+        return ManagedMazakSchedules.Cleanup(db, mazakCfg, mazakData, mazakDb);
       }
 
       //there are jobs to copy
@@ -185,6 +185,9 @@ namespace MazakMachineInterface
 
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData, s =>
         !jobs.Any(job => MazakPart.UniqueFromComment(s.Comment ?? "") == job.UniqueStr)
+        && !routes.Any(r =>
+          !r.Retired && string.Equals(r.PartName, s.PartName, StringComparison.OrdinalIgnoreCase)
+        )
         && (
           mazakCfg.UseInsightJobQuantities == null
           || !MazakPart.IsSailPart(s.PartName, s.Comment)
@@ -264,10 +267,29 @@ namespace MazakMachineInterface
 
       // delete pallets
       transSet = mazakJobs.DeleteOldPalletRows();
+      var retainedFixtures = routes
+        .Where(r => !r.Retired)
+        .SelectMany(r => r.Fixtures)
+        .Concat(mazakData.PalletSubStatuses.Select(p => p.FixtureName))
+        .ToImmutableHashSet();
+      if (mazakCfg.UseInsightJobQuantities is not null)
+        transSet = transSet with
+        {
+          Pallets = transSet
+            .Pallets.Where(p => !retainedFixtures.Contains(p.Fixture))
+            .ToImmutableList(),
+        };
       mazakDb.Save(transSet);
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
+      if (mazakCfg.UseInsightJobQuantities is not null)
+        transSet = transSet with
+        {
+          Fixtures = transSet
+            .Fixtures.Where(f => !retainedFixtures.Contains(f.FixtureName))
+            .ToImmutableList(),
+        };
       mazakDb.Save(transSet);
 
       transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
