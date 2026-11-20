@@ -236,7 +236,8 @@ namespace MazakMachineInterface
     public Func<int, bool>? CanQuarantineMissingMaterial { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
-    public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
+    public int TranslatePalletNumber(int mazakPallet) =>
+      mazakPallet > 0 ? mazakPallet - 1 + StartingPalletNumber : mazakPallet;
 
     // Convert FMS Insight pallet number back to Mazak-internal number
     public int InversePalletNumber(int fmsPallet) => fmsPallet - StartingPalletNumber + 1;
