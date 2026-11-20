@@ -21,6 +21,127 @@ public sealed partial class DuplicateDownloadSpec
     };
 
   [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task ExistingScheduleRequiresTheAcceptedProgramBeforeAdoption(bool namedRevision)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var job = PendingJob(true);
+    var device = new DownloadDevice("");
+    if (namedRevision)
+    {
+      var second = job.Processes[1];
+      var path = second.Paths[0];
+      job = job with
+      {
+        Processes = job.Processes.SetItem(
+          1,
+          second with
+          {
+            Paths =
+            [
+              path with
+              {
+                Stops = [path.Stops.Single() with { Program = "op2", ProgramRevision = 7 }],
+              },
+            ],
+          }
+        ),
+      };
+      device.Observe(
+        device.Data with
+        {
+          MainPrograms = device.Data.MainPrograms.Concat(
+            new[]
+            {
+              new MazakProgramRow { MainProgram = "1012", Comment = "Insight:7:op2" },
+              new MazakProgramRow { MainProgram = "1013", Comment = "Insight:8:op2" },
+            }
+          ),
+        }
+      );
+    }
+    db.AddJobs(
+      new NewJobs
+      {
+        ScheduleId = "first",
+        Jobs = [job],
+        Programs = namedRevision
+          ?
+          [
+            new NewProgramContent
+            {
+              ProgramName = "op2",
+              Revision = 7,
+              ProgramContent = "accepted",
+            },
+            new NewProgramContent
+            {
+              ProgramName = "op2",
+              Revision = 8,
+              ProgramContent = "later",
+            },
+          ]
+          : [],
+      },
+      null,
+      false
+    );
+    var config = ManagedConfig();
+    WriteJobs.SyncFromDatabase(
+      device.Data,
+      db,
+      device.Native,
+      new FMSSettings(),
+      config with
+      {
+        UseInsightJobQuantities = null,
+      },
+      Now
+    );
+    var original = device.Data;
+    var schedule = original.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
+    var part = original.Parts.Single(p => p.PartName == schedule.PartName);
+    await Assert
+      .That(part.Processes.Single().MainProgram)
+      .IsEqualTo(namedRevision ? "1012" : "1002");
+    device.Observe(
+      original with
+      {
+        Parts = original
+          .Parts.Select(p =>
+            p == part
+              ? p with
+              {
+                Processes =
+                [
+                  p.Processes.Single() with
+                  {
+                    MainProgram = namedRevision ? "1013" : "1001",
+                  },
+                ],
+              }
+              : p
+          )
+          .ToImmutableList(),
+      }
+    );
+    ManagedMazakSchedules.ConfirmObserved(db, config, device.Data);
+    await Assert.That(db.LoadMazakManagedSchedule(config.ControllerSource, part.PartName)).IsNull();
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.SetMaterialOffer(db, config, device.Data, job.UniqueStr, 2, 1)
+      )
+      .Throws<ConflictRequestException>();
+
+    ManagedMazakSchedules.ConfirmObserved(db, config, original);
+    await Assert
+      .That(MazakManagedScheduleControl.SetMaterialOffer(db, config, original, job.UniqueStr, 2, 1))
+      .IsNotNull();
+  }
+
+  [Test]
   [Arguments("pieces per fixture")]
   [Arguments("eligible machines")]
   [Arguments("eligible load stations")]

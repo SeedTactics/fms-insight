@@ -101,6 +101,37 @@ internal static partial class ManagedMazakSchedules
       .Select(p => new MazakManagedProcess(p.ProcessNumber, p.Fixture, p.MainProgram))
       .ToImmutableList();
 
+  private static void VerifyProgramForAdoption(
+    IRepository db,
+    MazakAllData data,
+    Job job,
+    MazakPartRow part
+  )
+  {
+    var route = MazakPart.ParseCommentInfo(part.Comment);
+    foreach (var process in part.Processes)
+    {
+      var jobProcess = route.JobProcessForMazakProcess(process.ProcessNumber);
+      var stop = job.Processes[jobProcess - 1].Paths[0].Stops.LastOrDefault();
+      var expected = stop?.Program is { Length: > 0 } name
+        ? ConvertJobsToMazakParts.ResolveProgram(
+          data,
+          name,
+          stop.ProgramRevision,
+          (program, revision) => WriteJobs.LookupProgram(db, program, revision)
+        )
+        : null;
+      if (
+        expected?.CellControllerProgramName is not { } native
+        || !data.MainPrograms.Any(program => program.MainProgram == native)
+        || process.MainProgram != native
+      )
+        throw new ConflictRequestException(
+          $"Mazak job '{job.UniqueStr}' process {jobProcess} cannot adopt native part '{part.PartName}' with program '{process.MainProgram}'. It requires the installed program for '{stop?.Program}'."
+        );
+    }
+  }
+
   internal static string? ExecutionConflict(
     MazakAllData data,
     MazakConfig config,
@@ -192,6 +223,9 @@ internal static partial class ManagedMazakSchedules
           ? Inspect(observed, job!, schedule.PartName, schedule.Comment, null)
           : Inspect(observed, job!, saved);
         if (part is not null && row is not null)
+        {
+          if (saved is null)
+            VerifyProgramForAdoption(db, observed, job!, part);
           db.RecordMazakManagedSchedule(
             saved is null
               ? Definition(config, job!, part, row.Id, beforeLoadCounter: null)
@@ -200,6 +234,7 @@ internal static partial class ManagedMazakSchedules
                 ConfirmedScheduleId = row.Id,
               }
           );
+        }
       }
       catch (ConflictRequestException)
       {
@@ -220,6 +255,8 @@ internal static partial class ManagedMazakSchedules
     if (saved is null)
     {
       var (installed, schedule) = Inspect(observed, job, planned.PartName, planned.Comment, null);
+      if (installed is not null)
+        VerifyProgramForAdoption(db, observed, job, installed);
       db.RecordMazakManagedSchedule(
         Definition(
           config,

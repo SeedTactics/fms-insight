@@ -1230,51 +1230,19 @@ namespace MazakMachineInterface
             return;
           }
 
-          if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.Program))
+          prog = ResolveProgram(mazakData, stop.Program, stop.ProgramRevision, lookupProgram);
+          if (prog == null)
           {
-            prog = new ProgramRevision()
-            {
-              ProgramName = "",
-              Revision = 0,
-              CellControllerProgramName = stop.Program,
-            };
-          }
-          else
-          {
-            prog = lookupProgram(stop.Program, stop.ProgramRevision);
-            if (prog == null)
-            {
-              ErrorDuringCreate =
-                "Part "
-                + job.PartName
-                + " program "
-                + stop.Program
-                + (
-                  stop.ProgramRevision.HasValue
-                    ? " rev" + stop.ProgramRevision.Value.ToString()
-                    : ""
-                )
-                + " does not exist in the cell controller.";
-              return;
-            }
-            // check if program already exists
-            foreach (var mp in mazakData.MainPrograms)
-            {
-              if (
-                MazakProcess.TryParseMainProgramComment(
-                  mp.Comment,
-                  out string mpProg,
-                  out long mpRev
-                )
+            ErrorDuringCreate =
+              "Part "
+              + job.PartName
+              + " program "
+              + stop.Program
+              + (
+                stop.ProgramRevision.HasValue ? " rev" + stop.ProgramRevision.Value.ToString() : ""
               )
-              {
-                if (mpProg == prog.ProgramName && mpRev == prog.Revision)
-                {
-                  prog = prog with { CellControllerProgramName = mp.MainProgram };
-                  break;
-                }
-              }
-            }
+              + " does not exist in the cell controller.";
+            return;
           }
         }
 
@@ -1294,6 +1262,40 @@ namespace MazakMachineInterface
           mazak.Processes.Add(new MazakProcessFromJob(mazak, mazakProc, 1, prog, jobProcess: proc));
         }
       }
+    }
+
+    internal static ProgramRevision ResolveProgram(
+      MazakAllData data,
+      string name,
+      long? revision,
+      Func<string, long?, ProgramRevision> lookupProgram
+    )
+    {
+      if (data.MainPrograms.Any(p => p.MainProgram == name))
+        return new ProgramRevision
+        {
+          ProgramName = "",
+          Revision = 0,
+          CellControllerProgramName = name,
+        };
+
+      var program = lookupProgram(name, revision);
+      if (program == null)
+        return null;
+      foreach (var native in data.MainPrograms)
+      {
+        if (
+          MazakProcess.TryParseMainProgramComment(
+            native.Comment,
+            out var nativeName,
+            out var nativeRevision
+          )
+          && nativeName == program.ProgramName
+          && nativeRevision == program.Revision
+        )
+          return program with { CellControllerProgramName = native.MainProgram };
+      }
+      return program;
     }
 
     private static ISet<string> CalculateUsedPrograms(

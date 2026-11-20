@@ -167,7 +167,7 @@ namespace MazakMachineInterface
       return true;
     }
 
-    private static ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
+    internal static ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
     {
       if (rev.HasValue)
       {
