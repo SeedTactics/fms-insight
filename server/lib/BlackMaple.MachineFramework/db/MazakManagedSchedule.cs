@@ -20,10 +20,20 @@ public sealed record MazakManagedSchedule
   public required int? ConfirmedScheduleId { get; init; }
   public required long? BeforeLoadCounter { get; init; }
   public required ImmutableList<MazakManagedProcess> Processes { get; init; }
+  public ImmutableHashSet<string> PreviousFixtures { get; init; } = [];
+  public ImmutableHashSet<string> PreviousPrograms { get; init; } = [];
   public IEnumerable<string> Fixtures =>
-    Processes.Select(p => p.Fixture).OfType<string>().Where(s => s.Length > 0);
+    Processes
+      .Select(p => p.Fixture)
+      .OfType<string>()
+      .Where(s => s.Length > 0)
+      .Union(PreviousFixtures, StringComparer.Ordinal);
   public IEnumerable<string> Programs =>
-    Processes.Select(p => p.Program).OfType<string>().Where(s => s.Length > 0);
+    Processes
+      .Select(p => p.Program)
+      .OfType<string>()
+      .Where(s => s.Length > 0)
+      .Union(PreviousPrograms, StringComparer.Ordinal);
   public bool Retired { get; init; }
 }
 
@@ -65,13 +75,16 @@ internal sealed partial class Repository
     using var cmd = ManagedScheduleCommand();
     cmd.CommandText = """
       INSERT INTO mazak_managed_schedule
-        (Source, PartName, JobUnique, Comment, ConfirmedId, BeforeLoadCounter, Processes)
-      VALUES ($source, $part, $job, $comment, $id, $counter, $processes)
+        (Source, PartName, JobUnique, Comment, ConfirmedId, BeforeLoadCounter, Processes, PreviousFixtures, PreviousPrograms)
+      VALUES ($source, $part, $job, $comment, $id, $counter, $processes, $oldFixtures, $oldPrograms)
       ON CONFLICT (Source, PartName) DO UPDATE SET
-        ConfirmedId = coalesce(ConfirmedId, excluded.ConfirmedId)
+        ConfirmedId = coalesce(ConfirmedId, excluded.ConfirmedId),
+        Processes = excluded.Processes,
+        PreviousFixtures = excluded.PreviousFixtures,
+        PreviousPrograms = excluded.PreviousPrograms
       WHERE JobUnique = excluded.JobUnique AND Comment = excluded.Comment
         AND PartName COLLATE BINARY = excluded.PartName AND Retired = 0
-        AND (ConfirmedId IS NULL OR ConfirmedId = excluded.ConfirmedId)
+        AND (ConfirmedId IS NULL OR (ConfirmedId = excluded.ConfirmedId AND Processes = excluded.Processes))
       """;
     cmd.Parameters.AddWithValue("$source", schedule.ControllerSource);
     cmd.Parameters.AddWithValue("$part", schedule.PartName);
@@ -80,6 +93,14 @@ internal sealed partial class Repository
     cmd.Parameters.AddWithValue("$id", (object?)schedule.ConfirmedScheduleId ?? DBNull.Value);
     cmd.Parameters.AddWithValue("$counter", (object?)schedule.BeforeLoadCounter ?? DBNull.Value);
     cmd.Parameters.AddWithValue("$processes", JsonSerializer.Serialize(schedule.Processes));
+    cmd.Parameters.AddWithValue(
+      "$oldFixtures",
+      JsonSerializer.Serialize(schedule.PreviousFixtures)
+    );
+    cmd.Parameters.AddWithValue(
+      "$oldPrograms",
+      JsonSerializer.Serialize(schedule.PreviousPrograms)
+    );
     if (cmd.ExecuteNonQuery() != 1)
       throw new ConflictRequestException(
         $"Native part '{schedule.PartName}' is reserved for another schedule."
@@ -97,7 +118,7 @@ internal sealed partial class Repository
   }
 
   private const string SelectManagedSchedules = """
-    SELECT PartName, JobUnique, Comment, ConfirmedId, BeforeLoadCounter, Processes, Retired
+    SELECT PartName, JobUnique, Comment, ConfirmedId, BeforeLoadCounter, Processes, Retired, PreviousFixtures, PreviousPrograms
     FROM mazak_managed_schedule WHERE Source = $source
     """;
 
@@ -115,5 +136,7 @@ internal sealed partial class Repository
       BeforeLoadCounter = row.IsDBNull(4) ? null : row.GetInt64(4),
       Processes = JsonSerializer.Deserialize<ImmutableList<MazakManagedProcess>>(row.GetString(5))!,
       Retired = row.GetInt64(6) != 0,
+      PreviousFixtures = JsonSerializer.Deserialize<ImmutableHashSet<string>>(row.GetString(7))!,
+      PreviousPrograms = JsonSerializer.Deserialize<ImmutableHashSet<string>>(row.GetString(8))!,
     };
 }

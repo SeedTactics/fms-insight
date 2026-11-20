@@ -121,7 +121,7 @@ namespace MazakMachineInterface
       return newPartRow;
     }
 
-    public string PartName { get; }
+    public string PartName { get; internal set; }
 
     public bool IsSplitPart => SplitJobProcess.HasValue;
 
@@ -787,15 +787,25 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
       Func<string, long?, ProgramRevision> lookupProgram,
       IList<string> errors,
-      bool reuseExistingParts
+      bool reuseExistingParts,
+      IReadOnlyDictionary<string, string> reservedPartNames = null
     )
     {
       Validate(jobs, fmsSettings, errors);
       CheckReusedFixture(mazakData, errors);
       var allParts = BuildMazakParts(jobs, downloadUID, mazakData, mazakCfg, errors, lookupProgram);
+      foreach (var expected in allParts)
+        if (reservedPartNames?.TryGetValue(expected.Comment, out var reserved) == true)
+          expected.PartName = reserved;
       var reused = reuseExistingParts
         ? allParts
-          .Select(expected => FindInstalledPart(expected, mazakData))
+          .Select(expected =>
+            FindInstalledPart(
+              expected,
+              mazakData,
+              reservedPartNames?.ContainsKey(expected.Comment) == true
+            )
+          )
           .Where(part => part != null)
           .ToImmutableList()
         : [];
@@ -872,10 +882,15 @@ namespace MazakMachineInterface
         .DistinctBy(row => (row.PalletNumber, row.Fixture))
         .ToImmutableList();
 
-    private static MazakPartRow FindInstalledPart(MazakPart expected, MazakAllData data) =>
+    private static MazakPartRow FindInstalledPart(
+      MazakPart expected,
+      MazakAllData data,
+      bool reservedName
+    ) =>
       data
         .Parts.Where(part =>
           part.Comment == expected.Comment
+          && (!reservedName || part.PartName == expected.PartName)
           && MazakPart.ExtractPartNameFromMazakPartName(part.PartName) == expected.Job.PartName
           && MazakPart.IsSailPart(part.PartName, part.Comment)
         )

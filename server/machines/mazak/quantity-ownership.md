@@ -45,10 +45,12 @@ each. When two controllers share a repository, set `BulkJobFilter` for each cont
 jobs and give each controller a stable `ControllerSource`. The original controller retains its usual
 CSV history on `DefaultControllerSource`.
 
-The downloader confirms a route from controller readback. Before confirmation it can finish a
-partial download on retry. A confirmed route retains the same full native part name and schedule
-number through the job's active life, including at planned equals completed. A missing or
-conflicting route raises a route-specific alarm for backend disposition.
+The downloader saves the native route identity before its first controller write and confirms the
+schedule from readback. An interrupted installation can finish beyond the normal download window.
+Archival also cleans up a partial installation with no confirmed schedule. A confirmed route retains
+the same full native part name and schedule number through the job's active life, including at
+planned equals completed. A missing or conflicting route raises a route-specific alarm for backend
+disposition.
 
 Use `MazakManagedScheduleControl.EnsurePlan` with an absolute minimum quantity and
 `SetMaterialOffer` with the currently authorized ready quantity. A combined schedule admits material

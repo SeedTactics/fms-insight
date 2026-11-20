@@ -1069,6 +1069,73 @@ namespace BlackMaple.FMSInsight.Tests
     }
   }
 
+  public sealed class Ver46UpgradeSpec
+  {
+    [Test]
+    public async System.Threading.Tasks.Task CreatesTheCompleteManagedScheduleTableAndRetainsHistory()
+    {
+      var guid = Guid.NewGuid();
+      using var database = RepositoryConfig.InitializeMemoryDB(null, guid);
+      using var connection = new SqliteConnection(
+        $"Data Source=file:${guid}?mode=memory&cache=shared"
+      );
+      using (var original = database.OpenConnection())
+        original.RecordGeneralMessage(
+          mats: [],
+          program: "message",
+          result: "recorded",
+          foreignId: "history"
+        );
+
+      connection.Open();
+      using (var command = connection.CreateCommand())
+      {
+        // Main's schema differs only by the new managed schedule table.
+        command.CommandText = "DROP TABLE mazak_managed_schedule; UPDATE version SET ver = 46";
+        command.ExecuteNonQuery();
+      }
+
+      using var upgraded = RepositoryConfig.InitializeMemoryDB(
+        null,
+        guid,
+        createTables: false,
+        upgradeTables: true
+      );
+      using (var repository = upgraded.OpenConnection())
+      {
+        await Assert
+          .That(repository.MostRecentLogEntryForForeignID("history").Result)
+          .IsEqualTo("recorded");
+        repository.RecordMazakManagedSchedule(
+          new MazakManagedSchedule
+          {
+            ControllerSource = "controller",
+            JobUnique = "job",
+            PartName = "part:1:0",
+            Comment = "job-Insight",
+            ConfirmedScheduleId = null,
+            BeforeLoadCounter = 0,
+            Processes = [new MazakManagedProcess(1, "current-fixture", "current-program")],
+            PreviousFixtures = ["earlier-fixture"],
+            PreviousPrograms = ["earlier-program"],
+          }
+        );
+      }
+
+      SchemaUpgradeSpec.Check(connection);
+      using var reopened = RepositoryConfig.InitializeMemoryDB(
+        null,
+        guid,
+        createTables: false,
+        upgradeTables: true
+      );
+      using var reader = reopened.OpenConnection();
+      var saved = reader.LoadMazakManagedSchedule("controller", "part:1:0")!;
+      await Assert.That(saved.Fixtures).IsEquivalentTo(["current-fixture", "earlier-fixture"]);
+      await Assert.That(saved.Programs).IsEquivalentTo(["current-program", "earlier-program"]);
+    }
+  }
+
   public sealed class Ver45UpgradeSpec
   {
     [Test]

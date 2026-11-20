@@ -51,9 +51,21 @@ namespace MazakMachineInterface
       FMSSettings fmsSt,
       MazakConfig mazakCfg,
       DateTime now
+    ) => SyncFromDatabase(mazakData, db, mazakDb, fmsSt, mazakCfg, now, attemptCleanup: true);
+
+    internal static bool SyncFromDatabase(
+      MazakAllData mazakData,
+      IRepository db,
+      IMazakDB mazakDb,
+      FMSSettings fmsSt,
+      MazakConfig mazakCfg,
+      DateTime now,
+      bool attemptCleanup
     )
     {
       ManagedMazakSchedules.ConfirmObserved(db, mazakCfg, mazakData);
+      if (attemptCleanup && ManagedMazakSchedules.Cleanup(db, mazakCfg, mazakData, mazakDb))
+        return true;
       var routes = mazakCfg.UseInsightJobQuantities is null
         ? []
         : db.LoadMazakManagedSchedules(mazakCfg.ControllerSource);
@@ -62,6 +74,20 @@ namespace MazakMachineInterface
           now.AddHours(1),
           includeDecremented: false
         )
+        .Concat(
+          routes
+            .Select(r => r.JobUnique)
+            .Distinct()
+            .Select(db.LoadJob)
+            .OfType<HistoricJob>()
+            .Where(j =>
+              !j.CopiedToSystem
+              && !j.Archived
+              && (j.Decrements is null || j.Decrements.Count == 0)
+              && ManagedMazakSchedules.Owns(mazakCfg, j)
+            )
+        )
+        .DistinctBy(j => j.UniqueStr)
         .Where(j => mazakCfg.BulkJobFilter?.Invoke(j) != false)
         .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
         .Where(j =>
@@ -85,7 +111,7 @@ namespace MazakMachineInterface
 
       if (jobs == null)
       {
-        return ManagedMazakSchedules.Cleanup(db, mazakCfg, mazakData, mazakDb);
+        return false;
       }
 
       //there are jobs to copy
@@ -132,7 +158,7 @@ namespace MazakMachineInterface
           && jobs.All(mazakCfg.UsesInsightJobQuantities)
           && pending.Count == jobs.Count()
         )
-          return ManagedMazakSchedules.Cleanup(db, mazakCfg, mazakData, mazakDb);
+          return false;
       }
 
       return true;
@@ -240,7 +266,8 @@ namespace MazakMachineInterface
         fmsSettings: fmsSt,
         lookupProgram: (prog, rev) => LookupProgram(jobDB, prog, rev),
         errors: jobErrs,
-        reuseExistingParts: true
+        reuseExistingParts: true,
+        reservedPartNames: routes.ToImmutableDictionary(r => r.Comment, r => r.PartName)
       );
       if (jobErrs.Count != 0)
       {
@@ -263,10 +290,26 @@ namespace MazakMachineInterface
         .ReusedParts.Select(part => part.PartName)
         .Concat(mazakJobs.AllParts.Select(part => part.PartName))
         .ToImmutableHashSet();
+      MazakWriteData managedDefinitions = null;
+      MazakWriteData managedParts = null;
+      var managedJobs = jobs.Where(mazakCfg.UsesInsightJobQuantities)
+        .ToDictionary(job => job.UniqueStr);
+      if (managedJobs.Count != 0)
+      {
+        if (mazakJobs.AllParts.Any())
+          managedDefinitions = mazakJobs.AddFixtureAndProgramDatabaseRows(
+            jobDB.LoadProgramContent,
+            mazakCfg.ProgramDirectory
+          );
+        managedParts = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
+        foreach (var part in managedParts.Parts.Concat(mazakJobs.ReusedParts))
+          if (managedJobs.TryGetValue(MazakPart.UniqueFromComment(part.Comment), out var job))
+            ManagedMazakSchedules.RecordInstallation(jobDB, mazakCfg, mazakData, job, part);
+      }
       if (!mazakJobs.AllParts.Any())
       {
         // Complete pallet transactions even when every part transaction already succeeded.
-        var mappings = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
+        var mappings = managedParts ?? mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
         if (mappings.Pallets.Any())
           mazakDb.Save(mappings);
         return selectedParts;
@@ -312,14 +355,15 @@ namespace MazakMachineInterface
         };
       mazakDb.Save(transSet);
 
-      transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
-        jobDB.LoadProgramContent,
-        mazakCfg.ProgramDirectory
-      );
+      transSet = managedDefinitions
+        ?? mazakJobs.AddFixtureAndProgramDatabaseRows(
+          jobDB.LoadProgramContent,
+          mazakCfg.ProgramDirectory
+        );
       mazakDb.Save(transSet);
 
       //now save the pallets and parts
-      transSet = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
+      transSet = managedParts ?? mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
       mazakDb.Save(transSet);
       return selectedParts;
     }
@@ -344,7 +388,7 @@ namespace MazakMachineInterface
           )
           .ToImmutableList();
         foreach (var schedule in managed)
-          ManagedMazakSchedules.RecordDownload(
+          ManagedMazakSchedules.CheckScheduleInstallation(
             jobDB,
             mazakCfg,
             mazakData,

@@ -413,11 +413,31 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     mazakDB.DeleteLogs(reconciliation.CommittedLogWatermark);
   }
 
+  private bool deferManagedCleanup;
+
   public bool ApplyActions(IRepository db, MazakState st)
   {
     if (st.StoppedBecauseRecentLogEvent)
     {
       return false;
+    }
+
+    // Cleanup can free capacity for a pending download. After a failed write, start the
+    // next fresh pass with independent downloads and queue work before retrying cleanup.
+    var cleanupDeferred = deferManagedCleanup;
+    deferManagedCleanup = false;
+    if (!cleanupDeferred)
+    {
+      try
+      {
+        if (ManagedMazakSchedules.Cleanup(db, mazakConfig, st.AllData, mazakDB))
+          return true;
+      }
+      catch
+      {
+        deferManagedCleanup = true;
+        throw;
+      }
     }
 
     // jobs
@@ -427,7 +447,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       mazakDB,
       settings,
       mazakConfig,
-      st.CurrentStatus.TimeOfCurrentStatusUTC
+      st.CurrentStatus.TimeOfCurrentStatusUTC,
+      attemptCleanup: false
     );
 
     // queues

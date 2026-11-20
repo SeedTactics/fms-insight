@@ -1410,6 +1410,8 @@ namespace BlackMaple.MachineFramework
           BeforeLoadCounter INTEGER NULL,
           Processes TEXT NOT NULL,
           Retired INTEGER NOT NULL DEFAULT 0 CHECK (Retired IN (0, 1)),
+          PreviousFixtures TEXT NOT NULL DEFAULT '[]',
+          PreviousPrograms TEXT NOT NULL DEFAULT '[]',
           PRIMARY KEY (Source, PartName),
           UNIQUE (Source, JobUnique, Comment)
         )

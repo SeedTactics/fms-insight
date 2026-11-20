@@ -141,7 +141,67 @@ internal static partial class ManagedMazakSchedules
     }
   }
 
-  public static void RecordDownload(
+  public static void RecordInstallation(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    Job job,
+    MazakPartRow planned
+  )
+  {
+    var saved = db.LoadMazakManagedSchedule(config.ControllerSource, planned.PartName);
+    if (saved is null)
+    {
+      var (installed, schedule) = Inspect(observed, job, planned.PartName, planned.Comment, null);
+      db.RecordMazakManagedSchedule(
+        Definition(
+          config,
+          job,
+          installed ?? planned,
+          schedule?.Id,
+          beforeLoadCounter: schedule is null ? db.MaxLogCounter() : null
+        )
+      );
+      return;
+    }
+
+    if (
+      saved.Retired
+      || saved.PartName != planned.PartName
+      || saved.Comment != planned.Comment
+      || saved.JobUnique != job.UniqueStr
+    )
+      throw new ConflictRequestException(
+        $"Native part '{planned.PartName}' already has a reserved lifecycle."
+      );
+
+    // If Mazak installed the part, its original definition remains authoritative. A missing
+    // provisional part can be planned again under the same name, retaining earlier dependencies
+    // in case only their native transactions succeeded.
+    if (observed.Parts.Any(p => p.PartName == planned.PartName && p.Comment == planned.Comment))
+      return;
+    var (_, row) = Inspect(observed, job, saved);
+    if (row is not null || saved.ConfirmedScheduleId.HasValue)
+      throw new ConflictRequestException(
+        $"Mazak job '{job.UniqueStr}' has an installed schedule with no verified part."
+      );
+    var processes = ProcessDefinitions(planned);
+    if (!saved.Processes.SequenceEqual(processes))
+      db.RecordMazakManagedSchedule(
+        saved with
+        {
+          Processes = processes,
+          PreviousFixtures = saved
+            .Fixtures.Except(processes.Select(p => p.Fixture).OfType<string>())
+            .ToImmutableHashSet(),
+          PreviousPrograms = saved
+            .Programs.Except(processes.Select(p => p.Program).OfType<string>())
+            .ToImmutableHashSet(),
+        }
+      );
+  }
+
+  public static void CheckScheduleInstallation(
     IRepository db,
     MazakConfig config,
     MazakAllData observed,
@@ -149,23 +209,21 @@ internal static partial class ManagedMazakSchedules
     MazakScheduleRow schedule
   )
   {
-    var (part, _) = Inspect(observed, job, schedule.PartName, schedule.Comment, null);
+    var saved = db.LoadMazakManagedSchedule(config.ControllerSource, schedule.PartName);
+    if (
+      saved is null
+      || saved.Retired
+      || saved.ConfirmedScheduleId.HasValue
+      || saved.JobUnique != job.UniqueStr
+      || saved.Comment != schedule.Comment
+    )
+      throw new ConflictRequestException(
+        $"Mazak job '{job.UniqueStr}' has no pending installation for '{schedule.PartName}'."
+      );
+    var (part, _) = Inspect(observed, job, saved);
     if (part is null)
       throw new ConflictRequestException(
         $"Mazak job '{job.UniqueStr}' has no verified native part."
-      );
-    var saved = db.LoadMazakManagedSchedule(config.ControllerSource, part.PartName);
-    if (saved is null)
-      db.RecordMazakManagedSchedule(Definition(config, job, part, null, db.MaxLogCounter()));
-    else if (
-      saved.JobUnique != job.UniqueStr
-      || saved.Comment != part.Comment
-      || saved.PartName != part.PartName
-      || saved.Retired
-      || saved.ConfirmedScheduleId.HasValue
-    )
-      throw new ConflictRequestException(
-        $"Native part '{part.PartName}' already has a reserved lifecycle."
       );
   }
 
