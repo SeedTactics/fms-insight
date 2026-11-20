@@ -446,6 +446,7 @@ function ToolSummaryRow({ tool }: { tool: ToolReport }) {
               <div>
                 <MachineDetailTable machines={tool.machines} />
               </div>
+              {!historyAvailable && <p>Program use is unknown for one or more machines.</p>}
               {tool.parts.length === 0 ? undefined : (
                 <div>
                   <PartDetailTable tool={tool} />

@@ -57,6 +57,10 @@ test("shared machine groups keep scheduled use unknown and retain measured tool 
   await expect.element(insert.getByRole("cell", { name: "Unknown" })).toHaveLength(3);
   const bit = screen.getByRole("row", { name: /Bit/ });
   await expect.element(bit.getByText("0", { exact: true })).toBeVisible();
+  await insert.getByRole("button").click();
+  await expect
+    .element(screen.getByText("Program use is unknown for one or more machines."))
+    .toBeVisible();
 
   await screen.getByRole("button", { name: "Copy to Clipboard" }).click();
   const html = vi.mocked(copy).mock.lastCall?.[0] ?? "";
