@@ -342,45 +342,62 @@ namespace MazakMachineInterface
         PalletBasketLoadUnloadCompletion baskets
       )
       {
+        var elapsed = CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, loadStation);
+        if (es.Any(e => ManagedRoute(e.FullPartName).Managed))
+        {
+          loads = loads
+            .Select(load =>
+              load with
+              {
+                AdditionalData = ManagedTransferDetails(
+                  load.ForeignID,
+                  load.MaterialIDs.Count,
+                  load.AdditionalData
+                ),
+              }
+            )
+            .ToImmutableList();
+          unloads = unloads
+            .Select(unload =>
+              unload with
+              {
+                AdditionalData = ManagedTransferDetails(
+                  unload.ForeignID,
+                  unload.MaterialIDToDestination.Count,
+                  unload.AdditionalData
+                ),
+              }
+            )
+            .ToImmutableList();
+          var removed = unloads
+            .SelectMany(u => u.MaterialIDToDestination.Keys)
+            .ToImmutableHashSet();
+          if (
+            loads.Sum(l => l.MaterialIDs.Count) + removed.Count < es.Sum(e => e.FixedQuantity)
+            || GetAllMaterialOnPallet(cycle).Any(m => !removed.Contains(m.MaterialID))
+          )
+          {
+            repo.RecordPartialLoadUnload(
+              loads,
+              unloads,
+              loadStation,
+              pallet,
+              elapsed,
+              es[0].TimeUTC,
+              fmsSettings.ExternalQueues,
+              baskets
+            );
+            return;
+          }
+        }
         repo.RecordLoadUnloadComplete(
-          toLoad: mazakConfig.UseInsightJobQuantities is null
-            ? loads
-            : loads
-              .Select(load =>
-                load with
-                {
-                  AdditionalData = ManagedTransferDetails(
-                    load.ForeignID,
-                    load.MaterialIDs.Count,
-                    load.AdditionalData
-                  ),
-                }
-              )
-              .ToImmutableList(),
+          toLoad: loads,
           previouslyLoaded: null,
-          toUnload: mazakConfig.UseInsightJobQuantities is null
-            ? unloads
-            : unloads
-              .Select(unload =>
-                unload with
-                {
-                  AdditionalData = ManagedTransferDetails(
-                    unload.ForeignID,
-                    unload.MaterialIDToDestination.Count,
-                    unload.AdditionalData
-                  ),
-                }
-              )
-              .ToImmutableList(),
+          toUnload: unloads,
           previouslyUnloaded: null,
           pallet: pallet,
           lulNum: loadStation,
-          totalElapsed: CalculateElapsed(
-            es[0].TimeUTC,
-            LogType.LoadUnloadCycle,
-            cycle,
-            loadStation
-          ),
+          totalElapsed: elapsed,
           timeUTC: es[0].TimeUTC,
           externalQueues: fmsSettings.ExternalQueues,
           palletBasketCompletion: baskets
@@ -393,21 +410,24 @@ namespace MazakMachineInterface
         ImmutableDictionary<string, string> details
       )
       {
-        if (mazakConfig.UseInsightJobQuantities is null)
-          return details;
         var external = es.FirstOrDefault(e => mazakConfig.LogForeignId(e.ForeignID) == foreignId);
-        if (external is null || ManagedBinding(external.FullPartName) is not { } route)
+        if (external is null || !ManagedRoute(external.FullPartName).Managed)
           return details;
         FindSchedule(external.FullPartName, external.Process, out var unique, out _, out _);
-        if (unique != route.JobUnique)
-          return details;
         var metadata = (details ?? ImmutableDictionary<string, string>.Empty)
-          .SetItem(ManagedMazakSchedules.NativePartKey, route.PartName)
+          .SetItem(ManagedMazakSchedules.NativePartKey, external.FullPartName)
           .SetItem(
             ManagedMazakSchedules.NativeProcessKey,
             external.Process.ToString(CultureInfo.InvariantCulture)
           )
-          .Remove(ManagedMazakSchedules.UnidentifiedQuantityKey);
+          .SetItem(
+            ManagedMazakSchedules.IdentifiedQuantityKey,
+            identified.ToString(CultureInfo.InvariantCulture)
+          )
+          .Remove(ManagedMazakSchedules.UnidentifiedQuantityKey)
+          .Remove(ManagedMazakSchedules.RouteConflictKey);
+        if (string.IsNullOrEmpty(unique))
+          metadata = metadata.SetItem(ManagedMazakSchedules.RouteConflictKey, "true");
         return identified < external.FixedQuantity
           ? metadata.SetItem(
             ManagedMazakSchedules.UnidentifiedQuantityKey,
@@ -524,6 +544,8 @@ namespace MazakMachineInterface
         var group in context.Unloads.GroupBy(f => (f.Face, f.Process, f.JobUnique, f.PartName))
       )
       {
+        if (ManagedMazakSchedules.Owns(mazakConfig, GetJob(group.Key.JobUnique)))
+          continue; // Every selected serial and the reported raw quantity were verified above.
         var expected = onPallet
           .Values.Where(m =>
             m.Face == group.Key.Face
@@ -948,7 +970,7 @@ namespace MazakMachineInterface
     {
       FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc, out int jobProc);
 
-      if (ManagedBinding(e.FullPartName) is not null)
+      if (ManagedRoute(e.FullPartName).Managed)
       {
         // Exact handling establishes identities. A later event can use the verified placement,
         // but a physical count alone never creates serials or credits an arbitrary subset.
@@ -1109,7 +1131,7 @@ namespace MazakMachineInterface
           out int jobProc
         );
 
-        if (ManagedBinding(e.FullPartName) is not null)
+        if (ManagedRoute(e.FullPartName).Managed)
         {
           toLoad.Add(
             new MaterialToLoadOntoFace
@@ -1319,7 +1341,7 @@ namespace MazakMachineInterface
 
         var mats = GetMaterialOnPallet(e, oldEvents);
         var jobProcess = e.Process;
-        if (ManagedBinding(e.FullPartName) is not null)
+        if (ManagedRoute(e.FullPartName).Managed)
           FindSchedule(e.FullPartName, e.Process, out _, out _, out jobProcess);
         var unloadProcess = mats.Count > 0 ? mats[0].Mat.Process : jobProcess;
 
@@ -1405,10 +1427,59 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private MazakManagedSchedule ManagedBinding(string partName) =>
-      mazakConfig.UseInsightJobQuantities != null && !string.IsNullOrEmpty(partName)
-        ? repo.LoadMazakManagedSchedule(mazakConfig.ControllerSource, partName)
-        : null;
+    private readonly Dictionary<string, (bool Managed, MazakManagedSchedule Route)> managedRoutes =
+      new(StringComparer.Ordinal);
+
+    private (bool Managed, MazakManagedSchedule Route) ManagedRoute(string partName)
+    {
+      if (mazakConfig.UseInsightJobQuantities is null || string.IsNullOrEmpty(partName))
+        return (false, null);
+      if (managedRoutes.TryGetValue(partName, out var cached))
+        return cached;
+
+      var binding = repo.LoadMazakManagedSchedule(mazakConfig.ControllerSource, partName);
+      var result = (Managed: false, Route: (MazakManagedSchedule)null);
+      if (binding is not null)
+      {
+        result.Managed = true;
+        var job = GetJob(binding.JobUnique);
+        if (binding.PartName == partName && ManagedMazakSchedules.Owns(mazakConfig, job))
+        {
+          try
+          {
+            // An absent historical row is expected after deletion. A conflicting row
+            // with the same name or route comment cannot authorize manufacturing credit.
+            ManagedMazakSchedules.Inspect(mazakData, job, binding);
+            result.Route = binding;
+          }
+          catch (ConflictRequestException conflict)
+          {
+            Log.Warning("{Conflict}", conflict.Message);
+          }
+        }
+      }
+      else
+      {
+        result.Managed = mazakData
+          .Schedules.Select(s => (s.PartName, s.Comment))
+          .Concat(mazakData.Parts.Select(p => (p.PartName, p.Comment)))
+          .Any(row =>
+            string.Equals(row.PartName, partName, StringComparison.OrdinalIgnoreCase)
+            && MazakPart.IsSailPart(row.PartName, row.Comment)
+            && mazakConfig.UsesInsightJobQuantities(
+              GetJob(MazakPart.UniqueFromComment(row.Comment))
+            )
+          );
+        if (result.Managed)
+          Log.Warning(
+            "Mazak event for {Part} has no verified managed route on {Controller}",
+            partName,
+            mazakConfig.ControllerSource
+          );
+      }
+      managedRoutes.Add(partName, result);
+      return result;
+    }
 
     public void FindSchedule(
       string mazakPartName,
@@ -1421,31 +1492,19 @@ namespace MazakMachineInterface
       unique = "";
       numProc = proc;
       jobProc = proc;
-      if (ManagedBinding(mazakPartName) is { } route)
+      var (managed, route) = ManagedRoute(mazakPartName);
+      if (managed)
       {
-        var job = GetJob(route.JobUnique);
-        var comment = MazakPart.ParseCommentInfo(route.Comment);
-        if (
-          job != null
-          && route.PartName == mazakPartName
-          && (comment.IsSplit ? proc == 1 : proc > 0 && proc <= job.Processes.Count)
-          && !mazakData.Schedules.Any(s =>
-            string.Equals(s.PartName, route.PartName, StringComparison.OrdinalIgnoreCase)
-            && (
-              s.PartName != route.PartName
-              || s.Comment != route.Comment
-              || route.ConfirmedScheduleId.HasValue && s.Id != route.ConfirmedScheduleId
-            )
-          )
-          && !mazakData.Parts.Any(p =>
-            string.Equals(p.PartName, route.PartName, StringComparison.OrdinalIgnoreCase)
-            && (p.PartName != route.PartName || p.Comment != route.Comment)
-          )
-        )
+        if (route is not null)
         {
-          unique = route.JobUnique;
-          numProc = job.Processes.Count;
-          jobProc = comment.IsSplit ? comment.FmsProcess : proc;
+          var job = GetJob(route.JobUnique);
+          var comment = MazakPart.ParseCommentInfo(route.Comment);
+          if (comment.IsSplit ? proc == 1 : proc > 0 && proc <= job.Processes.Count)
+          {
+            unique = route.JobUnique;
+            numProc = job.Processes.Count;
+            jobProc = comment.JobProcessForMazakProcess(proc);
+          }
         }
         return;
       }

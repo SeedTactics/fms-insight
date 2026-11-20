@@ -95,7 +95,7 @@ public static class MazakManagedScheduleControl
     int process
   )
   {
-    var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: true);
+    var (_, binding) = FindBinding(db, config, jobUnique, process, includeRetired: true);
     if (binding.BeforeLoadCounter is not { } after)
       return null;
     var nativeProcess = MazakPart.IsSplitComment(binding.Comment) ? 1 : process;
@@ -115,18 +115,21 @@ public static class MazakManagedScheduleControl
         entry.LogType != LogType.LoadUnloadCycle
         || entry.StartOfCycle
         || entry.Result != "LOAD"
+        || entry.ProgramDetails?.ContainsKey(ManagedMazakSchedules.RouteConflictKey) == true
         || entry.ForeignID?.StartsWith(source, StringComparison.Ordinal) != true
         || entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.NativeProcessKey)
           != nativeProcessText
       )
         continue;
-      identified += entry.Material.Count(m =>
-        m.MaterialID >= 0
-        && m.JobUniqueStr == job.UniqueStr
-        && m.Process == process
-        && m.Face == nativeProcess
-        && (m.Path ?? 1) == 1
-      );
+      // The route and quantity belong to the physical transfer, even after reassignment.
+      identified += int.TryParse(
+        entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.IdentifiedQuantityKey),
+        NumberStyles.None,
+        CultureInfo.InvariantCulture,
+        out var count
+      )
+        ? count
+        : entry.Material.Count(m => m.MaterialID >= 0);
       if (
         int.TryParse(
           entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.UnidentifiedQuantityKey),
