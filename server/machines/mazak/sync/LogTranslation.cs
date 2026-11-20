@@ -1568,7 +1568,9 @@ namespace MazakMachineInterface
         if (
           history.Any(e =>
             e.ProgramDetails?.ContainsKey(ManagedMazakSchedules.UnidentifiedQuantityKey) == true
-          ) && !ReadPalletPlacement(history).UncertainFaces.IsEmpty
+          )
+          && !ReadPalletPlacement(history).UncertainFaces.IsEmpty
+          && mazakConfig.CanQuarantineMissingMaterial?.Invoke(pallet) != false
         )
         {
           // This ends placement only. The raw unload remains unidentified in production history.

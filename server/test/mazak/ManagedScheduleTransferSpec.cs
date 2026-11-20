@@ -15,11 +15,17 @@ public sealed partial class DuplicateDownloadSpec
   [Arguments("raw quantities")]
   [Arguments("exact remainder")]
   [Arguments("settled empty observation")]
-  public async Task AmbiguousUnloadCannotAttributeOldSerialsToTheNextLoad(string disposition)
+  [Arguments("guarded empty observation")]
+  [Arguments("quarantined set")]
+  public async Task PalletRecoveryKeepsSerialsWithTheirOwnLoad(string disposition)
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
     using var db = repositories.OpenConnection();
-    var config = ManagedConfig();
+    var awaitingTransfer = false;
+    var config = ManagedConfig() with
+    {
+      CanQuarantineMissingMaterial = pallet => pallet != 2 || !awaitingTransfer,
+    };
     var job = PendingJob(true);
     var device = new DownloadDevice("");
     var settings = new FMSSettings { QuarantineQueue = "quarantine" };
@@ -30,10 +36,10 @@ public sealed partial class DuplicateDownloadSpec
       .Data.Parts.Single(p => p.PartName == route.PartName)
       .Processes.Single()
       .Fixture;
-    MazakAllData Observation(int quantity) =>
+    MazakAllData Observation(int quantity, string position = "LS011") =>
       device.Data with
       {
-        PalletPositions = [new() { PalletNumber = 2, PalletPosition = "LS011" }],
+        PalletPositions = [new() { PalletNumber = 2, PalletPosition = position }],
         PalletSubStatuses =
           quantity == 0
             ? []
@@ -80,62 +86,77 @@ public sealed partial class DuplicateDownloadSpec
 
     var firstLoad = Transfer(db, LogCode.LoadEnd, 3, Observation(3), original);
     await Assert.That(firstLoad.Material.Select(m => m.MaterialID)).IsEquivalentTo(original);
-    var unknown = Transfer(db, LogCode.UnloadEnd, 1, Observation(2));
-    await Assert.That(unknown.Material).IsEmpty();
-    await Assert.That(unknown.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
-
     using var reopened = repositories.OpenConnection();
-    var status = BuildCurrentStatus.Build(
-      reopened,
-      settings,
-      config,
-      Observation(2),
-      "MC",
-      null,
-      Now
-    );
-    await Assert
-      .That(status.Material.Where(m => m.Location.PalletNum == 2).Select(m => m.MaterialID))
-      .IsEquivalentTo([-1L, -1L]);
-
-    var resolved = disposition == "exact remainder" ? original.RemoveAt(0) : [];
-    if (disposition == "settled empty observation")
+    var resolved = disposition is "exact remainder" or "guarded empty observation"
+      ? original.RemoveAt(0)
+      : [];
+    if (disposition == "quarantined set")
     {
-      var empty = Observation(0);
-      var busy = empty with
-      {
-        LoadActions =
-        [
-          new()
-          {
-            Comment = route.Comment,
-            LoadStation = 1,
-            Qty = 2,
-          },
-        ],
-      };
-      Transfer(reopened, LogCode.LoadBegin, 0, busy);
-      await Assert
-        .That(reopened.CurrentPalletLog(2).Any(e => e.Counter == unknown.Counter))
-        .IsTrue();
-      Transfer(reopened, LogCode.LoadBegin, 0, empty);
-      await Assert
-        .That(reopened.CurrentPalletLog(2).Any(e => e.Counter == unknown.Counter))
-        .IsFalse();
-      await Assert
-        .That(reopened.MostRecentLogEntryForForeignID(unknown.ForeignID).Material)
-        .IsEmpty();
+      Transfer(db, LogCode.LoadBegin, 0, Observation(0, "S01"));
+      await Assert.That(original.All(reopened.IsMaterialInQueue)).IsTrue();
     }
     else
     {
-      var last = Transfer(
+      var unknown = Transfer(db, LogCode.UnloadEnd, 1, Observation(2));
+      await Assert.That(unknown.Material).IsEmpty();
+      await Assert.That(unknown.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
+      var status = BuildCurrentStatus.Build(
         reopened,
-        LogCode.UnloadEnd,
-        2,
-        Observation(0),
-        resolved.IsEmpty ? null : resolved
+        settings,
+        config,
+        Observation(2),
+        "MC",
+        null,
+        Now
       );
-      await Assert.That(last.Material.Select(m => m.MaterialID)).IsEquivalentTo(resolved);
+      await Assert
+        .That(status.Material.Where(m => m.Location.PalletNum == 2).Select(m => m.MaterialID))
+        .IsEquivalentTo([-1L, -1L]);
+
+      var empty = Observation(0);
+      if (disposition == "settled empty observation")
+      {
+        var busy = empty with
+        {
+          LoadActions =
+          [
+            new()
+            {
+              Comment = route.Comment,
+              LoadStation = 1,
+              Qty = 2,
+            },
+          ],
+        };
+        Transfer(reopened, LogCode.LoadBegin, 0, busy);
+        await Assert
+          .That(reopened.CurrentPalletLog(2).Any(e => e.Counter == unknown.Counter))
+          .IsTrue();
+        Transfer(reopened, LogCode.LoadBegin, 0, empty);
+        await Assert
+          .That(reopened.CurrentPalletLog(2).Any(e => e.Counter == unknown.Counter))
+          .IsFalse();
+        await Assert
+          .That(reopened.MostRecentLogEntryForForeignID(unknown.ForeignID).Material)
+          .IsEmpty();
+      }
+      else
+      {
+        if (disposition == "guarded empty observation")
+        {
+          awaitingTransfer = true;
+          Transfer(reopened, LogCode.LoadBegin, 0, empty);
+        }
+        var last = Transfer(
+          reopened,
+          LogCode.UnloadEnd,
+          2,
+          empty,
+          resolved.IsEmpty ? null : resolved
+        );
+        await Assert.That(last.Material.Select(m => m.MaterialID)).IsEquivalentTo(resolved);
+        awaitingTransfer = false;
+      }
     }
 
     var newLoad = Transfer(reopened, LogCode.LoadEnd, 3, Observation(3), next);

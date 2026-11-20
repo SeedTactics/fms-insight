@@ -72,9 +72,11 @@ invalidated attempts and separately identified and unidentified quantities. Adop
 without a recorded creation boundary have unknown attempt totals. Valid Insight completions come
 from repository manufacturing history. The exact transfer resolver supplies material IDs for managed
 loads. After an unidentified unload, pallet status leaves the affected serials unknown. Exact
-transfer evidence can identify individual pieces, and settled empty readback ends placement without
-adding completion credit. Historical native part identity remains available for late events after
-retirement and schedule number reuse.
+transfer evidence can identify individual pieces. While the backend reports a pending transfer, an
+empty pallet observation preserves the possible serials for a delayed unload. Settled empty readback
+can end an uncertain placement, and moving known missing pieces to quarantine releases their places
+on the pallet. Both preserve the original manufacturing history. Historical native part identity
+remains available for late events after retirement and schedule number reuse.
 
 Settle the backend's outstanding transfers and withdraw offers before archiving the Insight job.
 Archival authorizes the ordinary synchronization loop to clean up the route, including an idle

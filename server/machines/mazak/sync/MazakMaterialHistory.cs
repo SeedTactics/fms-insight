@@ -58,8 +58,10 @@ public static class MazakMaterialHistory
   )
   {
     var candidates = ImmutableDictionary<long, LogMaterial>.Empty;
-    var quantities = ImmutableDictionary<int, int>.Empty;
-    var uncertain = ImmutableHashSet<int>.Empty;
+    // Known faces take their occupancy from the serials still present after quarantine.
+    // Only an ambiguous face needs a separate physical count.
+    var managedFaces = ImmutableHashSet<int>.Empty;
+    var uncertain = ImmutableDictionary<int, int>.Empty;
     foreach (var entry in events.Where(e => !e.StartOfCycle).OrderBy(e => e.Counter))
     {
       if (entry.LogType == LogType.MachineCycle)
@@ -68,7 +70,7 @@ public static class MazakMaterialHistory
           entry
             .Material.Where(m =>
               !candidates.ContainsKey(m.MaterialID)
-              && !uncertain.Contains(m.Face)
+              && !uncertain.ContainsKey(m.Face)
               && !WasRemovedAfter(removals, m.MaterialID, entry.Counter)
             )
             .Select(m => KeyValuePair.Create(m.MaterialID, m))
@@ -91,15 +93,14 @@ public static class MazakMaterialHistory
         && face > 0
       )
       {
-        var before = quantities.TryGetValue(face, out var previous)
-          ? previous
-          : candidates.Values.Count(m => m.Face == face);
+        var wasUncertain = uncertain.TryGetValue(face, out var previous);
+        var before = wasUncertain ? previous : candidates.Values.Count(m => m.Face == face);
         if (details.ContainsKey(ManagedMazakSchedules.RouteConflictKey))
         {
           // An unverified route cannot establish occupancy for a subsequent verified load.
           // If we already had material on the face, its identity can no longer be inferred.
           if (before > 0)
-            uncertain = uncertain.Add(face);
+            uncertain = uncertain.SetItem(face, before);
           continue;
         }
         int.TryParse(
@@ -120,7 +121,7 @@ public static class MazakMaterialHistory
         var after = load ? before + moved : System.Math.Max(0, before - moved);
         if (after == 0)
         {
-          quantities = quantities.Remove(face);
+          managedFaces = managedFaces.Remove(face);
           candidates = candidates.RemoveRange(
             candidates.Values.Where(m => m.Face == face).Select(m => m.MaterialID)
           );
@@ -128,9 +129,9 @@ public static class MazakMaterialHistory
         }
         else
         {
-          quantities = quantities.SetItem(face, after);
-          if (unidentified > 0)
-            uncertain = uncertain.Add(face);
+          managedFaces = managedFaces.Add(face);
+          if (wasUncertain || unidentified > 0)
+            uncertain = uncertain.SetItem(face, after);
         }
       }
 
@@ -142,6 +143,10 @@ public static class MazakMaterialHistory
         )
         : candidates.RemoveRange(entry.Material.Select(m => m.MaterialID));
     }
-    return new(candidates, quantities, uncertain);
+    var knownCounts = candidates
+      .Values.Where(m => managedFaces.Contains(m.Face) && !uncertain.ContainsKey(m.Face))
+      .GroupBy(m => m.Face)
+      .Select(g => KeyValuePair.Create(g.Key, g.Count()));
+    return new(candidates, uncertain.AddRange(knownCounts), uncertain.Keys.ToImmutableHashSet());
   }
 }
