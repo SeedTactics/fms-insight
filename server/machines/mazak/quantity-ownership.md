@@ -25,24 +25,10 @@ the original batch, including empty results. `LoadJobDecrementOperation` only re
 The backend still owns eligibility, commitment calculation, admission serialization and publication.
 Ordinary `AddNewDecrement` callers retain their existing multiple-entry behavior.
 
-The backend owns supply admission, cancellation, schedule retirement, and job archival for selected
-jobs. Downloads start them with zero material supply. Generic queue reconciliation does not assign
-castings or change supply for them. Generic cleanup retains their schedules, even when completed,
-and retains their part definitions until job archival. The generic decrement command refuses an
-installation containing selected, unarchived, non-manual jobs before making any changes. Its
-replacement belongs to the custom backend, including decisions about jobs on the default policy.
-
-Use `BuildMazakSchedules.RemoveSchedules` to calculate retirement writes and the part names needed
-by surviving schedules. The caller must protect material, reservations, outstanding equipment work,
-and every required process route. Run retirement through the normal serialized controller owner,
-independently of new downloads, and require the ordinary post-write refresh. This helper neither
-archives jobs nor records cancellation quantities. Part definitions for a selected job remain
-protected during downloads until its backend explicitly archives it.
-
-The existing `ScheduleSafeEdit` command can carry an increased `PlanQuantity`. Capacity increases
-and rework admission are backend decisions requiring equipment qualification; this policy does not
-implement an invalidation/rework workflow. It introduces no new quantity-decrease path. The
-established controller-owned decrement path remains available to default installations.
+The backend owns supply admission, cancellation, and job archival for selected jobs. Generic queue
+reconciliation skips their raw supply. The generic decrement command refuses an installation
+containing selected, unarchived, non-manual jobs before making any changes. Its replacement belongs
+to the backend, including decisions about jobs on the default policy.
 
 Controller-owned backout requires successful synchronization, settled Mazak events, and confirmed
 downloads for all unarchived, non-manual jobs without a previous decrement. Unconfirmed downloads
@@ -51,8 +37,32 @@ dates fall outside the usual download window. Backout does not cancel pending jo
 itself. A failed write can have partial controller effects; the ordinary synchronization loop must
 succeed before retrying. This is a conservative refusal policy, not an atomic controller rollback.
 
+## Managed schedule lifecycle
+
+The normal downloader installs each managed route with zero material offered. A combined job has one
+native schedule and admits material at process 1. Split jobs have one schedule per process. The
+downloader confirms the native part name and schedule ID from readback. It keeps the route installed
+throughout the job's active life, even when planned quantity equals completed quantity. A missing
+schedule or conflicting definition raises a route alarm. Other eligible jobs can still download.
+
+A backend that owns queue admission can call `MazakSync.ApplyJobActions` for download and cleanup.
+`WriteJobs.FindPendingDownload` previews the batch. Both accept additional managed job IDs outside
+the download window. Serialize preview, validation, and writes with the controller's synchronization
+loop when validating a specific batch.
+
+| `MazakManagedScheduleControl` | Backend contract                                                                                                                                                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VerifyInstalledRoute`        | Check the native schedule and installed execution route before reporting readiness.                                                                                                                                               |
+| `EnsurePlan`                  | Supply an absolute minimum for the native plan. A repeat attempt can raise this ceiling while the accepted job quantity stays fixed.                                                                                              |
+| `SetMaterialOffer`            | Supply the quantity currently authorized to start. After an uncertain write, read the controller and recompute the offer because Mazak may have consumed it.                                                                      |
+| `WithdrawMaterialOffer`       | If a withdrawal reply was lost and the intended offer is still zero, request an explicit zero edit even when readback shows zero. Save it, await acknowledgment, and reconcile settled readback before releasing the reservation. |
+
+Settle transfers and withdraw offers before archiving the job. Archival authorizes cleanup of the
+idle schedule and its unused definitions, including after a partial download or a restart. The
+adapter retains the route's identity for manufacturing history after the schedule ID is reused.
+
 ## Sharing a repository between controllers
 
-Give each controller a stable `ControllerSource`. Keep the original controller on
-`DefaultControllerSource` so it resumes from its existing CSV filenames. Set `MachineGroupName`
-when controllers use different machining station groups.
+Give each controller a stable `ControllerSource` and assign its jobs with `BulkJobFilter`. Keep the
+original controller on `DefaultControllerSource` so it resumes from its existing CSV filenames. Set
+`MachineGroupName` when controllers use different machining station groups.

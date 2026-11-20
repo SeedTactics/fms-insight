@@ -768,7 +768,9 @@ public sealed class MazakSyncSpec : IDisposable
   }
 
   [Test]
-  public void CalculatesQueueChanges()
+  [Arguments(false, Categories = new[] { "OrdinaryQueues" })]
+  [Arguments(true, Categories = new[] { "ManagedRouteCommentDrift" })]
+  public async Task CalculatesQueueChanges(bool managedRouteCommentDrift)
   {
     using var db = repo.OpenConnection();
 
@@ -845,9 +847,13 @@ public sealed class MazakSyncSpec : IDisposable
         new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
       ],
     };
-    db.AddJobs(new NewJobs() { Jobs = [j], ScheduleId = "sch11" }, null, addAsCopiedToSystem: true);
+    var managed = j with { UniqueStr = "managed", Cycles = 50 };
+    db.AddJobs(
+      new NewJobs() { Jobs = managedRouteCommentDrift ? [j, managed] : [j], ScheduleId = "sch11" },
+      null,
+      addAsCopiedToSystem: true
+    );
 
-    // put 2 castings in queue, plus a different unique and a different process
     db.RecordAddMaterialToQueue(
       db.AllocateMaterialID("uuuu", "pppp", 1),
       process: 0,
@@ -857,21 +863,55 @@ public sealed class MazakSyncSpec : IDisposable
       reason: "TestSuite"
     );
 
-    _sync.ApplyActions(db, st).ShouldBeTrue();
+    var config = new MazakConfig
+    {
+      DBType = MazakDbType.MazakSmooth,
+      UseInsightJobQuantities = managedRouteCommentDrift
+        ? job => job.UniqueStr == managed.UniqueStr
+        : null,
+    };
+    using var sync = new MazakSync(_mazakDB, _fmsSt, config);
+    if (managedRouteCommentDrift)
+    {
+      var ordinary = st.AllData.Schedules.Single();
+      var drifted = ordinary with { Id = 11, PartName = "PPPP:11:1", Priority = 9 };
+      db.RecordMazakManagedSchedule(
+        new()
+        {
+          ControllerSource = config.ControllerSource,
+          JobUnique = managed.UniqueStr,
+          PartName = "pppp:11:1",
+          Comment = "managed-Insight",
+          ConfirmedScheduleId = drifted.Id,
+          BeforeLoadCounter = null,
+          Processes = [new(1, "fixture1", "1001"), new(2, "fixture2", "1002")],
+        }
+      );
+      st = st with
+      {
+        AllData = st.AllData with
+        {
+          Schedules = [drifted, ordinary],
+          Parts =
+          [
+            new() { PartName = ordinary.PartName, Comment = ordinary.Comment },
+            new() { PartName = drifted.PartName, Comment = "managed-Insight" },
+          ],
+          PalletSubStatuses = [],
+        },
+      };
+    }
+    _mazakDB.ClearReceivedCalls();
+    await Assert.That(sync.ApplyActions(db, st)).IsTrue();
 
-    _mazakDB.ReceivedCalls().Count().ShouldBe(1);
-    _mazakDB
-      .Received()
-      .Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Setting material from queues"));
-
-    var trans = _mazakDB.ReceivedCalls().Select(c => c.GetArguments()[0] as MazakWriteData).First();
-    trans.Schedules.Count.ShouldBe(1);
-    trans.Schedules[0].Id.ShouldBe(10);
-    trans.Schedules[0].Priority.ShouldBe(10);
-    trans.Schedules[0].Processes.Count.ShouldBe(2);
-    trans.Schedules[0].Processes[0].ProcessNumber.ShouldBe(1);
-    trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(1); // set the 1 material
-    trans.Schedules[0].Processes[1].ProcessNumber.ShouldBe(2);
-    trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(0); // sets no material
+    var call = _mazakDB.ReceivedCalls().Single();
+    var write = (MazakWriteData)call.GetArguments().Single();
+    await Assert.That(write.Prefix).IsEqualTo("Setting material from queues");
+    var schedule = write.Schedules.Single();
+    await Assert.That(schedule.Id).IsEqualTo(10);
+    await Assert.That(schedule.Priority).IsEqualTo(10);
+    await Assert
+      .That(schedule.Processes.Select(p => (p.ProcessNumber, p.ProcessMaterialQuantity)))
+      .IsEquivalentTo([(1, 1), (2, 0)]);
   }
 }
