@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using NSubstitute;
@@ -13,6 +14,162 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 
 public sealed partial class MazakAcquisitionSpec
 {
+  [Test]
+  [Arguments(null, 1)]
+  [Arguments("configured-group", 1)]
+  [Arguments(null, 101)]
+  [Arguments("configured-group", 101)]
+  public async Task MachiningAndStatusUseTheControllerGroupWhenConfigured(
+    string? group,
+    int machine
+  )
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    NewJobs Schedule(string id, string group)
+    {
+      var path = JobLogTest.EmptyPath with
+      {
+        Stops =
+        [
+          new()
+          {
+            StationGroup = group,
+            Stations = [machine],
+            Program = "1001",
+            ExpectedCycleTime = TimeSpan.FromMinutes(1),
+          },
+        ],
+      };
+      var job = new Job
+      {
+        UniqueStr = id,
+        PartName = "part",
+        Cycles = 1,
+        Archived = false,
+        RouteStartUTC = cell.Clock.Now.UtcDateTime.AddHours(-1),
+        RouteEndUTC = cell.Clock.Now.UtcDateTime.AddHours(1),
+        Processes = [new() { Paths = [path] }],
+      };
+      return new NewJobs { ScheduleId = id, Jobs = [job] };
+    }
+
+    db.AddJobs(Schedule("first", "original-group"), null, addAsCopiedToSystem: true);
+    var configuration = new MazakConfig
+    {
+      DBType = MazakDbType.MazakSmooth,
+      MachineGroupName = group,
+      MachineNumbers = machine == 1 ? null : [machine],
+      UseDurableRouteIdentity = true,
+    };
+    var settings = new FMSSettings();
+    using var synchronization = new MazakSync(cell.Native, settings, configuration, cell.Clock);
+    cell.Data = cell.Data with
+    {
+      Logs = [cell.Start],
+      PalletPositions = [new() { PalletNumber = 1, PalletPosition = "M013" }],
+    };
+    synchronization.CalculateCellState(db);
+    var start = db.MostRecentLogEntryForForeignID(cell.Start.ForeignID);
+    await Assert.That(start.LocationName).IsEqualTo(group ?? "original-group");
+    await Assert.That(start.LocationNum).IsEqualTo(machine);
+
+    // Another schedule changes the repository's inferred group while this run remains open.
+    db.AddJobs(Schedule("second", "another-group"), "first", addAsCopiedToSystem: true);
+    var inferred = BuildCurrentStatus.FindMachineGroupName(db);
+    await Assert.That(inferred).IsEqualTo("another-group");
+    var pocket = cell.Tools.Single();
+    cell.Tools = [pocket with { LifeUsed = pocket.LifeUsed + 12 }];
+    cell.Data = cell.Data with { Logs = [cell.End] };
+    var state = synchronization.CalculateCellState(db);
+    var end = db.MostRecentLogEntryForForeignID(cell.End.ForeignID);
+    await Assert.That(end).IsNotNull();
+    await Assert.That(end.LocationName).IsEqualTo(start.LocationName);
+    await Assert.That(end.ElapsedTime).IsEqualTo(cell.End.TimeUTC - cell.Start.TimeUTC);
+    await Assert
+      .That(end.Tools?.SingleOrDefault()?.ToolUseDuringCycle)
+      .IsEqualTo(TimeSpan.FromSeconds(12));
+    await Assert.That(synchronization.CaptureLogWatermark(db)).IsEqualTo(cell.End.ForeignID);
+
+    var expectedGroup = group ?? "another-group";
+    var rebuilt = BuildCurrentStatus.Build(
+      db,
+      settings,
+      configuration,
+      state.AllData,
+      inferred,
+      state.PalletWithUnprocessedUnloads,
+      state.CurrentStatus.TimeOfCurrentStatusUTC
+    );
+    await Assert
+      .That(state.CurrentStatus.Pallets[1].CurrentPalletLocation.StationGroup)
+      .IsEqualTo(expectedGroup);
+    await Assert
+      .That(rebuilt.Pallets[1].CurrentPalletLocation.StationGroup)
+      .IsEqualTo(expectedGroup);
+    var control = new MazakMachineControl(cell.Repositories, cell.Native, configuration);
+    var tool = control.CurrentToolsInMachines().Single();
+    await Assert.That(tool.MachineGroupName).IsEqualTo(expectedGroup);
+    await Assert.That(tool.MachineNum).IsEqualTo(machine);
+    await Assert.That(control.CurrentToolsInMachine(expectedGroup, machine)).IsEquivalentTo([tool]);
+
+    cell.Clock.Now = cell.Clock.Now.AddMinutes(1);
+    var next = cell.Start with
+    {
+      ForeignID = "LG20261105-120030-003.csv",
+      TimeUTC = cell.Clock.Now.UtcDateTime.AddSeconds(-30),
+    };
+    cell.Data = cell.Data with { Logs = [next] };
+    synchronization.CalculateCellState(db);
+    await Assert
+      .That(db.MostRecentLogEntryForForeignID(next.ForeignID).LocationName)
+      .IsEqualTo(expectedGroup);
+  }
+
+  [Test]
+  public async Task RemappedMachineEndSkipsAnOlderBaselineWithoutRawMachineIdentity()
+  {
+    using var cell = new Cell();
+    var db = cell.Repository;
+    var start = cell.Start;
+    // Before the mapping fix, raw machine 1 mapped to 2 and read tool rows from raw machine 2.
+    db.RecordMachineStart(
+      mats: [],
+      pallet: start.Pallet,
+      statName: "MC",
+      statNum: 2,
+      program: start.Program,
+      timeUTC: start.TimeUTC,
+      pockets:
+      [
+        new()
+        {
+          ToolName = "tool-1",
+          Pocket = 1,
+          CurrentUse = TimeSpan.FromSeconds(15),
+        },
+      ],
+      foreignId: start.ForeignID
+    );
+
+    using var synchronization = cell.NewSynchronizer(configure: cfg =>
+      cfg with
+      {
+        MachineNumbers = [2, 1],
+      }
+    );
+    cell.Data = cell.Data with { Logs = [cell.End] };
+    synchronization.CalculateCellState(db);
+
+    var end = db.MostRecentLogEntryForForeignID(cell.End.ForeignID);
+    await Assert.That(end.LocationNum).IsEqualTo(2);
+    await Assert.That(end.ElapsedTime).IsEqualTo(cell.End.TimeUTC - start.TimeUTC);
+    await Assert.That(end.Tools).IsNull();
+    await Assert
+      .That(db.ToolPocketSnapshotForCycle(end.Counter).Single().CurrentUse)
+      .IsEqualTo(TimeSpan.FromSeconds(60));
+  }
+
   [Test]
   [Arguments(1)]
   [Arguments(101)]

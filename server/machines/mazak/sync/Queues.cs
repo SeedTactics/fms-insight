@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using Serilog;
@@ -127,9 +128,17 @@ namespace MazakMachineInterface
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
       var skippedCastings = new HashSet<string>();
+      var reserved =
+        cfg.UseDurableRouteIdentity || cfg.BulkJobFilter != null
+          ? jdb.LoadReservedMazakPartNames(cfg.ControllerSource)
+            .WithComparer(StringComparer.OrdinalIgnoreCase)
+          : ImmutableHashSet<string>.Empty;
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
-        if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
+        if (
+          !MazakPart.IsSailPart(schRow.PartName, schRow.Comment)
+          || reserved.Contains(schRow.PartName)
+        )
           continue;
 
         var unique = MazakPart.UniqueFromComment(schRow.Comment);
@@ -137,7 +146,7 @@ namespace MazakMachineInterface
         var job = jdb.LoadJob(unique);
         if (job == null)
           continue;
-        if (cfg.UsesInsightJobQuantities(job))
+        if (cfg.UsesInsightJobQuantities(job) || cfg.BulkJobFilter?.Invoke(job) == false)
           continue;
 
         var isSplit = MazakPart.IsSplitComment(schRow.Comment);

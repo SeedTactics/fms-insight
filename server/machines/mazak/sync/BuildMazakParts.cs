@@ -91,21 +91,26 @@ namespace MazakMachineInterface
     }
 
     public MazakPart(Job j, int downID, int partIdx, int splitJobProcess, int splitPath)
+      : this(
+        j,
+        downID,
+        splitJobProcess,
+        splitPath,
+        SplitPartName(j, downID, partIdx, splitJobProcess)
+      ) { }
+
+    internal MazakPart(Job j, int downID, int splitJobProcess, int splitPath, string partName)
     {
       Job = j;
       DownloadID = downID;
       Processes = new List<MazakProcess>();
       SplitJobProcess = splitJobProcess;
       SplitPath = splitPath;
-      PartName =
-        Job.PartName
-        + ":"
-        + DownloadID.ToString()
-        + ":"
-        + partIdx.ToString()
-        + ":"
-        + splitJobProcess.ToString();
+      PartName = partName;
     }
+
+    internal static string SplitPartName(Job job, int downloadId, int partIndex, int process) =>
+      $"{job.PartName}:{downloadId}:{partIndex}:{process}";
 
     public MazakPartRow ToDatabaseRow()
     {
@@ -127,19 +132,17 @@ namespace MazakMachineInterface
 
     public string Comment =>
       IsSplitPart
-        ? Job.UniqueStr
-          + "-"
-          + SplitJobProcess.Value.ToString()
-          + "-"
-          + SplitPath.GetValueOrDefault(1).ToString()
-          + SplitInsightSuffix
+        ? SplitComment(Job.UniqueStr, SplitJobProcess.Value, SplitPath.GetValueOrDefault(1))
         : Job.UniqueStr + CombinedInsightSuffix;
+
+    public static string SplitComment(string unique, int process, int path) =>
+      $"{unique}-{process}-{path}{SplitInsightSuffix}";
 
     internal static ImmutableList<string> InitialScheduleComments(Job job) =>
       ConvertJobsToMazakParts.IsSplitScheduleJob(job)
         ? Enumerable
           .Range(1, job.Processes.Count)
-          .Select(process => job.UniqueStr + "-" + process + "-1" + SplitInsightSuffix)
+          .Select(process => SplitComment(job.UniqueStr, process, 1))
           .ToImmutableList()
         : [job.UniqueStr + CombinedInsightSuffix];
 
@@ -576,12 +579,19 @@ namespace MazakMachineInterface
     public MazakWriteData AddFixtureAndProgramDatabaseRows(
       Func<string, long, string> getProgramContent,
       string programDir
+    ) => AddFixtureAndProgramDatabaseRows(UsedFixtures, AllParts, getProgramContent, programDir);
+
+    internal MazakWriteData AddFixtureAndProgramDatabaseRows(
+      IEnumerable<string> fixtures,
+      IEnumerable<MazakPart> parts,
+      Func<string, long, string> getProgramContent,
+      string programDir
     )
     {
       var fixRows = new List<MazakFixtureRow>();
 
       //add new fixtures
-      foreach (string fixture in UsedFixtures)
+      foreach (string fixture in fixtures)
       {
         //check if this fixture exists already... could exist already if we reuse fixtures
         foreach (var fixRow in OldMazakData.Fixtures)
@@ -605,7 +615,7 @@ namespace MazakMachineInterface
 
       // add programs
       var newProgs = new Dictionary<(string name, long rev), NewMazakProgram>();
-      foreach (var part in AllParts)
+      foreach (var part in parts)
       {
         foreach (var proc in part.Processes)
         {
@@ -696,55 +706,44 @@ namespace MazakMachineInterface
       };
     }
 
-    public MazakWriteData DeleteOldPartRows()
-    {
-      var partRows = new List<MazakPartRow>();
-      foreach (var partRow in OldMazakData.Parts)
+    public MazakWriteData DeleteOldPartRows() =>
+      DeletePartRows(OldMazakData.Parts, part => !SavedParts.Contains(part.PartName));
+
+    internal static MazakWriteData DeletePartRows(
+      IEnumerable<MazakPartRow> parts,
+      Func<MazakPartRow, bool> canDelete
+    ) =>
+      new()
       {
-        if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
-        {
-          if (!SavedParts.Contains(partRow.PartName))
-          {
-            var newPartRow = partRow with
+        Prefix = "Delete Parts",
+        Parts = parts
+          .Where(part => MazakPart.IsSailPart(part.PartName, part.Comment) && canDelete(part))
+          .Select(part =>
+            part with
             {
               Command = MazakWriteCommand.Delete,
-              TotalProcess = partRow.Processes.Count(),
-              Processes =
-                new List<MazakPartProcessRow>() // when deleting, don't need to add process rows
-              ,
-            };
-            partRows.Add(newPartRow);
-          }
-        }
-      }
-      return new MazakWriteData() { Prefix = "Delete Parts", Parts = partRows };
-    }
+              TotalProcess = part.Processes.Count,
+              Processes = [],
+            }
+          )
+          .ToImmutableList(),
+      };
 
-    public MazakWriteData DeleteOldPalletRows()
-    {
-      var palRows = new List<MazakPalletRow>();
-      foreach (var palRow in OldMazakData.Pallets)
+    public MazakWriteData DeleteOldPalletRows() =>
+      DeletePalletRows(OldMazakData.Pallets, pallet => !UsedFixtures.Contains(pallet.Fixture));
+
+    internal static MazakWriteData DeletePalletRows(
+      IEnumerable<MazakPalletRow> pallets,
+      Func<MazakPalletRow, bool> canDelete
+    ) =>
+      new()
       {
-        int idx = palRow.Fixture.IndexOf(':');
-
-        if (idx >= 0)
-        {
-          //check if this fixture is being used by a new schedule
-          //or is a fixture used by a part in savedParts
-
-          if (!UsedFixtures.Contains(palRow.Fixture))
-          {
-            //not found, can delete it
-            var newPalRow = palRow with
-            {
-              Command = MazakWriteCommand.Delete,
-            };
-            palRows.Add(newPalRow);
-          }
-        }
-      }
-      return new MazakWriteData() { Prefix = "Delete Pallets", Pallets = palRows };
-    }
+        Prefix = "Delete Pallets",
+        Pallets = pallets
+          .Where(pallet => pallet.Fixture.Contains(':') && canDelete(pallet))
+          .Select(pallet => pallet with { Command = MazakWriteCommand.Delete })
+          .ToImmutableList(),
+      };
   }
 
   public static class ConvertJobsToMazakParts
@@ -790,7 +789,8 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
       Func<string, long?, ProgramRevision> lookupProgram,
       IList<string> errors,
-      bool reuseExistingParts
+      bool reuseExistingParts,
+      ImmutableHashSet<int> preparedFixtureGroups = null
     )
     {
       Validate(jobs, fmsSettings, errors);
@@ -802,27 +802,125 @@ namespace MazakMachineInterface
           .Where(part => part != null)
           .ToImmutableList()
         : [];
-      var reusedPallets = MissingReusedPallets(allParts, reused, mazakData, mazakCfg);
+      return BuildDefinitions(
+        mazakData,
+        downloadUID,
+        savedParts,
+        mazakCfg,
+        errors,
+        allParts,
+        reused,
+        preparedFixtureGroups: preparedFixtureGroups
+      );
+    }
+
+    internal static MazakJobs BuildSplitDefinition(
+      IRepository db,
+      MazakAllData data,
+      MazakConfig config,
+      FMSSettings settings,
+      Job job,
+      MazakRouteIdentity identity,
+      MazakPartRow installed,
+      MazakRoutePreparation preparation,
+      out MazakPart expected
+    )
+    {
+      var errors = new List<string>();
+      Validate([job], settings, errors);
+      var downloadId = MazakPart.ParseUID(identity.PartName);
+      expected = new MazakPart(
+        job,
+        downloadId,
+        identity.JobProcess,
+        identity.Path,
+        identity.PartName
+      );
+      BuildProcFromJob(
+        job,
+        expected,
+        out var error,
+        config,
+        data,
+        (program, revision) => WriteJobs.LookupProgram(db, program, revision),
+        onlyProcess: identity.JobProcess
+      );
+      if (!string.IsNullOrEmpty(error))
+        errors.Add(error);
+      if (errors.Count > 0)
+        throw new BadRequestException(string.Join(Environment.NewLine, errors));
+
+      var definitions = BuildDefinitions(
+        data,
+        downloadId,
+        data.Parts.Select(p => p.PartName).ToHashSet(StringComparer.Ordinal),
+        config,
+        errors,
+        [expected],
+        installed == null ? [] : [installed],
+        preparation,
+        db.LoadMazakRoutePreparations(config.ControllerSource)
+          .Values.Select(p => p.FixtureGroup)
+          .ToImmutableHashSet()
+      );
+      if (errors.Count > 0)
+        throw new BadRequestException(string.Join(Environment.NewLine, errors));
+      return definitions;
+    }
+
+    private static MazakJobs BuildDefinitions(
+      MazakAllData mazakData,
+      int downloadUID,
+      ISet<string> savedParts,
+      MazakConfig mazakCfg,
+      IList<string> errors,
+      List<MazakPart> allParts,
+      ImmutableList<MazakPartRow> reused,
+      MazakRoutePreparation preparation = null,
+      ImmutableHashSet<int> preparedFixtureGroups = null
+    )
+    {
+      var reusedPallets = MissingReusedPallets(allParts, reused, mazakData, mazakCfg, preparation);
       savedParts.UnionWith(reused.Select(part => part.PartName));
       allParts = allParts.Where(part => !reused.Any(old => old.Comment == part.Comment)).ToList();
       var usedMazakFixGroups = new HashSet<int>(
         mazakData.Pallets.Concat(reusedPallets).Select(row => row.FixtureGroup)
       );
+      usedMazakFixGroups.UnionWith(preparedFixtureGroups ?? []);
+      if (mazakCfg.UseDurableRouteIdentity || mazakCfg.BulkJobFilter != null)
+      {
+        // A fixture write may be visible before the corresponding part or pallet rows.
+        var mappedFixtures = mazakData
+          .Pallets.Select(p => p.Fixture)
+          .ToHashSet(StringComparer.Ordinal);
+        foreach (var fixture in mazakData.Fixtures)
+          if (
+            !mappedFixtures.Contains(fixture.FixtureName)
+            && TryReadFixtureGroup(fixture.FixtureName, out var group)
+          )
+            usedMazakFixGroups.Add(group);
+      }
       var groups = GroupProcessesIntoFixtures(
-        allParts,
+        preparation == null ? allParts : [],
         usedMazakFixGroups,
         mazakCfg.UseStartingOffsetForDueDate,
         errors
       );
+      if (preparation != null && allParts.Count > 0)
+      {
+        var process = allParts.Single().Processes.Single();
+        groups.Add(
+          new MazakFixture
+          {
+            MazakFixtureName = preparation.FixtureName,
+            FixtureGroup = preparation.FixtureGroup,
+            Pallets = process.Pallets().ToHashSet(),
+            Processes = [process],
+          }
+        );
+      }
 
-      var usedFixtures = AssignMazakFixtures(
-        groups,
-        downloadUID,
-        mazakData,
-        savedParts,
-        mazakCfg.UseStartingOffsetForDueDate,
-        errors
-      );
+      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, mazakCfg);
       var usedProgs = CalculateUsedPrograms(mazakData, allParts);
 
       return new MazakJobs()
@@ -840,11 +938,26 @@ namespace MazakMachineInterface
       };
     }
 
+    private static bool TryReadFixtureGroup(string fixture, out int group)
+    {
+      group = 0;
+      var pieces = fixture.Split(':');
+      return pieces.Length >= 4
+        && pieces[0] == "F"
+        && int.TryParse(
+          pieces[2],
+          System.Globalization.NumberStyles.None,
+          System.Globalization.CultureInfo.InvariantCulture,
+          out group
+        );
+    }
+
     private static ImmutableList<MazakPalletRow> MissingReusedPallets(
       IEnumerable<MazakPart> expectedParts,
       ImmutableList<MazakPartRow> reused,
       MazakAllData data,
-      MazakConfig cfg
+      MazakConfig cfg,
+      MazakRoutePreparation preparation
     ) =>
       expectedParts
         .SelectMany(expected =>
@@ -859,11 +972,17 @@ namespace MazakMachineInterface
               .Fixture;
             // Part transactions precede pallet transactions. Keep the installed fixture's original
             // group when completing a missing mapping; generated names contain F:download:group:... .
-            var group =
-              data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
-              ?? int.Parse(
-                fixture.Split(':')[2],
-                System.Globalization.CultureInfo.InvariantCulture
+            var mapping = data.Pallets.FirstOrDefault(row => row.Fixture == fixture);
+            int group;
+            if (mapping != null)
+              group = mapping.FixtureGroup;
+            else if (preparation?.FixtureName == fixture)
+              group = preparation.FixtureGroup;
+            else if (cfg.OverrideFixtureGroupToZero)
+              group = 0;
+            else if (!TryReadFixtureGroup(fixture, out group))
+              throw new ConflictRequestException(
+                $"Installed Mazak part '{installed.PartName}' has no pallet mapping and fixture '{fixture}' does not identify a fixture group."
               );
             return new MazakFixture
             {
@@ -1290,40 +1409,38 @@ namespace MazakMachineInterface
       IEnumerable<MazakPart> newParts
     )
     {
-      var progsToComment = oldData
-        .MainPrograms.Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
-        .ToDictionary(p => p.MainProgram, p => p.Comment);
-
-      var used = new HashSet<string>();
-      foreach (var part in oldData.Parts)
-      {
-        foreach (var proc in part.Processes)
-        {
-          if (
-            !string.IsNullOrEmpty(proc.MainProgram) && progsToComment.ContainsKey(proc.MainProgram)
-          )
-          {
-            used.Add(progsToComment[proc.MainProgram]);
-          }
-        }
-      }
-      foreach (var part in newParts)
-      {
-        foreach (var proc in part.Processes)
-        {
-          if (!string.IsNullOrEmpty(proc.PartProgram.ProgramName))
-          {
-            used.Add(
-              MazakProcess.CreateMainProgramComment(
-                proc.PartProgram.ProgramName,
-                proc.PartProgram.Revision
-              )
-            );
-          }
-        }
-      }
-
+      var used = RequiredProgramComments(oldData, newParts).ToHashSet(StringComparer.Ordinal);
+      var installed = oldData
+        .Parts.SelectMany(p => p.Processes)
+        .Select(p => p.MainProgram)
+        .ToImmutableHashSet(StringComparer.Ordinal);
+      used.UnionWith(
+        oldData.MainPrograms.Where(p => installed.Contains(p.MainProgram)).Select(p => p.Comment)
+      );
       return used;
+    }
+
+    internal static IEnumerable<string> RequiredProgramComments(
+      MazakAllData observed,
+      IEnumerable<MazakPart> parts
+    )
+    {
+      var programs = parts
+        .SelectMany(p => p.Processes)
+        .Select(p => p.PartProgram)
+        .ToImmutableList();
+      var nativeNames = programs
+        .Where(p => !string.IsNullOrEmpty(p.CellControllerProgramName))
+        .Select(p => p.CellControllerProgramName)
+        .ToImmutableHashSet(StringComparer.Ordinal);
+      return programs
+        .Where(p => !string.IsNullOrEmpty(p.ProgramName))
+        .Select(p => MazakProcess.CreateMainProgramComment(p.ProgramName, p.Revision))
+        .Concat(
+          observed
+            .MainPrograms.Where(p => nativeNames.Contains(p.MainProgram))
+            .Select(p => p.Comment)
+        );
     }
     #endregion
 
@@ -1442,8 +1559,7 @@ namespace MazakMachineInterface
       int downloadUID,
       MazakAllData mazakData,
       ISet<string> savedParts,
-      bool useStartingOffsetForDueDate,
-      IList<string> log
+      MazakConfig config
     )
     {
       //First calculate the available fixtures
@@ -1463,9 +1579,9 @@ namespace MazakMachineInterface
       foreach (var fixture in allFixtures)
       {
         //check if we can reuse an existing fixture
-        if (!useStartingOffsetForDueDate)
+        if (string.IsNullOrEmpty(fixture.MazakFixtureName) && !config.UseStartingOffsetForDueDate)
         {
-          CheckExistingFixture(fixture, usedMazakFixtureNames, mazakData);
+          CheckExistingFixture(fixture, usedMazakFixtureNames, mazakData, config);
         }
 
         if (string.IsNullOrEmpty(fixture.MazakFixtureName))
@@ -1508,7 +1624,8 @@ namespace MazakMachineInterface
     private static void CheckExistingFixture(
       MazakFixture fixture,
       ISet<string> availableMazakFixtures,
-      MazakAllData mazakData
+      MazakAllData mazakData,
+      MazakConfig config
     )
     {
       //we need a fixture that exactly matches this pallet list and has all the processes.
@@ -1530,7 +1647,7 @@ namespace MazakMachineInterface
         {
           if (palRow.Fixture == mazakFixtureName)
           {
-            onPallets.Add(palRow.PalletNumber);
+            onPallets.Add(config.TranslatePalletNumber(palRow.PalletNumber));
           }
         }
 

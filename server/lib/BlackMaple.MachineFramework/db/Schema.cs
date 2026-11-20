@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 46;
+    private const int Version = 50;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -110,6 +110,10 @@ namespace BlackMaple.MachineFramework
         CreateBasketOperationTables(cmd);
         CreateBasketContentsTables(cmd);
         CreateMaterialAllocationOperationTables(cmd);
+        CreateMazakRouteIdentityTable(cmd);
+        AddMazakRoutePreparationColumns(cmd);
+        AddMazakRequiredProgramColumn(cmd);
+        CreateMazakBulkCleanupTable(cmd);
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
         cmd.ExecuteNonQuery();
@@ -540,6 +544,30 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
             CreateSimStationTimeIndex(cmd);
+          }
+
+          if (curVersion < 47)
+          {
+            cmd.Transaction = trans;
+            CreateMazakRouteIdentityTable(cmd);
+          }
+
+          if (curVersion < 48)
+          {
+            cmd.Transaction = trans;
+            AddMazakRoutePreparationColumns(cmd);
+          }
+
+          if (curVersion < 49)
+          {
+            cmd.Transaction = trans;
+            AddMazakRequiredProgramColumn(cmd);
+          }
+
+          if (curVersion < 50)
+          {
+            cmd.Transaction = trans;
+            CreateMazakBulkCleanupTable(cmd);
           }
 
           //update the version in the database
@@ -1388,6 +1416,47 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE current_basket_slot_data(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, Key TEXT NOT NULL, Value TEXT NOT NULL, PRIMARY KEY(BasketId, Slot, Key))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateMazakRouteIdentityTable(IDbCommand cmd)
+    {
+      cmd.CommandText = """
+        CREATE TABLE mazak_route_identity(
+          Source TEXT NOT NULL, PartName TEXT NOT NULL, NativeProcess INTEGER NOT NULL,
+          JobUnique TEXT NOT NULL, JobProcess INTEGER NOT NULL, Path INTEGER NOT NULL,
+          PRIMARY KEY(Source, PartName, NativeProcess)
+        ) WITHOUT ROWID;
+        CREATE INDEX mazak_route_identity_job ON mazak_route_identity(Source, JobUnique, JobProcess, Path);
+        """;
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void AddMazakRoutePreparationColumns(IDbCommand cmd)
+    {
+      cmd.CommandText = """
+        ALTER TABLE mazak_route_identity ADD COLUMN PreparationFixture TEXT;
+        ALTER TABLE mazak_route_identity ADD COLUMN PreparationGroup INTEGER;
+        ALTER TABLE mazak_route_identity ADD COLUMN PreparationProgram TEXT;
+        """;
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void AddMazakRequiredProgramColumn(IDbCommand cmd)
+    {
+      cmd.CommandText =
+        "ALTER TABLE mazak_route_identity ADD COLUMN PreparationRequiredProgram TEXT";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateMazakBulkCleanupTable(IDbCommand cmd)
+    {
+      cmd.CommandText = """
+        CREATE TABLE mazak_bulk_cleanup(
+          Source TEXT NOT NULL, ResourceKind INTEGER NOT NULL, ResourceName TEXT NOT NULL,
+          PRIMARY KEY(Source, ResourceKind, ResourceName)
+        ) WITHOUT ROWID;
+        """;
       cmd.ExecuteNonQuery();
     }
 

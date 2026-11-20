@@ -947,7 +947,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .Select(j => j.UniqueStr)
         .ShouldBe(newJobs.Jobs.Select(j => j.UniqueStr), ignoreOrder: true);
 
-      //try again still with error
+      string[] WriteOrder() =>
+        _mazakDbMock
+          .ReceivedCalls()
+          .SelectMany(call => call.GetArguments().OfType<MazakWriteData>())
+          .Select(write => write.Prefix)
+          .ToArray();
+      var originalWriteOrder = WriteOrder();
+      _mazakDbMock.ClearReceivedCalls();
+
+      // Default mode repeats the ordinary cleanup and download writes after a rejection.
       Should
         .Throw<Exception>(() =>
           WriteJobs.SyncFromDatabase(
@@ -961,6 +970,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         )
         .Message.ShouldBe("Sample error");
 
+      WriteOrder().ShouldBe(originalWriteOrder);
+      await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
+      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts");
+      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts");
       await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
       _jobDB
         .LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))

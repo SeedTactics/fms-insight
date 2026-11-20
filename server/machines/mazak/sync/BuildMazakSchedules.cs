@@ -172,6 +172,8 @@ namespace MazakMachineInterface
               mazakComment: matchingPart.Comment,
               numProcess: MazakPart.IsSplitComment(matchingPart.Comment) ? 1 : part.Processes.Count,
               part: part,
+              planQuantity: part.Cycles,
+              jobProcess: 1,
               earlierConflicts: earlierConflicts,
               startingPriority: maxPriMatchingDate + 1,
               routeStartDate: routeStartDate,
@@ -192,12 +194,43 @@ namespace MazakMachineInterface
         return new MazakWriteData() { Prefix = "Add Schedules", Schedules = schs };
     }
 
+    internal static MazakScheduleRow CreateSplitSchedule(
+      MazakAllData data,
+      MazakRouteIdentity route,
+      Job job,
+      MazakConfig config,
+      int planQuantity
+    )
+    {
+      var date = job.RouteStartUTC.ToLocalTime().Date;
+      var priority = data
+        .Schedules.Where(s => s.DueDate == date)
+        .Select(s => s.Priority)
+        .Append(9)
+        .Max();
+      return SchedulePart(
+        FindNextScheduleId(data.Schedules.Select(s => s.Id).ToHashSet()),
+        route.PartName,
+        MazakPart.SplitComment(route.JobUnique, route.JobProcess, route.Path),
+        numProcess: 1,
+        part: job,
+        planQuantity: planQuantity,
+        jobProcess: route.JobProcess,
+        earlierConflicts: 0,
+        startingPriority: Math.Min(100, priority + 1),
+        routeStartDate: date,
+        config
+      );
+    }
+
     private static MazakScheduleRow SchedulePart(
       int SchID,
       string mazakPartName,
       string mazakComment,
       int numProcess,
       Job part,
+      int planQuantity,
+      int jobProcess,
       int earlierConflicts,
       int startingPriority,
       DateTime routeStartDate,
@@ -207,16 +240,16 @@ namespace MazakMachineInterface
       bool entireHold = false;
       if (part.HoldJob != null)
         entireHold = HoldCalculations.IsOnHold(part.HoldJob);
-      bool machiningHold = false;
-      if (part.Processes[0].Paths[0].HoldMachining != null)
-        machiningHold = HoldCalculations.IsOnHold(part.Processes[0].Paths[0].HoldMachining);
+      var path = part.Processes[jobProcess - 1].Paths[0];
+      bool machiningHold =
+        path.HoldMachining != null && HoldCalculations.IsOnHold(path.HoldMachining);
 
       var newSchRow = new MazakScheduleRow()
       {
         Command = MazakWriteCommand.Add,
         Id = SchID,
         PartName = mazakPartName,
-        PlanQuantity = part.Cycles,
+        PlanQuantity = planQuantity,
         CompleteQuantity = 0,
         FixForMachine = 0,
         MissingFixture = 0,
@@ -232,7 +265,7 @@ namespace MazakMachineInterface
 
       if (cfg.UseStartingOffsetForDueDate)
       {
-        if (part.Processes[0].Paths[0].SimulatedStartingUTC != DateTime.MinValue)
+        if (path.SimulatedStartingUTC != DateTime.MinValue)
         {
           newSchRow = newSchRow with
           {

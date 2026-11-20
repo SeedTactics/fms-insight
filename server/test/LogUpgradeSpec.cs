@@ -125,12 +125,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(50);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(50);
       }
 
       CheckSchema(conn1, memDb);
@@ -1039,7 +1039,8 @@ namespace BlackMaple.FMSInsight.Tests
         cmd.ExecuteNonQuery();
         cmd.CommandText = "UPDATE stations SET CorrelationId = 'correlation-1'";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "UPDATE version SET ver = 43";
+        cmd.CommandText =
+          "DROP TABLE mazak_route_identity; DROP TABLE mazak_bulk_cleanup; UPDATE version SET ver = 43";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "DROP INDEX sim_station_end_time";
         cmd.ExecuteNonQuery();
@@ -1104,7 +1105,8 @@ namespace BlackMaple.FMSInsight.Tests
       connection.Open();
       using (var command = connection.CreateCommand())
       {
-        command.CommandText = "DROP INDEX sim_station_end_time; UPDATE version SET ver = 45";
+        command.CommandText =
+          "DROP INDEX sim_station_end_time; DROP TABLE mazak_route_identity; DROP TABLE mazak_bulk_cleanup; UPDATE version SET ver = 45";
         command.ExecuteNonQuery();
       }
       using var upgraded = RepositoryConfig.InitializeMemoryDB(
@@ -1125,6 +1127,63 @@ namespace BlackMaple.FMSInsight.Tests
         createTables: false,
         upgradeTables: true
       );
+    }
+  }
+
+  public sealed class Ver47UpgradeSpec
+  {
+    [Test]
+    public async System.Threading.Tasks.Task AddsPreparationToExistingRouteIdentity()
+    {
+      var guid = Guid.NewGuid();
+      using var created = RepositoryConfig.InitializeMemoryDB(null, guid);
+      var route = new MazakRouteIdentity
+      {
+        Source = "source",
+        PartName = "part:1:1:2",
+        NativeProcess = 1,
+        JobUnique = "job",
+        JobProcess = 2,
+        Path = 1,
+      };
+      using (var db = created.OpenConnection())
+        db.ReserveMazakRouteIdentity(route);
+
+      using var connection = new SqliteConnection(
+        $"Data Source=file:${guid}?mode=memory&cache=shared"
+      );
+      connection.Open();
+      using (var command = connection.CreateCommand())
+      {
+        command.CommandText = """
+          DROP TABLE mazak_bulk_cleanup;
+          ALTER TABLE mazak_route_identity DROP COLUMN PreparationRequiredProgram;
+          ALTER TABLE mazak_route_identity DROP COLUMN PreparationProgram;
+          ALTER TABLE mazak_route_identity DROP COLUMN PreparationGroup;
+          ALTER TABLE mazak_route_identity DROP COLUMN PreparationFixture;
+          UPDATE version SET ver = 47;
+          """;
+        command.ExecuteNonQuery();
+      }
+      using var upgraded = RepositoryConfig.InitializeMemoryDB(
+        null,
+        guid,
+        createTables: false,
+        upgradeTables: true
+      );
+      using var repository = upgraded.OpenConnection();
+      await Assert
+        .That(repository.LoadMazakRouteIdentity(route.Source, route.PartName, 1))
+        .IsEqualTo(route);
+      await Assert
+        .That(repository.LoadMazakRoutePreparation(route.Source, route.PartName, 1))
+        .IsNull();
+      var preparation = new MazakRoutePreparation { FixtureName = "F:1:1:1", FixtureGroup = 1 };
+      repository.ReserveMazakRoutePreparation(route, preparation);
+      await Assert
+        .That(repository.LoadMazakRoutePreparation(route.Source, route.PartName, 1))
+        .IsEqualTo(preparation);
+      SchemaUpgradeSpec.Check(connection);
     }
   }
 

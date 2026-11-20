@@ -53,6 +53,31 @@ namespace BlackMaple.MachineFramework
   {
     RepositoryConfig RepoConfig { get; }
 
+    // A native route identity survives retirement and can be reserved only once.
+    void ReserveMazakRouteIdentity(MazakRouteIdentity route);
+    void ReserveMazakRoutePreparation(MazakRouteIdentity route, MazakRoutePreparation preparation);
+
+    [return: MaybeNull]
+    MazakRoutePreparation LoadMazakRoutePreparation(
+      string source,
+      string partName,
+      int nativeProcess
+    );
+
+    [return: MaybeNull]
+    MazakRouteIdentity LoadMazakRouteIdentity(string source, string partName, int nativeProcess);
+
+    ImmutableDictionary<string, MazakRoutePreparation> LoadMazakRoutePreparations(string source);
+    void ReleaseMazakRoutePreparations(string source, IReadOnlySet<string> partNames);
+
+    void StageMazakBulkCleanup(string source, MazakBulkCleanup cleanup);
+    MazakBulkCleanup LoadMazakBulkCleanup(string source);
+    void CompleteMazakBulkCleanup(string source, MazakBulkCleanup pending = null);
+
+    ImmutableList<MazakRouteIdentity> LoadMazakRouteIdentities(string source, string jobUnique);
+
+    ImmutableHashSet<string> LoadReservedMazakPartNames(string source);
+
     // --------------------------------------------------------------------------------
     // Loading Events
     // --------------------------------------------------------------------------------
@@ -60,6 +85,8 @@ namespace BlackMaple.MachineFramework
       long lastSeenCounter,
       DateTime? expectedEndUTCofLastSeen = null
     );
+    long MaxLogCounter();
+    IEnumerable<LogEntry> GetRecentLogForProgramDetail(long afterCounter, string key, string value);
     IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
@@ -73,6 +100,15 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
+
+    // For controllers where the pallet and machine numbers identify the physical run.
+    [return: MaybeNull]
+    LogEntry FindPalletMachineStart(
+      int pallet,
+      int station,
+      DateTime asOfUtc,
+      string placementEndProgram
+    );
     List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false);
 
     [return: MaybeNull]

@@ -129,6 +129,9 @@ namespace BlackMaple.MachineFramework
   [KnownType(typeof(MaterialProcessActualPath))]
   public record LogEntry
   {
+    // ProgramDetails key for a historical event that must be omitted from CurrentPalletLog.
+    public const string PriorPalletPlacementKey = "PriorPalletPlacement";
+
     [JsonPropertyName("counter")]
     public required long Counter { get; init; }
 

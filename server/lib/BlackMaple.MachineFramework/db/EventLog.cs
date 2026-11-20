@@ -362,6 +362,34 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public long MaxLogCounter()
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText = "SELECT COALESCE(MAX(Counter), 0) FROM stations";
+      return (long)cmd.ExecuteScalar();
+    }
+
+    public IEnumerable<LogEntry> GetRecentLogForProgramDetail(
+      long afterCounter,
+      string key,
+      string value
+    )
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.ForeignID "
+        + " FROM stations s JOIN program_details d ON d.Counter = s.Counter AND d.Key = $key "
+        + " WHERE s.Counter > $counter AND d.Value = $value ORDER BY s.Counter ASC";
+      cmd.Parameters.Add("counter", SqliteType.Integer).Value = afterCounter;
+      cmd.Parameters.Add("key", SqliteType.Text).Value = key;
+      cmd.Parameters.Add("value", SqliteType.Text).Value = value;
+      using var reader = cmd.ExecuteReader();
+      foreach (var entry in LoadLog(reader, trans))
+        yield return entry;
+    }
+
     public LogEntry MostRecentLogEntryForForeignID(string foreignID)
     {
       using (var trans = _connection.BeginTransaction())
@@ -540,7 +568,10 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path "
+        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path, "
+        + "CASE WHEN s.StationLoc = $pallet AND s.Result = 'UNLOAD' THEN EXISTS "
+        + "(SELECT 1 FROM program_details d WHERE d.Counter = s.Counter "
+        + "AND d.Key = 'PalletCycleInvalidated') ELSE 0 END "
         + "FROM matdetails m "
         + "JOIN stations_mat sm ON sm.MaterialID = m.MaterialID "
         + "JOIN stations s ON s.Counter = sm.Counter "
@@ -585,9 +616,13 @@ namespace BlackMaple.MachineFramework
         {
           if (lastUnload == null || time > lastUnload.Value)
             lastUnload = time;
-          var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
-          var key = (Process: process, Path: path);
-          completed[key] = completed.GetValueOrDefault(key) + 1;
+          // Invalidation can require another attempt. The original physical entry still counts.
+          if (!reader.GetBoolean(6))
+          {
+            var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
+            var key = (Process: process, Path: path);
+            completed[key] = completed.GetValueOrDefault(key) + 1;
+          }
         }
       }
 
@@ -720,39 +755,66 @@ namespace BlackMaple.MachineFramework
           "SELECT MAX(Counter) FROM stations where Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Result = 'PalletCycle'";
         cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
 
-        var counter = cmd.ExecuteScalar();
-
-        if (counter == DBNull.Value)
+        var cycleCondition = "";
+        if (cmd.ExecuteScalar() is long counter)
         {
-          cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
-            + " FROM stations s "
-            + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND "
-            + ignoreInvalidEventCondition
-            + " ORDER BY Counter ASC";
-          using (var reader = cmd.ExecuteReader())
-          {
-            return LoadLog(reader, trans).ToList();
-          }
+          cycleCondition = (includeLastPalletCycleEvt ? "Counter >=" : "Counter >") + " $cntr AND ";
+          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         }
-        else
-        {
-          cmd.CommandText =
-            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
-            + " FROM stations s "
-            + " WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND Counter "
-            + (includeLastPalletCycleEvt ? ">=" : ">")
-            + " $cntr AND "
-            + ignoreInvalidEventCondition
-            + " ORDER BY Counter ASC";
-          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
-
-          using (var reader = cmd.ExecuteReader())
-          {
-            return LoadLog(reader, trans).ToList();
-          }
-        }
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
+          + " FROM stations s WHERE Pallet = $pal AND StationLoc NOT BETWEEN 116 AND 128 AND "
+          + cycleCondition
+          + ignoreInvalidEventCondition
+          + " AND NOT EXISTS (SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = $priorPlacement)"
+          + " ORDER BY Counter ASC";
+        cmd.Parameters.Add("priorPlacement", SqliteType.Text).Value =
+          LogEntry.PriorPalletPlacementKey;
+        using var reader = cmd.ExecuteReader();
+        return LoadLog(reader, trans).ToList();
       }
+    }
+
+    public LogEntry FindPalletMachineStart(
+      int pallet,
+      int station,
+      DateTime asOfUtc,
+      string placementEndProgram
+    )
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      // An observed empty pallet also separates runs when the transfer CSV is missing.
+      // A delayed end can still match a run that ended before the empty observation.
+      // Any valid start bounds the time search. Find one via the pallet/counter index, then
+      // seek the latest eligible physical event via the time index, including late arrivals.
+      cmd.CommandText =
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName, ForeignID "
+        + " FROM stations s INDEXED BY stations_idx WHERE Pallet = $pal AND TimeUTC BETWEEN "
+        + " (SELECT s.TimeUTC FROM stations s WHERE Pallet = $pal AND StationLoc = $machine "
+        + " AND StationNum = $station AND Start = 1 AND TimeUTC <= $time AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY Counter DESC LIMIT 1) AND $time AND "
+        + " ((StationLoc = $machine AND StationNum = $station)"
+        + " OR (StationLoc = $transfer AND Start = 0) OR (StationLoc = $message AND Program = $placementEnd)) AND "
+        + ignoreInvalidEventCondition
+        + " ORDER BY TimeUTC DESC, Counter DESC LIMIT 1";
+      cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
+      cmd.Parameters.Add("machine", SqliteType.Integer).Value = (int)LogType.MachineCycle;
+      cmd.Parameters.Add("transfer", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+      cmd.Parameters.Add("message", SqliteType.Integer).Value = (int)LogType.GeneralMessage;
+      cmd.Parameters.Add("placementEnd", SqliteType.Text).Value = placementEndProgram;
+      cmd.Parameters.Add("station", SqliteType.Integer).Value = station;
+      cmd.Parameters.Add("time", SqliteType.Integer).Value = asOfUtc.Ticks;
+
+      LogEntry result;
+      using (var reader = cmd.ExecuteReader())
+      {
+        result = LoadLog(reader, trans).FirstOrDefault();
+      }
+      trans.Commit();
+      return result is { LogType: LogType.MachineCycle, StartOfCycle: true } ? result : null;
     }
 
     public List<LogEntry> CurrentBasketLog(int basketId, bool includeLastCycleEvt = false)
@@ -3072,7 +3134,9 @@ namespace BlackMaple.MachineFramework
         {
           elapsed = TimeSpan.FromSeconds(
             Math.Round(
-              totalElapsed.TotalSeconds * face.MaterialIDToDestination.Count / totMatCnt,
+              totMatCnt == 0
+                ? 0
+                : totalElapsed.TotalSeconds * face.MaterialIDToDestination.Count / totMatCnt,
               1
             )
           );
@@ -3247,7 +3311,10 @@ namespace BlackMaple.MachineFramework
         else
         {
           elapsed = TimeSpan.FromSeconds(
-            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt, 1)
+            Math.Round(
+              totMatCnt == 0 ? 0 : totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt,
+              1
+            )
           );
         }
 
@@ -6410,39 +6477,36 @@ namespace BlackMaple.MachineFramework
             int statNum = reader.GetInt32(3);
             int process = reader.GetInt32(4);
 
-            adjustPath(
-              process,
-              mat =>
+            adjustPath(process, mat =>
+            {
+              if (pal > 0)
+                mat = mat with { Pallet = pal };
+
+              switch (logTy)
               {
-                if (pal > 0)
-                  mat = mat with { Pallet = pal };
+                case LogType.LoadUnloadCycle:
+                  if (mat.LoadStation == -1)
+                    mat = mat with { LoadStation = statNum };
+                  else
+                    mat = mat with { UnloadStation = statNum };
+                  break;
 
-                switch (logTy)
-                {
-                  case LogType.LoadUnloadCycle:
-                    if (mat.LoadStation == -1)
-                      mat = mat with { LoadStation = statNum };
-                    else
-                      mat = mat with { UnloadStation = statNum };
-                    break;
-
-                  case LogType.MachineCycle:
-                    mat = mat with
-                    {
-                      Stops = mat.Stops.Add(
-                        new MaterialProcessActualPath.Stop()
-                        {
-                          StationName = statName,
-                          StationNum = statNum,
-                        }
-                      ),
-                    };
-                    break;
-                }
-
-                return mat;
+                case LogType.MachineCycle:
+                  mat = mat with
+                  {
+                    Stops = mat.Stops.Add(
+                      new MaterialProcessActualPath.Stop()
+                      {
+                        StationName = statName,
+                        StationNum = statNum,
+                      }
+                    ),
+                  };
+                  break;
               }
-            );
+
+              return mat;
+            });
           }
         }
       }

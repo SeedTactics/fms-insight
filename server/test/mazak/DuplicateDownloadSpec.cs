@@ -12,7 +12,7 @@ using NSubstitute;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
-public sealed class DuplicateDownloadSpec
+public sealed partial class DuplicateDownloadSpec
 {
   private static readonly DateTime Now = new(2026, 11, 11, 12, 0, 0, DateTimeKind.Utc);
 
@@ -609,6 +609,11 @@ public sealed class DuplicateDownloadSpec
         .Do(call =>
         {
           var write = call.Arg<MazakWriteData>();
+          if (_failOnce && failure == "delete-parts-before-apply" && write.Prefix == "Delete Parts")
+          {
+            _failOnce = false;
+            throw new IOException("The controller did not apply the part deletion.");
+          }
           if (_failOnce && failure == "schedules" && write.Prefix == "Add Schedules")
           {
             _failOnce = false;
@@ -620,6 +625,19 @@ public sealed class DuplicateDownloadSpec
             _failOnce && failure == "schedules-partial" && write.Prefix == "Add Schedules"
               ? write.Schedules.Take(1)
               : write.Schedules;
+          foreach (var deletion in schedules.Where(s => s.Command == MazakWriteCommand.Delete))
+          {
+            var current = Data.Schedules.FirstOrDefault(s => s.Id == deletion.Id);
+            if (
+              current?.Processes.Any(p =>
+                p.ProcessMaterialQuantity > 0 || p.ProcessExecuteQuantity > 0
+              ) == true
+              || Data.PalletSubStatuses.Any(s => s.ScheduleID == deletion.Id && s.FixQuantity > 0)
+            )
+              throw new InvalidOperationException(
+                $"Mazak schedule {deletion.Id} still has material in the system."
+              );
+          }
           // A partial batch contains a subset of complete parts, never part rows missing processes.
           var parts =
             _failOnce && failure == "parts-partial" && write.Prefix == "Add Parts"
@@ -627,7 +645,44 @@ public sealed class DuplicateDownloadSpec
               : write.Parts;
           Data = Data with
           {
-            Schedules = Apply(Data.Schedules, schedules, row => row.Id, row => row.Command),
+            Schedules = Apply(
+              Data.Schedules,
+              schedules
+                .Select(edit =>
+                  edit.Command switch
+                  {
+                    MazakWriteCommand.ScheduleSafeEdit => Data.Schedules.Single(s =>
+                      s.Id == edit.Id
+                    ) with
+                    {
+                      PlanQuantity = edit.PlanQuantity,
+                      DueDate = edit.DueDate,
+                      Priority = edit.Priority,
+                      HoldMode = edit.HoldMode,
+                    },
+                    MazakWriteCommand.ScheduleMaterialEdit => Data.Schedules.Single(s =>
+                      s.Id == edit.Id
+                    ) with
+                    {
+                      Processes = Data
+                        .Schedules.Single(s => s.Id == edit.Id)
+                        .Processes.Select(p =>
+                          p with
+                          {
+                            ProcessMaterialQuantity = edit
+                              .Processes.Single(e => e.ProcessNumber == p.ProcessNumber)
+                              .ProcessMaterialQuantity,
+                          }
+                        )
+                        .ToImmutableList(),
+                    },
+                    _ => edit,
+                  }
+                )
+                .ToImmutableList(),
+              row => row.Id,
+              row => row.Command
+            ),
             Parts = Apply(Data.Parts, parts, row => row.PartName, row => row.Command),
             Pallets = Apply(
               Data.Pallets,
@@ -641,11 +696,30 @@ public sealed class DuplicateDownloadSpec
               row => row.FixtureName,
               row => row.Command
             ),
+            MainPrograms = Data
+              .MainPrograms.Where(p =>
+                !write.Programs.Any(edit => edit.MainProgram == p.MainProgram)
+              )
+              .Concat(
+                write
+                  .Programs.Where(p => p.Command == MazakWriteCommand.Add)
+                  .Select(p => new MazakProgramRow
+                  {
+                    MainProgram = p.MainProgram,
+                    Comment = p.Comment,
+                  })
+              )
+              .ToImmutableList(),
           };
           if (
             _failOnce
             && (
-              (
+              (failure == "delete-parts-full" && write.Prefix == "Delete Parts")
+              || (
+                failure == "delete-deps-full"
+                && write.Programs.Any(p => p.Command == MazakWriteCommand.Delete)
+              )
+              || (
                 failure.StartsWith("parts-", StringComparison.Ordinal)
                 && write.Prefix == "Add Parts"
               )

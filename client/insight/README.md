@@ -36,6 +36,9 @@ The supported entry point for embedding a customized FMS Insight application is
   `root`.
 - `AppProps` to add custom routes or change the mode chooser. Basket station confirmation uses the
   shared WorkId HTTP command; the backend resolves its saved work.
+- `AppProps.machineReportSources` to supply the Tool and Program Reports with an atom of named
+  `MachineReportSource` options. Each option identifies its machines and reads its own inventory.
+  With multiple options, the operator selects the cell from either report.
 - `customState`, a read-only Jotai atom containing the server's opaque custom state.
 - `currentStatusIsLive`, a read-only Jotai atom that is true while the websocket is connected and
   the retained current status (including `customState`) reflects the server. Pages that must not act
