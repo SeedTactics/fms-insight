@@ -579,13 +579,18 @@ namespace MazakMachineInterface
         // canceled instructions. The backend projects any additional private reservations via
         // AdjustCurrentStatus and owns the decision to archive these jobs.
         var localJobs = new JobCache(jobDB).BuildActiveJobs(material, jobDB);
+        var managed = jobDB
+          .LoadMazakManagedSchedules(mazakCfg.ControllerSource)
+          .Select(route => route.JobUnique)
+          .ToImmutableHashSet();
         foreach (var local in localJobs.Values.Where(mazakCfg.UsesInsightJobQuantities))
         {
           var remainingToStart = local.RemainingToStart;
           // Actual execution still bounds remaining demand when entry history is incomplete.
           // Use the locally authorized quantity, not the controller's execution ceiling.
           if (
-            remainingToStart is { } remaining
+            !managed.Contains(local.UniqueStr)
+            && remainingToStart is { } remaining
             && jobsByUniq.TryGetValue(local.UniqueStr, out var controller)
           )
             remainingToStart = Math.Min(remaining, Math.Max(0, local.Cycles - controller.Started));
@@ -598,16 +603,18 @@ namespace MazakMachineInterface
                 RemainingToStart = remainingToStart,
                 // Keep execution evidence from a controller batch whose logs are still
                 // settling, and history for split routes that have already been removed.
-                Completed = local
-                  .Completed.Select(
-                    (paths, process) =>
-                      paths
-                        .Select(
-                          (count, path) => Math.Max(count, installed.Completed[process][path])
-                        )
-                        .ToImmutableList()
-                  )
-                  .ToImmutableList(),
+                Completed = managed.Contains(local.UniqueStr)
+                  ? local.Completed
+                  : local
+                    .Completed.Select(
+                      (paths, process) =>
+                        paths
+                          .Select(
+                            (count, path) => Math.Max(count, installed.Completed[process][path])
+                          )
+                          .ToImmutableList()
+                    )
+                    .ToImmutableList(),
                 Decrements = EmptyToNull(local.Decrements),
               }
               : local with

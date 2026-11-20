@@ -1,11 +1,17 @@
 #nullable enable
 
 using System;
-using System.Collections.Immutable;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface;
+
+public sealed record MazakManagedLoadCount(long IdentifiedQuantity, long UnidentifiedQuantity)
+{
+  public long PhysicalQuantity => IdentifiedQuantity + UnidentifiedQuantity;
+}
 
 /// <summary>Plans edits against current readback from the controller that downloaded the route.</summary>
 public static class MazakManagedScheduleControl
@@ -80,6 +86,89 @@ public static class MazakManagedScheduleControl
       };
   }
 
+  /// <summary>Count recorded physical attempts for this route's schedule history.</summary>
+  /// <remarks>Returns null for schedules adopted with no known creation boundary.</remarks>
+  public static MazakManagedLoadCount? RecordedLoads(
+    IRepository db,
+    MazakConfig config,
+    string jobUnique,
+    int process
+  )
+  {
+    var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: true);
+    if (binding.BeforeLoadCounter is not { } after)
+      return null;
+    var nativeProcess = MazakPart.IsSplitComment(binding.Comment) ? 1 : process;
+    var nativeProcessText = nativeProcess.ToString(CultureInfo.InvariantCulture);
+    var source = config.LogForeignId("LG");
+    long identified = 0,
+      unidentified = 0;
+    foreach (
+      var entry in db.GetRecentLogForProgramDetail(
+        after,
+        ManagedMazakSchedules.NativePartKey,
+        binding.PartName
+      )
+    )
+    {
+      if (
+        entry.LogType != LogType.LoadUnloadCycle
+        || entry.StartOfCycle
+        || entry.Result != "LOAD"
+        || entry.ForeignID?.StartsWith(source, StringComparison.Ordinal) != true
+        || entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.NativeProcessKey)
+          != nativeProcessText
+      )
+        continue;
+      identified += entry.Material.Count(m =>
+        m.MaterialID >= 0
+        && m.JobUniqueStr == job.UniqueStr
+        && m.Process == process
+        && m.Face == nativeProcess
+        && (m.Path ?? 1) == 1
+      );
+      if (
+        int.TryParse(
+          entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.UnidentifiedQuantityKey),
+          NumberStyles.None,
+          CultureInfo.InvariantCulture,
+          out var unknown
+        )
+      )
+        unidentified += unknown;
+    }
+    return new(identified, unidentified);
+  }
+
+  private static (Job Job, MazakManagedSchedule Binding) FindBinding(
+    IRepository db,
+    MazakConfig config,
+    string jobUnique,
+    int process,
+    bool includeRetired
+  )
+  {
+    var job = db.LoadJob(jobUnique);
+    if (
+      !ManagedMazakSchedules.Owns(config, job)
+      || (!includeRetired && job.Archived)
+      || process < 1
+      || process > job.Processes.Count
+    )
+      throw new BadRequestException(
+        $"Job '{jobUnique}' process {process} is not a managed route on Mazak controller '{config.ControllerSource}'."
+      );
+    var comments = MazakPart.InitialScheduleComments(job);
+    var comment = comments.Count == 1 ? comments[0] : comments[process - 1];
+    var binding = db.LoadMazakManagedSchedules(config.ControllerSource, includeRetired)
+      .SingleOrDefault(r => r.JobUnique == jobUnique && r.Comment == comment);
+    if (binding?.ConfirmedScheduleId is null)
+      throw new ConflictRequestException(
+        $"Mazak job '{jobUnique}' has no confirmed schedule for route '{comment}'."
+      );
+    return (job, binding);
+  }
+
   private static (MazakManagedSchedule Binding, MazakScheduleRow Schedule) Verify(
     IRepository db,
     MazakConfig config,
@@ -88,34 +177,17 @@ public static class MazakManagedScheduleControl
     int process
   )
   {
-    var job = db.LoadJob(jobUnique);
-    if (
-      !ManagedMazakSchedules.Owns(config, job)
-      || job.Archived
-      || process < 1
-      || process > job.Processes.Count
-    )
-      throw new BadRequestException(
-        $"Job '{jobUnique}' process {process} is not an active managed route on Mazak controller '{config.ControllerSource}'."
-      );
-    var comments = MazakPart.InitialScheduleComments(job);
-    var comment = comments.Length == 1 ? comments[0] : comments[process - 1];
-    var binding = db.LoadMazakManagedSchedules(config.ControllerSource)
-      .SingleOrDefault(r => r.JobUnique == jobUnique && r.Comment == comment);
-    if (binding?.ConfirmedScheduleId is null)
-      throw new ConflictRequestException(
-        $"Mazak job '{jobUnique}' has no confirmed schedule for route '{comment}'."
-      );
+    var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: false);
     var (part, schedule) = ManagedMazakSchedules.Inspect(
       observed,
       job,
       binding.PartName,
-      comment,
+      binding.Comment,
       binding.ConfirmedScheduleId
     );
     if (part is null || schedule is null)
       throw new ConflictRequestException(
-        $"Mazak job '{jobUnique}' is missing the installed definition or schedule for route '{comment}'."
+        $"Mazak job '{jobUnique}' is missing the installed definition or schedule for route '{binding.Comment}'."
       );
     return (binding, schedule);
   }

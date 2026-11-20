@@ -10,6 +10,7 @@ namespace MazakMachineInterface;
 internal static partial class ManagedMazakSchedules
 {
   internal const string NativePartKey = "mazak-native-part-name";
+  internal const string NativeProcessKey = "mazak-native-process";
   internal const string UnidentifiedQuantityKey = "mazak-unidentified-quantity";
 
   public static bool Owns(MazakConfig config, Job? job) =>
@@ -70,6 +71,8 @@ internal static partial class ManagedMazakSchedules
   {
     if (config.UseInsightJobQuantities is null)
       return;
+    var bindings = db.LoadMazakManagedSchedules(config.ControllerSource, includeRetired: true)
+      .ToLookup(r => r.Comment);
     foreach (var schedule in observed.Schedules)
     {
       if (!MazakPart.IsSailPart(schedule.PartName, schedule.Comment))
@@ -78,6 +81,8 @@ internal static partial class ManagedMazakSchedules
       if (!Owns(config, job))
         continue;
       var saved = db.LoadMazakManagedSchedule(config.ControllerSource, schedule.PartName);
+      if (saved is null && bindings.Contains(schedule.Comment))
+        continue;
       if (saved is { ConfirmedScheduleId: not null } or { Retired: true })
         continue;
       try
