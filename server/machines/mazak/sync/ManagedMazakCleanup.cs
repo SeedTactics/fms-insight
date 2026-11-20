@@ -128,6 +128,7 @@ internal static partial class ManagedMazakSchedules
       }
       // Surviving named dependencies can be shared or retained by the standard program policy.
       db.RetireMazakManagedSchedule(config.ControllerSource, route.PartName);
+      routes = routes.Remove(route);
     }
     return false;
   }

@@ -125,6 +125,34 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task ArchivingBothOwnersCleansSharedFixturesAfterAnInterruptedDownload()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var first = PendingJob(true);
+    var second = first with { UniqueStr = "second-job" };
+    var device = new DownloadDevice("");
+    device.AfterSave = write =>
+    {
+      if (write.Fixtures.Any(f => f.Command == MazakWriteCommand.Add))
+        throw new IOException("Lost fixture write reply");
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "both", Jobs = [first, second] }, null, false);
+    await Assert.That(() => Sync(device, db)).Throws<IOException>();
+    await Assert.That(device.Data.Fixtures.Count()).IsEqualTo(2);
+    await Assert.That(device.Data.Parts).IsEmpty();
+
+    db.ArchiveJobs([first.UniqueStr, second.UniqueStr]);
+    device.AfterSave = null!;
+    using var reopened = repositories.OpenConnection();
+    for (var i = 0; i < 8 && Sync(device, reopened); i++) { }
+    await Assert.That(device.Data.Fixtures).IsEmpty();
+    await Assert
+      .That(reopened.LoadMazakManagedSchedules(ManagedConfig().ControllerSource))
+      .IsEmpty();
+  }
+
+  [Test]
   public async Task ArchivedInstallationFreesFixtureCapacityForAPendingDownload()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null);
