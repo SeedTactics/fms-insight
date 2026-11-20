@@ -12,7 +12,7 @@ using NSubstitute;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
-public sealed class DuplicateDownloadSpec
+public sealed partial class DuplicateDownloadSpec
 {
   private static readonly DateTime Now = new(2026, 11, 11, 12, 0, 0, DateTimeKind.Utc);
 
@@ -300,7 +300,7 @@ public sealed class DuplicateDownloadSpec
     };
     device.Observe(device.Data with { Schedules = [existing, existing with { Id = 11 }] });
     await Assert.That(Sync(device, repository)).IsTrue();
-    await Assert.That(repository.LoadJob(job.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(repository.LoadJob(job.UniqueStr)!.CopiedToSystem).IsFalse();
     await Assert.That(device.Data.Schedules.Count).IsEqualTo(3);
     await Assert
       .That(device.Data.Schedules.Count(s => s.Comment == "initial-job-2-1-InsightS"))
@@ -329,6 +329,7 @@ public sealed class DuplicateDownloadSpec
       Comment = p1.Comment,
       PlanQuantity = 9,
       CompleteQuantity = 9,
+      Processes = [new MazakScheduleProcessRow { ProcessNumber = 1 }],
     };
     var peerPart = p1 with
     {
@@ -380,6 +381,7 @@ public sealed class DuplicateDownloadSpec
       Comment = "initial-job-1-2-InsightS",
       PlanQuantity = 9,
       CompleteQuantity = 3,
+      Processes = [new MazakScheduleProcessRow { ProcessNumber = 1 }],
     };
     device.Observe(device.Data with { Schedules = [existing] });
     device.Native.ClearReceivedCalls();
@@ -422,6 +424,7 @@ public sealed class DuplicateDownloadSpec
       Comment = "initial-job-1-2-InsightS",
       PlanQuantity = 9,
       CompleteQuantity = 3,
+      Processes = [new MazakScheduleProcessRow { ProcessNumber = 1 }],
     };
     device.Observe(device.Data with { Schedules = [existing] });
     using var mazak = new MazakSync(
@@ -599,6 +602,8 @@ public sealed class DuplicateDownloadSpec
 
     public void Observe(MazakAllData observation) => Data = observation;
 
+    public Action<MazakWriteData> AfterSave { get; set; }
+
     private bool _failOnce = true;
 
     public DownloadDevice(string failure)
@@ -627,7 +632,34 @@ public sealed class DuplicateDownloadSpec
               : write.Parts;
           Data = Data with
           {
-            Schedules = Apply(Data.Schedules, schedules, row => row.Id, row => row.Command),
+            Schedules = Apply(
+              Data.Schedules,
+              schedules.Select(edit =>
+                edit.Command switch
+                {
+                  MazakWriteCommand.ScheduleSafeEdit => Data.Schedules.Single(s =>
+                    s.Id == edit.Id
+                  ) with
+                  {
+                    PlanQuantity = edit.PlanQuantity,
+                  },
+                  MazakWriteCommand.ScheduleMaterialEdit => Data.Schedules.Single(s =>
+                    s.Id == edit.Id
+                  ) with
+                  {
+                    Processes = Data
+                      .Schedules.Single(s => s.Id == edit.Id)
+                      .Processes.Select(p =>
+                        edit.Processes.SingleOrDefault(e => e.ProcessNumber == p.ProcessNumber) ?? p
+                      )
+                      .ToImmutableList(),
+                  },
+                  _ => edit,
+                }
+              ),
+              row => row.Id,
+              row => row.Command
+            ),
             Parts = Apply(Data.Parts, parts, row => row.PartName, row => row.Command),
             Pallets = Apply(
               Data.Pallets,
@@ -642,6 +674,7 @@ public sealed class DuplicateDownloadSpec
               row => row.Command
             ),
           };
+          AfterSave?.Invoke(write);
           if (
             _failOnce
             && (

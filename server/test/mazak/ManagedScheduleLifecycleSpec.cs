@@ -1,0 +1,545 @@
+#nullable enable
+
+using System;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using BlackMaple.MachineFramework;
+using MazakMachineInterface;
+
+namespace BlackMaple.FMSInsight.Mazak.Tests;
+
+public sealed partial class DuplicateDownloadSpec
+{
+  private static MazakConfig ManagedConfig() =>
+    new()
+    {
+      DBType = MazakDbType.MazakSmooth,
+      UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
+    };
+
+  [Test]
+  public async Task CompletedManagedScheduleTakesNineAttemptsForSixValidCompletions()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = repositories.OpenConnection();
+    var config = ManagedConfig();
+    var settings = new FMSSettings { Queues = { ["rework"] = new QueueInfo() } };
+    var device = new DownloadDevice("schedules-partial");
+    var managed = PendingJob(true) with { UniqueStr = "managed", Cycles = 6 };
+    var ordinary = PendingJob(false) with
+    {
+      UniqueStr = "ordinary",
+      PartName = "ordinary-part",
+      Cycles = 6,
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [managed, ordinary] }, null, false);
+    bool Poll(IRepository repository) =>
+      WriteJobs.SyncFromDatabase(device.Data, repository, device.Native, settings, config, Now);
+    await Assert.That(() => Poll(db)).Throws<IOException>();
+    var installedBeforeRetry = device.Data.Schedules.Single();
+    using var restarted = repositories.OpenConnection();
+    await Assert.That(Poll(restarted)).IsTrue();
+    await Assert
+      .That(device.Data.Schedules.Single(s => s.Id == installedBeforeRetry.Id))
+      .IsEqualTo(installedBeforeRetry);
+    await Assert.That(db.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsTrue();
+    var p1 = device.Data.Schedules.Single(s => s.Comment == "managed-1-1-InsightS");
+    var p2 = device.Data.Schedules.Single(s => s.Comment == "managed-2-1-InsightS");
+    await Assert.That(p1.Processes.Single().ProcessMaterialQuantity).IsEqualTo(0);
+    await Assert.That(p2.Processes.Single().ProcessMaterialQuantity).IsEqualTo(0);
+
+    var ids = Enumerable
+      .Range(0, 6)
+      .Select(_ => db.AllocateMaterialID(managed.UniqueStr, managed.PartName, 2))
+      .ToImmutableList();
+    var attempts = 0;
+    BlackMaple.MachineFramework.LogEntry Transfer(
+      MazakScheduleRow route,
+      LogCode code,
+      ImmutableList<long> material
+    ) =>
+      TranslateManagedTransfer(
+        restarted,
+        config,
+        settings,
+        device.Data,
+        route,
+        managed.PartName,
+        code,
+        material.Count,
+        ++attempts,
+        material
+      );
+    foreach (var group in Enumerable.Chunk(ids, 3).Select(g => g.ToImmutableList()))
+    {
+      Transfer(p1, LogCode.LoadEnd, group);
+      Transfer(p1, LogCode.UnloadEnd, group);
+      Transfer(p2, LogCode.LoadEnd, group);
+      Transfer(p2, LogCode.UnloadEnd, group);
+    }
+    device.Observe(
+      device.Data with
+      {
+        Schedules = device
+          .Data.Schedules.Select(s =>
+            s with
+            {
+              CompleteQuantity = 6,
+              Processes = s
+                .Processes.Select(p => p with { ProcessMaterialQuantity = 0 })
+                .ToImmutableList(),
+            }
+          )
+          .ToImmutableList(),
+      }
+    );
+    db.AddJobs(
+      new NewJobs
+      {
+        ScheduleId = "next",
+        Jobs = [ordinary with { UniqueStr = "next", PartName = "next-part" }],
+      },
+      null,
+      false
+    );
+    await Assert.That(Poll(restarted)).IsTrue();
+    await Assert.That(device.Data.Schedules.Any(s => s.Comment == "ordinary-Insight")).IsFalse();
+    await Assert
+      .That(device.Data.Schedules.Single(s => s.Id == p2.Id).CompleteQuantity)
+      .IsEqualTo(6);
+
+    var repeated = ids.Take(3).ToImmutableList();
+    db.InvalidatePalletCycle(repeated[0], 2, "test", Now).ToImmutableList();
+    await Assert.That(db.GetJobProductionSummary(managed.UniqueStr).Completed[(2, 1)]).IsEqualTo(3);
+    foreach (var serial in repeated)
+      db.RecordAddMaterialToQueue(serial, 1, "rework", -1, "test", "rework");
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.SetMaterialOffer(
+          restarted,
+          config,
+          device.Data,
+          managed.UniqueStr,
+          2,
+          3
+        )
+      )
+      .Throws<ConflictRequestException>();
+    var capacity = MazakManagedScheduleControl.EnsurePlan(
+      restarted,
+      config,
+      device.Data,
+      managed.UniqueStr,
+      2,
+      9
+    )!;
+    await Assert.That(capacity.Schedules.Single().Id).IsEqualTo(p2.Id);
+    device.AfterSave = _ => throw new IOException("Lost plan edit reply");
+    await Assert.That(() => device.Native.Save(capacity)).Throws<IOException>();
+    device.AfterSave = null!;
+    using var afterLostReply = repositories.OpenConnection();
+    await Assert
+      .That(
+        MazakManagedScheduleControl.EnsurePlan(
+          afterLostReply,
+          config,
+          device.Data,
+          managed.UniqueStr,
+          2,
+          9
+        )
+      )
+      .IsNull();
+    await Assert
+      .That(
+        device.Data.Schedules.Single(s => s.Id == p2.Id).Processes.Single().ProcessMaterialQuantity
+      )
+      .IsEqualTo(0);
+    device.Native.Save(
+      MazakManagedScheduleControl.SetMaterialOffer(
+        afterLostReply,
+        config,
+        device.Data,
+        managed.UniqueStr,
+        2,
+        3
+      )!
+    );
+    var reloaded = Transfer(p2, LogCode.LoadEnd, repeated);
+    await Assert.That(reloaded.Material.Select(m => m.MaterialID)).IsEquivalentTo(repeated);
+    await Assert.That(db.GetMaterialInAllQueues()).IsEmpty();
+    Transfer(p2, LogCode.UnloadEnd, repeated);
+    device.Observe(
+      device.Data with
+      {
+        Schedules = device
+          .Data.Schedules.Select(s =>
+            s.Id == p2.Id
+              ? s with
+              {
+                CompleteQuantity = 9,
+                Processes = [s.Processes.Single() with { ProcessMaterialQuantity = 0 }],
+              }
+              : s
+          )
+          .ToImmutableList(),
+      }
+    );
+    var counts = MazakManagedScheduleControl.RecordedLoads(
+      afterLostReply,
+      config,
+      managed.UniqueStr,
+      2
+    )!;
+    await Assert.That(counts.IdentifiedQuantity).IsEqualTo(9L);
+    await Assert.That(counts.UnidentifiedQuantity).IsEqualTo(0L);
+    var summary = db.GetJobProductionSummary(managed.UniqueStr);
+    await Assert.That(summary.AutomationEntryMaterialIds).IsEquivalentTo(ids);
+    await Assert.That(summary.Completed[(2, 1)]).IsEqualTo(6);
+    var projected = BuildCurrentStatus.Build(db, settings, config, device.Data, "MC", null, Now);
+    await Assert.That(projected.Jobs[managed.UniqueStr].Cycles).IsEqualTo(6);
+    await Assert.That(projected.Jobs[managed.UniqueStr].Completed![1][0]).IsEqualTo(6);
+  }
+
+  [Test]
+  public async Task ArchivedUnequalScheduleWaitsForIdleReadbackAndRetainsLateUnloadAttribution()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = repositories.OpenConnection();
+    var config = ManagedConfig() with { ControllerSource = "secondary" };
+    var device = new DownloadDevice("");
+    var settings = new FMSSettings();
+    var job = PendingJob(true) with { Cycles = 6 };
+    var peer = PendingJob(false) with { UniqueStr = "peer", PartName = "peer-part" };
+    db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [job, peer] }, null, false);
+    bool Poll(IRepository repo) =>
+      WriteJobs.SyncFromDatabase(device.Data, repo, device.Native, settings, config, Now);
+    await Assert.That(Poll(db)).IsTrue();
+    var p2 = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
+    var missingIdentity = TranslateManagedTransfer(
+      db,
+      config,
+      settings,
+      device.Data,
+      p2,
+      job.PartName,
+      LogCode.LoadEnd,
+      1,
+      1,
+      null
+    );
+    await Assert.That(missingIdentity.Material).IsEmpty();
+    var count = MazakManagedScheduleControl.RecordedLoads(db, config, job.UniqueStr, 2)!;
+    await Assert.That(count.PhysicalQuantity).IsEqualTo(1L);
+    await Assert.That(count.UnidentifiedQuantity).IsEqualTo(1L);
+    TranslateManagedTransfer(
+      db,
+      config,
+      settings,
+      device.Data,
+      p2,
+      job.PartName,
+      LogCode.UnloadEnd,
+      1,
+      2,
+      null
+    );
+    var ids = Enumerable
+      .Range(0, 3)
+      .Select(_ => db.AllocateMaterialID(job.UniqueStr, job.PartName, 2))
+      .ToImmutableList();
+    TranslateManagedTransfer(
+      db,
+      config,
+      settings,
+      device.Data,
+      p2,
+      job.PartName,
+      LogCode.LoadEnd,
+      3,
+      3,
+      ids
+    );
+    var fixture = device
+      .Data.Parts.Single(p => p.PartName == p2.PartName)
+      .Processes.Single()
+      .Fixture;
+    device.Observe(
+      device.Data with
+      {
+        Parts = device
+          .Data.Parts.Select(p =>
+            p.Comment == "peer-Insight"
+              ? p with
+              {
+                Processes = p
+                  .Processes.Select(process => process with { Fixture = fixture })
+                  .ToImmutableList(),
+              }
+              : p
+          )
+          .ToImmutableList(),
+      }
+    );
+    db.ArchiveJob(job.UniqueStr);
+    void Guard(int ready, int executing, bool assigned, bool requested)
+    {
+      device.Observe(
+        device.Data with
+        {
+          Schedules = device
+            .Data.Schedules.Select(s =>
+              s.Id == p2.Id
+                ? s with
+                {
+                  CompleteQuantity = 1,
+                  Processes =
+                  [
+                    s.Processes.Single() with
+                    {
+                      ProcessMaterialQuantity = ready,
+                      ProcessExecuteQuantity = executing,
+                    },
+                  ],
+                }
+                : s
+            )
+            .ToImmutableList(),
+          PalletSubStatuses = assigned
+            ?
+            [
+              new()
+              {
+                ScheduleID = p2.Id,
+                PartName = p2.PartName,
+                PalletNumber = 2,
+              },
+            ]
+            : [],
+          LoadActions = requested
+            ?
+            [
+              new()
+              {
+                Comment = p2.Comment,
+                Qty = 3,
+                LoadStation = 1,
+              },
+            ]
+            : [],
+        }
+      );
+    }
+    foreach (
+      var guard in new[]
+      {
+        (1, 0, false, false),
+        (0, 1, false, false),
+        (0, 0, true, false),
+        (0, 0, false, true),
+      }
+    )
+    {
+      Guard(guard.Item1, guard.Item2, guard.Item3, guard.Item4);
+      Poll(db);
+      await Assert.That(device.Data.Schedules.Any(s => s.Id == p2.Id)).IsTrue();
+    }
+    Guard(0, 0, false, false);
+    device.AfterSave = write =>
+    {
+      if (write.Schedules.Any(s => s.Id == p2.Id && s.Command == MazakWriteCommand.Delete))
+        throw new IOException("Lost archived schedule delete reply");
+    };
+    await Assert.That(() => Poll(db)).Throws<IOException>();
+    await Assert.That(device.Data.Schedules.Any(s => s.Id == p2.Id)).IsFalse();
+    device.AfterSave = null!;
+    using var reopened = repositories.OpenConnection();
+    for (var i = 0; i < 8 && Poll(reopened); i++) { }
+    await Assert.That(db.LoadMazakManagedSchedules(config.ControllerSource)).IsEmpty();
+    await Assert
+      .That(
+        device.Data.Parts.All(p => !p.Comment.StartsWith("initial-job", StringComparison.Ordinal))
+      )
+      .IsTrue();
+    await Assert.That(device.Data.Pallets.Any(p => p.Fixture == fixture)).IsTrue();
+    var surviving = device.Data.Schedules.Single() with { Id = p2.Id };
+    device.Observe(device.Data with { Schedules = [surviving] });
+    var late = TranslateManagedTransfer(
+      reopened,
+      config,
+      settings,
+      device.Data,
+      p2,
+      job.PartName,
+      LogCode.UnloadEnd,
+      3,
+      4,
+      ids
+    );
+    await Assert.That(late.Material.Select(m => m.MaterialID)).IsEquivalentTo(ids);
+    await Assert
+      .That(late.Material.All(m => m.JobUniqueStr == job.UniqueStr && m.Process == 2))
+      .IsTrue();
+    await Assert.That(db.GetJobProductionSummary(peer.UniqueStr).Completed).IsEmpty();
+  }
+
+  [Test]
+  public async Task ConfirmedRouteCannotBeReplacedOrEditedThroughCopiedComment()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = repositories.OpenConnection();
+    var config = ManagedConfig();
+    var job = PendingJob(true);
+    var device = new DownloadDevice("");
+    var settings = new FMSSettings();
+    db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [job] }, null, false);
+    bool Poll() =>
+      WriteJobs.SyncFromDatabase(device.Data, db, device.Native, settings, config, Now);
+    await Assert.That(Poll()).IsTrue();
+    var p2 = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
+    var installed = device.Data;
+    var altered = installed with
+    {
+      Parts = installed
+        .Parts.Select(p =>
+          p.PartName == p2.PartName
+            ? p with
+            {
+              Processes = p
+                .Processes.Select(proc => proc with { MainProgram = "9999" })
+                .ToImmutableList(),
+            }
+            : p
+        )
+        .ToImmutableList(),
+    };
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.SetMaterialOffer(db, config, altered, job.UniqueStr, 2, 1)
+      )
+      .Throws<ConflictRequestException>();
+    var clonedPart = device.Data.Parts.Single(p => p.PartName == p2.PartName) with
+    {
+      PartName = job.PartName + ":100:2:2",
+    };
+    var peerSchedule = p2 with { PartName = clonedPart.PartName };
+    device.Observe(
+      device.Data with
+      {
+        Parts = device
+          .Data.Parts.Where(p => p.PartName != p2.PartName)
+          .Append(clonedPart)
+          .ToImmutableList(),
+        Schedules = device
+          .Data.Schedules.Where(s => s.Id != p2.Id)
+          .Append(peerSchedule)
+          .ToImmutableList(),
+      }
+    );
+    await Assert.That(Poll()).IsFalse();
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.EnsurePlan(db, config, device.Data, job.UniqueStr, 2, 10)
+      )
+      .Throws<ConflictRequestException>();
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.SetMaterialOffer(db, config, device.Data, job.UniqueStr, 2, 1)
+      )
+      .Throws<ConflictRequestException>();
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.EnsurePlan(
+          db,
+          config with
+          {
+            ControllerSource = "other",
+          },
+          device.Data,
+          job.UniqueStr,
+          2,
+          10
+        )
+      )
+      .Throws<ConflictRequestException>();
+    db.ArchiveJob(job.UniqueStr);
+    Poll();
+    await Assert.That(device.Data.Schedules.Single(s => s.Id == p2.Id)).IsEqualTo(peerSchedule);
+  }
+
+  private static BlackMaple.MachineFramework.LogEntry TranslateManagedTransfer(
+    IRepository db,
+    MazakConfig config,
+    FMSSettings settings,
+    MazakAllData data,
+    MazakScheduleRow row,
+    string partName,
+    LogCode code,
+    int quantity,
+    int sequence,
+    ImmutableList<long>? identified
+  )
+  {
+    var log = new MazakMachineInterface.LogEntry
+    {
+      Code = code,
+      ForeignID = $"LG20261111-115000-{sequence * 2:000}.csv",
+      TimeUTC = Now.AddMinutes(sequence - 90),
+      FullPartName = row.PartName,
+      JobPartName = partName,
+      FixedQuantity = quantity,
+      Pallet = 2,
+      StationNumber = 1,
+      Process = 1,
+    };
+    var captured = new MazakAllDataAndLogs
+    {
+      Parts = data.Parts,
+      Schedules = data.Schedules,
+      Pallets = data.Pallets,
+      Fixtures = data.Fixtures,
+      MainPrograms = data.MainPrograms,
+      LoadActions = data.LoadActions,
+      PalletStatuses = [],
+      PalletSubStatuses = data.PalletSubStatuses,
+      PalletPositions = data.PalletPositions,
+      Alarms = [],
+      Logs =
+      [
+        log,
+        log with
+        {
+          Code = LogCode.LoadBegin,
+          ForeignID = $"LG20261111-115000-{sequence * 2 + 1:000}.csv",
+        },
+      ],
+    };
+    var resolver = config with
+    {
+      ResolveLoadUnloadTransaction = identified is null
+        ? null
+        : (_, batch) =>
+          new MazakLoadUnloadResolution.Resolved
+          {
+            MaterialForLoads = batch.Loads.ToImmutableDictionary(
+              f => f.ForeignId,
+              f => new MazakResolvedLoad { MaterialIds = identified }
+            ),
+            MaterialForUnloads = batch.Unloads.ToImmutableDictionary(
+              f => f.ForeignId,
+              f => new MazakResolvedUnload
+              {
+                MaterialIDToDestination = identified.ToImmutableDictionary(
+                  id => id,
+                  _ => (UnloadDestination?)null
+                ),
+              }
+            ),
+          },
+    };
+    LogTranslation.HandleEvents(db, captured, "MC", settings, _ => { }, resolver, [], Now);
+    return db.MostRecentLogEntryForForeignID(config.LogForeignId(log.ForeignID));
+  }
+}
