@@ -36,9 +36,7 @@ public sealed partial class DuplicateDownloadSpec
     settings.Queues["raw"] = new QueueInfo();
     var device = new DownloadDevice("");
     db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
-    await Assert
-      .That(WriteJobs.SyncFromDatabase(device.Data, db, device.Native, settings, config, Now))
-      .IsTrue();
+    await Assert.That(Sync(device, db, config, settings)).IsTrue();
     var route = device.Data.Schedules.Single();
     long QueuePiece(string serial)
     {
@@ -86,33 +84,17 @@ public sealed partial class DuplicateDownloadSpec
     );
     await Assert.That(queued.Select(m => m.MaterialID)).IsEquivalentTo([first, selected]);
 
-    var completed = pending with
-    {
-      LoadActions = [],
-      PalletSubStatuses =
-      [
-        new()
-        {
-          PalletNumber = 2,
-          ScheduleID = route.Id,
-          PartName = route.PartName,
-          PartProcessNumber = 1,
-          FixtureName = device.Data.Parts.Single().Processes.Single().Fixture,
-          FixQuantity = 1,
-        },
-      ],
-    };
+    var completed = device.PalletReadback(route, quantity: 1);
     var recordedLoad = TranslateManagedTransfer(
       db,
-      config,
-      settings,
       completed,
       route,
-      job.PartName,
       LogCode.LoadEnd,
       1,
       1,
-      [selected]
+      [selected],
+      config: config,
+      settings: settings
     );
     await Assert.That(recordedLoad.Material.Single().MaterialID).IsEqualTo(selected);
     var after = Status(completed, config);
@@ -145,9 +127,7 @@ public sealed partial class DuplicateDownloadSpec
     settings.Queues[readyQueue] = new QueueInfo();
     var device = new DownloadDevice("");
     db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
-    await Assert
-      .That(WriteJobs.SyncFromDatabase(device.Data, db, device.Native, settings, config, Now))
-      .IsTrue();
+    await Assert.That(Sync(device, db, config, settings)).IsTrue();
 
     var route = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
     var outgoing = db.AllocateMaterialID(job.UniqueStr, job.PartName, job.Processes.Count);
@@ -155,36 +135,17 @@ public sealed partial class DuplicateDownloadSpec
     db.RecordSerialForMaterialID(outgoing, 0, "A", Now.AddHours(-2));
     db.RecordSerialForMaterialID(incoming, 0, "B", Now.AddHours(-2));
     db.RecordAddMaterialToQueue(incoming, 1, readyQueue, -1, null, "Staged", Now.AddHours(-1));
-    var occupied = device.Data with
-    {
-      PalletPositions = [new() { PalletNumber = 2, PalletPosition = "LS011" }],
-      PalletSubStatuses =
-      [
-        new()
-        {
-          PalletNumber = 2,
-          ScheduleID = route.Id,
-          PartName = route.PartName,
-          PartProcessNumber = 1,
-          FixtureName = device
-            .Data.Parts.Single(p => p.PartName == route.PartName)
-            .Processes.Single()
-            .Fixture,
-          FixQuantity = 1,
-        },
-      ],
-    };
+    var occupied = device.PalletReadback(route, quantity: 1);
     var initialLoad = TranslateManagedTransfer(
       db,
-      config,
-      settings,
       occupied,
       route,
-      job.PartName,
       LogCode.LoadEnd,
       1,
       1,
-      [outgoing]
+      [outgoing],
+      config: config,
+      settings: settings
     );
     await Assert.That(initialLoad.Material.Single().MaterialID).IsEqualTo(outgoing);
 
@@ -241,30 +202,8 @@ public sealed partial class DuplicateDownloadSpec
     db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
     await Assert.That(Sync(device, db)).IsTrue();
     var route = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
-    var fixture = device
-      .Data.Parts.Single(p => p.PartName == route.PartName)
-      .Processes.Single()
-      .Fixture;
     MazakAllData Observation(int quantity, string position = "LS011") =>
-      device.Data with
-      {
-        PalletPositions = [new() { PalletNumber = 2, PalletPosition = position }],
-        PalletSubStatuses =
-          quantity == 0
-            ? []
-            :
-            [
-              new()
-              {
-                PalletNumber = 2,
-                ScheduleID = route.Id,
-                PartName = route.PartName,
-                PartProcessNumber = 1,
-                FixtureName = fixture,
-                FixQuantity = quantity,
-              },
-            ],
-      };
+      device.PalletReadback(route, quantity, position);
     ImmutableList<long> Allocate(int count) =>
       Enumerable
         .Range(0, count)
@@ -282,15 +221,14 @@ public sealed partial class DuplicateDownloadSpec
     ) =>
       TranslateManagedTransfer(
         repository,
-        config,
-        settings,
         observed,
         route,
-        job.PartName,
         code,
         moved,
         ++sequence,
-        exact
+        exact,
+        config: config,
+        settings: settings
       );
 
     var firstLoad = Transfer(db, LogCode.LoadEnd, 3, Observation(3), original);
@@ -408,18 +346,7 @@ public sealed partial class DuplicateDownloadSpec
       .Select(_ => db.AllocateMaterialID(managed.UniqueStr, managed.PartName, 2))
       .ToImmutableList();
     BlackMaple.MachineFramework.LogEntry Move(LogCode code, ImmutableList<long> serials, int seq) =>
-      TranslateManagedTransfer(
-        db,
-        ManagedConfig(),
-        new FMSSettings(),
-        device.Data,
-        row,
-        managed.PartName,
-        code,
-        serials.Count,
-        seq,
-        serials
-      );
+      TranslateManagedTransfer(db, device.Data, row, code, serials.Count, seq, serials);
     Move(LogCode.LoadEnd, ids, 1);
     var first = Move(LogCode.UnloadEnd, [ids[1]], 2);
     await Assert.That(first.Material.Select(m => m.MaterialID)).IsEquivalentTo([ids[1]]);
@@ -441,46 +368,9 @@ public sealed partial class DuplicateDownloadSpec
     db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [job] }, null, false);
     await Assert.That(Sync(device, db)).IsTrue();
     var route = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
-    var alias = route with { PartName = job.PartName + ":100:2:2" };
-    var part = device.Data.Parts.Single(p => p.PartName == route.PartName);
-    device.Observe(
-      device.Data with
-      {
-        Parts = device
-          .Data.Parts.Where(p => p.PartName != route.PartName)
-          .Append(part with { PartName = alias.PartName })
-          .ToImmutableList(),
-        Schedules = device
-          .Data.Schedules.Where(s => s.Id != route.Id)
-          .Append(alias)
-          .ToImmutableList(),
-      }
-    );
-    var settings = new FMSSettings();
-    var load = TranslateManagedTransfer(
-      db,
-      config,
-      settings,
-      device.Data,
-      alias,
-      job.PartName,
-      LogCode.LoadEnd,
-      1,
-      1,
-      null
-    );
-    var unload = TranslateManagedTransfer(
-      db,
-      config,
-      settings,
-      device.Data,
-      alias,
-      job.PartName,
-      LogCode.UnloadEnd,
-      1,
-      2,
-      null
-    );
+    var alias = device.ReplaceRouteWithCopy(route, job.PartName + ":100:2:2");
+    var load = TranslateManagedTransfer(db, device.Data, alias, LogCode.LoadEnd, 1, 1);
+    var unload = TranslateManagedTransfer(db, device.Data, alias, LogCode.UnloadEnd, 1, 2);
     await Assert.That(load.Material).IsEmpty();
     await Assert.That(unload.Material).IsEmpty();
     await Assert.That(load.ProgramDetails!["mazak-managed-route-conflict"]).IsEqualTo("true");
@@ -505,36 +395,14 @@ public sealed partial class DuplicateDownloadSpec
     var part = device.Data.Parts.Single(p => p.Comment == "initial-job-2-1-InsightS");
     var candidate = new MazakScheduleRow { PartName = part.PartName, Comment = part.Comment };
     var id = db.AllocateMaterialID(job.UniqueStr, job.PartName, 2);
-    var entry = TranslateManagedTransfer(
-      db,
-      ManagedConfig(),
-      new FMSSettings(),
-      device.Data,
-      candidate,
-      job.PartName,
-      LogCode.LoadEnd,
-      1,
-      1,
-      [id]
-    );
+    var entry = TranslateManagedTransfer(db, device.Data, candidate, LogCode.LoadEnd, 1, 1, [id]);
     await Assert.That(entry.Material).IsEmpty();
     await Assert.That(entry.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
     await Assert.That(entry.ProgramDetails!["mazak-managed-route-conflict"]).IsEqualTo("true");
 
     await Assert.That(Sync(device, db)).IsTrue();
     var installed = device.Data.Schedules.Single(s => s.PartName == part.PartName);
-    entry = TranslateManagedTransfer(
-      db,
-      ManagedConfig(),
-      new FMSSettings(),
-      device.Data,
-      installed,
-      job.PartName,
-      LogCode.LoadEnd,
-      1,
-      2,
-      [id]
-    );
+    entry = TranslateManagedTransfer(db, device.Data, installed, LogCode.LoadEnd, 1, 2, [id]);
     await Assert.That(entry.Material.Single().MaterialID).IsEqualTo(id);
     await Assert
       .That(
@@ -557,31 +425,8 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(Sync(device, db)).IsTrue();
     var route = device.Data.Schedules.Single(s => s.Comment == "initial-job-1-1-InsightS");
     var id = db.AllocateMaterialID(job.UniqueStr, job.PartName, 2);
-    var settings = new FMSSettings();
-    TranslateManagedTransfer(
-      db,
-      config,
-      settings,
-      device.Data,
-      route,
-      job.PartName,
-      LogCode.LoadEnd,
-      1,
-      1,
-      [id]
-    );
-    TranslateManagedTransfer(
-      db,
-      config,
-      settings,
-      device.Data,
-      route,
-      job.PartName,
-      LogCode.UnloadEnd,
-      1,
-      2,
-      [id]
-    );
+    TranslateManagedTransfer(db, device.Data, route, LogCode.LoadEnd, 1, 1, [id]);
+    TranslateManagedTransfer(db, device.Data, route, LogCode.UnloadEnd, 1, 2, [id]);
     db.InvalidateAndChangeAssignment(id, "operator", "different-job", job.PartName, 2, Now)
       .ToImmutableList();
     await Assert.That(db.GetMaterialDetails(id)!.JobUnique).IsEqualTo("different-job");

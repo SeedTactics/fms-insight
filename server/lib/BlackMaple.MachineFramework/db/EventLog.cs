@@ -3102,13 +3102,13 @@ namespace BlackMaple.MachineFramework
             )
           );
         }
+        else if (totMatCnt == 0)
+          elapsed = TimeSpan.Zero;
         else
         {
           elapsed = TimeSpan.FromSeconds(
             Math.Round(
-              totMatCnt == 0
-                ? 0
-                : totalElapsed.TotalSeconds * face.MaterialIDToDestination.Count / totMatCnt,
+              totalElapsed.TotalSeconds * face.MaterialIDToDestination.Count / totMatCnt,
               1
             )
           );
@@ -3280,13 +3280,12 @@ namespace BlackMaple.MachineFramework
             )
           );
         }
+        else if (totMatCnt == 0)
+          elapsed = TimeSpan.Zero;
         else
         {
           elapsed = TimeSpan.FromSeconds(
-            Math.Round(
-              totMatCnt == 0 ? 0 : totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt,
-              1
-            )
+            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt, 1)
           );
         }
 
@@ -6449,36 +6448,39 @@ namespace BlackMaple.MachineFramework
             int statNum = reader.GetInt32(3);
             int process = reader.GetInt32(4);
 
-            adjustPath(process, mat =>
-            {
-              if (pal > 0)
-                mat = mat with { Pallet = pal };
-
-              switch (logTy)
+            adjustPath(
+              process,
+              mat =>
               {
-                case LogType.LoadUnloadCycle:
-                  if (mat.LoadStation == -1)
-                    mat = mat with { LoadStation = statNum };
-                  else
-                    mat = mat with { UnloadStation = statNum };
-                  break;
+                if (pal > 0)
+                  mat = mat with { Pallet = pal };
 
-                case LogType.MachineCycle:
-                  mat = mat with
-                  {
-                    Stops = mat.Stops.Add(
-                      new MaterialProcessActualPath.Stop()
-                      {
-                        StationName = statName,
-                        StationNum = statNum,
-                      }
-                    ),
-                  };
-                  break;
+                switch (logTy)
+                {
+                  case LogType.LoadUnloadCycle:
+                    if (mat.LoadStation == -1)
+                      mat = mat with { LoadStation = statNum };
+                    else
+                      mat = mat with { UnloadStation = statNum };
+                    break;
+
+                  case LogType.MachineCycle:
+                    mat = mat with
+                    {
+                      Stops = mat.Stops.Add(
+                        new MaterialProcessActualPath.Stop()
+                        {
+                          StationName = statName,
+                          StationNum = statNum,
+                        }
+                      ),
+                    };
+                    break;
+                }
+
+                return mat;
               }
-
-              return mat;
-            });
+            );
           }
         }
       }

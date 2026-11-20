@@ -25,10 +25,8 @@ public static class MazakManagedScheduleControl
     int process
   )
   {
-    var (job, _, part, schedule) = Verify(db, config, observed, jobUnique, process);
-    if (ManagedMazakSchedules.ExecutionConflict(db, observed, config, job, part) is { } conflict)
-      throw new ConflictRequestException(conflict);
-    return schedule;
+    var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: false);
+    return VerifySchedule(db, config, observed, job, binding, verifyExecution: true);
   }
 
   /// <summary>Raise the native plan to at least the absolute quantity. A satisfied plan needs no write.</summary>
@@ -96,21 +94,17 @@ public static class MazakManagedScheduleControl
   )
   {
     ArgumentOutOfRangeException.ThrowIfNegative(quantity);
-    var (job, binding, part, schedule) = Verify(
+    var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: false);
+    if (!MazakPart.IsSplitComment(binding.Comment) && process != 1)
+      throw new BadRequestException("A combined Mazak schedule admits material at process 1.");
+    var schedule = VerifySchedule(
       db,
       config,
       observed,
-      jobUnique,
-      process,
-      verifyDefinition: quantity > 0
+      job,
+      binding,
+      verifyExecution: quantity > 0
     );
-    if (!MazakPart.IsSplitComment(binding.Comment) && process != 1)
-      throw new BadRequestException("A combined Mazak schedule admits material at process 1.");
-    if (
-      quantity > 0
-      && ManagedMazakSchedules.ExecutionConflict(db, observed, config, job, part) is { } conflict
-    )
-      throw new ConflictRequestException(conflict);
     var first = schedule.Processes.Single(p => p.ProcessNumber == 1);
     var committed =
       (long)schedule.CompleteQuantity
@@ -174,23 +168,9 @@ public static class MazakManagedScheduleControl
       )
         continue;
       // The route and quantity belong to the physical transfer, even after reassignment.
-      identified += int.TryParse(
-        entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.IdentifiedQuantityKey),
-        NumberStyles.None,
-        CultureInfo.InvariantCulture,
-        out var count
-      )
-        ? count
-        : entry.Material.Count(m => m.MaterialID >= 0);
-      if (
-        int.TryParse(
-          entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.UnidentifiedQuantityKey),
-          NumberStyles.None,
-          CultureInfo.InvariantCulture,
-          out var unknown
-        )
-      )
-        unidentified += unknown;
+      var quantities = MazakMaterialHistory.TransferQuantities(entry);
+      identified += quantities.Identified;
+      unidentified += quantities.Unidentified;
     }
     return new(identified, unidentified);
   }
@@ -216,7 +196,7 @@ public static class MazakManagedScheduleControl
     var comments = MazakPart.InitialScheduleComments(job);
     var comment = comments.Count == 1 ? comments[0] : comments[process - 1];
     var binding = db.LoadMazakManagedSchedules(config.ControllerSource, includeRetired, jobUnique)
-      .SingleOrDefault(r => r.JobUnique == jobUnique && r.Comment == comment);
+      .SingleOrDefault(r => r.Comment == comment);
     if (binding?.ConfirmedScheduleId is null)
       throw new ConflictRequestException(
         $"Mazak job '{jobUnique}' has no confirmed schedule for route '{comment}'."
@@ -224,34 +204,30 @@ public static class MazakManagedScheduleControl
     return (job, binding);
   }
 
-  private static (
-    Job Job,
-    MazakManagedSchedule Binding,
-    MazakPartRow Part,
-    MazakScheduleRow Schedule
-  ) Verify(
+  private static MazakScheduleRow VerifySchedule(
     IRepository db,
     MazakConfig config,
     MazakAllData observed,
-    string jobUnique,
-    int process,
-    bool verifyDefinition = true
+    Job job,
+    MazakManagedSchedule binding,
+    bool verifyExecution
   )
   {
-    var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: false);
-    var (part, schedule) = verifyDefinition
-      ? ManagedMazakSchedules.Inspect(observed, job, binding)
-      : ManagedMazakSchedules.Inspect(
-        observed,
-        job,
-        binding.PartName,
-        binding.Comment,
-        binding.ConfirmedScheduleId
-      );
+    var (part, schedule) = ManagedMazakSchedules.Inspect(
+      observed,
+      job,
+      binding,
+      verifyDefinition: verifyExecution
+    );
     if (part is null || schedule is null)
       throw new ConflictRequestException(
-        $"Mazak job '{jobUnique}' is missing the installed definition or schedule for route '{binding.Comment}'."
+        $"Mazak job '{job.UniqueStr}' is missing the installed definition or schedule for route '{binding.Comment}'."
       );
-    return (job, binding, part, schedule);
+    if (
+      verifyExecution
+      && ManagedMazakSchedules.ExecutionConflict(db, observed, config, job, part) is { } conflict
+    )
+      throw new ConflictRequestException(conflict);
+    return schedule;
   }
 }

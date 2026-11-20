@@ -77,7 +77,8 @@ internal static partial class ManagedMazakSchedules
   public static (MazakPartRow? Part, MazakScheduleRow? Schedule) Inspect(
     MazakAllData data,
     Job job,
-    MazakManagedSchedule binding
+    MazakManagedSchedule binding,
+    bool verifyDefinition = true
   )
   {
     var inspection = Inspect(
@@ -87,7 +88,7 @@ internal static partial class ManagedMazakSchedules
       binding.Comment,
       binding.ConfirmedScheduleId
     );
-    if (inspection.Part is { } part)
+    if (verifyDefinition && inspection.Part is { } part)
       VerifyInstalledProcesses(part, binding);
     return inspection;
   }
@@ -115,16 +116,22 @@ internal static partial class ManagedMazakSchedules
       .Select(p => new MazakManagedProcess(p.ProcessNumber, p.Fixture, p.MainProgram))
       .ToImmutableList();
 
-  private static void VerifyProgramForAdoption(
+  private static (MazakPartRow? Part, MazakScheduleRow? Schedule) InspectForAdoption(
     IRepository db,
     MazakConfig config,
     MazakAllData data,
     Job job,
-    MazakPartRow part
+    string partName,
+    string comment
   )
   {
-    if (ExecutionConflict(db, data, config, job, part, checkExecutionFields: false) is { } conflict)
+    var inspection = Inspect(data, job, partName, comment, confirmedId: null);
+    if (
+      inspection.Part is { } part
+      && ExecutionConflict(db, data, config, job, part, checkExecutionFields: false) is { } conflict
+    )
       throw new ConflictRequestException(conflict);
+    return inspection;
   }
 
   internal static string? ExecutionConflict(
@@ -140,14 +147,11 @@ internal static partial class ManagedMazakSchedules
     var expectedPart = route.IsSplit
       ? MazakPart.FromNativeName(job, part.PartName, route.FmsProcess, 1)
       : MazakPart.FromNativeName(job, part.PartName, null, null);
-    ConvertJobsToMazakParts.BuildProcFromJob(
-      job,
+    var error = ConvertJobsToMazakParts.BuildPartProcesses(
       expectedPart,
-      out var error,
       config,
       data,
       (program, revision) => WriteJobs.LookupProgram(db, program, revision),
-      onlyProcess: route.IsSplit ? route.FmsProcess : null,
       // A custom hook can select a different program based on its input alias. Resolve its
       // input the same way as a download so the installed program cannot change that choice.
       installedPrograms: config.ProcessFromJob is null
@@ -227,8 +231,10 @@ internal static partial class ManagedMazakSchedules
     {
       if (!MazakPart.IsSailPart(schedule.PartName, schedule.Comment))
         continue;
-      var job = db.LoadJob(MazakPart.UniqueFromComment(schedule.Comment));
-      if (!Owns(config, job))
+      if (
+        db.LoadJob(MazakPart.UniqueFromComment(schedule.Comment)) is not { } job
+        || !Owns(config, job)
+      )
         continue;
       var saved = db.LoadMazakManagedSchedule(config.ControllerSource, schedule.PartName);
       if (
@@ -236,7 +242,7 @@ internal static partial class ManagedMazakSchedules
         && db.LoadMazakManagedSchedules(
             config.ControllerSource,
             includeRetired: true,
-            jobUnique: job!.UniqueStr
+            jobUnique: job.UniqueStr
           )
           .Any(binding => binding.Comment == schedule.Comment)
       )
@@ -246,15 +252,13 @@ internal static partial class ManagedMazakSchedules
       try
       {
         var (part, row) = saved is null
-          ? Inspect(observed, job!, schedule.PartName, schedule.Comment, null)
-          : Inspect(observed, job!, saved);
+          ? InspectForAdoption(db, config, observed, job, schedule.PartName, schedule.Comment)
+          : Inspect(observed, job, saved);
         if (part is not null && row is not null)
         {
-          if (saved is null)
-            VerifyProgramForAdoption(db, config, observed, job!, part);
           db.RecordMazakManagedSchedule(
             saved is null
-              ? Definition(config, job!, part, row.Id, beforeLoadCounter: null)
+              ? Definition(config, job, part, row.Id, beforeLoadCounter: null)
               : saved with
               {
                 ConfirmedScheduleId = row.Id,
@@ -280,9 +284,14 @@ internal static partial class ManagedMazakSchedules
     var saved = db.LoadMazakManagedSchedule(config.ControllerSource, planned.PartName);
     if (saved is null)
     {
-      var (installed, schedule) = Inspect(observed, job, planned.PartName, planned.Comment, null);
-      if (installed is not null)
-        VerifyProgramForAdoption(db, config, observed, job, installed);
+      var (installed, schedule) = InspectForAdoption(
+        db,
+        config,
+        observed,
+        job,
+        planned.PartName,
+        planned.Comment
+      );
       db.RecordMazakManagedSchedule(
         Definition(
           config,
@@ -308,17 +317,9 @@ internal static partial class ManagedMazakSchedules
     // If Mazak installed the part, its original definition remains authoritative. A missing
     // provisional part can be planned again under the same name, retaining earlier dependencies
     // in case only their native transactions succeeded.
-    if (
-      observed.Parts.FirstOrDefault(p =>
-        p.PartName == planned.PartName && p.Comment == planned.Comment
-      ) is
-      { } installedPart
-    )
-    {
-      VerifyInstalledProcesses(installedPart, saved);
+    var (part, row) = Inspect(observed, job, saved);
+    if (part is not null)
       return;
-    }
-    var (_, row) = Inspect(observed, job, saved);
     if (row is not null || saved.ConfirmedScheduleId.HasValue)
       throw new ConflictRequestException(
         $"Mazak job '{job.UniqueStr}' has an installed schedule with no verified part."
@@ -340,18 +341,17 @@ internal static partial class ManagedMazakSchedules
   }
 
   public static void CheckScheduleInstallation(
-    IRepository db,
-    MazakConfig config,
     MazakAllData observed,
     Job job,
-    MazakScheduleRow schedule
+    MazakScheduleRow schedule,
+    MazakManagedSchedule? saved
   )
   {
-    var saved = db.LoadMazakManagedSchedule(config.ControllerSource, schedule.PartName);
     if (
       saved is null
       || saved.Retired
       || saved.ConfirmedScheduleId.HasValue
+      || saved.PartName != schedule.PartName
       || saved.JobUnique != job.UniqueStr
       || saved.Comment != schedule.Comment
     )

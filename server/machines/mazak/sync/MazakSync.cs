@@ -469,31 +469,22 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   public bool ApplyActions(IRepository db, MazakState st)
   {
+    if (ApplyJobActions(db, st))
+      return true;
     if (st.StoppedBecauseRecentLogEvent)
       return false;
-    var jobsCopied = ApplyJobActions(db, st);
-    // queues
-    bool queuesChanged = false;
-    if (!jobsCopied)
-    {
-      var transSet = MazakQueues.CalculateScheduleChanges(db, st.AllData, mazakConfig);
-
-      if (transSet != null && transSet.Schedules.Count > 0)
-      {
-        mazakDB.Save(transSet);
-        queuesChanged = true;
-      }
-    }
-
-    // TODO: holds
-
-    return jobsCopied || queuesChanged;
+    var queues = MazakQueues.CalculateScheduleChanges(db, st.AllData, mazakConfig);
+    if (queues is null || queues.Schedules.Count == 0)
+      return false;
+    mazakDB.Save(queues);
+    return true;
   }
 
   public bool DecrementJobs(IRepository db, MazakState st)
   {
     if (
-      db.LoadUnarchivedJobs()
+      mazakConfig.UseInsightJobQuantities is not null
+      && db.LoadUnarchivedJobs()
         .Any(j => !j.ManuallyCreated && mazakConfig.UsesInsightJobQuantities(j))
     )
       throw new BadRequestException(

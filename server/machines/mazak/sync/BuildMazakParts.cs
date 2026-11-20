@@ -1141,106 +1141,69 @@ namespace MazakMachineInterface
 
       foreach (var job in jobs)
       {
-        for (int proc = 1; proc <= job.Processes.Count; proc++)
+        if (job.Processes.Any(process => process.Paths.Count != 1))
         {
-          if (job.Processes[proc - 1].Paths.Count != 1)
-          {
-            log.Add(
-              "Part "
-                + job.PartName
-                + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller"
-            );
-            goto skipPart;
-          }
+          log.Add(
+            "Part "
+              + job.PartName
+              + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller"
+          );
+          continue;
         }
 
-        if (IsSplitScheduleJob(job))
+        var split = IsSplitScheduleJob(job);
+        var partCount = split ? job.Processes.Count : 1;
+        for (var proc = 1; proc <= partCount; proc++, partIdx++)
         {
-          for (int proc = 1; proc <= job.Processes.Count; proc++)
-          {
-            var mazakPart = UseReservedIdentity(new MazakPart(job, downloadID, partIdx, proc, 1));
-            partIdx += 1;
-            BuildProcFromJob(
-              job,
-              mazakPart,
-              out string error,
-              mazakCfg,
-              mazakData,
-              lookupProgram,
-              onlyProcess: proc
-            );
-
-            if (string.IsNullOrEmpty(error))
-              ret.Add(mazakPart);
-            else
-              log.Add(error);
-          }
-        }
-        else
-        {
-          var mazakPart = UseReservedIdentity(new MazakPart(job, downloadID, partIdx));
-          partIdx += 1;
-          BuildProcFromJob(job, mazakPart, out string error, mazakCfg, mazakData, lookupProgram);
-
-          if (error == null || error == "")
+          var mazakPart = UseReservedIdentity(
+            split
+              ? new MazakPart(job, downloadID, partIdx, proc, 1)
+              : new MazakPart(job, downloadID, partIdx)
+          );
+          var error = BuildPartProcesses(mazakPart, mazakCfg, mazakData, lookupProgram);
+          if (error is null)
             ret.Add(mazakPart);
           else
             log.Add(error);
         }
-
-        skipPart:
-        ;
       }
 
       return ret;
     }
 
-    //Func<int, int, bool> only introduced in .NET 3.5
-    private delegate bool MatchFunc(int proc, int path);
-
-    internal static void BuildProcFromJob(
-      Job job,
+    internal static string BuildPartProcesses(
       MazakPart mazak,
-      out string ErrorDuringCreate,
       MazakConfig mazakCfg,
       MazakAllData mazakData,
       Func<string, long?, ProgramRevision> lookupProgram,
-      int? onlyProcess = null,
       IReadOnlyDictionary<int, string> installedPrograms = null
     )
     {
-      ErrorDuringCreate = null;
-
-      var processes = onlyProcess.HasValue
-        ? new[] { onlyProcess.Value }
-        : Enumerable.Range(1, job.Processes.Count);
+      var processes = mazak.SplitJobProcess is { } splitProcess
+        ? Enumerable.Repeat(splitProcess, 1)
+        : Enumerable.Range(1, mazak.Job.Processes.Count);
 
       foreach (var proc in processes)
       {
-        var mazakProc = onlyProcess.HasValue ? 1 : proc;
+        var mazakProc = mazak.IsSplitPart ? 1 : proc;
         var (prog, error) = ResolveProcessRoute(
-          job,
+          mazak.Job,
           proc,
           mazakCfg,
           mazakData,
           lookupProgram,
           installedPrograms?.GetValueOrDefault(mazakProc)
         );
-        if (error != null)
-        {
-          ErrorDuringCreate = error;
-          return;
-        }
+        if (error is not null)
+          return error;
 
-        if (mazakCfg.ProcessFromJob != null)
-        {
-          mazak.Processes.Add(mazakCfg.ProcessFromJob(mazak, mazakProc, 1, prog));
-        }
-        else
-        {
-          mazak.Processes.Add(new MazakProcessFromJob(mazak, mazakProc, 1, prog, jobProcess: proc));
-        }
+        mazak.Processes.Add(
+          mazakCfg.ProcessFromJob is { } createProcess
+            ? createProcess(mazak, mazakProc, 1, prog)
+            : new MazakProcessFromJob(mazak, mazakProc, 1, prog)
+        );
       }
+      return null;
     }
 
     internal static (ProgramRevision Program, string Error) ResolveProcessRoute(

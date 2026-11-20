@@ -533,7 +533,6 @@ namespace MazakMachineInterface
             !onPallet.TryGetValue(id, out var mat)
             || mat.Face != face.Face
             || mat.Process != face.Process
-            || repo.IsMaterialInQueue(id)
           ) || destinations.Keys.Any(unloaded.Contains)
         )
           throw new InvalidOperationException(
@@ -757,13 +756,15 @@ namespace MazakMachineInterface
             return false;
           }
 
-          var machStart = FindMachineStart(e, cycle, mcNum);
+          var machStart = cycle.LastOrDefault(log =>
+            log.LogType == LogType.MachineCycle && log.StartOfCycle && log.LocationNum == mcNum
+          );
           TimeSpan elapsed;
-          ImmutableList<ToolSnapshot> toolsAtStart;
+          IEnumerable<ToolSnapshot> toolsAtStart;
           if (machStart != null)
           {
             elapsed = e.TimeUTC.Subtract(machStart.EndTimeUTC);
-            toolsAtStart = repo.ToolPocketSnapshotForCycle(machStart.Counter).ToImmutableList();
+            toolsAtStart = repo.ToolPocketSnapshotForCycle(machStart.Counter);
           }
           else
           {
@@ -798,7 +799,6 @@ namespace MazakMachineInterface
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
               tools: toolsAtEnd is null
-              || toolsAtStart.IsEmpty
               || !baselineMatches
               || machStart?.ProgramDetails?.ContainsKey(ToolSnapshotUnavailableKey) == true
                 ? null
@@ -1569,7 +1569,7 @@ namespace MazakMachineInterface
           history.Any(e =>
             e.ProgramDetails?.ContainsKey(ManagedMazakSchedules.UnidentifiedQuantityKey) == true
           )
-          && !ReadPalletPlacement(history).UncertainFaces.IsEmpty
+          && !ReadPalletPlacement(history).UncertainQuantities.IsEmpty
           && mazakConfig.CanQuarantineMissingMaterial?.Invoke(pallet) != false
         )
         {
@@ -1683,17 +1683,6 @@ namespace MazakMachineInterface
         }
       }
       return lastWasDropoff;
-    }
-
-    private static MWI.LogEntry FindMachineStart(
-      LogEntry e,
-      IList<MWI.LogEntry> oldEvents,
-      int statNum
-    )
-    {
-      return oldEvents.LastOrDefault(old =>
-        old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum
-      );
     }
 
     private static TimeSpan CalculateElapsed(

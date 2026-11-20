@@ -13,33 +13,6 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class DuplicateDownloadSpec
 {
   [Test]
-  [Arguments("parts-full")]
-  [Arguments("parts-partial")]
-  [Arguments("parts-before-pallet-chunk")]
-  [Arguments("schedules-partial")]
-  public async Task AgedInitialInstallationCanFinish(string fault)
-  {
-    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
-    using var db = config.OpenConnection();
-    var managed = PendingJob(true);
-    var device = new DownloadDevice(fault);
-    db.AddJobs(new NewJobs { ScheduleId = "pending", Jobs = [managed] }, null, false);
-    await Assert.That(() => Sync(device, db)).Throws<IOException>();
-    using var reopened = config.OpenConnection();
-    var afterLookback = managed.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1);
-    WriteJobs.SyncFromDatabase(
-      device.Data,
-      reopened,
-      device.Native,
-      new FMSSettings(),
-      ManagedConfig(),
-      afterLookback
-    );
-    await Assert.That(device.Data.Schedules.Count).IsEqualTo(2);
-    await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsTrue();
-  }
-
-  [Test]
   [Arguments(false)]
   [Arguments(true)]
   public async Task RetryingPartInstallationKeepsTheIdentityUsedByTheProcessHook(bool split)
@@ -64,24 +37,21 @@ public sealed partial class DuplicateDownloadSpec
             }
         ),
     };
-    var settings = new FMSSettings();
     db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
-    bool Poll(IRepository repository) =>
-      WriteJobs.SyncFromDatabase(device.Data, repository, device.Native, settings, config, Now);
 
     device.BeforeSave = write =>
     {
       if (write.Parts.Any(part => part.Command == MazakWriteCommand.Add))
         throw new IOException("Part installation failed before applying the write.");
     };
-    await Assert.That(() => Poll(db)).Throws<IOException>();
+    await Assert.That(() => Sync(device, db, config)).Throws<IOException>();
     await Assert.That(device.Data.Parts).IsEmpty();
     var reserved = db.LoadMazakManagedSchedules(config.ControllerSource);
     await Assert.That(reserved.Count).IsEqualTo(split ? 2 : 1);
     device.BeforeSave = null!;
 
     using var reopened = repositories.OpenConnection();
-    await Assert.That(Poll(reopened)).IsTrue();
+    await Assert.That(Sync(device, reopened, config)).IsTrue();
     await Assert.That(reopened.LoadJob(job.UniqueStr)!.CopiedToSystem).IsTrue();
     foreach (var route in reserved)
     {
@@ -155,10 +125,8 @@ public sealed partial class DuplicateDownloadSpec
     var later = managed.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1);
     var required = ImmutableHashSet.Create(managed.UniqueStr, peer.UniqueStr, ordinary.UniqueStr);
 
-    MazakState Observe()
-    {
-      var data = device.Data;
-      return sync.ReconcileCellState(
+    MazakState Observe() =>
+      sync.ReconcileCellState(
         db,
         new MazakAcquisition
         {
@@ -166,21 +134,9 @@ public sealed partial class DuplicateDownloadSpec
           DataLoadedAtUtc = later,
           CompletedAtUtc = later,
           Tools = null,
-          Data = new MazakAllDataAndLogs
-          {
-            Schedules = data.Schedules,
-            Parts = data.Parts,
-            Fixtures = data.Fixtures,
-            Pallets = data.Pallets,
-            PalletSubStatuses = data.PalletSubStatuses,
-            PalletPositions = data.PalletPositions,
-            LoadActions = data.LoadActions,
-            MainPrograms = data.MainPrograms,
-            Logs = [],
-          },
+          Data = DownloadDevice.WithLogs(device.Data, []),
         }
       ).State;
-    }
 
     var initial = Observe();
     await Assert.That(WriteJobs.FindPendingDownload(initial.AllData, db, config, later)).IsEmpty();
@@ -236,22 +192,7 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(Sync(device, db)).IsTrue();
     var nativeSchedule = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
     var nativePart = device.Data.Parts.Single(p => p.PartName == nativeSchedule.PartName);
-    var occupied = device.Data with
-    {
-      PalletPositions = [new() { PalletNumber = 2, PalletPosition = "LS011" }],
-      PalletSubStatuses =
-      [
-        new()
-        {
-          PalletNumber = 2,
-          ScheduleID = nativeSchedule.Id,
-          PartName = nativePart.PartName,
-          PartProcessNumber = 1,
-          FixtureName = nativePart.Processes.Single().Fixture,
-          FixQuantity = 1,
-        },
-      ],
-    };
+    var occupied = device.PalletReadback(nativeSchedule, quantity: 1);
     var materialID = db.AllocateMaterialID(
       managed.UniqueStr,
       managed.PartName,
@@ -260,15 +201,14 @@ public sealed partial class DuplicateDownloadSpec
     db.RecordSerialForMaterialID(materialID, 0, "managed-serial", Now.AddHours(-2));
     var load = TranslateManagedTransfer(
       db,
-      config,
-      settings,
       occupied,
       nativeSchedule,
-      managed.PartName,
       LogCode.LoadEnd,
       1,
       1,
-      [materialID]
+      [materialID],
+      config: config,
+      settings: settings
     );
     await Assert.That(load.Material.Single().MaterialID).IsEqualTo(materialID);
 
@@ -292,15 +232,7 @@ public sealed partial class DuplicateDownloadSpec
     );
 
     db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [ordinary] }, null, false);
-    bool Poll(IRepository repository) =>
-      WriteJobs.SyncFromDatabase(
-        device.Data,
-        repository,
-        device.Native,
-        settings,
-        config,
-        statusTime
-      );
+    bool Poll(IRepository repository) => Sync(device, repository, config, settings, statusTime);
     CurrentStatus Status(MazakAllData observed) =>
       BuildCurrentStatus.Build(db, settings, config, observed, "MC", null, statusTime);
     var beforeDownload = Status(device.Data);
@@ -373,21 +305,7 @@ public sealed partial class DuplicateDownloadSpec
         .Select(s => s with { Comment = SwappedComment(s.PartName) })
         .ToImmutableList(),
       PalletSubStatuses = routes
-        .Select(
-          (route, index) =>
-            new MazakPalletSubStatusRow
-            {
-              PalletNumber = index + 1,
-              ScheduleID = route.Id,
-              PartName = route.PartName,
-              PartProcessNumber = 1,
-              FixtureName = installed
-                .Parts.Single(p => p.PartName == route.PartName)
-                .Processes.Single()
-                .Fixture,
-              FixQuantity = 1,
-            }
-        )
+        .Select((route, index) => device.Occupancy(route, quantity: 1, pallet: index + 1))
         .ToImmutableList(),
     };
     var reversed = swapped with
@@ -588,14 +506,7 @@ public sealed partial class DuplicateDownloadSpec
     );
     using var reopened = repositories.OpenConnection();
     var retry = interrupted ? active.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1) : Now;
-    WriteJobs.SyncFromDatabase(
-      device.Data,
-      reopened,
-      device.Native,
-      new FMSSettings(),
-      ManagedConfig(),
-      retry
-    );
+    await Assert.That(Sync(device, reopened, now: retry)).IsTrue();
     await Assert.That(reopened.LoadJob(active.UniqueStr)!.CopiedToSystem).IsTrue();
     await Assert.That(reopened.LoadJob(canceled.UniqueStr)!.CopiedToSystem).IsFalse();
     await Assert.That(reopened.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsFalse();
@@ -654,7 +565,6 @@ public sealed partial class DuplicateDownloadSpec
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
     using var db = repositories.OpenConnection();
     var managed = PendingJob(true);
-    var settings = new FMSSettings();
     var config = ManagedConfig();
     var device = new DownloadDevice(cause == "adopted program" ? "" : "parts-full");
     var pollAt = afterLookback ? managed.RouteEndUTC.AddHours(51) : Now;
@@ -696,17 +606,7 @@ public sealed partial class DuplicateDownloadSpec
       using var before = oldRepository.OpenConnection();
       before.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed] }, null, false);
       bool InstallLegacyRoutes() =>
-        WriteJobs.SyncFromDatabase(
-          device.Data,
-          before,
-          device.Native,
-          settings,
-          config with
-          {
-            UseInsightJobQuantities = null,
-          },
-          Now
-        );
+        Sync(device, before, config with { UseInsightJobQuantities = null });
       if (cause == "adopted part without schedule")
       {
         await Assert.That(() => InstallLegacyRoutes()).Throws<IOException>();
@@ -747,8 +647,7 @@ public sealed partial class DuplicateDownloadSpec
     if (!sameBatch)
       db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [peer] }, null, false);
     using var reopened = repositories.OpenConnection();
-    bool Poll() =>
-      WriteJobs.SyncFromDatabase(device.Data, reopened, device.Native, settings, config, pollAt);
+    bool Poll() => Sync(device, reopened, config, now: pollAt);
     await Assert.That(Poll()).IsTrue();
     await Assert.That(reopened.LoadJob(peer.UniqueStr)!.CopiedToSystem).IsTrue();
     await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsFalse();
@@ -829,15 +728,7 @@ public sealed partial class DuplicateDownloadSpec
     };
     db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [peer] }, null, false);
     using var reopened = repositories.OpenConnection();
-    bool Poll() =>
-      WriteJobs.SyncFromDatabase(
-        device.Data,
-        reopened,
-        device.Native,
-        new FMSSettings(),
-        config,
-        retryAt
-      );
+    bool Poll() => Sync(device, reopened, config, now: retryAt);
     await Assert.That(Poll()).IsTrue();
     await Assert.That(reopened.LoadJob(peer.UniqueStr)!.CopiedToSystem).IsTrue();
     await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsFalse();
@@ -880,21 +771,7 @@ public sealed partial class DuplicateDownloadSpec
     var managed = PendingJob(true);
     var device = new DownloadDevice("");
     db.AddJobs(new NewJobs { ScheduleId = "pending", Jobs = [managed] }, null, false);
-    await Assert
-      .That(
-        WriteJobs.SyncFromDatabase(
-          device.Data,
-          db,
-          device.Native,
-          new FMSSettings(),
-          config with
-          {
-            UseInsightJobQuantities = null,
-          },
-          Now
-        )
-      )
-      .IsTrue();
+    await Assert.That(Sync(device, db, config with { UseInsightJobQuantities = null })).IsTrue();
 
     var part = device.Data.Parts.Single(p => p.Comment == "initial-job-1-1-InsightS");
     var process = part.Processes.Single();

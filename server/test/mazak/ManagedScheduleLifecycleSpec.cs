@@ -89,17 +89,7 @@ public sealed partial class DuplicateDownloadSpec
       false
     );
     var config = ManagedConfig();
-    WriteJobs.SyncFromDatabase(
-      device.Data,
-      db,
-      device.Native,
-      new FMSSettings(),
-      config with
-      {
-        UseInsightJobQuantities = null,
-      },
-      Now
-    );
+    await Assert.That(Sync(device, db, config with { UseInsightJobQuantities = null })).IsTrue();
     var original = device.Data;
     var schedule = original.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
     var part = original.Parts.Single(p => p.PartName == schedule.PartName);
@@ -345,18 +335,9 @@ public sealed partial class DuplicateDownloadSpec
             }
           ),
     };
-    WriteJobs.SyncFromDatabase(
-      device.Data,
-      db,
-      device.Native,
-      new FMSSettings(),
-      config with
-      {
-        UseInsightJobQuantities = null,
-        ProcessFromJob = null,
-      },
-      Now
-    );
+    await Assert
+      .That(Sync(device, db, config with { UseInsightJobQuantities = null, ProcessFromJob = null }))
+      .IsTrue();
     var first = device.Data.Parts.Single(p => p.Comment == "initial-job-1-1-InsightS");
     await Assert.That(first.Processes.Single().MainProgram).IsEqualTo("1001");
     ManagedMazakSchedules.ConfirmObserved(db, config, device.Data);
@@ -541,7 +522,6 @@ public sealed partial class DuplicateDownloadSpec
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
     using var db = repositories.OpenConnection();
-    var settings = new FMSSettings();
     var ordinary = PendingJob(false) with { UniqueStr = "ordinary" };
     var managed = PendingJob(true) with { UniqueStr = "managed" };
     var manual = new DownloadDevice("");
@@ -558,17 +538,15 @@ public sealed partial class DuplicateDownloadSpec
       BulkJobFilter = job => job.UniqueStr == managed.UniqueStr,
     };
     db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [ordinary, managed] }, null, false);
-    void Poll(DownloadDevice device, MazakConfig config) =>
-      WriteJobs.SyncFromDatabase(device.Data, db, device.Native, settings, config, Now);
     if (manualFirst)
     {
-      Poll(manual, manualConfig);
-      Poll(robot, robotConfig);
+      Sync(manual, db, manualConfig);
+      Sync(robot, db, robotConfig);
     }
     else
     {
-      Poll(robot, robotConfig);
-      Poll(manual, manualConfig);
+      Sync(robot, db, robotConfig);
+      Sync(manual, db, manualConfig);
     }
     await Assert.That(manual.Data.Schedules.Single().CompleteQuantity).IsEqualTo(0);
     await Assert.That(db.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsTrue();
@@ -598,9 +576,7 @@ public sealed partial class DuplicateDownloadSpec
       BulkJobFilter = job => job.UniqueStr == peer.UniqueStr,
     };
     db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [peer] }, null, false);
-    bool Poll(MazakConfig c) =>
-      WriteJobs.SyncFromDatabase(device.Data, db, device.Native, new FMSSettings(), c, Now);
-    await Assert.That(Poll(config)).IsTrue();
+    await Assert.That(Sync(device, db, config)).IsTrue();
     var schedule = device.Data.Schedules.Single();
     var completed = schedule with
     {
@@ -618,7 +594,9 @@ public sealed partial class DuplicateDownloadSpec
 
     db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [local] }, null, false);
     await Assert
-      .That(Poll(config with { BulkJobFilter = job => job.UniqueStr == local.UniqueStr }))
+      .That(
+        Sync(device, db, config with { BulkJobFilter = job => job.UniqueStr == local.UniqueStr })
+      )
       .IsTrue();
     if (scheduleComment is not null)
       await Assert
@@ -644,8 +622,7 @@ public sealed partial class DuplicateDownloadSpec
       Cycles = 6,
     };
     db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [managed, ordinary] }, null, false);
-    bool Poll(IRepository repository) =>
-      WriteJobs.SyncFromDatabase(device.Data, repository, device.Native, settings, config, Now);
+    bool Poll(IRepository repository) => Sync(device, repository, config, settings);
     await Assert.That(() => Poll(db)).Throws<IOException>();
     var installedBeforeRetry = device.Data.Schedules.Single();
     using var restarted = repositories.OpenConnection();
@@ -671,15 +648,14 @@ public sealed partial class DuplicateDownloadSpec
     ) =>
       TranslateManagedTransfer(
         restarted,
-        config,
-        settings,
         device.Data,
         route,
-        managed.PartName,
         code,
         material.Count,
         ++attempts,
-        material
+        material,
+        config: config,
+        settings: settings
       );
     foreach (var group in Enumerable.Chunk(ids, 3).Select(g => g.ToImmutableList()))
     {
@@ -819,58 +795,31 @@ public sealed partial class DuplicateDownloadSpec
     using var db = repositories.OpenConnection();
     var config = ManagedConfig() with { ControllerSource = "secondary" };
     var device = new DownloadDevice("");
-    var settings = new FMSSettings();
     var job = PendingJob(true) with { Cycles = 6 };
     var peer = PendingJob(false) with { UniqueStr = "peer", PartName = "peer-part" };
     db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [job, peer] }, null, false);
-    bool Poll(IRepository repo) =>
-      WriteJobs.SyncFromDatabase(device.Data, repo, device.Native, settings, config, Now);
+    bool Poll(IRepository repo) => Sync(device, repo, config);
     await Assert.That(Poll(db)).IsTrue();
     var p2 = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
     var missingIdentity = TranslateManagedTransfer(
       db,
-      config,
-      settings,
       device.Data,
       p2,
-      job.PartName,
       LogCode.LoadEnd,
       1,
       1,
-      null
+      config: config
     );
     await Assert.That(missingIdentity.Material).IsEmpty();
     var count = MazakManagedScheduleControl.RecordedLoads(db, config, job.UniqueStr, 2)!;
     await Assert.That(count.PhysicalQuantity).IsEqualTo(1L);
     await Assert.That(count.UnidentifiedQuantity).IsEqualTo(1L);
-    TranslateManagedTransfer(
-      db,
-      config,
-      settings,
-      device.Data,
-      p2,
-      job.PartName,
-      LogCode.UnloadEnd,
-      1,
-      2,
-      null
-    );
+    TranslateManagedTransfer(db, device.Data, p2, LogCode.UnloadEnd, 1, 2, config: config);
     var ids = Enumerable
       .Range(0, 3)
       .Select(_ => db.AllocateMaterialID(job.UniqueStr, job.PartName, 2))
       .ToImmutableList();
-    TranslateManagedTransfer(
-      db,
-      config,
-      settings,
-      device.Data,
-      p2,
-      job.PartName,
-      LogCode.LoadEnd,
-      3,
-      3,
-      ids
-    );
+    TranslateManagedTransfer(db, device.Data, p2, LogCode.LoadEnd, 3, 3, ids, config: config);
     var fixture = device
       .Data.Parts.Single(p => p.PartName == p2.PartName)
       .Processes.Single()
@@ -916,19 +865,7 @@ public sealed partial class DuplicateDownloadSpec
                 : s
             )
             .ToImmutableList(),
-          PalletSubStatuses = fixedQuantity.HasValue
-            ?
-            [
-              new()
-              {
-                ScheduleID = p2.Id,
-                PartName = p2.PartName,
-                FixQuantity = fixedQuantity.Value,
-                FixtureName = fixture,
-                PalletNumber = 2,
-              },
-            ]
-            : [],
+          PalletSubStatuses = fixedQuantity is { } quantity ? [device.Occupancy(p2, quantity)] : [],
           LoadActions = requested
             ?
             [
@@ -993,15 +930,13 @@ public sealed partial class DuplicateDownloadSpec
     device.Observe(device.Data with { Schedules = [surviving] });
     var late = TranslateManagedTransfer(
       reopened,
-      config,
-      settings,
       device.Data,
       p2,
-      job.PartName,
       LogCode.UnloadEnd,
       3,
       4,
-      ids
+      ids,
+      config: config
     );
     await Assert.That(late.Material.Select(m => m.MaterialID)).IsEquivalentTo(ids);
     await Assert
@@ -1027,11 +962,8 @@ public sealed partial class DuplicateDownloadSpec
     var config = ManagedConfig();
     var job = PendingJob(true);
     var device = new DownloadDevice("");
-    var settings = new FMSSettings();
     db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [job] }, null, false);
-    bool Poll() =>
-      WriteJobs.SyncFromDatabase(device.Data, db, device.Native, settings, config, Now);
-    await Assert.That(Poll()).IsTrue();
+    await Assert.That(Sync(device, db, config)).IsTrue();
     var p2 = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
     var installed = device.Data;
     var altered = installed with
@@ -1054,25 +986,8 @@ public sealed partial class DuplicateDownloadSpec
         MazakManagedScheduleControl.SetMaterialOffer(db, config, altered, job.UniqueStr, 2, 1)
       )
       .Throws<ConflictRequestException>();
-    var clonedPart = device.Data.Parts.Single(p => p.PartName == p2.PartName) with
-    {
-      PartName = job.PartName + ":100:2:2",
-    };
-    var peerSchedule = p2 with { PartName = clonedPart.PartName };
-    device.Observe(
-      device.Data with
-      {
-        Parts = device
-          .Data.Parts.Where(p => p.PartName != p2.PartName)
-          .Append(clonedPart)
-          .ToImmutableList(),
-        Schedules = device
-          .Data.Schedules.Where(s => s.Id != p2.Id)
-          .Append(peerSchedule)
-          .ToImmutableList(),
-      }
-    );
-    await Assert.That(Poll()).IsFalse();
+    var peerSchedule = device.ReplaceRouteWithCopy(p2, job.PartName + ":100:2:2");
+    await Assert.That(Sync(device, db, config)).IsFalse();
     await Assert
       .That(() =>
         MazakManagedScheduleControl.EnsurePlan(db, config, device.Data, job.UniqueStr, 2, 10)
@@ -1099,52 +1014,41 @@ public sealed partial class DuplicateDownloadSpec
       )
       .Throws<ConflictRequestException>();
     db.ArchiveJob(job.UniqueStr);
-    Poll();
+    Sync(device, db, config);
     await Assert.That(device.Data.Schedules.Single(s => s.Id == p2.Id)).IsEqualTo(peerSchedule);
     var retirementAlarm = ManagedMazakSchedules.Diagnostics(db, config, device.Data, Now).Single();
     await Assert.That(retirementAlarm.Code).IsEqualTo("mazak-managed-retirement-conflict");
     await Assert.That(retirementAlarm.Message).Contains(p2.PartName);
-    await Assert.That(retirementAlarm.Message).Contains(clonedPart.PartName);
+    await Assert.That(retirementAlarm.Message).Contains(peerSchedule.PartName);
   }
 
   private static BlackMaple.MachineFramework.LogEntry TranslateManagedTransfer(
     IRepository db,
-    MazakConfig config,
-    FMSSettings settings,
     MazakAllData data,
     MazakScheduleRow row,
-    string partName,
     LogCode code,
     int quantity,
     int sequence,
-    ImmutableList<long>? identified
+    ImmutableList<long>? identified = null,
+    MazakConfig? config = null,
+    FMSSettings? settings = null
   )
   {
+    config ??= ManagedConfig();
     var log = new MazakMachineInterface.LogEntry
     {
       Code = code,
       ForeignID = $"LG20261111-115000-{sequence * 2:000}.csv",
       TimeUTC = Now.AddMinutes(sequence - 90),
       FullPartName = row.PartName,
-      JobPartName = partName,
+      JobPartName = row.PartName.Split(':', 2)[0],
       FixedQuantity = quantity,
       Pallet = 2,
       StationNumber = 1,
       Process = 1,
     };
-    var captured = new MazakAllDataAndLogs
-    {
-      Parts = data.Parts,
-      Schedules = data.Schedules,
-      Pallets = data.Pallets,
-      Fixtures = data.Fixtures,
-      MainPrograms = data.MainPrograms,
-      LoadActions = data.LoadActions,
-      PalletStatuses = [],
-      PalletSubStatuses = data.PalletSubStatuses,
-      PalletPositions = data.PalletPositions,
-      Alarms = [],
-      Logs =
+    var captured = DownloadDevice.WithLogs(
+      data,
       [
         log,
         log with
@@ -1152,8 +1056,8 @@ public sealed partial class DuplicateDownloadSpec
           Code = LogCode.LoadBegin,
           ForeignID = $"LG20261111-115000-{sequence * 2 + 1:000}.csv",
         },
-      ],
-    };
+      ]
+    );
     var resolver = config with
     {
       ResolveLoadUnloadTransaction = identified is null
@@ -1177,7 +1081,16 @@ public sealed partial class DuplicateDownloadSpec
             ),
           },
     };
-    LogTranslation.HandleEvents(db, captured, "MC", settings, _ => { }, resolver, [], Now);
+    LogTranslation.HandleEvents(
+      db,
+      captured,
+      "MC",
+      settings ?? new FMSSettings(),
+      _ => { },
+      resolver,
+      [],
+      Now
+    );
     return db.MostRecentLogEntryForForeignID(config.LogForeignId(log.ForeignID));
   }
 }

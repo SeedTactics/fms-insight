@@ -57,33 +57,40 @@ public sealed partial class DuplicateDownloadSpec
         .ToImmutableList(),
     };
 
-  private static bool Sync(DownloadDevice device, IRepository repository) =>
+  private static bool Sync(
+    DownloadDevice device,
+    IRepository repository,
+    MazakConfig config = null,
+    FMSSettings settings = null,
+    DateTime? now = null
+  ) =>
     WriteJobs.SyncFromDatabase(
       device.Native.LoadAllData(),
       repository,
       device.Native,
-      new FMSSettings(),
-      new MazakConfig
-      {
-        DBType = MazakDbType.MazakSmooth,
-        UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
-      },
-      Now
+      settings ?? new FMSSettings(),
+      config ?? ManagedConfig(),
+      now ?? Now
     );
 
   [Test]
-  [Arguments("schedules", true)]
-  [Arguments("parts-full", true)]
-  [Arguments("parts-partial", true)]
-  [Arguments("schedules-partial", true)]
-  [Arguments("schedules-full", true)]
-  [Arguments("schedules", false)]
-  [Arguments("parts-full", false)]
-  [Arguments("parts-partial", false)]
-  [Arguments("schedules-full", false)]
+  [Arguments("schedules", true, false)]
+  [Arguments("parts-full", true, false)]
+  [Arguments("parts-partial", true, false)]
+  [Arguments("schedules-partial", true, false)]
+  [Arguments("schedules-full", true, false)]
+  [Arguments("schedules", false, false)]
+  [Arguments("parts-full", false, false)]
+  [Arguments("parts-partial", false, false)]
+  [Arguments("schedules-full", false, false)]
+  [Arguments("parts-full", true, true, Categories = new[] { "AgedInstallation" })]
+  [Arguments("parts-partial", true, true, Categories = new[] { "AgedInstallation" })]
+  [Arguments("parts-before-pallet-chunk", true, true, Categories = new[] { "AgedInstallation" })]
+  [Arguments("schedules-partial", true, true, Categories = new[] { "AgedInstallation" })]
   public async Task RetryAfterRestartPreservesInitialRoutesAndQuantities(
     string failure,
-    bool basket
+    bool basket,
+    bool afterLookback
   )
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -104,7 +111,8 @@ public sealed partial class DuplicateDownloadSpec
     device.Native.ClearReceivedCalls();
     // A fresh repository connection models restart: no download state survives in the writer.
     using var restarted = config.OpenConnection();
-    await Assert.That(Sync(device, restarted)).IsTrue();
+    var retryAt = afterLookback ? job.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1) : Now;
+    await Assert.That(Sync(device, restarted, now: retryAt)).IsTrue();
     await Assert.That(restarted.LoadJob(job.UniqueStr)!.CopiedToSystem).IsTrue();
     await Assert.That(device.Data.Schedules.Count).IsEqualTo(basket ? 2 : 1);
     foreach (var comment in MazakPart.InitialScheduleComments(job))
@@ -119,11 +127,11 @@ public sealed partial class DuplicateDownloadSpec
       await Assert.That(device.Data.Parts.Single(p => p.PartName == part.PartName)).IsEqualTo(part);
     foreach (var schedule in installedSchedules)
       await Assert.That(device.Data.Schedules.Single(s => s.Id == schedule.Id)).IsEqualTo(schedule);
-    if (failure != "parts-partial" || !basket)
+    if (!basket || failure is not ("parts-partial" or "parts-before-pallet-chunk"))
       device.Native.DidNotReceive().Save(Arg.Is<MazakWriteData>(write => write.Parts.Count > 0));
     device.Native.ClearReceivedCalls();
     for (var attempt = 0; attempt < 3; attempt++)
-      await Assert.That(Sync(device, restarted)).IsFalse();
+      await Assert.That(Sync(device, restarted, now: retryAt)).IsFalse();
     device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
   }
 
@@ -578,6 +586,70 @@ public sealed partial class DuplicateDownloadSpec
       };
 
     public void Observe(MazakAllData observation) => Data = observation;
+
+    public static MazakAllDataAndLogs WithLogs(
+      MazakAllData data,
+      ImmutableList<MazakMachineInterface.LogEntry> logs
+    ) =>
+      new()
+      {
+        Schedules = data.Schedules,
+        Parts = data.Parts,
+        Fixtures = data.Fixtures,
+        Pallets = data.Pallets,
+        PalletStatuses = data.PalletStatuses ?? [],
+        PalletSubStatuses = data.PalletSubStatuses,
+        PalletPositions = data.PalletPositions,
+        LoadActions = data.LoadActions,
+        MainPrograms = data.MainPrograms,
+        Alarms = data.Alarms ?? [],
+        Logs = logs,
+      };
+
+    public MazakPalletSubStatusRow Occupancy(
+      MazakScheduleRow schedule,
+      int quantity,
+      int pallet = 2
+    ) =>
+      new()
+      {
+        PalletNumber = pallet,
+        ScheduleID = schedule.Id,
+        PartName = schedule.PartName,
+        PartProcessNumber = 1,
+        FixtureName = Data
+          .Parts.Single(p => p.PartName == schedule.PartName)
+          .Processes.First()
+          .Fixture,
+        FixQuantity = quantity,
+      };
+
+    public MazakAllData PalletReadback(
+      MazakScheduleRow schedule,
+      int quantity,
+      string position = "LS011"
+    ) =>
+      Data with
+      {
+        PalletPositions = [new() { PalletNumber = 2, PalletPosition = position }],
+        PalletSubStatuses = quantity > 0 ? [Occupancy(schedule, quantity)] : [],
+      };
+
+    public MazakScheduleRow ReplaceRouteWithCopy(MazakScheduleRow route, string nativePartName)
+    {
+      var part = Data.Parts.Single(p => p.PartName == route.PartName);
+      var copy = route with { PartName = nativePartName };
+      Observe(
+        Data with
+        {
+          Parts = Data
+            .Parts.ToImmutableList()
+            .Replace(part, part with { PartName = nativePartName }),
+          Schedules = Data.Schedules.ToImmutableList().Replace(route, copy),
+        }
+      );
+      return copy;
+    }
 
     public Action<MazakWriteData> BeforeSave { get; set; }
     public Action<MazakWriteData> AfterSave { get; set; }

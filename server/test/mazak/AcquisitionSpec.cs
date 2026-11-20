@@ -186,10 +186,7 @@ public sealed partial class MazakAcquisitionSpec
   [Arguments(true, "end")]
   [Arguments(false, "empty-end")]
   [Arguments(true, "empty-end")]
-  public async Task MissingToolsDoNotBlockManufacturingOrInventMeasurements(
-    bool staged,
-    string failure
-  )
+  public async Task FailedAndEmptyToolReadsRemainDistinct(bool staged, string failure)
   {
     using var cell = new Cell();
     var sync = cell.Sync;
@@ -240,12 +237,18 @@ public sealed partial class MazakAcquisitionSpec
       .Repository.GetRecentLog(0)
       .Single(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle);
     await Assert.That(end.ElapsedTime).IsEqualTo(TimeSpan.FromSeconds(90));
-    await Assert.That(end.Tools?.Count ?? 0).IsEqualTo(failure == "empty-end" ? 1 : 0);
+    await Assert
+      .That(end.Tools?.Count ?? 0)
+      .IsEqualTo(failure is "empty-start" or "empty-end" ? 1 : 0);
     await Assert
       .That(repository.ToolPocketSnapshotForCycle(end.Counter).Count())
       .IsEqualTo(failure is "start" or "empty-start" ? 1 : 0);
     if (failure == "empty-end")
       await Assert.That(end.Tools!.Single().ToolChangeOccurred).IsTrue();
+    if (failure == "empty-start")
+      await Assert
+        .That(end.Tools!.Single().ToolUseDuringCycle)
+        .IsEqualTo(TimeSpan.FromSeconds(120));
     await Assert
       .That(cell.Sync.CaptureLogWatermark(cell.Repository))
       .IsEqualTo(following.ForeignID);

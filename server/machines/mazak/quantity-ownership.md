@@ -39,73 +39,36 @@ succeed before retrying. This is a conservative refusal policy, not an atomic co
 
 ## Managed schedule lifecycle
 
-The normal downloader installs each selected route with zero material offered. A combined job has
-one native schedule. The existing split-job rules give independently admitted processes one schedule
-each. When two controllers share a repository, set `BulkJobFilter` for each controller's assigned
-jobs and give each controller a stable `ControllerSource`. The original controller retains its usual
-CSV history on `DefaultControllerSource`.
+The normal downloader installs each managed route with zero material offered. A combined job has one
+native schedule and admits material at process 1. Split jobs have one schedule per process. The
+downloader confirms the native part name and schedule ID from readback. It keeps the route installed
+throughout the job's active life, even when planned quantity equals completed quantity. A missing
+schedule or conflicting definition raises a route alarm. Other eligible jobs can still download.
 
-A backend that handles its own queue reconciliation can run `MazakSync.ApplyJobActions` for
-downloads and archive cleanup. `WriteJobs.FindPendingDownload` previews the next batch. Both accept
-additional managed job IDs for work outside the normal download window. If the backend validates
-that exact batch, serialize changes to the eligible jobs across preview and download.
+A backend that owns queue admission can call `MazakSync.ApplyJobActions` for download and cleanup.
+`WriteJobs.FindPendingDownload` previews the batch. Both accept additional managed job IDs outside
+the download window. Serialize preview, validation, and writes with the controller's synchronization
+loop when validating a specific batch.
 
-Set `MazakConfig.MachineGroupName` to the machining station group on each controller when the groups
-differ. The override applies to machining events, pallet locations, and tool queries. Leaving it
-unset uses the group inferred from the latest accepted schedule.
+| `MazakManagedScheduleControl` | Backend contract                                                                                                                                                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VerifyInstalledRoute`        | Check the native schedule and installed execution route before reporting readiness.                                                                                                                                               |
+| `EnsurePlan`                  | Supply an absolute minimum for the native plan. A repeat attempt can raise this ceiling while the accepted job quantity stays fixed.                                                                                              |
+| `SetMaterialOffer`            | Supply the quantity currently authorized to start. After an uncertain write, read the controller and recompute the offer because Mazak may have consumed it.                                                                      |
+| `WithdrawMaterialOffer`       | If a withdrawal reply was lost and the intended offer is still zero, request an explicit zero edit even when readback shows zero. Save it, await acknowledgment, and reconcile settled readback before releasing the reservation. |
+| `RecordedLoads`               | Count identified and unidentified physical loads, including invalidated attempts. An adopted route with an unknown creation boundary returns `null`.                                                                              |
 
-The downloader saves the native route identity before its first controller write and confirms the
-schedule from readback. A saved route or a matching native part lets an interrupted installation
-finish beyond the normal download window. Adoption and positive offers verify the effective program
-and revision using the same process configuration as download. A managed route with a pinned
-revision uses the controller program tagged with that revision, even when the job's program name is
-also a native program number.
+Queue and basket backends use `MazakConfig.ResolveLoadUnloadTransaction` to identify transferred
+pieces. The pending load stays anonymous until that identity is known. A transfer with only a
+physical count records that quantity and leaves the affected serials unknown. Use
+`CanQuarantineMissingMaterial` to retain pallet evidence while an external transfer is outstanding.
 
-A required program can disappear after job acceptance. When the job is due for download, a missing
-program or conflicting native definition raises a route alarm and holds that job while other
-eligible jobs can download. Correcting the controller's definition lets the held job resume. After a
-partial cancellation, managed jobs can still download at zero offer for the remaining work. Archival
-also cleans up a partial installation with no confirmed schedule. A confirmed route retains the same
-full native part name and schedule number through the job's active life, including at planned equals
-completed. A missing or conflicting route raises a route-specific alarm for backend disposition. The
-native part stays reserved during a conflict. Its controller comment cannot confirm another job's
-download or contribute to that job's completion and cancellation counts.
+Settle transfers and withdraw offers before archiving the job. Archival authorizes cleanup of the
+idle schedule and its unused definitions, including after a partial download or a restart. The
+adapter retains the route's identity for manufacturing history after the schedule ID is reused.
 
-Use `MazakManagedScheduleControl.VerifyInstalledRoute` to check a route against controller readback
-before reporting it ready. Use `EnsurePlan` with an absolute minimum quantity and `SetMaterialOffer`
-with the currently authorized ready quantity. A combined schedule admits material at process 1.
-Positive offers require the installed fixture quantity, pallet mappings, and eligible stations to
-match the job route. Withdrawal remains available when the schedule's identity is verified and its
-execution definition has changed. The plan is a native execution ceiling. Increasing it leaves
-Insight demand and the current offer intact. Serialize the writes with the controller's normal
-acquisition and download owner. After an uncertain write, acquire fresh readback and recompute the
-authorized offer before writing again, since the controller may have consumed it.
+## Sharing a repository between controllers
 
-If a withdrawal reply was lost and the intended offer is still zero, `WithdrawMaterialOffer` plans a
-zero edit against fresh, verified readback even if the controller already shows zero. The backend
-saves the edit, waits for the controller to acknowledge it, and reconciles settled readback before
-releasing any reservation associated with the offer.
-
-`RecordedLoads` reports physical loads within the confirmed schedule's history, including
-invalidated attempts and separately identified and unidentified quantities. Adopted schedules
-without a recorded creation boundary have unknown attempt totals. Valid Insight completions come
-from repository manufacturing history. Pending loads from a managed job's queue show the requested
-quantity with anonymous material cards. The queued pieces remain visible until the backend reports
-which pieces transferred. During an exchange on a managed split route, the pallet's existing serial
-appears on the unload card and the incoming load stays anonymous. Queue-only and basket backends
-both need `MazakConfig.ResolveLoadUnloadTransaction` to record material IDs for managed loads.
-Without a valid resolution, the LOAD event records physical quantity with unidentified material.
-
-After an unidentified unload, pallet status leaves the affected serials unknown. Exact transfer
-evidence can identify individual pieces. While the backend reports a pending transfer, an empty
-pallet observation preserves the possible serials for a delayed unload. Settled empty readback can
-end an uncertain placement, and moving known missing pieces to quarantine releases their places on
-the pallet. Both preserve the original manufacturing history. Historical native part identity
-remains available for late events after retirement and schedule number reuse.
-
-Settle the backend's outstanding transfers and withdraw offers before archiving the Insight job.
-Archival authorizes the ordinary synchronization loop to clean up the route, including an idle
-schedule with unequal planned and completed counts. Requests, pallet assignments, ready material and
-executing material defer deletion. The adapter rechecks readback between cleanup writes, including
-after restart, and preserves dependencies used by surviving routes. Cleanup can run without a new
-download.
+Give each controller a stable `ControllerSource` and assign its jobs with `BulkJobFilter`. Keep the
+original controller on `DefaultControllerSource` so it resumes from its existing CSV filenames. Set
+`MachineGroupName` when controllers use different machining station groups.

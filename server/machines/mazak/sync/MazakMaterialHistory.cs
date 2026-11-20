@@ -42,11 +42,32 @@ public static class MazakMaterialHistory
   internal sealed record PalletPlacement(
     ImmutableDictionary<long, LogMaterial> Candidates,
     ImmutableDictionary<int, int> PhysicalQuantities,
-    ImmutableHashSet<int> UncertainFaces
+    ImmutableDictionary<int, int> UncertainQuantities
   )
   {
     public IEnumerable<LogMaterial> Verified =>
-      Candidates.Values.Where(m => !UncertainFaces.Contains(m.Face));
+      Candidates.Values.Where(m => !UncertainQuantities.ContainsKey(m.Face));
+  }
+
+  internal static (int Identified, int Unidentified) TransferQuantities(
+    BlackMaple.MachineFramework.LogEntry entry
+  )
+  {
+    var identified = int.TryParse(
+      entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.IdentifiedQuantityKey),
+      NumberStyles.None,
+      CultureInfo.InvariantCulture,
+      out var count
+    )
+      ? count
+      : entry.Material.Count(m => m.MaterialID >= 0);
+    int.TryParse(
+      entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.UnidentifiedQuantityKey),
+      NumberStyles.None,
+      CultureInfo.InvariantCulture,
+      out var unidentified
+    );
+    return (identified, unidentified);
   }
 
   // A raw unload can remove a physical piece without identifying which recorded serial left.
@@ -103,20 +124,7 @@ public static class MazakMaterialHistory
             uncertain = uncertain.SetItem(face, before);
           continue;
         }
-        int.TryParse(
-          details.GetValueOrDefault(ManagedMazakSchedules.UnidentifiedQuantityKey),
-          NumberStyles.None,
-          CultureInfo.InvariantCulture,
-          out var unidentified
-        );
-        var identified = int.TryParse(
-          details.GetValueOrDefault(ManagedMazakSchedules.IdentifiedQuantityKey),
-          NumberStyles.None,
-          CultureInfo.InvariantCulture,
-          out var count
-        )
-          ? count
-          : entry.Material.Count(m => m.MaterialID >= 0);
+        var (identified, unidentified) = TransferQuantities(entry);
         var moved = identified + unidentified;
         var after = load ? before + moved : System.Math.Max(0, before - moved);
         if (after == 0)
@@ -147,6 +155,6 @@ public static class MazakMaterialHistory
       .Values.Where(m => managedFaces.Contains(m.Face) && !uncertain.ContainsKey(m.Face))
       .GroupBy(m => m.Face)
       .Select(g => KeyValuePair.Create(g.Key, g.Count()));
-    return new(candidates, uncertain.AddRange(knownCounts), uncertain.Keys.ToImmutableHashSet());
+    return new(candidates, uncertain.AddRange(knownCounts), uncertain);
   }
 }
