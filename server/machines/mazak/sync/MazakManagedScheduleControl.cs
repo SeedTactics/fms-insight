@@ -16,6 +16,21 @@ public sealed record MazakManagedLoadCount(long IdentifiedQuantity, long Unident
 /// <summary>Plans edits against current readback from the controller that downloaded the route.</summary>
 public static class MazakManagedScheduleControl
 {
+  /// <summary>Read the verified schedule and execution definition without reserving capacity.</summary>
+  public static MazakScheduleRow VerifyInstalledRoute(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    string jobUnique,
+    int process
+  )
+  {
+    var (job, _, part, schedule) = Verify(db, config, observed, jobUnique, process);
+    if (ManagedMazakSchedules.ExecutionConflict(db, observed, config, job, part) is { } conflict)
+      throw new ConflictRequestException(conflict);
+    return schedule;
+  }
+
   /// <summary>Raise the native plan to at least the absolute quantity. A satisfied plan needs no write.</summary>
   public static MazakWriteData? EnsurePlan(
     IRepository db,
@@ -27,7 +42,7 @@ public static class MazakManagedScheduleControl
   )
   {
     ArgumentOutOfRangeException.ThrowIfNegativeOrZero(minimum);
-    var schedule = Verify(db, config, observed, jobUnique, process).Schedule;
+    var schedule = VerifyInstalledRoute(db, config, observed, jobUnique, process);
     return schedule.PlanQuantity >= minimum
       ? null
       : new MazakWriteData

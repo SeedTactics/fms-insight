@@ -140,6 +140,78 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task JobMaintenanceCanDownloadAnAgedManagedJobWithoutAuthorizingCleanup()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var managed = PendingJob(true);
+    var peer = managed with { UniqueStr = "peer", PartName = "peer-part" };
+    var ordinary = PendingJob(false) with { UniqueStr = "ordinary", PartName = "ordinary-part" };
+    db.AddJobs(new NewJobs { ScheduleId = "old", Jobs = [managed, peer, ordinary] }, null, false);
+    var config = ManagedConfig() with { BulkJobFilter = job => job.UniqueStr != peer.UniqueStr };
+    var settings = new FMSSettings();
+    var device = new DownloadDevice("");
+    using var sync = new MazakSync(device.Native, settings, config);
+    var later = managed.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1);
+    var required = ImmutableHashSet.Create(managed.UniqueStr, peer.UniqueStr, ordinary.UniqueStr);
+
+    MazakState Observe()
+    {
+      var data = device.Data;
+      return sync.ReconcileCellState(
+        db,
+        new MazakAcquisition
+        {
+          StartedAtUtc = later,
+          DataLoadedAtUtc = later,
+          CompletedAtUtc = later,
+          Tools = null,
+          Data = new MazakAllDataAndLogs
+          {
+            Schedules = data.Schedules,
+            Parts = data.Parts,
+            Fixtures = data.Fixtures,
+            Pallets = data.Pallets,
+            PalletSubStatuses = data.PalletSubStatuses,
+            PalletPositions = data.PalletPositions,
+            LoadActions = data.LoadActions,
+            MainPrograms = data.MainPrograms,
+            Logs = [],
+          },
+        }
+      ).State;
+    }
+
+    var initial = Observe();
+    await Assert.That(WriteJobs.FindPendingDownload(initial.AllData, db, config, later)).IsEmpty();
+    var planned = WriteJobs.FindPendingDownload(initial.AllData, db, config, later, required);
+    await Assert.That(planned.Single().UniqueStr).IsEqualTo(managed.UniqueStr);
+    await Assert.That(db.LoadMazakManagedSchedules(config.ControllerSource)).IsEmpty();
+    device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+
+    await Assert
+      .That(sync.ApplyJobActions(db, initial, allowManagedCleanup: false, required))
+      .IsTrue();
+    await Assert.That(db.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(db.LoadJob(peer.UniqueStr)!.CopiedToSystem).IsFalse();
+    await Assert.That(db.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsFalse();
+    await Assert.That(device.Data.Schedules.Count).IsEqualTo(2);
+    await Assert
+      .That(device.Data.Schedules.SelectMany(s => s.Processes).Sum(p => p.ProcessMaterialQuantity))
+      .IsEqualTo(0);
+
+    db.ArchiveJob(managed.UniqueStr);
+    await Assert
+      .That(sync.ApplyJobActions(db, Observe(), allowManagedCleanup: false, required))
+      .IsFalse();
+    await Assert.That(device.Data.Schedules.Count).IsEqualTo(2);
+    await Assert
+      .That(sync.ApplyJobActions(db, Observe(), additionalManagedJobs: required))
+      .IsTrue();
+    await Assert.That(device.Data.Schedules.Count).IsEqualTo(1);
+  }
+
+  [Test]
   public async Task ZeroCycleManagedJobLetsTheNextBatchDownload()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());

@@ -69,7 +69,8 @@ namespace MazakMachineInterface
       FMSSettings fmsSt,
       MazakConfig mazakCfg,
       DateTime now,
-      bool attemptCleanup
+      bool attemptCleanup,
+      ImmutableHashSet<string> additionalManagedJobs = null
     )
     {
       ManagedMazakSchedules.ConfirmObserved(db, mazakCfg, mazakData);
@@ -78,25 +79,7 @@ namespace MazakMachineInterface
       var routes = mazakCfg.UseInsightJobQuantities is null
         ? []
         : db.LoadMazakManagedSchedules(mazakCfg.ControllerSource);
-      var window = DownloadWindow(now);
-      var jobs = db.LoadJobsNotCopiedToSystem(
-          window.EarliestEnd,
-          window.LatestStart,
-          includeDecremented: mazakCfg.UseInsightJobQuantities is not null
-        )
-        .Concat(InterruptedManagedDownloads(db, mazakCfg, mazakData, routes))
-        .DistinctBy(j => j.UniqueStr)
-        .Where(j => mazakCfg.BulkJobFilter?.Invoke(j) != false)
-        .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
-        .Where(j => HasDownloadDemand(j, mazakCfg))
-        .Where(j =>
-          !mazakCfg.UsesInsightJobQuantities(j)
-          || ManagedMazakSchedules.CanContinueDownload(db, mazakCfg, mazakData, j)
-        )
-        .GroupBy(j => j.ScheduleId)
-        // Only do one schedule at a time
-        .MinBy(g => g.Key, StringComparer.Ordinal);
-
+      var jobs = PendingDownload(mazakData, db, mazakCfg, now, routes, additionalManagedJobs);
       if (jobs == null)
       {
         return false;
@@ -150,6 +133,63 @@ namespace MazakMachineInterface
       }
 
       return true;
+    }
+
+    /// <summary>Preview the next eligible batch using current repository and controller state.</summary>
+    /// <remarks>Additional managed job IDs extend the download window. ApplyJobActions selects again when it runs.</remarks>
+    public static ImmutableList<HistoricJob> FindPendingDownload(
+      MazakAllData data,
+      IRepository db,
+      MazakConfig config,
+      DateTime now,
+      ImmutableHashSet<string> additionalManagedJobs = null
+    ) =>
+      PendingDownload(
+        data,
+        db,
+        config,
+        now,
+        config.UseInsightJobQuantities is null
+          ? []
+          : db.LoadMazakManagedSchedules(config.ControllerSource),
+        additionalManagedJobs
+      )
+        ?.ToImmutableList()
+      ?? [];
+
+    private static IGrouping<string, HistoricJob> PendingDownload(
+      MazakAllData mazakData,
+      IRepository db,
+      MazakConfig mazakCfg,
+      DateTime now,
+      ImmutableList<MazakManagedSchedule> routes,
+      ImmutableHashSet<string> additionalManagedJobs
+    )
+    {
+      var window = DownloadWindow(now);
+      return db.LoadJobsNotCopiedToSystem(
+          window.EarliestEnd,
+          window.LatestStart,
+          includeDecremented: mazakCfg.UseInsightJobQuantities is not null
+        )
+        .Concat(InterruptedManagedDownloads(db, mazakCfg, mazakData, routes))
+        .Concat(
+          (additionalManagedJobs ?? [])
+            .Select(db.LoadJob)
+            .OfType<HistoricJob>()
+            .Where(j => !j.CopiedToSystem && !j.Archived && ManagedMazakSchedules.Owns(mazakCfg, j))
+        )
+        .DistinctBy(j => j.UniqueStr)
+        .Where(j => mazakCfg.BulkJobFilter?.Invoke(j) != false)
+        .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
+        .Where(j => HasDownloadDemand(j, mazakCfg))
+        .Where(j =>
+          !mazakCfg.UsesInsightJobQuantities(j)
+          || ManagedMazakSchedules.CanContinueDownload(db, mazakCfg, mazakData, j)
+        )
+        .GroupBy(j => j.ScheduleId)
+        // Only do one schedule at a time
+        .MinBy(g => g.Key, StringComparer.Ordinal);
     }
 
     private static IEnumerable<HistoricJob> InterruptedManagedDownloads(

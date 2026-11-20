@@ -444,6 +444,11 @@ public sealed partial class DuplicateDownloadSpec
     )!;
     device.Native.Save(offer);
     var partName = offer.Schedules.Single().PartName;
+    await Assert
+      .That(
+        MazakManagedScheduleControl.VerifyInstalledRoute(db, config, device.Data, job.UniqueStr, 2)
+      )
+      .IsEqualTo(device.Data.Schedules.Single(s => s.PartName == partName));
     var part = device.Data.Parts.Single(p => p.PartName == partName);
     var process = part.Processes.Single();
     var changed = mismatch switch
@@ -468,6 +473,25 @@ public sealed partial class DuplicateDownloadSpec
     await Assert
       .That(() =>
         MazakManagedScheduleControl.SetMaterialOffer(db, config, observed, job.UniqueStr, 2, 2)
+      )
+      .Throws<ConflictRequestException>()
+      .WithMessageContaining(mismatch);
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.VerifyInstalledRoute(db, config, observed, job.UniqueStr, 2)
+      )
+      .Throws<ConflictRequestException>()
+      .WithMessageContaining(mismatch);
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.EnsurePlan(
+          db,
+          config,
+          observed,
+          job.UniqueStr,
+          2,
+          job.Cycles + 1
+        )
       )
       .Throws<ConflictRequestException>()
       .WithMessageContaining(mismatch);
@@ -1059,6 +1083,10 @@ public sealed partial class DuplicateDownloadSpec
     db.ArchiveJob(job.UniqueStr);
     Poll();
     await Assert.That(device.Data.Schedules.Single(s => s.Id == p2.Id)).IsEqualTo(peerSchedule);
+    var retirementAlarm = ManagedMazakSchedules.Diagnostics(db, config, device.Data, Now).Single();
+    await Assert.That(retirementAlarm.Code).IsEqualTo("mazak-managed-retirement-conflict");
+    await Assert.That(retirementAlarm.Message).Contains(p2.PartName);
+    await Assert.That(retirementAlarm.Message).Contains(clonedPart.PartName);
   }
 
   private static BlackMaple.MachineFramework.LogEntry TranslateManagedTransfer(

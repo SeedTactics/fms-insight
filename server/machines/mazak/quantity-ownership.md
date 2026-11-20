@@ -45,6 +45,11 @@ each. When two controllers share a repository, set `BulkJobFilter` for each cont
 jobs and give each controller a stable `ControllerSource`. The original controller retains its usual
 CSV history on `DefaultControllerSource`.
 
+A backend that handles its own queue reconciliation can run `MazakSync.ApplyJobActions` for
+downloads and archive cleanup. `WriteJobs.FindPendingDownload` previews the next batch. Both accept
+additional managed job IDs for work outside the normal download window. If the backend validates
+that exact batch, serialize changes to the eligible jobs across preview and download.
+
 Set `MazakConfig.MachineGroupName` to the machining station group on each controller when the groups
 differ. The override applies to machining events, pallet locations, and tool queries. Leaving it
 unset uses the group inferred from the latest accepted schedule.
@@ -64,14 +69,15 @@ also cleans up a partial installation with no confirmed schedule. A confirmed ro
 full native part name and schedule number through the job's active life, including at planned equals
 completed. A missing or conflicting route raises a route-specific alarm for backend disposition.
 
-Use `MazakManagedScheduleControl.EnsurePlan` with an absolute minimum quantity and
-`SetMaterialOffer` with the currently authorized ready quantity. A combined schedule admits material
-at process 1. Positive offers require the installed fixture quantity, pallet mappings, and eligible
-stations to match the job route. Withdrawal remains available when the schedule's identity is
-verified and its execution definition has changed. The plan is a native execution ceiling.
-Increasing it leaves Insight demand and the current offer intact. Serialize the writes with the
-controller's normal acquisition and download owner. After an uncertain write, acquire fresh readback
-and recompute the authorized offer before writing again, since the controller may have consumed it.
+Use `MazakManagedScheduleControl.VerifyInstalledRoute` to check a route against controller readback
+before reporting it ready. Use `EnsurePlan` with an absolute minimum quantity and `SetMaterialOffer`
+with the currently authorized ready quantity. A combined schedule admits material at process 1.
+Positive offers require the installed fixture quantity, pallet mappings, and eligible stations to
+match the job route. Withdrawal remains available when the schedule's identity is verified and its
+execution definition has changed. The plan is a native execution ceiling. Increasing it leaves
+Insight demand and the current offer intact. Serialize the writes with the controller's normal
+acquisition and download owner. After an uncertain write, acquire fresh readback and recompute the
+authorized offer before writing again, since the controller may have consumed it.
 
 `RecordedLoads` reports physical loads within the confirmed schedule's history, including
 invalidated attempts and separately identified and unidentified quantities. Adopted schedules

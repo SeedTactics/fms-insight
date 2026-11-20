@@ -424,7 +424,13 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   private bool deferManagedCleanup;
 
-  public bool ApplyActions(IRepository db, MazakState st)
+  /// <summary>Run native job downloads and optional managed archive cleanup, skipping queue reconciliation.</summary>
+  public bool ApplyJobActions(
+    IRepository db,
+    MazakState st,
+    bool allowManagedCleanup = true,
+    ImmutableHashSet<string>? additionalManagedJobs = null
+  )
   {
     if (st.StoppedBecauseRecentLogEvent)
     {
@@ -435,7 +441,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     // next fresh pass with independent downloads and queue work before retrying cleanup.
     var cleanupDeferred = deferManagedCleanup;
     deferManagedCleanup = false;
-    if (!cleanupDeferred)
+    if (allowManagedCleanup && !cleanupDeferred)
     {
       try
       {
@@ -449,17 +455,23 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       }
     }
 
-    // jobs
-    bool jobsCopied = WriteJobs.SyncFromDatabase(
+    return WriteJobs.SyncFromDatabase(
       st.AllData,
       db,
       mazakDB,
       settings,
       mazakConfig,
       st.CurrentStatus.TimeOfCurrentStatusUTC,
-      attemptCleanup: false
+      attemptCleanup: false,
+      additionalManagedJobs
     );
+  }
 
+  public bool ApplyActions(IRepository db, MazakState st)
+  {
+    if (st.StoppedBecauseRecentLogEvent)
+      return false;
+    var jobsCopied = ApplyJobActions(db, st);
     // queues
     bool queuesChanged = false;
     if (!jobsCopied)

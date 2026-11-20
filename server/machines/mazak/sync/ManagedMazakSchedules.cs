@@ -499,8 +499,9 @@ internal static partial class ManagedMazakSchedules
       .Concat(data.Schedules.Select(s => s.Comment))
       .ToImmutableHashSet();
     var window = WriteJobs.DownloadWindow(observationTimeUtc);
-    return (
-      from job in db.LoadUnarchivedJobs()
+    var unarchived = db.LoadUnarchivedJobs();
+    var active =
+      from job in unarchived
       where Owns(config, job)
       let bindings = db.LoadMazakManagedSchedules(
         config.ControllerSource,
@@ -533,7 +534,39 @@ internal static partial class ManagedMazakSchedules
         Code = "mazak-managed-schedule-unavailable",
         Message = message,
         Impact = AlarmImpact.Informational,
-      }
-    ).ToImmutableList();
+      };
+    var unarchivedJobs = unarchived.Select(job => job.UniqueStr).ToImmutableHashSet();
+    var retiring =
+      from routes in db.LoadMazakManagedSchedules(config.ControllerSource).GroupBy(r => r.JobUnique)
+      where !unarchivedJobs.Contains(routes.Key)
+      let job = db.LoadJob(routes.Key)
+      where job is { Archived: true } && Owns(config, job)
+      from route in routes
+      let alarm = RetirementConflict(data, job, route)
+      where alarm != null
+      select alarm;
+    return active.Concat(retiring).ToImmutableList();
+  }
+
+  private static CurrentStatusAlarm? RetirementConflict(
+    MazakAllData data,
+    Job job,
+    MazakManagedSchedule route
+  )
+  {
+    try
+    {
+      Inspect(data, job, route);
+      return null;
+    }
+    catch (ConflictRequestException conflict)
+    {
+      return new CurrentStatusAlarm
+      {
+        Code = "mazak-managed-retirement-conflict",
+        Message = conflict.Message,
+        Impact = AlarmImpact.Informational,
+      };
+    }
   }
 }
