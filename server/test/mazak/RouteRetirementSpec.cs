@@ -56,6 +56,15 @@ public sealed partial class DuplicateDownloadSpec
     };
     var view = new DownloadDevice("").Data with
     {
+      Parts =
+      [
+        new()
+        {
+          PartName = route.PartName,
+          Comment = schedule.Comment,
+          Processes = [new() { PartName = route.PartName, ProcessNumber = 1 }],
+        },
+      ],
       Schedules = [schedule],
       PalletSubStatuses = [new() { ScheduleID = schedule.Id, FixQuantity = onPallet }],
     };
@@ -115,10 +124,16 @@ public sealed partial class DuplicateDownloadSpec
     await Assert
       .That(() => MazakRouteRetirement.RemoveSchedule(db, RouteConfig, changed, route))
       .Throws<ConflictRequestException>();
+    await Assert
+      .That(() => MazakRouteCapacity.SetMaterialQuantity(db, RouteConfig, changed, route, 0))
+      .Throws<ConflictRequestException>();
     var peer = RouteConfig with { ControllerSource = "peer" };
     db.ReserveMazakRouteIdentity(route with { Source = peer.ControllerSource });
     await Assert
       .That(() => MazakRouteRetirement.Calculate(db, peer, view, candidates))
+      .Throws<ArgumentException>();
+    await Assert
+      .That(() => MazakRouteCapacity.SetMaterialQuantity(db, peer, changed, route, 1))
       .Throws<ArgumentException>();
     var incomplete = view with { Schedules = [foreignRow with { PartName = "peer:3:1" }] };
     var waiting = MazakRouteRetirement.Calculate(db, RouteConfig, incomplete, candidates);

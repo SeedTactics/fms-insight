@@ -435,16 +435,24 @@ public static class MazakRouteCapacity
 
   // Set the outstanding offer on a freshly observed split schedule. After an uncertain write
   // the owner must recalculate what is still available to load: Mazak may have consumed it.
-  public static MazakWriteData? SetMaterialQuantity(MazakScheduleRow schedule, int offeredQuantity)
+  public static MazakWriteData? SetMaterialQuantity(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    MazakRouteIdentity route,
+    int offeredQuantity
+  )
   {
     ArgumentOutOfRangeException.ThrowIfNegative(offeredQuantity);
-    if (
-      !MazakPart.IsSplitComment(schedule.Comment)
-      || schedule.Processes is not [{ ProcessNumber: 1 } process]
-    )
-      throw new BadRequestException(
-        "Material admission requires a single-process split Mazak schedule."
+    var schedule = MazakRouteRetirement.FindOwnedSchedule(db, config, observed, route)
+      ?? throw new ConflictRequestException(
+        $"Native part '{route.PartName}' has no observed schedule to edit."
       );
+    if (offeredQuantity > 0 && !observed.Parts.Any(part => part.PartName == route.PartName))
+      throw new ConflictRequestException(
+        $"Native part '{route.PartName}' needs a confirmed part definition before offering material."
+      );
+    var process = schedule.Processes.Single();
     var committed =
       (long)schedule.CompleteQuantity + process.ProcessExecuteQuantity + process.ProcessBadQuantity;
     if (offeredQuantity > 0 && committed + offeredQuantity > schedule.PlanQuantity)

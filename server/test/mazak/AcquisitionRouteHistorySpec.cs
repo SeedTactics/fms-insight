@@ -421,7 +421,8 @@ public sealed partial class MazakAcquisitionSpec
     var replacement = repeat.NextWrite!.Schedules.Single();
     await Assert.That(replacement.PartName).IsEqualTo(route.PartName);
     await Assert.That(replacement.Processes.Single().ProcessMaterialQuantity).IsEqualTo(0);
-    var offer = MazakRouteCapacity.SetMaterialQuantity(replacement, 1)!;
+    cell.Data = cell.Data with { Schedules = [replacement] };
+    var offer = MazakRouteCapacity.SetMaterialQuantity(db, config, cell.Data, route, 1)!;
     cell.Data = cell.Data with { Schedules = [offer.Schedules.Single()] };
 
     var reloaded = Transfer(LogCode.LoadEnd, 4);

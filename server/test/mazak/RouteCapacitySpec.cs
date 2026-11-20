@@ -440,10 +440,7 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(row.Processes).IsEmpty();
     device.Native.Save(increase);
     MazakWriteData? Offer(int count) =>
-      MazakRouteCapacity.SetMaterialQuantity(
-        device.Data.Schedules.Single(s => s.Id == add.Id),
-        count
-      );
+      MazakRouteCapacity.SetMaterialQuantity(reopened, routeConfig, device.Data, identity, count);
     var offer = Offer(3)!;
     await Assert
       .That(offer.Schedules.Single().Command)
@@ -551,7 +548,9 @@ public sealed partial class DuplicateDownloadSpec
       throw new InvalidOperationException("Installation failed to settle.");
     }
     var route = Install();
-    device.Native.Save(MazakRouteCapacity.SetMaterialQuantity(device.Data.Schedules.Single(), 3)!);
+    device.Native.Save(
+      MazakRouteCapacity.SetMaterialQuantity(db, routeConfig, device.Data, route, 3)!
+    );
     var time = Now.AddMinutes(-2);
     var load = new MazakMachineInterface.LogEntry
     {
@@ -777,7 +776,9 @@ public sealed partial class DuplicateDownloadSpec
           },
     };
     using var nextSync = new MazakSync(device.Native, settings, exact);
-    device.Native.Save(MazakRouteCapacity.SetMaterialQuantity(device.Data.Schedules.Single(), 3)!);
+    device.Native.Save(
+      MazakRouteCapacity.SetMaterialQuantity(db, routeConfig, device.Data, route, 3)!
+    );
     var readSchedule = device.Data.Schedules.Single();
     device.Observe(
       device.Data with

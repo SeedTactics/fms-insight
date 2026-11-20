@@ -69,11 +69,11 @@ the next write without saving reservations. Use `Calculate` before applying a wr
 A new schedule starts with zero offered material. An existing schedule keeps its current offer. An
 increase to the plan uses `ScheduleSafeEdit` with the observed priority, due date and hold.
 
-When material is ready, pass the observed schedule row and the available piece count to
-`MazakRouteCapacity.SetMaterialQuantity`. The caller owns admission, including which pieces make up
-a set. After an uncertain material edit, read the controller and the staging evidence again before
-calculating the next offer. Replaying the old quantity after Mazak consumed it could offer the same
-pieces twice.
+When material is ready, pass the controller, its current readback, the reserved route and the
+available piece count to `MazakRouteCapacity.SetMaterialQuantity`. The adapter verifies native
+ownership. The caller owns admission, including which pieces make up a set. After an uncertain
+material edit, read the controller and the staging evidence again before calculating the next offer.
+Replaying the old quantity after Mazak consumed it could offer the same pieces twice.
 
 The preparation API manages one live schedule per selected route. For example, after a piece is
 invalidated and returned to a queue, use `MazakRouteRetirement.RemoveSchedule` to remove the

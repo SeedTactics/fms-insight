@@ -174,6 +174,10 @@ public static class MazakRouteRetirement
     var row = FindOwnedSchedule(db, config, observed, route);
     if (row == null)
       return null;
+    if (!observed.Parts.Any(part => part.PartName == route.PartName))
+      throw new ConflictRequestException(
+        $"Native part '{route.PartName}' needs a confirmed part definition before removing its schedule."
+      );
     CheckIdle(observed, row);
     return BuildMazakSchedules.RemoveSchedules(observed, schedule => schedule.Id == row.Id).Item1;
   }
@@ -193,6 +197,8 @@ public static class MazakRouteRetirement
         nameof(candidates)
       );
     var rows = VerifyOwnership(db, config, observed, candidates.PartNames);
+    if (!HasAllScheduledParts(observed))
+      return new(MazakRetirementProgress.WaitingForReadback, null);
     foreach (var row in rows)
       CheckIdle(observed, row);
     var scheduled = rows.Select(row => row.Id).ToImmutableHashSet();
@@ -203,8 +209,7 @@ public static class MazakRouteRetirement
       return Write(scheduleDeletes);
 
     if (
-      !HasAllScheduledParts(observed)
-      || observed.PalletSubStatuses.Any(s =>
+      observed.PalletSubStatuses.Any(s =>
         s.FixQuantity > 0
         && candidates.PartNames.WithComparer(StringComparer.OrdinalIgnoreCase).Contains(s.PartName)
       )
