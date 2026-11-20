@@ -1230,7 +1230,14 @@ namespace MazakMachineInterface
             return;
           }
 
-          prog = ResolveProgram(mazakData, stop.Program, stop.ProgramRevision, lookupProgram);
+          prog = ResolveProgram(
+            mazakData,
+            stop.Program,
+            stop.ProgramRevision,
+            lookupProgram,
+            allowUnversionedNativeName: stop.ProgramRevision is null or 0
+              || !mazakCfg.UsesInsightJobQuantities(job)
+          );
           if (prog == null)
           {
             ErrorDuringCreate =
@@ -1268,10 +1275,11 @@ namespace MazakMachineInterface
       MazakAllData data,
       string name,
       long? revision,
-      Func<string, long?, ProgramRevision> lookupProgram
+      Func<string, long?, ProgramRevision> lookupProgram,
+      bool allowUnversionedNativeName
     )
     {
-      if (data.MainPrograms.Any(p => p.MainProgram == name))
+      if (allowUnversionedNativeName && data.MainPrograms.Any(p => p.MainProgram == name))
         return new ProgramRevision
         {
           ProgramName = "",

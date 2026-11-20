@@ -183,6 +183,91 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task NativeProgramNumberCannotOverrideTheAcceptedRevision()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var device = new DownloadDevice("");
+    var job = PendingJob(true);
+    var second = job.Processes[1];
+    var path = second.Paths.Single();
+    var request = new NewJobs
+    {
+      ScheduleId = "first",
+      Jobs =
+      [
+        job with
+        {
+          Processes = job.Processes.SetItem(
+            1,
+            second with
+            {
+              Paths = [path with { Stops = [path.Stops.Single() with { ProgramRevision = 7 }] }],
+            }
+          ),
+        },
+      ],
+      Programs =
+      [
+        new()
+        {
+          ProgramName = "1002",
+          Revision = 7,
+          ProgramContent = "accepted",
+        },
+      ],
+    };
+    device.Observe(
+      device.Data with
+      {
+        MainPrograms = device
+          .Data.MainPrograms.Select(p =>
+            p.MainProgram == "1002" ? p with { Comment = "Insight:8:1002" } : p
+          )
+          .Append(new MazakProgramRow { MainProgram = "1012", Comment = "Insight:7:1002" })
+          .ToImmutableList(),
+      }
+    );
+    db.AddJobs(request, null, false);
+    await Assert.That(Sync(device, db)).IsTrue();
+    var part = device.Data.Parts.Single(p => p.Comment == "initial-job-2-1-InsightS");
+    var process = part.Processes.Single();
+    await Assert.That(process.MainProgram).IsEqualTo("1012");
+
+    using var recovery = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var reopened = recovery.OpenConnection();
+    reopened.AddJobs(request, null, false);
+    var config = ManagedConfig();
+    var wrong = device.Data with
+    {
+      Parts = device
+        .Data.Parts.Select(p =>
+          p == part ? p with { Processes = [process with { MainProgram = "1002" }] } : p
+        )
+        .ToImmutableList(),
+    };
+    ManagedMazakSchedules.ConfirmObserved(reopened, config, wrong);
+    await Assert
+      .That(() =>
+        MazakManagedScheduleControl.SetMaterialOffer(reopened, config, wrong, job.UniqueStr, 2, 1)
+      )
+      .Throws<ConflictRequestException>();
+    ManagedMazakSchedules.ConfirmObserved(reopened, config, device.Data);
+    await Assert
+      .That(
+        MazakManagedScheduleControl.SetMaterialOffer(
+          reopened,
+          config,
+          device.Data,
+          job.UniqueStr,
+          2,
+          1
+        )
+      )
+      .IsNotNull();
+  }
+
+  [Test]
   [Arguments(false)]
   [Arguments(true)]
   public async Task AdoptionAndSupplyUseTheConfiguredProcessProgram(bool overrideRow)
