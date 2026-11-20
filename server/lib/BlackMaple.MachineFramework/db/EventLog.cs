@@ -362,6 +362,34 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public long MaxLogCounter()
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText = "SELECT COALESCE(MAX(Counter), 0) FROM stations";
+      return (long)cmd.ExecuteScalar();
+    }
+
+    public IEnumerable<LogEntry> GetRecentLogForProgramDetail(
+      long afterCounter,
+      string key,
+      string value
+    )
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName, s.ForeignID "
+        + " FROM stations s JOIN program_details d ON d.Counter = s.Counter AND d.Key = $key "
+        + " WHERE s.Counter > $counter AND d.Value = $value ORDER BY s.Counter ASC";
+      cmd.Parameters.Add("counter", SqliteType.Integer).Value = afterCounter;
+      cmd.Parameters.Add("key", SqliteType.Text).Value = key;
+      cmd.Parameters.Add("value", SqliteType.Text).Value = value;
+      using var reader = cmd.ExecuteReader();
+      foreach (var entry in LoadLog(reader, trans))
+        yield return entry;
+    }
+
     public LogEntry MostRecentLogEntryForForeignID(string foreignID)
     {
       using (var trans = _connection.BeginTransaction())
@@ -540,7 +568,10 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path "
+        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path, "
+        + "CASE WHEN s.StationLoc = $pallet AND s.Result = 'UNLOAD' THEN EXISTS "
+        + "(SELECT 1 FROM program_details d WHERE d.Counter = s.Counter "
+        + "AND d.Key = 'PalletCycleInvalidated') ELSE 0 END "
         + "FROM matdetails m "
         + "JOIN stations_mat sm ON sm.MaterialID = m.MaterialID "
         + "JOIN stations s ON s.Counter = sm.Counter "
@@ -585,9 +616,12 @@ namespace BlackMaple.MachineFramework
         {
           if (lastUnload == null || time > lastUnload.Value)
             lastUnload = time;
-          var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
-          var key = (Process: process, Path: path);
-          completed[key] = completed.GetValueOrDefault(key) + 1;
+          if (!reader.GetBoolean(6))
+          {
+            var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
+            var key = (Process: process, Path: path);
+            completed[key] = completed.GetValueOrDefault(key) + 1;
+          }
         }
       }
 
@@ -3068,6 +3102,8 @@ namespace BlackMaple.MachineFramework
             )
           );
         }
+        else if (totMatCnt == 0)
+          elapsed = TimeSpan.Zero;
         else
         {
           elapsed = TimeSpan.FromSeconds(
@@ -3244,6 +3280,8 @@ namespace BlackMaple.MachineFramework
             )
           );
         }
+        else if (totMatCnt == 0)
+          elapsed = TimeSpan.Zero;
         else
         {
           elapsed = TimeSpan.FromSeconds(

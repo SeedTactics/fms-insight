@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 46;
+    private const int Version = 47;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -289,6 +289,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         CreateJobDecrementOperationTables(cmd);
+        CreateMazakManagedScheduleTable(cmd);
 
         cmd.CommandText =
           "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
@@ -540,6 +541,12 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
             CreateSimStationTimeIndex(cmd);
+          }
+
+          if (curVersion < 47)
+          {
+            cmd.Transaction = trans;
+            CreateMazakManagedScheduleTable(cmd);
           }
 
           //update the version in the database
@@ -1388,6 +1395,30 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText =
         "CREATE TABLE current_basket_slot_data(BasketId INTEGER NOT NULL, Slot INTEGER NOT NULL, Key TEXT NOT NULL, Value TEXT NOT NULL, PRIMARY KEY(BasketId, Slot, Key))";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateMazakManagedScheduleTable(IDbCommand cmd)
+    {
+      cmd.CommandText = """
+        CREATE TABLE IF NOT EXISTS mazak_managed_schedule (
+          Source TEXT NOT NULL,
+          PartName TEXT NOT NULL COLLATE NOCASE,
+          JobUnique TEXT NOT NULL,
+          Comment TEXT NOT NULL,
+          ConfirmedId INTEGER NULL,
+          BeforeLoadCounter INTEGER NULL,
+          Processes TEXT NOT NULL,
+          Retired INTEGER NOT NULL DEFAULT 0 CHECK (Retired IN (0, 1)),
+          PreviousFixtures TEXT NOT NULL DEFAULT '[]',
+          PreviousPrograms TEXT NOT NULL DEFAULT '[]',
+          PRIMARY KEY (Source, PartName),
+          UNIQUE (Source, JobUnique, Comment)
+        )
+        """;
+      cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX IF NOT EXISTS mazak_managed_open_idx ON mazak_managed_schedule(Source, PartName) WHERE Retired = 0";
       cmd.ExecuteNonQuery();
     }
 
