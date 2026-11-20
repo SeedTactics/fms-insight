@@ -1443,7 +1443,11 @@ namespace MazakMachineInterface
       {
         result.Managed = true;
         var job = GetJob(binding.JobUnique);
-        if (binding.PartName == partName && ManagedMazakSchedules.Owns(mazakConfig, job))
+        if (
+          binding.ConfirmedScheduleId.HasValue
+          && binding.PartName == partName
+          && ManagedMazakSchedules.Owns(mazakConfig, job)
+        )
         {
           try
           {

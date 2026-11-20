@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
@@ -108,6 +109,58 @@ public sealed partial class DuplicateDownloadSpec
         MazakManagedScheduleControl.RecordedLoads(db, config, job.UniqueStr, 2)!.PhysicalQuantity
       )
       .IsEqualTo(0L);
+  }
+
+  [Test]
+  public async Task TransferForAnUnconfirmedInstallationStaysUnidentified()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = repositories.OpenConnection();
+    var job = PendingJob(true);
+    var device = new DownloadDevice("schedules");
+    db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [job] }, null, false);
+    await Assert.That(() => Sync(device, db)).Throws<IOException>();
+    var part = device.Data.Parts.Single(p => p.Comment == "initial-job-2-1-InsightS");
+    var candidate = new MazakScheduleRow { PartName = part.PartName, Comment = part.Comment };
+    var id = db.AllocateMaterialID(job.UniqueStr, job.PartName, 2);
+    var entry = TranslateManagedTransfer(
+      db,
+      ManagedConfig(),
+      new FMSSettings(),
+      device.Data,
+      candidate,
+      job.PartName,
+      LogCode.LoadEnd,
+      1,
+      1,
+      [id]
+    );
+    await Assert.That(entry.Material).IsEmpty();
+    await Assert.That(entry.ProgramDetails!["mazak-unidentified-quantity"]).IsEqualTo("1");
+    await Assert.That(entry.ProgramDetails!["mazak-managed-route-conflict"]).IsEqualTo("true");
+
+    await Assert.That(Sync(device, db)).IsTrue();
+    var installed = device.Data.Schedules.Single(s => s.PartName == part.PartName);
+    entry = TranslateManagedTransfer(
+      db,
+      ManagedConfig(),
+      new FMSSettings(),
+      device.Data,
+      installed,
+      job.PartName,
+      LogCode.LoadEnd,
+      1,
+      2,
+      [id]
+    );
+    await Assert.That(entry.Material.Single().MaterialID).IsEqualTo(id);
+    await Assert
+      .That(
+        MazakManagedScheduleControl
+          .RecordedLoads(db, ManagedConfig(), job.UniqueStr, 2)!
+          .PhysicalQuantity
+      )
+      .IsEqualTo(1L);
   }
 
   [Test]
