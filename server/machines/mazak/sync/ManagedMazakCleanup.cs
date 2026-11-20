@@ -70,7 +70,7 @@ internal static partial class ManagedMazakSchedules
           new MazakWriteData
           {
             Prefix = "Delete archived managed part",
-            Parts = [part with { Command = MazakWriteCommand.Delete }],
+            Parts = [MazakJobs.PartDelete(part)],
           }
         );
         return true;

@@ -705,20 +705,20 @@ namespace MazakMachineInterface
         {
           if (!SavedParts.Contains(partRow.PartName))
           {
-            var newPartRow = partRow with
-            {
-              Command = MazakWriteCommand.Delete,
-              TotalProcess = partRow.Processes.Count(),
-              Processes =
-                new List<MazakPartProcessRow>() // when deleting, don't need to add process rows
-              ,
-            };
-            partRows.Add(newPartRow);
+            partRows.Add(PartDelete(partRow));
           }
         }
       }
       return new MazakWriteData() { Prefix = "Delete Parts", Parts = partRows };
     }
+
+    internal static MazakPartRow PartDelete(MazakPartRow installed) =>
+      installed with
+      {
+        Command = MazakWriteCommand.Delete,
+        TotalProcess = installed.Processes.Count,
+        Processes = [],
+      };
 
     public MazakWriteData DeleteOldPalletRows()
     {
@@ -735,10 +735,7 @@ namespace MazakMachineInterface
           if (!UsedFixtures.Contains(palRow.Fixture))
           {
             //not found, can delete it
-            var newPalRow = palRow with
-            {
-              Command = MazakWriteCommand.Delete,
-            };
+            var newPalRow = palRow with { Command = MazakWriteCommand.Delete };
             palRows.Add(newPalRow);
           }
         }
@@ -859,8 +856,7 @@ namespace MazakMachineInterface
               .Fixture;
             // Part transactions precede pallet transactions. Keep the installed fixture's original
             // group when completing a missing mapping; generated names contain F:download:group:... .
-            var group =
-              data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
+            var group = data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
               ?? int.Parse(
                 fixture.Split(':')[2],
                 System.Globalization.CultureInfo.InvariantCulture

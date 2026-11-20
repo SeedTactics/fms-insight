@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
+using NSubstitute;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
@@ -404,6 +405,18 @@ public sealed partial class DuplicateDownloadSpec
     device.AfterSave = null!;
     using var reopened = repositories.OpenConnection();
     for (var i = 0; i < 8 && Poll(reopened); i++) { }
+    device
+      .Native.Received(1)
+      .Save(
+        Arg.Is<MazakWriteData>(write =>
+          write.Parts.Any(part =>
+            part.PartName == p2.PartName
+            && part.Command == MazakWriteCommand.Delete
+            && part.TotalProcess == 1
+            && part.Processes.Count == 0
+          )
+        )
+      );
     await Assert.That(db.LoadMazakManagedSchedules(config.ControllerSource)).IsEmpty();
     await Assert
       .That(
