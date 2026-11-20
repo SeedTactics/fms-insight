@@ -147,6 +147,7 @@ public sealed partial class DuplicateDownloadSpec
   [Arguments("eligible load stations")]
   [Arguments("eligible unload stations")]
   [Arguments("eligible pallets")]
+  [Arguments("changed fixtures or programs")]
   public async Task MaterialOfferRequiresTheInstalledExecutionRoute(string mismatch)
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null);
@@ -175,6 +176,7 @@ public sealed partial class DuplicateDownloadSpec
       "eligible machines" => process with { CutMc = "2" },
       "eligible load stations" => process with { FixLDS = "2" },
       "eligible unload stations" => process with { RemoveLDS = "2" },
+      "changed fixtures or programs" => process with { MainProgram = "1001" },
       _ => process,
     };
     var observed = device.Data with

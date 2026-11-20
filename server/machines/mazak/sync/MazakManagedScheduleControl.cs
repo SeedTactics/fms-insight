@@ -56,7 +56,14 @@ public static class MazakManagedScheduleControl
   )
   {
     ArgumentOutOfRangeException.ThrowIfNegative(quantity);
-    var (job, binding, part, schedule) = Verify(db, config, observed, jobUnique, process);
+    var (job, binding, part, schedule) = Verify(
+      db,
+      config,
+      observed,
+      jobUnique,
+      process,
+      verifyDefinition: quantity > 0
+    );
     if (!MazakPart.IsSplitComment(binding.Comment) && process != 1)
       throw new BadRequestException("A combined Mazak schedule admits material at process 1.");
     if (
@@ -182,10 +189,25 @@ public static class MazakManagedScheduleControl
     MazakManagedSchedule Binding,
     MazakPartRow Part,
     MazakScheduleRow Schedule
-  ) Verify(IRepository db, MazakConfig config, MazakAllData observed, string jobUnique, int process)
+  ) Verify(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData observed,
+    string jobUnique,
+    int process,
+    bool verifyDefinition = true
+  )
   {
     var (job, binding) = FindBinding(db, config, jobUnique, process, includeRetired: false);
-    var (part, schedule) = ManagedMazakSchedules.Inspect(observed, job, binding);
+    var (part, schedule) = verifyDefinition
+      ? ManagedMazakSchedules.Inspect(observed, job, binding)
+      : ManagedMazakSchedules.Inspect(
+        observed,
+        job,
+        binding.PartName,
+        binding.Comment,
+        binding.ConfirmedScheduleId
+      );
     if (part is null || schedule is null)
       throw new ConflictRequestException(
         $"Mazak job '{jobUnique}' is missing the installed definition or schedule for route '{binding.Comment}'."

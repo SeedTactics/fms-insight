@@ -91,7 +91,7 @@ internal static partial class ManagedMazakSchedules
   {
     if (!ProcessDefinitions(part).SequenceEqual(binding.Processes))
       throw new ConflictRequestException(
-        $"Mazak job '{binding.JobUnique}' has changed fixtures or programs for route '{binding.Comment}'."
+        $"Mazak job '{binding.JobUnique}' has changed fixtures or programs on native part '{binding.PartName}' for route '{binding.Comment}'."
       );
   }
 
@@ -391,24 +391,31 @@ internal static partial class ManagedMazakSchedules
           .Select(comment =>
           {
             var route = bindings[job.UniqueStr].SingleOrDefault(r => r.Comment == comment);
-            var unavailable = route?.ConfirmedScheduleId is not null
-              ? ConfirmedRouteUnavailable(data, job, route)
-              : job.CopiedToSystem
-                || route is not null
-                  && data.Schedules.Any(s =>
-                    s.Comment == comment
-                    || string.Equals(s.PartName, route.PartName, StringComparison.OrdinalIgnoreCase)
-                  );
-            if (unavailable)
-              return $"Mazak controller '{config.ControllerSource}' has no verified schedule for job '{job.UniqueStr}', route '{comment}'. Check the controller before admitting material.";
-            return route?.ConfirmedScheduleId is not null
-              ? ExecutionConflict(
-                data,
-                config,
-                job,
-                data.Parts.Single(p => p.PartName == route.PartName)
+            if (route?.ConfirmedScheduleId is not null)
+            {
+              try
+              {
+                var (part, schedule) = Inspect(data, job, route);
+                if (part is not null && schedule is not null)
+                  return ExecutionConflict(data, config, job, part);
+              }
+              catch (ConflictRequestException conflict)
+              {
+                return conflict.Message;
+              }
+            }
+            else if (
+              !job.CopiedToSystem
+              && (
+                route is null
+                || !data.Schedules.Any(s =>
+                  s.Comment == comment
+                  || string.Equals(s.PartName, route.PartName, StringComparison.OrdinalIgnoreCase)
+                )
               )
-              : null;
+            )
+              return null;
+            return $"Mazak controller '{config.ControllerSource}' has no verified schedule for job '{job.UniqueStr}', route '{comment}'. Check the controller before admitting material.";
           })
           .OfType<string>()
           .Select(message => new CurrentStatusAlarm
