@@ -74,14 +74,7 @@ namespace MazakMachineInterface
           now.AddHours(1),
           includeDecremented: mazakCfg.UseInsightJobQuantities is not null
         )
-        .Concat(
-          routes
-            .Select(r => r.JobUnique)
-            .Distinct()
-            .Select(db.LoadJob)
-            .OfType<HistoricJob>()
-            .Where(j => !j.CopiedToSystem && !j.Archived && ManagedMazakSchedules.Owns(mazakCfg, j))
-        )
+        .Concat(InterruptedManagedDownloads(db, mazakCfg, mazakData, routes))
         .DistinctBy(j => j.UniqueStr)
         .Where(j => mazakCfg.BulkJobFilter?.Invoke(j) != false)
         .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
@@ -154,6 +147,33 @@ namespace MazakMachineInterface
       }
 
       return true;
+    }
+
+    private static IEnumerable<HistoricJob> InterruptedManagedDownloads(
+      IRepository db,
+      MazakConfig config,
+      MazakAllData observed,
+      ImmutableList<MazakManagedSchedule> routes
+    )
+    {
+      if (config.UseInsightJobQuantities is null)
+        yield break;
+      // A controller may retain a part from an older download before Insight has a binding
+      // or Mazak has its schedule. Its route remains eligible for the usual ownership checks.
+      var comments = routes
+        .Select(r => r.Comment)
+        .Concat(
+          observed
+            .Parts.Where(p => MazakPart.IsSailPart(p.PartName, p.Comment))
+            .Select(p => p.Comment)
+        );
+      foreach (var group in comments.Distinct().GroupBy(MazakPart.UniqueFromComment))
+        if (
+          db.LoadJob(group.Key) is { CopiedToSystem: false, Archived: false } job
+          && ManagedMazakSchedules.Owns(config, job)
+          && MazakPart.InitialScheduleComments(job).Any(group.Contains)
+        )
+          yield return job;
     }
 
     internal static ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)

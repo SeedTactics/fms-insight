@@ -208,6 +208,7 @@ public sealed partial class DuplicateDownloadSpec
   [Arguments("fixture", false)]
   [Arguments("program", true)]
   [Arguments("adopted program", false)]
+  [Arguments("adopted part without schedule", true)]
   public async Task PendingRouteConflictHoldsOnlyTheAffectedJob(string cause, bool afterLookback)
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -249,22 +250,31 @@ public sealed partial class DuplicateDownloadSpec
       null,
       false
     );
-    if (cause == "adopted program")
+    if (cause is "adopted program" or "adopted part without schedule")
     {
       using var oldRepository = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
       using var before = oldRepository.OpenConnection();
       before.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed] }, null, false);
-      WriteJobs.SyncFromDatabase(
-        device.Data,
-        before,
-        device.Native,
-        settings,
-        config with
-        {
-          UseInsightJobQuantities = null,
-        },
-        Now
-      );
+      bool InstallLegacyRoutes() =>
+        WriteJobs.SyncFromDatabase(
+          device.Data,
+          before,
+          device.Native,
+          settings,
+          config with
+          {
+            UseInsightJobQuantities = null,
+          },
+          Now
+        );
+      if (cause == "adopted part without schedule")
+      {
+        await Assert.That(() => InstallLegacyRoutes()).Throws<IOException>();
+        await Assert.That(device.Data.Schedules).IsEmpty();
+        await Assert.That(db.LoadMazakManagedSchedules(config.ControllerSource)).IsEmpty();
+      }
+      else
+        await Assert.That(InstallLegacyRoutes()).IsTrue();
     }
     else
       await Assert.That(() => Sync(device, db)).Throws<IOException>();
@@ -292,6 +302,8 @@ public sealed partial class DuplicateDownloadSpec
     };
     device.Observe(device.Data with { Parts = parts.Replace(route, wrong) });
 
+    if (cause == "adopted part without schedule")
+      await Assert.That(Sync(device, db)).IsFalse();
     if (!sameBatch)
       db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [peer] }, null, false);
     using var reopened = repositories.OpenConnection();
