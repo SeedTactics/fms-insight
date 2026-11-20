@@ -38,6 +38,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     [Test]
     public void ParsesCommentInfoForCombinedAndSplitComments()
     {
+      MazakPart.UniqueFromComment(null).ShouldBe("");
+      MazakPart.UniqueFromComment("").ShouldBe("");
       MazakPart
         .ParseCommentInfo(null)
         .ShouldBe(new MazakPart.MazakCommentInfo(Unique: "", IsSplit: false, FmsProcess: 1));

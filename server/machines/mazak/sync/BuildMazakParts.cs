@@ -222,6 +222,9 @@ namespace MazakMachineInterface
 
     public static string UniqueFromComment(string comment)
     {
+      if (string.IsNullOrEmpty(comment))
+        return "";
+
       if (comment.EndsWith(CombinedInsightSuffix, StringComparison.Ordinal))
       {
         return comment.Substring(0, comment.Length - CombinedInsightSuffix.Length);
