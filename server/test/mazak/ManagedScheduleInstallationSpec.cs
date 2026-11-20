@@ -212,6 +212,320 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  [Arguments(false, Categories = new[] { "ScheduleCommentDrift" })]
+  [Arguments(true, Categories = new[] { "PartAndScheduleCommentDrift" })]
+  public async Task DriftedManagedScheduleCannotConfirmAnOrdinaryDownload(
+    bool alsoRenamePartComment
+  )
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var managed = PendingJob(true);
+    var statusTime = DateTime.UtcNow;
+    var ordinary = PendingJob(false) with
+    {
+      UniqueStr = "ordinary",
+      Cycles = 10,
+      RouteStartUTC = statusTime.AddHours(-1),
+      RouteEndUTC = statusTime.AddDays(1),
+    };
+    var config = ManagedConfig();
+    var settings = new FMSSettings();
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed] }, null, false);
+    await Assert.That(Sync(device, db)).IsTrue();
+    var nativeSchedule = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
+    var nativePart = device.Data.Parts.Single(p => p.PartName == nativeSchedule.PartName);
+    var occupied = device.Data with
+    {
+      PalletPositions = [new() { PalletNumber = 2, PalletPosition = "LS011" }],
+      PalletSubStatuses =
+      [
+        new()
+        {
+          PalletNumber = 2,
+          ScheduleID = nativeSchedule.Id,
+          PartName = nativePart.PartName,
+          PartProcessNumber = 1,
+          FixtureName = nativePart.Processes.Single().Fixture,
+          FixQuantity = 1,
+        },
+      ],
+    };
+    var materialID = db.AllocateMaterialID(
+      managed.UniqueStr,
+      managed.PartName,
+      managed.Processes.Count
+    );
+    db.RecordSerialForMaterialID(materialID, 0, "managed-serial", Now.AddHours(-2));
+    var load = TranslateManagedTransfer(
+      db,
+      config,
+      settings,
+      occupied,
+      nativeSchedule,
+      managed.PartName,
+      LogCode.LoadEnd,
+      1,
+      1,
+      [materialID]
+    );
+    await Assert.That(load.Material.Single().MaterialID).IsEqualTo(materialID);
+
+    const string ordinaryComment = "ordinary-Insight";
+    var driftedSchedule = nativeSchedule with
+    {
+      Comment = ordinaryComment,
+      PlanQuantity = 15,
+      CompleteQuantity = 3,
+    };
+    device.Observe(
+      occupied with
+      {
+        Schedules = occupied.Schedules.ToImmutableList().Replace(nativeSchedule, driftedSchedule),
+        Parts = alsoRenamePartComment
+          ? occupied
+            .Parts.ToImmutableList()
+            .Replace(nativePart, nativePart with { Comment = ordinaryComment })
+          : occupied.Parts,
+      }
+    );
+
+    db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [ordinary] }, null, false);
+    bool Poll(IRepository repository) =>
+      WriteJobs.SyncFromDatabase(
+        device.Data,
+        repository,
+        device.Native,
+        settings,
+        config,
+        statusTime
+      );
+    CurrentStatus Status(MazakAllData observed) =>
+      BuildCurrentStatus.Build(db, settings, config, observed, "MC", null, statusTime);
+    var beforeDownload = Status(device.Data);
+    await Assert.That(beforeDownload.Jobs[ordinary.UniqueStr].CopiedToSystem).IsFalse();
+    await Assert.That(beforeDownload.Jobs[ordinary.UniqueStr].Cycles).IsEqualTo(ordinary.Cycles);
+    var knownManagedMaterial = beforeDownload.Material.Single(m => m.MaterialID == materialID);
+    await Assert.That(knownManagedMaterial.Serial).IsEqualTo("managed-serial");
+    await Assert.That(knownManagedMaterial.Process).IsEqualTo(2);
+    await Assert.That(knownManagedMaterial.Location.PalletNum).IsEqualTo(2);
+
+    device.BeforeSave = write =>
+    {
+      if (write.Prefix == "Add Schedules")
+        throw new IOException("Ordinary schedule was not installed.");
+    };
+    await Assert.That(() => Poll(db)).Throws<IOException>();
+    await Assert.That(db.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsFalse();
+    var ordinaryPart = device.Data.Parts.Single(p =>
+      p.Comment == ordinaryComment && p.PartName != nativePart.PartName
+    );
+    await Assert
+      .That(device.Data.Schedules.Single(s => s.Comment == ordinaryComment))
+      .IsEqualTo(driftedSchedule);
+
+    device.BeforeSave = null!;
+    using var reopened = repositories.OpenConnection();
+    await Assert.That(Poll(reopened)).IsTrue();
+    await Assert.That(reopened.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsTrue();
+    var ordinarySchedule = device.Data.Schedules.Single(s => s.PartName == ordinaryPart.PartName);
+    await Assert.That(ordinarySchedule.Comment).IsEqualTo(ordinaryComment);
+    await Assert
+      .That(device.Data.Schedules.Single(s => s.Id == nativeSchedule.Id))
+      .IsEqualTo(driftedSchedule);
+    var published = Status(device.Data).Jobs[ordinary.UniqueStr];
+    await Assert.That(published.Cycles).IsEqualTo(ordinary.Cycles);
+    await Assert.That(published.RemainingToStart).IsEqualTo(ordinary.Cycles);
+    await Assert.That(published.Completed!.SelectMany(counts => counts)).IsEquivalentTo([0, 0]);
+
+    var unconfirmed = device.Data with
+    {
+      Schedules = device
+        .Data.Schedules.ToImmutableList()
+        .Replace(driftedSchedule, driftedSchedule with { Id = 1001 }),
+    };
+    await Assert
+      .That(Status(unconfirmed).Jobs[ordinary.UniqueStr].Cycles)
+      .IsEqualTo(ordinary.Cycles);
+  }
+
+  [Test]
+  public async Task SwappedManagedCommentsPreserveBothPalletRoutesInEitherReadbackOrder()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var job = PendingJob(true);
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
+    await Assert.That(Sync(device, db)).IsTrue();
+
+    var installed = device.Data;
+    var routes = installed.Schedules.OrderBy(s => s.Comment).ToImmutableArray();
+    string SwappedComment(string partName) =>
+      partName == routes[0].PartName ? routes[1].Comment : routes[0].Comment;
+    var swapped = installed with
+    {
+      Parts = installed
+        .Parts.Select(p => p with { Comment = SwappedComment(p.PartName) })
+        .ToImmutableList(),
+      Schedules = routes
+        .Select(s => s with { Comment = SwappedComment(s.PartName) })
+        .ToImmutableList(),
+      PalletSubStatuses = routes
+        .Select(
+          (route, index) =>
+            new MazakPalletSubStatusRow
+            {
+              PalletNumber = index + 1,
+              ScheduleID = route.Id,
+              PartName = route.PartName,
+              PartProcessNumber = 1,
+              FixtureName = installed
+                .Parts.Single(p => p.PartName == route.PartName)
+                .Processes.Single()
+                .Fixture,
+              FixQuantity = 1,
+            }
+        )
+        .ToImmutableList(),
+    };
+    var reversed = swapped with
+    {
+      Parts = swapped.Parts.Reverse().ToImmutableList(),
+      Schedules = swapped.Schedules.Reverse().ToImmutableList(),
+    };
+    foreach (var observed in new[] { swapped, reversed })
+    {
+      var status = BuildCurrentStatus.Build(
+        db,
+        new FMSSettings(),
+        ManagedConfig(),
+        observed,
+        "MC",
+        null,
+        Now
+      );
+      await Assert
+        .That(status.Material.Select(m => (m.Process, m.Location.PalletNum!.Value)))
+        .IsEquivalentTo([(1, 1), (2, 2)]);
+    }
+  }
+
+  [Test]
+  [Arguments(false, Categories = new[] { "PartOnly" })]
+  [Arguments(true, Categories = new[] { "PartAndSchedule" })]
+  public async Task FirstDownloadReadbackUsesNewNativePartBindings(bool includeSchedule)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var managedTemplate = PendingJob(true);
+    var managed = managedTemplate with { Processes = [managedTemplate.Processes[0]] };
+    var ordinaryTemplate = PendingJob(false);
+    var ordinary = ordinaryTemplate with
+    {
+      UniqueStr = "ordinary",
+      Processes = [ordinaryTemplate.Processes[0]],
+    };
+    var device = new DownloadDevice("");
+    const string ordinaryComment = "ordinary-Insight";
+    const int managedScheduleId = 1;
+    string? managedPartName = null;
+    device.AfterSave = write =>
+    {
+      if (write.Prefix != "Add Parts")
+        return;
+      var part = device.Data.Parts.Single(p => p.Comment == "initial-job-1-1-InsightS");
+      managedPartName = part.PartName;
+      device.Observe(
+        device.Data with
+        {
+          Parts = device
+            .Data.Parts.ToImmutableList()
+            .Replace(part, part with { Comment = ordinaryComment }),
+          Schedules = includeSchedule
+            ?
+            [
+              new()
+              {
+                Id = managedScheduleId,
+                PartName = part.PartName,
+                Comment = ordinaryComment,
+                PlanQuantity = managed.Cycles,
+                Processes = [new() { ProcessNumber = 1 }],
+              },
+            ]
+            : [],
+        }
+      );
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "same-batch", Jobs = [managed, ordinary] }, null, false);
+
+    await Assert.That(Sync(device, db)).IsTrue();
+    var binding = db.LoadMazakManagedSchedules(ManagedConfig().ControllerSource).Single();
+    await Assert.That(binding.PartName).IsEqualTo(managedPartName!);
+    await Assert.That(binding.ConfirmedScheduleId).IsNull();
+    await Assert.That(db.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsFalse();
+    var ordinarySchedule = device.Data.Schedules.Single(s => s.PartName != binding.PartName);
+    await Assert.That(ordinarySchedule.Comment).IsEqualTo(ordinaryComment);
+    await Assert.That(db.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsTrue();
+    if (includeSchedule)
+      await Assert
+        .That(device.Data.Schedules.Single(s => s.Id == managedScheduleId).PartName)
+        .IsEqualTo(binding.PartName);
+  }
+
+  [Test]
+  [Arguments(2, Categories = new[] { "IncompleteManagedRoute" })]
+  [Arguments(3, Categories = new[] { "CompleteManagedRoute" })]
+  public async Task DriftedManagedScheduleCannotAffectOrdinaryArchival(int managedComplete)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var managedTemplate = PendingJob(true);
+    var managed = managedTemplate with { Processes = [managedTemplate.Processes[0]] };
+    var ordinary = PendingJob(false) with
+    {
+      UniqueStr = "ordinary",
+      PartName = "ordinary-part",
+      Cycles = 10,
+    };
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed, ordinary] }, null, false);
+    await Assert.That(Sync(device, db)).IsTrue();
+    var managedSchedule = device.Data.Schedules.Single(s =>
+      MazakPart.UniqueFromComment(s.Comment) == managed.UniqueStr
+    );
+    var ordinarySchedule = device.Data.Schedules.Single(s =>
+      MazakPart.UniqueFromComment(s.Comment) == ordinary.UniqueStr
+    );
+    var drifted = managedSchedule with
+    {
+      Comment = ordinarySchedule.Comment,
+      PlanQuantity = 3,
+      CompleteQuantity = managedComplete,
+    };
+    device.Observe(
+      device.Data with
+      {
+        Schedules = [ordinarySchedule with { PlanQuantity = 4, CompleteQuantity = 4 }, drifted],
+      }
+    );
+
+    db.ArchiveJob(managed.UniqueStr);
+    var next = ordinary with { UniqueStr = "next", PartName = "next-part" };
+    db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [next] }, null, false);
+    await Assert.That(Sync(device, db)).IsTrue();
+    var archived = db.LoadJob(ordinary.UniqueStr)!;
+    await Assert.That(archived.Archived).IsTrue();
+    await Assert.That(archived.Decrements!.Single().Quantity).IsEqualTo(6);
+    await Assert.That(db.LoadJob(next.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert
+      .That(device.Data.Schedules.Single(s => s.Id == managedSchedule.Id))
+      .IsEqualTo(drifted);
+  }
+
+  [Test]
   public async Task ZeroCycleManagedJobLetsTheNextBatchDownload()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());

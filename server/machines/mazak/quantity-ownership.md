@@ -67,7 +67,9 @@ eligible jobs can download. Correcting the controller's definition lets the held
 partial cancellation, managed jobs can still download at zero offer for the remaining work. Archival
 also cleans up a partial installation with no confirmed schedule. A confirmed route retains the same
 full native part name and schedule number through the job's active life, including at planned equals
-completed. A missing or conflicting route raises a route-specific alarm for backend disposition.
+completed. A missing or conflicting route raises a route-specific alarm for backend disposition. The
+native part stays reserved during a conflict. Its controller comment cannot confirm another job's
+download or contribute to that job's completion and cancellation counts.
 
 Use `MazakManagedScheduleControl.VerifyInstalledRoute` to check a route against controller readback
 before reporting it ready. Use `EnsurePlan` with an absolute minimum quantity and `SetMaterialOffer`
@@ -84,9 +86,10 @@ invalidated attempts and separately identified and unidentified quantities. Adop
 without a recorded creation boundary have unknown attempt totals. Valid Insight completions come
 from repository manufacturing history. Pending loads from a managed job's queue show the requested
 quantity with anonymous material cards. The queued pieces remain visible until the backend reports
-which pieces transferred. Queue-only and basket backends both need
-`MazakConfig.ResolveLoadUnloadTransaction` to record material IDs for managed loads. Without a valid
-resolution, the LOAD event records physical quantity with unidentified material.
+which pieces transferred. During an exchange on a managed split route, the pallet's existing serial
+appears on the unload card and the incoming load stays anonymous. Queue-only and basket backends
+both need `MazakConfig.ResolveLoadUnloadTransaction` to record material IDs for managed loads.
+Without a valid resolution, the LOAD event records physical quantity with unidentified material.
 
 After an unidentified unload, pallet status leaves the affected serials unknown. Exact transfer
 evidence can identify individual pieces. While the backend reports a pending transfer, an empty

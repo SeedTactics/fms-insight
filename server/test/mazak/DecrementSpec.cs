@@ -973,6 +973,93 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public async Task BackoutSkipsArchivedManagedScheduleWithOrdinaryComment()
+    {
+      using var db = _repoCfg.OpenConnection();
+      var ordinary = PendingJob("ordinary") with { Cycles = 10 };
+      var managed = PendingJob("managed") with { Cycles = 10 };
+      db.AddJobs(new NewJobs { ScheduleId = "schedule", Jobs = [ordinary, managed] }, null, true);
+      var config = new MazakConfig
+      {
+        DBType = MazakDbType.MazakSmooth,
+        UseInsightJobQuantities = job => job.UniqueStr == managed.UniqueStr,
+      };
+      var ordinarySchedule = Schedule(ordinary.UniqueStr, committed: 2) with { PlanQuantity = 10 };
+      var driftedSchedule = Schedule(ordinary.UniqueStr) with
+      {
+        Id = 2,
+        PartName = "PART:2",
+        PlanQuantity = 10,
+        CompleteQuantity = 3,
+        Processes = [new MazakScheduleProcessRow { MazakScheduleRowId = 2, ProcessNumber = 1 }],
+      };
+      db.RecordMazakManagedSchedule(
+        new MazakManagedSchedule
+        {
+          ControllerSource = config.ControllerSource,
+          JobUnique = managed.UniqueStr,
+          PartName = "part:2",
+          Comment = managed.UniqueStr + "-Insight",
+          ConfirmedScheduleId = driftedSchedule.Id,
+          BeforeLoadCounter = null,
+          Processes = [new MazakManagedProcess(1, "fixture", "1001")],
+        }
+      );
+      db.ArchiveJob(managed.UniqueStr);
+
+      using var sync = new MazakSync(_write, new FMSSettings(), config);
+      var state = new MazakState
+      {
+        AllData = new MazakAllDataAndLogs { Schedules = [ordinarySchedule, driftedSchedule] },
+        CurrentStatus = new CurrentStatus
+        {
+          Revision = 0,
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+          Material = [],
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+          Alarms = [],
+        },
+        StateUpdated = true,
+        TimeUntilNextRefresh = TimeSpan.Zero,
+        StoppedBecauseRecentLogEvent = false,
+      };
+
+      var withLoad = state with
+      {
+        AllData = state.AllData with
+        {
+          LoadActions =
+          [
+            new LoadAction
+            {
+              LoadEvent = true,
+              Comment = ordinarySchedule.Comment,
+              Part = ordinary.PartName,
+              Process = 1,
+              Qty = 1,
+              LoadStation = 1,
+            },
+          ],
+        },
+      };
+      await Assert
+        .That(() => sync.DecrementJobs(db, withLoad))
+        .Throws<ConflictRequestException>()
+        .WithMessageContaining("load may belong to a managed schedule");
+      _write.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+      await Assert.That(db.LoadDecrementQuantitiesAfter(-1)).IsEmpty();
+
+      await Assert.That(sync.DecrementJobs(db, state)).IsTrue();
+      var edited = GetSchRows().Single();
+      await Assert.That(edited.Id).IsEqualTo(ordinarySchedule.Id);
+      await Assert.That(edited.PlanQuantity).IsEqualTo(2);
+      await Assert.That(db.LoadDecrementsForJob(ordinary.UniqueStr).Single().Quantity).IsEqualTo(8);
+      await Assert.That(db.LoadDecrementsForJob(managed.UniqueStr)).IsEmpty();
+    }
+
+    [Test]
     public async Task RefusesBackoutUntilMazakEventsSettle()
     {
       using var db = _repoCfg.OpenConnection();

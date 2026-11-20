@@ -123,11 +123,109 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task ManagedSplitExchangeShowsTheOutgoingSerialOnlyOnTheUnload()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    const string readyQueue = "ready-for-process-2";
+    var job = PendingJob(true);
+    var second = job.Processes[1];
+    job = job with
+    {
+      Processes = job.Processes.SetItem(
+        1,
+        second with
+        {
+          Paths = [second.Paths[0] with { InputQueue = readyQueue }],
+        }
+      ),
+    };
+    var config = ManagedConfig();
+    var settings = new FMSSettings();
+    settings.Queues[readyQueue] = new QueueInfo();
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
+    await Assert
+      .That(WriteJobs.SyncFromDatabase(device.Data, db, device.Native, settings, config, Now))
+      .IsTrue();
+
+    var route = device.Data.Schedules.Single(s => s.Comment == "initial-job-2-1-InsightS");
+    var outgoing = db.AllocateMaterialID(job.UniqueStr, job.PartName, job.Processes.Count);
+    var incoming = db.AllocateMaterialID(job.UniqueStr, job.PartName, job.Processes.Count);
+    db.RecordSerialForMaterialID(outgoing, 0, "A", Now.AddHours(-2));
+    db.RecordSerialForMaterialID(incoming, 0, "B", Now.AddHours(-2));
+    db.RecordAddMaterialToQueue(incoming, 1, readyQueue, -1, null, "Staged", Now.AddHours(-1));
+    var occupied = device.Data with
+    {
+      PalletPositions = [new() { PalletNumber = 2, PalletPosition = "LS011" }],
+      PalletSubStatuses =
+      [
+        new()
+        {
+          PalletNumber = 2,
+          ScheduleID = route.Id,
+          PartName = route.PartName,
+          PartProcessNumber = 1,
+          FixtureName = device
+            .Data.Parts.Single(p => p.PartName == route.PartName)
+            .Processes.Single()
+            .Fixture,
+          FixQuantity = 1,
+        },
+      ],
+    };
+    var initialLoad = TranslateManagedTransfer(
+      db,
+      config,
+      settings,
+      occupied,
+      route,
+      job.PartName,
+      LogCode.LoadEnd,
+      1,
+      1,
+      [outgoing]
+    );
+    await Assert.That(initialLoad.Material.Single().MaterialID).IsEqualTo(outgoing);
+
+    var load = new LoadAction
+    {
+      LoadStation = 1,
+      LoadEvent = true,
+      Comment = route.Comment,
+      Part = job.PartName,
+      Process = 1,
+      Qty = 1,
+    };
+    var exchange = occupied with { LoadActions = [load, load with { LoadEvent = false }] };
+    var status = BuildCurrentStatus.Build(db, settings, config, exchange, "MC", null, Now);
+
+    var unloading = status.Material.Single(m => m.MaterialID == outgoing);
+    await Assert.That(unloading.Serial).IsEqualTo("A");
+    await Assert.That(unloading.Location.PalletNum).IsEqualTo(2);
+    await Assert
+      .That(unloading.Action.Type)
+      .IsEqualTo(InProcessMaterialAction.ActionType.UnloadToCompletedMaterial);
+    var loading = status.Material.Single(m =>
+      m.Action.Type == InProcessMaterialAction.ActionType.Loading
+    );
+    await Assert.That(loading.MaterialID).IsEqualTo(-1);
+    await Assert.That(loading.Serial).IsNull();
+    await Assert.That(loading.Action.LoadOntoPalletNum).IsEqualTo(2);
+    await Assert.That(loading.Action.LoadOntoFace).IsEqualTo(2);
+    await Assert.That(loading.Action.ProcessAfterLoad).IsEqualTo(2);
+    var waiting = status.Material.Single(m => m.MaterialID == incoming);
+    await Assert.That(waiting.Location.CurrentQueue).IsEqualTo(readyQueue);
+    await Assert.That(waiting.Action.Type).IsEqualTo(InProcessMaterialAction.ActionType.Waiting);
+  }
+
+  [Test]
   [Arguments("raw quantities")]
   [Arguments("exact remainder")]
   [Arguments("settled empty observation")]
   [Arguments("guarded empty observation")]
   [Arguments("quarantined set")]
+  [Arguments("occupied with changed schedule comment")]
   public async Task PalletRecoveryKeepsSerialsWithTheirOwnLoad(string disposition)
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -201,9 +299,25 @@ public sealed partial class DuplicateDownloadSpec
     var resolved = disposition is "exact remainder" or "guarded empty observation"
       ? original.RemoveAt(0)
       : [];
-    if (disposition == "quarantined set")
+    if (disposition is "quarantined set" or "occupied with changed schedule comment")
     {
-      Transfer(db, LogCode.LoadBegin, 0, Observation(0, "S01"));
+      if (disposition == "occupied with changed schedule comment")
+      {
+        var ordinary = PendingJob(false) with { UniqueStr = "ordinary" };
+        db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [ordinary] }, null, false);
+        var occupied = Observation(3, "S01");
+        var changed = occupied with
+        {
+          Schedules = occupied
+            .Schedules.Select(s => s.Id == route.Id ? s with { Comment = "ordinary-Insight" } : s)
+            .ToImmutableList(),
+        };
+        Transfer(reopened, LogCode.LoadBegin, 0, changed);
+        await Assert.That(original.Any(reopened.IsMaterialInQueue)).IsFalse();
+        Transfer(reopened, LogCode.LoadBegin, 0, occupied);
+        await Assert.That(original.Any(reopened.IsMaterialInQueue)).IsFalse();
+      }
+      Transfer(reopened, LogCode.LoadBegin, 0, Observation(0, "S01"));
       await Assert.That(original.All(reopened.IsMaterialInQueue)).IsTrue();
     }
     else

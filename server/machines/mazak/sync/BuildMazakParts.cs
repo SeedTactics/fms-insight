@@ -812,13 +812,17 @@ namespace MazakMachineInterface
         lookupProgram,
         reservedPartNames
       );
+      var managedParts = reservedPartNames?.Values.ToImmutableHashSet(
+        StringComparer.OrdinalIgnoreCase
+      ) ?? ImmutableHashSet<string>.Empty;
       var reused = reuseExistingParts
         ? allParts
           .Select(expected =>
             FindInstalledPart(
               expected,
               mazakData,
-              reservedPartNames?.ContainsKey(expected.Comment) == true
+              reservedPartNames?.ContainsKey(expected.Comment) == true,
+              managedParts
             )
           )
           .Where(part => part != null)
@@ -900,12 +904,17 @@ namespace MazakMachineInterface
     private static MazakPartRow FindInstalledPart(
       MazakPart expected,
       MazakAllData data,
-      bool reservedName
+      bool reservedName,
+      IReadOnlySet<string> managedParts
     ) =>
       data
         .Parts.Where(part =>
           part.Comment == expected.Comment
-          && (!reservedName || part.PartName == expected.PartName)
+          && (
+            reservedName
+              ? part.PartName == expected.PartName
+              : !managedParts.Contains(part.PartName)
+          )
           && MazakPart.ExtractPartNameFromMazakPartName(part.PartName) == expected.Job.PartName
           && MazakPart.IsSailPart(part.PartName, part.Comment)
         )

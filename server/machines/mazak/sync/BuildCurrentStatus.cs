@@ -87,6 +87,11 @@ namespace MazakMachineInterface
     )
     {
       machineGroupName = mazakCfg.MachineGroupName ?? machineGroupName;
+      var managedRoutes = mazakCfg.UseInsightJobQuantities is null
+        ? ImmutableList<MazakManagedSchedule>.Empty
+        : jobDB.LoadMazakManagedSchedules(mazakCfg.ControllerSource);
+      if (!managedRoutes.IsEmpty)
+        mazakData = ProjectManagedOwnership(jobDB, mazakCfg, mazakData, managedRoutes);
 
       //Load process and path numbers
       CalculateMaxProcAndPath(
@@ -287,9 +292,9 @@ namespace MazakMachineInterface
 
             // For split schedules, the Mazak PartProcessNumber is always 1, but the FMS
             // job process may be 2+ for later split processes.
-            var palFmsProc = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP)
-              ? splitFP
-              : palSub.PartProcessNumber;
+            var split = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP);
+            var palFmsProc = split ? splitFP : palSub.PartProcessNumber;
+            var managed = mazakCfg.UsesInsightJobQuantities(job.DbJob);
 
             var matIDs = new Queue<long>(
               FindMatIDsFromOldCycles(
@@ -299,7 +304,7 @@ namespace MazakMachineInterface
                 palFmsProc,
                 jobDB,
                 removals,
-                mazakCfg.UsesInsightJobQuantities(job.DbJob) ? managedPlacement : null,
+                managed ? managedPlacement : null,
                 palSub.PartProcessNumber
               )
             );
@@ -315,20 +320,23 @@ namespace MazakMachineInterface
               var currentProcessBeforeLoad =
                 palFmsProc > palSub.PartProcessNumber ? palFmsProc - 1 : palSub.PartProcessNumber;
 
-              //check for unloading or transfer
-              // The pallet substatus reports Mazak face/process 1 for every split schedule. For
-              // split transfers beyond proc-1, recover the pre-load FMS process from the schedule.
-              var loadNext = CheckLoadOfNextProcess(
-                currentLoads,
-                job.UniqueStr,
-                currentProcessBeforeLoad,
-                palLoc
-              );
+              // A managed split route admits its own material. Leave its load request for
+              // anonymous projection and keep the existing material on the unload action.
+              var loadNext =
+                managed && split
+                  ? null
+                  : CheckLoadOfNextProcess(
+                    currentLoads,
+                    job.UniqueStr,
+                    currentProcessBeforeLoad,
+                    palLoc
+                  );
               var unload = CheckUnload(
                 currentLoads,
                 job.UniqueStr,
                 palSub.PartProcessNumber,
-                palLoc
+                palLoc,
+                managed && split ? palFmsProc : null
               );
 
               var action = new InProcessMaterialAction()
@@ -588,10 +596,7 @@ namespace MazakMachineInterface
         // canceled instructions. The backend projects any additional private reservations via
         // AdjustCurrentStatus and owns the decision to archive these jobs.
         var localJobs = new JobCache(jobDB).BuildActiveJobs(material, jobDB);
-        var managed = jobDB
-          .LoadMazakManagedSchedules(mazakCfg.ControllerSource)
-          .Select(route => route.JobUnique)
-          .ToImmutableHashSet();
+        var managed = managedRoutes.Select(route => route.JobUnique).ToImmutableHashSet();
         foreach (var local in localJobs.Values.Where(mazakCfg.UsesInsightJobQuantities))
         {
           var remainingToStart = local.RemainingToStart;
@@ -653,6 +658,78 @@ namespace MazakMachineInterface
             .ToHashSet()
         ),
       };
+    }
+
+    private static MazakAllData ProjectManagedOwnership(
+      IRepository db,
+      MazakConfig config,
+      MazakAllData data,
+      ImmutableList<MazakManagedSchedule> managedRoutes
+    )
+    {
+      var owners = managedRoutes.ToLookup(
+        route => route.PartName,
+        StringComparer.OrdinalIgnoreCase
+      );
+      var drifted = data
+        .Parts.Select(row => (row.PartName, row.Comment))
+        .Concat(data.Schedules.Select(row => (row.PartName, row.Comment)))
+        .Where(row => owners[row.PartName].Any(owner => owner.Comment != row.Comment))
+        .Select(row => row.PartName)
+        .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+      if (drifted.IsEmpty)
+        return data;
+
+      var candidates = managedRoutes
+        .Where(route =>
+          route.ConfirmedScheduleId is not null
+          && drifted.Contains(route.PartName)
+          && owners[route.PartName].Count() == 1
+        )
+        .Select(route => (Route: route, Job: db.LoadJob(route.JobUnique)))
+        .Where(candidate => ManagedMazakSchedules.Owns(config, candidate.Job))
+        .ToImmutableDictionary(
+          candidate => candidate.Route.PartName,
+          StringComparer.OrdinalIgnoreCase
+        );
+      string StatusComment(string name, string comment) =>
+        name is not null && candidates.TryGetValue(name, out var candidate)
+          ? candidate.Route.Comment
+          : comment;
+
+      // Verify every candidate against the same snapshot, including when routes exchange comments.
+      // Reconciliation and diagnostics keep the original controller readback.
+      var snapshot = data with
+      {
+        Parts = data
+          .Parts.Select(row => row with { Comment = StatusComment(row.PartName, row.Comment) })
+          .ToImmutableList(),
+        Schedules = data
+          .Schedules.Select(row => row with { Comment = StatusComment(row.PartName, row.Comment) })
+          .ToImmutableList(),
+      };
+      var unverified = drifted;
+      foreach (var (route, job) in candidates.Values)
+      {
+        try
+        {
+          if (ManagedMazakSchedules.Inspect(snapshot, job, route) is ({ }, { }))
+            unverified = unverified.Remove(route.PartName);
+        }
+        catch (ConflictRequestException)
+        {
+          // The raw observation reports this ownership conflict through diagnostics.
+        }
+      }
+      return unverified.IsEmpty
+        ? snapshot
+        : snapshot with
+        {
+          Parts = snapshot.Parts.Where(row => !unverified.Contains(row.PartName)).ToImmutableList(),
+          Schedules = snapshot
+            .Schedules.Where(row => !unverified.Contains(row.PartName))
+            .ToImmutableList(),
+        };
     }
 
     private static void CalculateMaxProcAndPath(
@@ -871,7 +948,8 @@ namespace MazakMachineInterface
       List<LoadAction> currentLoads,
       string unique,
       int process,
-      PalletLocation loc
+      PalletLocation loc,
+      int? splitFmsProc
     )
     {
       if (loc.Location != PalletLocationEnum.LoadUnload)
@@ -885,6 +963,13 @@ namespace MazakMachineInterface
           && !string.IsNullOrEmpty(act.Comment)
           && unique == MazakPart.UniqueFromComment(act.Comment)
           && process == act.Process
+          && (
+            splitFmsProc is null
+            || (
+              MazakPart.IsSplitComment(act.Comment)
+              && splitFmsProc == MazakPart.ProcessFromComment(act.Comment)
+            )
+          )
           && act.Qty >= 1
         )
         {

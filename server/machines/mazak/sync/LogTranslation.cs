@@ -1596,6 +1596,7 @@ namespace MazakMachineInterface
 
         // start with everything on the pallet
         List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
+        var unverifiedOccupancy = false;
 
         foreach (
           var st in mazakData.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber)
@@ -1603,6 +1604,15 @@ namespace MazakMachineInterface
         {
           // remove material from matsOnPal that matches this PalletSubStatus
           var sch = mazakData.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
+          if (
+            matsOnPal.Count > 0
+            && st.FixQuantity > 0
+            && ManagedRoute(sch?.PartName ?? st.PartName) is (true, null)
+          )
+          {
+            unverifiedOccupancy = true;
+            break;
+          }
           if (sch == null)
             continue;
           var scheduleComment = MazakPart.ParseCommentInfo(sch.Comment);
@@ -1625,6 +1635,10 @@ namespace MazakMachineInterface
               matsOnPal.Remove(mat);
           }
         }
+
+        // Conflicting managed route readback cannot establish which pieces went missing.
+        if (unverifiedOccupancy)
+          continue;
 
         // anything left in matsOnPal disappeared from PalletSubStatuses so should be quarantined
         foreach (var extraMat in matsOnPal)
