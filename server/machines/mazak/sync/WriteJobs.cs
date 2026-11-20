@@ -72,7 +72,7 @@ namespace MazakMachineInterface
       var jobs = db.LoadJobsNotCopiedToSystem(
           now.AddHours(-JobLookbackHours),
           now.AddHours(1),
-          includeDecremented: false
+          includeDecremented: mazakCfg.UseInsightJobQuantities is not null
         )
         .Concat(
           routes
@@ -80,16 +80,19 @@ namespace MazakMachineInterface
             .Distinct()
             .Select(db.LoadJob)
             .OfType<HistoricJob>()
-            .Where(j =>
-              !j.CopiedToSystem
-              && !j.Archived
-              && (j.Decrements is null || j.Decrements.Count == 0)
-              && ManagedMazakSchedules.Owns(mazakCfg, j)
-            )
+            .Where(j => !j.CopiedToSystem && !j.Archived && ManagedMazakSchedules.Owns(mazakCfg, j))
         )
         .DistinctBy(j => j.UniqueStr)
         .Where(j => mazakCfg.BulkJobFilter?.Invoke(j) != false)
         .Where(j => !j.Archived || !mazakCfg.UsesInsightJobQuantities(j))
+        // A backend can cancel unstarted demand while admitted pieces still need their routes.
+        .Where(j =>
+          j.Decrements is not { Count: > 0 }
+          || (
+            mazakCfg.UsesInsightJobQuantities(j)
+            && j.Decrements.Sum(d => (long)d.Quantity) < j.Cycles
+          )
+        )
         .Where(j =>
           !mazakCfg.UsesInsightJobQuantities(j)
           || db.LoadMazakManagedSchedules(
@@ -487,7 +490,7 @@ namespace MazakMachineInterface
 
       // Accepted jobs remain committed while controller delivery is pending, including
       // jobs outside this pass's download window or selected schedule group.
-      // Any decrement makes an uncopied job ineligible for delivery.
+      // Controller-owned jobs with a decrement can be archived here.
       current.UnionWith(
         unarchived
           .Where(j => !j.CopiedToSystem && (j.Decrements == null || j.Decrements.Count == 0))

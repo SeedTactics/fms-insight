@@ -39,6 +39,75 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  [Arguments(true)]
+  [Arguments(false)]
+  public async Task ManagedDownloadRequiresRemainingDemandAfterBackout(bool interrupted)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var active = PendingJob(true);
+    var canceled = active with { UniqueStr = "fully-canceled" };
+    var ordinary = PendingJob(false) with { UniqueStr = "ordinary" };
+    var device = new DownloadDevice(interrupted ? "schedules-partial" : "");
+    db.AddJobs(
+      new NewJobs { ScheduleId = "first", Jobs = [active, canceled, ordinary] },
+      null,
+      false
+    );
+    if (interrupted)
+      await Assert.That(() => Sync(device, db)).Throws<IOException>();
+    var installed = device.Data.Schedules.ToImmutableList();
+    db.RecordJobDecrementOperation(
+      "backout",
+      [
+        new()
+        {
+          JobUnique = active.UniqueStr,
+          Part = active.PartName,
+          Quantity = active.Cycles - 3,
+        },
+        new()
+        {
+          JobUnique = canceled.UniqueStr,
+          Part = canceled.PartName,
+          Quantity = canceled.Cycles,
+        },
+        new()
+        {
+          JobUnique = ordinary.UniqueStr,
+          Part = ordinary.PartName,
+          Quantity = ordinary.Cycles - 3,
+        },
+      ],
+      [],
+      Now
+    );
+    using var reopened = repositories.OpenConnection();
+    var retry = interrupted ? active.RouteEndUTC.AddHours(WriteJobs.JobLookbackHours + 1) : Now;
+    WriteJobs.SyncFromDatabase(
+      device.Data,
+      reopened,
+      device.Native,
+      new FMSSettings(),
+      ManagedConfig(),
+      retry
+    );
+    await Assert.That(reopened.LoadJob(active.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(reopened.LoadJob(canceled.UniqueStr)!.CopiedToSystem).IsFalse();
+    await Assert.That(reopened.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsFalse();
+    var added = device
+      .Data.Schedules.Where(s => !installed.Any(before => before.Id == s.Id))
+      .ToImmutableList();
+    await Assert.That(added).IsNotEmpty();
+    await Assert
+      .That(added.All(s => MazakPart.UniqueFromComment(s.Comment) == active.UniqueStr))
+      .IsTrue();
+    await Assert
+      .That(added.SelectMany(s => s.Processes).All(p => p.ProcessMaterialQuantity == 0))
+      .IsTrue();
+  }
+
+  [Test]
   public async Task ArchiveAfterUnacknowledgedPartInstallationCleansNativeDefinitions()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
