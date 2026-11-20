@@ -105,6 +105,41 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task SharedBatchValidatesOnlyTheProgramsForThisController()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var template = PendingJob(false);
+    var local = template with { Processes = [template.Processes[0]] };
+    var peer = template with { UniqueStr = "peer", Processes = [template.Processes[1]] };
+    var batch = new NewJobs { ScheduleId = "shared", Jobs = [local, peer] };
+    var device = new DownloadDevice("");
+    device.Observe(
+      device.Data with
+      {
+        MainPrograms = device
+          .Data.MainPrograms.Where(p => p.MainProgram == "1001")
+          .ToImmutableList(),
+      }
+    );
+    using var mazak = new MazakSync(
+      device.Native,
+      new FMSSettings(),
+      ManagedConfig() with
+      {
+        BulkJobFilter = job => job.UniqueStr == local.UniqueStr,
+      }
+    );
+    await Assert.That(mazak.CheckNewJobs(db, batch)).IsEmpty();
+
+    device.Observe(device.Data with { MainPrograms = [] });
+    await Assert.That(mazak.CheckNewJobs(db, batch).Single()).Contains("program 1001");
+    device.Native.ClearReceivedCalls();
+    await Assert.That(mazak.CheckNewJobs(db, batch with { Jobs = [peer] })).IsEmpty();
+    device.Native.DidNotReceive().LoadAllData();
+  }
+
+  [Test]
   public async Task ZeroCycleManagedJobLetsTheNextBatchDownload()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -451,6 +486,65 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task ArchivingAnAdoptedRoutePreservesOperatorPalletMappings()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var config = ManagedConfig();
+    var managed = PendingJob(true);
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "pending", Jobs = [managed] }, null, false);
+    await Assert
+      .That(
+        WriteJobs.SyncFromDatabase(
+          device.Data,
+          db,
+          device.Native,
+          new FMSSettings(),
+          config with
+          {
+            UseInsightJobQuantities = null,
+          },
+          Now
+        )
+      )
+      .IsTrue();
+
+    var part = device.Data.Parts.Single(p => p.Comment == "initial-job-1-1-InsightS");
+    var process = part.Processes.Single();
+    var oldFixture = device.Data.Fixtures.Single(f => f.FixtureName == process.Fixture);
+    var fixture = oldFixture with { FixtureName = "VISE1", Comment = "Operator fixture" };
+    var oldMapping = device.Data.Pallets.Single(p => p.Fixture == process.Fixture);
+    var mapping = oldMapping with { Fixture = fixture.FixtureName };
+    device.Observe(
+      device.Data with
+      {
+        Parts = device
+          .Data.Parts.Select(p =>
+            p == part ? p with { Processes = [process with { Fixture = fixture.FixtureName }] } : p
+          )
+          .ToImmutableList(),
+        Fixtures = device
+          .Data.Fixtures.Select(f => f == oldFixture ? fixture : f)
+          .ToImmutableList(),
+        Pallets = device.Data.Pallets.Select(p => p == oldMapping ? mapping : p).ToImmutableList(),
+      }
+    );
+    await Assert.That(Sync(device, db)).IsFalse();
+    var adopted = db.LoadMazakManagedSchedule(config.ControllerSource, part.PartName);
+    await Assert.That(adopted?.Processes.Single().Fixture).IsEqualTo(fixture.FixtureName);
+
+    db.ArchiveJob(managed.UniqueStr);
+    using var reopened = repositories.OpenConnection();
+    for (var poll = 0; poll < 12 && Sync(device, reopened); poll++) { }
+    await Assert.That(device.Data.Schedules).IsEmpty();
+    await Assert.That(device.Data.Parts).IsEmpty();
+    await Assert.That(reopened.LoadMazakManagedSchedules(config.ControllerSource)).IsEmpty();
+    await Assert.That(device.Data.Pallets.Single()).IsEqualTo(mapping);
+    await Assert.That(device.Data.Fixtures.Single()).IsEqualTo(fixture);
+  }
+
+  [Test]
   public async Task ArchivingBothOwnersCleansSharedFixturesAfterAnInterruptedDownload()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -489,11 +583,11 @@ public sealed partial class DuplicateDownloadSpec
     db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [first, peer] }, null, false);
     await Assert.That(Sync(device, db)).IsTrue();
     db.ArchiveJobs([first.UniqueStr, peer.UniqueStr]);
-    var rejected = device.Data.Schedules.Single(s => s.Comment == "initial-job-1-1-InsightS");
+    MazakScheduleRow? rejected = null;
     var config = ManagedConfig();
     var reads = 0;
     var readAtRefusal = -1;
-    var peerReadAfterRefusal = false;
+    var peerDeletedWithoutReadback = false;
     device
       .Native.LoadAllData()
       .Returns(_ =>
@@ -503,44 +597,34 @@ public sealed partial class DuplicateDownloadSpec
       });
     device.BeforeSave = write =>
     {
-      if (write.Schedules.Any(s => s.Id == rejected.Id))
+      if (write.Schedules.SingleOrDefault() is not { } schedule)
+        return;
+      rejected ??= schedule;
+      if (schedule.Id == rejected.Id)
       {
         readAtRefusal = reads;
         throw new IOException("Mazak refused deletion.");
       }
-      if (write.Schedules.Any(s => s.Comment.StartsWith("other-", StringComparison.Ordinal)))
-        peerReadAfterRefusal = readAtRefusal >= 0 && reads > readAtRefusal;
+      if (
+        MazakPart.UniqueFromComment(schedule.Comment)
+        != MazakPart.UniqueFromComment(rejected.Comment)
+      )
+        peerDeletedWithoutReadback |= reads == readAtRefusal;
     };
     bool Poll() =>
       WriteJobs.SyncFromDatabase(device.Data, db, device.Native, new FMSSettings(), config, Now);
-    for (
-      var poll = 0;
-      poll < 15
-        && db.LoadMazakManagedSchedules(config.ControllerSource, jobUnique: peer.UniqueStr).Count
-          > 0;
-      ++poll
-    )
-    {
-      try
-      {
-        await Assert.That(Poll()).IsTrue();
-      }
-      catch (IOException)
-        when (db.LoadMazakManagedSchedules(
-            config.ControllerSource,
-            jobUnique: peer.UniqueStr
-          ).IsEmpty
-        )
-      {
-        // After independent cleanup finishes, the remaining refusal can surface normally.
-        break;
-      }
-    }
-    await Assert.That(peerReadAfterRefusal).IsTrue();
-    await Assert.That(device.Data.Schedules.Single().Id).IsEqualTo(rejected.Id);
     await Assert
-      .That(db.LoadMazakManagedSchedules(config.ControllerSource, jobUnique: peer.UniqueStr))
-      .IsEmpty();
+      .That(() =>
+      {
+        for (var poll = 0; poll < 15 && Poll(); ++poll) { }
+      })
+      .Throws<IOException>()
+      .WithMessageContaining("Mazak refused deletion.");
+    await Assert.That(peerDeletedWithoutReadback).IsFalse();
+    await Assert.That(device.Data.Schedules.Single().Id).IsEqualTo(rejected!.Id);
+    await Assert
+      .That(db.LoadMazakManagedSchedules(config.ControllerSource).Single().PartName)
+      .IsEqualTo(rejected.PartName);
 
     device.BeforeSave = null!;
     for (var poll = 0; poll < 8 && Poll(); ++poll) { }

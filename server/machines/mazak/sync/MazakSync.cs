@@ -136,6 +136,13 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
   {
+    var localJobs = jobs.Jobs;
+    if (mazakConfig.BulkJobFilter is { } assignedToController)
+    {
+      localJobs = localJobs.Where(assignedToController).ToImmutableList();
+      if (localJobs.IsEmpty)
+        return [];
+    }
     var logMessages = new List<string>();
     MazakAllData mazakData = mazakDB.LoadAllData();
 
@@ -183,11 +190,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         }
       }
 
-      //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
-      //need to ignore the warning that palletPartMap is not used.
-#pragma warning disable 168, 219
-      var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-        jobs: jobs.Jobs,
+      ConvertJobsToMazakParts.JobsToMazak(
+        jobs: localJobs,
         downloadUID: 1,
         mazakData: mazakData,
         savedParts: new HashSet<string>(),
@@ -196,7 +200,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         lookupProgram: lookupProg,
         errors: logMessages
       );
-#pragma warning restore 168, 219
     }
     catch (Exception ex)
     {

@@ -76,12 +76,17 @@ and recompute the authorized offer before writing again, since the controller ma
 `RecordedLoads` reports physical loads within the confirmed schedule's history, including
 invalidated attempts and separately identified and unidentified quantities. Adopted schedules
 without a recorded creation boundary have unknown attempt totals. Valid Insight completions come
-from repository manufacturing history. The exact transfer resolver supplies material IDs for managed
-loads. After an unidentified unload, pallet status leaves the affected serials unknown. Exact
-transfer evidence can identify individual pieces. While the backend reports a pending transfer, an
-empty pallet observation preserves the possible serials for a delayed unload. Settled empty readback
-can end an uncertain placement, and moving known missing pieces to quarantine releases their places
-on the pallet. Both preserve the original manufacturing history. Historical native part identity
+from repository manufacturing history. Pending loads from a managed job's queue show the requested
+quantity with anonymous material cards. The queued pieces remain visible until the backend reports
+which pieces transferred. Queue-only and basket backends both need
+`MazakConfig.ResolveLoadUnloadTransaction` to record material IDs for managed loads. Without a valid
+resolution, the LOAD event records physical quantity with unidentified material.
+
+After an unidentified unload, pallet status leaves the affected serials unknown. Exact transfer
+evidence can identify individual pieces. While the backend reports a pending transfer, an empty
+pallet observation preserves the possible serials for a delayed unload. Settled empty readback can
+end an uncertain placement, and moving known missing pieces to quarantine releases their places on
+the pallet. Both preserve the original manufacturing history. Historical native part identity
 remains available for late events after retirement and schedule number reuse.
 
 Settle the backend's outstanding transfers and withdraw offers before archiving the Insight job.

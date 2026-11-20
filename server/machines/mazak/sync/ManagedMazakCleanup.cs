@@ -121,7 +121,11 @@ internal static partial class ManagedMazakSchedules
         .Concat(otherRoutes.SelectMany(r => r.Fixtures))
         .ToHashSet(StringComparer.Ordinal);
       var mappings = data
-        .Pallets.Where(p => route.Fixtures.Contains(p.Fixture) && !usedFixtures.Contains(p.Fixture))
+        .Pallets.Where(p =>
+          route.Fixtures.Contains(p.Fixture)
+          && MazakPart.IsInsightFixture(p.Fixture)
+          && !usedFixtures.Contains(p.Fixture)
+        )
         .Select(p => p with { Command = MazakWriteCommand.Delete })
         .ToImmutableList();
       if (!mappings.IsEmpty)

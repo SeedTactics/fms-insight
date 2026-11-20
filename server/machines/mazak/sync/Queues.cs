@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using Serilog;
@@ -125,11 +126,18 @@ namespace MazakMachineInterface
     )
     {
       var loadOpers = mazakData.LoadActions;
+      var managedParts = cfg.UseInsightJobQuantities is null
+        ? ImmutableHashSet<string>.Empty
+        : jdb.LoadMazakManagedPartNames(cfg.ControllerSource);
       var schs = new List<ScheduleWithQueues>();
       var skippedCastings = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
-        if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
+        // A changed comment can point at an ordinary job while the managed part still exists.
+        if (
+          !MazakPart.IsSailPart(schRow.PartName, schRow.Comment)
+          || managedParts.Contains(schRow.PartName)
+        )
           continue;
 
         var unique = MazakPart.UniqueFromComment(schRow.Comment);

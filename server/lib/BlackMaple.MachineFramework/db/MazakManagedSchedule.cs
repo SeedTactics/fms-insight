@@ -70,6 +70,20 @@ internal sealed partial class Repository
     return reader.Read() ? ReadManagedSchedule(source, reader) : null;
   }
 
+  public ImmutableHashSet<string> LoadMazakManagedPartNames(string source, bool includeRetired)
+  {
+    using var cmd = ManagedScheduleCommand();
+    cmd.CommandText =
+      "SELECT PartName FROM mazak_managed_schedule WHERE Source = $source"
+      + (includeRetired ? "" : " AND Retired = 0");
+    cmd.Parameters.AddWithValue("$source", source);
+    using var reader = cmd.ExecuteReader();
+    var names = ImmutableHashSet.CreateBuilder<string>(StringComparer.OrdinalIgnoreCase);
+    while (reader.Read())
+      names.Add(reader.GetString(0));
+    return names.ToImmutable();
+  }
+
   public void RecordMazakManagedSchedule(MazakManagedSchedule schedule)
   {
     using var cmd = ManagedScheduleCommand();

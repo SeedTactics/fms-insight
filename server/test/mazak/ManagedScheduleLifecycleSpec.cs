@@ -966,6 +966,15 @@ public sealed partial class DuplicateDownloadSpec
       .That(late.Material.All(m => m.JobUniqueStr == job.UniqueStr && m.Process == 2))
       .IsTrue();
     await Assert.That(db.GetJobProductionSummary(peer.UniqueStr).Completed).IsEmpty();
+
+    await Assert
+      .That(ManagedMazakSchedules.Diagnostics(reopened, config, device.Data, Now))
+      .IsEmpty();
+    reopened.UnarchiveJob(job.UniqueStr);
+    var alarms = ManagedMazakSchedules.Diagnostics(reopened, config, device.Data, Now);
+    await Assert.That(alarms.Count).IsEqualTo(2);
+    foreach (var alarm in alarms)
+      await Assert.That(alarm.Message).Contains("already retired native part");
   }
 
   [Test]

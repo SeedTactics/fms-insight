@@ -1101,8 +1101,10 @@ namespace MazakMachineInterface
               job.Started += 1;
             }
 
+            // A managed load request reports a quantity. Its material IDs come from
+            // the backend's exact transfer resolution, which can pick any queued pieces.
             var queue = job.Processes[fmsOperationProc - 1][0].InputQueue;
-            if (!string.IsNullOrEmpty(queue))
+            if (!config.UsesInsightJobQuantities(job.DbJob) && !string.IsNullOrEmpty(queue))
             {
               var key = (uniq: uniq, proc: fmsOperationProc);
               if (queuedMats.ContainsKey(key))

@@ -1417,6 +1417,9 @@ namespace BlackMaple.MachineFramework
         )
         """;
       cmd.ExecuteNonQuery();
+      cmd.CommandText =
+        "CREATE INDEX IF NOT EXISTS mazak_managed_open_idx ON mazak_managed_schedule(Source, PartName) WHERE Retired = 0";
+      cmd.ExecuteNonQuery();
     }
 
     private static void CreateJobDecrementOperationTables(IDbCommand cmd)

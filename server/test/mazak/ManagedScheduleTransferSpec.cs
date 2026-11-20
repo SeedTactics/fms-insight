@@ -12,6 +12,117 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class DuplicateDownloadSpec
 {
   [Test]
+  public async Task PendingManagedQueueLoadStaysAnonymousUntilResolved()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var template = PendingJob(false);
+    var process = template.Processes[0];
+    var job = template with
+    {
+      Processes =
+      [
+        process with
+        {
+          Paths = [process.Paths[0] with { InputQueue = "raw", PalletNums = [2] }],
+        },
+      ],
+    };
+    var config = ManagedConfig() with
+    {
+      UseInsightJobQuantities = j => j.UniqueStr == job.UniqueStr,
+    };
+    var settings = new FMSSettings();
+    settings.Queues["raw"] = new QueueInfo();
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
+    await Assert
+      .That(WriteJobs.SyncFromDatabase(device.Data, db, device.Native, settings, config, Now))
+      .IsTrue();
+    var route = device.Data.Schedules.Single();
+    long QueuePiece(string serial)
+    {
+      var id = db.AllocateMaterialID(job.UniqueStr, job.PartName, job.Processes.Count);
+      db.RecordSerialForMaterialID(id, 0, serial, Now.AddHours(-1));
+      db.RecordAddMaterialToQueue(id, 0, "raw", -1, null, "Staged", Now.AddHours(-1));
+      return id;
+    }
+    var first = QueuePiece("A");
+    var selected = QueuePiece("B");
+
+    var pending = device.Data with
+    {
+      PalletPositions = [new() { PalletNumber = 2, PalletPosition = "LS011" }],
+      LoadActions =
+      [
+        new()
+        {
+          LoadStation = 1,
+          LoadEvent = true,
+          Comment = route.Comment,
+          Part = job.PartName,
+          Process = 1,
+          Qty = 1,
+        },
+      ],
+    };
+    CurrentStatus Status(MazakAllData observed, MazakConfig cfg) =>
+      BuildCurrentStatus.Build(db, settings, cfg, observed, "MC", null, Now);
+    var ordinaryStatus = Status(pending, config with { UseInsightJobQuantities = null });
+    var ordinaryLoad = ordinaryStatus.Material.Single(m =>
+      m.Action.Type == InProcessMaterialAction.ActionType.Loading
+    );
+    await Assert.That(ordinaryLoad.Serial).IsEqualTo("A");
+
+    var managedStatus = Status(pending, config);
+    var managedLoad = managedStatus.Material.Single(m =>
+      m.Action.Type == InProcessMaterialAction.ActionType.Loading
+    );
+    await Assert.That(managedLoad.MaterialID).IsEqualTo(-1);
+    await Assert.That(managedLoad.Serial).IsNull();
+    var queued = managedStatus.Material.Where(m =>
+      m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+      && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
+    );
+    await Assert.That(queued.Select(m => m.MaterialID)).IsEquivalentTo([first, selected]);
+
+    var completed = pending with
+    {
+      LoadActions = [],
+      PalletSubStatuses =
+      [
+        new()
+        {
+          PalletNumber = 2,
+          ScheduleID = route.Id,
+          PartName = route.PartName,
+          PartProcessNumber = 1,
+          FixtureName = device.Data.Parts.Single().Processes.Single().Fixture,
+          FixQuantity = 1,
+        },
+      ],
+    };
+    var recordedLoad = TranslateManagedTransfer(
+      db,
+      config,
+      settings,
+      completed,
+      route,
+      job.PartName,
+      LogCode.LoadEnd,
+      1,
+      1,
+      [selected]
+    );
+    await Assert.That(recordedLoad.Material.Single().MaterialID).IsEqualTo(selected);
+    var after = Status(completed, config);
+    await Assert.That(after.Material.Single(m => m.Location.PalletNum == 2).Serial).IsEqualTo("B");
+    await Assert
+      .That(after.Material.Single(m => m.Location.CurrentQueue == "raw").Serial)
+      .IsEqualTo("A");
+  }
+
+  [Test]
   [Arguments("raw quantities")]
   [Arguments("exact remainder")]
   [Arguments("settled empty observation")]

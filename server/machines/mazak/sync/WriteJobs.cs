@@ -202,13 +202,12 @@ namespace MazakMachineInterface
     )
     {
       //first allocate a UID to use for this download
-      var reservedUIDs = (
-        mazakCfg.UseInsightJobQuantities is null
-          ? []
-          : jobDB.LoadMazakManagedSchedules(mazakCfg.ControllerSource, includeRetired: true)
-      )
-        .Select(route => MazakPart.ParseUID(route.PartName))
-        .ToImmutableHashSet();
+      var reservedUIDs = mazakCfg.UseInsightJobQuantities is null
+        ? ImmutableHashSet<int>.Empty
+        : jobDB
+          .LoadMazakManagedPartNames(mazakCfg.ControllerSource, includeRetired: true)
+          .Select(MazakPart.ParseUID)
+          .ToImmutableHashSet();
       int UID = 0;
       while (UID < int.MaxValue)
       {

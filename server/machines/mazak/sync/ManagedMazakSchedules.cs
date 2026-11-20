@@ -494,49 +494,46 @@ internal static partial class ManagedMazakSchedules
   {
     if (config.UseInsightJobQuantities is null)
       return [];
-    var bindings = db.LoadMazakManagedSchedules(config.ControllerSource, includeRetired: true)
-      .ToLookup(r => r.JobUnique);
     var observedComments = data
       .Parts.Select(p => p.Comment)
       .Concat(data.Schedules.Select(s => s.Comment))
       .ToImmutableHashSet();
     var window = WriteJobs.DownloadWindow(observationTimeUtc);
-    return db.LoadUnarchivedJobs()
-      .Where(j =>
-        Owns(config, j)
-        && (
-          j.CopiedToSystem
-          || bindings.Contains(j.UniqueStr)
-          || MazakPart.InitialScheduleComments(j).Any(observedComments.Contains)
-          || (
-            j.RouteEndUTC >= window.EarliestEnd
-            && j.RouteStartUTC <= window.LatestStart
-            && WriteJobs.HasDownloadDemand(j, config)
-          )
+    return (
+      from job in db.LoadUnarchivedJobs()
+      where Owns(config, job)
+      let bindings = db.LoadMazakManagedSchedules(
+        config.ControllerSource,
+        includeRetired: true,
+        jobUnique: job.UniqueStr
+      )
+      let comments = MazakPart.InitialScheduleComments(job)
+      where
+        job.CopiedToSystem
+        || !bindings.IsEmpty
+        || comments.Any(observedComments.Contains)
+        || (
+          job.RouteEndUTC >= window.EarliestEnd
+          && job.RouteStartUTC <= window.LatestStart
+          && WriteJobs.HasDownloadDemand(job, config)
         )
+      from comment in comments
+      let message = RouteReadbackProblem(
+        db,
+        config,
+        data,
+        job,
+        comment,
+        bindings.SingleOrDefault(r => r.Comment == comment),
+        forDownload: false
       )
-      .SelectMany(job =>
-        MazakPart
-          .InitialScheduleComments(job)
-          .Select(comment =>
-            RouteReadbackProblem(
-              db,
-              config,
-              data,
-              job,
-              comment,
-              bindings[job.UniqueStr].SingleOrDefault(r => r.Comment == comment),
-              forDownload: false
-            )
-          )
-      )
-      .OfType<string>()
-      .Select(message => new CurrentStatusAlarm
+      where message != null
+      select new CurrentStatusAlarm
       {
         Code = "mazak-managed-schedule-unavailable",
         Message = message,
         Impact = AlarmImpact.Informational,
-      })
-      .ToImmutableList();
+      }
+    ).ToImmutableList();
   }
 }

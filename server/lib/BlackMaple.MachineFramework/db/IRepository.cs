@@ -70,6 +70,7 @@ namespace BlackMaple.MachineFramework
       bool includeRetired = false,
       string jobUnique = null
     );
+    ImmutableHashSet<string> LoadMazakManagedPartNames(string source, bool includeRetired = false);
     MazakManagedSchedule LoadMazakManagedSchedule(string source, string nativePart);
     void RecordMazakManagedSchedule(MazakManagedSchedule schedule);
     void RetireMazakManagedSchedule(string source, string nativePart);

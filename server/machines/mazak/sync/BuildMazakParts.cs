@@ -159,6 +159,8 @@ namespace MazakMachineInterface
         && comment.EndsWith(SplitInsightSuffix, StringComparison.Ordinal);
     }
 
+    internal static bool IsInsightFixture(string fixture) => fixture.Contains(':');
+
     public static bool IsSailPart(string partName, string comment)
     {
       if (partName == null || comment == null)
@@ -735,9 +737,7 @@ namespace MazakMachineInterface
       var palRows = new List<MazakPalletRow>();
       foreach (var palRow in OldMazakData.Pallets)
       {
-        int idx = palRow.Fixture.IndexOf(':');
-
-        if (idx >= 0)
+        if (MazakPart.IsInsightFixture(palRow.Fixture))
         {
           //check if this fixture is being used by a new schedule
           //or is a fixture used by a part in savedParts
@@ -1096,7 +1096,7 @@ namespace MazakMachineInterface
         {
           foreach (var proc in part.Processes)
           {
-            if (proc.Fixture.Contains(':'))
+            if (MazakPart.IsInsightFixture(proc.Fixture))
             {
               errors.Add(
                 $"Non-Insight part {part.PartName} in the Mazak cell controller is using an Insight fixture {proc.Fixture}.  Please edit the part in the cell controller to not use an Insight fixture."
