@@ -132,8 +132,130 @@ public sealed partial class DuplicateDownloadSpec
     device.Observe(device.Data with { Parts = [changed, parts[1]] });
     device.Native.ClearReceivedCalls();
     using var reopened = repositories.OpenConnection();
-    await Assert.That(() => Sync(device, reopened)).Throws<ConflictRequestException>();
+    await Assert.That(Sync(device, reopened)).IsFalse();
+    var alarm = ManagedMazakSchedules.Diagnostics(reopened, ManagedConfig(), device.Data).Single();
+    await Assert.That(alarm.Message).Contains("changed fixtures or programs");
+    await Assert.That(alarm.Message).Contains(parts[1].Processes.Single().Fixture);
     device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+  }
+
+  [Test]
+  [Arguments("fixture", false)]
+  [Arguments("program", true)]
+  [Arguments("adopted program", false)]
+  public async Task PendingRouteConflictHoldsOnlyTheAffectedJob(string cause, bool afterLookback)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var managed = PendingJob(true);
+    var settings = new FMSSettings();
+    var config = ManagedConfig();
+    var device = new DownloadDevice(cause == "adopted program" ? "" : "parts-full");
+    var pollAt = afterLookback ? managed.RouteEndUTC.AddHours(51) : Now;
+    var ordinary = PendingJob(false);
+    var peer = ordinary with
+    {
+      UniqueStr = "peer",
+      PartName = "peer-part",
+      RouteStartUTC = pollAt.AddHours(-1),
+      RouteEndUTC = pollAt.AddDays(1),
+      Processes = ordinary
+        .Processes.Select(p =>
+          p with
+          {
+            Paths = p
+              .Paths.Select(path =>
+                path with
+                {
+                  PalletNums = [9],
+                  Load = [2],
+                  Unload = [2],
+                  Stops = path.Stops.Select(stop => stop with { Stations = [2] }).ToImmutableList(),
+                }
+              )
+              .ToImmutableList(),
+          }
+        )
+        .ToImmutableList(),
+    };
+    var sameBatch = cause == "fixture";
+    db.AddJobs(
+      new NewJobs { ScheduleId = "first", Jobs = sameBatch ? [managed, peer] : [managed] },
+      null,
+      false
+    );
+    if (cause == "adopted program")
+    {
+      using var oldRepository = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+      using var before = oldRepository.OpenConnection();
+      before.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed] }, null, false);
+      WriteJobs.SyncFromDatabase(
+        device.Data,
+        before,
+        device.Native,
+        settings,
+        config with
+        {
+          UseInsightJobQuantities = null,
+        },
+        Now
+      );
+    }
+    else
+      await Assert.That(() => Sync(device, db)).Throws<IOException>();
+
+    var parts = device.Data.Parts.ToImmutableList();
+    var route = parts.Single(p => p.Comment == "initial-job-2-1-InsightS");
+    var process = route.Processes.Single();
+    var wrong = route with
+    {
+      Processes =
+      [
+        cause == "fixture"
+          ? process with
+          {
+            Fixture = parts
+              .Single(p => p.Comment == "initial-job-1-1-InsightS")
+              .Processes.Single()
+              .Fixture,
+          }
+          : process with
+          {
+            MainProgram = "1001",
+          },
+      ],
+    };
+    device.Observe(device.Data with { Parts = parts.Replace(route, wrong) });
+
+    if (!sameBatch)
+      db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [peer] }, null, false);
+    using var reopened = repositories.OpenConnection();
+    bool Poll() =>
+      WriteJobs.SyncFromDatabase(device.Data, reopened, device.Native, settings, config, pollAt);
+    await Assert.That(Poll()).IsTrue();
+    await Assert.That(reopened.LoadJob(peer.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsFalse();
+    for (var i = 0; i < 3; ++i)
+      await Assert.That(Poll()).IsFalse();
+    await Assert.That(device.Data.Parts.Single(p => p.PartName == route.PartName)).IsEqualTo(wrong);
+    var alarm = ManagedMazakSchedules.Diagnostics(reopened, config, device.Data).Single();
+    await Assert.That(alarm.Message).Contains(managed.UniqueStr);
+    await Assert.That(alarm.Message).Contains(route.PartName);
+    await Assert
+      .That(alarm.Message)
+      .Contains(cause == "fixture" ? wrong.Processes.Single().Fixture : "1001");
+
+    device.Observe(
+      device.Data with
+      {
+        Parts = device
+          .Data.Parts.Select(p => p.PartName == route.PartName ? route : p)
+          .ToImmutableList(),
+      }
+    );
+    await Assert.That(Poll()).IsTrue();
+    await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(ManagedMazakSchedules.Diagnostics(reopened, config, device.Data)).IsEmpty();
   }
 
   [Test]

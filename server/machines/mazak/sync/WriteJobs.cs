@@ -95,18 +95,7 @@ namespace MazakMachineInterface
         )
         .Where(j =>
           !mazakCfg.UsesInsightJobQuantities(j)
-          || db.LoadMazakManagedSchedules(
-              mazakCfg.ControllerSource,
-              includeRetired: true,
-              jobUnique: j.UniqueStr
-            )
-            .All(route =>
-              !route.Retired
-              && (
-                !route.ConfirmedScheduleId.HasValue
-                || !ManagedMazakSchedules.ConfirmedRouteUnavailable(mazakData, j, route)
-              )
-            )
+          || ManagedMazakSchedules.CanContinueDownload(db, mazakCfg, mazakData, j)
         )
         .GroupBy(j => j.ScheduleId)
         // Only do one schedule at a time

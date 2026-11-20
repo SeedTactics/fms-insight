@@ -63,9 +63,14 @@ internal static partial class ManagedMazakSchedules
         || !s.Processes.Select(proc => proc.ProcessNumber).Order().SequenceEqual(expected)
       )
     )
+    {
+      var rows = schedules
+        .Select(s => $"schedule {s.Id} for '{s.PartName}' with comment '{s.Comment}'")
+        .Concat(parts.Select(p => $"part '{p.PartName}' with comment '{p.Comment}'"));
       throw new ConflictRequestException(
-        $"Mazak job '{job.UniqueStr}' has conflicting readback for route '{comment}' and native part '{partName}'."
+        $"Mazak job '{job.UniqueStr}' requires route comment '{comment}' on native part '{partName}'. Conflicting readback: {string.Join(", ", rows)}."
       );
+    }
     return (parts.SingleOrDefault(), schedules.SingleOrDefault());
   }
 
@@ -89,9 +94,18 @@ internal static partial class ManagedMazakSchedules
 
   private static void VerifyInstalledProcesses(MazakPartRow part, MazakManagedSchedule binding)
   {
-    if (!ProcessDefinitions(part).SequenceEqual(binding.Processes))
+    var installed = ProcessDefinitions(part);
+    if (!installed.SequenceEqual(binding.Processes))
       throw new ConflictRequestException(
-        $"Mazak job '{binding.JobUnique}' has changed fixtures or programs on native part '{binding.PartName}' for route '{binding.Comment}'."
+        $"Mazak job '{binding.JobUnique}' has changed fixtures or programs on native part '{binding.PartName}' for route '{binding.Comment}'. Expected {Describe(binding.Processes)}. Observed {Describe(installed)}."
+      );
+
+    static string Describe(ImmutableList<MazakManagedProcess> processes) =>
+      string.Join(
+        ", ",
+        processes.Select(p =>
+          $"process {p.Process} with fixture '{p.Fixture}' and program '{p.Program}'"
+        )
       );
   }
 
@@ -367,20 +381,88 @@ internal static partial class ManagedMazakSchedules
       Processes = ProcessDefinitions(part),
     };
 
-  public static bool ConfirmedRouteUnavailable(
+  public static bool CanContinueDownload(
+    IRepository db,
+    MazakConfig config,
     MazakAllData data,
-    Job job,
-    MazakManagedSchedule route
+    HistoricJob job
   )
   {
+    var routes = db.LoadMazakManagedSchedules(
+      config.ControllerSource,
+      includeRetired: true,
+      jobUnique: job.UniqueStr
+    );
+    return MazakPart
+      .InitialScheduleComments(job)
+      .All(comment =>
+        RouteReadbackProblem(
+          db,
+          config,
+          data,
+          job,
+          comment,
+          routes.SingleOrDefault(r => r.Comment == comment),
+          forDownload: true
+        )
+          is null
+      );
+  }
+
+  private static string? RouteReadbackProblem(
+    IRepository db,
+    MazakConfig config,
+    MazakAllData data,
+    HistoricJob job,
+    string comment,
+    MazakManagedSchedule? binding,
+    bool forDownload
+  )
+  {
+    var unavailable =
+      $"Mazak controller '{config.ControllerSource}' has no verified schedule for job '{job.UniqueStr}', route '{comment}'. Check the controller before admitting material.";
+    if (binding is { Retired: true })
+      return $"Mazak controller '{config.ControllerSource}' has already retired native part '{binding.PartName}' for job '{job.UniqueStr}', route '{comment}'.";
+
     try
     {
-      var (part, schedule) = Inspect(data, job, route);
-      return part is null || schedule is null;
+      var nativePartName = binding?.PartName
+        ?? data.Parts.FirstOrDefault(p => p.Comment == comment)?.PartName
+        ?? data.Schedules.FirstOrDefault(s => s.Comment == comment)?.PartName;
+      var (part, schedule) =
+        binding is not null ? Inspect(data, job, binding)
+        : nativePartName is not null ? Inspect(data, job, nativePartName, comment, null)
+        : (null, null);
+
+      if (part is null && schedule is not null)
+        return $"Mazak controller '{config.ControllerSource}' has schedule {schedule.Id} for job '{job.UniqueStr}', route '{comment}', but its native part '{schedule.PartName}' is missing.";
+      if (
+        (part is null || schedule is null)
+        && (binding?.ConfirmedScheduleId is not null || job.CopiedToSystem)
+      )
+        return unavailable;
+
+      if (
+        part is not null
+        && ExecutionConflict(
+          db,
+          data,
+          config,
+          job,
+          part,
+          checkExecutionFields: !forDownload && binding?.ConfirmedScheduleId is not null
+        )
+          is { } mismatch
+      )
+        return mismatch;
+
+      return !forDownload && schedule is not null && binding?.ConfirmedScheduleId is null
+        ? unavailable
+        : null;
     }
-    catch (ConflictRequestException)
+    catch (ConflictRequestException conflict)
     {
-      return true;
+      return conflict.Message;
     }
   }
 
@@ -392,49 +474,43 @@ internal static partial class ManagedMazakSchedules
   {
     if (config.UseInsightJobQuantities is null)
       return [];
-    var bindings = db.LoadMazakManagedSchedules(config.ControllerSource).ToLookup(r => r.JobUnique);
+    var bindings = db.LoadMazakManagedSchedules(config.ControllerSource, includeRetired: true)
+      .ToLookup(r => r.JobUnique);
+    var observedComments = data
+      .Parts.Select(p => p.Comment)
+      .Concat(data.Schedules.Select(s => s.Comment))
+      .ToImmutableHashSet();
     return db.LoadUnarchivedJobs()
-      .Where(j => Owns(config, j) && (j.CopiedToSystem || bindings.Contains(j.UniqueStr)))
+      .Where(j =>
+        Owns(config, j)
+        && (
+          j.CopiedToSystem
+          || bindings.Contains(j.UniqueStr)
+          || MazakPart.InitialScheduleComments(j).Any(observedComments.Contains)
+        )
+      )
       .SelectMany(job =>
         MazakPart
           .InitialScheduleComments(job)
           .Select(comment =>
-          {
-            var route = bindings[job.UniqueStr].SingleOrDefault(r => r.Comment == comment);
-            if (route?.ConfirmedScheduleId is not null)
-            {
-              try
-              {
-                var (part, schedule) = Inspect(data, job, route);
-                if (part is not null && schedule is not null)
-                  return ExecutionConflict(db, data, config, job, part);
-              }
-              catch (ConflictRequestException conflict)
-              {
-                return conflict.Message;
-              }
-            }
-            else if (
-              !job.CopiedToSystem
-              && (
-                route is null
-                || !data.Schedules.Any(s =>
-                  s.Comment == comment
-                  || string.Equals(s.PartName, route.PartName, StringComparison.OrdinalIgnoreCase)
-                )
-              )
+            RouteReadbackProblem(
+              db,
+              config,
+              data,
+              job,
+              comment,
+              bindings[job.UniqueStr].SingleOrDefault(r => r.Comment == comment),
+              forDownload: false
             )
-              return null;
-            return $"Mazak controller '{config.ControllerSource}' has no verified schedule for job '{job.UniqueStr}', route '{comment}'. Check the controller before admitting material.";
-          })
-          .OfType<string>()
-          .Select(message => new CurrentStatusAlarm
-          {
-            Code = "mazak-managed-schedule-unavailable",
-            Message = message,
-            Impact = AlarmImpact.Informational,
-          })
+          )
       )
+      .OfType<string>()
+      .Select(message => new CurrentStatusAlarm
+      {
+        Code = "mazak-managed-schedule-unavailable",
+        Message = message,
+        Impact = AlarmImpact.Informational,
+      })
       .ToImmutableList();
   }
 }

@@ -51,12 +51,14 @@ unset uses the group inferred from the latest accepted schedule.
 
 The downloader saves the native route identity before its first controller write and confirms the
 schedule from readback. An interrupted installation can finish beyond the normal download window.
-Adopting a schedule with no installation record requires the native program to match the job's
-program and revision under the normal download rules. After a partial cancellation, managed jobs can
-still download at zero offer for the remaining work. Archival also cleans up a partial installation
-with no confirmed schedule. A confirmed route retains the same full native part name and schedule
-number through the job's active life, including at planned equals completed. A missing or
-conflicting route raises a route-specific alarm for backend disposition.
+Adoption and positive offers verify the effective program and revision using the same process
+configuration as download. A conflict during installation raises a route alarm and holds that job
+while other eligible jobs can download. Correcting the controller's definition lets the held job
+resume. After a partial cancellation, managed jobs can still download at zero offer for the
+remaining work. Archival also cleans up a partial installation with no confirmed schedule. A
+confirmed route retains the same full native part name and schedule number through the job's active
+life, including at planned equals completed. A missing or conflicting route raises a route-specific
+alarm for backend disposition.
 
 Use `MazakManagedScheduleControl.EnsurePlan` with an absolute minimum quantity and
 `SetMaterialOffer` with the currently authorized ready quantity. A combined schedule admits material
