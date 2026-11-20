@@ -934,6 +934,45 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
+    public async Task BackoutUsesOnlyThisControllersJobs()
+    {
+      using var db = _repoCfg.OpenConnection();
+      db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [PendingJob("local")] }, null, true);
+      db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [PendingJob("peer")] }, null, false);
+      var observed = new MazakAllDataAndLogs
+      {
+        Schedules = [Schedule("local"), Schedule("peer") with { Id = 2 }],
+      };
+      var config = new MazakConfig
+      {
+        DBType = MazakDbType.MazakSmooth,
+        BulkJobFilter = job => job.UniqueStr == "local",
+      };
+      using var sync = new MazakSync(_write, new FMSSettings(), config);
+      var state = new MazakState
+      {
+        AllData = observed,
+        CurrentStatus = new CurrentStatus
+        {
+          Revision = 0,
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+          Material = [],
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+          Alarms = [],
+        },
+        StateUpdated = true,
+        TimeUntilNextRefresh = TimeSpan.Zero,
+        StoppedBecauseRecentLogEvent = false,
+      };
+      await Assert.That(sync.DecrementJobs(db, state)).IsTrue();
+      await Assert.That(GetSchRows().Select(s => s.Id)).IsEquivalentTo([1]);
+      await Assert.That(db.LoadDecrementsForJob("local").Single().Quantity).IsEqualTo(3);
+      await Assert.That(db.LoadDecrementsForJob("peer")).IsEmpty();
+    }
+
+    [Test]
     public async Task RefusesBackoutUntilMazakEventsSettle()
     {
       using var db = _repoCfg.OpenConnection();

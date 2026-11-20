@@ -226,8 +226,15 @@ namespace MazakMachineInterface
       }
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
+      bool BelongsToPeer(string part, string comment) =>
+        mazakCfg.BulkJobFilter is { } filter
+        && MazakPart.IsSailPart(part, comment)
+        && jobDB.LoadJob(MazakPart.UniqueFromComment(comment)) is { } job
+        && !filter(job);
+
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData, s =>
         !jobs.Any(job => MazakPart.UniqueFromComment(s.Comment ?? "") == job.UniqueStr)
+        && !BelongsToPeer(s.PartName, s.Comment)
         && !routes.Any(r =>
           !r.Retired && string.Equals(r.PartName, s.PartName, StringComparison.OrdinalIgnoreCase)
         )
@@ -239,6 +246,10 @@ namespace MazakMachineInterface
           )
         )
       );
+      if (mazakCfg.BulkJobFilter is not null)
+        savedParts.UnionWith(
+          mazakData.Parts.Where(p => BelongsToPeer(p.PartName, p.Comment)).Select(p => p.PartName)
+        );
       if (mazakCfg.UseInsightJobQuantities != null)
       {
         // Retiring a schedule does not retire the job or its reusable route definitions.

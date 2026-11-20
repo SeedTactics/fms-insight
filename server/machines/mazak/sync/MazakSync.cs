@@ -485,6 +485,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         "Cannot back out jobs while Mazak events are still settling. Wait for synchronization to finish and retry."
       );
 
-    return DecrementPlanQty.Decrement(mazakDB, db, st.AllData);
+    return DecrementPlanQty.Decrement(mazakDB, db, st.AllData, mazakConfig.BulkJobFilter);
   }
 }

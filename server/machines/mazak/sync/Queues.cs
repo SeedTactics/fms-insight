@@ -135,7 +135,7 @@ namespace MazakMachineInterface
         var unique = MazakPart.UniqueFromComment(schRow.Comment);
 
         var job = jdb.LoadJob(unique);
-        if (job == null)
+        if (job == null || cfg.BulkJobFilter?.Invoke(job) == false)
           continue;
         if (cfg.UsesInsightJobQuantities(job))
           continue;

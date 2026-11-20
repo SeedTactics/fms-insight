@@ -137,6 +137,37 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task OrdinaryDownloadPreservesNativeRowsClaimedByAPeer()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null);
+    using var db = repositories.OpenConnection();
+    var device = new DownloadDevice("");
+    var local = PendingJob(false) with { UniqueStr = "local" };
+    var peer = PendingJob(false) with { UniqueStr = "peer", PartName = "peer-part" };
+    var config = new MazakConfig
+    {
+      DBType = MazakDbType.MazakSmooth,
+      BulkJobFilter = job => job.UniqueStr == peer.UniqueStr,
+    };
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [peer] }, null, false);
+    bool Poll(MazakConfig c) =>
+      WriteJobs.SyncFromDatabase(device.Data, db, device.Native, new FMSSettings(), c, Now);
+    await Assert.That(Poll(config)).IsTrue();
+    var schedule = device.Data.Schedules.Single();
+    var completed = schedule with { CompleteQuantity = schedule.PlanQuantity };
+    var part = device.Data.Parts.Single();
+    device.Observe(device.Data with { Schedules = [completed] });
+
+    db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [local] }, null, false);
+    await Assert
+      .That(Poll(config with { BulkJobFilter = job => job.UniqueStr == local.UniqueStr }))
+      .IsTrue();
+    await Assert.That(device.Data.Schedules.Single(s => s.Id == completed.Id)).IsEqualTo(completed);
+    await Assert.That(device.Data.Parts.Single(p => p.PartName == part.PartName)).IsEqualTo(part);
+    await Assert.That(db.LoadJob(peer.UniqueStr)!.Archived).IsFalse();
+  }
+
+  [Test]
   public async Task CompletedManagedScheduleTakesNineAttemptsForSixValidCompletions()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null);

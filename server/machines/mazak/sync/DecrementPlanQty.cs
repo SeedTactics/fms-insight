@@ -46,6 +46,14 @@ namespace MazakMachineInterface
       IRepository jobDB,
       MazakCurrentStatus status,
       DateTime? now = null
+    ) => Decrement(mazakDB, jobDB, status, jobFilter: null, now);
+
+    internal static bool Decrement(
+      IMazakDB mazakDB,
+      IRepository jobDB,
+      MazakCurrentStatus status,
+      Func<Job, bool> jobFilter,
+      DateTime? now = null
     )
     {
       // This works in three steps:
@@ -72,7 +80,12 @@ namespace MazakMachineInterface
       if (
         jobDB
           .LoadUnarchivedJobs()
-          .Any(j => !j.ManuallyCreated && !j.CopiedToSystem && !j.Decrements.Any())
+          .Any(j =>
+            jobFilter?.Invoke(j) != false
+            && !j.ManuallyCreated
+            && !j.CopiedToSystem
+            && !j.Decrements.Any()
+          )
       )
       {
         throw new ConflictRequestException(
@@ -80,7 +93,7 @@ namespace MazakMachineInterface
         );
       }
 
-      var jobs = JobsToDecrement(jobDB, status);
+      var jobs = JobsToDecrement(jobDB, status, jobFilter);
       Log.Debug("Found jobs to decrement {@jobs}", jobs);
 
       if (jobs.Count == 0)
@@ -102,7 +115,8 @@ namespace MazakMachineInterface
 
     private static List<DecrSchedule> JobsToDecrement(
       IRepository jobDB,
-      MazakCurrentStatus schedules
+      MazakCurrentStatus schedules,
+      Func<Job, bool> jobFilter
     )
     {
       var jobs = new List<DecrSchedule>();
@@ -120,7 +134,7 @@ namespace MazakMachineInterface
         if (string.IsNullOrEmpty(unique))
           continue;
         var job = jobDB.LoadJob(unique);
-        if (job == null)
+        if (job == null || jobFilter?.Invoke(job) == false)
           continue;
         if (job.ManuallyCreated || job.Archived)
           continue;
