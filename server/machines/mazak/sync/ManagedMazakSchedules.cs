@@ -148,10 +148,11 @@ internal static partial class ManagedMazakSchedules
       data,
       (program, revision) => WriteJobs.LookupProgram(db, program, revision),
       onlyProcess: route.IsSplit ? route.FmsProcess : null,
-      installedPrograms: part.Processes.ToImmutableDictionary(
-        p => p.ProcessNumber,
-        p => p.MainProgram
-      )
+      // A custom hook can select a different program based on its input alias. Resolve its
+      // input the same way as a download so the installed program cannot change that choice.
+      installedPrograms: config.ProcessFromJob is null
+        ? part.Processes.ToImmutableDictionary(p => p.ProcessNumber, p => p.MainProgram)
+        : null
     );
     if (error is not null)
       return $"Mazak controller '{config.ControllerSource}' cannot verify native part '{part.PartName}' for job '{job.UniqueStr}'. {error}";

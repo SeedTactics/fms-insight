@@ -147,6 +147,43 @@ public sealed partial class DuplicateDownloadSpec
       }
       : original;
     device.Observe(equivalentReadback);
+    if (namedRevision)
+    {
+      // A downloader hook selects revision 8 when given the first revision-7 alias (1014).
+      // The installed alias (1012) must not let the legacy route bypass that choice.
+      var customConfig = config with
+      {
+        ProcessFromJob = (p, proc, path, program) =>
+          new MazakProcessFromJob(
+            p,
+            proc,
+            path,
+            program.CellControllerProgramName == "1014"
+              ? program with
+              {
+                Revision = 8,
+                CellControllerProgramName = "1013",
+              }
+              : program
+          ),
+      };
+      ManagedMazakSchedules.ConfirmObserved(db, customConfig, device.Data);
+      await Assert
+        .That(db.LoadMazakManagedSchedule(config.ControllerSource, part.PartName))
+        .IsNull();
+      await Assert
+        .That(() =>
+          MazakManagedScheduleControl.SetMaterialOffer(
+            db,
+            customConfig,
+            device.Data,
+            job.UniqueStr,
+            2,
+            1
+          )
+        )
+        .Throws<ConflictRequestException>();
+    }
     ManagedMazakSchedules.ConfirmObserved(db, config, device.Data);
     var offer = MazakManagedScheduleControl.SetMaterialOffer(
       db,

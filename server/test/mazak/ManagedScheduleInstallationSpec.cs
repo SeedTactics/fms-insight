@@ -105,6 +105,23 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  public async Task ZeroCycleManagedJobLetsTheNextBatchDownload()
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var managed = PendingJob(true) with { Cycles = 0 };
+    var ordinary = PendingJob(false) with { UniqueStr = "next", PartName = "next-part" };
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed] }, null, false);
+    db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [ordinary] }, null, false);
+
+    await Assert.That(Sync(device, db)).IsTrue();
+    await Assert.That(db.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(device.Data.Parts.Single().Comment).IsEqualTo("next-Insight");
+    await Assert.That(db.LoadMazakManagedSchedules(ManagedConfig().ControllerSource)).IsEmpty();
+  }
+
+  [Test]
   [Arguments(true)]
   [Arguments(false)]
   public async Task ManagedDownloadRequiresRemainingDemandAfterBackout(bool interrupted)

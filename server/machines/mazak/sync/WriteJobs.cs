@@ -49,11 +49,9 @@ namespace MazakMachineInterface
 
     // A backend can cancel unstarted demand while admitted pieces still need their routes.
     internal static bool HasDownloadDemand(HistoricJob job, MazakConfig config) =>
-      job.Decrements is not { Count: > 0 }
-      || (
-        config.UsesInsightJobQuantities(job)
-        && job.Decrements.Sum(d => (long)d.Quantity) < job.Cycles
-      );
+      config.UsesInsightJobQuantities(job)
+        ? job.Cycles > (job.Decrements?.Sum(d => (long)d.Quantity) ?? 0)
+        : job.Decrements is not { Count: > 0 };
 
     public static bool SyncFromDatabase(
       MazakAllData mazakData,
