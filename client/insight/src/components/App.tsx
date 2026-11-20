@@ -92,7 +92,8 @@ import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
 import { BasketCycleChart } from "./analysis/BasketCycleCards.js";
 import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
 import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, type Atom } from "jotai";
+import type { MachineReportSource } from "../data/machine-report-sources.js";
 import { SimDayUsagePage } from "./operations/SimDayUsage.js";
 import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
 import { CloseoutReport } from "./operations/CloseoutReport.js";
@@ -380,6 +381,7 @@ function SalesTabs() {
 }
 
 export interface AppProps {
+  readonly machineReportSources?: Atom<ReadonlyArray<MachineReportSource>>;
   readonly renderCustomPage?: (custom: ReadonlyArray<string>) => {
     readonly nav: ComponentType | undefined;
     readonly page: ReactNode;

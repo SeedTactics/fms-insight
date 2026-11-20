@@ -35,6 +35,7 @@ import {
   ActionType,
   ICurrentStatus,
   IHistoricJob,
+  IMachiningStop,
   IProgramInCellController,
   IToolInMachine,
 } from "../network/api.js";
@@ -58,6 +59,12 @@ import { LazySeq, HashMap, hashValues, OrderedSet } from "@seedtactics/immutable
 import { atom, useStore } from "jotai";
 import { useCallback } from "react";
 import { last30Jobs } from "../cell-status/scheduled-jobs.js";
+import {
+  machineInventory,
+  machineReportHistoryGroups,
+  machineReportIncludesStop,
+  machineReportSource,
+} from "./machine-report-sources.js";
 
 function averageToolUse(
   usage: ToolUsage,
@@ -152,6 +159,7 @@ export function calcToolReport(
   currentSt: Readonly<ICurrentStatus>,
   toolsInMach: ReadonlyArray<Readonly<IToolInMachine>>,
   usage: ToolUsage,
+  includeStop: (stop: IMachiningStop) => boolean = () => true,
 ): ReadonlyArray<ToolReport> {
   let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
@@ -164,6 +172,7 @@ export function calcToolReport(
         const path = job.procsAndPaths[procIdx].paths[pathIdx];
         for (let stopIdx = 0; stopIdx < path.stops.length; stopIdx += 1) {
           const stop = path.stops[stopIdx];
+          if (!includeStop(stop)) continue;
           const inProcAfter = LazySeq.of(currentSt.material)
             .filter(
               (m) =>
@@ -289,38 +298,35 @@ export function calcToolReport(
     .toRArray();
 }
 
-type ToolsInMachine = {
-  readonly tools: ReadonlyArray<IToolInMachine>;
-  readonly time: Date;
-};
-
-const toolsInMachine = atom<ToolsInMachine | null>(null);
+const toolInventory = machineInventory((source) =>
+  source ? source.readTools() : MachineBackend.getToolsInMachines(),
+);
+export const toolReportInventory = toolInventory.status;
 
 export const toolReportRefreshTime = atom<Date | null, [Date], Promise<void>>(
-  (get) => get(toolsInMachine)?.time ?? null,
-  async (_, set, time) => {
-    set(toolsInMachine, {
-      tools: await MachineBackend.getToolsInMachines(),
-      time,
-    });
-  },
+  (get) => get(toolReportInventory).time,
+  (_, set, time) => set(toolInventory.refresh, time),
 );
 
 export const machinesWithTools = atom<ReadonlyArray<string>>((get) => {
-  const toolsInMach = get(toolsInMachine);
-  if (toolsInMach === null) return [];
-  return LazySeq.of(toolsInMach.tools)
+  return LazySeq.of(get(toolReportInventory).rows)
     .toOrderedSet((n) => stat_name_and_num(n.machineGroupName, n.machineNum))
     .toAscLazySeq()
     .toRArray();
 });
 
 export const currentToolReport = atom<ReadonlyArray<ToolReport> | null>((get) => {
-  const toolsInMach = get(toolsInMachine);
-  if (toolsInMach === null) return null;
-  const currentSt = get(currentStatus);
+  const inventory = get(toolReportInventory);
+  if (inventory.time === null) return null;
+  const source = get(machineReportSource);
+  const groups = get(machineReportHistoryGroups);
   const usage = get(last30ToolUse);
-  return calcToolReport(currentSt, toolsInMach.tools, usage);
+  return calcToolReport(
+    get(currentStatus),
+    inventory.rows,
+    groups === null ? usage : usage.filter((_, op) => groups.has(op.statGroup)),
+    (stop) => machineReportIncludesStop(source, stop),
+  );
 });
 
 export const toolReportHasSerial = atom<boolean>((get) => {
@@ -421,6 +427,7 @@ export function calcProgramReport(
   jobs: HashMap<string, Readonly<IHistoricJob>> | null,
   progsInCellCtrl: ReadonlyArray<Readonly<IProgramInCellController>>,
   progsToShow: ReadonlySet<string> | null,
+  includeStop: (stop: IMachiningStop) => boolean = () => true,
 ): ProgramReport {
   const tools = averageToolUse(usage, true);
 
@@ -441,18 +448,20 @@ export function calcProgramReport(
       LazySeq.of(j.procsAndPaths)
         .flatMap((p) => p.paths)
         .flatMap((path) =>
-          LazySeq.of(path.stops).collect((stop) => {
-            const mins = durationToMinutes(stop.expectedCycleTime);
-            if (stop.program && mins > 0) {
-              return {
-                program: stop.program,
-                plannedMins: mins / path.partsPerPallet,
-                start: j.routeStartUTC,
-              };
-            } else {
-              return null;
-            }
-          }),
+          LazySeq.of(path.stops)
+            .filter(includeStop)
+            .collect((stop) => {
+              const mins = durationToMinutes(stop.expectedCycleTime);
+              if (stop.program && mins > 0) {
+                return {
+                  program: stop.program,
+                  plannedMins: mins / path.partsPerPallet,
+                  start: j.routeStartUTC,
+                };
+              } else {
+                return null;
+              }
+            }),
         ),
     )
     .toOrderedMap(
@@ -488,27 +497,22 @@ export function calcProgramReport(
 
 export const programFilter = atom<"AllPrograms" | "ActivePrograms">("AllPrograms");
 
-type ProgsInCellCtrl = {
-  readonly progs: ReadonlyArray<Readonly<IProgramInCellController>>;
-  readonly time: Date;
-};
-
-const programsInCellCtrl = atom<ProgsInCellCtrl | null>(null);
+const programInventory = machineInventory((source) =>
+  source ? source.readPrograms() : MachineBackend.getProgramsInCellController(),
+);
+export const programReportInventory = programInventory.status;
 
 export const programReportRefreshTime = atom<Date | null, [Date], Promise<void>>(
-  (get) => get(programsInCellCtrl)?.time ?? null,
-  async (_, set, time) => {
-    set(programsInCellCtrl, {
-      progs: await MachineBackend.getProgramsInCellController(),
-      time,
-    });
-  },
+  (get) => get(programReportInventory).time,
+  (_, set, time) => set(programInventory.refresh, time),
 );
 
 export const currentProgramReport = atom<ProgramReport | null>((get) => {
-  const time = get(programReportRefreshTime);
-  if (time === null) return null;
+  const inventory = get(programReportInventory);
+  if (inventory.time === null) return null;
 
+  const source = get(machineReportSource);
+  const includeStop = (stop: IMachiningStop) => machineReportIncludesStop(source, stop);
   const filter = get(programFilter);
   let progsToShow: ReadonlySet<string> | null = null;
   if (filter === "ActivePrograms") {
@@ -518,20 +522,22 @@ export const currentProgramReport = atom<ProgramReport | null>((get) => {
         .flatMap(([, job]) => job.procsAndPaths)
         .flatMap((p) => p.paths)
         .flatMap((p) => p.stops)
+        .filter(includeStop)
         .filter((s) => s.program !== null && s.program !== undefined && s.program !== "")
         .map((s) => s.program ?? ""),
     );
   }
 
-  const progsInCell = get(programsInCellCtrl);
-  if (progsInCell === null) return null;
-
+  const groups = get(machineReportHistoryGroups);
+  const usage = get(last30ToolUse);
+  const cycleTimes = get(last30EstimatedCycleTimes);
   return calcProgramReport(
-    get(last30ToolUse),
-    get(last30EstimatedCycleTimes),
+    groups === null ? usage : usage.filter((_, op) => groups.has(op.statGroup)),
+    groups === null ? cycleTimes : cycleTimes.filter((_, op) => groups.has(op.statGroup)),
     get(last30Jobs),
-    progsInCell.progs,
+    inventory.rows,
     progsToShow,
+    includeStop,
   );
 });
 

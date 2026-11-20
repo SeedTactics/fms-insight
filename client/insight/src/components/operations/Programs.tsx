@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { useState, useMemo, useEffect, ReactNode } from "react";
-import { Box, Fab, FormControl, styled } from "@mui/material";
+import { Alert, Box, Fab, FormControl, styled } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
@@ -57,6 +57,7 @@ import {
 
 import {
   programReportRefreshTime,
+  programReportInventory,
   currentProgramReport,
   CellControllerProgram,
   programToShowContent,
@@ -64,6 +65,8 @@ import {
   programToShowHistory,
   programFilter,
 } from "../../data/tools-programs.js";
+import { machineReportSource } from "../../data/machine-report-sources.js";
+import { MachineReportSourcePicker } from "./MachineReportSourcePicker.js";
 import { TableBody } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { Collapse } from "@mui/material";
@@ -113,6 +116,7 @@ function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = useState<boolean>(false);
   const setProgramToShowContent = useSetAtom(programToShowContent);
   const setProgramToShowHistory = useSetAtom(programToShowHistory);
+  const scoped = useAtomValue(machineReportSource) !== null;
 
   const numCols = 8 + (props.showCellCtrlCol ? 1 : 0) + (props.showRevCol ? 1 : 0);
 
@@ -178,11 +182,13 @@ function ProgramRow(props: ProgramRowProps) {
           {props.program.plannedMins === null ? "" : numFormat.format(props.program.plannedMins)}
         </TableCell>
         <TableCell>
-          <Tooltip title="Load Program Content">
-            <IconButton size="small" onClick={() => setProgramToShowContent(props.program)}>
-              <CodeIcon />
-            </IconButton>
-          </Tooltip>
+          {(!scoped || props.program.revision !== null) && (
+            <Tooltip title="Load Program Content">
+              <IconButton size="small" onClick={() => setProgramToShowContent(props.program)}>
+                <CodeIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           {props.program.revision !== null ? (
             <Tooltip title="Revision History">
               <IconButton size="small" onClick={() => setProgramToShowHistory(props.program)}>
@@ -791,15 +797,12 @@ export function ProgramHistoryDialog(): ReactNode {
 
 function ProgNavHeader() {
   const [reloadTime, refreshPrograms] = useAtom(programReportRefreshTime);
-  const [loading, setLoading] = useState(false);
   const demo = useIsDemo();
   const [filter, setFilter] = useAtom(programFilter);
+  const { loading } = useAtomValue(programReportInventory);
 
   function refresh() {
-    setLoading(true);
-    refreshPrograms(new Date())
-      .catch(console.log)
-      .finally(() => setLoading(false));
+    void refreshPrograms(new Date());
   }
 
   if (demo) {
@@ -865,6 +868,7 @@ function ProgNavHeader() {
 
 export function ProgramReportPage(): ReactNode {
   useSetTitle("Programs");
+  const { error } = useAtomValue(programReportInventory);
 
   return (
     <Box
@@ -874,7 +878,9 @@ export function ProgramReportPage(): ReactNode {
         paddingTop: "10px",
       }}
     >
+      <MachineReportSourcePicker />
       <ProgNavHeader />
+      {error && <Alert severity="error">{error}</Alert>}
       <main>
         <DisplayLoadingAndError>
           <ProgramSummaryTable />

@@ -55,6 +55,7 @@ import {
 import {
   ToolReport,
   currentToolReport,
+  toolReportInventory,
   toolReportRefreshTime,
   machinesWithTools,
   toolReportHasSerial,
@@ -67,6 +68,8 @@ import { PartIdenticon } from "../station-monitor/Material.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { atom, useAtom, useAtomValue } from "jotai";
+import { Alert } from "@mui/material";
+import { MachineReportSourcePicker } from "./MachineReportSourcePicker.js";
 
 const cntFormat = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
@@ -546,9 +549,13 @@ function ToolMachineRow({ report, pocket }: { report: ToolReport; pocket: ToolIn
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 
 const toolReportMachineFilter = atom<string | null>(null);
+const availableToolMachineFilter = atom((get) => {
+  const filter = get(toolReportMachineFilter);
+  return filter !== null && get(machinesWithTools).includes(filter) ? filter : null;
+});
 
 export function ToolSummaryTable(): ReactNode {
-  const machineFilter = useAtomValue(toolReportMachineFilter);
+  const machineFilter = useAtomValue(availableToolMachineFilter);
   const tools = useAtomValue(currentToolReport);
 
   if (tools === null) {
@@ -584,18 +591,16 @@ export function ToolSummaryTable(): ReactNode {
 }
 
 function ToolNavHeader() {
-  const [machineFilter, setMachineFilter] = useAtom(toolReportMachineFilter);
+  const [, setMachineFilter] = useAtom(toolReportMachineFilter);
+  const machineFilter = useAtomValue(availableToolMachineFilter);
   const [reloadTime, refreshReport] = useAtom(toolReportRefreshTime);
-  const [loading, setLoading] = useState(false);
+  const { loading } = useAtomValue(toolReportInventory);
   const machineNames = useAtomValue(machinesWithTools);
   const copyToolReportToClipboard = useCopyToolReportToClipboard();
   const demo = useIsDemo();
 
   function refresh() {
-    setLoading(true);
-    refreshReport(new Date())
-      .catch(console.log)
-      .finally(() => setLoading(false));
+    void refreshReport(new Date());
   }
 
   if (demo) {
@@ -686,6 +691,7 @@ function ToolNavHeader() {
 
 export function ToolReportPage(): ReactNode {
   useSetTitle("Tool Report");
+  const { error } = useAtomValue(toolReportInventory);
 
   return (
     <Box
@@ -695,7 +701,9 @@ export function ToolReportPage(): ReactNode {
         paddingTop: "10px",
       }}
     >
+      <MachineReportSourcePicker />
       <ToolNavHeader />
+      {error && <Alert severity="error">{error}</Alert>}
       <main>
         <DisplayLoadingAndError>
           <ToolSummaryTable />

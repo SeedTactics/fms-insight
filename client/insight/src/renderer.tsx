@@ -45,12 +45,16 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 
 import App, { AppProps } from "./components/App.js";
 import { Provider, createStore } from "jotai";
+import { machineReportSourceProvider } from "./data/machine-report-sources.js";
 
 export function render(
   appProps: AppProps | null,
   elem: HTMLElement,
   store: ReturnType<typeof createStore>,
 ): void {
+  if (appProps?.machineReportSources) {
+    store.set(machineReportSourceProvider, appProps.machineReportSources);
+  }
   const theme = createTheme({
     palette: {
       primary: green,

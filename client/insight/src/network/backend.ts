@@ -190,7 +190,7 @@ let userAccessToken: string | undefined;
 
 export function registerNetworkBackend(): void {
   LogBackend = new api.LogClient();
-  MachineBackend = new api.MachinesClient();
+  MachineBackend = new api.MachinesClient(undefined, { fetch: authenticatedFetch });
   JobsBackend = new api.JobsClient();
   FmsServerBackend = new api.FmsClient();
 }
