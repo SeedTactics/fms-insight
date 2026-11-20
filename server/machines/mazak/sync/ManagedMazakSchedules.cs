@@ -147,7 +147,11 @@ internal static partial class ManagedMazakSchedules
       config,
       data,
       (program, revision) => WriteJobs.LookupProgram(db, program, revision),
-      onlyProcess: route.IsSplit ? route.FmsProcess : null
+      onlyProcess: route.IsSplit ? route.FmsProcess : null,
+      installedPrograms: part.Processes.ToImmutableDictionary(
+        p => p.ProcessNumber,
+        p => p.MainProgram
+      )
     );
     if (error is not null)
       return $"Mazak controller '{config.ControllerSource}' cannot verify native part '{part.PartName}' for job '{job.UniqueStr}'. {error}";

@@ -135,7 +135,18 @@ public sealed partial class DuplicateDownloadSpec
       )
       .Throws<ConflictRequestException>();
 
-    device.Observe(original);
+    // The same revision can appear under more than one native number, in either order.
+    var equivalentReadback = namedRevision
+      ? original with
+      {
+        MainPrograms = original
+          .MainPrograms.Prepend(
+            new MazakProgramRow { MainProgram = "1014", Comment = "Insight:7:op2" }
+          )
+          .ToImmutableList(),
+      }
+      : original;
+    device.Observe(equivalentReadback);
     ManagedMazakSchedules.ConfirmObserved(db, config, device.Data);
     var offer = MazakManagedScheduleControl.SetMaterialOffer(
       db,
@@ -148,6 +159,11 @@ public sealed partial class DuplicateDownloadSpec
     await Assert.That(offer).IsNotNull();
     if (namedRevision)
     {
+      await Assert
+        .That(
+          MazakManagedScheduleControl.SetMaterialOffer(db, config, original, job.UniqueStr, 2, 1)
+        )
+        .IsNotNull();
       device.Native.Save(offer!);
       // A previously saved program number cannot override the controller's current revision.
       db.SetCellControllerProgramForProgram("op2", 7, "1012");

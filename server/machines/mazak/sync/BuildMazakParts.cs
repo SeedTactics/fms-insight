@@ -1193,7 +1193,8 @@ namespace MazakMachineInterface
       MazakConfig mazakCfg,
       MazakAllData mazakData,
       Func<string, long?, ProgramRevision> lookupProgram,
-      int? onlyProcess = null
+      int? onlyProcess = null,
+      IReadOnlyDictionary<int, string> installedPrograms = null
     )
     {
       ErrorDuringCreate = null;
@@ -1204,14 +1205,21 @@ namespace MazakMachineInterface
 
       foreach (var proc in processes)
       {
-        var (prog, error) = ResolveProcessRoute(job, proc, mazakCfg, mazakData, lookupProgram);
+        var mazakProc = onlyProcess.HasValue ? 1 : proc;
+        var (prog, error) = ResolveProcessRoute(
+          job,
+          proc,
+          mazakCfg,
+          mazakData,
+          lookupProgram,
+          installedPrograms?.GetValueOrDefault(mazakProc)
+        );
         if (error != null)
         {
           ErrorDuringCreate = error;
           return;
         }
 
-        var mazakProc = onlyProcess.HasValue ? 1 : proc;
         if (mazakCfg.ProcessFromJob != null)
         {
           mazak.Processes.Add(mazakCfg.ProcessFromJob(mazak, mazakProc, 1, prog));
@@ -1228,7 +1236,8 @@ namespace MazakMachineInterface
       int process,
       MazakConfig config,
       MazakAllData data,
-      Func<string, long?, ProgramRevision> lookupProgram
+      Func<string, long?, ProgramRevision> lookupProgram,
+      string preferredProgram = null
     )
     {
       if (job.Processes[process - 1].Paths is not [var path])
@@ -1265,7 +1274,8 @@ namespace MazakMachineInterface
           stop.ProgramRevision,
           lookupProgram,
           allowUnversionedNativeName: stop.ProgramRevision is null or 0
-            || !config.UsesInsightJobQuantities(job)
+            || !config.UsesInsightJobQuantities(job),
+          preferredProgram: preferredProgram
         );
         if (program == null)
         {
@@ -1284,7 +1294,8 @@ namespace MazakMachineInterface
       string name,
       long? revision,
       Func<string, long?, ProgramRevision> lookupProgram,
-      bool allowUnversionedNativeName
+      bool allowUnversionedNativeName,
+      string preferredProgram
     )
     {
       if (allowUnversionedNativeName && data.MainPrograms.Any(p => p.MainProgram == name))
@@ -1298,6 +1309,7 @@ namespace MazakMachineInterface
       var program = lookupProgram(name, revision);
       if (program == null)
         return null;
+      MazakProgramRow firstMatch = null;
       foreach (var native in data.MainPrograms)
       {
         if (
@@ -1309,9 +1321,18 @@ namespace MazakMachineInterface
           && nativeName == program.ProgramName
           && nativeRevision == program.Revision
         )
-          return program with { CellControllerProgramName = native.MainProgram };
+        {
+          if (preferredProgram is null || native.MainProgram == preferredProgram)
+            return program with { CellControllerProgramName = native.MainProgram };
+          firstMatch ??= native;
+        }
       }
-      return program;
+      return firstMatch is null
+        ? program
+        : program with
+        {
+          CellControllerProgramName = firstMatch.MainProgram,
+        };
     }
 
     private static ISet<string> CalculateUsedPrograms(
