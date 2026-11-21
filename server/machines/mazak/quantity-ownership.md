@@ -56,6 +56,12 @@ loop when validating a specific batch.
 | `EnsurePlan`                  | Supply an absolute minimum for the native plan. A repeat attempt can raise this ceiling while the accepted job quantity stays fixed.                                                                                              |
 | `SetMaterialOffer`            | Supply the quantity currently authorized to start. After an uncertain write, read the controller and recompute the offer because Mazak may have consumed it.                                                                      |
 | `WithdrawMaterialOffer`       | If a withdrawal reply was lost and the intended offer is still zero, request an explicit zero edit even when readback shows zero. Save it, await acknowledgment, and reconcile settled readback before releasing the reservation. |
+| `RecordedLoads`               | Count identified and unidentified physical loads, including invalidated attempts. An adopted route with an unknown creation boundary returns `null`.                                                                              |
+
+Queue and basket backends use `MazakConfig.ResolveLoadUnloadTransaction` to identify transferred
+pieces. The pending load stays anonymous until that identity is known. A transfer with only a
+physical count records that quantity and leaves the affected serials unknown. Use
+`CanQuarantineMissingMaterial` to retain pallet evidence while an external transfer is outstanding.
 
 Settle transfers and withdraw offers before archiving the job. Archival authorizes cleanup of the
 idle schedule and its unused definitions, including after a partial download or a restart. The

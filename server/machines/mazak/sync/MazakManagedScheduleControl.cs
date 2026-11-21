@@ -1,10 +1,17 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface;
+
+public sealed record MazakManagedLoadCount(long IdentifiedQuantity, long UnidentifiedQuantity)
+{
+  public long PhysicalQuantity => IdentifiedQuantity + UnidentifiedQuantity;
+}
 
 /// <summary>Plans edits against current readback from the controller that downloaded the route.</summary>
 public static class MazakManagedScheduleControl
@@ -123,6 +130,49 @@ public static class MazakManagedScheduleControl
           },
         ],
       };
+  }
+
+  /// <summary>Count recorded physical attempts for this route's schedule history.</summary>
+  /// <remarks>Returns null for schedules adopted with no known creation boundary.</remarks>
+  public static MazakManagedLoadCount? RecordedLoads(
+    IRepository db,
+    MazakConfig config,
+    string jobUnique,
+    int process
+  )
+  {
+    var (_, binding) = FindBinding(db, config, jobUnique, process, includeRetired: true);
+    if (binding.BeforeLoadCounter is not { } after)
+      return null;
+    var nativeProcess = MazakPart.IsSplitComment(binding.Comment) ? 1 : process;
+    var nativeProcessText = nativeProcess.ToString(CultureInfo.InvariantCulture);
+    var source = config.LogForeignId("LG");
+    long identified = 0,
+      unidentified = 0;
+    foreach (
+      var entry in db.GetRecentLogForProgramDetail(
+        after,
+        ManagedMazakSchedules.NativePartKey,
+        binding.PartName
+      )
+    )
+    {
+      if (
+        entry.LogType != LogType.LoadUnloadCycle
+        || entry.StartOfCycle
+        || entry.Result != "LOAD"
+        || entry.ProgramDetails?.ContainsKey(ManagedMazakSchedules.RouteConflictKey) == true
+        || entry.ForeignID?.StartsWith(source, StringComparison.Ordinal) != true
+        || entry.ProgramDetails?.GetValueOrDefault(ManagedMazakSchedules.NativeProcessKey)
+          != nativeProcessText
+      )
+        continue;
+      // The route and quantity belong to the physical transfer, even after reassignment.
+      var quantities = MazakMaterialHistory.TransferQuantities(entry);
+      identified += quantities.Identified;
+      unidentified += quantities.Unidentified;
+    }
+    return new(identified, unidentified);
   }
 
   private static (Job Job, MazakManagedSchedule Binding) FindBinding(

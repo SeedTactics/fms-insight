@@ -9,6 +9,12 @@ namespace MazakMachineInterface;
 
 internal static partial class ManagedMazakSchedules
 {
+  internal const string NativePartKey = "mazak-native-part-name";
+  internal const string NativeProcessKey = "mazak-native-process";
+  internal const string IdentifiedQuantityKey = "mazak-identified-quantity";
+  internal const string UnidentifiedQuantityKey = "mazak-unidentified-quantity";
+  internal const string RouteConflictKey = "mazak-managed-route-conflict";
+
   public static bool Owns(MazakConfig config, Job? job) =>
     job is not null
     && config.UsesInsightJobQuantities(job)
