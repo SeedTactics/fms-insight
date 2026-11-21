@@ -83,6 +83,16 @@ namespace MazakMachineInterface
       DateTime? observationTimeUtc = null
     )
     {
+      // Use the repository key throughout translation, including the resolver's receipt lookups.
+      // The caller retains raw filenames in its controller observation and acknowledgment.
+      var prefix = mazakConfig?.CsvLogForeignIDPrefix;
+      if (!string.IsNullOrEmpty(prefix))
+        mazakData = mazakData with
+        {
+          Logs = mazakData
+            .Logs.Select(e => e with { ForeignID = prefix + e.ForeignID })
+            .ToImmutableList(),
+        };
       var t = new LogTranslation(
         repo: repo,
         mazakData: mazakData,

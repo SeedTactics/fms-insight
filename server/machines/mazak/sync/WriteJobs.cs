@@ -68,40 +68,112 @@ namespace MazakMachineInterface
         return false;
       }
 
-      //there are jobs to copy
+      InstallJobs(mazakData, jobs.ToImmutableList<Job>(), db, mazakDb, fmsSt, mazakCfg, true);
+      return true;
+    }
+
+    /// <summary>
+    /// Installs or resumes the accepted jobs selected for this controller, using fresh native
+    /// data. Only jobs with all expected routes visible on the controller are marked copied.
+    /// </summary>
+    /// <remarks>
+    /// The batch is additive. The caller selects jobs that still need initial delivery and
+    /// serializes the entire operation with all other writes to the same physical controller.
+    /// With due-date ordering enabled, jobs are installed by local route-start date.
+    /// A failure can leave some native writes applied. Retry from a fresh controller observation.
+    /// </remarks>
+    public static void InstallJobs(
+      IEnumerable<Job> jobs,
+      IRepository db,
+      IMazakDB mazakDb,
+      FMSSettings fmsSt,
+      MazakConfig mazakCfg
+    )
+    {
+      // The schedule builder assigns one native due date and priority range per batch.
+      var batches = jobs.GroupBy(job =>
+        mazakCfg.UseStartingOffsetForDueDate
+          ? job.RouteStartUTC.ToLocalTime().Date
+          : DateTime.MinValue
+      );
+      foreach (var batch in batches.OrderBy(group => group.Key))
+        InstallJobs(
+          mazakDb.LoadAllData(),
+          batch.ToImmutableList(),
+          db,
+          mazakDb,
+          fmsSt,
+          mazakCfg,
+          false
+        );
+    }
+
+    private static void InstallJobs(
+      MazakAllData mazakData,
+      ImmutableList<Job> jobs,
+      IRepository db,
+      IMazakDB mazakDb,
+      FMSSettings fmsSt,
+      MazakConfig mazakCfg,
+      bool stockMaintenance
+    )
+    {
       Log.Debug(
         "Sending jobs into mazak {@uniqs} with {@data}",
         jobs.Select(j => j.UniqueStr).ToList(),
         mazakData
       );
 
-      var pending = jobs.Where(job => !HasAllInitialRoutes(mazakData.Schedules, job))
-        .ToImmutableList();
+      var pending = FindUnconfirmedJobs(mazakData, jobs, stockMaintenance);
       foreach (var job in jobs.Except(pending))
         db.MarkJobCopiedToSystem(job.UniqueStr);
 
-      if (!pending.IsEmpty)
-      {
+      if (pending.IsEmpty)
+        return;
+
+      if (stockMaintenance)
         ArchiveOldJobs(db, mazakData, jobs, mazakCfg);
-        var partNames = AddFixturesPalletsParts(mazakData, db, pending, mazakDb, fmsSt, mazakCfg);
-        // A failed native write is not a rollback. Each retry starts from a fresh observation;
-        // after successful construction, schedule only the selected definitions, not retained peers.
-        mazakData = mazakDb.LoadAllData();
-        AddSchedules(
-          mazakData with
+
+      var partNames = AddFixturesPalletsParts(
+        mazakData,
+        db,
+        pending,
+        mazakDb,
+        fmsSt,
+        mazakCfg,
+        stockMaintenance
+      );
+      mazakData = mazakDb.LoadAllData();
+      // Schedule only the definitions selected by this download.
+      var writes = BuildMazakSchedules.AddSchedules(
+        mazakData with
+        {
+          Parts = mazakData.Parts.Where(part => partNames.Contains(part.PartName)),
+        },
+        pending,
+        mazakCfg
+      );
+      var installed = mazakData;
+      if (writes.Schedules.Count > 0)
+      {
+        mazakDb.Save(writes);
+        installed = stockMaintenance
+          ? mazakData with
           {
-            Parts = mazakData
-              .Parts.Where(part => partNames.Contains(part.PartName))
-              .ToImmutableList(),
-          },
-          db,
-          pending,
-          mazakDb,
-          mazakCfg
-        );
+            Schedules = mazakData.Schedules.Concat(writes.Schedules),
+          }
+          : mazakDb.LoadAllData();
       }
 
-      return true;
+      var unconfirmed = FindUnconfirmedJobs(installed, pending, stockMaintenance);
+      foreach (var job in pending.Except(unconfirmed))
+        db.MarkJobCopiedToSystem(job.UniqueStr);
+
+      if (!stockMaintenance && !unconfirmed.IsEmpty)
+        throw new InvalidOperationException(
+          "Mazak did not report all expected schedules for: "
+            + string.Join(", ", unconfirmed.Select(job => job.UniqueStr))
+        );
     }
 
     private static ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
@@ -122,7 +194,8 @@ namespace MazakMachineInterface
       IEnumerable<Job> jobs,
       IMazakDB mazakDb,
       FMSSettings fmsSt,
-      MazakConfig mazakCfg
+      MazakConfig mazakCfg,
+      bool stockMaintenance
     )
     {
       //first allocate a UID to use for this download
@@ -156,32 +229,9 @@ namespace MazakMachineInterface
       }
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
-      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(
-        mazakData,
-        s =>
-          !jobs.Any(job => MazakPart.UniqueFromComment(s.Comment ?? "") == job.UniqueStr)
-          && (
-            mazakCfg.UseInsightJobQuantities == null
-            || !MazakPart.IsSailPart(s.PartName, s.Comment)
-            || !mazakCfg.UsesInsightJobQuantities(
-              jobDB.LoadJob(MazakPart.UniqueFromComment(s.Comment))
-            )
-          )
-      );
-      if (mazakCfg.UseInsightJobQuantities != null)
-      {
-        // Retiring a schedule does not retire the job or its reusable route definitions.
-        // Keep definitions for backend-owned work until that backend archives the job.
-        savedParts.UnionWith(
-          mazakData
-            .Parts.Where(p => MazakPart.IsSailPart(p.PartName, p.Comment))
-            .Where(p =>
-              jobDB.LoadJob(MazakPart.UniqueFromComment(p.Comment)) is { Archived: false } job
-              && mazakCfg.UsesInsightJobQuantities(job)
-            )
-            .Select(p => p.PartName)
-        );
-      }
+      var (cleanup, savedParts) = stockMaintenance
+        ? StockScheduleCleanup(mazakData, jobDB, jobs, mazakCfg)
+        : (null, mazakData.Parts.Select(part => part.PartName).ToHashSet());
       Log.Debug("Saved Parts: {parts}", savedParts);
 
       var jobErrs = new List<string>();
@@ -201,77 +251,130 @@ namespace MazakMachineInterface
         throw new BadRequestException(string.Join(Environment.NewLine, jobErrs));
       }
 
-      var selectedParts = mazakJobs
+      if (mazakJobs.AllParts.Any())
+      {
+        if (cleanup != null)
+        {
+          if (cleanup.Schedules.Any())
+            mazakDb.Save(cleanup);
+
+          var oldParts = mazakJobs.DeleteOldPartRows();
+          if (oldParts.Parts.Any())
+            mazakDb.Save(oldParts);
+
+          mazakDb.Save(mazakJobs.DeleteOldPalletRows());
+          // Fixtures and programs can be removed after the dependent rows.
+          mazakDb.Save(mazakJobs.DeleteFixtureAndProgramDatabaseRows());
+        }
+
+        mazakDb.Save(
+          mazakJobs.AddFixtureAndProgramDatabaseRows(
+            jobDB.LoadProgramContent,
+            mazakCfg.ProgramDirectory
+          )
+        );
+      }
+
+      // Complete missing pallet transactions even when every part already exists.
+      var mappings = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
+      if (mappings.Parts.Any() || mappings.Pallets.Any())
+        mazakDb.Save(mappings);
+
+      return mazakJobs
         .ReusedParts.Select(part => part.PartName)
         .Concat(mazakJobs.AllParts.Select(part => part.PartName))
         .ToImmutableHashSet();
-      if (!mazakJobs.AllParts.Any())
-      {
-        // Complete pallet transactions even when every part transaction already succeeded.
-        var mappings = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
-        if (mappings.Pallets.Any())
-          mazakDb.Save(mappings);
-        return selectedParts;
-      }
-
-      if (transSet.Schedules.Any())
-        mazakDb.Save(transSet);
-
-      //delete parts
-      transSet = mazakJobs.DeleteOldPartRows();
-      if (transSet.Parts.Any())
-      {
-        mazakDb.Save(transSet);
-      }
-
-      // delete pallets
-      transSet = mazakJobs.DeleteOldPalletRows();
-      mazakDb.Save(transSet);
-
-      //have to delete fixtures after schedule, parts, and pallets are already deleted
-      transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
-      mazakDb.Save(transSet);
-
-      transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
-        jobDB.LoadProgramContent,
-        mazakCfg.ProgramDirectory
-      );
-      mazakDb.Save(transSet);
-
-      //now save the pallets and parts
-      transSet = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
-      mazakDb.Save(transSet);
-      return selectedParts;
     }
 
-    private static void AddSchedules(
+    private static (MazakWriteData, ISet<string>) StockScheduleCleanup(
       MazakAllData mazakData,
       IRepository jobDB,
-      IReadOnlyList<Job> jobs,
-      IMazakDB writeDb,
+      IEnumerable<Job> jobs,
       MazakConfig mazakCfg
     )
     {
-      Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
-
-      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, mazakCfg);
-      if (transSet.Schedules.Any())
+      var (cleanup, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData, s =>
+        !jobs.Any(job => MazakPart.UniqueFromComment(s.Comment ?? "") == job.UniqueStr)
+        && (
+          mazakCfg.UseInsightJobQuantities == null
+          || !MazakPart.IsSailPart(s.PartName, s.Comment)
+          || !mazakCfg.UsesInsightJobQuantities(
+            jobDB.LoadJob(MazakPart.UniqueFromComment(s.Comment))
+          )
+        )
+      );
+      if (mazakCfg.UseInsightJobQuantities != null)
       {
-        writeDb.Save(transSet);
-
-        foreach (var job in jobs)
-          if (HasAllInitialRoutes(mazakData.Schedules.Concat(transSet.Schedules), job))
-            jobDB.MarkJobCopiedToSystem(job.UniqueStr);
+        // Retiring a schedule does not retire the job or its reusable route definitions.
+        // Keep definitions for backend-owned work until that backend archives the job.
+        savedParts.UnionWith(
+          mazakData
+            .Parts.Where(p => MazakPart.IsSailPart(p.PartName, p.Comment))
+            .Where(p =>
+              jobDB.LoadJob(MazakPart.UniqueFromComment(p.Comment)) is { Archived: false } job
+              && mazakCfg.UsesInsightJobQuantities(job)
+            )
+            .Select(p => p.PartName)
+        );
       }
+      return (cleanup, savedParts);
     }
 
-    private static bool HasAllInitialRoutes(IEnumerable<MazakScheduleRow> schedules, Job job)
+    private static ImmutableList<Job> FindUnconfirmedJobs(
+      MazakAllData data,
+      ImmutableList<Job> jobs,
+      bool stockMaintenance
+    )
     {
-      var comments = schedules
-        .Where(schedule => MazakPart.IsSailPart(schedule.PartName, schedule.Comment))
-        .Select(schedule => schedule.Comment)
-        .ToImmutableHashSet();
-      return MazakPart.InitialScheduleComments(job).All(comments.Contains);
+      var confirmed = new HashSet<string>(StringComparer.Ordinal);
+      if (stockMaintenance)
+      {
+        confirmed.UnionWith(
+          data.Schedules.Where(schedule =>
+              MazakPart.IsSailPart(schedule.PartName, schedule.Comment)
+            )
+            .Select(schedule => schedule.Comment)
+        );
+      }
+      else
+      {
+        var jobsByRoute = jobs.SelectMany(
+            job => MazakPart.InitialScheduleComments(job),
+            (job, route) => (job, route)
+          )
+          .ToLookup(pair => pair.route, pair => pair.job, StringComparer.Ordinal);
+        var parts = data.Parts.ToLookup(part => part.PartName, StringComparer.Ordinal);
+        foreach (var schedule in data.Schedules)
+        {
+          // CSV translation reads the schedule comment, while current status reads the part comment.
+          var part = parts[schedule.PartName].FirstOrDefault();
+          var job = jobsByRoute[schedule.Comment].FirstOrDefault()
+            ?? jobsByRoute[part?.Comment].FirstOrDefault();
+          if (job == null)
+            continue;
+
+          if (part != null && part.Comment != schedule.Comment)
+            throw new InvalidOperationException(
+              $"Cannot download job '{job.UniqueStr}': Mazak schedule {schedule.Id} on '{part.PartName}' "
+                + $"has comment '{schedule.Comment}', and its part definition has '{part.Comment}'. "
+                + "Resolve the conflicting route comments on the controller before retrying."
+            );
+          if (
+            !MazakPart.IsSailPart(schedule.PartName, schedule.Comment)
+            || MazakPart.ExtractPartNameFromMazakPartName(schedule.PartName) != job.PartName
+          )
+            throw new InvalidOperationException(
+              $"Cannot download job '{job.UniqueStr}': Mazak schedule {schedule.Id} claims route "
+                + $"'{schedule.Comment}' on '{schedule.PartName}'. The job expects an Insight part "
+                + $"for '{job.PartName}'. Correct the schedule comment on the controller before retrying."
+            );
+
+          if (part != null)
+            confirmed.Add(schedule.Comment);
+        }
+      }
+      return jobs.Where(job => !MazakPart.InitialScheduleComments(job).All(confirmed.Contains))
+        .ToImmutableList();
     }
 
     private static void ArchiveOldJobs(

@@ -72,6 +72,301 @@ public sealed class DuplicateDownloadSpec
     );
 
   [Test]
+  public async Task ExplicitInstallPreservesDueDatesAndPrioritiesWhenCatchingUp()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var existing = PendingJob(false) with { UniqueStr = "installed" };
+    var first = existing with { UniqueStr = "first-day" };
+    var next = existing with
+    {
+      UniqueStr = "next-day",
+      RouteStartUTC = existing.RouteStartUTC.AddDays(1),
+      RouteEndUTC = existing.RouteEndUTC.AddDays(1),
+    };
+    foreach (var job in new[] { existing, first, next })
+      repository.AddJobs(new NewJobs { ScheduleId = job.UniqueStr, Jobs = [job] }, null, false);
+
+    var device = new DownloadDevice("");
+    var settings = new FMSSettings();
+    var mazak = new MazakConfig { DBType = MazakDbType.MazakSmooth };
+    WriteJobs.InstallJobs([existing], repository, device.Native, settings, mazak);
+    WriteJobs.InstallJobs([next, first], repository, device.Native, settings, mazak);
+
+    var schedules = device.Data.Schedules.ToDictionary(s => MazakPart.UniqueFromComment(s.Comment));
+    await Assert
+      .That(schedules[first.UniqueStr].DueDate)
+      .IsEqualTo(first.RouteStartUTC.ToLocalTime().Date);
+    await Assert
+      .That(schedules[next.UniqueStr].DueDate)
+      .IsEqualTo(next.RouteStartUTC.ToLocalTime().Date);
+    await Assert
+      .That(schedules[first.UniqueStr].Priority)
+      .IsEqualTo(schedules[existing.UniqueStr].Priority + 1);
+    await Assert
+      .That(schedules[next.UniqueStr].Priority)
+      .IsEqualTo(schedules[existing.UniqueStr].Priority);
+  }
+
+  [Test]
+  [Arguments(false, "Cover:4:1", null, null, Categories = new[] { "combined" })]
+  [Arguments(true, "Cover:4:1:2", null, null, Categories = new[] { "split" })]
+  [Arguments(false, "Cover", "Operator run", null, Categories = new[] { "operator" })]
+  [Arguments(
+    true,
+    "Body:4:1:2",
+    "previous-job-2-1-InsightS",
+    null,
+    Categories = new[] { "same-part" }
+  )]
+  [Arguments(false, "Cover:4:1", null, "cover-job-Insight", Categories = new[] { "part-comment" })]
+  public async Task ExplicitInstallRejectsRouteCommentOnWrongPart(
+    bool basket,
+    string nativePartName,
+    string partComment,
+    string scheduleComment
+  )
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var job = PendingJob(basket) with { PartName = "Body" };
+    repository.AddJobs(new NewJobs { ScheduleId = "body", Jobs = [job] }, null, false);
+
+    var device = new DownloadDevice("");
+    var route = MazakPart.InitialScheduleComments(job).Last();
+    var wrongPart = new MazakPartRow
+    {
+      PartName = nativePartName,
+      Comment = partComment ?? route,
+      TotalProcess = 1,
+      Processes =
+      [
+        new MazakPartProcessRow
+        {
+          PartName = nativePartName,
+          ProcessNumber = 1,
+          FixQuantity = 3,
+          Fixture = "vise",
+          MainProgram = "1001",
+        },
+      ],
+    };
+    var wrongSchedule = new MazakScheduleRow
+    {
+      Id = 10,
+      PartName = wrongPart.PartName,
+      Comment = scheduleComment ?? route,
+      PlanQuantity = 9,
+      Processes = [new MazakScheduleProcessRow { MazakScheduleRowId = 10, ProcessNumber = 1 }],
+    };
+    device.Observe(
+      device.Data with
+      {
+        Parts = [wrongPart],
+        Schedules = [wrongSchedule],
+        Fixtures = [new MazakFixtureRow { FixtureName = "vise", Comment = "" }],
+        Pallets = [new MazakPalletRow { PalletNumber = 1, Fixture = "vise" }],
+      }
+    );
+
+    var settings = new FMSSettings();
+    var mazak = new MazakConfig { DBType = MazakDbType.MazakSmooth };
+    void Install() => WriteJobs.InstallJobs([job], repository, device.Native, settings, mazak);
+    var error = await Assert.That(Install).Throws<InvalidOperationException>();
+    await Assert.That(error!.Message).Contains("schedule 10");
+    await Assert.That(error.Message).Contains(nativePartName);
+    await Assert.That(repository.LoadJob(job.UniqueStr).CopiedToSystem).IsFalse();
+    device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+
+    // Correct the other route on the controller, then retry from that observation.
+    var corrected = wrongSchedule with
+    {
+      Comment = partComment ?? scheduleComment ?? "cover-job-Insight",
+    };
+    device.Observe(
+      device.Data with
+      {
+        Parts = [wrongPart with { Comment = corrected.Comment }],
+        Schedules = [corrected],
+      }
+    );
+    Install();
+    await Assert.That(repository.LoadJob(job.UniqueStr).CopiedToSystem).IsTrue();
+    await Assert.That(device.Data.Schedules).Contains(corrected);
+    await Assert
+      .That(
+        device
+          .Data.Schedules.Where(schedule => schedule.Id != corrected.Id)
+          .Select(schedule => schedule.Comment)
+      )
+      .IsEquivalentTo(MazakPart.InitialScheduleComments(job));
+  }
+
+  [Test]
+  public async Task ExplicitRetryRejectsAnotherRouteOnTheInstalledNativePart()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var job = PendingJob(true);
+    repository.AddJobs(new NewJobs { ScheduleId = "initial-download", Jobs = [job] }, null, false);
+    var device = new DownloadDevice("schedules-full");
+    var mazak = new MazakConfig { DBType = MazakDbType.MazakSmooth };
+    void Install() =>
+      WriteJobs.InstallJobs([job], repository, device.Native, new FMSSettings(), mazak);
+
+    await Assert.That(Install).Throws<IOException>();
+    var installed = device.Data;
+    var p2 = installed.Schedules.Single(row =>
+      row.Comment == MazakPart.InitialScheduleComments(job).Last()
+    );
+    // The lost reply leaves the original install intact. Mazak's GUI allows multiple schedules
+    // for one part. Insight creates a part per route, so inject the conflicting row explicitly.
+    var anotherSchedule = p2 with
+    {
+      Id = 10,
+      Comment = "other-job-Insight",
+      Processes = p2
+        .Processes.Select(process => process with { MazakScheduleRowId = 10 })
+        .ToImmutableList(),
+    };
+    device.Observe(installed with { Schedules = installed.Schedules.Append(anotherSchedule) });
+    device.Native.ClearReceivedCalls();
+
+    var error = await Assert.That(Install).Throws<InvalidOperationException>();
+    await Assert.That(error!.Message).Contains("schedule 10");
+    await Assert.That(error.Message).Contains(p2.PartName);
+    await Assert.That(repository.LoadJob(job.UniqueStr).CopiedToSystem).IsFalse();
+    // The operator removes the extra idle schedule. The original download can now be confirmed.
+    device.Observe(installed);
+    Install();
+    await Assert.That(repository.LoadJob(job.UniqueStr).CopiedToSystem).IsTrue();
+    device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+  }
+
+  [Test]
+  public async Task ExplicitBatchesResumeIndependentlyAndPreserveUnselectedDefinitions()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var completed = PendingJob(false) with { UniqueStr = "completed", PartName = "previous" };
+    var interrupted = completed with { UniqueStr = "interrupted" };
+    var aJob = PendingJob(true) with { UniqueStr = "controller-a" };
+    var bJob = PendingJob(false) with { UniqueStr = "controller-b" };
+    repository.AddJobs(
+      new NewJobs { ScheduleId = "previous", Jobs = [completed, interrupted] },
+      null,
+      false
+    );
+    repository.MarkJobCopiedToSystem(completed.UniqueStr);
+    repository.AddJobs(new NewJobs { ScheduleId = "new", Jobs = [aJob, bJob] }, null, false);
+    repository.AddNewDecrement(
+      [
+        new NewDecrementQuantity
+        {
+          JobUnique = aJob.UniqueStr,
+          Part = aJob.PartName,
+          Quantity = 3,
+        },
+      ],
+      Now
+    );
+
+    var a = new DownloadDevice("parts-full");
+    var b = new DownloadDevice("schedules-unconfirmed");
+    var fixture = new MazakFixtureRow { FixtureName = "F:4:1:shared:1", Comment = "Insight" };
+    var pallet = new MazakPalletRow
+    {
+      PalletNumber = 1,
+      Fixture = fixture.FixtureName,
+      FixtureGroupV2 = 1,
+    };
+    MazakPartRow PreviousPart(Job job, string nativeName) =>
+      new()
+      {
+        PartName = nativeName,
+        Comment = job.UniqueStr + "-Insight",
+        Processes =
+        [
+          new MazakPartProcessRow
+          {
+            PartName = nativeName,
+            ProcessNumber = 1,
+            Fixture = fixture.FixtureName,
+          },
+        ],
+      };
+    var completedPart = PreviousPart(completed, "previous:4:1");
+    var interruptedPart = PreviousPart(interrupted, "previous:4:2");
+    var completedSchedule = new MazakScheduleRow
+    {
+      Id = 1,
+      PartName = completedPart.PartName,
+      Comment = completedPart.Comment,
+      PlanQuantity = 9,
+      CompleteQuantity = 9,
+    };
+    var previousData = a.Data with
+    {
+      Fixtures = [fixture],
+      Pallets = [pallet],
+      Parts = [completedPart, interruptedPart],
+      Schedules = [completedSchedule],
+    };
+    a.Observe(previousData);
+    b.Observe(previousData);
+
+    var settings = new FMSSettings();
+    var mazakConfig = new MazakConfig { DBType = MazakDbType.MazakSmooth };
+    await Assert
+      .That(() =>
+        WriteJobs.InstallJobs(
+          [repository.LoadJob(aJob.UniqueStr)],
+          repository,
+          a.Native,
+          settings,
+          mazakConfig
+        )
+      )
+      .Throws<IOException>();
+    await Assert.That(a.Data.Schedules).IsEquivalentTo([completedSchedule]);
+    await Assert.That(a.Data.Parts.Count()).IsEqualTo(4);
+    await Assert.That(repository.LoadJob(aJob.UniqueStr).CopiedToSystem).IsFalse();
+    var aParts = a.Data.Parts.ToImmutableList();
+
+    // B returns success from Save before its schedule appears in readback.
+    await Assert
+      .That(() => WriteJobs.InstallJobs([bJob], repository, b.Native, settings, mazakConfig))
+      .Throws<InvalidOperationException>();
+    await Assert.That(b.Data.Schedules).IsEquivalentTo([completedSchedule]);
+    await Assert.That(repository.LoadJob(bJob.UniqueStr).CopiedToSystem).IsFalse();
+
+    using var restarted = config.OpenConnection();
+    a.Native.ClearReceivedCalls();
+    WriteJobs.InstallJobs([aJob], restarted, a.Native, settings, mazakConfig);
+    a.Native.DidNotReceive().Save(Arg.Is<MazakWriteData>(write => write.Parts.Count > 0));
+    await Assert.That(a.Data.Parts).IsEquivalentTo(aParts);
+    await Assert.That(restarted.LoadJob(aJob.UniqueStr).CopiedToSystem).IsTrue();
+    await Assert.That(restarted.LoadJob(bJob.UniqueStr).CopiedToSystem).IsFalse();
+    WriteJobs.InstallJobs([bJob], restarted, b.Native, settings, mazakConfig);
+    await Assert.That(restarted.LoadJob(bJob.UniqueStr).CopiedToSystem).IsTrue();
+
+    foreach (var (device, job) in new[] { (a, aJob), (b, bJob) })
+    {
+      var added = device.Data.Schedules.Where(schedule => schedule.Id != completedSchedule.Id);
+      await Assert
+        .That(added.Select(schedule => schedule.Comment))
+        .IsEquivalentTo(MazakPart.InitialScheduleComments(job));
+      await Assert.That(device.Data.Schedules).Contains(completedSchedule);
+      await Assert.That(device.Data.Parts).Contains(completedPart);
+      await Assert.That(device.Data.Parts).Contains(interruptedPart);
+      await Assert.That(device.Data.Fixtures).Contains(fixture);
+      await Assert.That(device.Data.Pallets).Contains(pallet);
+    }
+    await Assert.That(restarted.LoadJob(completed.UniqueStr).Archived).IsFalse();
+    await Assert.That(restarted.LoadJob(interrupted.UniqueStr).CopiedToSystem).IsFalse();
+  }
+
+  [Test]
   [Arguments("schedules", true)]
   [Arguments("parts-full", true)]
   [Arguments("parts-partial", true)]
@@ -613,6 +908,11 @@ public sealed class DuplicateDownloadSpec
           {
             _failOnce = false;
             throw new IOException("Schedule submission failed before controller admission.");
+          }
+          if (_failOnce && failure == "schedules-unconfirmed" && write.Prefix == "Add Schedules")
+          {
+            _failOnce = false;
+            return;
           }
           if (_failOnce && failure == "parts-before-pallet-chunk" && write.Prefix == "Add Parts")
             write = OpenDatabaseKitDB.SplitWriteData(write).First();
