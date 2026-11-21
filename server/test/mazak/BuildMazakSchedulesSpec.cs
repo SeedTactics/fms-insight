@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using AutoFixture;
 using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
@@ -45,6 +46,84 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class BuildMazakSchedulesSpec
   {
+    [Test]
+    [Arguments("part:1:1:2", "job-2-1-InsightS", 1)]
+    [Arguments("OperatorPart", "Operator job", 2)]
+    public async Task UpdateAndRetireCallerSelectedSchedule(
+      string partName,
+      string comment,
+      int nativeProcess
+    )
+    {
+      var row = new MazakScheduleRow
+      {
+        Id = 12,
+        PartName = partName,
+        Comment = comment,
+        PlanQuantity = 6,
+        CompleteQuantity = 6,
+        DueDate = new DateTime(2026, 11, 21),
+        Priority = 42,
+        Processes = Enumerable
+          .Range(1, nativeProcess)
+          .Select(process => new MazakScheduleProcessRow
+          {
+            MazakScheduleRowId = 12,
+            ProcessNumber = process,
+            ProcessMaterialQuantity = process == nativeProcess ? 0 : 3,
+            ProcessBadQuantity = 1,
+          })
+          .ToImmutableList(),
+      };
+
+      var raised = BuildMazakSchedules.IncreasePlanQuantity(row, 9).Schedules.Single();
+      await Assert
+        .That(raised)
+        .IsEqualTo(row with { Command = MazakWriteCommand.ScheduleSafeEdit, PlanQuantity = 9 });
+      await Assert.That(BuildMazakSchedules.IncreasePlanQuantity(raised, 9).Schedules).IsEmpty();
+      await Assert.That(BuildMazakSchedules.IncreasePlanQuantity(raised, 6).Schedules).IsEmpty();
+
+      var offered = BuildMazakSchedules
+        .SetMaterialQuantity(raised, nativeProcess, 3)
+        .Schedules.Single();
+      await Assert
+        .That(offered with { Processes = raised.Processes })
+        .IsEqualTo(raised with { Command = MazakWriteCommand.ScheduleMaterialEdit });
+      await Assert
+        .That(offered.Processes)
+        .IsEquivalentTo(
+          raised.Processes.Select(process =>
+            process.ProcessNumber == nativeProcess
+              ? process with
+              {
+                ProcessMaterialQuantity = 3,
+              }
+              : process
+          )
+        );
+      var idle = raised with
+      {
+        Processes = raised
+          .Processes.Select(process => process with { ProcessMaterialQuantity = 0 })
+          .ToImmutableList(),
+      };
+      var withdrawal = BuildMazakSchedules
+        .SetMaterialQuantity(idle, nativeProcess, 0)
+        .Schedules.Single();
+      await Assert.That(withdrawal.Command).IsEqualTo(MazakWriteCommand.ScheduleMaterialEdit);
+      await Assert.That(withdrawal.Processes).IsEquivalentTo(idle.Processes);
+
+      var other = row with { Id = 13, PartName = "other" };
+      var (delete, keptParts) = BuildMazakSchedules.RemoveSchedules(
+        new MazakCurrentStatus { Schedules = [idle, other] },
+        candidate => candidate.Id == idle.Id && candidate.PartName == idle.PartName
+      );
+      await Assert
+        .That(delete.Schedules.Single())
+        .IsEqualTo(idle with { Command = MazakWriteCommand.Delete });
+      await Assert.That(keptParts).IsEquivalentTo([other.PartName]);
+    }
+
     [Test]
     public void DeleteCompletedSchedules()
     {

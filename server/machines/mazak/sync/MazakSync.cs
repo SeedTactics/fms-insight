@@ -215,8 +215,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   // release the repository mutation lock during controller I/O so other work and status can progress.
   // Hold one controller lock across the staged sequence, taking it before the repository lock,
   // and hold the repository lock only for watermark capture and reconciliation.
-  // Each controller stream needs its own watermark domain; the repository-wide LG cursor does not
-  // distinguish controllers.
+  // Assign each controller a stable CsvLogSource when sharing a repository, with at most one
+  // controller keeping the original LG range.
   // The host owns source-health publication and decides which actions require fresh observations.
   public MazakState CalculateCellState(IRepository db)
   {
@@ -227,9 +227,17 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   }
 
   // Capture under the caller's repository/mutation owner, then release that owner before acquiring.
-  public string CaptureLogWatermark(IRepository db) =>
+  public string CaptureLogWatermark(IRepository db)
+  {
     // Web/Smooth CSV names begin with LG; exclude other event producers.
-    db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound);
+    var prefix = mazakConfig.CsvLogForeignIDPrefix;
+    var committed = db.MaxForeignIDInRange(
+      prefix + MazakCsvForeignIDLowerBound,
+      prefix + MazakCsvForeignIDUpperBound
+    );
+    // Acquisition and acknowledgment always use native filenames.
+    return committed.Length == 0 ? "" : committed[prefix.Length..];
+  }
 
   // Serialize controller acquisition and acknowledgment with the same controller owner. All
   // enumerables, including tools and nested process rows, finish reading before this returns.
@@ -298,7 +306,14 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   // No built-in controller I/O. The caller keeps source observations ordered and serializes
   // resolver/repository effects. Already committed events are omitted, including after a
   // partial reconciliation failure, while the available observation still contributes status.
-  public MazakReconciliation ReconcileCellState(IRepository db, MazakAcquisition acquisition)
+  public MazakReconciliation ReconcileCellState(IRepository db, MazakAcquisition acquisition) =>
+    ReconcileCellState(db, acquisition, BuildCurrentStatus.FindMachineGroupName(db));
+
+  public MazakReconciliation ReconcileCellState(
+    IRepository db,
+    MazakAcquisition acquisition,
+    string machineGroupName
+  )
   {
     var committed = CaptureLogWatermark(db);
     if (acquisition.ToolReadFailed || acquisition.Tools is not null)
@@ -309,8 +324,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         .Data.Logs.Where(entry => StringComparer.Ordinal.Compare(entry.ForeignID, committed) > 0)
         .ToImmutableList(),
     };
-    var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
-
     var evtResults = LogTranslation.HandleEvents(
       db,
       mazakData,

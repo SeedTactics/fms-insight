@@ -72,6 +72,129 @@ public sealed class DuplicateDownloadSpec
     );
 
   [Test]
+  public async Task ExplicitBatchesResumeIndependentlyAndPreserveUnselectedDefinitions()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var completed = PendingJob(false) with { UniqueStr = "completed", PartName = "previous" };
+    var interrupted = completed with { UniqueStr = "interrupted" };
+    var aJob = PendingJob(true) with { UniqueStr = "controller-a" };
+    var bJob = PendingJob(false) with { UniqueStr = "controller-b" };
+    repository.AddJobs(
+      new NewJobs { ScheduleId = "previous", Jobs = [completed, interrupted] },
+      null,
+      false
+    );
+    repository.MarkJobCopiedToSystem(completed.UniqueStr);
+    repository.AddJobs(new NewJobs { ScheduleId = "new", Jobs = [aJob, bJob] }, null, false);
+    repository.AddNewDecrement(
+      [
+        new NewDecrementQuantity
+        {
+          JobUnique = aJob.UniqueStr,
+          Part = aJob.PartName,
+          Quantity = 3,
+        },
+      ],
+      Now
+    );
+
+    var a = new DownloadDevice("parts-full");
+    var b = new DownloadDevice("schedules-unconfirmed");
+    var fixture = new MazakFixtureRow { FixtureName = "F:4:1:shared:1", Comment = "Insight" };
+    var pallet = new MazakPalletRow
+    {
+      PalletNumber = 1,
+      Fixture = fixture.FixtureName,
+      FixtureGroupV2 = 1,
+    };
+    MazakPartRow PreviousPart(Job job, string nativeName) =>
+      new()
+      {
+        PartName = nativeName,
+        Comment = job.UniqueStr + "-Insight",
+        Processes =
+        [
+          new MazakPartProcessRow
+          {
+            PartName = nativeName,
+            ProcessNumber = 1,
+            Fixture = fixture.FixtureName,
+          },
+        ],
+      };
+    var completedPart = PreviousPart(completed, "previous:4:1");
+    var interruptedPart = PreviousPart(interrupted, "previous:4:2");
+    var completedSchedule = new MazakScheduleRow
+    {
+      Id = 1,
+      PartName = completedPart.PartName,
+      Comment = completedPart.Comment,
+      PlanQuantity = 9,
+      CompleteQuantity = 9,
+    };
+    var previousData = a.Data with
+    {
+      Fixtures = [fixture],
+      Pallets = [pallet],
+      Parts = [completedPart, interruptedPart],
+      Schedules = [completedSchedule],
+    };
+    a.Observe(previousData);
+    b.Observe(previousData);
+
+    var settings = new FMSSettings();
+    var mazakConfig = new MazakConfig { DBType = MazakDbType.MazakSmooth };
+    await Assert
+      .That(() =>
+        WriteJobs.InstallJobs(
+          [repository.LoadJob(aJob.UniqueStr)],
+          repository,
+          a.Native,
+          settings,
+          mazakConfig
+        )
+      )
+      .Throws<IOException>();
+    await Assert.That(a.Data.Schedules).IsEquivalentTo([completedSchedule]);
+    await Assert.That(a.Data.Parts.Count()).IsEqualTo(4);
+    await Assert.That(repository.LoadJob(aJob.UniqueStr).CopiedToSystem).IsFalse();
+    var aParts = a.Data.Parts.ToImmutableList();
+
+    // B returns success from Save before its schedule appears in readback.
+    await Assert
+      .That(() => WriteJobs.InstallJobs([bJob], repository, b.Native, settings, mazakConfig))
+      .Throws<InvalidOperationException>();
+    await Assert.That(b.Data.Schedules).IsEquivalentTo([completedSchedule]);
+    await Assert.That(repository.LoadJob(bJob.UniqueStr).CopiedToSystem).IsFalse();
+
+    using var restarted = config.OpenConnection();
+    a.Native.ClearReceivedCalls();
+    WriteJobs.InstallJobs([aJob], restarted, a.Native, settings, mazakConfig);
+    a.Native.DidNotReceive().Save(Arg.Is<MazakWriteData>(write => write.Parts.Count > 0));
+    await Assert.That(a.Data.Parts).IsEquivalentTo(aParts);
+    await Assert.That(restarted.LoadJob(aJob.UniqueStr).CopiedToSystem).IsTrue();
+    await Assert.That(restarted.LoadJob(bJob.UniqueStr).CopiedToSystem).IsFalse();
+    WriteJobs.InstallJobs([bJob], restarted, b.Native, settings, mazakConfig);
+    await Assert.That(restarted.LoadJob(bJob.UniqueStr).CopiedToSystem).IsTrue();
+
+    foreach (var (device, job) in new[] { (a, aJob), (b, bJob) })
+    {
+      var added = device.Data.Schedules.Where(schedule => schedule.Id != completedSchedule.Id);
+      await Assert
+        .That(added.Select(schedule => schedule.Comment))
+        .IsEquivalentTo(MazakPart.InitialScheduleComments(job));
+      await Assert.That(device.Data.Schedules).Contains(completedSchedule);
+      await Assert.That(device.Data.Parts).Contains(completedPart);
+      await Assert.That(device.Data.Parts).Contains(interruptedPart);
+      await Assert.That(device.Data.Fixtures).Contains(fixture);
+      await Assert.That(device.Data.Pallets).Contains(pallet);
+    }
+    await Assert.That(restarted.LoadJob(completed.UniqueStr).Archived).IsFalse();
+    await Assert.That(restarted.LoadJob(interrupted.UniqueStr).CopiedToSystem).IsFalse();
+  }
+
+  [Test]
   [Arguments("schedules", true)]
   [Arguments("parts-full", true)]
   [Arguments("parts-partial", true)]
@@ -613,6 +736,11 @@ public sealed class DuplicateDownloadSpec
           {
             _failOnce = false;
             throw new IOException("Schedule submission failed before controller admission.");
+          }
+          if (_failOnce && failure == "schedules-unconfirmed" && write.Prefix == "Add Schedules")
+          {
+            _failOnce = false;
+            return;
           }
           if (_failOnce && failure == "parts-before-pallet-chunk" && write.Prefix == "Add Parts")
             write = OpenDatabaseKitDB.SplitWriteData(write).First();

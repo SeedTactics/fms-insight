@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -41,6 +42,71 @@ namespace MazakMachineInterface
   public static class BuildMazakSchedules
   {
     public static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MazakWriteData>();
+
+    /// <summary>
+    /// Builds a plan increase from a fresh native row and an absolute minimum in pieces.
+    /// An empty write means the observed plan already meets the minimum.
+    /// </summary>
+    public static MazakWriteData IncreasePlanQuantity(MazakScheduleRow schedule, int minimumPlan)
+    {
+      ArgumentOutOfRangeException.ThrowIfNegative(minimumPlan);
+      return new MazakWriteData
+      {
+        Prefix = "Increase schedule plan",
+        Schedules =
+          minimumPlan > schedule.PlanQuantity
+            ?
+            [
+              schedule with
+              {
+                Command = MazakWriteCommand.ScheduleSafeEdit,
+                PlanQuantity = minimumPlan,
+              },
+            ]
+            : [],
+      };
+    }
+
+    /// <summary>
+    /// Builds a ready-material edit for the selected native process. An explicit zero is written
+    /// even when the observed quantity is zero. Recheck consumption before retrying an offer
+    /// after an uncertain acknowledgment.
+    /// </summary>
+    public static MazakWriteData SetMaterialQuantity(
+      MazakScheduleRow schedule,
+      int nativeProcess,
+      int readyPieces
+    )
+    {
+      ArgumentOutOfRangeException.ThrowIfNegative(readyPieces);
+      if (!schedule.Processes.Any(process => process.ProcessNumber == nativeProcess))
+        throw new ArgumentOutOfRangeException(
+          nameof(nativeProcess),
+          "Unknown native schedule process."
+        );
+
+      return new MazakWriteData
+      {
+        Prefix = "Set schedule material",
+        Schedules =
+        [
+          schedule with
+          {
+            Command = MazakWriteCommand.ScheduleMaterialEdit,
+            Processes = schedule
+              .Processes.Select(process =>
+                process.ProcessNumber == nativeProcess
+                  ? process with
+                  {
+                    ProcessMaterialQuantity = readyPieces,
+                  }
+                  : process
+              )
+              .ToImmutableList(),
+          },
+        ],
+      };
+    }
 
     public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(
       MazakCurrentStatus mazakData

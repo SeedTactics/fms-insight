@@ -118,6 +118,18 @@ namespace MazakMachineInterface
     public string? ProgramDirectory { get; init; }
     public string? LoadCSVPath { get; init; }
 
+    /// <summary>
+    /// A stable, unique controller identity when sharing a repository. Leave the original
+    /// controller's source unset to preserve its existing CSV foreign IDs.
+    /// </summary>
+    public string? CsvLogSource { get; init; }
+
+    internal string CsvLogForeignIDPrefix =>
+      string.IsNullOrEmpty(CsvLogSource) ? "" : $"Mazak:{Uri.EscapeDataString(CsvLogSource)}:";
+
+    /// <summary>Returns the repository key for a raw controller CSV filename.</summary>
+    public string CsvLogForeignID(string filename) => CsvLogForeignIDPrefix + filename;
+
     public Uri? ProxyDBUri { get; init; }
     public bool UseStartingOffsetForDueDate { get; init; } = true;
     public bool WaitForAllCastings { get; init; } = false;

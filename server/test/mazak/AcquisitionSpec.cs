@@ -16,6 +16,102 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class MazakAcquisitionSpec
 {
   [Test]
+  public async Task SharedRepositoryKeepsEachControllersCsvProgressThroughRestart()
+  {
+    using var a = new Cell();
+    using var b = new Cell(
+      new MazakConfig
+      {
+        DBType = MazakDbType.MazakSmooth,
+        CsvLogSource = "cell:B",
+        StartingPalletNumber = 101,
+        LoadStationNumbers = [5],
+        MachineNumbers = [201],
+        CanQuarantineMissingMaterial = _ => false,
+      }
+    );
+    var load = a.Start with { Code = LogCode.LoadEnd, FixedQuantity = 3 };
+    var cutting = a.End with { Code = LogCode.MachineCycleStart };
+    foreach (var cell in new[] { a, b })
+    {
+      cell.Data = cell.Data with
+      {
+        Parts =
+        [
+          new MazakPartRow
+          {
+            PartName = load.FullPartName,
+            Comment = "",
+            TotalProcess = 1,
+            Processes =
+            [
+              new MazakPartProcessRow
+              {
+                PartName = load.FullPartName,
+                ProcessNumber = 1,
+                FixQuantity = 3,
+                Fixture = "three-piece",
+              },
+            ],
+          },
+        ],
+        Logs = [load],
+      };
+      cell.Native.When(native => native.DeleteLogs(Arg.Any<string>()))
+        .Do(call =>
+        {
+          cell.Data = cell.Data with
+          {
+            Logs = cell
+              .Data.Logs.Where(log => string.CompareOrdinal(log.ForeignID, call.Arg<string>()) > 0)
+              .ToImmutableList(),
+          };
+        });
+    }
+
+    a.Data = a.Data with { Logs = [load, cutting] };
+    a.Sync.CalculateCellState(a.Repository);
+    await Assert.That(a.Data.Logs).IsEmpty();
+    await Assert.That(b.Data.Logs).IsEquivalentTo([load]);
+    await Assert.That(b.Sync.CaptureLogWatermark(a.Repository)).IsEmpty();
+    var aLoad = a.Repository.MostRecentLogEntryForForeignID(load.ForeignID);
+    await Assert.That(aLoad.Material.Count).IsEqualTo(3);
+    await Assert.That(aLoad.Pallet).IsEqualTo(1);
+
+    // The peer sees its own load, but leaves the unfinished visit on its controller.
+    var pending = b.Sync.CalculateCellState(a.Repository);
+    await Assert.That(pending.PalletWithUnprocessedUnloads).IsEqualTo(101);
+    await Assert.That(b.Data.Logs).IsEquivalentTo([load]);
+    var bLoadKey = b.Config.CsvLogForeignID(load.ForeignID);
+    await Assert.That(a.Repository.MostRecentLogEntryForForeignID(bLoadKey)).IsNull();
+
+    b.Data = b.Data with { Logs = [load, cutting] };
+    var observed = b.Sync.AcquireCellState(b.Sync.CaptureLogWatermark(a.Repository));
+    var committed = b.Sync.ReconcileCellState(a.Repository, observed, "Peer MC");
+    await Assert.That(committed.CommittedLogWatermark).IsEqualTo(cutting.ForeignID);
+    var bLoad = a.Repository.MostRecentLogEntryForForeignID(bLoadKey);
+    await Assert.That(bLoad.Pallet).IsEqualTo(101);
+    await Assert.That(bLoad.LocationNum).IsEqualTo(5);
+    await Assert.That(bLoad.Material.Count).IsEqualTo(3);
+    var bCycle = a.Repository.MostRecentLogEntryForForeignID(
+      b.Config.CsvLogForeignID(cutting.ForeignID)
+    );
+    await Assert.That(bCycle.LocationName).IsEqualTo("Peer MC");
+    await Assert.That(bCycle.LocationNum).IsEqualTo(201);
+    await Assert.That(b.Data.Logs).IsEquivalentTo([load, cutting]);
+
+    var history = a.Repository.GetRecentLog(0).ToImmutableList();
+    using var restarted = b.NewSynchronizer();
+    using var reopened = a.Repositories.OpenConnection();
+    var after = restarted.AcquireCellState(restarted.CaptureLogWatermark(reopened));
+    await Assert.That(after.Data.Logs).IsEmpty();
+    restarted.AcknowledgeLogs(restarted.ReconcileCellState(reopened, after, "Peer MC"));
+    b.Native.Received(1).DeleteLogs(cutting.ForeignID);
+    await Assert.That(b.Data.Logs).IsEmpty();
+    await Assert.That(reopened.GetRecentLog(0)).IsEquivalentTo(history);
+  }
+
+  [Test]
   [Arguments(false)]
   [Arguments(true)]
   public async Task StatusFailureAfterCommitRecoversAcrossRestartWithoutReplay(bool staged)
@@ -662,7 +758,9 @@ public sealed partial class MazakAcquisitionSpec
         Code = LogCode.MachineCycleEnd,
       };
 
-    public Cell()
+    public MazakConfig Config { get; }
+
+    public Cell(MazakConfig? config = null)
     {
       repositories = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings { ConvertMaterialIDToSerial = _ => "" },
@@ -683,23 +781,19 @@ public sealed partial class MazakAcquisitionSpec
         });
       Native.LoadTools().Returns(_ => ReadTools());
       Native.When(n => n.DeleteLogs(Arg.Any<string>())).Do(_ => BeforeAcknowledgment?.Invoke());
-      Sync = NewSynchronizer();
-    }
-
-    public MazakSync NewSynchronizer() =>
-      new(
-        Native,
-        new FMSSettings(),
-        new MazakConfig
+      Config = config
+        ?? new MazakConfig
         {
           DBType = MazakDbType.MazakSmooth,
           ProgramDirectory = "unused",
           CanQuarantineMissingMaterial = _ => false,
           AdjustCurrentStatus = (_, status) =>
             FailStatus ? throw new InvalidOperationException("status construction failed") : status,
-        },
-        Clock
-      );
+        };
+      Sync = NewSynchronizer();
+    }
+
+    public MazakSync NewSynchronizer() => new(Native, new FMSSettings(), Config, Clock);
 
     private IEnumerable<ToolPocketRow> ReadTools()
     {
