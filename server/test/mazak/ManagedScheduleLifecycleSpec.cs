@@ -1120,7 +1120,7 @@ public sealed partial class DuplicateDownloadSpec
     var resolver = config with
     {
       ResolveLoadUnloadTransaction = identified is null
-        ? null
+        ? config.ResolveLoadUnloadTransaction
         : (_, batch) =>
           new MazakLoadUnloadResolution.Resolved
           {

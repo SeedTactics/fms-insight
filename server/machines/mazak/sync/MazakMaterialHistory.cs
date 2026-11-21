@@ -73,6 +73,16 @@ public static class MazakMaterialHistory
     return (identified, unidentified);
   }
 
+  internal static int NativeFace(BlackMaple.MachineFramework.LogEntry entry) =>
+    int.TryParse(
+      entry.ProgramDetails?.GetValueOrDefault(ManagedFaceKey),
+      NumberStyles.None,
+      CultureInfo.InvariantCulture,
+      out var face
+    )
+      ? face
+      : 0;
+
   // A raw unload can remove a physical piece without identifying which recorded serial left.
   // Keep possible identities for exact resolution, and never infer an identity from that face.
   // The sum of actual transfers can establish that the face is empty even without serials.
@@ -105,16 +115,8 @@ public static class MazakMaterialHistory
         continue;
 
       var load = entry.Result == "LOAD";
-      if (
-        entry.ProgramDetails is { } details
-        && int.TryParse(
-          details.GetValueOrDefault(ManagedFaceKey),
-          NumberStyles.None,
-          CultureInfo.InvariantCulture,
-          out var face
-        )
-        && face > 0
-      )
+      var face = NativeFace(entry);
+      if (face > 0)
       {
         var wasUncertain = uncertain.TryGetValue(face, out var previous);
         var before = wasUncertain ? previous : candidates.Values.Count(m => m.Face == face);

@@ -293,9 +293,11 @@ namespace MazakMachineInterface
             jobDB,
             oldCycles.SelectMany(e => e.Material).Select(m => m.MaterialID)
           );
-          var managedPlacement = mazakCfg.UseInsightJobQuantities is null
-            ? null
-            : MazakMaterialHistory.ReplayPalletPlacement(oldCycles, removals);
+          var managedPlacement =
+            mazakCfg.UseInsightJobQuantities is not null
+            || mazakCfg.RequireExactLoadIdentities is not null
+              ? MazakMaterialHistory.ReplayPalletPlacement(oldCycles, removals)
+              : null;
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -319,6 +321,9 @@ namespace MazakMachineInterface
             var split = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP);
             var palFmsProc = split ? splitFP : palSub.PartProcessNumber;
             var managed = mazakCfg.UsesInsightJobQuantities(job.DbJob);
+            var exactLoad =
+              palLoc.Location == PalletLocationEnum.LoadUnload
+              && mazakCfg.RequiresExactLoadIdentities(job.DbJob, palLoc.Num);
 
             var matIDs = new Queue<long>(
               FindMatIDsFromOldCycles(
@@ -328,7 +333,11 @@ namespace MazakMachineInterface
                 palFmsProc,
                 jobDB,
                 removals,
-                managed ? managedPlacement : null,
+                managed
+                || managedPlacement?.PhysicalQuantities.ContainsKey(palSub.PartProcessNumber)
+                  == true
+                  ? managedPlacement
+                  : null,
                 palSub.PartProcessNumber
               )
             );
@@ -344,10 +353,10 @@ namespace MazakMachineInterface
               var currentProcessBeforeLoad =
                 palFmsProc > palSub.PartProcessNumber ? palFmsProc - 1 : palSub.PartProcessNumber;
 
-              // A managed split route admits its own material. Leave its load request for
-              // anonymous projection and keep the existing material on the unload action.
+              // Split managed routes and exact load requests admit incoming pieces separately
+              // from the material currently on this pallet.
               var loadNext =
-                managed && split
+                exactLoad || (managed && split)
                   ? null
                   : CheckLoadOfNextProcess(
                     currentLoads,
@@ -360,7 +369,7 @@ namespace MazakMachineInterface
                 job.UniqueStr,
                 palSub.PartProcessNumber,
                 palLoc,
-                managed && split ? palFmsProc : null
+                split && (managed || exactLoad) ? palFmsProc : null
               );
 
               var action = new InProcessMaterialAction()
@@ -986,7 +995,10 @@ namespace MazakMachineInterface
             fmsUnloadProc,
             log,
             removals,
-            config.UsesInsightJobQuantities(job?.DbJob) ? managedPlacement : null,
+            config.UsesInsightJobQuantities(job?.DbJob)
+            || managedPlacement?.PhysicalQuantities.ContainsKey(unload.Process) == true
+              ? managedPlacement
+              : null,
             unload.Process
           )
         );
@@ -1133,10 +1145,11 @@ namespace MazakMachineInterface
             if (fmsOperationProc == 1)
               job.Started += 1;
 
-            // A managed load request reports a quantity. Its material IDs come from
-            // the backend's exact transfer resolution, which can pick any queued pieces.
             var queue = job.Processes[fmsOperationProc - 1][0].InputQueue;
-            if (!config.UsesInsightJobQuantities(job.DbJob) && !string.IsNullOrEmpty(queue))
+            if (
+              !config.RequiresExactLoadIdentities(job.DbJob, operation.LoadStation)
+              && !string.IsNullOrEmpty(queue)
+            )
             {
               var key = (uniq: uniq, proc: fmsOperationProc);
               if (queuedMats.ContainsKey(key))

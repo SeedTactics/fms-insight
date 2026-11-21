@@ -264,6 +264,7 @@ namespace MazakMachineInterface
       ImmutableList<MaterialToLoadOntoFace> exactLoads = null;
       ImmutableList<MaterialToUnloadFromFace> exactUnloads = null;
       PalletBasketLoadUnloadCompletion basketCompletion = null;
+      var useOrdinaryLoadSelection = false;
 
       if (mazakConfig.ResolveLoadUnloadTransaction is { } resolve)
       {
@@ -278,10 +279,14 @@ namespace MazakMachineInterface
             (exactLoads, exactUnloads) = BuildResolvedLoadUnload(context, exact, cycle);
             basketCompletion = exact.BasketCompletion;
           }
-          else if (resolution is not MazakLoadUnloadResolution.NotApplicable)
+          else if (resolution is MazakLoadUnloadResolution.NotApplicable)
+          {
+            useOrdinaryLoadSelection = true;
+          }
+          else
           {
             Log.Error(
-              "Unable to resolve exact Mazak L/U {ForeignId}: {Reason}. Using ordinary translation.",
+              "Unable to resolve exact Mazak L/U {ForeignId}: {Reason}. Using configured fallback.",
               es[0].ForeignID,
               (resolution as MazakLoadUnloadResolution.UnableToResolve)?.Reason
                 ?? "Missing resolution"
@@ -292,7 +297,7 @@ namespace MazakMachineInterface
         {
           Log.Error(
             ex,
-            "Unable to resolve exact Mazak L/U {ForeignId}. Using ordinary translation.",
+            "Unable to resolve exact Mazak L/U {ForeignId}. Using configured fallback.",
             es[0].ForeignID
           );
         }
@@ -330,13 +335,17 @@ namespace MazakMachineInterface
           }
           Log.Error(
             ex,
-            "Exact Mazak L/U {ForeignId} did not commit. Using ordinary translation.",
+            "Exact Mazak L/U {ForeignId} did not commit. Using configured fallback.",
             es[0].ForeignID
           );
         }
       }
 
-      RecordLoadUnload(FindMatToLoad(es, cycle), FindMatToUnload(es, cycle), null);
+      RecordLoadUnload(
+        FindMatToLoad(es, cycle, loadStation, useOrdinaryLoadSelection),
+        FindMatToUnload(es, cycle),
+        null
+      );
 
       void RecordLoadUnload(
         IReadOnlyList<MaterialToLoadOntoFace> loads,
@@ -345,13 +354,13 @@ namespace MazakMachineInterface
       )
       {
         var elapsed = CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, loadStation);
-        if (es.Any(e => ManagedRoute(e.FullPartName).Managed))
+        if (es.Any(TracksTransferQuantity))
         {
           loads = loads
             .Select(load =>
               load with
               {
-                AdditionalData = ManagedTransferDetails(
+                AdditionalData = TransferDetails(
                   load.ForeignID,
                   load.MaterialIDs.Count,
                   load.AdditionalData
@@ -363,7 +372,7 @@ namespace MazakMachineInterface
             .Select(unload =>
               unload with
               {
-                AdditionalData = ManagedTransferDetails(
+                AdditionalData = TransferDetails(
                   unload.ForeignID,
                   unload.MaterialIDToDestination.Count,
                   unload.AdditionalData
@@ -417,14 +426,24 @@ namespace MazakMachineInterface
         );
       }
 
-      ImmutableDictionary<string, string> ManagedTransferDetails(
+      bool TracksTransferQuantity(LogEntry external)
+      {
+        if (UsesPhysicalTransferHistory(external, cycle))
+          return true;
+        if (useOrdinaryLoadSelection || mazakConfig.RequireExactLoadIdentities is null)
+          return false;
+        FindSchedule(external.FullPartName, external.Process, out var unique, out _, out _);
+        return mazakConfig.RequiresExactLoadIdentities(GetJob(unique), loadStation);
+      }
+
+      ImmutableDictionary<string, string> TransferDetails(
         string foreignId,
         int identified,
         ImmutableDictionary<string, string> details
       )
       {
         var external = es.FirstOrDefault(e => mazakConfig.LogForeignId(e.ForeignID) == foreignId);
-        if (external is null || !ManagedRoute(external.FullPartName).Managed)
+        if (external is null || !TracksTransferQuantity(external))
           return details;
         FindSchedule(
           external.FullPartName,
@@ -447,7 +466,10 @@ namespace MazakMachineInterface
             Math.Max(0, external.FixedQuantity - identified).ToString(CultureInfo.InvariantCulture)
           )
           .Remove(MazakManagedScheduleControl.LoadRouteKey);
-        return external.Code == LogCode.LoadEnd && !string.IsNullOrEmpty(unique)
+        return
+          external.Code == LogCode.LoadEnd
+          && !string.IsNullOrEmpty(unique)
+          && ManagedRoute(external.FullPartName).Managed
           ? metadata.SetItem(
             MazakManagedScheduleControl.LoadRouteKey,
             MazakManagedScheduleControl.LoadRouteValue(unique, process)
@@ -565,7 +587,11 @@ namespace MazakMachineInterface
         var group in context.Unloads.GroupBy(f => (f.Face, f.Process, f.JobUnique, f.PartName))
       )
       {
-        if (UsesManagedTransfers(GetJob(group.Key.JobUnique)))
+        var job = GetJob(group.Key.JobUnique);
+        if (
+          MazakLiveRoutes.Owns(mazakConfig, job)
+          || mazakConfig.RequiresExactLoadIdentities(job, context.LoadStation)
+        )
           continue; // Every selected serial and the reported raw quantity were verified above.
         var expected = onPallet
           .Values.Where(m =>
@@ -964,11 +990,17 @@ namespace MazakMachineInterface
       public string PartName { get; set; }
     }
 
+    private bool UsesPhysicalTransferHistory(LogEntry e, IList<MWI.LogEntry> history) =>
+      ManagedRoute(e.FullPartName).Managed
+      || mazakConfig.RequireExactLoadIdentities is not null
+        && e.Process > 0
+        && history.Any(log => MazakMaterialHistory.NativeFace(log) == e.Process);
+
     private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, IList<MWI.LogEntry> oldEvents)
     {
       FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc, out int jobProc);
 
-      if (ManagedRoute(e.FullPartName).Managed)
+      if (UsesPhysicalTransferHistory(e, oldEvents))
       {
         // Exact handling establishes identities. A later event can use the verified placement,
         // but a physical count alone never creates serials or credits an arbitrary subset.
@@ -1110,7 +1142,9 @@ namespace MazakMachineInterface
 
     private List<MaterialToLoadOntoFace> FindMatToLoad(
       IEnumerable<LogEntry> events,
-      List<MWI.LogEntry> oldPalEvents
+      List<MWI.LogEntry> oldPalEvents,
+      int loadStation,
+      bool useOrdinaryLoadSelection
     )
     {
       var toLoad = new List<MaterialToLoadOntoFace>();
@@ -1129,7 +1163,11 @@ namespace MazakMachineInterface
           out int jobProc
         );
 
-        if (ManagedRoute(e.FullPartName).Managed)
+        Job job = string.IsNullOrEmpty(unique) ? null : GetJob(unique);
+        if (
+          job is null && ManagedRoute(e.FullPartName).Managed
+          || !useOrdinaryLoadSelection && mazakConfig.RequiresExactLoadIdentities(job, loadStation)
+        )
         {
           toLoad.Add(
             new MaterialToLoadOntoFace
@@ -1152,7 +1190,6 @@ namespace MazakMachineInterface
           jobProc
         );
 
-        Job job = string.IsNullOrEmpty(unique) ? null : GetJob(unique);
         if (job == null)
         {
           Log.Warning("Unable to find job for load {@pending} with unique {@uniq}", e, unique);
@@ -1339,7 +1376,7 @@ namespace MazakMachineInterface
 
         var mats = GetMaterialOnPallet(e, oldEvents);
         var jobProcess = e.Process;
-        if (ManagedRoute(e.FullPartName).Managed)
+        if (UsesPhysicalTransferHistory(e, oldEvents))
           FindSchedule(e.FullPartName, e.Process, out _, out _, out jobProcess);
         var unloadProcess = mats.Count > 0 ? mats[0].Mat.Process : jobProcess;
 
@@ -1425,8 +1462,6 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private bool UsesManagedTransfers(Job job) => MazakLiveRoutes.Owns(mazakConfig, job);
-
     private readonly Dictionary<
       string,
       (bool Managed, Job Job, MazakPart.MazakCommentInfo Comment)
@@ -1451,7 +1486,7 @@ namespace MazakMachineInterface
         .Select(row => row.Comment)
         .Distinct(StringComparer.Ordinal)
         .Select(comment => (Comment: comment, Job: GetJob(MazakPart.UniqueFromComment(comment))))
-        .Where(candidate => UsesManagedTransfers(candidate.Job))
+        .Where(candidate => MazakLiveRoutes.Owns(mazakConfig, candidate.Job))
         .Take(2)
         .ToImmutableList();
       var result = (
@@ -1542,7 +1577,12 @@ namespace MazakMachineInterface
     #region Compare Status With Events
     private bool CloseUncertainEmptyPallets()
     {
-      if (mazakConfig.UseInsightJobQuantities is null || mazakData.PalletSubStatuses is null)
+      if (
+        (
+          mazakConfig.UseInsightJobQuantities is null
+          && mazakConfig.RequireExactLoadIdentities is null
+        ) || mazakData.PalletSubStatuses is null
+      )
         return false;
 
       var occupied = mazakData

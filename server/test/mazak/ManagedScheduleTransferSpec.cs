@@ -12,7 +12,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests;
 public sealed partial class DuplicateDownloadSpec
 {
   [Test]
-  public async Task PendingManagedQueueLoadStaysAnonymousUntilResolved()
+  public async Task PendingExactQueueLoadStaysAnonymousUntilResolved()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
     using var db = repositories.OpenConnection();
@@ -72,6 +72,10 @@ public sealed partial class DuplicateDownloadSpec
     );
     await Assert.That(ordinaryLoad.Serial).IsEqualTo("A");
 
+    config = config with
+    {
+      RequireExactLoadIdentities = (j, station) => j.UniqueStr == job.UniqueStr && station == 1,
+    };
     var managedStatus = Status(pending, config);
     var managedLoad = managedStatus.Material.Single(m =>
       m.Action.Type == InProcessMaterialAction.ActionType.Loading
@@ -105,6 +109,88 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  [Arguments("no resolver")]
+  [Arguments("not applicable")]
+  [Arguments("unable to resolve")]
+  [Arguments("unable with native quantities")]
+  public async Task QueueLoadFallbackFollowsTheIdentityPolicy(string resolution)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var template = PendingJob(false);
+    var process = template.Processes[0];
+    var job = template with
+    {
+      Processes =
+      [
+        process with
+        {
+          Paths = [process.Paths[0] with { InputQueue = "raw", PalletNums = [2] }],
+        },
+      ],
+    };
+    var anonymous = resolution.StartsWith("unable", StringComparison.Ordinal);
+    var ownedQuantities = resolution != "unable with native quantities";
+    var config = ManagedConfig() with
+    {
+      UseInsightJobQuantities = ownedQuantities ? j => j.UniqueStr == job.UniqueStr : null,
+      RequireExactLoadIdentities =
+        resolution == "no resolver" ? null : (_, station) => station == 1,
+      ResolveLoadUnloadTransaction = resolution switch
+      {
+        "no resolver" => null,
+        "not applicable" => (_, _) => new MazakLoadUnloadResolution.NotApplicable(),
+        _ => (_, _) => new MazakLoadUnloadResolution.UnableToResolve("Missing transfer evidence"),
+      },
+    };
+    var settings = new FMSSettings { Queues = { ["raw"] = new QueueInfo() } };
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [job] }, null, false);
+    await Assert.That(Sync(device, db, config, settings)).IsTrue();
+    var route = device.Data.Schedules.Single();
+    var queued = db.AllocateMaterialID(job.UniqueStr, job.PartName, job.Processes.Count);
+    db.RecordSerialForMaterialID(queued, 0, "A", Now.AddHours(-2));
+    db.RecordAddMaterialToQueue(queued, 0, "raw", -1, null, "Staged", Now.AddHours(-1));
+
+    var loaded = device.PalletReadback(route, quantity: 1);
+    ImmutableList<long> expectedMaterial = anonymous ? [] : [queued];
+    var load = TranslateManagedTransfer(
+      db,
+      loaded,
+      route,
+      LogCode.LoadEnd,
+      1,
+      1,
+      config: config,
+      settings: settings
+    );
+    await Assert.That(load.Material.Select(m => m.MaterialID)).IsEquivalentTo(expectedMaterial);
+    await Assert.That(db.IsMaterialInQueue(queued)).IsEqualTo(anonymous);
+    var pallet = BuildCurrentStatus
+      .Build(db, settings, config, loaded, "MC", null, Now)
+      .Material.Single(m => m.Location.PalletNum == 2);
+    await Assert.That(pallet.MaterialID).IsEqualTo(anonymous ? -1L : queued);
+    if (ownedQuantities)
+      await Assert
+        .That(MazakManagedScheduleControl.RecordedLoads(db, config, job.UniqueStr, 1))
+        .IsEqualTo(anonymous ? new MazakManagedLoadCount(0, 1) : new MazakManagedLoadCount(1, 0));
+
+    var unloaded = device.PalletReadback(route, quantity: 0);
+    var unload = TranslateManagedTransfer(
+      db,
+      unloaded,
+      route,
+      LogCode.UnloadEnd,
+      1,
+      2,
+      config: config,
+      settings: settings
+    );
+    await Assert.That(unload.Material.Select(m => m.MaterialID)).IsEquivalentTo(expectedMaterial);
+    await Assert.That(db.IsMaterialInQueue(queued)).IsEqualTo(anonymous);
+  }
+
+  [Test]
   public async Task ManagedSplitExchangeShowsTheOutgoingSerialOnlyOnTheUnload()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
@@ -122,7 +208,7 @@ public sealed partial class DuplicateDownloadSpec
         }
       ),
     };
-    var config = ManagedConfig();
+    var config = ManagedConfig() with { RequireExactLoadIdentities = (_, station) => station == 1 };
     var settings = new FMSSettings();
     settings.Queues[readyQueue] = new QueueInfo();
     var device = new DownloadDevice("");
@@ -363,7 +449,13 @@ public sealed partial class DuplicateDownloadSpec
     using var repositories = RepositoryConfig.InitializeMemoryDB(null);
     using var db = repositories.OpenConnection();
     var job = PendingJob(true);
-    var config = ManagedConfig() with { ControllerSource = "secondary" };
+    var config = ManagedConfig() with
+    {
+      ControllerSource = "secondary",
+      RequireExactLoadIdentities = (_, station) => station == 1,
+      ResolveLoadUnloadTransaction = (_, _) =>
+        new MazakLoadUnloadResolution.UnableToResolve("Missing transfer evidence"),
+    };
     var device = new DownloadDevice("");
     db.AddJobs(new NewJobs { ScheduleId = "initial", Jobs = [job] }, null, false);
     Sync(device, db, config);

@@ -45,11 +45,13 @@ lifetime.
 - `WithdrawMaterialOffer` issues an explicit zero edit even when readback already shows zero. Await
   the acknowledgment and settle the transfer before releasing a reserved piece.
 
-Provide exact material identities through `ResolveLoadUnloadTransaction`. Pending loads remain
-anonymous until their identity is known. `RecordedLoads` counts physical loads recorded for a
-controller, job and process, including invalidated attempts, and reports unidentified pieces
-separately. A job already running when tracking begins can have native attempts that predate this
-history.
+Load identification is a separate policy. By default, the translator uses ordinary queue and pallet
+material selection. A backend that identifies pieces itself can select jobs and mapped load stations
+with `RequireExactLoadIdentities` and provide identities through `ResolveLoadUnloadTransaction`. At
+selected stations, pending loads are anonymous and failed resolution records the raw load without
+assigning a serial. A resolver can return `NotApplicable` to explicitly use ordinary selection.
+`RecordedLoads` counts physical loads recorded for a controller, job and process, including
+invalidated attempts, and reports unidentified pieces separately.
 
 Archive the job after processing its final transfers and releasing its offers and equipment
 reservations. `MazakSync.ApplyJobActions` retires an archived schedule after a settled, idle

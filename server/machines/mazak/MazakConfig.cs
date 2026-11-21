@@ -105,7 +105,7 @@ namespace MazakMachineInterface
       public PalletBasketLoadUnloadCompletion? BasketCompletion { get; init; }
     }
 
-    // Exact details were expected but unavailable. Log the reason and translate ordinarily.
+    // Exact details were expected but unavailable. Log the reason and use the configured fallback.
     public sealed record UnableToResolve(string Reason) : MazakLoadUnloadResolution;
   }
 
@@ -222,12 +222,20 @@ namespace MazakMachineInterface
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
 
+    // Select jobs and mapped Insight load stations where the backend identifies the loaded pieces.
+    // Pending loads are anonymous, and failed resolutions record an unidentified physical load.
+    // The default uses ordinary queue and pallet material selection. Keep this predicate read-only.
+    public Func<Job, int, bool>? RequireExactLoadIdentities { get; init; }
+
+    internal bool RequiresExactLoadIdentities(Job? job, int station) =>
+      job is not null && RequireExactLoadIdentities?.Invoke(job, station) == true;
+
     // Invoked once for a complete L/U chunk, before ordinary material selection can write anything.
     // The callback must only read the repository and supply a resolution; it must not write FMS or
     // close external occurrences. The translator commits; external reconciliation can observe it.
-    // NotApplicable preserves ordinary translation. UnableToResolve, exceptions and invalid
-    // resolutions log an error and fall back to ordinary translation so ingestion keeps moving.
-    // Basket transaction failures also fall back, unless the transaction already committed.
+    // NotApplicable selects ordinary material identification. UnableToResolve, exceptions and
+    // invalid resolutions log an error and use the fallback selected by RequireExactLoadIdentities.
+    // Basket transaction failures use that fallback unless the transaction already committed.
     public Func<
       IRepository,
       MazakLoadUnloadContext,
