@@ -702,6 +702,56 @@ public sealed partial class DuplicateDownloadSpec
   }
 
   [Test]
+  [Arguments("pieces per fixture")]
+  [Arguments("eligible pallets")]
+  public async Task InterruptedManagedDownloadWithNativeDriftLetsNextBatchDownload(string drift)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var managed = PendingJob(true);
+    var ordinary = PendingJob(false) with { UniqueStr = "ordinary", PartName = "ordinary-part" };
+    var config = ManagedConfig();
+    var device = new DownloadDevice("schedules");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [managed] }, null, false);
+    await Assert.That(() => Sync(device, db, config)).Throws<IOException>();
+    await Assert.That(device.Data.Schedules).IsEmpty();
+    var part = device.Data.Parts.Single(p => p.Comment == "initial-job-1-1-InsightS");
+    var process = part.Processes.Single();
+    var mapping = device.Data.Pallets.Single(p => p.Fixture == process.Fixture);
+    device.Observe(
+      drift == "pieces per fixture"
+        ? device.Data with
+        {
+          Parts = device
+            .Data.Parts.ToImmutableList()
+            .Replace(
+              part,
+              part with
+              {
+                Processes = [process with { FixQuantity = process.FixQuantity + 1 }],
+              }
+            ),
+        }
+        : device.Data with
+        {
+          Pallets = [.. device.Data.Pallets, mapping with { PalletNumber = 19 }],
+        }
+    );
+    db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [ordinary] }, null, false);
+
+    using var reopened = repositories.OpenConnection();
+    await Assert.That(Sync(device, reopened, config)).IsTrue();
+    await Assert.That(device.Data.Schedules.Single().Comment).IsEqualTo("ordinary-Insight");
+    await Assert.That(reopened.LoadJob(ordinary.UniqueStr)!.CopiedToSystem).IsTrue();
+    await Assert.That(reopened.LoadJob(managed.UniqueStr)!.CopiedToSystem).IsFalse();
+    await Assert.That(Sync(device, reopened, config)).IsFalse();
+    var alarm = MazakLiveRoutes.Diagnostics(reopened, config, device.Data, Now).Single();
+    await Assert.That(alarm.Code).IsEqualTo("mazak-managed-schedule-unavailable");
+    await Assert.That(alarm.Message).Contains(drift);
+    await Assert.That(alarm.Message).Contains(managed.UniqueStr);
+  }
+
+  [Test]
   public async Task ConflictingLiveScheduleCannotConfirmAnOrdinaryDownload()
   {
     using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());

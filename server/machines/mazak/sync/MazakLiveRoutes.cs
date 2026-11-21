@@ -224,7 +224,7 @@ internal static class MazakLiveRoutes
           config,
           job,
           part,
-          checkExecutionFields: requireInstalledPart || schedule is not null
+          allowMissingPalletMappings: !requireInstalledPart && schedule is null
         );
       if (requireInstalledPart)
         return $"Mazak job '{job.UniqueStr}' is missing its installed part for route '{comment}'.";
@@ -293,7 +293,7 @@ internal static class MazakLiveRoutes
     MazakConfig config,
     Job job,
     MazakPartRow part,
-    bool checkExecutionFields = true
+    bool allowMissingPalletMappings = false
   )
   {
     var route = MazakPart.ParseCommentInfo(part.Comment);
@@ -354,21 +354,24 @@ internal static class MazakLiveRoutes
         return $"Mazak controller '{config.ControllerSource}' cannot verify the program for job '{job.UniqueStr}', process {jobProcess}, native part '{part.PartName}'. The part references '{process.MainProgram}', and the route requires {requiredProgram}.";
       }
 
-      if (!checkExecutionFields)
-        continue;
       var mappings = data
         .Pallets.Where(p => p.Fixture == process.Fixture)
-        .Select(p => p.PalletNumber);
+        .Select(p => p.PalletNumber)
+        .ToImmutableHashSet();
+      var expectedPallets = expectedProcess.Pallets().Select(config.InversePalletNumber);
+      // The retry can add missing mappings for its generated fixtures. The installed process
+      // row is reused unchanged, and the retry cannot remove unexpected mappings.
+      var palletsMatch =
+        allowMissingPalletMappings && MazakPart.IsInsightFixture(process.Fixture)
+          ? mappings.IsSubsetOf(expectedPallets)
+          : mappings.SetEquals(expectedPallets);
       var mismatch =
         process.FixQuantity != expected.FixQuantity ? "pieces per fixture"
         : process.CutMc?.Trim() != expected.CutMc?.Trim() ? "eligible machines"
         : process.FixLDS?.Trim() != expected.FixLDS?.Trim() ? "eligible load stations"
         : process.RemoveLDS?.Trim() != expected.RemoveLDS?.Trim() ? "eligible unload stations"
         : process.ContinueCut != expected.ContinueCut ? "continue-cut settings"
-        : !mappings
-          .ToImmutableHashSet()
-          .SetEquals(expectedProcess.Pallets().Select(config.InversePalletNumber))
-          ? "eligible pallets"
+        : !palletsMatch ? "eligible pallets"
         : null;
       if (mismatch is not null)
         return $"Mazak controller '{config.ControllerSource}' has different {mismatch} for job '{job.UniqueStr}', process {jobProcess}, native part '{part.PartName}'. Check the controller before admitting material.";
