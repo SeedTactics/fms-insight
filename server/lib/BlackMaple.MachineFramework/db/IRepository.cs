@@ -507,6 +507,9 @@ namespace BlackMaple.MachineFramework
     /// returns the original allocation in request order; changed material details throw
     /// <see cref="ConflictRequestException"/>.
     /// </summary>
+    /// <summary>Read the recorded material for an allocation key, or an empty list if absent.</summary>
+    ImmutableList<MaterialDetails> LoadMaterialAllocation(string idempotencyKey);
+
     ImmutableList<MaterialDetails> AllocateMaterialIDs(
       ImmutableList<MaterialToAllocate> material,
       string idempotencyKey

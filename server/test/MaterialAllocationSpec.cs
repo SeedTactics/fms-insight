@@ -60,12 +60,15 @@ public sealed class MaterialAllocationSpec
         pooling: false
       );
       using var verify = restartedConfig.OpenConnection();
+      await Assert.That(verify.LoadMaterialAllocation("missing-key")).IsEmpty();
+      var receipt = verify.LoadMaterialAllocation("raw-basket-work");
       var retry = verify.AllocateMaterialIDs(request, "raw-basket-work");
 
       await Assert
         .That(
           allocations
             .Append(retry)
+            .Append(receipt)
             .All(allocation =>
               allocation.Select(material => material.MaterialID).SequenceEqual([1L, 2L])
               && allocation.All(material => material.Paths![1] == 3)
