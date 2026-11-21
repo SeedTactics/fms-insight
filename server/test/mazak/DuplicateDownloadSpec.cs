@@ -219,6 +219,8 @@ public sealed class DuplicateDownloadSpec
     var p2 = installed.Schedules.Single(row =>
       row.Comment == MazakPart.InitialScheduleComments(job).Last()
     );
+    // The lost reply leaves the original install intact. Mazak's GUI allows multiple schedules
+    // for one part. Insight creates a part per route, so inject the conflicting row explicitly.
     var anotherSchedule = p2 with
     {
       Id = 10,
