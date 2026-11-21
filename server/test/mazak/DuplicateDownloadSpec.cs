@@ -109,6 +109,58 @@ public sealed class DuplicateDownloadSpec
   }
 
   [Test]
+  [Arguments(false, Categories = new[] { "combined" })]
+  [Arguments(true, Categories = new[] { "split" })]
+  public async Task ExplicitInstallRejectsRouteCommentOnWrongPart(bool basket)
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var job = PendingJob(basket) with { PartName = "Body" };
+    repository.AddJobs(new NewJobs { ScheduleId = "body", Jobs = [job] }, null, false);
+
+    var device = new DownloadDevice("");
+    var route = MazakPart.InitialScheduleComments(job).Last();
+    var wrongPart = new MazakPartRow { PartName = "Cover:4:1", Comment = route };
+    var wrongSchedule = new MazakScheduleRow
+    {
+      Id = 10,
+      PartName = wrongPart.PartName,
+      Comment = route,
+      PlanQuantity = 9,
+    };
+    device.Observe(device.Data with { Parts = [wrongPart], Schedules = [wrongSchedule] });
+
+    var settings = new FMSSettings();
+    var mazak = new MazakConfig { DBType = MazakDbType.MazakSmooth };
+    void Install() => WriteJobs.InstallJobs([job], repository, device.Native, settings, mazak);
+    await Assert.That(Install).Throws<InvalidOperationException>();
+    await Assert.That(repository.LoadJob(job.UniqueStr).CopiedToSystem).IsFalse();
+    device.Native.DidNotReceive().Save(Arg.Any<MazakWriteData>());
+
+    // Correct the other route on the controller, then retry from that observation.
+    var corrected = wrongSchedule with { Comment = "cover-job-Insight" };
+    device.Observe(
+      device.Data with
+      {
+        Parts = [wrongPart with { Comment = corrected.Comment }],
+        Schedules = [corrected],
+      }
+    );
+    Install();
+    await Assert.That(repository.LoadJob(job.UniqueStr).CopiedToSystem).IsTrue();
+    await Assert.That(device.Data.Schedules).Contains(corrected);
+    await Assert
+      .That(
+        device
+          .Data.Schedules.Where(schedule =>
+            MazakPart.ExtractPartNameFromMazakPartName(schedule.PartName) == job.PartName
+          )
+          .Select(schedule => schedule.Comment)
+      )
+      .IsEquivalentTo(MazakPart.InitialScheduleComments(job));
+  }
+
+  [Test]
   public async Task ExplicitBatchesResumeIndependentlyAndPreserveUnselectedDefinitions()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());

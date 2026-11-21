@@ -79,6 +79,7 @@ namespace MazakMachineInterface
     /// <remarks>
     /// The batch is additive. The caller selects jobs that still need initial delivery and
     /// serializes the entire operation with all other writes to the same physical controller.
+    /// With due-date ordering enabled, jobs are installed by local route-start date.
     /// A failure can leave some native writes applied. Retry from a fresh controller observation.
     /// </remarks>
     public static void InstallJobs(
@@ -123,13 +124,7 @@ namespace MazakMachineInterface
         mazakData
       );
 
-      var observedRoutes = stockMaintenance
-        ? ScheduleComments(mazakData.Schedules)
-        : ConfirmedRouteComments(mazakData);
-      var pending = jobs.Where(job =>
-          !MazakPart.InitialScheduleComments(job).All(observedRoutes.Contains)
-        )
-        .ToImmutableList();
+      var pending = FindUnconfirmedJobs(mazakData, jobs, stockMaintenance);
       foreach (var job in jobs.Except(pending))
         db.MarkJobCopiedToSystem(job.UniqueStr);
 
@@ -158,15 +153,19 @@ namespace MazakMachineInterface
         pending,
         mazakCfg
       );
+      var installed = mazakData;
       if (writes.Schedules.Count > 0)
+      {
         mazakDb.Save(writes);
+        installed = stockMaintenance
+          ? mazakData with
+          {
+            Schedules = mazakData.Schedules.Concat(writes.Schedules),
+          }
+          : mazakDb.LoadAllData();
+      }
 
-      observedRoutes = stockMaintenance
-        ? ScheduleComments(mazakData.Schedules.Concat(writes.Schedules))
-        : ConfirmedRouteComments(writes.Schedules.Count > 0 ? mazakDb.LoadAllData() : mazakData);
-      var unconfirmed = pending
-        .Where(job => !MazakPart.InitialScheduleComments(job).All(observedRoutes.Contains))
-        .ToImmutableList();
+      var unconfirmed = FindUnconfirmedJobs(installed, pending, stockMaintenance);
       foreach (var job in pending.Except(unconfirmed))
         db.MarkJobCopiedToSystem(job.UniqueStr);
 
@@ -321,21 +320,41 @@ namespace MazakMachineInterface
       return (cleanup, savedParts);
     }
 
-    private static ImmutableHashSet<string> ConfirmedRouteComments(MazakAllData data)
+    private static ImmutableList<Job> FindUnconfirmedJobs(
+      MazakAllData data,
+      ImmutableList<Job> jobs,
+      bool stockMaintenance
+    )
     {
-      var parts = data.Parts.Select(part => (part.PartName, part.Comment)).ToImmutableHashSet();
-      return ScheduleComments(
-        data.Schedules.Where(schedule => parts.Contains((schedule.PartName, schedule.Comment)))
-      );
-    }
+      var schedules = data
+        .Schedules.Where(schedule => MazakPart.IsSailPart(schedule.PartName, schedule.Comment))
+        .ToLookup(schedule => schedule.Comment, StringComparer.Ordinal);
+      if (stockMaintenance)
+        return jobs.Where(job => !MazakPart.InitialScheduleComments(job).All(schedules.Contains))
+          .ToImmutableList();
 
-    private static ImmutableHashSet<string> ScheduleComments(
-      IEnumerable<MazakScheduleRow> schedules
-    ) =>
-      schedules
-        .Where(schedule => MazakPart.IsSailPart(schedule.PartName, schedule.Comment))
-        .Select(schedule => schedule.Comment)
-        .ToImmutableHashSet();
+      var parts = data.Parts.Select(part => (part.PartName, part.Comment)).ToImmutableHashSet();
+      return jobs.Where(job =>
+        {
+          var expected = MazakPart.InitialScheduleComments(job);
+          var conflict = expected
+            .SelectMany(comment => schedules[comment])
+            .FirstOrDefault(schedule =>
+              MazakPart.ExtractPartNameFromMazakPartName(schedule.PartName) != job.PartName
+            );
+          if (conflict != null)
+            throw new InvalidOperationException(
+              $"Cannot download job '{job.UniqueStr}': route '{conflict.Comment}' is already on "
+                + $"Mazak schedule {conflict.Id} for part '{conflict.PartName}', but the job "
+                + $"expects part '{job.PartName}'. Resolve the schedule comment on the controller before retrying."
+            );
+
+          return expected.Any(comment =>
+            !schedules[comment].Any(schedule => parts.Contains((schedule.PartName, comment)))
+          );
+        })
+        .ToImmutableList();
+    }
 
     private static void ArchiveOldJobs(
       IRepository jobDB,
