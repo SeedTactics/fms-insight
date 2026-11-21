@@ -36,7 +36,10 @@ replacement belongs to the custom backend, including decisions about jobs on the
 
 Use `WriteJobs.InstallJobs` to deliver the accepted jobs selected for one controller. It resumes
 interrupted installs using native readback, adds the supplied routes, and marks a job copied when
-all its expected schedules appear. Automatic deletion and repository-wide archival remain in
+all its expected schedules appear. CSV translation reads the native schedule's comment and current
+status reads the native part's comment. If either identifies a route in the batch, both must agree
+on that route and identify the job's part. The installer reports the conflicting schedule ID for
+correction on the controller. Automatic deletion and repository-wide archival remain in
 `SyncFromDatabase`.
 
 Run downloads, plan edits, supply edits, and retirement through one serialized owner per physical

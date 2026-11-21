@@ -326,33 +326,54 @@ namespace MazakMachineInterface
       bool stockMaintenance
     )
     {
-      var schedules = data
-        .Schedules.Where(schedule => MazakPart.IsSailPart(schedule.PartName, schedule.Comment))
-        .ToLookup(schedule => schedule.Comment, StringComparer.Ordinal);
+      var confirmed = new HashSet<string>(StringComparer.Ordinal);
       if (stockMaintenance)
-        return jobs.Where(job => !MazakPart.InitialScheduleComments(job).All(schedules.Contains))
-          .ToImmutableList();
-
-      var parts = data.Parts.Select(part => (part.PartName, part.Comment)).ToImmutableHashSet();
-      return jobs.Where(job =>
+      {
+        confirmed.UnionWith(
+          data.Schedules.Where(schedule =>
+              MazakPart.IsSailPart(schedule.PartName, schedule.Comment)
+            )
+            .Select(schedule => schedule.Comment)
+        );
+      }
+      else
+      {
+        var jobsByRoute = jobs.SelectMany(
+            job => MazakPart.InitialScheduleComments(job),
+            (job, route) => (job, route)
+          )
+          .ToLookup(pair => pair.route, pair => pair.job, StringComparer.Ordinal);
+        var parts = data.Parts.ToLookup(part => part.PartName, StringComparer.Ordinal);
+        foreach (var schedule in data.Schedules)
         {
-          var expected = MazakPart.InitialScheduleComments(job);
-          var conflict = expected
-            .SelectMany(comment => schedules[comment])
-            .FirstOrDefault(schedule =>
-              MazakPart.ExtractPartNameFromMazakPartName(schedule.PartName) != job.PartName
-            );
-          if (conflict != null)
+          // CSV translation reads the schedule comment, while current status reads the part comment.
+          var part = parts[schedule.PartName].FirstOrDefault();
+          var job = jobsByRoute[schedule.Comment].FirstOrDefault()
+            ?? jobsByRoute[part?.Comment].FirstOrDefault();
+          if (job == null)
+            continue;
+
+          if (part != null && part.Comment != schedule.Comment)
             throw new InvalidOperationException(
-              $"Cannot download job '{job.UniqueStr}': route '{conflict.Comment}' is already on "
-                + $"Mazak schedule {conflict.Id} for part '{conflict.PartName}', but the job "
-                + $"expects part '{job.PartName}'. Resolve the schedule comment on the controller before retrying."
+              $"Cannot download job '{job.UniqueStr}': Mazak schedule {schedule.Id} on '{part.PartName}' "
+                + $"has comment '{schedule.Comment}', and its part definition has '{part.Comment}'. "
+                + "Resolve the conflicting route comments on the controller before retrying."
+            );
+          if (
+            !MazakPart.IsSailPart(schedule.PartName, schedule.Comment)
+            || MazakPart.ExtractPartNameFromMazakPartName(schedule.PartName) != job.PartName
+          )
+            throw new InvalidOperationException(
+              $"Cannot download job '{job.UniqueStr}': Mazak schedule {schedule.Id} claims route "
+                + $"'{schedule.Comment}' on '{schedule.PartName}'. The job expects an Insight part "
+                + $"for '{job.PartName}'. Correct the schedule comment on the controller before retrying."
             );
 
-          return expected.Any(comment =>
-            !schedules[comment].Any(schedule => parts.Contains((schedule.PartName, comment)))
-          );
-        })
+          if (part != null)
+            confirmed.Add(schedule.Comment);
+        }
+      }
+      return jobs.Where(job => !MazakPart.InitialScheduleComments(job).All(confirmed.Contains))
         .ToImmutableList();
     }
 
