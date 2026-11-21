@@ -1,82 +1,114 @@
-# Job quantity ownership
+# Who controls job quantities on a Mazak cell?
 
-By default, Mazak's schedule quantities drive current job counts, raw supply reconciliation,
-decrement, and completed-schedule cleanup. Existing installations keep this behavior.
+By default, FMS Insight downloads a job as Mazak schedules. Mazak tracks pieces through the
+processes, and the stock `MazakSync` loop uses the controller's counts to reconcile queues, back
+out work, and clean up completed schedules.
 
-A custom backend can select jobs through `MazakConfig.UseInsightJobQuantities`, a pure predicate
-derived from job routes and backend configuration. Keep the selection stable for each job's
-lifetime. This policy is internal to the backend; accepted jobs and allocation clients need no new
-flag. One cell can contain jobs using either policy.
+A custom backend can use a queue scan or a basket load to decide which pieces may run. It selects
+the jobs it controls with `MazakConfig.UseInsightJobQuantities`, a predicate based on the route
+and backend configuration. Keep that choice stable for the life of the job. Both policies can
+coexist on one cell. Backend-owned jobs start with zero ready material, and stock queue
+reconciliation leaves their supply alone. The backend admits pieces, cancels demand, retires
+schedules, and archives jobs.
 
-Selected jobs use repository production accounting: accepted cycles minus recorded cancellations,
-durable first entry, and recorded completions. Controller plan increases do not increase demand.
-Current status keeps unarchived selected jobs even when their schedules disappear. Explicitly
-archived selected jobs stay out of current status and new downloads even if controller rows or the
-copied-to-system flag lag behind archival. The backend can project its additional active
-reservations through `AdjustCurrentStatus`.
+## What the counts mean
 
-Controller completion evidence remains visible while its event batch is settling; repository history
-preserves completion for retired split routes. Actual machining also establishes durable entry when
-its preceding LOAD was unavailable, without synthesizing a LOAD event.
+| Quantity | What it tells the backend |
+| --- | --- |
+| Job demand | How many pieces the job calls for. For a backend-owned job, this is the accepted quantity less recorded cancellations. |
+| Mazak `PlanQuantity` | How many pieces may run through this schedule, including reruns. Raising it creates capacity. |
+| Mazak `ProcessMaterialQuantity` | How many pieces are ready to load at this native process. Setting it admits work. |
+| Valid completions | How many distinct pieces have a valid unload for the job, process, and path. |
 
-Generic `Completed` can include invalidated unloads and use a higher native count while the schedule
-exists. A backend that needs valid-piece counts after rework should count distinct material IDs per
-process and path from unload history with `includeInvalidatedCycles: false`. Use these counts in the
-status projection, for example through `AdjustCurrentStatus`, and in archive decisions. If six
-pieces finish and a set of three is invalidated and rerun, valid output goes 6 → 3 → 6 while the
-native completion count goes 6 → 6 → 9.
+Suppose six pieces finish process 2 in two sets of three. An operator invalidates the second set
+and returns it to the queue. The job still calls for six pieces. On a split process-2 schedule,
+the backend can raise the plan from six to nine and offer three pieces when the set is ready.
+FMS process 2 is native process 1 on that schedule. [How Mazak represents material](design-material-rep.md)
 
-For local cancellation, `RecordJobDecrementOperation` commits positive once-only cancellations,
-release of never-entered raw allocations, and a completed request receipt together. Replays return
-the original batch, including empty results. `LoadJobDecrementOperation` only reads that receipt.
-The backend still owns eligibility, commitment calculation, admission serialization and publication.
-Ordinary `AddNewDecrement` callers retain their existing multiple-entry behavior.
+| Process 2 | Mazak `CompleteQuantity` | Valid pieces |
+| --- | ---: | ---: |
+| Both sets finish | 6 | 6 |
+| The second set is invalidated | 6 | 3 |
+| The same three pieces finish again | 9 | 6 |
 
-The backend owns supply admission, cancellation, schedule retirement, and job archival for selected
-jobs. Downloads start them with zero material supply. Generic queue reconciliation does not assign
-castings or change supply for them. Generic cleanup retains their schedules, even when completed,
-and retains their part definitions until job archival. The generic decrement command refuses an
-installation containing selected, unarchived, non-manual jobs before making any changes. Its
-replacement belongs to the custom backend, including decisions about jobs on the default policy.
+The generic `ActiveJob.Completed` count can include invalidated unloads. While a schedule
+exists, the status builder also keeps the higher of the repository and native counts. For a
+valid-piece count, read the job's material history with
+`IRepository.GetLogForMaterial(materialIDs, includeInvalidatedCycles: false)`. Count distinct
+IDs belonging to this job on completed pallet unloads for each process and path. Use that count
+for the operator's status (through `AdjustCurrentStatus`) and when deciding whether to archive.
 
-## Custom controller loop
+Entry into production answers a different question. If a machining event identifies a piece whose
+load event was missed, Insight still knows that piece entered the cell. Asking for another blank
+would overstate the remaining demand. The backend can also account for pieces it has reserved
+when it projects status. [Mazak job status](sync/BuildCurrentStatus.cs)
 
-Use `WriteJobs.InstallJobs` to deliver the accepted jobs selected for one controller. It resumes
-interrupted installs using native readback, adds the supplied routes, and marks a job copied when
-all its expected schedules appear. CSV translation reads the native schedule's comment and current
-status reads the native part's comment. If either identifies a route in the batch, both must agree
-on that route and identify the job's part. The installer reports the conflicting schedule ID for
-correction on the controller. Automatic deletion and repository-wide archival remain in
-`SyncFromDatabase`.
+## Installing and running a job
 
-Run downloads, plan edits, supply edits, and retirement through one serialized owner per physical
-controller. With direct database access, share one `OpenDatabaseKitDB` instance for that controller.
-Its write lock covers one complete `Save`, including acknowledgment of all its chunks. The caller
-serializes the observation and decision leading to that save. Recheck the schedule ID and full part
-name, and check the route comment when selecting by job. `BuildMazakSchedules.IncreasePlanQuantity`
-builds a `ScheduleSafeEdit` for an absolute minimum. After an uncertain reply, reread the row and
-apply the minimum again if needed. `BuildMazakSchedules.SetMaterialQuantity` sets ready pieces for a
-native process, including an explicit zero when withdrawal needs acknowledgment. A split schedule
-has one native process. An already satisfied positive quantity yields an empty write. For a combined
-schedule the command also sends the observed ready counts of its other processes. Use it when the
-caller can account for supply on the whole schedule. Check whether Mazak consumed a material offer
-before retrying it.
+### Installation
 
-Use `BuildMazakSchedules.RemoveSchedules` to calculate retirement writes and find the parts still
-needed by surviving schedules. Select an idle row once its final transfer receipt, material and
-reservations have settled. Handle a native refusal or uncertain reply by rereading the controller.
-Reclaim definitions separately, using fresh references and removing rows in dependency order.
+`WriteJobs.InstallJobs` adds the whole jobs selected for one controller and preserves other
+work. It marks a job copied once all its expected routes are visible there. After an interrupted
+download, retry from fresh controller data. CSV
+translation identifies the job and route from the schedule comment, while status uses the part
+comment. If the two disagree, the installer identifies the schedule to correct. The stock
+`WriteJobs.SyncFromDatabase` also performs automatic cleanup and repository-wide archival, so
+it belongs in the default single-cell loop. [Job installation](sync/WriteJobs.cs)
 
-For a shared repository, set a stable, unique `MazakConfig.CsvLogSource` for each additional
-controller. The original controller can keep its existing raw IDs. `CaptureLogWatermark`,
-`AcquireCellState` and `AcknowledgeLogs` use raw filenames for the corresponding controller.
-Translation uses the qualified repository key, which callers can obtain with `CsvLogForeignID` for
-receipt lookups. The staged `ReconcileCellState` overload accepts the controller's machining group
-explicitly.
+### Changing the plan and offering material
 
-Controller-owned backout requires successful synchronization, settled Mazak events, and confirmed
-downloads for all unarchived, non-manual jobs without a previous decrement. Unconfirmed downloads
-cause refusal before any controller edits, including when only pending jobs exist or their route
-dates fall outside the usual download window. Backout does not cancel pending jobs or run downloads
-itself. A failed write can have partial controller effects; the ordinary synchronization loop must
-succeed before retrying. This is a conservative refusal policy, not an atomic controller rollback.
+Serialize the read, decision, and write per physical controller. With direct database access,
+share one `OpenDatabaseKitDB` instance for that controller. Its lock covers one `Save` through
+acknowledgment of the last chunk. The caller coordinates the preceding read and decision with
+other writes. Check the schedule ID and full native part name, plus the route comment when
+selecting by job.
+
+- **Raise the plan.** `BuildMazakSchedules.IncreasePlanQuantity` takes an absolute minimum in
+  pieces. If the reply is lost, reread the row. A request for nine can be repeated safely once
+  the row identity is confirmed. If the plan already meets nine, the helper produces no write.
+- **Offer or withdraw material.** `BuildMazakSchedules.SetMaterialQuantity` sets the ready count
+  for a native process. If a reply is lost and the count is now zero, Mazak may already have
+  loaded the pieces. Check for consumption before offering them again. A matching positive count
+  produces no write. An explicit zero requests acknowledgment of withdrawal. On a combined
+  schedule, the command also writes the observed ready counts of the other processes, so the
+  caller must account for supply across the whole schedule. [Schedule writes](sync/BuildMazakSchedules.cs)
+
+### Retirement
+
+Mazak can keep a schedule installed after `CompleteQuantity` reaches `PlanQuantity`. Once the
+final transfer is recorded, reservations are settled, and the row has no
+ready or executing material or pallet assignments, the backend can select it with
+`BuildMazakSchedules.RemoveSchedules`. Reread the controller after a refusal or uncertain reply.
+The helper reports which parts surviving schedules still use. Reclaim unreferenced definitions
+separately, in dependency order. Stock cleanup protects a backend-owned job's part definitions
+until archival. An unarchived job on this policy stays visible after its schedules disappear.
+Archiving it removes it from current status and stock download selection, even if a native row
+remains or the copied flag is stale.
+
+## Backing out work
+
+Quantity ownership is per job. The stock backout command acts on the installation. If any
+unarchived, non-manual job uses backend-owned quantities, the command refuses before changing
+anything. The custom backend then owns the backout decision for both kinds of jobs.
+
+For a local backout, the backend decides which pieces are still eligible and serializes that
+decision with admission. `RecordJobDecrementOperation` records a positive cancellation once per job, releases the
+specified raw allocations that never entered production, and saves a receipt in one transaction.
+A retry with the same operation ID returns the original result, including an empty batch.
+`LoadJobDecrementOperation` reads the receipt. The backend publishes the result and can leave
+the Mazak schedule in place.
+
+For controller-owned backout, the stock loop requires successful synchronization, settled Mazak
+events, and confirmed downloads for all unarchived, non-manual jobs without a prior decrement.
+That includes pending jobs outside the current download window. A failed write can leave some
+controller changes in place. Let the normal loop synchronize successfully before retrying.
+[Stock backout](sync/DecrementPlanQty.cs)
+
+## Sharing a log repository across cells
+
+Two controllers can produce the same CSV filename. Give each additional controller a stable,
+unique `MazakConfig.CsvLogSource`. The original controller can keep its source unset so its
+existing history remains addressable. Capture the watermark, acquire logs, and acknowledge them
+using each controller's raw filenames. For a repository receipt lookup starting from a raw
+filename, use `CsvLogForeignID` to obtain the qualified key. Pass the controller's machining
+group explicitly to the staged `ReconcileCellState` call. [Log synchronization](sync/MazakSync.cs)
