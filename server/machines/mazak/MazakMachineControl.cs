@@ -88,7 +88,8 @@ namespace MazakMachineInterface
       string machineGroupName;
       using (var db = jobDbCfg.OpenConnection())
       {
-        machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
+        machineGroupName = mazakCfg?.MachineGroupName
+          ?? BuildCurrentStatus.FindMachineGroupName(db);
       }
 
       return readData
@@ -102,7 +103,8 @@ namespace MazakMachineInterface
         .Select(t => new ToolInMachine()
         {
           MachineGroupName = machineGroupName,
-          MachineNum = t.MachineNumber.Value,
+          MachineNum = mazakCfg?.TranslateMachineNumber(t.MachineNumber.Value)
+            ?? t.MachineNumber.Value,
           Pocket = t.PocketNumber.Value,
           ToolName = mazakCfg?.ExtractToolName == null ? t.GroupNo : mazakCfg.ExtractToolName(t),
           Serial = null,

@@ -68,6 +68,7 @@ public sealed record MazakAcquisition
   // Null means unobserved; an empty list means a successful observation of no tools.
   public required ImmutableList<ToolPocketRow>? Tools { get; init; }
   public bool ToolReadFailed { get; init; }
+  internal string ControllerSource { get; init; } = MazakConfig.DefaultControllerSource;
 }
 
 // Retain this receipt across acknowledgment failure. Its watermark is captured at reconciliation,
@@ -76,6 +77,7 @@ public sealed record MazakReconciliation
 {
   public required MazakState State { get; init; }
   public required string CommittedLogWatermark { get; init; }
+  internal string ControllerSource { get; init; } = MazakConfig.DefaultControllerSource;
 }
 
 public delegate void MazakLogEventDel(LogEntry e, IRepository jobDB);
@@ -134,6 +136,13 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
   {
+    var localJobs = jobs.Jobs;
+    if (mazakConfig.BulkJobFilter is { } assignedToController)
+    {
+      localJobs = localJobs.Where(assignedToController).ToImmutableList();
+      if (localJobs.IsEmpty)
+        return [];
+    }
     var logMessages = new List<string>();
     MazakAllData mazakData = mazakDB.LoadAllData();
 
@@ -181,11 +190,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         }
       }
 
-      //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
-      //need to ignore the warning that palletPartMap is not used.
-#pragma warning disable 168, 219
-      var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-        jobs: jobs.Jobs,
+      ConvertJobsToMazakParts.JobsToMazak(
+        jobs: localJobs,
         downloadUID: 1,
         mazakData: mazakData,
         savedParts: new HashSet<string>(),
@@ -194,7 +200,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         lookupProgram: lookupProg,
         errors: logMessages
       );
-#pragma warning restore 168, 219
     }
     catch (Exception ex)
     {
@@ -215,8 +220,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   // release the repository mutation lock during controller I/O so other work and status can progress.
   // Hold one controller lock across the staged sequence, taking it before the repository lock,
   // and hold the repository lock only for watermark capture and reconciliation.
-  // Each controller stream needs its own watermark domain; the repository-wide LG cursor does not
-  // distinguish controllers.
   // The host owns source-health publication and decides which actions require fresh observations.
   public MazakState CalculateCellState(IRepository db)
   {
@@ -227,9 +230,15 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   }
 
   // Capture under the caller's repository/mutation owner, then release that owner before acquiring.
-  public string CaptureLogWatermark(IRepository db) =>
+  public string CaptureLogWatermark(IRepository db)
+  {
     // Web/Smooth CSV names begin with LG; exclude other event producers.
-    db.MaxForeignIDInRange(MazakCsvForeignIDLowerBound, MazakCsvForeignIDUpperBound);
+    var committed = db.MaxForeignIDInRange(
+      mazakConfig.LogForeignId(MazakCsvForeignIDLowerBound),
+      mazakConfig.LogForeignId(MazakCsvForeignIDUpperBound)
+    );
+    return committed.Length == 0 ? "" : committed[mazakConfig.LogKeyPrefix.Length..];
+  }
 
   // Serialize controller acquisition and acknowledgment with the same controller owner. All
   // enumerables, including tools and nested process rows, finish reading before this returns.
@@ -292,6 +301,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       Data = data,
       Tools = tools,
       ToolReadFailed = toolReadFailed,
+      ControllerSource = mazakConfig.ControllerSource,
     };
   }
 
@@ -300,6 +310,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   // partial reconciliation failure, while the available observation still contributes status.
   public MazakReconciliation ReconcileCellState(IRepository db, MazakAcquisition acquisition)
   {
+    if (acquisition.ControllerSource != mazakConfig.ControllerSource)
+      throw new ArgumentException("The observation belongs to a different Mazak controller.");
     var committed = CaptureLogWatermark(db);
     if (acquisition.ToolReadFailed || acquisition.Tools is not null)
       lastToolReadFailed = acquisition.ToolReadFailed;
@@ -309,8 +321,10 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         .Data.Logs.Where(entry => StringComparer.Ordinal.Compare(entry.ForeignID, committed) > 0)
         .ToImmutableList(),
     };
-    var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
+    var machineGroupName = mazakConfig.MachineGroupName
+      ?? BuildCurrentStatus.FindMachineGroupName(db);
 
+    ManagedMazakSchedules.ConfirmObserved(db, mazakConfig, mazakData);
     var evtResults = LogTranslation.HandleEvents(
       db,
       mazakData,
@@ -349,11 +363,16 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       acquisition.StartedAtUtc
     );
 
-    if (mazakConfig != null && mazakConfig.AdjustCurrentStatus != null)
+    if (mazakConfig.AdjustCurrentStatus != null)
     {
       st = mazakConfig.AdjustCurrentStatus(db, st);
     }
-    var diagnostics = ImmutableList<CurrentStatusAlarm>.Empty;
+    var diagnostics = ManagedMazakSchedules.Diagnostics(
+      db,
+      mazakConfig,
+      mazakData,
+      acquisition.StartedAtUtc
+    );
     if (lastToolReadFailed)
       diagnostics = diagnostics.Add(
         new CurrentStatusAlarm
@@ -370,6 +389,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     var result = new MazakReconciliation
     {
       CommittedLogWatermark = CaptureLogWatermark(db),
+      ControllerSource = mazakConfig.ControllerSource,
       State = new MazakState()
       {
         StateUpdated =
@@ -395,48 +415,76 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   // Call outside the repository/mutation owner, using its captured progress even if isolated
   // source records were logged and skipped. Never substitute a later repository watermark.
-  public void AcknowledgeLogs(MazakReconciliation reconciliation) =>
+  public void AcknowledgeLogs(MazakReconciliation reconciliation)
+  {
+    if (reconciliation.ControllerSource != mazakConfig.ControllerSource)
+      throw new ArgumentException("The reconciliation belongs to a different Mazak controller.");
     mazakDB.DeleteLogs(reconciliation.CommittedLogWatermark);
+  }
 
-  public bool ApplyActions(IRepository db, MazakState st)
+  private bool deferManagedCleanup;
+
+  /// <summary>Run native job downloads and optional managed archive cleanup, skipping queue reconciliation.</summary>
+  public bool ApplyJobActions(
+    IRepository db,
+    MazakState st,
+    bool allowManagedCleanup = true,
+    ImmutableHashSet<string>? additionalManagedJobs = null
+  )
   {
     if (st.StoppedBecauseRecentLogEvent)
     {
       return false;
     }
 
-    // jobs
-    bool jobsCopied = WriteJobs.SyncFromDatabase(
+    // Cleanup can free capacity for a pending download. After a failed write, start the
+    // next fresh pass with independent downloads and queue work before retrying cleanup.
+    var cleanupDeferred = deferManagedCleanup;
+    deferManagedCleanup = false;
+    if (allowManagedCleanup && !cleanupDeferred)
+    {
+      try
+      {
+        if (ManagedMazakSchedules.Cleanup(db, mazakConfig, st.AllData, mazakDB))
+          return true;
+      }
+      catch
+      {
+        deferManagedCleanup = true;
+        throw;
+      }
+    }
+
+    return WriteJobs.SyncFromDatabase(
       st.AllData,
       db,
       mazakDB,
       settings,
       mazakConfig,
-      st.CurrentStatus.TimeOfCurrentStatusUTC
+      st.CurrentStatus.TimeOfCurrentStatusUTC,
+      attemptCleanup: false,
+      additionalManagedJobs
     );
+  }
 
-    // queues
-    bool queuesChanged = false;
-    if (!jobsCopied)
-    {
-      var transSet = MazakQueues.CalculateScheduleChanges(db, st.AllData, mazakConfig);
-
-      if (transSet != null && transSet.Schedules.Count > 0)
-      {
-        mazakDB.Save(transSet);
-        queuesChanged = true;
-      }
-    }
-
-    // TODO: holds
-
-    return jobsCopied || queuesChanged;
+  public bool ApplyActions(IRepository db, MazakState st)
+  {
+    if (ApplyJobActions(db, st))
+      return true;
+    if (st.StoppedBecauseRecentLogEvent)
+      return false;
+    var queues = MazakQueues.CalculateScheduleChanges(db, st.AllData, mazakConfig);
+    if (queues is null || queues.Schedules.Count == 0)
+      return false;
+    mazakDB.Save(queues);
+    return true;
   }
 
   public bool DecrementJobs(IRepository db, MazakState st)
   {
     if (
-      db.LoadUnarchivedJobs()
+      mazakConfig.UseInsightJobQuantities is not null
+      && db.LoadUnarchivedJobs()
         .Any(j => !j.ManuallyCreated && mazakConfig.UsesInsightJobQuantities(j))
     )
       throw new BadRequestException(
@@ -448,6 +496,15 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         "Cannot back out jobs while Mazak events are still settling. Wait for synchronization to finish and retry."
       );
 
-    return DecrementPlanQty.Decrement(mazakDB, db, st.AllData);
+    var managedParts = mazakConfig.UseInsightJobQuantities is null
+      ? null
+      : db.LoadMazakManagedPartNames(mazakConfig.ControllerSource);
+    return DecrementPlanQty.Decrement(
+      mazakDB,
+      db,
+      st.AllData,
+      mazakConfig.BulkJobFilter,
+      managedParts: managedParts
+    );
   }
 }
