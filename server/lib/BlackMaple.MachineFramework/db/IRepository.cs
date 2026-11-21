@@ -503,13 +503,16 @@ namespace BlackMaple.MachineFramework
     long AllocateMaterialID(string unique, string part, int numProc);
 
     /// <summary>
+    /// Returns the originally allocated IDs in request order with their current material details.
+    /// An unknown key returns an empty list.
+    /// </summary>
+    ImmutableList<MaterialDetails> LoadMaterialAllocation(string idempotencyKey);
+
+    /// <summary>
     /// Allocates a batch of ordinary sequential material IDs exactly once. An identical retry
     /// returns the original allocation in request order; changed material details throw
     /// <see cref="ConflictRequestException"/>.
     /// </summary>
-    /// <summary>Read the recorded material for an allocation key, or an empty list if absent.</summary>
-    ImmutableList<MaterialDetails> LoadMaterialAllocation(string idempotencyKey);
-
     ImmutableList<MaterialDetails> AllocateMaterialIDs(
       ImmutableList<MaterialToAllocate> material,
       string idempotencyKey

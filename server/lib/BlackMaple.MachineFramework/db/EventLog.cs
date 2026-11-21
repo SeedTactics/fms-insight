@@ -4869,7 +4869,7 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableList<MaterialDetails> LoadMaterialAllocation(string idempotencyKey)
     {
-      using var trans = _connection.BeginTransaction();
+      using var trans = _connection.BeginTransaction(deferred: true);
       var allocated = MaterialAllocationForIdempotencyKey(idempotencyKey, trans);
       trans.Commit();
       return allocated;
