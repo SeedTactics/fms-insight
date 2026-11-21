@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -9,6 +10,9 @@ public static class MazakMaterialHistory
 {
   // Persisted event marker: keep its value compatible with existing removal history.
   public const string MissingMaterialReason = "MaterialMissingOnPallet";
+  internal const string ManagedFaceKey = "mazak-native-process";
+  internal const string IdentifiedQuantityKey = "mazak-identified-quantity";
+  internal const string UnidentifiedQuantityKey = "mazak-unidentified-quantity";
 
   // A read-local snapshot, not a cache across translations or repository writes. Batch the
   // histories once rather than loading/deserializing a material's full log for every old event.
@@ -37,4 +41,116 @@ public static class MazakMaterialHistory
     long material,
     long counter
   ) => removalCounters.TryGetValue(material, out var removedAt) && removedAt > counter;
+
+  internal sealed record PalletPlacement(
+    ImmutableDictionary<long, LogMaterial> Candidates,
+    ImmutableDictionary<int, int> PhysicalQuantities,
+    ImmutableDictionary<int, int> UncertainQuantities
+  )
+  {
+    public IEnumerable<LogMaterial> Verified =>
+      Candidates.Values.Where(m => !UncertainQuantities.ContainsKey(m.Face));
+  }
+
+  internal static (int Identified, int Unidentified) TransferQuantities(
+    BlackMaple.MachineFramework.LogEntry entry
+  )
+  {
+    var identified = int.TryParse(
+      entry.ProgramDetails?.GetValueOrDefault(IdentifiedQuantityKey),
+      NumberStyles.None,
+      CultureInfo.InvariantCulture,
+      out var count
+    )
+      ? count
+      : entry.Material.Count(m => m.MaterialID >= 0);
+    int.TryParse(
+      entry.ProgramDetails?.GetValueOrDefault(UnidentifiedQuantityKey),
+      NumberStyles.None,
+      CultureInfo.InvariantCulture,
+      out var unidentified
+    );
+    return (identified, unidentified);
+  }
+
+  internal static int NativeFace(BlackMaple.MachineFramework.LogEntry entry) =>
+    int.TryParse(
+      entry.ProgramDetails?.GetValueOrDefault(ManagedFaceKey),
+      NumberStyles.None,
+      CultureInfo.InvariantCulture,
+      out var face
+    )
+      ? face
+      : 0;
+
+  // A raw unload can remove a physical piece without identifying which recorded serial left.
+  // Keep possible identities for exact resolution, and never infer an identity from that face.
+  // The sum of actual transfers can establish that the face is empty even without serials.
+  internal static PalletPlacement ReplayPalletPlacement(
+    IEnumerable<BlackMaple.MachineFramework.LogEntry> events,
+    IReadOnlyDictionary<long, long> removals
+  )
+  {
+    var candidates = ImmutableDictionary<long, LogMaterial>.Empty;
+    // Known faces take their occupancy from the serials still present after quarantine.
+    // Only an ambiguous face needs a separate physical count.
+    var managedFaces = ImmutableHashSet<int>.Empty;
+    var uncertain = ImmutableDictionary<int, int>.Empty;
+    foreach (var entry in events.Where(e => !e.StartOfCycle).OrderBy(e => e.Counter))
+    {
+      if (entry.LogType == LogType.MachineCycle)
+      {
+        candidates = candidates.SetItems(
+          entry
+            .Material.Where(m =>
+              !candidates.ContainsKey(m.MaterialID)
+              && !uncertain.ContainsKey(m.Face)
+              && !WasRemovedAfter(removals, m.MaterialID, entry.Counter)
+            )
+            .Select(m => KeyValuePair.Create(m.MaterialID, m))
+        );
+        continue;
+      }
+      if (entry.LogType != LogType.LoadUnloadCycle || entry.Result is not ("LOAD" or "UNLOAD"))
+        continue;
+
+      var load = entry.Result == "LOAD";
+      var face = NativeFace(entry);
+      if (face > 0)
+      {
+        var wasUncertain = uncertain.TryGetValue(face, out var previous);
+        var before = wasUncertain ? previous : candidates.Values.Count(m => m.Face == face);
+        var (identified, unidentified) = TransferQuantities(entry);
+        var moved = identified + unidentified;
+        var after = load ? before + moved : System.Math.Max(0, before - moved);
+        if (after == 0)
+        {
+          managedFaces = managedFaces.Remove(face);
+          candidates = candidates.RemoveRange(
+            candidates.Values.Where(m => m.Face == face).Select(m => m.MaterialID)
+          );
+          uncertain = uncertain.Remove(face);
+        }
+        else
+        {
+          managedFaces = managedFaces.Add(face);
+          if (wasUncertain || unidentified > 0)
+            uncertain = uncertain.SetItem(face, after);
+        }
+      }
+
+      candidates = load
+        ? candidates.SetItems(
+          entry
+            .Material.Where(m => !WasRemovedAfter(removals, m.MaterialID, entry.Counter))
+            .Select(m => KeyValuePair.Create(m.MaterialID, m))
+        )
+        : candidates.RemoveRange(entry.Material.Select(m => m.MaterialID));
+    }
+    var knownCounts = candidates
+      .Values.Where(m => managedFaces.Contains(m.Face) && !uncertain.ContainsKey(m.Face))
+      .GroupBy(m => m.Face)
+      .Select(g => KeyValuePair.Create(g.Key, g.Count()));
+    return new(candidates, uncertain.AddRange(knownCounts), uncertain);
+  }
 }

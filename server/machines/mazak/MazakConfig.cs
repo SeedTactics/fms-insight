@@ -105,7 +105,7 @@ namespace MazakMachineInterface
       public PalletBasketLoadUnloadCompletion? BasketCompletion { get; init; }
     }
 
-    // Exact details were expected but unavailable. Log the reason and translate ordinarily.
+    // Exact details were expected but unavailable. Log the reason and use the configured fallback.
     public sealed record UnableToResolve(string Reason) : MazakLoadUnloadResolution;
   }
 
@@ -122,6 +122,41 @@ namespace MazakMachineInterface
     public bool UseStartingOffsetForDueDate { get; init; } = true;
     public bool WaitForAllCastings { get; init; } = false;
     public bool SynchronizeRawMaterialInQueues { get; init; } = true;
+
+    // Keep the original controller on this source when adding another controller to an
+    // existing repository. It owns the unqualified LG history and continues using those keys.
+    public const string DefaultControllerSource = "default";
+    private string _controllerSource = DefaultControllerSource;
+    public string ControllerSource
+    {
+      get => _controllerSource;
+      init
+      {
+        if (
+          string.IsNullOrEmpty(value)
+          || value.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-' && c != '_' && c != '.')
+        )
+          throw new ArgumentException(
+            "The Mazak controller source must contain only ASCII letters, digits, dots, underscores or hyphens."
+          );
+        _controllerSource = value;
+      }
+    }
+
+    internal string LogKeyPrefix =>
+      ControllerSource == DefaultControllerSource ? "" : $"Mazak:{ControllerSource}:";
+
+    // Converts a raw CSV filename from the controller or MazakLogEvent to its repository key.
+    public string LogForeignId(string filename) => LogKeyPrefix + filename;
+
+    // Match the station group in this controller's job routes when sharing a repository.
+    // Null keeps the group inferred from the latest accepted schedule.
+    private string? _machineGroupName;
+    public string? MachineGroupName
+    {
+      get => _machineGroupName;
+      init => _machineGroupName = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
 
     public ImmutableList<int>? MachineNumbers { get; init; } = null;
     public int StartingPalletNumber { get; init; } = 1;
@@ -165,9 +200,10 @@ namespace MazakMachineInterface
 
     // Backend-only policy, derived from the job's route/configuration; not an allocator option.
     // Selected jobs use repository production accounting instead of controller quantities.
-    // Their backend owns supply admission, cancellation, schedule retirement and job archival.
-    // Generic queue reconciliation and automatic schedule deletion/archival leave them alone;
-    // the generic decrement command refuses mixed ownership before changing any jobs.
+    // Their backend owns supply admission, cancellation and archival. Archive only after final
+    // transfers and outstanding work have settled. Synchronization retains active schedules and
+    // retires idle archived schedules. Generic queues leave its supply to the backend, and the
+    // generic decrement command refuses mixed ownership.
     // Null preserves controller-owned quantities for every job. Keep this predicate pure and
     // stable throughout a job's lifetime. AdjustCurrentStatus can add external reservations.
     public Func<Job, bool>? UseInsightJobQuantities { get; init; }
@@ -175,15 +211,31 @@ namespace MazakMachineInterface
     public bool UsesInsightJobQuantities(Job? job) =>
       job != null && UseInsightJobQuantities?.Invoke(job) == true;
 
+    // For jobs selected by UseInsightJobQuantities, use repository completion and entry counts
+    // from the start. Other selected jobs keep the native count as a lower bound. Keep this pure
+    // and stable. At rollout, apply the new policy only to newly accepted jobs.
+    public Func<Job, bool>? UseRepositoryOnlyProductionCounts { get; init; }
+
+    // Each controller validates, downloads, and cleans up the jobs assigned to it.
+    public Func<Job, bool>? BulkJobFilter { get; init; }
+
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
     public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
+
+    // Select jobs and mapped Insight load stations where the backend identifies the loaded pieces.
+    // Pending loads are anonymous, and failed resolutions record an unidentified physical load.
+    // The default uses ordinary queue and pallet material selection. Keep this predicate read-only.
+    public Func<Job, int, bool>? RequireExactLoadIdentities { get; init; }
+
+    internal bool RequiresExactLoadIdentities(Job? job, int station) =>
+      job is not null && RequireExactLoadIdentities?.Invoke(job, station) == true;
 
     // Invoked once for a complete L/U chunk, before ordinary material selection can write anything.
     // The callback must only read the repository and supply a resolution; it must not write FMS or
     // close external occurrences. The translator commits; external reconciliation can observe it.
-    // NotApplicable preserves ordinary translation. UnableToResolve, exceptions and invalid
-    // resolutions log an error and fall back to ordinary translation so ingestion keeps moving.
-    // Basket transaction failures also fall back, unless the transaction already committed.
+    // NotApplicable selects ordinary material identification. UnableToResolve, exceptions and
+    // invalid resolutions log an error and use the fallback selected by RequireExactLoadIdentities.
+    // Basket transaction failures use that fallback unless the transaction already committed.
     public Func<
       IRepository,
       MazakLoadUnloadContext,
@@ -197,10 +249,16 @@ namespace MazakMachineInterface
     public Func<int, bool>? CanQuarantineMissingMaterial { get; init; }
 
     // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
-    public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
+    public int TranslatePalletNumber(int mazakPallet) =>
+      mazakPallet > 0 ? mazakPallet - 1 + StartingPalletNumber : mazakPallet;
 
     // Convert FMS Insight pallet number back to Mazak-internal number
     public int InversePalletNumber(int fmsPallet) => fmsPallet - StartingPalletNumber + 1;
+
+    internal int TranslateMachineNumber(int mazakMachine) =>
+      MachineNumbers != null && mazakMachine > 0 && mazakMachine <= MachineNumbers.Count
+        ? MachineNumbers[mazakMachine - 1]
+        : mazakMachine;
 
     // Convert Mazak-internal load station number to FMS Insight load station number
     public int TranslateLoadStationNumber(int mazakLul) =>
@@ -317,6 +375,7 @@ namespace MazakMachineInterface
         ProxyDBUri = proxyUri,
         LogCSVPath = logPath,
         LoadCSVPath = loadPath,
+        MachineGroupName = cfg.GetValue<string>("Machine Group Name"),
         MachineNumbers = machineNumbers.Count > 0 ? machineNumbers.ToImmutable() : null,
         ProgramDirectory = cfg.GetValue<string?>("Program Directory") ?? "C:\\NCProgs",
         UseStartingOffsetForDueDate = Convert.ToBoolean(

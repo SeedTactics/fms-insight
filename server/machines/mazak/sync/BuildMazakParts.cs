@@ -83,29 +83,39 @@ namespace MazakMachineInterface
     public readonly int? SplitPath;
 
     public MazakPart(Job j, int downID, int partIdx)
-    {
-      Job = j;
-      DownloadID = downID;
-      Processes = new List<MazakProcess>();
-      PartName = Job.PartName + ":" + DownloadID.ToString() + ":" + partIdx.ToString();
-    }
+      : this(j, downID, $"{j.PartName}:{downID}:{partIdx}", null, null) { }
 
     public MazakPart(Job j, int downID, int partIdx, int splitJobProcess, int splitPath)
+      : this(
+        j,
+        downID,
+        $"{j.PartName}:{downID}:{partIdx}:{splitJobProcess}",
+        splitJobProcess,
+        splitPath
+      ) { }
+
+    private MazakPart(
+      Job job,
+      int downloadID,
+      string partName,
+      int? splitJobProcess,
+      int? splitPath
+    )
     {
-      Job = j;
-      DownloadID = downID;
+      Job = job;
+      DownloadID = downloadID;
       Processes = new List<MazakProcess>();
       SplitJobProcess = splitJobProcess;
       SplitPath = splitPath;
-      PartName =
-        Job.PartName
-        + ":"
-        + DownloadID.ToString()
-        + ":"
-        + partIdx.ToString()
-        + ":"
-        + splitJobProcess.ToString();
+      PartName = partName;
     }
+
+    internal static MazakPart FromNativeName(
+      Job job,
+      string partName,
+      int? splitJobProcess,
+      int? splitPath
+    ) => new(job, ParseUID(partName), partName, splitJobProcess, splitPath);
 
     public MazakPartRow ToDatabaseRow()
     {
@@ -135,7 +145,8 @@ namespace MazakMachineInterface
           + SplitInsightSuffix
         : Job.UniqueStr + CombinedInsightSuffix;
 
-    internal static ImmutableList<string> InitialScheduleComments(Job job) =>
+    /// <summary>Native route comments expected from a normal download, in FMS process order for split jobs.</summary>
+    public static ImmutableList<string> InitialScheduleComments(Job job) =>
       ConvertJobsToMazakParts.IsSplitScheduleJob(job)
         ? Enumerable
           .Range(1, job.Processes.Count)
@@ -148,6 +159,8 @@ namespace MazakMachineInterface
       return !string.IsNullOrEmpty(comment)
         && comment.EndsWith(SplitInsightSuffix, StringComparison.Ordinal);
     }
+
+    internal static bool IsInsightFixture(string fixture) => fixture.Contains(':');
 
     public static bool IsSailPart(string partName, string comment)
     {
@@ -210,6 +223,9 @@ namespace MazakMachineInterface
 
     public static string UniqueFromComment(string comment)
     {
+      if (string.IsNullOrEmpty(comment))
+        return "";
+
       if (comment.EndsWith(CombinedInsightSuffix, StringComparison.Ordinal))
       {
         return comment.Substring(0, comment.Length - CombinedInsightSuffix.Length);
@@ -283,7 +299,7 @@ namespace MazakMachineInterface
 
     public static bool IsInsightMainProgram(string mainProgramComment)
     {
-      return mainProgramComment.StartsWith("Insight:");
+      return mainProgramComment?.StartsWith("Insight:", StringComparison.Ordinal) == true;
     }
 
     public static bool TryParseMainProgramComment(
@@ -292,7 +308,7 @@ namespace MazakMachineInterface
       out long rev
     )
     {
-      if (mainProgramComment.StartsWith("Insight:"))
+      if (IsInsightMainProgram(mainProgramComment))
       {
         mainProgramComment = mainProgramComment.Substring(8);
         var idx = mainProgramComment.IndexOf(':');
@@ -735,10 +751,7 @@ namespace MazakMachineInterface
           if (!UsedFixtures.Contains(palRow.Fixture))
           {
             //not found, can delete it
-            var newPalRow = palRow with
-            {
-              Command = MazakWriteCommand.Delete,
-            };
+            var newPalRow = palRow with { Command = MazakWriteCommand.Delete };
             palRows.Add(newPalRow);
           }
         }
@@ -790,15 +803,24 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
       Func<string, long?, ProgramRevision> lookupProgram,
       IList<string> errors,
-      bool reuseExistingParts
+      bool reuseExistingParts,
+      IReadOnlySet<string> managedParts = null
     )
     {
       Validate(jobs, fmsSettings, errors);
       CheckReusedFixture(mazakData, errors);
-      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, mazakCfg, errors, lookupProgram);
+      var allParts = BuildMazakParts(
+        jobs,
+        downloadUID,
+        mazakData,
+        mazakCfg,
+        errors,
+        lookupProgram,
+        reuseExistingParts
+      );
       var reused = reuseExistingParts
         ? allParts
-          .Select(expected => FindInstalledPart(expected, mazakData))
+          .Select(expected => FindInstalledPart(expected, mazakData, mazakCfg, managedParts))
           .Where(part => part != null)
           .ToImmutableList()
         : [];
@@ -857,10 +879,12 @@ namespace MazakMachineInterface
             var fixture = installed
               .Processes.Single(row => row.ProcessNumber == process.ProcessNumber)
               .Fixture;
+            if (cfg.UsesInsightJobQuantities(expected.Job) && !MazakPart.IsInsightFixture(fixture))
+              return Enumerable.Empty<MazakPalletRow>();
+
             // Part transactions precede pallet transactions. Keep the installed fixture's original
             // group when completing a missing mapping; generated names contain F:download:group:... .
-            var group =
-              data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
+            var group = data.Pallets.FirstOrDefault(row => row.Fixture == fixture)?.FixtureGroup
               ?? int.Parse(
                 fixture.Split(':')[2],
                 System.Globalization.CultureInfo.InvariantCulture
@@ -876,10 +900,20 @@ namespace MazakMachineInterface
         .DistinctBy(row => (row.PalletNumber, row.Fixture))
         .ToImmutableList();
 
-    private static MazakPartRow FindInstalledPart(MazakPart expected, MazakAllData data) =>
+    private static MazakPartRow FindInstalledPart(
+      MazakPart expected,
+      MazakAllData data,
+      MazakConfig config,
+      IReadOnlySet<string> managedParts
+    ) =>
       data
         .Parts.Where(part =>
           part.Comment == expected.Comment
+          && (
+            config.UsesInsightJobQuantities(expected.Job)
+              ? part.PartName == expected.PartName
+              : managedParts?.Contains(part.PartName) != true
+          )
           && MazakPart.ExtractPartNameFromMazakPartName(part.PartName) == expected.Job.PartName
           && MazakPart.IsSailPart(part.PartName, part.Comment)
         )
@@ -1089,7 +1123,8 @@ namespace MazakMachineInterface
       MazakAllData mazakData,
       MazakConfig mazakCfg,
       IList<string> log,
-      Func<string, long?, ProgramRevision> lookupProgram
+      Func<string, long?, ProgramRevision> lookupProgram,
+      bool reuseExistingParts
     )
     {
       var ret = new List<MazakPart>();
@@ -1097,192 +1132,182 @@ namespace MazakMachineInterface
 
       foreach (var job in jobs)
       {
-        for (int proc = 1; proc <= job.Processes.Count; proc++)
+        if (job.Processes.Any(process => process.Paths.Count != 1))
         {
-          if (job.Processes[proc - 1].Paths.Count != 1)
-          {
-            log.Add(
-              "Part "
-                + job.PartName
-                + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller"
-            );
-            goto skipPart;
-          }
+          log.Add(
+            "Part "
+              + job.PartName
+              + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller"
+          );
+          continue;
         }
 
-        if (IsSplitScheduleJob(job))
+        var split = IsSplitScheduleJob(job);
+        var partCount = split ? job.Processes.Count : 1;
+        for (var proc = 1; proc <= partCount; proc++, partIdx++)
         {
-          for (int proc = 1; proc <= job.Processes.Count; proc++)
+          var mazakPart = split
+            ? new MazakPart(job, downloadID, partIdx, proc, 1)
+            : new MazakPart(job, downloadID, partIdx);
+          if (reuseExistingParts && mazakCfg.UsesInsightJobQuantities(job))
           {
-            var mazakPart = new MazakPart(job, downloadID, partIdx, proc, 1);
-            partIdx += 1;
-            BuildProcFromJob(
-              job,
-              mazakPart,
-              out string error,
-              mazakCfg,
-              mazakData,
-              lookupProgram,
-              onlyProcess: proc
-            );
-
-            if (string.IsNullOrEmpty(error))
-              ret.Add(mazakPart);
-            else
-              log.Add(error);
+            var installed = MazakLiveRoutes.Inspect(mazakData, job, mazakPart.Comment).Part;
+            if (installed is not null)
+              mazakPart = MazakPart.FromNativeName(
+                job,
+                installed.PartName,
+                mazakPart.SplitJobProcess,
+                mazakPart.SplitPath
+              );
           }
-        }
-        else
-        {
-          var mazakPart = new MazakPart(job, downloadID, partIdx);
-          partIdx += 1;
-          BuildProcFromJob(job, mazakPart, out string error, mazakCfg, mazakData, lookupProgram);
-
-          if (error == null || error == "")
+          var error = BuildPartProcesses(mazakPart, mazakCfg, mazakData, lookupProgram);
+          if (error is null)
             ret.Add(mazakPart);
           else
             log.Add(error);
         }
-
-        skipPart:
-        ;
       }
 
       return ret;
     }
 
-    //Func<int, int, bool> only introduced in .NET 3.5
-    private delegate bool MatchFunc(int proc, int path);
-
-    private static void BuildProcFromJob(
-      Job job,
+    internal static string BuildPartProcesses(
       MazakPart mazak,
-      out string ErrorDuringCreate,
       MazakConfig mazakCfg,
       MazakAllData mazakData,
       Func<string, long?, ProgramRevision> lookupProgram,
-      int? onlyProcess = null
+      IReadOnlyDictionary<int, string> installedPrograms = null
     )
     {
-      ErrorDuringCreate = null;
-
-      var processes = onlyProcess.HasValue
-        ? new[] { onlyProcess.Value }
-        : Enumerable.Range(1, job.Processes.Count);
+      var processes = mazak.SplitJobProcess is { } splitProcess
+        ? Enumerable.Repeat(splitProcess, 1)
+        : Enumerable.Range(1, mazak.Job.Processes.Count);
 
       foreach (var proc in processes)
       {
-        // checked above that only a single path
-        var info = job.Processes[proc - 1].Paths[0];
+        var mazakProc = mazak.IsSplitPart ? 1 : proc;
+        var (prog, error) = ResolveProcessRoute(
+          mazak.Job,
+          proc,
+          mazakCfg,
+          mazakData,
+          lookupProgram,
+          installedPrograms?.GetValueOrDefault(mazakProc)
+        );
+        if (error is not null)
+          return error;
 
-        foreach (var station in info.Load.Concat(info.Unload))
+        mazak.Processes.Add(
+          mazakCfg.ProcessFromJob is { } createProcess
+            ? createProcess(mazak, mazakProc, 1, prog)
+            : new MazakProcessFromJob(mazak, mazakProc, 1, prog)
+        );
+      }
+      return null;
+    }
+
+    internal static (ProgramRevision Program, string Error) ResolveProcessRoute(
+      Job job,
+      int process,
+      MazakConfig config,
+      MazakAllData data,
+      Func<string, long?, ProgramRevision> lookupProgram,
+      string preferredProgram = null
+    )
+    {
+      if (job.Processes[process - 1].Paths is not [var path])
+        return (null, $"Part {job.PartName} requires one Mazak path for process {process}.");
+      foreach (var station in path.Load.Concat(path.Unload))
+      {
+        try
         {
-          try
-          {
-            mazakCfg.InverseLoadStationNumber(station);
-          }
-          catch (ArgumentOutOfRangeException)
-          {
-            ErrorDuringCreate = "Part " + job.PartName + " has an unmapped load station " + station;
-            return;
-          }
+          config.InverseLoadStationNumber(station);
         }
-
-        //Check this proc and path has a program
-        bool has1Stop = false;
-        ProgramRevision prog = null;
-        foreach (var stop in info.Stops)
+        catch (ArgumentOutOfRangeException)
         {
-          has1Stop = true;
-          if (stop.Stations.Count == 0)
-          {
-            ErrorDuringCreate = "Part " + job.PartName + " has no stations assigned.";
-            return;
-          }
-
-          if (mazakCfg.MachineNumbers != null)
-          {
-            foreach (var stat in stop.Stations)
-            {
-              if (!mazakCfg.MachineNumbers.Contains(stat))
-              {
-                ErrorDuringCreate =
-                  "Part " + job.PartName + " has an invalid machine number " + stat.ToString();
-                return;
-              }
-            }
-          }
-
-          if (stop.Program == null || stop.Program == "")
-          {
-            ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
-            return;
-          }
-
-          if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.Program))
-          {
-            prog = new ProgramRevision()
-            {
-              ProgramName = "",
-              Revision = 0,
-              CellControllerProgramName = stop.Program,
-            };
-          }
-          else
-          {
-            prog = lookupProgram(stop.Program, stop.ProgramRevision);
-            if (prog == null)
-            {
-              ErrorDuringCreate =
-                "Part "
-                + job.PartName
-                + " program "
-                + stop.Program
-                + (
-                  stop.ProgramRevision.HasValue
-                    ? " rev" + stop.ProgramRevision.Value.ToString()
-                    : ""
-                )
-                + " does not exist in the cell controller.";
-              return;
-            }
-            // check if program already exists
-            foreach (var mp in mazakData.MainPrograms)
-            {
-              if (
-                MazakProcess.TryParseMainProgramComment(
-                  mp.Comment,
-                  out string mpProg,
-                  out long mpRev
-                )
-              )
-              {
-                if (mpProg == prog.ProgramName && mpRev == prog.Revision)
-                {
-                  prog = prog with { CellControllerProgramName = mp.MainProgram };
-                  break;
-                }
-              }
-            }
-          }
-        }
-
-        if (!has1Stop)
-        {
-          ErrorDuringCreate = "Part " + job.PartName + " has no machines assigned";
-          return;
-        }
-
-        var mazakProc = onlyProcess.HasValue ? 1 : proc;
-        if (mazakCfg.ProcessFromJob != null)
-        {
-          mazak.Processes.Add(mazakCfg.ProcessFromJob(mazak, mazakProc, 1, prog));
-        }
-        else
-        {
-          mazak.Processes.Add(new MazakProcessFromJob(mazak, mazakProc, 1, prog, jobProcess: proc));
+          return (null, $"Part {job.PartName} has an unmapped load station {station}");
         }
       }
+
+      if (path.Stops.Count == 0)
+        return (null, $"Part {job.PartName} has no machines assigned");
+      ProgramRevision program = null;
+      foreach (var stop in path.Stops)
+      {
+        if (stop.Stations.Count == 0)
+          return (null, $"Part {job.PartName} has no stations assigned.");
+        if (config.MachineNumbers is { } machines)
+          foreach (var station in stop.Stations)
+            if (!machines.Contains(station))
+              return (null, $"Part {job.PartName} has an invalid machine number {station}");
+        if (string.IsNullOrEmpty(stop.Program))
+          return (null, $"Part {job.PartName} has no programs.");
+
+        program = ResolveProgram(
+          data,
+          stop.Program,
+          stop.ProgramRevision,
+          lookupProgram,
+          allowUnversionedNativeName: stop.ProgramRevision is null or 0
+            || !config.UsesInsightJobQuantities(job),
+          preferredProgram: preferredProgram
+        );
+        if (program == null)
+        {
+          var revision = stop.ProgramRevision is { } rev ? $" rev{rev}" : "";
+          return (
+            null,
+            $"Part {job.PartName} program {stop.Program}{revision} does not exist in the cell controller."
+          );
+        }
+      }
+      return (program, null);
+    }
+
+    private static ProgramRevision ResolveProgram(
+      MazakAllData data,
+      string name,
+      long? revision,
+      Func<string, long?, ProgramRevision> lookupProgram,
+      bool allowUnversionedNativeName,
+      string preferredProgram
+    )
+    {
+      if (allowUnversionedNativeName && data.MainPrograms.Any(p => p.MainProgram == name))
+        return new ProgramRevision
+        {
+          ProgramName = "",
+          Revision = 0,
+          CellControllerProgramName = name,
+        };
+
+      var program = lookupProgram(name, revision);
+      if (program == null)
+        return null;
+      MazakProgramRow firstMatch = null;
+      foreach (var native in data.MainPrograms)
+      {
+        if (
+          MazakProcess.TryParseMainProgramComment(
+            native.Comment,
+            out var nativeName,
+            out var nativeRevision
+          )
+          && nativeName == program.ProgramName
+          && nativeRevision == program.Revision
+        )
+        {
+          if (preferredProgram is null || native.MainProgram == preferredProgram)
+            return program with { CellControllerProgramName = native.MainProgram };
+          firstMatch ??= native;
+        }
+      }
+      return firstMatch is null
+        ? program
+        : program with
+        {
+          CellControllerProgramName = firstMatch.MainProgram,
+        };
     }
 
     private static ISet<string> CalculateUsedPrograms(

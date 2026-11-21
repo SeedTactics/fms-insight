@@ -82,6 +82,13 @@ namespace MazakMachineInterface
       MazakAllData mazakData,
       IEnumerable<Job> jobs,
       MazakConfig cfg
+    ) => AddSchedules(mazakData, jobs, cfg, (_, _) => true);
+
+    internal static MazakWriteData AddSchedules(
+      MazakAllData mazakData,
+      IEnumerable<Job> jobs,
+      MazakConfig cfg,
+      Func<string, string, bool> matchesOwnership
     )
     {
       if (!jobs.Any())
@@ -96,7 +103,10 @@ namespace MazakMachineInterface
       foreach (var schRow in mazakData.Schedules)
       {
         usedScheduleIDs.Add(schRow.Id);
-        if (MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
+        if (
+          MazakPart.IsSailPart(schRow.PartName, schRow.Comment)
+          && matchesOwnership(schRow.PartName, schRow.Comment)
+        )
           scheduledRoutes.Add(schRow.Comment);
         if (schRow.DueDate == routeStartDate)
         {

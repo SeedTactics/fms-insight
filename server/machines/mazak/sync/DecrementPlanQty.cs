@@ -46,6 +46,15 @@ namespace MazakMachineInterface
       IRepository jobDB,
       MazakCurrentStatus status,
       DateTime? now = null
+    ) => Decrement(mazakDB, jobDB, status, jobFilter: null, now);
+
+    internal static bool Decrement(
+      IMazakDB mazakDB,
+      IRepository jobDB,
+      MazakCurrentStatus status,
+      Func<Job, bool> jobFilter,
+      DateTime? now = null,
+      IReadOnlySet<string> managedParts = null
     )
     {
       // This works in three steps:
@@ -72,7 +81,12 @@ namespace MazakMachineInterface
       if (
         jobDB
           .LoadUnarchivedJobs()
-          .Any(j => !j.ManuallyCreated && !j.CopiedToSystem && !j.Decrements.Any())
+          .Any(j =>
+            jobFilter?.Invoke(j) != false
+            && !j.ManuallyCreated
+            && !j.CopiedToSystem
+            && !j.Decrements.Any()
+          )
       )
       {
         throw new ConflictRequestException(
@@ -80,7 +94,7 @@ namespace MazakMachineInterface
         );
       }
 
-      var jobs = JobsToDecrement(jobDB, status);
+      var jobs = JobsToDecrement(jobDB, status, jobFilter, managedParts);
       Log.Debug("Found jobs to decrement {@jobs}", jobs);
 
       if (jobs.Count == 0)
@@ -102,15 +116,25 @@ namespace MazakMachineInterface
 
     private static List<DecrSchedule> JobsToDecrement(
       IRepository jobDB,
-      MazakCurrentStatus schedules
+      MazakCurrentStatus schedules,
+      Func<Job, bool> jobFilter,
+      IReadOnlySet<string> managedParts
     )
     {
       var jobs = new List<DecrSchedule>();
+      var managedSchedulesByComment = managedParts is { Count: > 0 }
+        ? schedules
+          .Schedules.Where(s => managedParts.Contains(s.PartName))
+          .ToLookup(s => s.Comment, s => MazakPart.ExtractPartNameFromMazakPartName(s.PartName))
+        : null;
 
       foreach (var sch in schedules.Schedules)
       {
         //parse schedule
-        if (!MazakPart.IsSailPart(sch.PartName, sch.Comment))
+        if (
+          managedParts?.Contains(sch.PartName) == true
+          || !MazakPart.IsSailPart(sch.PartName, sch.Comment)
+        )
           continue;
         if (string.IsNullOrEmpty(sch.Comment))
           continue;
@@ -120,7 +144,7 @@ namespace MazakMachineInterface
         if (string.IsNullOrEmpty(unique))
           continue;
         var job = jobDB.LoadJob(unique);
-        if (job == null)
+        if (job == null || jobFilter?.Invoke(job) == false)
           continue;
         if (job.ManuallyCreated || job.Archived)
           continue;
@@ -149,6 +173,17 @@ namespace MazakMachineInterface
               )
             )
             {
+              // The load request has a base part name and comment, without the schedule ID.
+              if (
+                action.Qty > 0
+                && managedSchedulesByComment?[action.Comment].Any(part =>
+                  string.IsNullOrEmpty(action.Part)
+                  || string.Equals(part, action.Part, StringComparison.OrdinalIgnoreCase)
+                ) == true
+              )
+                throw new ConflictRequestException(
+                  $"Cannot back out job '{job.UniqueStr}' while a Mazak load may belong to a managed schedule. Wait for the load to settle and retry."
+                );
               loadingQty += action.Qty;
               Log.Debug(
                 "Found {uniq} is in the process of being loaded action {@action}",

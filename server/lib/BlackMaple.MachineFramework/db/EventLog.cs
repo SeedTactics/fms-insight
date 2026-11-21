@@ -532,6 +532,49 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    private const string MazakManagedLoadCondition = """
+      route.Key = 'MazakManagedLoad' AND route.Value = $route
+      AND s.StationLoc = $loadUnload AND s.Start = 0 AND s.Result = 'LOAD'
+      AND s.ForeignID >= $lower AND s.ForeignID < $upper
+      """;
+
+    private static void BindMazakManagedLoadParameters(
+      SqliteCommand cmd,
+      string route,
+      string lowerForeignId,
+      string upperForeignId
+    )
+    {
+      cmd.Parameters.Add("route", SqliteType.Text).Value = route;
+      cmd.Parameters.Add("loadUnload", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+      cmd.Parameters.Add("lower", SqliteType.Text).Value = lowerForeignId;
+      cmd.Parameters.Add("upper", SqliteType.Text).Value = upperForeignId;
+    }
+
+    public (long Identified, long Unidentified) GetMazakManagedLoadQuantities(
+      string route,
+      string lowerForeignId,
+      string upperForeignId
+    )
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText = $"""
+        SELECT COALESCE(SUM(CAST(identified.Value AS INTEGER)), 0),
+               COALESCE(SUM(CAST(unidentified.Value AS INTEGER)), 0)
+        FROM program_details route
+        JOIN stations s ON s.Counter = route.Counter
+        JOIN program_details identified
+          ON identified.Counter = s.Counter AND identified.Key = 'mazak-identified-quantity'
+        JOIN program_details unidentified
+          ON unidentified.Counter = s.Counter AND unidentified.Key = 'mazak-unidentified-quantity'
+        WHERE {MazakManagedLoadCondition}
+        """;
+      BindMazakManagedLoadParameters(cmd, route, lowerForeignId, upperForeignId);
+      using var reader = cmd.ExecuteReader();
+      reader.Read();
+      return (reader.GetInt64(0), reader.GetInt64(1));
+    }
+
     public JobProductionSummary GetJobProductionSummary(string jobUnique)
     {
       // Read the same job material and event facts as GetLogForJobUnique without loading
@@ -540,7 +583,10 @@ namespace BlackMaple.MachineFramework
       using var cmd = _connection.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
-        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path "
+        "SELECT s.StationLoc, s.TimeUTC, s.Result, sm.MaterialID, sm.Process, mp.Path, "
+        + "CASE WHEN s.StationLoc = $pallet AND s.Result = 'UNLOAD' THEN EXISTS "
+        + "(SELECT 1 FROM program_details d WHERE d.Counter = s.Counter "
+        + "AND d.Key = 'PalletCycleInvalidated') ELSE 0 END "
         + "FROM matdetails m "
         + "JOIN stations_mat sm ON sm.MaterialID = m.MaterialID "
         + "JOIN stations s ON s.Counter = sm.Counter "
@@ -585,9 +631,12 @@ namespace BlackMaple.MachineFramework
         {
           if (lastUnload == null || time > lastUnload.Value)
             lastUnload = time;
-          var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
-          var key = (Process: process, Path: path);
-          completed[key] = completed.GetValueOrDefault(key) + 1;
+          if (!reader.GetBoolean(6))
+          {
+            var path = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
+            var key = (Process: process, Path: path);
+            completed[key] = completed.GetValueOrDefault(key) + 1;
+          }
         }
       }
 
@@ -3068,6 +3117,8 @@ namespace BlackMaple.MachineFramework
             )
           );
         }
+        else if (totMatCnt == 0)
+          elapsed = TimeSpan.Zero;
         else
         {
           elapsed = TimeSpan.FromSeconds(
@@ -3244,6 +3295,8 @@ namespace BlackMaple.MachineFramework
             )
           );
         }
+        else if (totMatCnt == 0)
+          elapsed = TimeSpan.Zero;
         else
         {
           elapsed = TimeSpan.FromSeconds(
