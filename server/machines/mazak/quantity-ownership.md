@@ -47,9 +47,10 @@ name, and check the route comment when selecting by job. `BuildMazakSchedules.In
 builds a `ScheduleSafeEdit` for an absolute minimum. After an uncertain reply, reread the row and
 apply the minimum again if needed. `BuildMazakSchedules.SetMaterialQuantity` sets ready pieces for a
 native process, including an explicit zero when withdrawal needs acknowledgment. A split schedule
-has one native process. For a combined schedule the command also sends the observed ready counts of
-its other processes. Use it when the caller can account for supply on the whole schedule. Check
-whether Mazak consumed a material offer before retrying it.
+has one native process. An already satisfied positive quantity yields an empty write. For a combined
+schedule the command also sends the observed ready counts of its other processes. Use it when the
+caller can account for supply on the whole schedule. Check whether Mazak consumed a material offer
+before retrying it.
 
 Use `BuildMazakSchedules.RemoveSchedules` to calculate retirement writes and find the parts still
 needed by surviving schedules. Select an idle row once its final transfer receipt, material and

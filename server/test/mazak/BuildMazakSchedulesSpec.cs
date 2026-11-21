@@ -101,6 +101,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               : process
           )
         );
+      await Assert
+        .That(BuildMazakSchedules.SetMaterialQuantity(offered, nativeProcess, 3).Schedules)
+        .IsEmpty();
       var idle = raised with
       {
         Processes = raised

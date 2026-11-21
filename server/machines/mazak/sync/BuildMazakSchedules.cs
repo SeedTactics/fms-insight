@@ -68,9 +68,10 @@ namespace MazakMachineInterface
     }
 
     /// <summary>
-    /// Builds a ready-material edit for the selected native process, including explicit zero.
-    /// The command also carries the observed ready quantities of every other process on the
-    /// schedule. Recheck consumption before retrying an offer after an uncertain acknowledgment.
+    /// Builds a ready-material edit for the selected native process. An already satisfied positive
+    /// quantity yields an empty write. An explicit zero still requests acknowledgment.
+    /// The command carries the observed ready quantities of the other processes on the schedule.
+    /// Recheck consumption before retrying an offer after an uncertain acknowledgment.
     /// </summary>
     public static MazakWriteData SetMaterialQuantity(
       MazakScheduleRow schedule,
@@ -79,15 +80,23 @@ namespace MazakMachineInterface
     )
     {
       ArgumentOutOfRangeException.ThrowIfNegative(readyPieces);
-      if (!schedule.Processes.Any(process => process.ProcessNumber == nativeProcess))
+      var observed = schedule.Processes.FirstOrDefault(process =>
+        process.ProcessNumber == nativeProcess
+      );
+      if (observed == null)
         throw new ArgumentOutOfRangeException(
           nameof(nativeProcess),
           "Unknown native schedule process."
         );
 
+      const string prefix = "Set schedule material";
+      // Rewriting an existing offer could replenish material Mazak just consumed.
+      if (readyPieces > 0 && observed.ProcessMaterialQuantity == readyPieces)
+        return new MazakWriteData { Prefix = prefix };
+
       return new MazakWriteData
       {
-        Prefix = "Set schedule material",
+        Prefix = prefix,
         Schedules =
         [
           schedule with
