@@ -125,12 +125,12 @@ namespace BlackMaple.FMSInsight.Tests
       using (var versionCmd = conn1.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(48);
       }
       using (var versionCmd = memDb.CreateCommand())
       {
         versionCmd.CommandText = "SELECT ver FROM version";
-        ((long)versionCmd.ExecuteScalar()).ShouldBe(46);
+        ((long)versionCmd.ExecuteScalar()).ShouldBe(48);
       }
 
       CheckSchema(conn1, memDb);
@@ -1041,7 +1041,8 @@ namespace BlackMaple.FMSInsight.Tests
         cmd.ExecuteNonQuery();
         cmd.CommandText = "UPDATE version SET ver = 43";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "DROP INDEX sim_station_end_time";
+        cmd.CommandText =
+          "DROP INDEX sim_station_end_time; DROP INDEX program_details_managed_load";
         cmd.ExecuteNonQuery();
       }
       _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, pooling: false);
@@ -1104,7 +1105,8 @@ namespace BlackMaple.FMSInsight.Tests
       connection.Open();
       using (var command = connection.CreateCommand())
       {
-        command.CommandText = "DROP INDEX sim_station_end_time; UPDATE version SET ver = 45";
+        command.CommandText =
+          "DROP INDEX sim_station_end_time; DROP INDEX program_details_managed_load; UPDATE version SET ver = 45";
         command.ExecuteNonQuery();
       }
       using var upgraded = RepositoryConfig.InitializeMemoryDB(
@@ -1125,6 +1127,38 @@ namespace BlackMaple.FMSInsight.Tests
         createTables: false,
         upgradeTables: true
       );
+    }
+  }
+
+  public sealed class ManagedLoadIndexUpgradeSpec
+  {
+    [Test]
+    [Arguments(46)]
+    [Arguments(47)]
+    public async System.Threading.Tasks.Task AddsIndexToExistingEventHistory(int previousVersion)
+    {
+      var id = Guid.NewGuid();
+      using var created = RepositoryConfig.InitializeMemoryDB(null, id);
+      using var connection = new SqliteConnection(
+        $"Data Source=file:${id}?mode=memory&cache=shared"
+      );
+      connection.Open();
+      using var cmd = connection.CreateCommand();
+      cmd.CommandText =
+        "DROP INDEX program_details_managed_load; UPDATE version SET ver = $version";
+      cmd.Parameters.AddWithValue("$version", previousVersion);
+      cmd.ExecuteNonQuery();
+      using var upgraded = RepositoryConfig.InitializeMemoryDB(
+        null,
+        id,
+        createTables: false,
+        upgradeTables: true
+      );
+      cmd.CommandText =
+        "EXPLAIN QUERY PLAN SELECT Counter FROM program_details WHERE Key = 'MazakManagedLoad' AND Value = '1:test'";
+      using var plan = cmd.ExecuteReader();
+      await Assert.That(plan.Read()).IsTrue();
+      await Assert.That(plan.GetString(3)).Contains("program_details_managed_load");
     }
   }
 

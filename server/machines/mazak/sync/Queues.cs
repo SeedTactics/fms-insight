@@ -125,17 +125,21 @@ namespace MazakMachineInterface
     )
     {
       var loadOpers = mazakData.LoadActions;
+      var managedParts = MazakLiveRoutes.ManagedPartNames(jdb, cfg, mazakData);
       var schs = new List<ScheduleWithQueues>();
       var skippedCastings = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
-        if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
+        if (
+          !MazakPart.IsSailPart(schRow.PartName, schRow.Comment)
+          || managedParts.Contains(schRow.PartName)
+        )
           continue;
 
         var unique = MazakPart.UniqueFromComment(schRow.Comment);
 
         var job = jdb.LoadJob(unique);
-        if (job == null)
+        if (job == null || cfg.BulkJobFilter?.Invoke(job) == false)
           continue;
         if (cfg.UsesInsightJobQuantities(job))
           continue;

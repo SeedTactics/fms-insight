@@ -245,6 +245,7 @@ namespace MazakMachineInterface
       if (!stoppedFromMcEvt && !palForFinalEvts.HasValue)
       {
         palStChanged = CheckPalletStatusMatchesLogs();
+        palStChanged = CloseUncertainEmptyPallets() || palStChanged;
       }
 
       return new HandleEventResult()
@@ -343,6 +344,65 @@ namespace MazakMachineInterface
         PalletBasketLoadUnloadCompletion baskets
       )
       {
+        var elapsed = CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, loadStation);
+        if (es.Any(e => ManagedRoute(e.FullPartName).Managed))
+        {
+          loads = loads
+            .Select(load =>
+              load with
+              {
+                AdditionalData = ManagedTransferDetails(
+                  load.ForeignID,
+                  load.MaterialIDs.Count,
+                  load.AdditionalData
+                ),
+              }
+            )
+            .ToImmutableList();
+          unloads = unloads
+            .Select(unload =>
+              unload with
+              {
+                AdditionalData = ManagedTransferDetails(
+                  unload.ForeignID,
+                  unload.MaterialIDToDestination.Count,
+                  unload.AdditionalData
+                ),
+              }
+            )
+            .ToImmutableList();
+          var removed = unloads
+            .SelectMany(u => u.MaterialIDToDestination.Keys)
+            .ToImmutableHashSet();
+          var placement = ReadPalletPlacement(cycle);
+          var physicalUnloads = es.Where(e => e.Code == LogCode.UnloadEnd)
+            .GroupBy(e => e.Process)
+            .ToImmutableDictionary(g => g.Key, g => g.Sum(e => e.FixedQuantity));
+          if (
+            loads.Sum(l => l.MaterialIDs.Count) + removed.Count < es.Sum(e => e.FixedQuantity)
+            || placement.PhysicalQuantities.Any(f =>
+              f.Value > physicalUnloads.GetValueOrDefault(f.Key)
+            )
+            || placement.Candidates.Values.Any(m =>
+              !placement.PhysicalQuantities.ContainsKey(m.Face)
+              && !removed.Contains(m.MaterialID)
+              && !repo.IsMaterialInQueue(m.MaterialID)
+            )
+          )
+          {
+            repo.RecordPartialLoadUnload(
+              loads,
+              unloads,
+              loadStation,
+              pallet,
+              elapsed,
+              es[0].TimeUTC,
+              fmsSettings.ExternalQueues,
+              baskets
+            );
+            return;
+          }
+        }
         repo.RecordLoadUnloadComplete(
           toLoad: loads,
           previouslyLoaded: null,
@@ -350,16 +410,49 @@ namespace MazakMachineInterface
           previouslyUnloaded: null,
           pallet: pallet,
           lulNum: loadStation,
-          totalElapsed: CalculateElapsed(
-            es[0].TimeUTC,
-            LogType.LoadUnloadCycle,
-            cycle,
-            loadStation
-          ),
+          totalElapsed: elapsed,
           timeUTC: es[0].TimeUTC,
           externalQueues: fmsSettings.ExternalQueues,
           palletBasketCompletion: baskets
         );
+      }
+
+      ImmutableDictionary<string, string> ManagedTransferDetails(
+        string foreignId,
+        int identified,
+        ImmutableDictionary<string, string> details
+      )
+      {
+        var external = es.FirstOrDefault(e => mazakConfig.LogForeignId(e.ForeignID) == foreignId);
+        if (external is null || !ManagedRoute(external.FullPartName).Managed)
+          return details;
+        FindSchedule(
+          external.FullPartName,
+          external.Process,
+          out var unique,
+          out _,
+          out var process
+        );
+        var metadata = (details ?? ImmutableDictionary<string, string>.Empty)
+          .SetItem(
+            MazakMaterialHistory.ManagedFaceKey,
+            external.Process.ToString(CultureInfo.InvariantCulture)
+          )
+          .SetItem(
+            MazakMaterialHistory.IdentifiedQuantityKey,
+            identified.ToString(CultureInfo.InvariantCulture)
+          )
+          .SetItem(
+            MazakMaterialHistory.UnidentifiedQuantityKey,
+            Math.Max(0, external.FixedQuantity - identified).ToString(CultureInfo.InvariantCulture)
+          )
+          .Remove(MazakManagedScheduleControl.LoadRouteKey);
+        return external.Code == LogCode.LoadEnd && !string.IsNullOrEmpty(unique)
+          ? metadata.SetItem(
+            MazakManagedScheduleControl.LoadRouteKey,
+            MazakManagedScheduleControl.LoadRouteValue(unique, process)
+          )
+          : metadata;
       }
     }
 
@@ -426,7 +519,10 @@ namespace MazakMachineInterface
         );
 
       // The same committed placement evidence drives exact transfers and missing-material cleanup.
-      var onPallet = GetAllMaterialOnPallet(cycle).ToImmutableDictionary(m => m.MaterialID);
+      var placement = ReadPalletPlacement(cycle);
+      var onPallet = placement.Candidates.RemoveRange(
+        placement.Candidates.Keys.Where(repo.IsMaterialInQueue)
+      );
       var loaded = ImmutableHashSet<long>.Empty;
       var unloaded = ImmutableHashSet<long>.Empty;
       var toLoad = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
@@ -443,7 +539,6 @@ namespace MazakMachineInterface
             !onPallet.TryGetValue(id, out var mat)
             || mat.Face != face.Face
             || mat.Process != face.Process
-            || repo.IsMaterialInQueue(id)
           ) || destinations.Keys.Any(unloaded.Contains)
         )
           throw new InvalidOperationException(
@@ -470,6 +565,8 @@ namespace MazakMachineInterface
         var group in context.Unloads.GroupBy(f => (f.Face, f.Process, f.JobUnique, f.PartName))
       )
       {
+        if (UsesManagedTransfers(GetJob(group.Key.JobUnique)))
+          continue; // Every selected serial and the reported raw quantity were verified above.
         var expected = onPallet
           .Values.Where(m =>
             m.Face == group.Key.Face
@@ -487,8 +584,20 @@ namespace MazakMachineInterface
             "Resolved unload quantity must match the current pallet material for each job and face."
           );
       }
+      var unloadingByFace = context
+        .Unloads.GroupBy(f => f.Face)
+        .ToImmutableDictionary(g => g.Key, g => g.Sum(f => f.Quantity));
+      foreach (var (face, quantity) in unloadingByFace)
+        if (placement.PhysicalQuantities.TryGetValue(face, out var present) && quantity > present)
+          throw new InvalidOperationException(
+            "Resolved unload exceeds the recorded physical quantity on its face."
+          );
+
       foreach (var face in context.Loads)
       {
+        var occupied = placement.PhysicalQuantities.TryGetValue(face.Face, out var present)
+          ? present > unloadingByFace.GetValueOrDefault(face.Face)
+          : onPallet.Values.Any(m => m.Face == face.Face && !unloaded.Contains(m.MaterialID));
         var resolved = exact.MaterialForLoads[face.ForeignId]
           ?? throw new InvalidOperationException("Resolved load must not be null.");
         var ids = resolved.MaterialIds;
@@ -496,7 +605,7 @@ namespace MazakMachineInterface
         if (
           ids.Any(loaded.Contains)
           || ids.Any(id => onPallet.ContainsKey(id) && !unloaded.Contains(id))
-          || onPallet.Values.Any(m => m.Face == face.Face && !unloaded.Contains(m.MaterialID))
+          || occupied
         )
           throw new InvalidOperationException(
             "Resolved load duplicates material or overwrites occupied pallet material."
@@ -831,34 +940,22 @@ namespace MazakMachineInterface
     #endregion
 
     #region Material
-    private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents)
-    {
-      var removals = MazakMaterialHistory.LoadRemovalCounters(
-        repo,
-        oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
+    private MazakMaterialHistory.PalletPlacement ReadPalletPlacement(
+      IList<MWI.LogEntry> oldEvents
+    ) =>
+      MazakMaterialHistory.ReplayPalletPlacement(
+        oldEvents,
+        MazakMaterialHistory.LoadRemovalCounters(
+          repo,
+          oldEvents.SelectMany(e => e.Material).Select(m => m.MaterialID)
+        )
       );
-      // Actual machining can establish identity when the LOAD was unavailable. It fills only
-      // missing identities: an existing LOAD retains its raw face/addressing information.
-      return oldEvents
-        .Where(e => !e.StartOfCycle && e.LogType is LogType.LoadUnloadCycle or LogType.MachineCycle)
-        .OrderBy(e => e.Counter)
-        .Aggregate(ImmutableDictionary<long, LogMaterial>.Empty, (current, e) => e.Result == "LOAD"
-          || e.LogType == LogType.MachineCycle
-            ? current.SetItems(
-              e.Material.Where(m =>
-                  e.LogType != LogType.MachineCycle || !current.ContainsKey(m.MaterialID)
-                )
-                .Where(m =>
-                  !MazakMaterialHistory.WasRemovedAfter(removals, m.MaterialID, e.Counter)
-                )
-                .Select(m => KeyValuePair.Create(m.MaterialID, m))
-            )
-          : e.Result == "UNLOAD" ? current.RemoveRange(e.Material.Select(m => m.MaterialID))
-          : current)
-        .Values.Where(m => !repo.IsMaterialInQueue(m.MaterialID))
+
+    private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents) =>
+      ReadPalletPlacement(oldEvents)
+        .Verified.Where(m => !repo.IsMaterialInQueue(m.MaterialID))
         .OrderBy(m => m.MaterialID)
         .ToList();
-    }
 
     private struct LogMaterialAndPath
     {
@@ -870,6 +967,27 @@ namespace MazakMachineInterface
     private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, IList<MWI.LogEntry> oldEvents)
     {
       FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc, out int jobProc);
+
+      if (ManagedRoute(e.FullPartName).Managed)
+      {
+        // Exact handling establishes identities. A later event can use the verified placement,
+        // but a physical count alone never creates serials or credits an arbitrary subset.
+        var known = GetAllMaterialOnPallet(oldEvents)
+          .Where(m =>
+            m.JobUniqueStr == unique
+            && !string.IsNullOrEmpty(unique)
+            && m.Process == jobProc
+            && m.Face == e.Process
+          )
+          .Select(m => new LogMaterialAndPath
+          {
+            Mat = EventLogMaterial.FromLogMat(m),
+            Unique = unique,
+            PartName = e.JobPartName,
+          })
+          .ToList();
+        return known.Count == e.FixedQuantity ? known : [];
+      }
 
       var byMatId = ParseMaterialFromPreviousEvents(
         jobPartName: e.JobPartName,
@@ -1010,6 +1128,22 @@ namespace MazakMachineInterface
           out int numProc,
           out int jobProc
         );
+
+        if (ManagedRoute(e.FullPartName).Managed)
+        {
+          toLoad.Add(
+            new MaterialToLoadOntoFace
+            {
+              MaterialIDs = [],
+              Process = jobProc,
+              FaceNum = e.Process,
+              Path = 1,
+              ForeignID = mazakConfig.LogForeignId(e.ForeignID),
+              ActiveOperationTime = TimeSpan.Zero,
+            }
+          );
+          continue;
+        }
 
         Log.Debug(
           "Found job {unique} with number of procs {numProc} and job proc {jobProc}",
@@ -1204,7 +1338,10 @@ namespace MazakMachineInterface
           continue;
 
         var mats = GetMaterialOnPallet(e, oldEvents);
-        var unloadProcess = mats.Count > 0 ? mats[0].Mat.Process : e.Process;
+        var jobProcess = e.Process;
+        if (ManagedRoute(e.FullPartName).Managed)
+          FindSchedule(e.FullPartName, e.Process, out _, out _, out jobProcess);
+        var unloadProcess = mats.Count > 0 ? mats[0].Mat.Process : jobProcess;
 
         var matToQueue = ImmutableDictionary.CreateBuilder<long, UnloadDestination>();
         var unresolvedBasketMaterial = new List<long>();
@@ -1288,6 +1425,64 @@ namespace MazakMachineInterface
       return ret;
     }
 
+    private bool UsesManagedTransfers(Job job) => MazakLiveRoutes.Owns(mazakConfig, job);
+
+    private readonly Dictionary<
+      string,
+      (bool Managed, Job Job, MazakPart.MazakCommentInfo Comment)
+    > managedRoutes = new(StringComparer.Ordinal);
+
+    private (bool Managed, Job Job, MazakPart.MazakCommentInfo Comment) ManagedRoute(
+      string partName
+    )
+    {
+      if (mazakConfig.UseInsightJobQuantities is null || string.IsNullOrEmpty(partName))
+        return default;
+      if (managedRoutes.TryGetValue(partName, out var cached))
+        return cached;
+
+      var candidates = (mazakData.Schedules ?? [])
+        .Select(s => (s.PartName, s.Comment))
+        .Concat((mazakData.Parts ?? []).Select(p => (p.PartName, p.Comment)))
+        .Where(row =>
+          string.Equals(row.PartName, partName, StringComparison.OrdinalIgnoreCase)
+          && MazakPart.IsSailPart(row.PartName, row.Comment)
+        )
+        .Select(row => row.Comment)
+        .Distinct(StringComparer.Ordinal)
+        .Select(comment => (Comment: comment, Job: GetJob(MazakPart.UniqueFromComment(comment))))
+        .Where(candidate => UsesManagedTransfers(candidate.Job))
+        .Take(2)
+        .ToImmutableList();
+      var result = (
+        Managed: !candidates.IsEmpty,
+        Job: (Job)null,
+        Comment: default(MazakPart.MazakCommentInfo)
+      );
+      if (candidates.Count == 1 && mazakData.Parts is not null && mazakData.Schedules is not null)
+      {
+        var candidate = candidates[0];
+        try
+        {
+          var (part, schedule) = MazakLiveRoutes.Inspect(
+            mazakData,
+            candidate.Job,
+            candidate.Comment
+          );
+          if (part?.PartName == partName && schedule is not null)
+            result = (true, candidate.Job, MazakPart.ParseCommentInfo(candidate.Comment));
+        }
+        catch (ConflictRequestException conflict)
+        {
+          Log.Warning("{Conflict}", conflict.Message);
+        }
+      }
+      if (result.Managed && result.Job is null)
+        Log.Warning("Unable to identify the live Mazak route for native part {Part}", partName);
+      managedRoutes.Add(partName, result);
+      return result;
+    }
+
     public void FindSchedule(
       string mazakPartName,
       int proc,
@@ -1299,6 +1494,20 @@ namespace MazakMachineInterface
       unique = "";
       numProc = proc;
       jobProc = proc;
+      var (managed, job, comment) = ManagedRoute(mazakPartName);
+      if (managed)
+      {
+        if (
+          job is not null
+          && (comment.IsSplit ? proc == 1 : proc > 0 && proc <= job.Processes.Count)
+        )
+        {
+          unique = job.UniqueStr;
+          numProc = job.Processes.Count;
+          jobProc = comment.JobProcessForMazakProcess(proc);
+        }
+        return;
+      }
       foreach (var schRow in mazakData.Schedules)
       {
         if (schRow.PartName == mazakPartName && !string.IsNullOrEmpty(schRow.Comment))
@@ -1331,6 +1540,49 @@ namespace MazakMachineInterface
     #endregion
 
     #region Compare Status With Events
+    private bool CloseUncertainEmptyPallets()
+    {
+      if (mazakConfig.UseInsightJobQuantities is null || mazakData.PalletSubStatuses is null)
+        return false;
+
+      var occupied = mazakData
+        .PalletSubStatuses.Where(s => s.FixQuantity > 0)
+        .Select(s => s.PalletNumber)
+        .ToImmutableHashSet();
+      var changed = false;
+      foreach (
+        var position in mazakData.PalletPositions.Where(p =>
+          p.PalletNumber > 0 && !occupied.Contains(p.PalletNumber)
+        )
+      )
+      {
+        if (
+          string.IsNullOrEmpty(position.PalletPosition)
+          || position.PalletPosition.StartsWith("LS", StringComparison.Ordinal)
+            && (
+              position.PalletPosition.Length < 4
+              || !int.TryParse(position.PalletPosition.AsSpan(3, 1), out var station)
+              || mazakData.LoadActions.Any(a => a.LoadStation == station)
+            )
+        )
+          continue;
+
+        var pallet = mazakConfig.TranslatePalletNumber(position.PalletNumber);
+        var history = repo.CurrentPalletLog(pallet);
+        if (
+          history.Any(e => MazakMaterialHistory.TransferQuantities(e).Unidentified > 0)
+          && !ReadPalletPlacement(history).UncertainQuantities.IsEmpty
+          && mazakConfig.CanQuarantineMissingMaterial?.Invoke(pallet) != false
+        )
+        {
+          // This ends placement only. The raw unload remains unidentified in production history.
+          repo.RecordEmptyPallet(pallet, observationTimeUtc ?? DateTime.UtcNow, palletEnd: true);
+          changed = true;
+        }
+      }
+      return changed;
+    }
+
     private bool CheckPalletStatusMatchesLogs()
     {
       if (string.IsNullOrEmpty(fmsSettings.QuarantineQueue))
@@ -1346,6 +1598,7 @@ namespace MazakMachineInterface
 
         // start with everything on the pallet
         List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
+        var unverifiedOccupancy = false;
 
         foreach (
           var st in mazakData.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber)
@@ -1353,6 +1606,15 @@ namespace MazakMachineInterface
         {
           // remove material from matsOnPal that matches this PalletSubStatus
           var sch = mazakData.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
+          if (
+            matsOnPal.Count > 0
+            && st.FixQuantity > 0
+            && ManagedRoute(sch?.PartName ?? st.PartName) is (true, null, _)
+          )
+          {
+            unverifiedOccupancy = true;
+            break;
+          }
           if (sch == null)
             continue;
           var scheduleComment = MazakPart.ParseCommentInfo(sch.Comment);
@@ -1375,6 +1637,10 @@ namespace MazakMachineInterface
               matsOnPal.Remove(mat);
           }
         }
+
+        // Conflicting managed route readback cannot establish which pieces went missing.
+        if (unverifiedOccupancy)
+          continue;
 
         // anything left in matsOnPal disappeared from PalletSubStatuses so should be quarantined
         foreach (var extraMat in matsOnPal)

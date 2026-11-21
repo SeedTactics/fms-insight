@@ -50,6 +50,7 @@ namespace MazakMachineInterface
       public HistoricJob DbJob { get; init; }
       public int Cycles { get; set; }
       public long Started { get; set; }
+      public long FirstProcessStarted { get; set; }
       public IReadOnlyList<ImmutableList<int>.Builder> Completed { get; init; }
       public IReadOnlyList<ImmutableList<ProcPathInfo>.Builder> Processes { get; init; }
       public IReadOnlyList<ImmutableList<long>.Builder> Precedence { get; init; }
@@ -117,7 +118,8 @@ namespace MazakMachineInterface
       {
         precedence += 1;
 
-        if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
+        var insightSchedule = MazakPart.IsSailPart(schRow.PartName, schRow.Comment);
+        if (!insightSchedule && mazakCfg.UseInsightJobQuantities is null)
           continue;
 
         MazakPartRow partRow = null;
@@ -140,11 +142,38 @@ namespace MazakMachineInterface
         var partComment = MazakPart.ParseCommentInfo(partRow.Comment);
         var jobUnique = partComment.Unique;
 
-        if (!uniqueToMaxProcess.ContainsKey(jobUnique))
+        if (!uniqueToMaxProcess.TryGetValue(jobUnique, out var numProc))
           continue;
 
-        int numProc = uniqueToMaxProcess[jobUnique];
+        var dbJob = jobsByUniq.TryGetValue(jobUnique, out var job)
+          ? job.DbJob
+          : jobDB.LoadJob(jobUnique);
         var scheduleComment = MazakPart.ParseCommentInfo(schRow.Comment);
+        var managedPlacementOnly = false;
+        if (mazakCfg.UseInsightJobQuantities is not null && partRow.Comment != schRow.Comment)
+        {
+          if (MazakLiveRoutes.Owns(mazakCfg, dbJob))
+          {
+            if (
+              !MazakPart.IsSailPart(partRow.PartName, partRow.Comment)
+              || partName != dbJob.PartName
+              || !MazakPart.InitialScheduleComments(dbJob).Contains(partRow.Comment)
+            )
+              continue;
+
+            // The live part still addresses the known material on the pallet. The conflicting
+            // schedule cannot supply job quantity or completion data.
+            managedPlacementOnly = true;
+            scheduleComment = partComment;
+          }
+          else if (
+            insightSchedule && MazakLiveRoutes.Owns(mazakCfg, jobDB.LoadJob(scheduleComment.Unique))
+          )
+            continue;
+        }
+        if (!insightSchedule && !managedPlacementOnly)
+          continue;
+
         var fmsProcSch = scheduleComment.FmsProcess;
         if (scheduleComment.IsSplit && (fmsProcSch < 1 || fmsProcSch > numProc))
         {
@@ -158,10 +187,8 @@ namespace MazakMachineInterface
         }
 
         //Create or lookup the job
-        CurrentJob job;
-        if (!jobsByUniq.TryGetValue(jobUnique, out job))
+        if (job is null)
         {
-          var dbJob = jobDB.LoadJob(jobUnique);
           job = new CurrentJob()
           {
             UniqueStr = jobUnique,
@@ -209,6 +236,9 @@ namespace MazakMachineInterface
         if (scheduleComment.IsSplit)
           splitFmsProcBySchID.Add(schRow.Id, fmsProcSch);
 
+        if (managedPlacementOnly)
+          continue;
+
         //Job Basics
         // Split schedules repeat the same PlanQuantity on every per-process schedule, and
         // Mazak can delete an earlier process schedule before later ones finish. Recover the
@@ -218,7 +248,7 @@ namespace MazakMachineInterface
         else
           job.Cycles += schRow.PlanQuantity;
         AddCompletedToJob(schRow, job, scheduleComment.IsSplit, fmsProcSch);
-        AddMachiningOrCompletedToStarted(schRow, job, scheduleComment.IsSplit);
+        AddMachiningOrCompletedToStarted(schRow, job, scheduleComment.IsSplit, fmsProcSch);
         job.UserHold =
           job.UserHold || ((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold;
 
@@ -264,6 +294,9 @@ namespace MazakMachineInterface
             jobDB,
             oldCycles.SelectMany(e => e.Material).Select(m => m.MaterialID)
           );
+          var managedPlacement = mazakCfg.UseInsightJobQuantities is null
+            ? null
+            : MazakMaterialHistory.ReplayPalletPlacement(oldCycles, removals);
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -284,9 +317,9 @@ namespace MazakMachineInterface
 
             // For split schedules, the Mazak PartProcessNumber is always 1, but the FMS
             // job process may be 2+ for later split processes.
-            var palFmsProc = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP)
-              ? splitFP
-              : palSub.PartProcessNumber;
+            var split = splitFmsProcBySchID.TryGetValue(palSub.ScheduleID, out var splitFP);
+            var palFmsProc = split ? splitFP : palSub.PartProcessNumber;
+            var managed = mazakCfg.UsesInsightJobQuantities(job.DbJob);
 
             var matIDs = new Queue<long>(
               FindMatIDsFromOldCycles(
@@ -295,7 +328,9 @@ namespace MazakMachineInterface
                 job,
                 palFmsProc,
                 jobDB,
-                removals
+                removals,
+                managed ? managedPlacement : null,
+                palSub.PartProcessNumber
               )
             );
 
@@ -310,20 +345,23 @@ namespace MazakMachineInterface
               var currentProcessBeforeLoad =
                 palFmsProc > palSub.PartProcessNumber ? palFmsProc - 1 : palSub.PartProcessNumber;
 
-              //check for unloading or transfer
-              // The pallet substatus reports Mazak face/process 1 for every split schedule. For
-              // split transfers beyond proc-1, recover the pre-load FMS process from the schedule.
-              var loadNext = CheckLoadOfNextProcess(
-                currentLoads,
-                job.UniqueStr,
-                currentProcessBeforeLoad,
-                palLoc
-              );
+              // A managed split route admits its own material. Leave its load request for
+              // anonymous projection and keep the existing material on the unload action.
+              var loadNext =
+                managed && split
+                  ? null
+                  : CheckLoadOfNextProcess(
+                    currentLoads,
+                    job.UniqueStr,
+                    currentProcessBeforeLoad,
+                    palLoc
+                  );
               var unload = CheckUnload(
                 currentLoads,
                 job.UniqueStr,
                 palSub.PartProcessNumber,
-                palLoc
+                palLoc,
+                managed && split ? palFmsProc : null
               );
 
               var action = new InProcessMaterialAction()
@@ -436,6 +474,8 @@ namespace MazakMachineInterface
               jobsByUniq,
               oldCycles,
               removals,
+              mazakCfg,
+              managedPlacement,
               partNameToNumProc,
               fmsSettings
             );
@@ -583,14 +623,29 @@ namespace MazakMachineInterface
         var localJobs = new JobCache(jobDB).BuildActiveJobs(material, jobDB);
         foreach (var local in localJobs.Values.Where(mazakCfg.UsesInsightJobQuantities))
         {
+          var managedLoads = Enumerable
+            .Range(1, local.Processes.Count)
+            .Select(process =>
+              jobDB.HasMazakManagedLoad(
+                MazakManagedScheduleControl.LoadRouteValue(local.UniqueStr, process),
+                mazakCfg.LogForeignId("LG"),
+                mazakCfg.LogForeignId("LH")
+              )
+            )
+            .ToImmutableList();
           var remainingToStart = local.RemainingToStart;
-          // Actual execution still bounds remaining demand when entry history is incomplete.
-          // Use the locally authorized quantity, not the controller's execution ceiling.
           if (
-            remainingToStart is { } remaining
+            !managedLoads.FirstOrDefault()
+            && remainingToStart is { } remaining
             && jobsByUniq.TryGetValue(local.UniqueStr, out var controller)
           )
-            remainingToStart = Math.Min(remaining, Math.Max(0, local.Cycles - controller.Started));
+          {
+            var started = managedLoads.Any(tracked => tracked)
+              ? controller.FirstProcessStarted
+              : controller.Started;
+            remainingToStart = Math.Min(remaining, Math.Max(0, local.Cycles - started));
+          }
+
           allJobs = allJobs.SetItem(
             local.UniqueStr,
             allJobs.TryGetValue(local.UniqueStr, out var installed)
@@ -598,16 +653,17 @@ namespace MazakMachineInterface
               {
                 Cycles = local.Cycles,
                 RemainingToStart = remainingToStart,
-                // Keep execution evidence from a controller batch whose logs are still
-                // settling, and history for split routes that have already been removed.
+                // Controller counts include rework attempts once managed transfer recording starts.
                 Completed = local
                   .Completed.Select(
                     (paths, process) =>
-                      paths
-                        .Select(
-                          (count, path) => Math.Max(count, installed.Completed[process][path])
-                        )
-                        .ToImmutableList()
+                      managedLoads[process]
+                        ? paths
+                        : paths
+                          .Select(
+                            (count, path) => Math.Max(count, installed.Completed[process][path])
+                          )
+                          .ToImmutableList()
                   )
                   .ToImmutableList(),
                 Decrements = EmptyToNull(local.Decrements),
@@ -806,14 +862,22 @@ namespace MazakMachineInterface
     private static void AddMachiningOrCompletedToStarted(
       MazakScheduleRow schRow,
       CurrentJob job,
-      bool isSplit
+      bool isSplit,
+      int splitProcess
     )
     {
       var started = (long)DecrementPlanQty.CountCompletedOrMachiningStarted(schRow);
       if (isSplit)
+      {
         job.Started = Math.Max(job.Started, started);
+        if (splitProcess == 1)
+          job.FirstProcessStarted = Math.Max(job.FirstProcessStarted, started);
+      }
       else
+      {
         job.Started += started;
+        job.FirstProcessStarted += started;
+      }
     }
 
     private static LoadAction CheckLoadOfNextProcess(
@@ -857,7 +921,8 @@ namespace MazakMachineInterface
       List<LoadAction> currentLoads,
       string unique,
       int process,
-      PalletLocation loc
+      PalletLocation loc,
+      int? splitFmsProc
     )
     {
       if (loc.Location != PalletLocationEnum.LoadUnload)
@@ -871,6 +936,13 @@ namespace MazakMachineInterface
           && !string.IsNullOrEmpty(act.Comment)
           && unique == MazakPart.UniqueFromComment(act.Comment)
           && process == act.Process
+          && (
+            splitFmsProc is null
+            || (
+              MazakPart.IsSplitComment(act.Comment)
+              && splitFmsProc == MazakPart.ProcessFromComment(act.Comment)
+            )
+          )
           && act.Qty >= 1
         )
         {
@@ -898,6 +970,8 @@ namespace MazakMachineInterface
       IReadOnlyDictionary<string, CurrentJob> jobsByUniq,
       List<BlackMaple.MachineFramework.LogEntry> oldCycles,
       IReadOnlyDictionary<long, long> removals,
+      MazakConfig config,
+      MazakMaterialHistory.PalletPlacement managedPlacement,
       IReadOnlyDictionary<string, int> partNameToNumProc,
       FMSSettings fmsSettings
     )
@@ -929,7 +1003,16 @@ namespace MazakMachineInterface
         var fmsUnloadProc = unloadComment.JobProcessForMazakProcess(unload.Process);
 
         var matIDs = new Queue<long>(
-          FindMatIDsFromOldCycles(oldCycles, false, job, fmsUnloadProc, log, removals)
+          FindMatIDsFromOldCycles(
+            oldCycles,
+            false,
+            job,
+            fmsUnloadProc,
+            log,
+            removals,
+            config.UsesInsightJobQuantities(job?.DbJob) ? managedPlacement : null,
+            unload.Process
+          )
         );
 
         InProcessMaterialAction loadAction = null;
@@ -1074,10 +1157,13 @@ namespace MazakMachineInterface
             if (fmsOperationProc == 1)
             {
               job.Started += 1;
+              job.FirstProcessStarted += 1;
             }
 
+            // A managed load request reports a quantity. Its material IDs come from
+            // the backend's exact transfer resolution, which can pick any queued pieces.
             var queue = job.Processes[fmsOperationProc - 1][0].InputQueue;
-            if (!string.IsNullOrEmpty(queue))
+            if (!config.UsesInsightJobQuantities(job.DbJob) && !string.IsNullOrEmpty(queue))
             {
               var key = (uniq: uniq, proc: fmsOperationProc);
               if (queuedMats.ContainsKey(key))
@@ -1203,13 +1289,30 @@ namespace MazakMachineInterface
       CurrentJob job,
       int proc,
       IRepository log,
-      IReadOnlyDictionary<long, long> removals
+      IReadOnlyDictionary<long, long> removals,
+      MazakMaterialHistory.PalletPlacement managedPlacement,
+      int face
     )
     {
       if (job == null)
       {
         return Enumerable.Empty<long>();
       }
+
+      if (managedPlacement is not null)
+        return hasPendingLoads
+          ? []
+          : managedPlacement
+            .Verified.Where(m =>
+              m.MaterialID >= 0
+              && m.Face == face
+              && m.JobUniqueStr == job.UniqueStr
+              && m.Process == proc
+              && !log.IsMaterialInQueue(m.MaterialID)
+            )
+            .Select(m => m.MaterialID)
+            .Order()
+            .ToImmutableList();
 
       if (hasPendingLoads)
       {

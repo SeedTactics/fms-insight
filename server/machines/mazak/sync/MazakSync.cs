@@ -136,6 +136,13 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
   {
+    var localJobs = jobs.Jobs;
+    if (mazakConfig.BulkJobFilter is { } assignedToController)
+    {
+      localJobs = localJobs.Where(assignedToController).ToImmutableList();
+      if (localJobs.IsEmpty)
+        return [];
+    }
     var logMessages = new List<string>();
     MazakAllData mazakData = mazakDB.LoadAllData();
 
@@ -183,11 +190,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         }
       }
 
-      //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
-      //need to ignore the warning that palletPartMap is not used.
-#pragma warning disable 168, 219
-      var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-        jobs: jobs.Jobs,
+      ConvertJobsToMazakParts.JobsToMazak(
+        jobs: localJobs,
         downloadUID: 1,
         mazakData: mazakData,
         savedParts: new HashSet<string>(),
@@ -196,7 +200,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         lookupProgram: lookupProg,
         errors: logMessages
       );
-#pragma warning restore 168, 219
     }
     catch (Exception ex)
     {
@@ -363,7 +366,12 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     {
       st = mazakConfig.AdjustCurrentStatus(db, st);
     }
-    var diagnostics = ImmutableList<CurrentStatusAlarm>.Empty;
+    var diagnostics = MazakLiveRoutes.Diagnostics(
+      db,
+      mazakConfig,
+      mazakData,
+      acquisition.StartedAtUtc
+    );
     if (lastToolReadFailed)
       diagnostics = diagnostics.Add(
         new CurrentStatusAlarm
@@ -413,46 +421,69 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     mazakDB.DeleteLogs(reconciliation.CommittedLogWatermark);
   }
 
-  public bool ApplyActions(IRepository db, MazakState st)
+  private bool deferManagedCleanup;
+
+  /// <summary>Run native job downloads and optional managed archive cleanup, skipping queue reconciliation.</summary>
+  public bool ApplyJobActions(
+    IRepository db,
+    MazakState st,
+    bool allowManagedCleanup = true,
+    ImmutableHashSet<string>? additionalManagedJobs = null
+  )
   {
-    if (st.StoppedBecauseRecentLogEvent)
+    if (st.StoppedBecauseRecentLogEvent || st.PalletWithUnprocessedUnloads.HasValue)
     {
       return false;
     }
 
-    // jobs
-    bool jobsCopied = WriteJobs.SyncFromDatabase(
+    // Cleanup can free capacity for a pending download. After a failed write, start the
+    // next fresh pass with independent downloads and queue work before retrying cleanup.
+    var cleanupDeferred = deferManagedCleanup;
+    deferManagedCleanup = false;
+    if (allowManagedCleanup && !cleanupDeferred)
+    {
+      try
+      {
+        if (MazakLiveRoutes.RetireSchedules(db, mazakConfig, st.AllData, mazakDB))
+          return true;
+      }
+      catch
+      {
+        deferManagedCleanup = true;
+        throw;
+      }
+    }
+
+    return WriteJobs.SyncFromDatabase(
       st.AllData,
       db,
       mazakDB,
       settings,
       mazakConfig,
-      st.CurrentStatus.TimeOfCurrentStatusUTC
+      st.CurrentStatus.TimeOfCurrentStatusUTC,
+      additionalManagedJobs
     );
+  }
 
-    // queues
-    bool queuesChanged = false;
-    if (!jobsCopied)
-    {
-      var transSet = MazakQueues.CalculateScheduleChanges(db, st.AllData, mazakConfig);
-
-      if (transSet != null && transSet.Schedules.Count > 0)
-      {
-        mazakDB.Save(transSet);
-        queuesChanged = true;
-      }
-    }
-
-    // TODO: holds
-
-    return jobsCopied || queuesChanged;
+  public bool ApplyActions(IRepository db, MazakState st)
+  {
+    if (ApplyJobActions(db, st))
+      return true;
+    if (st.StoppedBecauseRecentLogEvent || st.PalletWithUnprocessedUnloads.HasValue)
+      return false;
+    var queues = MazakQueues.CalculateScheduleChanges(db, st.AllData, mazakConfig);
+    if (queues is null || queues.Schedules.Count == 0)
+      return false;
+    mazakDB.Save(queues);
+    return true;
   }
 
   public bool DecrementJobs(IRepository db, MazakState st)
   {
     if (
-      db.LoadUnarchivedJobs()
-        .Any(j => !j.ManuallyCreated && mazakConfig.UsesInsightJobQuantities(j))
+      mazakConfig.UseInsightJobQuantities is not null
+      && db.LoadUnarchivedJobs()
+        .Any(j => !j.ManuallyCreated && MazakLiveRoutes.Owns(mazakConfig, j))
     )
       throw new BadRequestException(
         "This backend manages job quantities. Use its backout command instead of the Mazak decrement command."
@@ -463,6 +494,13 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         "Cannot back out jobs while Mazak events are still settling. Wait for synchronization to finish and retry."
       );
 
-    return DecrementPlanQty.Decrement(mazakDB, db, st.AllData);
+    var managedParts = MazakLiveRoutes.ManagedPartNames(db, mazakConfig, st.AllData);
+    return DecrementPlanQty.Decrement(
+      mazakDB,
+      db,
+      st.AllData,
+      mazakConfig.BulkJobFilter,
+      managedParts: managedParts
+    );
   }
 }

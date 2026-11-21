@@ -41,7 +41,8 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 46;
+    // A prerelease used version 47 for managed schedules. Its databases also need the load index.
+    private const int Version = 48;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -141,6 +142,8 @@ namespace BlackMaple.MachineFramework
           "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, "
           + "PRIMARY KEY(Counter, Key))";
         cmd.ExecuteNonQuery();
+
+        CreateManagedLoadIndex(cmd);
 
         cmd.CommandText =
           "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, SerialAtStart TEXT, SerialAtEnd TEXT, CountInCycle INTEGER, CountAtEndOfCycle INTEGER, LifeCount INTEGER, "
@@ -542,6 +545,12 @@ namespace BlackMaple.MachineFramework
             CreateSimStationTimeIndex(cmd);
           }
 
+          if (curVersion < 48)
+          {
+            cmd.Transaction = trans;
+            CreateManagedLoadIndex(cmd);
+          }
+
           //update the version in the database
           cmd.Transaction = trans;
           cmd.CommandText = "UPDATE version SET ver = " + Version.ToString();
@@ -558,10 +567,13 @@ namespace BlackMaple.MachineFramework
         if (detachOldJob)
           DetachJobsDb(connection);
 
-        //only vacuum if we did some updating
-        cmd.Transaction = null;
-        cmd.CommandText = "VACUUM";
-        cmd.ExecuteNonQuery();
+        // The managed load index only adds pages. Keep the existing vacuum for older upgrades.
+        if (curVersion < 46)
+        {
+          cmd.Transaction = null;
+          cmd.CommandText = "VACUUM";
+          cmd.ExecuteNonQuery();
+        }
 
         try
         {
@@ -1359,6 +1371,13 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText = "DROP INDEX stations_correlation_id";
       cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE stations DROP COLUMN CorrelationId";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void CreateManagedLoadIndex(IDbCommand cmd)
+    {
+      cmd.CommandText =
+        "CREATE INDEX program_details_managed_load ON program_details(Value, Counter) WHERE Key = 'MazakManagedLoad'";
       cmd.ExecuteNonQuery();
     }
 
