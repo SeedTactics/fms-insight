@@ -18,6 +18,7 @@ public sealed partial class DuplicateDownloadSpec
     {
       DBType = MazakDbType.MazakSmooth,
       UseInsightJobQuantities = JobHelpers.EntersThroughBasket,
+      UseRepositoryOnlyProductionCounts = JobHelpers.EntersThroughBasket,
     };
 
   [Test]
@@ -433,6 +434,112 @@ public sealed partial class DuplicateDownloadSpec
     var projected = BuildCurrentStatus.Build(db, settings, config, device.Data, "MC", null, Now);
     await Assert.That(projected.Jobs[managed.UniqueStr].Cycles).IsEqualTo(6);
     await Assert.That(projected.Jobs[managed.UniqueStr].Completed![1][0]).IsEqualTo(6);
+  }
+
+  [Test]
+  [Arguments(false)]
+  [Arguments(true)]
+  public async Task FirstLoadDoesNotSwitchTheCompletionSourceAfterCutover(bool legacyInsightCounts)
+  {
+    using var repositories = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var db = repositories.OpenConnection();
+    var existing = PendingJob(true) with { UniqueStr = "existing" };
+    var newlyAccepted = PendingJob(true) with { UniqueStr = "newly-accepted" };
+    var config = ManagedConfig() with
+    {
+      UseInsightJobQuantities = job =>
+        legacyInsightCounts || job.UniqueStr == newlyAccepted.UniqueStr,
+      UseRepositoryOnlyProductionCounts = job => job.UniqueStr == newlyAccepted.UniqueStr,
+    };
+    var settings = new FMSSettings();
+    var device = new DownloadDevice("");
+    db.AddJobs(new NewJobs { ScheduleId = "first", Jobs = [existing] }, null, false);
+    await Assert.That(Sync(device, db, config)).IsTrue();
+    db.AddJobs(new NewJobs { ScheduleId = "second", Jobs = [newlyAccepted] }, null, false);
+    await Assert.That(Sync(device, db, config)).IsTrue();
+    device.Observe(
+      device.Data with
+      {
+        Schedules = device
+          .Data.Schedules.Select(row => row with { CompleteQuantity = 6 })
+          .ToImmutableList(),
+      }
+    );
+    var existingRoute = device.Data.Schedules.Single(s => s.Comment == "existing-2-1-InsightS");
+    var newRoute = device.Data.Schedules.Single(s => s.Comment == "newly-accepted-2-1-InsightS");
+    var historical = Enumerable
+      .Range(0, 4)
+      .Select(_ => db.AllocateMaterialID(existing.UniqueStr, existing.PartName, 2))
+      .ToImmutableList();
+    var beforeLoadMetadata = config with { UseInsightJobQuantities = null };
+    TranslateManagedTransfer(
+      db,
+      device.Data,
+      existingRoute,
+      LogCode.LoadEnd,
+      4,
+      1,
+      historical,
+      beforeLoadMetadata
+    );
+    TranslateManagedTransfer(
+      db,
+      device.Data,
+      existingRoute,
+      LogCode.UnloadEnd,
+      4,
+      2,
+      historical,
+      beforeLoadMetadata
+    );
+    await Assert
+      .That(db.GetJobProductionSummary(existing.UniqueStr).Completed[(2, 1)])
+      .IsEqualTo(4);
+
+    int Completed(IRepository repository, Job job) =>
+      BuildCurrentStatus
+        .Build(repository, settings, config, device.Data, "MC", null, Now)
+        .Jobs[job.UniqueStr]
+        .Completed![1][0];
+    await Assert.That(Completed(db, existing)).IsEqualTo(6);
+    await Assert.That(Completed(db, newlyAccepted)).IsEqualTo(0);
+
+    using var reopened = repositories.OpenConnection();
+    var next = db.AllocateMaterialID(newlyAccepted.UniqueStr, newlyAccepted.PartName, 2);
+    TranslateManagedTransfer(
+      reopened,
+      device.Data,
+      newRoute,
+      LogCode.LoadEnd,
+      1,
+      3,
+      [next],
+      config
+    );
+    await Assert.That(Completed(reopened, newlyAccepted)).IsEqualTo(0);
+    TranslateManagedTransfer(
+      reopened,
+      device.Data,
+      newRoute,
+      LogCode.UnloadEnd,
+      1,
+      4,
+      [next],
+      config
+    );
+    await Assert.That(Completed(reopened, newlyAccepted)).IsEqualTo(1);
+    var legacy = db.AllocateMaterialID(existing.UniqueStr, existing.PartName, 2);
+    TranslateManagedTransfer(
+      reopened,
+      device.Data,
+      existingRoute,
+      LogCode.LoadEnd,
+      1,
+      5,
+      [legacy],
+      config
+    );
+    await Assert.That(Completed(reopened, existing)).IsEqualTo(6);
   }
 
   [Test]

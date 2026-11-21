@@ -5,8 +5,7 @@ decrement, and completed-schedule cleanup. Existing installations keep this beha
 
 A custom backend can select jobs through `MazakConfig.UseInsightJobQuantities`, a pure predicate
 derived from job routes and backend configuration. Keep the selection stable for each job's
-lifetime. This policy is internal to the backend; accepted jobs and allocation clients need no new
-flag. One cell can contain jobs using either policy.
+lifetime. One cell can contain jobs using either policy.
 
 Selected jobs use repository production accounting: accepted cycles minus recorded cancellations,
 durable first entry, and recorded completions. Controller plan increases do not increase demand.
@@ -15,9 +14,12 @@ archived selected jobs stay out of current status and new downloads even if cont
 copied-to-system flag lag behind archival. The backend can project its additional active
 reservations through `AdjustCurrentStatus`.
 
-Once Insight records a managed load for a process, its completed quantity comes from valid FMS
-unloads. Until tracking starts, native counts can still supply missing history. A repeated process
-consumes native capacity each time. An invalidated unload contributes no good completion.
+For jobs that will run rework, also select `MazakConfig.UseRepositoryOnlyProductionCounts`. Those
+jobs use valid FMS unloads for completions from the start. A repeated process consumes native
+capacity each time. An invalidated unload contributes no good completion. Other selected jobs retain
+the native execution counts as a lower bound on recorded starts and completions. During rollout,
+keep previously accepted jobs on their existing policy and opt in newly accepted jobs. The backend
+can use stable job IDs to implement the cutover without an allocator flag.
 
 For local cancellation, `RecordJobDecrementOperation` commits positive once-only cancellations,
 release of never-entered raw allocations, and a completed request receipt together. Replays return

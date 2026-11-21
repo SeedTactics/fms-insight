@@ -551,19 +551,6 @@ namespace BlackMaple.MachineFramework
       cmd.Parameters.Add("upper", SqliteType.Text).Value = upperForeignId;
     }
 
-    public bool HasMazakManagedLoad(string route, string lowerForeignId, string upperForeignId)
-    {
-      using var cmd = _connection.CreateCommand();
-      cmd.CommandText = $"""
-        SELECT EXISTS(
-          SELECT 1 FROM program_details route JOIN stations s ON s.Counter = route.Counter
-          WHERE {MazakManagedLoadCondition}
-        )
-        """;
-      BindMazakManagedLoadParameters(cmd, route, lowerForeignId, upperForeignId);
-      return (long)cmd.ExecuteScalar() != 0;
-    }
-
     public (long Identified, long Unidentified) GetMazakManagedLoadQuantities(
       string route,
       string lowerForeignId,

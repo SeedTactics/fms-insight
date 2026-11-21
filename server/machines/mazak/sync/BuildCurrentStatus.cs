@@ -50,7 +50,6 @@ namespace MazakMachineInterface
       public HistoricJob DbJob { get; init; }
       public int Cycles { get; set; }
       public long Started { get; set; }
-      public long FirstProcessStarted { get; set; }
       public IReadOnlyList<ImmutableList<int>.Builder> Completed { get; init; }
       public IReadOnlyList<ImmutableList<ProcPathInfo>.Builder> Processes { get; init; }
       public IReadOnlyList<ImmutableList<long>.Builder> Precedence { get; init; }
@@ -248,7 +247,7 @@ namespace MazakMachineInterface
         else
           job.Cycles += schRow.PlanQuantity;
         AddCompletedToJob(schRow, job, scheduleComment.IsSplit, fmsProcSch);
-        AddMachiningOrCompletedToStarted(schRow, job, scheduleComment.IsSplit, fmsProcSch);
+        AddMachiningOrCompletedToStarted(schRow, job, scheduleComment.IsSplit);
         job.UserHold =
           job.UserHold || ((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold;
 
@@ -623,28 +622,14 @@ namespace MazakMachineInterface
         var localJobs = new JobCache(jobDB).BuildActiveJobs(material, jobDB);
         foreach (var local in localJobs.Values.Where(mazakCfg.UsesInsightJobQuantities))
         {
-          var managedLoads = Enumerable
-            .Range(1, local.Processes.Count)
-            .Select(process =>
-              jobDB.HasMazakManagedLoad(
-                MazakManagedScheduleControl.LoadRouteValue(local.UniqueStr, process),
-                mazakCfg.LogForeignId("LG"),
-                mazakCfg.LogForeignId("LH")
-              )
-            )
-            .ToImmutableList();
+          var repositoryOnly = mazakCfg.UseRepositoryOnlyProductionCounts?.Invoke(local) == true;
           var remainingToStart = local.RemainingToStart;
           if (
-            !managedLoads.FirstOrDefault()
+            !repositoryOnly
             && remainingToStart is { } remaining
             && jobsByUniq.TryGetValue(local.UniqueStr, out var controller)
           )
-          {
-            var started = managedLoads.Any(tracked => tracked)
-              ? controller.FirstProcessStarted
-              : controller.Started;
-            remainingToStart = Math.Min(remaining, Math.Max(0, local.Cycles - started));
-          }
+            remainingToStart = Math.Min(remaining, Math.Max(0, local.Cycles - controller.Started));
 
           allJobs = allJobs.SetItem(
             local.UniqueStr,
@@ -653,19 +638,18 @@ namespace MazakMachineInterface
               {
                 Cycles = local.Cycles,
                 RemainingToStart = remainingToStart,
-                // Controller counts include rework attempts once managed transfer recording starts.
-                Completed = local
-                  .Completed.Select(
-                    (paths, process) =>
-                      managedLoads[process]
-                        ? paths
-                        : paths
+                Completed = repositoryOnly
+                  ? local.Completed
+                  : local
+                    .Completed.Select(
+                      (paths, process) =>
+                        paths
                           .Select(
                             (count, path) => Math.Max(count, installed.Completed[process][path])
                           )
                           .ToImmutableList()
-                  )
-                  .ToImmutableList(),
+                    )
+                    .ToImmutableList(),
                 Decrements = EmptyToNull(local.Decrements),
               }
               : local with
@@ -862,22 +846,14 @@ namespace MazakMachineInterface
     private static void AddMachiningOrCompletedToStarted(
       MazakScheduleRow schRow,
       CurrentJob job,
-      bool isSplit,
-      int splitProcess
+      bool isSplit
     )
     {
       var started = (long)DecrementPlanQty.CountCompletedOrMachiningStarted(schRow);
       if (isSplit)
-      {
         job.Started = Math.Max(job.Started, started);
-        if (splitProcess == 1)
-          job.FirstProcessStarted = Math.Max(job.FirstProcessStarted, started);
-      }
       else
-      {
         job.Started += started;
-        job.FirstProcessStarted += started;
-      }
     }
 
     private static LoadAction CheckLoadOfNextProcess(
@@ -1155,10 +1131,7 @@ namespace MazakMachineInterface
             // add loads on process 1 into the job started.  Loads on other
             // processes are calculated during AddMachiningOrCompletedToStarted
             if (fmsOperationProc == 1)
-            {
               job.Started += 1;
-              job.FirstProcessStarted += 1;
-            }
 
             // A managed load request reports a quantity. Its material IDs come from
             // the backend's exact transfer resolution, which can pick any queued pieces.

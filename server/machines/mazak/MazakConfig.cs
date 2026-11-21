@@ -211,6 +211,11 @@ namespace MazakMachineInterface
     public bool UsesInsightJobQuantities(Job? job) =>
       job != null && UseInsightJobQuantities?.Invoke(job) == true;
 
+    // For jobs selected by UseInsightJobQuantities, use repository completion and entry counts
+    // from the start. Other selected jobs keep the native count as a lower bound. Keep this pure
+    // and stable. At rollout, apply the new policy only to newly accepted jobs.
+    public Func<Job, bool>? UseRepositoryOnlyProductionCounts { get; init; }
+
     // Each controller validates, downloads, and cleans up the jobs assigned to it.
     public Func<Job, bool>? BulkJobFilter { get; init; }
 
