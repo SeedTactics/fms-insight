@@ -54,6 +54,8 @@ namespace MazakMachineInterface
   public sealed class OpenDatabaseKitDB : IMazakDB, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitDB>();
+
+    // Legacy process-wide mutex for callers that coordinate their own multi-step operations.
     public static System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
 
     private readonly object _writeLock = new();
@@ -231,14 +233,14 @@ namespace MazakMachineInterface
     {
       lock (_writeLock)
       {
-        // Every chunk clears the shared transaction tables before submitting its commands.
-        // Keep all chunks and their acknowledgments together on this controller connection.
+        // Every chunk clears the transaction tables. Serialize saves on this instance through
+        // acknowledgment so the next save cannot clear a pending write.
         foreach (var chunk in SplitWriteData(data))
-          SaveChunck(chunk);
+          SaveChunk(chunk);
       }
     }
 
-    private void SaveChunck(MazakWriteData data)
+    private void SaveChunk(MazakWriteData data)
     {
       Log.Debug("Writing {@data} to transaction db", data);
 

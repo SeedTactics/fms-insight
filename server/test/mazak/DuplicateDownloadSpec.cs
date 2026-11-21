@@ -72,6 +72,43 @@ public sealed class DuplicateDownloadSpec
     );
 
   [Test]
+  public async Task ExplicitInstallPreservesDueDatesAndPrioritiesWhenCatchingUp()
+  {
+    using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());
+    using var repository = config.OpenConnection();
+    var existing = PendingJob(false) with { UniqueStr = "installed" };
+    var first = existing with { UniqueStr = "first-day" };
+    var next = existing with
+    {
+      UniqueStr = "next-day",
+      RouteStartUTC = existing.RouteStartUTC.AddDays(1),
+      RouteEndUTC = existing.RouteEndUTC.AddDays(1),
+    };
+    foreach (var job in new[] { existing, first, next })
+      repository.AddJobs(new NewJobs { ScheduleId = job.UniqueStr, Jobs = [job] }, null, false);
+
+    var device = new DownloadDevice("");
+    var settings = new FMSSettings();
+    var mazak = new MazakConfig { DBType = MazakDbType.MazakSmooth };
+    WriteJobs.InstallJobs([existing], repository, device.Native, settings, mazak);
+    WriteJobs.InstallJobs([next, first], repository, device.Native, settings, mazak);
+
+    var schedules = device.Data.Schedules.ToDictionary(s => MazakPart.UniqueFromComment(s.Comment));
+    await Assert
+      .That(schedules[first.UniqueStr].DueDate)
+      .IsEqualTo(first.RouteStartUTC.ToLocalTime().Date);
+    await Assert
+      .That(schedules[next.UniqueStr].DueDate)
+      .IsEqualTo(next.RouteStartUTC.ToLocalTime().Date);
+    await Assert
+      .That(schedules[first.UniqueStr].Priority)
+      .IsEqualTo(schedules[existing.UniqueStr].Priority + 1);
+    await Assert
+      .That(schedules[next.UniqueStr].Priority)
+      .IsEqualTo(schedules[existing.UniqueStr].Priority);
+  }
+
+  [Test]
   public async Task ExplicitBatchesResumeIndependentlyAndPreserveUnselectedDefinitions()
   {
     using var config = RepositoryConfig.InitializeMemoryDB(null, Guid.NewGuid());

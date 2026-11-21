@@ -40,13 +40,16 @@ all its expected schedules appear. Automatic deletion and repository-wide archiv
 `SyncFromDatabase`.
 
 Run downloads, plan edits, supply edits, and retirement through one serialized owner per physical
-controller. Take the native observation used to select a row within that sequence. Recheck the
-schedule ID and full part name, and check the route comment when selecting by job.
-`BuildMazakSchedules.IncreasePlanQuantity` builds a `ScheduleSafeEdit` for an absolute minimum.
-After an uncertain reply, reread the row and apply the minimum again if needed.
-`BuildMazakSchedules.SetMaterialQuantity` sets ready pieces for a native process, including an
-explicit zero when withdrawal needs acknowledgment. Check whether Mazak consumed a material
-offer before retrying it.
+controller. With direct database access, share one `OpenDatabaseKitDB` instance for that controller.
+Its write lock covers one complete `Save`, including acknowledgment of all its chunks. The caller
+serializes the observation and decision leading to that save. Recheck the schedule ID and full part
+name, and check the route comment when selecting by job. `BuildMazakSchedules.IncreasePlanQuantity`
+builds a `ScheduleSafeEdit` for an absolute minimum. After an uncertain reply, reread the row and
+apply the minimum again if needed. `BuildMazakSchedules.SetMaterialQuantity` sets ready pieces for a
+native process, including an explicit zero when withdrawal needs acknowledgment. A split schedule
+has one native process. For a combined schedule the command also sends the observed ready counts of
+its other processes. Use it when the caller can account for supply on the whole schedule. Check
+whether Mazak consumed a material offer before retrying it.
 
 Use `BuildMazakSchedules.RemoveSchedules` to calculate retirement writes and find the parts still
 needed by surviving schedules. Select an idle row once its final transfer receipt, material and
@@ -56,9 +59,9 @@ Reclaim definitions separately, using fresh references and removing rows in depe
 For a shared repository, set a stable, unique `MazakConfig.CsvLogSource` for each additional
 controller. The original controller can keep its existing raw IDs. `CaptureLogWatermark`,
 `AcquireCellState` and `AcknowledgeLogs` use raw filenames for the corresponding controller.
-Translation uses the qualified repository key, which callers can obtain with `CsvLogForeignID`
-for receipt lookups. The staged `ReconcileCellState` overload accepts the controller's machining
-group explicitly.
+Translation uses the qualified repository key, which callers can obtain with `CsvLogForeignID` for
+receipt lookups. The staged `ReconcileCellState` overload accepts the controller's machining group
+explicitly.
 
 Controller-owned backout requires successful synchronization, settled Mazak events, and confirmed
 downloads for all unarchived, non-manual jobs without a previous decrement. Unconfirmed downloads

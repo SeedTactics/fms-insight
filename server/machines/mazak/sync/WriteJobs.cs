@@ -89,9 +89,22 @@ namespace MazakMachineInterface
       MazakConfig mazakCfg
     )
     {
-      var batch = jobs.ToImmutableList();
-      if (!batch.IsEmpty)
-        InstallJobs(mazakDb.LoadAllData(), batch, db, mazakDb, fmsSt, mazakCfg, false);
+      // The schedule builder assigns one native due date and priority range per batch.
+      var batches = jobs.GroupBy(job =>
+        mazakCfg.UseStartingOffsetForDueDate
+          ? job.RouteStartUTC.ToLocalTime().Date
+          : DateTime.MinValue
+      );
+      foreach (var batch in batches.OrderBy(group => group.Key))
+        InstallJobs(
+          mazakDb.LoadAllData(),
+          batch.ToImmutableList(),
+          db,
+          mazakDb,
+          fmsSt,
+          mazakCfg,
+          false
+        );
     }
 
     private static void InstallJobs(

@@ -68,9 +68,9 @@ namespace MazakMachineInterface
     }
 
     /// <summary>
-    /// Builds a ready-material edit for the selected native process. An explicit zero is written
-    /// even when the observed quantity is zero. Recheck consumption before retrying an offer
-    /// after an uncertain acknowledgment.
+    /// Builds a ready-material edit for the selected native process, including explicit zero.
+    /// The command also carries the observed ready quantities of every other process on the
+    /// schedule. Recheck consumption before retrying an offer after an uncertain acknowledgment.
     /// </summary>
     public static MazakWriteData SetMaterialQuantity(
       MazakScheduleRow schedule,
