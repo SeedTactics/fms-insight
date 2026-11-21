@@ -19,6 +19,13 @@ Controller completion evidence remains visible while its event batch is settling
 preserves completion for retired split routes. Actual machining also establishes durable entry when
 its preceding LOAD was unavailable, without synthesizing a LOAD event.
 
+Generic `Completed` can include invalidated unloads and use a higher native count while the schedule
+exists. A backend that needs valid-piece counts after rework should count distinct material IDs per
+process and path from unload history with `includeInvalidatedCycles: false`. Use these counts in the
+status projection, for example through `AdjustCurrentStatus`, and in archive decisions. If six
+pieces finish and a set of three is invalidated and rerun, valid output goes 6 → 3 → 6 while the
+native completion count goes 6 → 6 → 9.
+
 For local cancellation, `RecordJobDecrementOperation` commits positive once-only cancellations,
 release of never-entered raw allocations, and a completed request receipt together. Replays return
 the original batch, including empty results. `LoadJobDecrementOperation` only reads that receipt.
