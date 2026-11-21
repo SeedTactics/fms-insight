@@ -35,6 +35,10 @@ installed for as long as its job might use it.
 
 ## FMS Insight schedules
 
+The Mazak GUI allows operators to create multiple schedules that reference the same native part.
+FMS Insight creates a distinct native part for each schedule it downloads, giving those schedules
+a one-to-one relationship with their parts.
+
 In a **combined schedule**, the Mazak part contains the job's processes. Unloading one process makes
 its pieces ready in the Material field of the next process. This suits work whose next process can
 begin immediately.
