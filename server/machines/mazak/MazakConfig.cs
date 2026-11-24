@@ -208,8 +208,9 @@ namespace MazakMachineInterface
     // equipment I/O here: this runs inside ordinary event processing/reconciliation.
     public Func<int, bool>? CanQuarantineMissingMaterial { get; init; }
 
-    // Convert Mazak-internal pallet number (1, 2, 3...) to FMS Insight pallet number
-    public int TranslatePalletNumber(int mazakPallet) => mazakPallet - 1 + StartingPalletNumber;
+    // Offset real pallets only. Mazak events can use a nonpositive number when no pallet is present.
+    public int TranslatePalletNumber(int mazakPallet) =>
+      mazakPallet > 0 ? mazakPallet - 1 + StartingPalletNumber : mazakPallet;
 
     // Convert FMS Insight pallet number back to Mazak-internal number
     public int InversePalletNumber(int fmsPallet) => fmsPallet - StartingPalletNumber + 1;
